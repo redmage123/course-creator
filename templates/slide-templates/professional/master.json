@@ -1,0 +1,10 @@
+{
+  "templateName": "Professional",
+  "description": "Clean, corporate design with professional styling",
+  "colorScheme": {
+    "primary": "#2E5984",
+    "secondary": "#F39C12",
+    "background": "#FFFFFF",
+    "text": "#2C3E50"
+  }
+}

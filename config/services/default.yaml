@@ -1,0 +1,39 @@
+services:
+  api_gateway:
+    host: "0.0.0.0"
+    port: ${oc.env:API_GATEWAY_PORT,8000}
+    workers: 1
+    cors_origins:
+      - "http://localhost:3000"
+      - "http://localhost:8000"
+
+  content_generator:
+    host: "0.0.0.0"
+    port: ${oc.env:CONTENT_GENERATOR_PORT,8001}
+    workers: 2
+    timeout: 300
+    max_content_length: 10000
+
+  slide_service:
+    host: "0.0.0.0"
+    port: ${oc.env:SLIDE_SERVICE_PORT,8003}
+    workers: 2
+    libreoffice:
+      template_path: "/app/templates"
+      output_path: "/app/generated"
+
+  lab_service:
+    host: "0.0.0.0"
+    port: ${oc.env:LAB_SERVICE_PORT,8004}
+    workers: 2
+    sandbox:
+      enabled: true
+      timeout: 300
+      memory_limit: "512M"
+      cpu_limit: "1"
+
+  user_interface:
+    host: "0.0.0.0"
+    port: ${oc.env:USER_INTERFACE_PORT,3000}
+    api_base_url: "http://localhost:${oc.env:API_GATEWAY_PORT,8000}"
+    websocket_url: "ws://localhost:${oc.env:API_GATEWAY_PORT,8000}"

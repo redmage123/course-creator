@@ -1,0 +1,20 @@
+defaults:
+  - _self_
+  - services: default
+  - database: postgres
+  - ai: claude
+  - messaging: redis
+  - logging: default
+
+app:
+  name: "Course Creator"
+  version: "1.0.0"
+  environment: ${oc.env:ENVIRONMENT,development}
+  debug: ${oc.env:DEBUG,false}
+
+hydra:
+  run:
+    dir: ./outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  sweep:
+    dir: ./multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    subdir: ${hydra:job.num}

@@ -1,0 +1,12 @@
+messaging:
+  type: "redis"
+  host: ${oc.env:REDIS_HOST,localhost}
+  port: ${oc.env:REDIS_PORT,6379}
+  password: ${oc.env:REDIS_PASSWORD,""}
+  db: ${oc.env:REDIS_DB,0}
+  max_connections: 100
+  socket_timeout: 30
+  socket_connect_timeout: 30
+  socket_keepalive: true
+  retry_on_timeout: true
+  health_check_interval: 30

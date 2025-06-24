@@ -1,0 +1,15 @@
+database:
+  type: "postgresql"
+  host: ${oc.env:DB_HOST,localhost}
+  port: ${oc.env:DB_PORT,5432}
+  name: ${oc.env:DB_NAME,course_creator}
+  user: ${oc.env:DB_USER,postgres}
+  password: ${oc.env:DB_PASSWORD,password}
+  pool_size: 10
+  max_overflow: 20
+  echo: ${oc.env:DB_ECHO,false}
+
+  connection_params:
+    application_name: "course_creator"
+    connect_timeout: 10
+    command_timeout: 30
