@@ -1,0 +1,26 @@
+# Configuration for user-management service
+user_management:
+  host: "0.0.0.0"
+  port: 8002
+  workers: 1
+  timeout: 300
+  cors_origins:
+    - "http://localhost:3000"
+    - "http://localhost:8000"
+  allowed_hosts:
+    - "*"
+  
+  # Service-specific configuration
+  description: "User authentication, authorization, and profile management service"
+  endpoints: ['register', 'login', 'refresh_token', 'logout', 'get_profile', 'update_profile', 'list_users', 'change_password', 'verify_email']
+  
+  # Database settings
+  database:
+    pool_size: 10
+    max_overflow: 20
+    echo: false
+  
+  # Cache settings
+  cache:
+    ttl: 3600
+    max_size: 1000

@@ -1,0 +1,37 @@
+"""
+Update_Content service for business logic
+"""
+
+from typing import List, Optional, Dict, Any
+from ..models import *
+
+class Update_ContentService:
+    """Service class for update_content operations"""
+    
+    def __init__(self, db_session):
+        self.db = db_session
+    
+    async def create_update_content(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a new update_content"""
+        # TODO: Implement create logic
+        return {"message": "Created update_content"}
+    
+    async def get_update_content(self, id: str) -> Optional[Dict[str, Any]]:
+        """Get update_content by ID"""
+        # TODO: Implement get logic
+        return None
+    
+    async def update_update_content(self, id: str, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Update update_content"""
+        # TODO: Implement update logic
+        return None
+    
+    async def delete_update_content(self, id: str) -> bool:
+        """Delete update_content"""
+        # TODO: Implement delete logic
+        return False
+    
+    async def list_update_contents(self, limit: int = 10, offset: int = 0) -> List[Dict[str, Any]]:
+        """List update_contents with pagination"""
+        # TODO: Implement list logic
+        return []

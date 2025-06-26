@@ -1,0 +1,46 @@
+{
+    "name": "slide-service",
+    "description": "Presentation Slide Generation Service",
+    "port": 8003,
+    "endpoints": [
+        {
+            "name": "presentation",
+            "routes": [
+                {
+                    "method": "POST",
+                    "path": "/presentations",
+                    "function_name": "create_presentation",
+                    "description": "Create a new presentation",
+                    "return_type": "Dict[str, Any]",
+                    "body_param": {"name": "request", "type": "PresentationCreateRequest"}
+                },
+                {
+                    "method": "GET",
+                    "path": "/presentations/{presentation_id}",
+                    "function_name": "get_presentation",
+                    "description": "Get presentation by ID",
+                    "return_type": "Dict[str, Any]",
+                    "path_params": [{"name": "presentation_id", "type": "str"}]
+                }
+            ]
+        }
+    ],
+    "dependencies": [
+        "python-pptx>=0.6.21",
+        "Pillow>=10.0.0"
+    ],
+    "database_models": [
+        {
+            "name": "Presentation",
+            "description": "Presentation metadata",
+            "fields": [
+                {"name": "title", "type": "str", "nullable": false},
+                {"name": "template_id", "type": "str", "nullable": false},
+                {"name": "slide_count", "type": "int", "default": "0"}
+            ]
+        }
+    ],
+    "async_tasks": [],
+    "websocket_endpoints": [],
+    "middleware": ["logging", "timing"]
+}

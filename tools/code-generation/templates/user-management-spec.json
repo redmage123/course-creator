@@ -1,0 +1,113 @@
+{
+  "name": "user-management",
+  "description": "User authentication, authorization, and profile management service",
+  "port": 8002,
+  "endpoints": [
+    {
+      "name": "register",
+      "path": "/auth/register",
+      "method": "POST",
+      "description": "Register a new user account"
+    },
+    {
+      "name": "login",
+      "path": "/auth/login",
+      "method": "POST",
+      "description": "Authenticate user and return JWT token"
+    },
+    {
+      "name": "refresh_token",
+      "path": "/auth/refresh",
+      "method": "POST",
+      "description": "Refresh JWT token"
+    },
+    {
+      "name": "logout",
+      "path": "/auth/logout",
+      "method": "POST",
+      "description": "Logout user and invalidate token"
+    },
+    {
+      "name": "get_profile",
+      "path": "/users/{user_id}",
+      "method": "GET",
+      "description": "Get user profile information"
+    },
+    {
+      "name": "update_profile",
+      "path": "/users/{user_id}",
+      "method": "PUT",
+      "description": "Update user profile information"
+    },
+    {
+      "name": "list_users",
+      "path": "/users",
+      "method": "GET",
+      "description": "List users with pagination and filtering"
+    },
+    {
+      "name": "change_password",
+      "path": "/users/{user_id}/password",
+      "method": "PUT",
+      "description": "Change user password"
+    },
+    {
+      "name": "verify_email",
+      "path": "/auth/verify-email",
+      "method": "POST",
+      "description": "Verify user email address"
+    }
+  ],
+  "dependencies": [
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
+    "sqlalchemy>=2.0.0",
+    "asyncpg>=0.29.0",
+    "passlib[bcrypt]>=1.7.4",
+    "python-jose[cryptography]>=3.3.0",
+    "python-multipart>=0.0.6",
+    "email-validator>=2.1.0"
+  ],
+  "database_models": [
+    {
+      "name": "User",
+      "fields": [
+        {"name": "id", "type": "UUID", "primary_key": true},
+        {"name": "email", "type": "String", "nullable": false, "unique": true},
+        {"name": "username", "type": "String", "nullable": false, "unique": true},
+        {"name": "full_name", "type": "String", "nullable": false},
+        {"name": "hashed_password", "type": "String", "nullable": false},
+        {"name": "is_active", "type": "Boolean", "default": true},
+        {"name": "is_verified", "type": "Boolean", "default": false},
+        {"name": "role", "type": "String", "default": "student"},
+        {"name": "avatar_url", "type": "String"},
+        {"name": "bio", "type": "Text"},
+        {"name": "created_at", "type": "DateTime"},
+        {"name": "updated_at", "type": "DateTime"},
+        {"name": "last_login", "type": "DateTime"}
+      ]
+    },
+    {
+      "name": "RefreshToken",
+      "fields": [
+        {"name": "id", "type": "UUID", "primary_key": true},
+        {"name": "user_id", "type": "UUID", "nullable": false},
+        {"name": "token", "type": "String", "nullable": false},
+        {"name": "expires_at", "type": "DateTime", "nullable": false},
+        {"name": "created_at", "type": "DateTime"}
+      ]
+    }
+  ],
+  "async_tasks": [
+    {
+      "name": "send_verification_email",
+      "description": "Send email verification to new users"
+    },
+    {
+      "name": "send_password_reset_email",
+      "description": "Send password reset email to users"
+    }
+  ],
+  "websocket_endpoints": [],
+  "middleware": ["logging", "cors", "authentication"]
+}

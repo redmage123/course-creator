@@ -1,0 +1,179 @@
+{
+  "name": "enrollment",
+  "description": "Service for managing student enrollments, progress tracking, and learning analytics",
+  "port": 8004,
+  "endpoints": [
+    {
+      "name": "enroll_student",
+      "path": "/enrollments",
+      "method": "POST",
+      "description": "Enroll a student in a course"
+    },
+    {
+      "name": "get_enrollment",
+      "path": "/enrollments/{enrollment_id}",
+      "method": "GET",
+      "description": "Get enrollment details by ID"
+    },
+    {
+      "name": "list_enrollments",
+      "path": "/enrollments",
+      "method": "GET",
+      "description": "List enrollments with filtering by student or course"
+    },
+    {
+      "name": "update_enrollment",
+      "path": "/enrollments/{enrollment_id}",
+      "method": "PUT",
+      "description": "Update enrollment status or settings"
+    },
+    {
+      "name": "unenroll_student",
+      "path": "/enrollments/{enrollment_id}",
+      "method": "DELETE",
+      "description": "Unenroll a student from a course"
+    },
+    {
+      "name": "get_student_courses",
+      "path": "/students/{student_id}/courses",
+      "method": "GET",
+      "description": "Get all courses a student is enrolled in"
+    },
+    {
+      "name": "get_course_students",
+      "path": "/courses/{course_id}/students",
+      "method": "GET",
+      "description": "Get all students enrolled in a course"
+    },
+    {
+      "name": "update_lesson_progress",
+      "path": "/progress/lessons/{lesson_id}",
+      "method": "POST",
+      "description": "Update student progress on a lesson"
+    },
+    {
+      "name": "get_course_progress",
+      "path": "/progress/courses/{course_id}",
+      "method": "GET",
+      "description": "Get student progress for a course"
+    },
+    {
+      "name": "get_student_progress",
+      "path": "/progress/students/{student_id}",
+      "method": "GET",
+      "description": "Get overall progress for a student"
+    },
+    {
+      "name": "mark_lesson_complete",
+      "path": "/progress/lessons/{lesson_id}/complete",
+      "method": "POST",
+      "description": "Mark a lesson as completed"
+    },
+    {
+      "name": "get_certificates",
+      "path": "/certificates",
+      "method": "GET",
+      "description": "Get certificates earned by student"
+    },
+    {
+      "name": "issue_certificate",
+      "path": "/certificates",
+      "method": "POST",
+      "description": "Issue a completion certificate"
+    }
+  ],
+  "dependencies": [
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
+    "sqlalchemy>=2.0.0",
+    "asyncpg>=0.29.0",
+    "redis>=5.0.0",
+    "pydantic>=2.0.0",
+    "httpx>=0.25.0"
+  ],
+  "database_models": [
+    {
+      "name": "Enrollment",
+      "fields": [
+        {"name": "id", "type": "UUID", "primary_key": true},
+        {"name": "student_id", "type": "UUID", "nullable": false},
+        {"name": "course_id", "type": "UUID", "nullable": false},
+        {"name": "enrollment_date", "type": "DateTime", "nullable": false},
+        {"name": "status", "type": "String", "default": "active"},
+        {"name": "progress_percentage", "type": "Float", "default": 0.0},
+        {"name": "last_accessed", "type": "DateTime"},
+        {"name": "completed_at", "type": "DateTime"},
+        {"name": "certificate_issued", "type": "Boolean", "default": false},
+        {"name": "created_at", "type": "DateTime"},
+        {"name": "updated_at", "type": "DateTime"}
+      ]
+    },
+    {
+      "name": "LessonProgress",
+      "fields": [
+        {"name": "id", "type": "UUID", "primary_key": true},
+        {"name": "enrollment_id", "type": "UUID", "nullable": false},
+        {"name": "lesson_id", "type": "UUID", "nullable": false},
+        {"name": "status", "type": "String", "default": "not_started"},
+        {"name": "progress_percentage", "type": "Float", "default": 0.0},
+        {"name": "time_spent_minutes", "type": "Integer", "default": 0},
+        {"name": "started_at", "type": "DateTime"},
+        {"name": "completed_at", "type": "DateTime"},
+        {"name": "last_position", "type": "Integer", "default": 0},
+        {"name": "created_at", "type": "DateTime"},
+        {"name": "updated_at", "type": "DateTime"}
+      ]
+    },
+    {
+      "name": "Certificate",
+      "fields": [
+        {"name": "id", "type": "UUID", "primary_key": true},
+        {"name": "enrollment_id", "type": "UUID", "nullable": false},
+        {"name": "student_id", "type": "UUID", "nullable": false},
+        {"name": "course_id", "type": "UUID", "nullable": false},
+        {"name": "certificate_url", "type": "String"},
+        {"name": "issued_at", "type": "DateTime", "nullable": false},
+        {"name": "verification_code", "type": "String", "nullable": false},
+        {"name": "is_verified", "type": "Boolean", "default": true},
+        {"name": "created_at", "type": "DateTime"}
+      ]
+    },
+    {
+      "name": "LearningPath",
+      "fields": [
+        {"name": "id", "type": "UUID", "primary_key": true},
+        {"name": "student_id", "type": "UUID", "nullable": false},
+        {"name": "name", "type": "String", "nullable": false},
+        {"name": "description", "type": "Text"},
+        {"name": "target_completion_date", "type": "DateTime"},
+        {"name": "is_active", "type": "Boolean", "default": true},
+        {"name": "created_at", "type": "DateTime"},
+        {"name": "updated_at", "type": "DateTime"}
+      ]
+    }
+  ],
+  "async_tasks": [
+    {
+      "name": "calculate_course_progress",
+      "description": "Calculate and update overall course progress for student"
+    },
+    {
+      "name": "check_completion_status",
+      "description": "Check if student has completed course and trigger certificate generation"
+    },
+    {
+      "name": "send_progress_notifications",
+      "description": "Send progress notifications to students and instructors"
+    },
+    {
+      "name": "generate_certificate",
+      "description": "Generate completion certificate for student"
+    },
+    {
+      "name": "update_learning_analytics",
+      "description": "Update learning analytics and recommendations"
+    }
+  ],
+  "websocket_endpoints": [],
+  "middleware": ["logging", "cors", "authentication"]
+}

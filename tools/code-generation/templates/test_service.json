@@ -1,0 +1,35 @@
+{
+    "name": "test-service",
+    "description": "Simple Test Service for Agent Validation",
+    "port": 8999,
+    "endpoints": [
+        {
+            "name": "hello",
+            "routes": [
+                {
+                    "method": "GET",
+                    "path": "/hello",
+                    "function_name": "say_hello",
+                    "description": "Simple hello endpoint",
+                    "return_type": "Dict[str, str]"
+                }
+            ]
+        }
+    ],
+    "dependencies": [
+        "requests>=2.31.0"
+    ],
+    "database_models": [
+        {
+            "name": "Greeting",
+            "description": "Simple greeting model",
+            "fields": [
+                {"name": "message", "type": "str", "nullable": false},
+                {"name": "language", "type": "str", "default": "'en'"}
+            ]
+        }
+    ],
+    "async_tasks": [],
+    "websocket_endpoints": [],
+    "middleware": ["logging"]
+}

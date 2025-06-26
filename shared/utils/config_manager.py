@@ -1,40 +1,72 @@
-"""Configuration management using Hydra."""
+"""Configuration manager for course creator services"""
 
-from hydra import compose, initialize_config_dir
-from omegaconf import DictConfig, OmegaConf
-from pathlib import Path
 import os
+from typing import Any, Dict, Optional
+from pydantic_settings import BaseSettings
+
+
+class Settings(BaseSettings):
+    """Application settings"""
+    
+    # Database settings
+    database_url: str = "postgresql://user:password@localhost:5432/course_creator"
+    redis_url: str = "redis://localhost:6379"
+    
+    # Service settings
+    debug: bool = True
+    log_level: str = "INFO"
+    
+    # API settings
+    api_title: str = "Course Creator Service"
+    api_version: str = "1.0.0"
+    
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
+
 
 class ConfigManager:
-    """Centralized configuration management using Hydra"""
-
-    _instance = None
-    _config = None
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
-
+    """Configuration manager singleton"""
+    
     def __init__(self):
-        if self._config is None:
-            self._load_config()
+        self.settings = Settings()
+    
+    def get(self, key: str, default: Any = None) -> Any:
+        """Get configuration value"""
+        return getattr(self.settings, key, default)
+    
+    def get_database_url(self) -> str:
+        """Get database URL"""
+        return self.settings.database_url
+    
+    def get_redis_url(self) -> str:
+        """Get Redis URL"""
+        return self.settings.redis_url
+    
+    def is_debug(self) -> bool:
+        """Check if debug mode is enabled"""
+        return self.settings.debug
+    
+    def get_service_config(self, service_name: str) -> Dict[str, Any]:
+        """Get service-specific configuration"""
+        return {
+            "name": service_name,
+            "debug": self.settings.debug,
+            "log_level": self.settings.log_level,
+            "api_title": self.settings.api_title,
+            "api_version": self.settings.api_version,
+            "database_url": self.settings.database_url,
+            "redis_url": self.settings.redis_url,
+        }
+    
+    def get_api_config(self) -> Dict[str, Any]:
+        """Get API configuration"""
+        return {
+            "title": self.settings.api_title,
+            "version": self.settings.api_version,
+            "debug": self.settings.debug,
+        }
 
-    def _load_config(self):
-        """Load configuration using Hydra"""
-        config_dir = Path(__file__).parent.parent.parent / "config"
 
-        with initialize_config_dir(config_dir=str(config_dir.absolute()), version_base=None):
-            self._config = compose(config_name="config")
-
-    @property
-    def config(self) -> DictConfig:
-        """Get the configuration object"""
-        return self._config
-
-    def get_service_config(self, service_name: str) -> DictConfig:
-        """Get configuration for a specific service"""
-        return self._config.services.get(service_name, {})
-
-# Initialize global config manager
+# Global config manager instance
 config_manager = ConfigManager()

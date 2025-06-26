@@ -1,0 +1,134 @@
+{
+  "name": "content-management",
+  "description": "Service for managing course content including files, videos, documents, and media processing",
+  "port": 8003,
+  "endpoints": [
+    {
+      "name": "upload_content",
+      "path": "/content/upload",
+      "method": "POST",
+      "description": "Upload course content files"
+    },
+    {
+      "name": "get_content",
+      "path": "/content/{content_id}",
+      "method": "GET",
+      "description": "Get content metadata and download URL"
+    },
+    {
+      "name": "update_content",
+      "path": "/content/{content_id}",
+      "method": "PUT",
+      "description": "Update content metadata"
+    },
+    {
+      "name": "delete_content",
+      "path": "/content/{content_id}",
+      "method": "DELETE",
+      "description": "Delete content and associated files"
+    },
+    {
+      "name": "list_content",
+      "path": "/content",
+      "method": "GET",
+      "description": "List content with filtering by course, type, etc."
+    },
+    {
+      "name": "get_content_by_lesson",
+      "path": "/lessons/{lesson_id}/content",
+      "method": "GET",
+      "description": "Get all content for a specific lesson"
+    },
+    {
+      "name": "attach_to_lesson",
+      "path": "/content/{content_id}/attach/{lesson_id}",
+      "method": "POST",
+      "description": "Attach content to a lesson"
+    },
+    {
+      "name": "process_video",
+      "path": "/content/{content_id}/process",
+      "method": "POST",
+      "description": "Trigger video processing (transcoding, thumbnails)"
+    },
+    {
+      "name": "get_processing_status",
+      "path": "/content/{content_id}/status",
+      "method": "GET",
+      "description": "Get content processing status"
+    }
+  ],
+  "dependencies": [
+    "fastapi>=0.104.0",
+    "uvicorn>=0.24.0",
+    "sqlalchemy>=2.0.0",
+    "asyncpg>=0.29.0",
+    "redis>=5.0.0",
+    "boto3>=1.28.0",
+    "python-multipart>=0.0.6",
+    "pillow>=10.0.0",
+    "ffmpeg-python>=0.2.0"
+  ],
+  "database_models": [
+    {
+      "name": "Content",
+      "fields": [
+        {"name": "id", "type": "UUID", "primary_key": true},
+        {"name": "title", "type": "String", "nullable": false},
+        {"name": "description", "type": "Text"},
+        {"name": "content_type", "type": "String", "nullable": false},
+        {"name": "file_path", "type": "String", "nullable": false},
+        {"name": "file_size", "type": "BigInteger"},
+        {"name": "mime_type", "type": "String"},
+        {"name": "duration", "type": "Integer"},
+        {"name": "thumbnail_url", "type": "String"},
+        {"name": "processing_status", "type": "String", "default": "pending"},
+        {"name": "upload_by", "type": "UUID", "nullable": false},
+        {"name": "created_at", "type": "DateTime"},
+        {"name": "updated_at", "type": "DateTime"}
+      ]
+    },
+    {
+      "name": "LessonContent",
+      "fields": [
+        {"name": "id", "type": "UUID", "primary_key": true},
+        {"name": "lesson_id", "type": "UUID", "nullable": false},
+        {"name": "content_id", "type": "UUID", "nullable": false},
+        {"name": "order_index", "type": "Integer", "default": 0},
+        {"name": "is_primary", "type": "Boolean", "default": false},
+        {"name": "created_at", "type": "DateTime"}
+      ]
+    },
+    {
+      "name": "ContentVersion",
+      "fields": [
+        {"name": "id", "type": "UUID", "primary_key": true},
+        {"name": "content_id", "type": "UUID", "nullable": false},
+        {"name": "version_number", "type": "Integer", "nullable": false},
+        {"name": "file_path", "type": "String", "nullable": false},
+        {"name": "change_notes", "type": "Text"},
+        {"name": "created_at", "type": "DateTime"}
+      ]
+    }
+  ],
+  "async_tasks": [
+    {
+      "name": "process_video_file",
+      "description": "Process uploaded video files (transcoding, compression)"
+    },
+    {
+      "name": "generate_thumbnails",
+      "description": "Generate video thumbnails and preview images"
+    },
+    {
+      "name": "extract_metadata",
+      "description": "Extract metadata from uploaded files"
+    },
+    {
+      "name": "cleanup_temp_files",
+      "description": "Clean up temporary upload files"
+    }
+  ],
+  "websocket_endpoints": [],
+  "middleware": ["logging", "cors", "authentication", "file_upload"]
+}

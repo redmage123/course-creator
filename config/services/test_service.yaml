@@ -1,0 +1,26 @@
+# Configuration for test-service service
+test_service:
+  host: "0.0.0.0"
+  port: 8999
+  workers: 1
+  timeout: 300
+  cors_origins:
+    - "http://localhost:3000"
+    - "http://localhost:8000"
+  allowed_hosts:
+    - "*"
+  
+  # Service-specific configuration
+  description: "Simple Test Service for Agent Validation"
+  endpoints: ['hello']
+  
+  # Database settings
+  database:
+    pool_size: 10
+    max_overflow: 20
+    echo: false
+  
+  # Cache settings
+  cache:
+    ttl: 3600
+    max_size: 1000

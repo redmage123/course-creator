@@ -1,0 +1,25 @@
+total 92
+drwxrwxr-x 17 bbrelin bbrelin 4096 Jun 24 10:15 .
+drwxr-x---  4 bbrelin bbrelin 4096 Jun 24 10:22 ..
+drwxrwxr-x  7 bbrelin bbrelin 4096 Jun 24 06:28 config
+drwxrwxr-x  5 bbrelin bbrelin 4096 Jun 24 06:28 data
+-rw-rw-r--  1 bbrelin bbrelin    0 Jun 24 10:38 dir.out
+-rw-rw-r--  1 bbrelin bbrelin  679 Jun 24 10:15 docker-compose.test-service.yml
+drwxrwxr-x  6 bbrelin bbrelin 4096 Jun 24 06:28 docs
+-rw-rw-r--  1 bbrelin bbrelin  356 Jun 24 06:28 .env.example
+drwxrwxr-x  8 bbrelin bbrelin 4096 Jun 24 06:28 .git
+-rw-rw-r--  1 bbrelin bbrelin  702 Jun 24 06:28 .gitignore
+drwxrwxr-x  6 bbrelin bbrelin 4096 Jun 24 06:28 infrastructure
+-rw-rw-r--  1 bbrelin bbrelin 1076 Jun 24 06:28 LICENSE
+drwxrwxr-x  2 bbrelin bbrelin 4096 Jun 24 06:28 logs
+drwxrwxr-x  6 bbrelin bbrelin 4096 Jun 24 06:28 monitoring
+-rw-rw-r--  1 bbrelin bbrelin   69 Jun 24 06:28 README.md
+-rw-rw-r--  1 bbrelin bbrelin  841 Jun 24 09:05 requirements.txt
+drwxrwxr-x  7 bbrelin bbrelin 4096 Jun 24 06:28 scripts
+drwxrwxr-x  5 bbrelin bbrelin 4096 Jun 24 06:28 security
+drwxrwxr-x 11 bbrelin bbrelin 4096 Jun 24 10:15 services
+drwxrwxr-x  7 bbrelin bbrelin 4096 Jun 24 10:25 shared
+drwxrwxr-x  5 bbrelin bbrelin 4096 Jun 24 06:28 templates
+drwxrwxr-x  6 bbrelin bbrelin 4096 Jun 24 06:28 tests
+drwxrwxr-x  6 bbrelin bbrelin 4096 Jun 24 06:28 tools
+drwxrwxr-x  5 bbrelin bbrelin 4096 Jun 24 07:05 .venv

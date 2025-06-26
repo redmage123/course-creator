@@ -1,0 +1,25 @@
+# Add this to your main docker-compose.yml:
+  enrollment:
+    build:
+      context: .
+      dockerfile: services/enrollment/Dockerfile
+    ports:
+      - "${ENROLLMENT_PORT:-8004}:8004"
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - DB_HOST=postgres
+      - REDIS_HOST=redis
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./config:/app/config
+      - ./shared:/app/shared
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

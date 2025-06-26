@@ -1,0 +1,26 @@
+# Configuration for content-management service
+content_management:
+  host: "0.0.0.0"
+  port: 8003
+  workers: 1
+  timeout: 300
+  cors_origins:
+    - "http://localhost:3000"
+    - "http://localhost:8000"
+  allowed_hosts:
+    - "*"
+  
+  # Service-specific configuration
+  description: "Service for managing course content including files, videos, documents, and media processing"
+  endpoints: ['upload_content', 'get_content', 'update_content', 'delete_content', 'list_content', 'get_content_by_lesson', 'attach_to_lesson', 'process_video', 'get_processing_status']
+  
+  # Database settings
+  database:
+    pool_size: 10
+    max_overflow: 20
+    echo: false
+  
+  # Cache settings
+  cache:
+    ttl: 3600
+    max_size: 1000
