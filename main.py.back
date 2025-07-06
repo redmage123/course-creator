@@ -1,0 +1,79 @@
+"""
+Course Creator Platform - Main FastAPI Application
+"""
+from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import uvicorn
+from contextlib import asynccontextmanager
+
+# Import your API routers (we'll create these)
+from api.auth import router as auth_router
+from api.courses import router as courses_router
+from api.users import router as users_router
+from api.enrollments import router as enrollments_router
+
+# Import database setup
+from shared.database.base import init_database
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan events"""
+    # Startup
+    print("🚀 Starting Course Creator Platform...")
+    await init_database()
+    print("✅ Database initialized")
+    yield
+    # Shutdown
+    print("🛑 Shutting down Course Creator Platform...")
+
+# Create FastAPI application
+app = FastAPI(
+    title="Course Creator Platform",
+    description="A comprehensive platform for creating and managing online courses",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# Configure CORS for frontend integration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for monitoring"""
+    return {
+        "status": "healthy",
+        "message": "Course Creator Platform is running",
+        "version": "1.0.0"
+    }
+
+@app.get("/")
+async def root():
+    """Root endpoint"""
+    return {
+        "message": "Welcome to Course Creator Platform API",
+        "docs": "/docs",
+        "health": "/health"
+    }
+
+# Include API routers
+app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
+app.include_router(courses_router, prefix="/api/courses", tags=["Courses"])
+app.include_router(users_router, prefix="/api/users", tags=["Users"])
+app.include_router(enrollments_router, prefix="/api/enrollments", tags=["Enrollments"])
+
+if __name__ == "__main__":
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        log_level="info"
+    )

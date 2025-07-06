@@ -1,0 +1,48 @@
+# Configuration for course_generator service
+course_generator:
+  host: "0.0.0.0"
+  port: 8001
+  workers: 1
+  timeout: 300
+  cors_origins:
+    - "http://localhost:3000"
+    - "http://localhost:8000"
+  allowed_hosts:
+    - "*"
+  
+  # Service-specific configuration
+  description: "Course Creation and Management Service"
+  endpoints: ['course', 'lesson', 'content', 'category']
+  
+  # Authentication settings
+  authentication:
+    enabled: true
+    jwt_secret_key: "${JWT_SECRET_KEY}"
+    jwt_algorithm: "HS256"
+    jwt_expiration: 3600
+  
+  # Database settings
+  database:
+    pool_size: 10
+    max_overflow: 20
+    echo: false
+    timeout: 30
+  
+  # Cache settings
+  cache:
+    enabled: true
+    ttl: 3600
+    max_size: 1000
+    redis_url: "redis://redis:6379/0"
+  
+  # Logging settings
+  logging:
+    enabled: true
+    level: "INFO"
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    
+  # Monitoring settings
+  monitoring:
+    enabled: true
+    metrics_port: 9001
+    health_check_interval: 30

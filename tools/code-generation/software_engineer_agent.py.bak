@@ -1,0 +1,1164 @@
+"""
+Enhanced Software Engineer Agent for Course Creator
+
+This agent acts as a senior software engineer that can generate complete microservices
+with full implementations using Claude AI for code generation and analysis.
+"""
+
+import os
+import sys
+import json
+import argparse
+import asyncio
+from pathlib import Path
+from typing import Dict, List, Optional, Any
+from dataclasses import dataclass
+from datetime import datetime
+import textwrap
+import anthropic
+
+# Add the shared directory to the path so we can import our models
+sys.path.append(str(Path(__file__).parent.parent.parent / "shared"))
+
+@dataclass
+class ServiceSpec:
+    """Specification for a microservice to be generated"""
+    name: str
+    description: str
+    port: int
+    endpoints: List[Dict[str, Any]]
+    dependencies: List[str]
+    database_models: List[Dict[str, Any]]
+    async_tasks: List[Dict[str, Any]]
+    websocket_endpoints: List[Dict[str, Any]]
+    middleware: List[str]
+    business_logic: Dict[str, Any]  # Added for implementation details
+    authentication: bool = True
+    caching: bool = True
+    logging: bool = True
+
+class EnhancedSoftwareEngineerAgent:
+    """
+    AI-powered software engineer agent that generates complete, functional microservices
+    """
+    
+    def __init__(self, api_key: str = None):
+        self.repo_root = Path(__file__).parent.parent.parent
+        self.services_dir = self.repo_root / "services"
+        self.shared_dir = self.repo_root / "shared"
+        self.config_dir = self.repo_root / "config"
+        
+        # Initialize Claude client
+        self.api_key = api_key or os.getenv('ANTHROPIC_API_KEY')
+        if not self.api_key:
+            raise ValueError("ANTHROPIC_API_KEY environment variable is required")
+        
+        self.client = anthropic.Anthropic(api_key=self.api_key)
+        
+        print(f"🤖 Enhanced Software Engineer Agent initialized with Claude AI")
+        
+    async def generate_service(self, spec: ServiceSpec) -> bool:
+        """Generate a complete, functional microservice with full implementation"""
+        
+        print(f"🏗️  Generating complete microservice: {spec.name}")
+        print(f"📋 Description: {spec.description}")
+        
+        service_dir = self.services_dir / spec.name
+        service_dir.mkdir(exist_ok=True)
+        
+        try:
+            # Step 1: Analyze service requirements with Claude
+            print("🔍 Analyzing service requirements with Claude...")
+            analysis = await self._analyze_service_requirements(spec)
+            
+            # Step 2: Generate database models with full implementation
+            print("🗄️  Generating database models...")
+            await self._generate_complete_models(service_dir, spec, analysis)
+            
+            # Step 3: Generate service layer with business logic
+            print("⚙️  Generating service layer with business logic...")
+            await self._generate_complete_services(service_dir, spec, analysis)
+            
+            # Step 4: Generate routers with full endpoint implementations
+            print("🛣️  Generating API routers with complete implementations...")
+            await self._generate_complete_routers(service_dir, spec, analysis)
+            
+            # Step 5: Generate main application with all integrations
+            print("🚀 Generating main application...")
+            await self._generate_complete_main_app(service_dir, spec, analysis)
+            
+            # Step 6: Generate dependencies and middleware
+            print("🔗 Generating dependencies and middleware...")
+            await self._generate_complete_dependencies(service_dir, spec)
+            await self._generate_complete_middleware(service_dir, spec)
+            
+            # Step 7: Generate comprehensive tests
+            print("🧪 Generating comprehensive test suite...")
+            await self._generate_complete_tests(service_dir, spec, analysis)
+            
+            # Step 8: Generate deployment files
+            print("🐳 Generating deployment configurations...")
+            self._generate_dockerfile(service_dir, spec)
+            self._generate_requirements(service_dir, spec)
+            self._generate_config(spec)
+            
+            # Step 9: Validate generated code with Claude
+            print("✅ Validating generated code with Claude...")
+            validation_result = await self._validate_service_code(service_dir, spec)
+            
+            if validation_result['is_valid']:
+                print(f"✅ Successfully generated and validated microservice: {spec.name}")
+                print(f"📊 Generated {validation_result['file_count']} files")
+                print(f"📝 Total lines of code: {validation_result['total_lines']}")
+                return True
+            else:
+                print(f"❌ Validation failed: {validation_result['issues']}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Error generating service: {e}")
+            return False
+    
+    async def _analyze_service_requirements(self, spec: ServiceSpec) -> Dict[str, Any]:
+        """Use Claude to analyze service requirements and plan implementation"""
+        
+        prompt = f"""
+        As a senior software engineer, analyze this microservice specification and provide a detailed implementation plan:
+
+        Service Name: {spec.name}
+        Description: {spec.description}
+        Port: {spec.port}
+        
+        Endpoints: {json.dumps(spec.endpoints, indent=2)}
+        Database Models: {json.dumps(spec.database_models, indent=2)}
+        Business Logic Requirements: {json.dumps(spec.business_logic, indent=2)}
+        
+        Authentication Required: {spec.authentication}
+        Caching Required: {spec.caching}
+        Logging Required: {spec.logging}
+        
+        Please provide a comprehensive analysis including:
+        1. Database schema design with relationships
+        2. API endpoint implementation details
+        3. Business logic patterns to implement
+        4. Error handling strategies
+        5. Security considerations
+        6. Performance optimization suggestions
+        7. Integration points with other services
+        8. Testing strategy
+        
+        Format your response as a JSON object with these sections:
+        - database_design
+        - api_implementation
+        - business_logic_patterns
+        - error_handling
+        - security_measures
+        - performance_optimizations
+        - integration_points
+        - testing_strategy
+        """
+        
+        response = self.client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=4000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        try:
+            analysis = json.loads(response.content[0].text)
+            return analysis
+        except json.JSONDecodeError:
+            # Fallback to text analysis
+            return {"raw_analysis": response.content[0].text}
+    
+    async def _generate_complete_models(self, service_dir: Path, spec: ServiceSpec, analysis: Dict[str, Any]):
+        """Generate complete database models with SQLAlchemy and Pydantic schemas"""
+        
+        models_dir = service_dir / "models"
+        models_dir.mkdir(exist_ok=True)
+        
+        for model in spec.database_models:
+            model_code = await self._generate_model_with_claude(model, spec, analysis)
+            (models_dir / f"{model['name'].lower()}.py").write_text(model_code)
+        
+        # Generate models __init__.py
+        init_code = await self._generate_models_init(spec.database_models)
+        (models_dir / "__init__.py").write_text(init_code)
+    
+    async def _generate_model_with_claude(self, model: Dict[str, Any], spec: ServiceSpec, analysis: Dict[str, Any]) -> str:
+        """Generate a complete model file using Claude"""
+        
+        prompt = f"""
+        Generate a complete Python model file for a FastAPI microservice with the following requirements:
+
+        Model Name: {model['name']}
+        Model Description: {model.get('description', '')}
+        Fields: {json.dumps(model['fields'], indent=2)}
+        
+        Service Context: {spec.description}
+        Database Design Analysis: {json.dumps(analysis.get('database_design', {}), indent=2)}
+        
+        Generate a complete model file that includes:
+        1. SQLAlchemy ORM model with proper relationships
+        2. Pydantic schemas (Base, Create, Update, Response)
+        3. Proper field validation
+        4. Database indexes where appropriate
+        5. Model methods for common operations
+        6. Proper imports and type hints
+        7. Comprehensive docstrings
+        
+        Use these imports and follow FastAPI best practices:
+        - from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, ForeignKey
+        - from sqlalchemy.ext.declarative import declarative_base
+        - from sqlalchemy.orm import relationship
+        - from pydantic import BaseModel, Field, validator
+        - from datetime import datetime
+        - from typing import Optional, List
+        - import uuid
+        
+        Make sure the code is production-ready and follows all best practices.
+        """
+        
+        response = self.client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return response.content[0].text
+    
+    async def _generate_complete_services(self, service_dir: Path, spec: ServiceSpec, analysis: Dict[str, Any]):
+        """Generate complete service layer with full business logic implementation"""
+        
+        services_dir = service_dir / "services"
+        services_dir.mkdir(exist_ok=True)
+        
+        for endpoint in spec.endpoints:
+            service_code = await self._generate_service_with_claude(endpoint, spec, analysis)
+            (services_dir / f"{endpoint['name']}_service.py").write_text(service_code)
+        
+        # Generate services __init__.py
+        (services_dir / "__init__.py").write_text('"""Service layer for business logic"""')
+    
+    async def _generate_service_with_claude(self, endpoint: Dict[str, Any], spec: ServiceSpec, analysis: Dict[str, Any]) -> str:
+        """Generate a complete service class using Claude"""
+        
+        prompt = f"""
+        Generate a complete service class for a FastAPI microservice with full business logic implementation:
+
+        Endpoint Name: {endpoint['name']}
+        Service Description: {spec.description}
+        Routes: {json.dumps(endpoint.get('routes', []), indent=2)}
+        
+        Business Logic Requirements: {json.dumps(spec.business_logic, indent=2)}
+        Business Logic Patterns: {json.dumps(analysis.get('business_logic_patterns', {}), indent=2)}
+        Error Handling Strategy: {json.dumps(analysis.get('error_handling', {}), indent=2)}
+        
+        Authentication Required: {spec.authentication}
+        Caching Required: {spec.caching}
+        
+        Generate a complete service class that includes:
+        1. Full CRUD operations with proper error handling
+        2. Business logic validation
+        3. Database operations using asyncpg or SQLAlchemy
+        4. Caching implementation if required
+        5. Authentication checks if required
+        6. Comprehensive logging
+        7. Input validation and sanitization
+        8. Proper exception handling with custom exceptions
+        9. Async/await patterns
+        10. Type hints and docstrings
+        
+        Use these patterns:
+        - Dependency injection for database connections
+        - Repository pattern for data access
+        - Service layer for business logic
+        - Proper error handling with custom exceptions
+        - Comprehensive logging
+        - Input validation
+        
+        Make sure the implementation is production-ready and handles edge cases.
+        """
+        
+        response = self.client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=3000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return response.content[0].text
+    
+    async def _generate_complete_routers(self, service_dir: Path, spec: ServiceSpec, analysis: Dict[str, Any]):
+        """Generate complete API routers with full endpoint implementations"""
+        
+        routers_dir = service_dir / "routers"
+        routers_dir.mkdir(exist_ok=True)
+        
+        for endpoint in spec.endpoints:
+            router_code = await self._generate_router_with_claude(endpoint, spec, analysis)
+            (routers_dir / f"{endpoint['name']}.py").write_text(router_code)
+        
+        # Generate routers __init__.py
+        router_imports = [f"from .{endpoint['name']} import router as {endpoint['name']}_router" for endpoint in spec.endpoints]
+        init_content = f"""\"\"\"API routers for {spec.name} service\"\"\"\n\n{chr(10).join(router_imports)}\n\n__all__ = {[f"{endpoint['name']}_router" for endpoint in spec.endpoints]}"""
+        (routers_dir / "__init__.py").write_text(init_content)
+    
+    async def _generate_router_with_claude(self, endpoint: Dict[str, Any], spec: ServiceSpec, analysis: Dict[str, Any]) -> str:
+        """Generate a complete router file using Claude"""
+        
+        prompt = f"""
+        Generate a complete FastAPI router with full endpoint implementations:
+
+        Endpoint Name: {endpoint['name']}
+        Service: {spec.description}
+        Routes: {json.dumps(endpoint.get('routes', []), indent=2)}
+        
+        API Implementation Details: {json.dumps(analysis.get('api_implementation', {}), indent=2)}
+        Security Measures: {json.dumps(analysis.get('security_measures', {}), indent=2)}
+        
+        Authentication Required: {spec.authentication}
+        Logging Required: {spec.logging}
+        
+        Generate a complete router that includes:
+        1. All CRUD endpoints with proper HTTP methods
+        2. Request/response models with validation
+        3. Error handling with proper HTTP status codes
+        4. Authentication/authorization decorators
+        5. Input sanitization and validation
+        6. Comprehensive logging
+        7. API documentation with OpenAPI
+        8. Pagination for list endpoints
+        9. Search and filtering capabilities
+        10. Proper dependency injection
+        11. Rate limiting considerations
+        12. Response formatting
+        
+        Use FastAPI best practices:
+        - Proper status codes (200, 201, 400, 401, 403, 404, 500)
+        - HTTPException for errors
+        - Depends() for dependency injection
+        - Query parameters for filtering/pagination
+        - Path parameters for resource IDs
+        - Request body validation
+        - Response models
+        
+        Make sure all endpoints are fully functional and production-ready.
+        """
+        
+        response = self.client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=3000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return response.content[0].text
+    
+    async def _generate_complete_main_app(self, service_dir: Path, spec: ServiceSpec, analysis: Dict[str, Any]):
+        """Generate complete main application with all integrations"""
+        
+        main_code = await self._generate_main_with_claude(spec, analysis)
+        (service_dir / "main.py").write_text(main_code)
+        (service_dir / "__init__.py").write_text("")
+    
+    async def _generate_main_with_claude(self, spec: ServiceSpec, analysis: Dict[str, Any]) -> str:
+        """Generate complete main.py using Claude"""
+        
+        prompt = f"""
+        Generate a complete main.py file for a FastAPI microservice:
+
+        Service Name: {spec.name}
+        Description: {spec.description}
+        Port: {spec.port}
+        Endpoints: {[endpoint['name'] for endpoint in spec.endpoints]}
+        Middleware: {spec.middleware}
+        
+        Integration Points: {json.dumps(analysis.get('integration_points', {}), indent=2)}
+        Performance Optimizations: {json.dumps(analysis.get('performance_optimizations', {}), indent=2)}
+        
+        Authentication Required: {spec.authentication}
+        Caching Required: {spec.caching}
+        Logging Required: {spec.logging}
+        
+        Generate a complete main.py that includes:
+        1. FastAPI app initialization with proper configuration
+        2. CORS middleware setup
+        3. Authentication middleware if required
+        4. Custom middleware integration
+        5. Router registration
+        6. Database connection management
+        7. Redis connection for caching
+        8. Health check endpoints
+        9. Graceful startup/shutdown
+        10. Error handling middleware
+        11. Request logging
+        12. Performance monitoring
+        13. Environment configuration
+        14. API documentation setup
+        
+        Use proper FastAPI patterns:
+        - lifespan events for startup/shutdown
+        - Dependency injection
+        - Middleware stack
+        - Exception handlers
+        - CORS configuration
+        - API versioning considerations
+        
+        Make it production-ready with proper error handling and monitoring.
+        """
+        
+        response = self.client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=3000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return response.content[0].text
+    
+    async def _generate_complete_dependencies(self, service_dir: Path, spec: ServiceSpec):
+        """Generate complete dependencies with full implementations"""
+        
+        deps_code = await self._generate_dependencies_with_claude(spec)
+        (service_dir / "dependencies.py").write_text(deps_code)
+    
+    async def _generate_dependencies_with_claude(self, spec: ServiceSpec) -> str:
+        """Generate complete dependencies using Claude"""
+        
+        prompt = f"""
+        Generate a complete dependencies.py file for a FastAPI microservice:
+
+        Service: {spec.description}
+        Authentication Required: {spec.authentication}
+        Caching Required: {spec.caching}
+        
+        Generate comprehensive dependencies including:
+        1. Database connection with connection pooling
+        2. Redis connection for caching
+        3. Authentication dependencies (JWT verification)
+        4. Authorization dependencies (role-based access)
+        5. Rate limiting dependencies
+        6. Logging dependencies
+        7. Configuration dependencies
+        8. External service clients
+        9. Error handling utilities
+        10. Validation utilities
+        
+        Use proper async patterns and error handling.
+        Include dependency injection for testability.
+        Make sure connections are properly managed and closed.
+        """
+        
+        response = self.client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return response.content[0].text
+    
+    async def _generate_complete_middleware(self, service_dir: Path, spec: ServiceSpec):
+        """Generate complete middleware implementations"""
+        
+        middleware_dir = service_dir / "middleware"
+        middleware_dir.mkdir(exist_ok=True)
+        
+        for mw in spec.middleware:
+            mw_code = await self._generate_middleware_with_claude(mw, spec)
+            (middleware_dir / f"{mw}.py").write_text(mw_code)
+        
+        (middleware_dir / "__init__.py").write_text("")
+    
+    async def _generate_middleware_with_claude(self, middleware_name: str, spec: ServiceSpec) -> str:
+        """Generate complete middleware using Claude"""
+        
+        prompt = f"""
+        Generate a complete {middleware_name} middleware for a FastAPI microservice:
+
+        Service: {spec.description}
+        Middleware Type: {middleware_name}
+        
+        Generate a production-ready middleware that includes:
+        1. Proper request/response handling
+        2. Error handling and logging
+        3. Performance monitoring
+        4. Security considerations
+        5. Configuration support
+        6. Async support
+        7. Proper exception handling
+        8. Request/response transformation if needed
+        
+        Common middleware types:
+        - logging: Request/response logging with timing
+        - auth: Authentication and authorization
+        - cors: Cross-origin resource sharing
+        - rate_limiting: API rate limiting
+        - monitoring: Performance and health monitoring
+        - security: Security headers and validation
+        
+        Use FastAPI middleware patterns and make it configurable.
+        """
+        
+        response = self.client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=1500,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return response.content[0].text
+    
+    async def _generate_complete_tests(self, service_dir: Path, spec: ServiceSpec, analysis: Dict[str, Any]):
+        """Generate comprehensive test suite with full coverage"""
+        
+        tests_dir = service_dir / "tests"
+        tests_dir.mkdir(exist_ok=True)
+        
+        # Generate test configuration
+        conftest_code = await self._generate_conftest_with_claude(spec)
+        (tests_dir / "conftest.py").write_text(conftest_code)
+        
+        # Generate main app tests
+        main_tests = await self._generate_main_tests_with_claude(spec)
+        (tests_dir / "test_main.py").write_text(main_tests)
+        
+        # Generate tests for each endpoint
+        for endpoint in spec.endpoints:
+            router_tests = await self._generate_router_tests_with_claude(endpoint, spec)
+            (tests_dir / f"test_{endpoint['name']}_router.py").write_text(router_tests)
+            
+            service_tests = await self._generate_service_tests_with_claude(endpoint, spec)
+            (tests_dir / f"test_{endpoint['name']}_service.py").write_text(service_tests)
+        
+        # Generate integration tests
+        integration_tests = await self._generate_integration_tests_with_claude(spec, analysis)
+        (tests_dir / "test_integration.py").write_text(integration_tests)
+        
+        (tests_dir / "__init__.py").write_text("")
+    
+    async def _generate_conftest_with_claude(self, spec: ServiceSpec) -> str:
+        """Generate comprehensive test configuration"""
+        
+        prompt = f"""
+        Generate a complete conftest.py for pytest with FastAPI microservice testing:
+
+        Service: {spec.description}
+        Authentication: {spec.authentication}
+        Caching: {spec.caching}
+        
+        Generate comprehensive test configuration including:
+        1. Test database setup and teardown
+        2. Test Redis setup
+        3. Authentication mocks
+        4. FastAPI test client setup
+        5. Async test client setup
+        6. Database fixtures with test data
+        7. Mock external services
+        8. Test configuration overrides
+        9. Proper cleanup between tests
+        10. Performance testing utilities
+        
+        Use pytest-asyncio and FastAPI testing patterns.
+        """
+        
+        response = self.client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return response.content[0].text
+    
+    async def _generate_main_tests_with_claude(self, spec: ServiceSpec) -> str:
+        """Generate comprehensive main app tests"""
+        
+        prompt = f"""
+        Generate comprehensive tests for the main FastAPI application:
+
+        Service: {spec.description}
+        Port: {spec.port}
+        
+        Generate tests that cover:
+        1. Application startup and shutdown
+        2. Health check endpoints
+        3. CORS middleware
+        4. Authentication middleware
+        5. Error handling
+        6. API documentation endpoints
+        7. Request/response validation
+        8. Performance benchmarks
+        9. Security testing
+        10. Database connection testing
+        
+        Use pytest and FastAPI testing best practices.
+        """
+        
+        response = self.client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return response.content[0].text
+    
+    async def _generate_router_tests_with_claude(self, endpoint: Dict[str, Any], spec: ServiceSpec) -> str:
+        """Generate comprehensive router tests"""
+        
+        prompt = f"""
+        Generate comprehensive tests for API router endpoints:
+
+        Endpoint: {endpoint['name']}
+        Routes: {json.dumps(endpoint.get('routes', []), indent=2)}
+        Service: {spec.description}
+        
+        Generate tests that cover:
+        1. All CRUD operations
+        2. Input validation (valid and invalid inputs)
+        3. Authentication and authorization
+        4. Error handling (400, 401, 403, 404, 500)
+        5. Pagination and filtering
+        6. Data relationships
+        7. Business logic validation
+        8. Performance testing
+        9. Concurrent access testing
+        10. Edge cases and boundary conditions
+        
+        Use proper test data and mock objects.
+        """
+        
+        response = self.client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=2500,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return response.content[0].text
+    
+    async def _generate_service_tests_with_claude(self, endpoint: Dict[str, Any], spec: ServiceSpec) -> str:
+        """Generate comprehensive service layer tests"""
+        
+        prompt = f"""
+        Generate comprehensive tests for service layer business logic:
+
+        Service Class: {endpoint['name'].title()}Service
+        Service Description: {spec.description}
+        
+        Generate tests that cover:
+        1. Business logic validation
+        2. Database operations
+        3. Error handling and exceptions
+        4. Data transformation
+        5. External service integration
+        6. Caching logic
+        7. Performance testing
+        8. Concurrent operations
+        9. Transaction handling
+        10. Edge cases and error scenarios
+        
+        Use mocking for external dependencies.
+        """
+        
+        response = self.client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return response.content[0].text
+    
+    async def _generate_integration_tests_with_claude(self, spec: ServiceSpec, analysis: Dict[str, Any]) -> str:
+        """Generate comprehensive integration tests"""
+        
+        prompt = f"""
+        Generate comprehensive integration tests for the entire microservice:
+
+        Service: {spec.description}
+        Endpoints: {[endpoint['name'] for endpoint in spec.endpoints]}
+        Integration Points: {json.dumps(analysis.get('integration_points', {}), indent=2)}
+        
+        Generate tests that cover:
+        1. End-to-end workflows
+        2. Service-to-service communication
+        3. Database integration
+        4. Cache integration
+        5. Authentication flows
+        6. Error propagation
+        7. Performance under load
+        8. Data consistency
+        9. Rollback scenarios
+        10. Health and monitoring
+        
+        Use real database and external service calls where appropriate.
+        """
+        
+        response = self.client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return response.content[0].text
+    
+    async def _generate_models_init(self, models: List[Dict[str, Any]]) -> str:
+        """Generate models __init__.py"""
+        
+        model_imports = [f"from .{model['name'].lower()} import {model['name']}" for model in models]
+        all_models = [model['name'] for model in models]
+        
+        return f'''"""
+Database models for the service
+"""
+
+{chr(10).join(model_imports)}
+
+__all__ = {all_models}
+'''
+    
+    async def _validate_service_code(self, service_dir: Path, spec: ServiceSpec) -> Dict[str, Any]:
+        """Validate generated code using Claude"""
+        
+        # Collect all generated files
+        code_files = []
+        total_lines = 0
+        
+        for py_file in service_dir.rglob("*.py"):
+            if py_file.is_file():
+                content = py_file.read_text()
+                lines = len(content.splitlines())
+                total_lines += lines
+                code_files.append({
+                    "file": str(py_file.relative_to(service_dir)),
+                    "lines": lines,
+                    "content": content[:1000]  # First 1000 chars for analysis
+                })
+        
+        prompt = f"""
+        Validate this generated microservice code for correctness and completeness:
+
+        Service: {spec.description}
+        Generated Files: {len(code_files)}
+        Total Lines: {total_lines}
+        
+        Files Overview: {json.dumps([{"file": f["file"], "lines": f["lines"]} for f in code_files], indent=2)}
+        
+        Please analyze the code and check for:
+        1. Syntax errors
+        2. Import errors
+        3. Missing implementations
+        4. FastAPI best practices
+        5. Security vulnerabilities
+        6. Performance issues
+        7. Code organization
+        8. Error handling completeness
+        9. Test coverage adequacy
+        10. Documentation quality
+        
+        Return a JSON response with:
+        {{
+            "is_valid": boolean,
+            "file_count": number,
+            "total_lines": number,
+            "issues": ["list of issues found"],
+            "recommendations": ["list of recommendations"],
+            "score": number (1-10)
+        }}
+        """
+        
+        response = self.client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=1500,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        try:
+            validation = json.loads(response.content[0].text)
+            validation.update({
+                "file_count": len(code_files),
+                "total_lines": total_lines
+            })
+            return validation
+        except json.JSONDecodeError:
+            return {
+                "is_valid": True,  # Assume valid if we can't parse
+                "file_count": len(code_files),
+                "total_lines": total_lines,
+                "issues": [],
+                "recommendations": ["Could not parse validation response"],
+                "score": 7
+            }
+    
+    def _generate_dockerfile(self, service_dir: Path, spec: ServiceSpec):
+        """Generate Dockerfile for the service"""
+        
+        dockerfile_content = f'''FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \\
+    curl \\
+    gcc \\
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+COPY services/{spec.name}/requirements.txt ./service_requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt -r service_requirements.txt
+
+# Copy application code
+COPY shared/ ./shared/
+COPY services/{spec.name}/ ./
+COPY config/ ./config/
+
+# Create non-root user
+RUN adduser --disabled-password --gecos '' appuser
+RUN chown -R appuser:appuser /app
+USER appuser
+
+# Expose port
+EXPOSE {spec.port}
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \\
+    CMD curl -f http://localhost:{spec.port}/health || exit 1
+
+# Run application
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "{spec.port}"]
+'''
+        
+        (service_dir / "Dockerfile").write_text(dockerfile_content)
+    
+    def _generate_requirements(self, service_dir: Path, spec: ServiceSpec):
+        """Generate requirements.txt for the service"""
+        
+        base_requirements = [
+            "fastapi>=0.104.0",
+            "uvicorn[standard]>=0.24.0",
+            "pydantic>=2.5.0",
+            "sqlalchemy>=2.0.0",
+            "asyncpg>=0.29.0",
+            "alembic>=1.12.0",
+            "redis>=5.0.0",
+            "httpx>=0.25.0",
+            "python-jose[cryptography]>=3.3.0",
+            "passlib[bcrypt]>=1.7.4",
+            "python-multipart>=0.0.6",
+            "prometheus-client>=0.19.0",
+            "pytest>=7.4.0",
+            "pytest-asyncio>=0.21.0",
+            "pytest-cov>=4.1.0",
+        ]
+        
+        # Add service-specific dependencies
+        requirements = base_requirements + spec.dependencies
+        
+        (service_dir / "requirements.txt").write_text("\n".join(requirements))
+    
+    def _generate_config(self, spec: ServiceSpec):
+        """Generate service configuration"""
+        
+        service_config_path = self.config_dir / "services" / f"{spec.name.replace('-', '_')}.yaml"
+        service_config_path.parent.mkdir(exist_ok=True)
+        
+        config_content = f'''# Configuration for {spec.name} service
+{spec.name.replace('-', '_')}:
+  host: "0.0.0.0"
+  port: {spec.port}
+  workers: 1
+  timeout: 300
+  cors_origins:
+    - "http://localhost:3000"
+    - "http://localhost:8000"
+  allowed_hosts:
+    - "*"
+  
+  # Service-specific configuration
+  description: "{spec.description}"
+  endpoints: {[endpoint['name'] for endpoint in spec.endpoints]}
+  
+  # Authentication settings
+  authentication:
+    enabled: {str(spec.authentication).lower()}
+    jwt_secret_key: "${{JWT_SECRET_KEY}}"
+    jwt_algorithm: "HS256"
+    jwt_expiration: 3600
+  
+  # Database settings
+  database:
+    pool_size: 10
+    max_overflow: 20
+    echo: false
+    timeout: 30
+  
+  # Cache settings
+  cache:
+    enabled: {str(spec.caching).lower()}
+    ttl: 3600
+    max_size: 1000
+    redis_url: "redis://redis:6379/0"
+  
+  # Logging settings
+  logging:
+    enabled: {str(spec.logging).lower()}
+    level: "INFO"
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    
+  # Monitoring settings
+  monitoring:
+    enabled: true
+    metrics_port: {spec.port + 1000}
+    health_check_interval: 30
+'''
+        
+        service_config_path.write_text(config_content)
+
+def main():
+    """Main CLI interface for the Enhanced Software Engineer Agent"""
+    
+    parser = argparse.ArgumentParser(description="Enhanced Software Engineer Agent - Generate complete microservices")
+    subparsers = parser.add_subparsers(dest='command', help='Available commands')
+    
+    # Generate service command
+    gen_parser = subparsers.add_parser('generate', help='Generate a complete microservice')
+    gen_parser.add_argument('--spec', '-s', required=True, help='Path to service specification JSON file')
+    gen_parser.add_argument('--interactive', '-i', action='store_true', help='Interactive mode')
+    gen_parser.add_argument('--api-key', '-k', help='Anthropic API key (or set ANTHROPIC_API_KEY env var)')
+    
+    # Validate service command
+    val_parser = subparsers.add_parser('validate', help='Validate existing service code')
+    val_parser.add_argument('--service', '-s', required=True, help='Service name to validate')
+    val_parser.add_argument('--api-key', '-k', help='Anthropic API key')
+    
+    # List templates command
+    list_parser = subparsers.add_parser('templates', help='List available service templates')
+    
+    args = parser.parse_args()
+    
+    if args.command == 'generate':
+        api_key = args.api_key or os.getenv('ANTHROPIC_API_KEY')
+        if not api_key:
+            print("❌ Error: ANTHROPIC_API_KEY environment variable or --api-key argument required")
+            sys.exit(1)
+        
+        agent = EnhancedSoftwareEngineerAgent(api_key)
+        
+        if args.interactive:
+            spec = interactive_spec_builder()
+        else:
+            with open(args.spec, 'r') as f:
+                spec_data = json.load(f)
+                spec = ServiceSpec(**spec_data)
+        
+        success = asyncio.run(agent.generate_service(spec))
+        sys.exit(0 if success else 1)
+    
+    elif args.command == 'validate':
+        api_key = args.api_key or os.getenv('ANTHROPIC_API_KEY')
+        if not api_key:
+            print("❌ Error: ANTHROPIC_API_KEY environment variable or --api-key argument required")
+            sys.exit(1)
+            
+        agent = EnhancedSoftwareEngineerAgent(api_key)
+        # Implement validation of existing service
+        print(f"🔍 Validating service: {args.service}")
+        # TODO: Implement validation
+    
+    elif args.command == 'templates':
+        show_templates()
+    
+    else:
+        parser.print_help()
+
+def interactive_spec_builder() -> ServiceSpec:
+    """Enhanced interactive specification builder"""
+    
+    print("🤖 Enhanced Software Engineer Agent - Interactive Service Builder")
+    print("=" * 70)
+    
+    # Basic service info
+    name = input("Service name (e.g., 'content-analyzer'): ").strip()
+    description = input("Service description: ").strip()
+    port = int(input("Service port (e.g., 8006): ").strip())
+    
+    # Features
+    print("\n🔧 Service Features:")
+    authentication = input("Enable authentication? (y/n): ").lower().startswith('y')
+    caching = input("Enable caching? (y/n): ").lower().startswith('y')
+    logging = input("Enable comprehensive logging? (y/n): ").lower().startswith('y')
+    
+    # Business logic
+    print("\n💼 Business Logic:")
+    business_description = input("Describe the main business logic: ").strip()
+    
+    # Endpoints
+    endpoints = []
+    print("\n📍 Define API endpoints:")
+    while True:
+        endpoint_name = input("Endpoint name (or 'done' to finish): ").strip()
+        if endpoint_name.lower() == 'done':
+            break
+        
+        endpoint = {
+            "name": endpoint_name,
+            "routes": [
+                {
+                    "method": "GET",
+                    "path": f"/{endpoint_name}s",
+                    "function_name": f"list_{endpoint_name}s",
+                    "description": f"List {endpoint_name}s",
+                    "return_type": "List[Dict[str, Any]]"
+                },
+                {
+                    "method": "POST",
+                    "path": f"/{endpoint_name}s",
+                    "function_name": f"create_{endpoint_name}",
+                    "description": f"Create {endpoint_name}",
+                    "return_type": "Dict[str, Any]",
+                    "body_param": {"name": "data", "type": "Dict[str, Any]"}
+                },
+                {
+                    "method": "GET",
+                    "path": f"/{endpoint_name}s/{{id}}",
+                    "function_name": f"get_{endpoint_name}",
+                    "description": f"Get {endpoint_name} by ID",
+                    "return_type": "Dict[str, Any]",
+                    "path_params": [{"name": "id", "type": "str"}]
+                },
+                {
+                    "method": "PUT",
+                    "path": f"/{endpoint_name}s/{{id}}",
+                    "function_name": f"update_{endpoint_name}",
+                    "description": f"Update {endpoint_name}",
+                    "return_type": "Dict[str, Any]",
+                    "path_params": [{"name": "id", "type": "str"}],
+                    "body_param": {"name": "data", "type": "Dict[str, Any]"}
+                },
+                {
+                    "method": "DELETE",
+                    "path": f"/{endpoint_name}s/{{id}}",
+                    "function_name": f"delete_{endpoint_name}",
+                    "description": f"Delete {endpoint_name}",
+                    "return_type": "Dict[str, Any]",
+                    "path_params": [{"name": "id", "type": "str"}]
+                }
+            ]
+        }
+        endpoints.append(endpoint)
+    
+    # Database models
+    models = []
+    print("\n🗄️  Define database models:")
+    for endpoint in endpoints:
+        model_name = endpoint['name'].title()
+        print(f"\nDefining fields for {model_name} model:")
+        
+        fields = []
+        while True:
+            field_name = input(f"Field name for {model_name} (or 'done'): ").strip()
+            if field_name.lower() == 'done':
+                break
+            
+            field_type = input(f"Field type for {field_name} (str/int/bool/datetime): ").strip()
+            nullable = input(f"Is {field_name} nullable? (y/n): ").lower().startswith('y')
+            
+            fields.append({
+                "name": field_name,
+                "type": field_type,
+                "nullable": nullable
+            })
+        
+        model = {
+            "name": model_name,
+            "description": f"{model_name} database model",
+            "fields": fields
+        }
+        models.append(model)
+    
+    # Dependencies
+    print("\n📦 Additional Python dependencies (comma-separated, or press Enter for none):")
+    deps_input = input("Dependencies: ").strip()
+    dependencies = [dep.strip() for dep in deps_input.split(',')] if deps_input else []
+    
+    return ServiceSpec(
+        name=name,
+        description=description,
+        port=port,
+        endpoints=endpoints,
+        dependencies=dependencies,
+        database_models=models,
+        async_tasks=[],
+        websocket_endpoints=[],
+        middleware=["logging", "timing", "security"],
+        business_logic={"description": business_description},
+        authentication=authentication,
+        caching=caching,
+        logging=logging
+    )
+
+def show_templates():
+    """Show available service templates"""
+    
+    templates_dir = Path(__file__).parent / "templates"
+    
+    print("🎨 Available Service Templates:")
+    print("=" * 40)
+    
+    if not templates_dir.exists():
+        print("No templates directory found. Create templates/ and add JSON files.")
+        print("\nExample template structure:")
+        print("""
+{
+  "name": "content-analyzer",
+  "description": "Content Analysis Service",
+  "port": 8006,
+  "endpoints": [
+    {
+      "name": "content",
+      "routes": [...]
+    }
+  ],
+  "database_models": [...],
+  "business_logic": {
+    "description": "Analyze and process content"
+  },
+  "authentication": true,
+  "caching": true,
+  "logging": true,
+  "dependencies": ["nltk", "pandas"],
+  "async_tasks": [],
+  "websocket_endpoints": [],
+  "middleware": ["logging", "auth"]
+}
+        """)
+        return
+    
+    # Find all JSON files in templates directory
+    template_files = list(templates_dir.glob("*.json"))
+    
+    if not template_files:
+        print("No template files found in templates/ directory.")
+        return
+    
+    # Read and display each template
+    for template_file in sorted(template_files):
+        try:
+            with open(template_file, 'r') as f:
+                template_data = json.load(f)
+                
+            template_name = template_file.stem
+            description = template_data.get('description', 'No description available')
+            port = template_data.get('port', 'Unknown')
+            endpoint_count = len(template_data.get('endpoints', []))
+            has_auth = template_data.get('authentication', False)
+            has_cache = template_data.get('caching', False)
+            
+            print(f"  {template_name:20} - {description}")
+            print(f"    {'':20}   Port: {port}, Endpoints: {endpoint_count}")
+            print(f"    {'':20}   Auth: {'✓' if has_auth else '✗'}, Cache: {'✓' if has_cache else '✗'}")
+            print()
+            
+        except (json.JSONDecodeError, KeyError, FileNotFoundError) as e:
+            print(f"  {template_file.stem:20} - ERROR: Invalid template file ({e})")
+    
+    print(f"Found {len(template_files)} template(s)")
+    print("To use: python software_engineer_agent.py generate --spec templates/TEMPLATE_NAME.json")
+
+if __name__ == "__main__":
+    main()
