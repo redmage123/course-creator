@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 # Database URL from environment
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "postgresql+asyncpg://course_user@localhost:5432/course_creator"
+    f"postgresql+asyncpg://course_user:{os.getenv('DB_PASSWORD', 'default_password')}@localhost:5433/course_creator"
 )
 
 # Create async engine

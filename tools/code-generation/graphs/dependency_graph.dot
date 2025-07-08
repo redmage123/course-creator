@@ -1,0 +1,14 @@
+digraph ServiceDependencies {
+  rankdir=LR;
+  node [shape=box];
+  "user-management" [fillcolor="lightblue", style=filled];
+  "course-generator" [fillcolor="lightpink", style=filled];
+  "course-management" [fillcolor="lightyellow", style=filled];
+  "content-storage" [fillcolor="lightgreen", style=filled];
+  "course-management" -> "user-management" [label="auth_dep", style="solid"];
+  "course-generator" -> "user-management" [label="auth_dep", style="solid"];
+  "course-management" -> "course-generator" [label="api_call", style="solid"];
+  "course-management" -> "content-storage" [label="storage_dep", style="solid"];
+  "course-generator" -> "content-storage" [label="storage_dep", style="solid"];
+  "content-storage" -> "user-management" [label="auth_dep", style="dashed"];
+}

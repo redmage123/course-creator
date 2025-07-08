@@ -1,0 +1,30 @@
+server:
+  host: 0.0.0.0
+  port: 8000
+  reload: false
+
+log:
+  level: INFO
+  format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+
+cors:
+  origins:
+    - "http://localhost:3000"
+    - "http://localhost:8000"
+    - "http://localhost:8001"
+    - "http://localhost:8003"
+    - "http://localhost:8004"
+
+database:
+  url: postgresql+asyncpg://course_user:${DB_PASSWORD}@localhost:5433/course_creator
+
+jwt:
+  secret_key: "your-secret-key-here-change-in-production"
+  algorithm: HS256
+  token_expiry: 30
+
+service:
+  host: 0.0.0.0
+  port: 8000
+  debug: false
+  log_level: INFO

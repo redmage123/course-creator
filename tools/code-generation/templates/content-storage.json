@@ -1,0 +1,469 @@
+{
+  "name": "content-storage",
+  "description": "Comprehensive file storage and retrieval service for course content with advanced content management capabilities",
+  "port": 8003,
+  "provides": [
+    "file_storage",
+    "content_access", 
+    "download_support",
+    "bulk_operations",
+    "file_metadata",
+    "content_versioning"
+  ],
+  "depends_on": ["user-management"],
+  "database_models": [
+    {
+      "name": "ContentFile",
+      "description": "Individual file storage record",
+      "fields": [
+        {"name": "id", "type": "UUID", "primary_key": true},
+        {"name": "filename", "type": "String", "nullable": false, "index": true},
+        {"name": "original_filename", "type": "String", "nullable": false},
+        {"name": "file_path", "type": "String", "nullable": false},
+        {"name": "file_url", "type": "String", "nullable": true},
+        {"name": "file_size", "type": "BigInteger", "nullable": false},
+        {"name": "mime_type", "type": "String", "nullable": false, "index": true},
+        {"name": "file_hash", "type": "String", "nullable": false, "index": true},
+        {"name": "owner_id", "type": "UUID", "nullable": false, "foreign_key": "users.id", "index": true},
+        {"name": "content_type", "type": "String", "nullable": false, "index": true},
+        {"name": "storage_provider", "type": "String", "nullable": false, "default": "local"},
+        {"name": "is_public", "type": "Boolean", "default": false, "index": true},
+        {"name": "download_count", "type": "Integer", "default": 0},
+        {"name": "metadata", "type": "JSON", "nullable": true},
+        {"name": "tags", "type": "JSON", "nullable": true},
+        {"name": "created_at", "type": "DateTime", "nullable": false},
+        {"name": "updated_at", "type": "DateTime", "nullable": false},
+        {"name": "expires_at", "type": "DateTime", "nullable": true}
+      ],
+      "indexes": [
+        {"fields": ["owner_id", "content_type"]},
+        {"fields": ["created_at", "content_type"]},
+        {"fields": ["file_hash"], "unique": true}
+      ]
+    },
+    {
+      "name": "ContentFolder",
+      "description": "Hierarchical folder organization for content",
+      "fields": [
+        {"name": "id", "type": "UUID", "primary_key": true},
+        {"name": "name", "type": "String", "nullable": false},
+        {"name": "path", "type": "String", "nullable": false, "index": true},
+        {"name": "parent_folder_id", "type": "UUID", "nullable": true, "foreign_key": "content_folders.id"},
+        {"name": "owner_id", "type": "UUID", "nullable": false, "foreign_key": "users.id", "index": true},
+        {"name": "is_public", "type": "Boolean", "default": false},
+        {"name": "metadata", "type": "JSON", "nullable": true},
+        {"name": "created_at", "type": "DateTime", "nullable": false},
+        {"name": "updated_at", "type": "DateTime", "nullable": false}
+      ]
+    },
+    {
+      "name": "FileShare",
+      "description": "File sharing and access control",
+      "fields": [
+        {"name": "id", "type": "UUID", "primary_key": true},
+        {"name": "file_id", "type": "UUID", "nullable": false, "foreign_key": "content_files.id"},
+        {"name": "shared_by", "type": "UUID", "nullable": false, "foreign_key": "users.id"},
+        {"name": "shared_with", "type": "UUID", "nullable": true, "foreign_key": "users.id"},
+        {"name": "share_token", "type": "String", "nullable": false, "unique": true},
+        {"name": "permission_level", "type": "String", "nullable": false, "default": "read"},
+        {"name": "expires_at", "type": "DateTime", "nullable": true},
+        {"name": "download_limit", "type": "Integer", "nullable": true},
+        {"name": "download_count", "type": "Integer", "default": 0},
+        {"name": "created_at", "type": "DateTime", "nullable": false}
+      ]
+    },
+    {
+      "name": "DownloadJob",
+      "description": "Bulk download job tracking",
+      "fields": [
+        {"name": "id", "type": "UUID", "primary_key": true},
+        {"name": "user_id", "type": "UUID", "nullable": false, "foreign_key": "users.id"},
+        {"name": "job_type", "type": "String", "nullable": false},
+        {"name": "file_ids", "type": "JSON", "nullable": false},
+        {"name": "status", "type": "String", "nullable": false, "default": "pending"},
+        {"name": "progress", "type": "Float", "default": 0.0},
+        {"name": "download_url", "type": "String", "nullable": true},
+        {"name": "error_message", "type": "String", "nullable": true},
+        {"name": "expires_at", "type": "DateTime", "nullable": true},
+        {"name": "created_at", "type": "DateTime", "nullable": false},
+        {"name": "completed_at", "type": "DateTime", "nullable": true}
+      ]
+    }
+  ],
+  "endpoints": [
+    {
+      "group": "File Upload",
+      "base_path": "/api/v1/files",
+      "routes": [
+        {
+          "path": "/upload",
+          "method": "POST",
+          "function_name": "upload_file",
+          "description": "Upload a single file with metadata",
+          "body_param": {
+            "file": "UploadFile",
+            "content_type": "str",
+            "folder_id": "Optional[UUID]",
+            "tags": "Optional[List[str]]",
+            "metadata": "Optional[Dict]",
+            "is_public": "bool = False"
+          },
+          "response_type": "FileUploadResponse",
+          "authentication": true
+        },
+        {
+          "path": "/upload/bulk",
+          "method": "POST", 
+          "function_name": "upload_bulk_files",
+          "description": "Upload multiple files at once",
+          "body_param": {
+            "files": "List[UploadFile]",
+            "content_type": "str",
+            "folder_id": "Optional[UUID]",
+            "tags": "Optional[List[str]]",
+            "metadata": "Optional[Dict]"
+          },
+          "response_type": "BulkUploadResponse",
+          "authentication": true
+        },
+        {
+          "path": "/upload/url",
+          "method": "POST",
+          "function_name": "upload_from_url",
+          "description": "Upload file from external URL",
+          "body_param": {
+            "url": "str",
+            "filename": "Optional[str]",
+            "content_type": "str",
+            "folder_id": "Optional[UUID]",
+            "metadata": "Optional[Dict]"
+          },
+          "response_type": "FileUploadResponse",
+          "authentication": true
+        }
+      ]
+    },
+    {
+      "group": "File Access",
+      "base_path": "/api/v1/files",
+      "routes": [
+        {
+          "path": "/{file_id}",
+          "method": "GET",
+          "function_name": "get_file_info",
+          "description": "Get file metadata and information",
+          "path_params": [{"name": "file_id", "type": "UUID"}],
+          "response_type": "FileInfoResponse",
+          "authentication": true
+        },
+        {
+          "path": "/{file_id}/download",
+          "method": "GET",
+          "function_name": "download_file",
+          "description": "Download file with streaming support",
+          "path_params": [{"name": "file_id", "type": "UUID"}],
+          "query_params": [
+            {"name": "inline", "type": "bool", "default": false},
+            {"name": "format", "type": "str", "choices": ["original", "pdf", "zip"]}
+          ],
+          "return_type": "StreamingResponse",
+          "authentication": true
+        },
+        {
+          "path": "/{file_id}/preview",
+          "method": "GET",
+          "function_name": "preview_file",
+          "description": "Get file preview or thumbnail",
+          "path_params": [{"name": "file_id", "type": "UUID"}],
+          "query_params": [
+            {"name": "size", "type": "str", "choices": ["thumbnail", "small", "medium", "large"], "default": "medium"}
+          ],
+          "return_type": "StreamingResponse",
+          "authentication": true
+        }
+      ]
+    },
+    {
+      "group": "File Management",
+      "base_path": "/api/v1/files",
+      "routes": [
+        {
+          "path": "/",
+          "method": "GET",
+          "function_name": "list_files",
+          "description": "List user's files with filtering and pagination",
+          "query_params": [
+            {"name": "folder_id", "type": "Optional[UUID]"},
+            {"name": "content_type", "type": "Optional[str]"},
+            {"name": "mime_type", "type": "Optional[str]"},
+            {"name": "tags", "type": "Optional[List[str]]"},
+            {"name": "search", "type": "Optional[str]"},
+            {"name": "sort_by", "type": "str", "choices": ["name", "created_at", "size", "downloads"], "default": "created_at"},
+            {"name": "sort_order", "type": "str", "choices": ["asc", "desc"], "default": "desc"},
+            {"name": "page", "type": "int", "default": 1},
+            {"name": "per_page", "type": "int", "default": 20}
+          ],
+          "response_type": "FileListResponse",
+          "authentication": true
+        },
+        {
+          "path": "/{file_id}",
+          "method": "PUT",
+          "function_name": "update_file_metadata",
+          "description": "Update file metadata and properties",
+          "path_params": [{"name": "file_id", "type": "UUID"}],
+          "body_param": {
+            "filename": "Optional[str]",
+            "content_type": "Optional[str]",
+            "tags": "Optional[List[str]]",
+            "metadata": "Optional[Dict]",
+            "is_public": "Optional[bool]",
+            "folder_id": "Optional[UUID]"
+          },
+          "response_type": "FileInfoResponse",
+          "authentication": true
+        },
+        {
+          "path": "/{file_id}",
+          "method": "DELETE",
+          "function_name": "delete_file",
+          "description": "Delete file and clean up storage",
+          "path_params": [{"name": "file_id", "type": "UUID"}],
+          "response_type": "DeleteResponse",
+          "authentication": true
+        }
+      ]
+    },
+    {
+      "group": "Bulk Operations",
+      "base_path": "/api/v1/bulk",
+      "routes": [
+        {
+          "path": "/download",
+          "method": "POST",
+          "function_name": "create_bulk_download",
+          "description": "Create bulk download job for multiple files",
+          "body_param": {
+            "file_ids": "List[UUID]",
+            "format": "str",
+            "include_metadata": "bool = False",
+            "compression_level": "int = 6"
+          },
+          "response_type": "BulkDownloadResponse",
+          "authentication": true
+        },
+        {
+          "path": "/download/{job_id}",
+          "method": "GET",
+          "function_name": "get_bulk_download_status",
+          "description": "Check bulk download job status",
+          "path_params": [{"name": "job_id", "type": "UUID"}],
+          "response_type": "DownloadJobStatus",
+          "authentication": true
+        },
+        {
+          "path": "/download/{job_id}/download",
+          "method": "GET",
+          "function_name": "download_bulk_archive",
+          "description": "Download completed bulk archive",
+          "path_params": [{"name": "job_id", "type": "UUID"}],
+          "return_type": "StreamingResponse",
+          "authentication": true
+        },
+        {
+          "path": "/delete",
+          "method": "POST",
+          "function_name": "bulk_delete_files",
+          "description": "Delete multiple files at once",
+          "body_param": {
+            "file_ids": "List[UUID]"
+          },
+          "response_type": "BulkDeleteResponse",
+          "authentication": true
+        }
+      ]
+    },
+    {
+      "group": "Folder Management",
+      "base_path": "/api/v1/folders",
+      "routes": [
+        {
+          "path": "/",
+          "method": "POST",
+          "function_name": "create_folder",
+          "description": "Create new content folder",
+          "body_param": {
+            "name": "str",
+            "parent_folder_id": "Optional[UUID]",
+            "metadata": "Optional[Dict]",
+            "is_public": "bool = False"
+          },
+          "response_type": "FolderResponse",
+          "authentication": true
+        },
+        {
+          "path": "/",
+          "method": "GET",
+          "function_name": "list_folders",
+          "description": "List user's folders",
+          "query_params": [
+            {"name": "parent_folder_id", "type": "Optional[UUID]"},
+            {"name": "recursive", "type": "bool", "default": false}
+          ],
+          "response_type": "FolderListResponse",
+          "authentication": true
+        },
+        {
+          "path": "/{folder_id}",
+          "method": "GET", 
+          "function_name": "get_folder_contents",
+          "description": "Get folder contents (files and subfolders)",
+          "path_params": [{"name": "folder_id", "type": "UUID"}],
+          "query_params": [
+            {"name": "include_files", "type": "bool", "default": true},
+            {"name": "include_folders", "type": "bool", "default": true}
+          ],
+          "response_type": "FolderContentsResponse",
+          "authentication": true
+        }
+      ]
+    },
+    {
+      "group": "File Sharing",
+      "base_path": "/api/v1/share",
+      "routes": [
+        {
+          "path": "/",
+          "method": "POST",
+          "function_name": "create_file_share",
+          "description": "Create shareable link for file",
+          "body_param": {
+            "file_id": "UUID",
+            "permission_level": "str",
+            "expires_in_hours": "Optional[int]",
+            "download_limit": "Optional[int]",
+            "shared_with_user_id": "Optional[UUID]"
+          },
+          "response_type": "FileShareResponse",
+          "authentication": true
+        },
+        {
+          "path": "/{share_token}",
+          "method": "GET",
+          "function_name": "access_shared_file",
+          "description": "Access file via share token",
+          "path_params": [{"name": "share_token", "type": "str"}],
+          "response_type": "SharedFileInfoResponse",
+          "authentication": false
+        },
+        {
+          "path": "/{share_token}/download",
+          "method": "GET",
+          "function_name": "download_shared_file",
+          "description": "Download file via share token",
+          "path_params": [{"name": "share_token", "type": "str"}],
+          "return_type": "StreamingResponse",
+          "authentication": false
+        }
+      ]
+    },
+    {
+      "group": "Analytics",
+      "base_path": "/api/v1/analytics",
+      "routes": [
+        {
+          "path": "/storage",
+          "method": "GET",
+          "function_name": "get_storage_analytics",
+          "description": "Get user storage usage analytics",
+          "query_params": [
+            {"name": "time_range", "type": "str", "choices": ["7d", "30d", "90d", "1y"], "default": "30d"}
+          ],
+          "response_type": "StorageAnalyticsResponse",
+          "authentication": true
+        },
+        {
+          "path": "/downloads",
+          "method": "GET",
+          "function_name": "get_download_analytics",
+          "description": "Get download analytics for user's files",
+          "query_params": [
+            {"name": "file_id", "type": "Optional[UUID]"},
+            {"name": "time_range", "type": "str", "default": "30d"}
+          ],
+          "response_type": "DownloadAnalyticsResponse",
+          "authentication": true
+        }
+      ]
+    }
+  ],
+  "events": {
+    "produces_events": [
+      "file.uploaded",
+      "file.downloaded", 
+      "file.deleted",
+      "file.shared",
+      "bulk.download.completed",
+      "storage.quota.warning",
+      "storage.quota.exceeded"
+    ],
+    "consumes_events": [
+      "user.deleted"
+    ]
+  },
+  "storage_config": {
+    "providers": ["local", "s3", "gcs"],
+    "default_provider": "local",
+    "upload_limits": {
+      "max_file_size_mb": 100,
+      "max_files_per_request": 10,
+      "allowed_mime_types": [
+        "application/pdf",
+        "image/jpeg", 
+        "image/png",
+        "image/gif",
+        "video/mp4",
+        "video/webm",
+        "audio/mpeg",
+        "audio/wav",
+        "text/plain",
+        "text/markdown",
+        "application/zip",
+        "application/json",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+      ]
+    },
+    "features": {
+      "enable_virus_scanning": false,
+      "enable_thumbnail_generation": true,
+      "enable_file_compression": true,
+      "enable_duplicate_detection": true,
+      "enable_automatic_backup": false
+    }
+  },
+  "authentication": {
+    "required": true,
+    "methods": ["jwt", "api_key"],
+    "permissions": {
+      "upload_files": ["user", "admin"],
+      "download_files": ["user", "admin"],
+      "manage_files": ["user", "admin"],
+      "share_files": ["user", "admin"],
+      "bulk_operations": ["user", "admin"],
+      "analytics": ["user", "admin"]
+    }
+  },
+  "dependencies": [
+    "fastapi[all]",
+    "python-multipart",
+    "aiofiles",
+    "python-magic",
+    "pillow",
+    "zipfile36",
+    "boto3",
+    "google-cloud-storage"
+  ]
+}

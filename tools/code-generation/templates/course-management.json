@@ -1,0 +1,824 @@
+{
+  "name": "course-management",
+  "description": "Comprehensive course lifecycle management with AI-generated content organization and student enrollment",
+  "port": 8004,
+  "provides": [
+    "course_lifecycle",
+    "content_organization",
+    "student_enrollment",
+    "progress_tracking",
+    "course_publishing",
+    "curriculum_management"
+  ],
+  "depends_on": ["user-management", "content-generation", "content-storage"],
+  "database_models": [
+    {
+      "name": "Course",
+      "description": "Main course entity with metadata and structure",
+      "fields": [
+        {"name": "id", "type": "UUID", "primary_key": true},
+        {"name": "title", "type": "String", "nullable": false, "index": true},
+        {"name": "description", "type": "Text", "nullable": true},
+        {"name": "short_description", "type": "String", "nullable": true},
+        {"name": "instructor_id", "type": "UUID", "nullable": false, "foreign_key": "users.id", "index": true},
+        {"name": "category", "type": "String", "nullable": false, "index": true},
+        {"name": "difficulty_level", "type": "String", "nullable": false, "default": "beginner"},
+        {"name": "estimated_duration_hours", "type": "Integer", "nullable": true},
+        {"name": "course_image_url", "type": "String", "nullable": true},
+        {"name": "course_trailer_url", "type": "String", "nullable": true},
+        {"name": "price", "type": "Decimal", "nullable": true, "default": 0.00},
+        {"name": "currency", "type": "String", "nullable": false, "default": "USD"},
+        {"name": "status", "type": "String", "nullable": false, "default": "draft", "index": true},
+        {"name": "is_published", "type": "Boolean", "default": false, "index": true},
+        {"name": "is_featured", "type": "Boolean", "default": false},
+        {"name": "enrollment_limit", "type": "Integer", "nullable": true},
+        {"name": "enrollment_count", "type": "Integer", "default": 0},
+        {"name": "rating_average", "type": "Float", "default": 0.0},
+        {"name": "rating_count", "type": "Integer", "default": 0},
+        {"name": "view_count", "type": "Integer", "default": 0},
+        {"name": "tags", "type": "JSON", "nullable": true},
+        {"name": "learning_objectives", "type": "JSON", "nullable": true},
+        {"name": "prerequisites", "type": "JSON", "nullable": true},
+        {"name": "metadata", "type": "JSON", "nullable": true},
+        {"name": "ai_generation_config", "type": "JSON", "nullable": true},
+        {"name": "published_at", "type": "DateTime", "nullable": true},
+        {"name": "created_at", "type": "DateTime", "nullable": false},
+        {"name": "updated_at", "type": "DateTime", "nullable": false}
+      ],
+      "indexes": [
+        {"fields": ["instructor_id", "status"]},
+        {"fields": ["category", "is_published"]},
+        {"fields": ["created_at", "is_published"]},
+        {"fields": ["title"], "type": "fulltext"}
+      ]
+    },
+    {
+      "name": "CourseModule",
+      "description": "Course modules/chapters for organizing content",
+      "fields": [
+        {"name": "id", "type": "UUID", "primary_key": true},
+        {"name": "course_id", "type": "UUID", "nullable": false, "foreign_key": "courses.id", "index": true},
+        {"name": "title", "type": "String", "nullable": false},
+        {"name": "description", "type": "Text", "nullable": true},
+        {"name": "order_index", "type": "Integer", "nullable": false},
+        {"name": "estimated_duration_minutes", "type": "Integer", "nullable": true},
+        {"name": "is_required", "type": "Boolean", "default": true},
+        {"name": "unlock_conditions", "type": "JSON", "nullable": true},
+        {"name": "module_type", "type": "String", "nullable": false, "default": "lesson"},
+        {"name": "content_generation_prompt", "type": "Text", "nullable": true},
+        {"name": "ai_generated", "type": "Boolean", "default": false},
+        {"name": "created_at", "type": "DateTime", "nullable": false},
+        {"name": "updated_at", "type": "DateTime", "nullable": false}
+      ],
+      "indexes": [
+        {"fields": ["course_id", "order_index"], "unique": true}
+      ]
+    },
+    {
+      "name": "CourseLesson",
+      "description": "Individual lessons within course modules",
+      "fields": [
+        {"name": "id", "type": "UUID", "primary_key": true},
+        {"name": "module_id", "type": "UUID", "nullable": false, "foreign_key": "course_modules.id", "index": true},
+        {"name": "title", "type": "String", "nullable": false},
+        {"name": "description", "type": "Text", "nullable": true},
+        {"name": "order_index", "type": "Integer", "nullable": false},
+        {"name": "lesson_type", "type": "String", "nullable": false, "default": "text"},
+        {"name": "content", "type": "Text", "nullable": true},
+        {"name": "video_url", "type": "String", "nullable": true},
+        {"name": "audio_url", "type": "String", "nullable": true},
+        {"name": "slides_file_id", "type": "UUID", "nullable": true, "foreign_key": "content_files.id"},
+        {"name": "exercise_file_id", "type": "UUID", "nullable": true, "foreign_key": "content_files.id"},
+        {"name": "resources", "type": "JSON", "nullable": true},
+        {"name": "estimated_duration_minutes", "type": "Integer", "nullable": true},
+        {"name": "is_preview", "type": "Boolean", "default": false},
+        {"name": "completion_criteria", "type": "JSON", "nullable": true},
+        {"name": "content_generation_prompt", "type": "Text", "nullable": true},
+        {"name": "ai_generated", "type": "Boolean", "default": false},
+        {"name": "created_at", "type": "DateTime", "nullable": false},
+        {"name": "updated_at", "type": "DateTime", "nullable": false}
+      ],
+      "indexes": [
+        {"fields": ["module_id", "order_index"], "unique": true}
+      ]
+    },
+    {
+      "name": "CourseEnrollment",
+      "description": "Student enrollment and progress tracking",
+      "fields": [
+        {"name": "id", "type": "UUID", "primary_key": true},
+        {"name": "course_id", "type": "UUID", "nullable": false, "foreign_key": "courses.id", "index": true},
+        {"name": "student_id", "type": "UUID", "nullable": false, "foreign_key": "users.id", "index": true},
+        {"name": "enrollment_status", "type": "String", "nullable": false, "default": "active"},
+        {"name": "progress_percentage", "type": "Float", "default": 0.0},
+        {"name": "last_accessed_lesson_id", "type": "UUID", "nullable": true, "foreign_key": "course_lessons.id"},
+        {"name": "total_time_spent_minutes", "type": "Integer", "default": 0},
+        {"name": "completion_percentage", "type": "Float", "default": 0.0},
+        {"name": "grade", "type": "Float", "nullable": true},
+        {"name": "certificate_issued", "type": "Boolean", "default": false},
+        {"name": "certificate_url", "type": "String", "nullable": true},
+        {"name": "enrolled_at", "type": "DateTime", "nullable": false},
+        {"name": "started_at", "type": "DateTime", "nullable": true},
+        {"name": "completed_at", "type": "DateTime", "nullable": true},
+        {"name": "last_activity_at", "type": "DateTime", "nullable": true}
+      ],
+      "indexes": [
+        {"fields": ["course_id", "student_id"], "unique": true},
+        {"fields": ["student_id", "enrollment_status"]},
+        {"fields": ["completion_percentage"]}
+      ]
+    },
+    {
+      "name": "LessonProgress",
+      "description": "Detailed lesson-level progress tracking",
+      "fields": [
+        {"name": "id", "type": "UUID", "primary_key": true},
+        {"name": "enrollment_id", "type": "UUID", "nullable": false, "foreign_key": "course_enrollments.id", "index": true},
+        {"name": "lesson_id", "type": "UUID", "nullable": false, "foreign_key": "course_lessons.id", "index": true},
+        {"name": "status", "type": "String", "nullable": false, "default": "not_started"},
+        {"name": "time_spent_minutes", "type": "Integer", "default": 0},
+        {"name": "completion_percentage", "type": "Float", "default": 0.0},
+        {"name": "score", "type": "Float", "nullable": true},
+        {"name": "attempts", "type": "Integer", "default": 0},
+        {"name": "notes", "type": "Text", "nullable": true},
+        {"name": "bookmarked", "type": "Boolean", "default": false},
+        {"name": "first_accessed_at", "type": "DateTime", "nullable": true},
+        {"name": "last_accessed_at", "type": "DateTime", "nullable": true},
+        {"name": "completed_at", "type": "DateTime", "nullable": true}
+      ],
+      "indexes": [
+        {"fields": ["enrollment_id", "lesson_id"], "unique": true},
+        {"fields": ["lesson_id", "status"]}
+      ]
+    },
+    {
+      "name": "CourseReview",
+      "description": "Student reviews and ratings for courses",
+      "fields": [
+        {"name": "id", "type": "UUID", "primary_key": true},
+        {"name": "course_id", "type": "UUID", "nullable": false, "foreign_key": "courses.id", "index": true},
+        {"name": "student_id", "type": "UUID", "nullable": false, "foreign_key": "users.id", "index": true},
+        {"name": "rating", "type": "Integer", "nullable": false},
+        {"name": "review_text", "type": "Text", "nullable": true},
+        {"name": "is_public", "type": "Boolean", "default": true},
+        {"name": "helpful_votes", "type": "Integer", "default": 0},
+        {"name": "created_at", "type": "DateTime", "nullable": false},
+        {"name": "updated_at", "type": "DateTime", "nullable": false}
+      ],
+      "indexes": [
+        {"fields": ["course_id", "student_id"], "unique": true},
+        {"fields": ["course_id", "rating"]},
+        {"fields": ["created_at"]}
+      ]
+    },
+    {
+      "name": "CourseCategory",
+      "description": "Course categorization and taxonomy",
+      "fields": [
+        {"name": "id", "type": "UUID", "primary_key": true},
+        {"name": "name", "type": "String", "nullable": false, "unique": true},
+        {"name": "slug", "type": "String", "nullable": false, "unique": true},
+        {"name": "description", "type": "Text", "nullable": true},
+        {"name": "parent_category_id", "type": "UUID", "nullable": true, "foreign_key": "course_categories.id"},
+        {"name": "icon", "type": "String", "nullable": true},
+        {"name": "color", "type": "String", "nullable": true},
+        {"name": "order_index", "type": "Integer", "default": 0},
+        {"name": "is_active", "type": "Boolean", "default": true},
+        {"name": "created_at", "type": "DateTime", "nullable": false}
+      ]
+    },
+    {
+      "name": "CourseTemplate",
+      "description": "Reusable course templates for AI generation",
+      "fields": [
+        {"name": "id", "type": "UUID", "primary_key": true},
+        {"name": "name", "type": "String", "nullable": false},
+        {"name": "description", "type": "Text", "nullable": true},
+        {"name": "category", "type": "String", "nullable": false},
+        {"name": "difficulty_level", "type": "String", "nullable": false},
+        {"name": "estimated_duration_hours", "type": "Integer", "nullable": false},
+        {"name": "module_structure", "type": "JSON", "nullable": false},
+        {"name": "content_prompts", "type": "JSON", "nullable": false},
+        {"name": "learning_objectives_template", "type": "JSON", "nullable": true},
+        {"name": "assessment_template", "type": "JSON", "nullable": true},
+        {"name": "created_by", "type": "UUID", "nullable": false, "foreign_key": "users.id"},
+        {"name": "is_public", "type": "Boolean", "default": false},
+        {"name": "usage_count", "type": "Integer", "default": 0},
+        {"name": "created_at", "type": "DateTime", "nullable": false},
+        {"name": "updated_at", "type": "DateTime", "nullable": false}
+      ]
+    }
+  ],
+  "endpoints": [
+    {
+      "group": "Course Management",
+      "base_path": "/api/v1/courses",
+      "routes": [
+        {
+          "path": "/",
+          "method": "POST",
+          "function_name": "create_course",
+          "description": "Create a new course",
+          "body_param": {
+            "title": "str",
+            "description": "Optional[str]",
+            "category": "str",
+            "difficulty_level": "str",
+            "estimated_duration_hours": "Optional[int]",
+            "price": "Optional[Decimal]",
+            "tags": "Optional[List[str]]",
+            "learning_objectives": "Optional[List[str]]",
+            "prerequisites": "Optional[List[str]]",
+            "template_id": "Optional[UUID]"
+          },
+          "response_type": "CourseResponse",
+          "authentication": true
+        },
+        {
+          "path": "/",
+          "method": "GET",
+          "function_name": "list_courses",
+          "description": "List courses with filtering and pagination",
+          "query_params": [
+            {"name": "instructor_id", "type": "Optional[UUID]"},
+            {"name": "category", "type": "Optional[str]"},
+            {"name": "difficulty_level", "type": "Optional[str]"},
+            {"name": "status", "type": "Optional[str]"},
+            {"name": "is_published", "type": "Optional[bool]"},
+            {"name": "search", "type": "Optional[str]"},
+            {"name": "tags", "type": "Optional[List[str]]"},
+            {"name": "price_min", "type": "Optional[Decimal]"},
+            {"name": "price_max", "type": "Optional[Decimal]"},
+            {"name": "sort_by", "type": "str", "choices": ["title", "created_at", "rating", "enrollment_count", "price"], "default": "created_at"},
+            {"name": "sort_order", "type": "str", "choices": ["asc", "desc"], "default": "desc"},
+            {"name": "page", "type": "int", "default": 1},
+            {"name": "per_page", "type": "int", "default": 20}
+          ],
+          "response_type": "CourseListResponse",
+          "authentication": false
+        },
+        {
+          "path": "/{course_id}",
+          "method": "GET",
+          "function_name": "get_course",
+          "description": "Get detailed course information",
+          "path_params": [{"name": "course_id", "type": "UUID"}],
+          "query_params": [
+            {"name": "include_modules", "type": "bool", "default": true},
+            {"name": "include_lessons", "type": "bool", "default": false},
+            {"name": "include_progress", "type": "bool", "default": false}
+          ],
+          "response_type": "CourseDetailResponse",
+          "authentication": false
+        },
+        {
+          "path": "/{course_id}",
+          "method": "PUT",
+          "function_name": "update_course",
+          "description": "Update course information",
+          "path_params": [{"name": "course_id", "type": "UUID"}],
+          "body_param": {
+            "title": "Optional[str]",
+            "description": "Optional[str]",
+            "short_description": "Optional[str]",
+            "category": "Optional[str]",
+            "difficulty_level": "Optional[str]",
+            "estimated_duration_hours": "Optional[int]",
+            "price": "Optional[Decimal]",
+            "enrollment_limit": "Optional[int]",
+            "tags": "Optional[List[str]]",
+            "learning_objectives": "Optional[List[str]]",
+            "prerequisites": "Optional[List[str]]",
+            "course_image_url": "Optional[str]"
+          },
+          "response_type": "CourseResponse",
+          "authentication": true
+        },
+        {
+          "path": "/{course_id}",
+          "method": "DELETE",
+          "function_name": "delete_course",
+          "description": "Delete course and all related content",
+          "path_params": [{"name": "course_id", "type": "UUID"}],
+          "response_type": "DeleteResponse",
+          "authentication": true
+        }
+      ]
+    },
+    {
+      "group": "Course Publishing",
+      "base_path": "/api/v1/courses",
+      "routes": [
+        {
+          "path": "/{course_id}/publish",
+          "method": "POST",
+          "function_name": "publish_course",
+          "description": "Publish course to make it available to students",
+          "path_params": [{"name": "course_id", "type": "UUID"}],
+          "body_param": {
+            "publish_immediately": "bool = True",
+            "scheduled_publish_at": "Optional[datetime]"
+          },
+          "response_type": "PublishResponse",
+          "authentication": true
+        },
+        {
+          "path": "/{course_id}/unpublish",
+          "method": "POST",
+          "function_name": "unpublish_course",
+          "description": "Unpublish course to hide from students",
+          "path_params": [{"name": "course_id", "type": "UUID"}],
+          "response_type": "PublishResponse",
+          "authentication": true
+        },
+        {
+          "path": "/{course_id}/duplicate",
+          "method": "POST",
+          "function_name": "duplicate_course",
+          "description": "Create a copy of existing course",
+          "path_params": [{"name": "course_id", "type": "UUID"}],
+          "body_param": {
+            "new_title": "str",
+            "include_content": "bool = True",
+            "include_enrollments": "bool = False"
+          },
+          "response_type": "CourseResponse",
+          "authentication": true
+        }
+      ]
+    },
+    {
+      "group": "Module Management",
+      "base_path": "/api/v1/courses/{course_id}/modules",
+      "routes": [
+        {
+          "path": "/",
+          "method": "POST",
+          "function_name": "create_module",
+          "description": "Create new course module",
+          "path_params": [{"name": "course_id", "type": "UUID"}],
+          "body_param": {
+            "title": "str",
+            "description": "Optional[str]",
+            "order_index": "Optional[int]",
+            "estimated_duration_minutes": "Optional[int]",
+            "module_type": "str",
+            "is_required": "bool = True",
+            "unlock_conditions": "Optional[Dict]",
+            "auto_generate_content": "bool = False",
+            "content_generation_prompt": "Optional[str]"
+          },
+          "response_type": "ModuleResponse",
+          "authentication": true
+        },
+        {
+          "path": "/",
+          "method": "GET",
+          "function_name": "list_modules",
+          "description": "List course modules",
+          "path_params": [{"name": "course_id", "type": "UUID"}],
+          "query_params": [
+            {"name": "include_lessons", "type": "bool", "default": false}
+          ],
+          "response_type": "ModuleListResponse",
+          "authentication": false
+        },
+        {
+          "path": "/{module_id}",
+          "method": "PUT",
+          "function_name": "update_module",
+          "description": "Update course module",
+          "path_params": [
+            {"name": "course_id", "type": "UUID"},
+            {"name": "module_id", "type": "UUID"}
+          ],
+          "body_param": {
+            "title": "Optional[str]",
+            "description": "Optional[str]",
+            "order_index": "Optional[int]",
+            "estimated_duration_minutes": "Optional[int]",
+            "is_required": "Optional[bool]",
+            "unlock_conditions": "Optional[Dict]"
+          },
+          "response_type": "ModuleResponse",
+          "authentication": true
+        },
+        {
+          "path": "/{module_id}",
+          "method": "DELETE",
+          "function_name": "delete_module",
+          "description": "Delete course module and all lessons",
+          "path_params": [
+            {"name": "course_id", "type": "UUID"},
+            {"name": "module_id", "type": "UUID"}
+          ],
+          "response_type": "DeleteResponse",
+          "authentication": true
+        }
+      ]
+    },
+    {
+      "group": "Lesson Management",
+      "base_path": "/api/v1/modules/{module_id}/lessons",
+      "routes": [
+        {
+          "path": "/",
+          "method": "POST",
+          "function_name": "create_lesson",
+          "description": "Create new lesson in module",
+          "path_params": [{"name": "module_id", "type": "UUID"}],
+          "body_param": {
+            "title": "str",
+            "description": "Optional[str]",
+            "lesson_type": "str",
+            "content": "Optional[str]",
+            "order_index": "Optional[int]",
+            "estimated_duration_minutes": "Optional[int]",
+            "is_preview": "bool = False",
+            "completion_criteria": "Optional[Dict]",
+            "resources": "Optional[List[Dict]]",
+            "auto_generate_content": "bool = False",
+            "content_generation_prompt": "Optional[str]"
+          },
+          "response_type": "LessonResponse",
+          "authentication": true
+        },
+        {
+          "path": "/",
+          "method": "GET",
+          "function_name": "list_lessons",
+          "description": "List lessons in module",
+          "path_params": [{"name": "module_id", "type": "UUID"}],
+          "response_type": "LessonListResponse",
+          "authentication": false
+        },
+        {
+          "path": "/{lesson_id}",
+          "method": "GET",
+          "function_name": "get_lesson",
+          "description": "Get detailed lesson content",
+          "path_params": [
+            {"name": "module_id", "type": "UUID"},
+            {"name": "lesson_id", "type": "UUID"}
+          ],
+          "query_params": [
+            {"name": "include_progress", "type": "bool", "default": false}
+          ],
+          "response_type": "LessonDetailResponse",
+          "authentication": false
+        },
+        {
+          "path": "/{lesson_id}",
+          "method": "PUT",
+          "function_name": "update_lesson",
+          "description": "Update lesson content",
+          "path_params": [
+            {"name": "module_id", "type": "UUID"},
+            {"name": "lesson_id", "type": "UUID"}
+          ],
+          "body_param": {
+            "title": "Optional[str]",
+            "description": "Optional[str]",
+            "content": "Optional[str]",
+            "lesson_type": "Optional[str]",
+            "order_index": "Optional[int]",
+            "estimated_duration_minutes": "Optional[int]",
+            "is_preview": "Optional[bool]",
+            "completion_criteria": "Optional[Dict]",
+            "resources": "Optional[List[Dict]]"
+          },
+          "response_type": "LessonResponse",
+          "authentication": true
+        }
+      ]
+    },
+    {
+      "group": "AI Content Generation",
+      "base_path": "/api/v1/ai-generation",
+      "routes": [
+        {
+          "path": "/course",
+          "method": "POST",
+          "function_name": "generate_course_from_template",
+          "description": "Generate complete course using AI from template",
+          "body_param": {
+            "template_id": "UUID",
+            "course_title": "str",
+            "customization_prompts": "Optional[Dict]",
+            "target_audience": "Optional[str]",
+            "specific_requirements": "Optional[List[str]]"
+          },
+          "response_type": "CourseGenerationResponse",
+          "authentication": true
+        },
+        {
+          "path": "/course/{course_id}/enhance",
+          "method": "POST",
+          "function_name": "enhance_course_with_ai",
+          "description": "Enhance existing course with AI-generated content",
+          "path_params": [{"name": "course_id", "type": "UUID"}],
+          "body_param": {
+            "enhancement_type": "str",
+            "target_modules": "Optional[List[UUID]]",
+            "enhancement_prompts": "Optional[Dict]"
+          },
+          "response_type": "CourseEnhancementResponse",
+          "authentication": true
+        },
+        {
+          "path": "/module/{module_id}/generate-content",
+          "method": "POST",
+          "function_name": "generate_module_content",
+          "description": "Generate content for specific module using AI",
+          "path_params": [{"name": "module_id", "type": "UUID"}],
+          "body_param": {
+            "content_types": "List[str]",
+            "generation_prompts": "Dict[str, str]",
+            "include_exercises": "bool = True",
+            "include_assessments": "bool = True"
+          },
+          "response_type": "ModuleContentResponse",
+          "authentication": true
+        }
+      ]
+    },
+    {
+      "group": "Student Enrollment",
+      "base_path": "/api/v1/enrollments",
+      "routes": [
+        {
+          "path": "/",
+          "method": "POST",
+          "function_name": "enroll_student",
+          "description": "Enroll student in course",
+          "body_param": {
+            "course_id": "UUID",
+            "student_id": "Optional[UUID]",
+            "enrollment_type": "str = 'standard'",
+            "payment_reference": "Optional[str]"
+          },
+          "response_type": "EnrollmentResponse",
+          "authentication": true
+        },
+        {
+          "path": "/my-courses",
+          "method": "GET",
+          "function_name": "get_student_enrollments",
+          "description": "Get current user's course enrollments",
+          "query_params": [
+            {"name": "status", "type": "Optional[str]"},
+            {"name": "include_progress", "type": "bool", "default": true},
+            {"name": "sort_by", "type": "str", "choices": ["enrolled_at", "last_activity", "progress"], "default": "last_activity"}
+          ],
+          "response_type": "StudentEnrollmentListResponse",
+          "authentication": true
+        },
+        {
+          "path": "/{enrollment_id}/progress",
+          "method": "PUT",
+          "function_name": "update_lesson_progress",
+          "description": "Update student progress for specific lesson",
+          "path_params": [{"name": "enrollment_id", "type": "UUID"}],
+          "body_param": {
+            "lesson_id": "UUID",
+            "status": "str",
+            "time_spent_minutes": "Optional[int]",
+            "completion_percentage": "Optional[float]",
+            "score": "Optional[float]",
+            "notes": "Optional[str]"
+          },
+          "response_type": "ProgressResponse",
+          "authentication": true
+        },
+        {
+          "path": "/{enrollment_id}/certificate",
+          "method": "POST",
+          "function_name": "generate_certificate",
+          "description": "Generate completion certificate for student",
+          "path_params": [{"name": "enrollment_id", "type": "UUID"}],
+          "response_type": "CertificateResponse",
+          "authentication": true
+        }
+      ]
+    },
+    {
+      "group": "Course Reviews",
+      "base_path": "/api/v1/courses/{course_id}/reviews",
+      "routes": [
+        {
+          "path": "/",
+          "method": "POST",
+          "function_name": "create_review",
+          "description": "Create course review",
+          "path_params": [{"name": "course_id", "type": "UUID"}],
+          "body_param": {
+            "rating": "int",
+            "review_text": "Optional[str]",
+            "is_public": "bool = True"
+          },
+          "response_type": "ReviewResponse",
+          "authentication": true
+        },
+        {
+          "path": "/",
+          "method": "GET",
+          "function_name": "list_reviews",
+          "description": "List course reviews",
+          "path_params": [{"name": "course_id", "type": "UUID"}],
+          "query_params": [
+            {"name": "rating_filter", "type": "Optional[int]"},
+            {"name": "sort_by", "type": "str", "choices": ["created_at", "rating", "helpful_votes"], "default": "created_at"},
+            {"name": "page", "type": "int", "default": 1},
+            {"name": "per_page", "type": "int", "default": 10}
+          ],
+          "response_type": "ReviewListResponse",
+          "authentication": false
+        }
+      ]
+    },
+    {
+      "group": "Course Analytics",
+      "base_path": "/api/v1/courses/{course_id}/analytics",
+      "routes": [
+        {
+          "path": "/",
+          "method": "GET",
+          "function_name": "get_course_analytics",
+          "description": "Get comprehensive course analytics",
+          "path_params": [{"name": "course_id", "type": "UUID"}],
+          "query_params": [
+            {"name": "time_range", "type": "str", "choices": ["7d", "30d", "90d", "1y"], "default": "30d"},
+            {"name": "include_student_details", "type": "bool", "default": false}
+          ],
+          "response_type": "CourseAnalyticsResponse",
+          "authentication": true
+        },
+        {
+          "path": "/engagement",
+          "method": "GET",
+          "function_name": "get_engagement_metrics",
+          "description": "Get student engagement metrics",
+          "path_params": [{"name": "course_id", "type": "UUID"}],
+          "query_params": [
+            {"name": "time_range", "type": "str", "default": "30d"}
+          ],
+          "response_type": "EngagementMetricsResponse",
+          "authentication": true
+        },
+        {
+          "path": "/completion",
+          "method": "GET",
+          "function_name": "get_completion_analytics",
+          "description": "Get course completion analytics",
+          "path_params": [{"name": "course_id", "type": "UUID"}],
+          "response_type": "CompletionAnalyticsResponse",
+          "authentication": true
+        }
+      ]
+    },
+    {
+      "group": "Course Templates",
+      "base_path": "/api/v1/templates",
+      "routes": [
+        {
+          "path": "/",
+          "method": "POST",
+          "function_name": "create_course_template",
+          "description": "Create reusable course template",
+          "body_param": {
+            "name": "str",
+            "description": "Optional[str]",
+            "category": "str",
+            "difficulty_level": "str",
+            "estimated_duration_hours": "int",
+            "module_structure": "Dict",
+            "content_prompts": "Dict",
+            "learning_objectives_template": "Optional[List[str]]",
+            "is_public": "bool = False"
+          },
+          "response_type": "TemplateResponse",
+          "authentication": true
+        },
+        {
+          "path": "/",
+          "method": "GET",
+          "function_name": "list_course_templates",
+          "description": "List available course templates",
+          "query_params": [
+            {"name": "category", "type": "Optional[str]"},
+            {"name": "difficulty_level", "type": "Optional[str]"},
+            {"name": "is_public", "type": "Optional[bool]"},
+            {"name": "created_by", "type": "Optional[UUID]"}
+          ],
+          "response_type": "TemplateListResponse",
+          "authentication": false
+        }
+      ]
+    },
+    {
+      "group": "Bulk Operations",
+      "base_path": "/api/v1/bulk",
+      "routes": [
+        {
+          "path": "/export-course",
+          "method": "POST",
+          "function_name": "export_course_content",
+          "description": "Export complete course content and structure",
+          "body_param": {
+            "course_id": "UUID",
+            "export_format": "str",
+            "include_student_data": "bool = False",
+            "include_analytics": "bool = False"
+          },
+          "response_type": "ExportJobResponse",
+          "authentication": true
+        },
+        {
+          "path": "/import-course",
+          "method": "POST",
+          "function_name": "import_course_content",
+          "description": "Import course from external format",
+          "body_param": {
+            "import_file": "UploadFile",
+            "import_format": "str",
+            "course_title": "Optional[str]",
+            "merge_with_existing": "bool = False"
+          },
+          "response_type": "ImportJobResponse",
+          "authentication": true
+        }
+      ]
+    }
+  ],
+  "events": {
+    "produces_events": [
+      "course.created",
+      "course.updated",
+      "course.published",
+      "course.unpublished",
+      "course.deleted",
+      "module.created",
+      "module.updated",
+      "lesson.created",
+      "lesson.updated",
+      "student.enrolled",
+      "student.unenrolled",
+      "progress.updated",
+      "course.completed",
+      "certificate.generated",
+      "review.created",
+      "ai.content.generated"
+    ],
+    "consumes_events": [
+      "user.deleted",
+      "content.generated",
+      "file.uploaded",
+      "payment.completed"
+    ]
+  },
+  "ai_integration": {
+    "content_generation_features": [
+      "course_structure_generation",
+      "lesson_content_creation",
+      "exercise_generation",
+      "assessment_creation",
+      "content_enhancement",
+      "personalized_learning_paths"
+    ],
+    "supported_content_types": [
+      "text_lessons",
+      "slide_presentations", 
+      "practice_exercises",
+      "coding_labs",
+      "quizzes",
+      "project_assignments"
+    ]
+  },
+  "authentication": {
+    "required": true,
+    "methods": ["jwt"],
+    "permissions": {
+      "create_course": ["instructor", "admin"],
+      "update_course": ["instructor", "admin"],
+      "delete_course": ["instructor", "admin"],
+      "publish_course": ["instructor", "admin"],
+      "view_course": ["student", "instructor", "admin"],
+      "enroll_course": ["student", "instructor", "admin"],
+      "manage_enrollments": ["instructor", "admin"],
+      "view_analytics": ["instructor", "admin"],
+      "create_templates": ["instructor", "admin"],
+      "ai_generation": ["instructor", "admin"]
+    }
+  },
+  "dependencies": [
+    "fastapi[all]",
+    "sqlalchemy",
+    "alembic",
+    "pydantic",
+    "celery",
+    "redis",
+    "reportlab",
+    "jinja2",
+    "python-multipart"
+  ]
+}

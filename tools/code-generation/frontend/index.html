@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Creator Platform</title>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <header>
+        <h1>Course Creator Platform</h1>
+        <nav>
+            <a href="#dashboard">Dashboard</a>
+            <a href="#courses">Courses</a>
+            <a href="#create">Create Course</a>
+            <a href="#profile">Profile</a>
+            <a href="#services">Services</a>
+        </nav>
+    </header>
+    
+    <main id="main-content">
+        <section id="dashboard">
+            <h2>Platform Dashboard</h2>
+            <div class="service-status">
+                <h3>Service Status</h3>
+                <div id="service-health">
+                    <div class="service-item" data-service="user-management"><span class="service-name">user-management</span><span class="service-status">Checking...</span></div> <div class="service-item" data-service="course-generator"><span class="service-name">course-generator</span><span class="service-status">Checking...</span></div> <div class="service-item" data-service="course-management"><span class="service-name">course-management</span><span class="service-status">Checking...</span></div> <div class="service-item" data-service="content-storage"><span class="service-name">content-storage</span><span class="service-status">Checking...</span></div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="services" style="display:none;">
+            <h2>Service Architecture</h2>
+            <div id="dependency-graph">
+                <p>Service dependency visualization will be loaded here.</p>
+            </div>
+        </section>
+    </main>
+    
+    <script src="js/main.js"></script>
+</body>
+</html>

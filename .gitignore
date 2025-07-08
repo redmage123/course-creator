@@ -33,6 +33,7 @@ ENV/
 .env.local
 .env.staging
 .env.production
+.cc_env
 
 # IDEs
 .vscode/
@@ -50,6 +51,7 @@ node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+course-creator-frontnd/
 
 # Generated content
 generated_content/
@@ -60,10 +62,14 @@ generated_content/
 # Logs
 logs/
 *.log
+backend.log
+frontend.log
+platform_generator.log
 
 # Database
 *.db
 *.sqlite
+postgres_data/
 
 # Secrets and certificates
 *.key
@@ -80,3 +86,17 @@ certificates/
 # Temporary files
 *.tmp
 *.temp
+dir.out
+
+# Runtime directories
+.pids/
+outputs/
+content_files/
+
+# Development files
+*_original.py
+simple_main.py
+
+# Test and validation files
+test-*.py
+validate-*.py
