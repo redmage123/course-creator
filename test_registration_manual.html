@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Registration Test</title>
+</head>
+<body>
+    <h1>Manual Registration Test</h1>
+    <form id="test-form">
+        <input type="email" id="email" value="manualtest@example.com" required>
+        <input type="text" id="name" value="Manual Test User" required>
+        <input type="text" id="username" value="manualtest" required>
+        <input type="password" id="password" value="testpass123" required>
+        <button type="submit">Register</button>
+    </form>
+    
+    <div id="result"></div>
+    
+    <script>
+        document.getElementById('test-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const userData = {
+                email: document.getElementById('email').value,
+                full_name: document.getElementById('name').value,
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value
+            };
+            
+            try {
+                const response = await fetch('http://localhost:8000/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(userData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('result').innerHTML = 
+                        '<p style="color: green;">Registration successful!</p>' + 
+                        '<pre>' + JSON.stringify(result, null, 2) + '</pre>';
+                } else {
+                    document.getElementById('result').innerHTML = 
+                        '<p style="color: red;">Registration failed: ' + result.detail + '</p>';
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = 
+                    '<p style="color: red;">Error: ' + error.message + '</p>';
+            }
+        });
+    </script>
+</body>
+</html>

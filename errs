@@ -1,0 +1,210 @@
+🧪 Starting Course Creator Platform Test Suite
+==============================================
+[0;34m[INFO][0m Course Creator Platform Test Suite Starting...
+[0;34m[INFO][0m Running code linting...
+
+> course-creator@1.0.0 lint
+> eslint frontend/js/**/*.js
+
+[0;32m[SUCCESS][0m Linting passed
+[0;34m[INFO][0m Running frontend unit tests...
+
+> course-creator@1.0.0 test:unit
+> jest tests/unit
+
+PASS tests/unit/frontend/test_auth_fixed.test.js
+PASS tests/unit/frontend/auth-working.test.js
+PASS tests/unit/frontend/basic.test.js
+
+Test Suites: 3 passed, 3 total
+Tests:       23 passed, 23 total
+Snapshots:   0 total
+Time:        0.49 s, estimated 1 s
+Ran all test suites matching /tests\/unit/i.
+[0;32m[SUCCESS][0m Frontend unit tests passed
+[0;34m[INFO][0m Checking if services are running...
+[0;32m[SUCCESS][0m User management service is running
+[0;32m[SUCCESS][0m Course management service is running
+[0;32m[SUCCESS][0m Frontend service is running
+[0;34m[INFO][0m Running backend unit tests...
+============================= test session starts ==============================
+platform linux -- Python 3.10.12, pytest-8.4.1, pluggy-1.6.0 -- /home/bbrelin/course-creator/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/bbrelin/course-creator/tests
+plugins: asyncio-1.0.0, anyio-4.9.0, hydra-core-1.3.2
+asyncio: mode=strict, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 0 items / 2 skipped
+
+============================== 2 skipped in 0.20s ==============================
+[1;33m[WARNING][0m Backend unit tests failed (services may not be running)
+[0;34m[INFO][0m Running integration tests...
+============================= test session starts ==============================
+platform linux -- Python 3.10.12, pytest-8.4.1, pluggy-1.6.0 -- /home/bbrelin/course-creator/.venv/bin/python
+cachedir: .pytest_cache
+rootdir: /home/bbrelin/course-creator/tests
+plugins: asyncio-1.0.0, anyio-4.9.0, hydra-core-1.3.2
+asyncio: mode=strict, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 21 items
+
+integration/test_api_integration.py::TestAPIIntegration::test_01_services_are_running PASSED [  4%]
+integration/test_api_integration.py::TestAPIIntegration::test_02_user_registration_flow PASSED [  9%]
+integration/test_api_integration.py::TestAPIIntegration::test_03_user_login_flow PASSED [ 14%]
+integration/test_api_integration.py::TestAPIIntegration::test_04_authenticated_user_profile PASSED [ 19%]
+integration/test_api_integration.py::TestAPIIntegration::test_05_course_creation_flow PASSED [ 23%]
+integration/test_api_integration.py::TestAPIIntegration::test_06_course_retrieval_flow PASSED [ 28%]
+integration/test_api_integration.py::TestAPIIntegration::test_07_course_list_flow PASSED [ 33%]
+integration/test_api_integration.py::TestAPIIntegration::test_08_course_update_flow FAILED [ 38%]
+integration/test_api_integration.py::TestAPIIntegration::test_09_course_publish_flow FAILED [ 42%]
+integration/test_api_integration.py::TestAPIIntegration::test_10_student_enrollment_flow FAILED [ 47%]
+integration/test_api_integration.py::TestAPIIntegration::test_11_bulk_enrollment_flow FAILED [ 52%]
+integration/test_api_integration.py::TestAPIIntegration::test_12_course_statistics_flow FAILED [ 57%]
+integration/test_api_integration.py::TestAPIIntegration::test_13_instructor_courses_flow FAILED [ 61%]
+integration/test_api_integration.py::TestAPIIntegration::test_14_error_handling_flows FAILED [ 66%]
+integration/test_api_integration.py::TestAPIIntegration::test_15_concurrent_access_flow PASSED [ 71%]
+integration/test_api_integration.py::TestAPIIntegration::test_16_performance_baseline PASSED [ 76%]
+integration/test_api_integration.py::TestAPIIntegration::test_17_cleanup_test_data PASSED [ 80%]
+integration/test_registration_flow.py::TestRegistrationFlow::test_api_registration_works PASSED [ 85%]
+integration/test_registration_flow.py::TestRegistrationFlow::test_cors_headers_present PASSED [ 90%]
+integration/test_registration_flow.py::TestRegistrationFlow::test_user_service_health PASSED [ 95%]
+integration/test_registration_flow.py::TestRegistrationFlow::test_frontend_registration_flow SKIPPED [100%]
+
+=================================== FAILURES ===================================
+________________ TestAPIIntegration.test_08_course_update_flow _________________
+integration/test_api_integration.py:162: in test_08_course_update_flow
+    assert response.status_code == 200
+E   assert 422 == 200
+E    +  where 422 = <Response [422]>.status_code
+________________ TestAPIIntegration.test_09_course_publish_flow ________________
+integration/test_api_integration.py:179: in test_09_course_publish_flow
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = <Response [404]>.status_code
+______________ TestAPIIntegration.test_10_student_enrollment_flow ______________
+integration/test_api_integration.py:204: in test_10_student_enrollment_flow
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = <Response [404]>.status_code
+_______________ TestAPIIntegration.test_11_bulk_enrollment_flow ________________
+integration/test_api_integration.py:239: in test_11_bulk_enrollment_flow
+    assert response.status_code == 200
+E   assert 404 == 200
+E    +  where 404 = <Response [404]>.status_code
+______________ TestAPIIntegration.test_12_course_statistics_flow _______________
+integration/test_api_integration.py:256: in test_12_course_statistics_flow
+    assert response.status_code == 200
+E   assert 422 == 200
+E    +  where 422 = <Response [422]>.status_code
+______________ TestAPIIntegration.test_13_instructor_courses_flow ______________
+integration/test_api_integration.py:267: in test_13_instructor_courses_flow
+    instructor_name = self.test_course["instructor"]
+E   KeyError: 'instructor'
+_______________ TestAPIIntegration.test_14_error_handling_flows ________________
+integration/test_api_integration.py:283: in test_14_error_handling_flows
+    assert response.status_code == 404
+E   assert 422 == 404
+E    +  where 422 = <Response [422]>.status_code
+=========================== short test summary info ============================
+FAILED integration/test_api_integration.py::TestAPIIntegration::test_08_course_update_flow
+FAILED integration/test_api_integration.py::TestAPIIntegration::test_09_course_publish_flow
+FAILED integration/test_api_integration.py::TestAPIIntegration::test_10_student_enrollment_flow
+FAILED integration/test_api_integration.py::TestAPIIntegration::test_11_bulk_enrollment_flow
+FAILED integration/test_api_integration.py::TestAPIIntegration::test_12_course_statistics_flow
+FAILED integration/test_api_integration.py::TestAPIIntegration::test_13_instructor_courses_flow
+FAILED integration/test_api_integration.py::TestAPIIntegration::test_14_error_handling_flows
+=================== 7 failed, 13 passed, 1 skipped in 0.69s ====================
+[1;33m[WARNING][0m Integration tests failed (services may not be running)
+[0;34m[INFO][0m Running registration flow integration test...
+✅ All registration flow tests passed!
+[0;32m[SUCCESS][0m Registration flow test passed
+[0;34m[INFO][0m Running E2E tests...
+
+> course-creator@1.0.0 test:e2e
+> playwright test
+
+🚀 Starting global setup for E2E tests...
+Error: browserType.launch: Executable doesn't exist at /home/bbrelin/.cache/ms-playwright/chromium_headless_shell-1179/chrome-linux/headless_shell
+╔═════════════════════════════════════════════════════════════════════════╗
+║ Looks like Playwright Test or Playwright was just installed or updated. ║
+║ Please run the following command to download new browsers:              ║
+║                                                                         ║
+║     npx playwright install                                              ║
+║                                                                         ║
+║ <3 Playwright Team                                                      ║
+╚═════════════════════════════════════════════════════════════════════════╝
+
+   at global-setup.js:12
+
+  10 |   
+  11 |   // Check if services are running
+> 12 |   const browser = await chromium.launch();
+     |                                  ^
+  13 |   const context = await browser.newContext();
+  14 |   const page = await context.newPage();
+  15 |   
+    at globalSetup (/home/bbrelin/course-creator/tests/e2e/global-setup.js:12:34)
+
+🧹 Starting global teardown for E2E tests...
+Error: browserType.launch: Executable doesn't exist at /home/bbrelin/.cache/ms-playwright/chromium_headless_shell-1179/chrome-linux/headless_shell
+╔═════════════════════════════════════════════════════════════════════════╗
+║ Looks like Playwright Test or Playwright was just installed or updated. ║
+║ Please run the following command to download new browsers:              ║
+║                                                                         ║
+║     npx playwright install                                              ║
+║                                                                         ║
+║ <3 Playwright Team                                                      ║
+╚═════════════════════════════════════════════════════════════════════════╝
+
+   at global-teardown.js:11
+
+   9 |   console.log('🧹 Starting global teardown for E2E tests...');
+  10 |   
+> 11 |   const browser = await chromium.launch();
+     |                                  ^
+  12 |   const context = await browser.newContext();
+  13 |   const page = await context.newPage();
+  14 |   
+    at globalTeardown (/home/bbrelin/course-creator/tests/e2e/global-teardown.js:11:34)
+
+[31mConfiguration Error: HTML reporter output folder clashes with the tests output folder:[39m
+
+    html reporter folder: [1m/home/bbrelin/course-creator/test-reports/playwright[22m
+    test results folder: [1m/home/bbrelin/course-creator/test-reports/playwright/test-results[22m
+
+HTML reporter will clear its output directory prior to being generated, which will lead to the artifact loss.
+
+[1A[2K
+To open last HTML report run:
+[36m[39m
+[36m  npx playwright show-report test-reports/playwright[39m
+[36m[39m
+[1;33m[WARNING][0m E2E tests failed (services may not be running)
+[0;34m[INFO][0m Running test coverage analysis...
+
+> course-creator@1.0.0 test:coverage
+> jest --coverage
+
+PASS tests/unit/frontend/test_auth_fixed.test.js
+PASS tests/unit/frontend/auth-working.test.js
+PASS tests/unit/frontend/basic.test.js
+-------------------------|---------|----------|---------|---------|-------------------
+File                     | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------------|---------|----------|---------|---------|-------------------
+All files                |       0 |        0 |       0 |       0 |                   
+ admin.js                |       0 |        0 |       0 |       0 | 1-276             
+ instructor-dashboard.js |       0 |        0 |       0 |       0 | 3-495             
+ main.js                 |       0 |        0 |       0 |       0 | 1-754             
+ student-dashboard.js    |       0 |        0 |       0 |       0 | 3-538             
+-------------------------|---------|----------|---------|---------|-------------------
+Jest: "global" coverage threshold for statements (80%) not met: 0%
+Jest: "global" coverage threshold for branches (70%) not met: 0%
+Jest: "global" coverage threshold for lines (80%) not met: 0%
+Jest: "global" coverage threshold for functions (80%) not met: 0%
+
+Test Suites: 3 passed, 3 total
+Tests:       23 passed, 23 total
+Snapshots:   0 total
+Time:        0.787 s, estimated 1 s
+Ran all test suites.
+[1;33m[WARNING][0m Coverage analysis failed
+[0;32m[SUCCESS][0m Test suite completed!
+[0;34m[INFO][0m Cleaning up test processes...

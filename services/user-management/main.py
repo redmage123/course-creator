@@ -26,11 +26,14 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    username: Optional[str] = None
 
 class User(UserBase):
-    id: int
+    id: str
+    username: str
     is_active: bool
-    roles: List[str] = []
+    role: str = "student"  # student, instructor, admin
+    roles: List[str] = []  # For backward compatibility
 
 class Token(BaseModel):
     access_token: str
@@ -40,6 +43,15 @@ class Role(BaseModel):
     id: int
     name: str
     description: Optional[str] = None
+
+class UserUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+    full_name: Optional[str] = None
+    is_active: Optional[bool] = None
+    role: Optional[str] = None
+
+class AdminUserCreate(UserCreate):
+    role: str = "student"
 
 @hydra.main(config_path="conf", config_name="config", version_base=None)
 def main(cfg: DictConfig) -> None:
@@ -115,7 +127,30 @@ def main(cfg: DictConfig) -> None:
         user = await database.fetch_one(query)
         if user is None:
             raise credentials_exception
-        return User(**user)
+        
+        # Convert UUID to string for Pydantic model
+        user_data = dict(user)
+        user_data['id'] = str(user_data['id'])
+        user_data['roles'] = [user_data.get('role', 'student')]  # Convert role to roles list
+        
+        return User(**user_data)
+    
+    # Role checking functions
+    async def require_admin(current_user: User = Depends(get_current_user)):
+        if current_user.role != "admin":
+            raise HTTPException(
+                status_code=403,
+                detail="Admin privileges required"
+            )
+        return current_user
+
+    async def require_instructor_or_admin(current_user: User = Depends(get_current_user)):
+        if current_user.role not in ["instructor", "admin"]:
+            raise HTTPException(
+                status_code=403,
+                detail="Instructor or Admin privileges required"
+            )
+        return current_user
     
     # Startup/shutdown events
     @app.on_event("startup")
@@ -177,8 +212,17 @@ def main(cfg: DictConfig) -> None:
 
         hashed_password = pwd_context.hash(user.password)
         
-        # Create username from email if not provided
-        username = user.email.split('@')[0]
+        # Use provided username or create from email
+        username = user.username or user.email.split('@')[0]
+        
+        # Check if username already exists
+        existing_username_query = users_table.select().where(users_table.c.username == username)
+        existing_username = await database.fetch_one(existing_username_query)
+        if existing_username:
+            raise HTTPException(
+                status_code=400,
+                detail="Username already taken"
+            )
         
         # Insert new user
         insert_query = users_table.insert().values(
@@ -188,7 +232,7 @@ def main(cfg: DictConfig) -> None:
             hashed_password=hashed_password,
             is_active=True,
             is_verified=False,
-            role='student'
+            role='instructor'
         )
         
         try:
@@ -196,7 +240,13 @@ def main(cfg: DictConfig) -> None:
             # Get the created user
             new_user_query = users_table.select().where(users_table.c.email == user.email)
             new_user = await database.fetch_one(new_user_query)
-            return User(**new_user)
+            
+            # Convert UUID to string for Pydantic model
+            user_data = dict(new_user)
+            user_data['id'] = str(user_data['id'])
+            user_data['roles'] = [user_data.get('role', 'student')]  # Convert role to roles list
+            
+            return User(**user_data)
         except Exception as e:
             logger.error(f"Registration error: {e}")
             raise HTTPException(status_code=400, detail="Registration failed")
@@ -208,7 +258,159 @@ def main(cfg: DictConfig) -> None:
     
     @app.get("/roles")
     async def get_roles():
-        return [{"id": 1, "name": "admin", "description": "Administrator"}]
+        return [
+            {"id": 1, "name": "admin", "description": "Administrator"},
+            {"id": 2, "name": "instructor", "description": "Course Instructor"},
+            {"id": 3, "name": "student", "description": "Student"}
+        ]
+
+    # Admin endpoints
+    @app.get("/admin/users", response_model=List[User])
+    async def admin_get_all_users(admin_user: User = Depends(require_admin)):
+        logger.info(f"Admin {admin_user.id} requesting all users")
+        
+        query = users_table.select()
+        users = await database.fetch_all(query)
+        
+        user_list = []
+        for user in users:
+            user_data = dict(user)
+            user_data['id'] = str(user_data['id'])
+            user_data['roles'] = [user_data.get('role', 'student')]
+            user_list.append(User(**user_data))
+        
+        return user_list
+
+    @app.post("/admin/users", response_model=User)
+    async def admin_create_user(user: AdminUserCreate, admin_user: User = Depends(require_admin)):
+        logger.info(f"Admin {admin_user.id} creating user: {user.email}")
+        
+        # Check if user exists
+        existing_query = users_table.select().where(users_table.c.email == user.email)
+        existing_user = await database.fetch_one(existing_query)
+        if existing_user:
+            raise HTTPException(
+                status_code=400,
+                detail="Email already registered"
+            )
+
+        hashed_password = pwd_context.hash(user.password)
+        username = user.email.split('@')[0]
+        
+        # Insert new user with specified role
+        insert_query = users_table.insert().values(
+            email=user.email,
+            username=username,
+            full_name=user.full_name or "",
+            hashed_password=hashed_password,
+            is_active=True,
+            is_verified=True,  # Admin-created users are pre-verified
+            role=user.role
+        )
+        
+        try:
+            result = await database.execute(insert_query)
+            new_user_query = users_table.select().where(users_table.c.email == user.email)
+            new_user = await database.fetch_one(new_user_query)
+            
+            user_data = dict(new_user)
+            user_data['id'] = str(user_data['id'])
+            user_data['roles'] = [user_data.get('role', 'student')]
+            
+            return User(**user_data)
+        except Exception as e:
+            logger.error(f"Admin user creation error: {e}")
+            raise HTTPException(status_code=400, detail="User creation failed")
+
+    @app.put("/admin/users/{user_id}", response_model=User)
+    async def admin_update_user(user_id: str, user_update: UserUpdate, admin_user: User = Depends(require_admin)):
+        logger.info(f"Admin {admin_user.id} updating user: {user_id}")
+        
+        # Check if user exists
+        query = users_table.select().where(users_table.c.id == user_id)
+        existing_user = await database.fetch_one(query)
+        if not existing_user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Build update data
+        update_data = {}
+        if user_update.email is not None:
+            update_data['email'] = user_update.email
+        if user_update.full_name is not None:
+            update_data['full_name'] = user_update.full_name
+        if user_update.is_active is not None:
+            update_data['is_active'] = user_update.is_active
+        if user_update.role is not None:
+            update_data['role'] = user_update.role
+        
+        if update_data:
+            update_query = users_table.update().where(users_table.c.id == user_id).values(**update_data)
+            await database.execute(update_query)
+        
+        # Get updated user
+        updated_user = await database.fetch_one(users_table.select().where(users_table.c.id == user_id))
+        
+        user_data = dict(updated_user)
+        user_data['id'] = str(user_data['id'])
+        user_data['roles'] = [user_data.get('role', 'student')]
+        
+        return User(**user_data)
+
+    @app.delete("/admin/users/{user_id}")
+    async def admin_delete_user(user_id: str, admin_user: User = Depends(require_admin)):
+        logger.info(f"Admin {admin_user.id} deleting user: {user_id}")
+        
+        # Check if user exists
+        query = users_table.select().where(users_table.c.id == user_id)
+        existing_user = await database.fetch_one(query)
+        if not existing_user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Don't allow admin to delete themselves
+        if user_id == admin_user.id:
+            raise HTTPException(status_code=400, detail="Cannot delete your own account")
+        
+        # Delete user
+        delete_query = users_table.delete().where(users_table.c.id == user_id)
+        await database.execute(delete_query)
+        
+        return {"message": "User deleted successfully"}
+
+    @app.get("/admin/users/{user_id}", response_model=User)
+    async def admin_get_user(user_id: str, admin_user: User = Depends(require_admin)):
+        logger.info(f"Admin {admin_user.id} requesting user: {user_id}")
+        
+        query = users_table.select().where(users_table.c.id == user_id)
+        user = await database.fetch_one(query)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        user_data = dict(user)
+        user_data['id'] = str(user_data['id'])
+        user_data['roles'] = [user_data.get('role', 'student')]
+        
+        return User(**user_data)
+
+    @app.get("/admin/stats")
+    async def admin_get_stats(admin_user: User = Depends(require_admin)):
+        logger.info(f"Admin {admin_user.id} requesting system stats")
+        
+        # Get user counts by role
+        total_users = await database.fetch_val("SELECT COUNT(*) FROM users")
+        admin_count = await database.fetch_val("SELECT COUNT(*) FROM users WHERE role = 'admin'")
+        instructor_count = await database.fetch_val("SELECT COUNT(*) FROM users WHERE role = 'instructor'")
+        student_count = await database.fetch_val("SELECT COUNT(*) FROM users WHERE role = 'student'")
+        active_users = await database.fetch_val("SELECT COUNT(*) FROM users WHERE is_active = true")
+        
+        return {
+            "total_users": total_users,
+            "active_users": active_users,
+            "users_by_role": {
+                "admin": admin_count,
+                "instructor": instructor_count,
+                "student": student_count
+            }
+        }
     
     # Error handling
     @app.exception_handler(Exception)

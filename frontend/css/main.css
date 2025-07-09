@@ -5,13 +5,552 @@ body {
     background-color: #f5f5f5;
 }
 
-header {
-    background-color: #2c3e50;
-    color: white;
+/* Content Management Styles */
+.content-management-section {
+    padding: 1rem;
+}
+
+.course-content-selector {
+    margin-bottom: 2rem;
+}
+
+.course-content-selector label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+.course-content-selector select {
+    width: 100%;
+    max-width: 400px;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.course-content-display {
+    margin-top: 2rem;
+}
+
+.course-content-header {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.course-content-header h4 {
+    margin: 0 0 0.5rem 0;
+    color: #2c3e50;
+}
+
+.course-content-header p {
+    margin: 0;
+    color: #666;
+}
+
+.content-sections {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.content-section {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid #e9ecef;
+}
+
+.content-section h5 {
+    margin: 0 0 1rem 0;
+    color: #2c3e50;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.content-area {
+    min-height: 100px;
+}
+
+.slides-list, .exercises-list, .quizzes-list {
+    margin-bottom: 1rem;
+}
+
+/* Slide Viewer Styles */
+.slides-viewer {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.slides-navigation {
+    background: #f8f9fa;
     padding: 1rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.slide-counter {
+    font-weight: bold;
+    color: #495057;
+}
+
+.slides-container {
+    position: relative;
+    min-height: 300px;
+    background: white;
+}
+
+.slides-container .slide-item {
+    display: none;
+    padding: 2rem;
+    margin-bottom: 0;
+    border: none;
+    background: white;
+}
+
+.slides-container .slide-item.active {
+    display: block;
+}
+
+.slides-container.overview-mode {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.slides-container.overview-mode .slide-item {
+    display: block;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 0;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.slides-container.overview-mode .slide-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.slides-overview {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-top: 1px solid #dee2e6;
+    text-align: center;
+}
+
+.slide-item, .exercise-item, .quiz-item {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.quiz-item {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.quiz-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.quiz-header h6 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 1.1rem;
+}
+
+.quiz-type {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.quiz-description {
+    margin-bottom: 1rem;
+    color: #6c757d;
+}
+
+.quiz-meta {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    align-items: center;
+}
+
+.quiz-questions, .quiz-duration {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.quiz-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.quiz-actions .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+.slide-header, .exercise-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.slide-header h6, .exercise-header h6 {
+    margin: 0;
+    color: #495057;
+    font-size: 0.95rem;
+}
+
+.slide-content, .exercise-description {
+    color: #6c757d;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.exercise-type {
+    background: #e9ecef;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #495057;
+}
+
+.exercise-difficulty {
+    margin-top: 0.5rem;
+}
+
+.difficulty-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.difficulty-beginner {
+    background: #d4edda;
+    color: #155724;
+}
+
+.difficulty-intermediate {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.difficulty-advanced {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.lab-environment {
+    margin-bottom: 1rem;
+}
+
+.lab-header h6 {
+    margin: 0 0 0.5rem 0;
+    color: #495057;
+}
+
+.lab-description, .lab-config {
+    margin-bottom: 1rem;
+}
+
+.lab-config h7 {
+    font-weight: bold;
+    color: #495057;
+    font-size: 0.9rem;
+}
+
+.lab-exercises ul {
+    padding-left: 1.5rem;
+}
+
+.lab-exercises li {
+    margin-bottom: 0.25rem;
+    color: #6c757d;
+}
+
+.lab-status {
+    margin-top: 1rem;
+}
+
+.status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.status-running {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-stopped {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.status-launching {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+}
+
+.empty-state p {
+    margin-bottom: 1rem;
+}
+
+.content-actions {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.content-actions .btn {
+    flex: 0 0 auto;
+}
+
+.content-actions .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 8px;
+    max-width: 90%;
+    max-height: 90%;
+    overflow: auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.lab-analytics-modal {
+    width: 1000px;
+    max-width: 90vw;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+    background: #f8f9fa;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #6c757d;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-close:hover {
+    color: #dc3545;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e9ecef;
+    background: #f8f9fa;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+/* Analytics Styles */
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.analytics-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1.5rem;
+    border: 1px solid #e9ecef;
+}
+
+.analytics-card h4 {
+    margin: 0 0 1rem 0;
+    color: #2c3e50;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.stat-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.student-progress-list {
+    margin-top: 2rem;
+}
+
+.student-progress-list h4 {
+    margin-bottom: 1rem;
+    color: #2c3e50;
+}
+
+.progress-table {
+    overflow-x: auto;
+}
+
+.progress-table table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.progress-table th,
+.progress-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.progress-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.progress-bar-small {
+    width: 60px;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+    display: inline-block;
+    margin-right: 0.5rem;
+}
+
+.progress-bar-small .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3498db, #2ecc71);
+    transition: width 0.3s;
+}
+
+.lab-features ul {
+    list-style: none;
+    padding: 0;
+}
+
+.lab-features li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.lab-features li:last-child {
+    border-bottom: none;
+}
+
+.error {
+    color: #dc3545;
+    font-style: italic;
+}
+
+header {
+    background-color: #2c3e50;
+    color: white;
+    padding: 1rem;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 nav a {
@@ -42,6 +581,897 @@ button {
 
 button:hover {
     background-color: #2980b9;
+}
+
+/* Dashboard Styles */
+.dashboard-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.dashboard-header h2 {
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.dashboard-tabs {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid #ecf0f1;
+}
+
+.tab-button {
+    background: none;
+    border: none;
+    padding: 1rem 2rem;
+    cursor: pointer;
+    font-size: 1rem;
+    color: #7f8c8d;
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s;
+}
+
+.tab-button.active,
+.tab-button:hover {
+    color: #2c3e50;
+    border-bottom-color: #3498db;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.section-header h3 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+/* Course Grid */
+.courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.course-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.course-card:hover {
+    transform: translateY(-2px);
+}
+
+.course-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.course-header h4 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.course-status {
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.course-status.published {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.course-status.draft {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.course-description {
+    color: #7f8c8d;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
+
+.course-meta {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+.course-category,
+.course-difficulty,
+.course-duration {
+    background-color: #ecf0f1;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    color: #2c3e50;
+}
+
+.course-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.3s;
+}
+
+.btn-primary {
+    background-color: #3498db;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #2980b9;
+}
+
+.btn-secondary {
+    background-color: #95a5a6;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #7f8c8d;
+}
+
+.btn-success {
+    background-color: #27ae60;
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: #229954;
+}
+
+.btn-danger {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #c0392b;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+/* Forms */
+.create-course-form {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #2c3e50;
+    font-weight: bold;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+/* Student Management */
+.student-management-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.course-selector {
+    margin-bottom: 2rem;
+}
+
+.course-selector select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.enrollment-section {
+    margin-bottom: 2rem;
+}
+
+.enrollment-methods {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.single-enrollment,
+.bulk-enrollment {
+    padding: 1.5rem;
+    border: 1px solid #ecf0f1;
+    border-radius: 8px;
+}
+
+.single-enrollment h5,
+.bulk-enrollment h5 {
+    margin-top: 0;
+    color: #2c3e50;
+}
+
+.enrolled-students-section {
+    margin-top: 2rem;
+}
+
+.students-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.students-table th,
+.students-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #ecf0f1;
+}
+
+.students-table th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.status {
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.status.active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status.completed {
+    background-color: #cce5ff;
+    color: #004085;
+}
+
+.status.dropped {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Lab Environment Styles */
+.lab-environments-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+}
+
+.lab-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.lab-card:hover {
+    transform: translateY(-2px);
+}
+
+.lab-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.lab-header h4 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.lab-status {
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.lab-status.active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.lab-status.inactive {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.lab-description {
+    color: #7f8c8d;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
+
+.lab-specs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.spec-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: #7f8c8d;
+}
+
+.lab-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 5% auto;
+    padding: 0;
+    border-radius: 8px;
+    width: 80%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-content.lab-modal {
+    max-width: 1200px;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #ecf0f1;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.close {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: black;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+/* Lab Environment Modal */
+.lab-environment {
+    display: grid;
+    gap: 2rem;
+}
+
+.lab-info,
+.lab-config {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+}
+
+.vm-config {
+    background: white;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.vm-config h5 {
+    margin-top: 0;
+    color: #2c3e50;
+}
+
+.terminal-window {
+    background: #2c3e50;
+    border-radius: 8px;
+    overflow: hidden;
+    font-family: 'Courier New', monospace;
+}
+
+.terminal-header {
+    background: #34495e;
+    padding: 0.5rem 1rem;
+    color: white;
+    font-size: 0.9rem;
+}
+
+.terminal-content {
+    padding: 1rem;
+    color: #2ecc71;
+    min-height: 200px;
+}
+
+.terminal-line {
+    margin-bottom: 0.5rem;
+}
+
+.terminal-prompt {
+    color: #f39c12;
+}
+
+.cursor {
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    50% { opacity: 0; }
+}
+
+/* AI Assistant */
+.ai-chat {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.ai-message,
+.user-message {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+}
+
+.ai-message {
+    background: white;
+    color: #2c3e50;
+}
+
+.user-message {
+    background: #3498db;
+    color: white;
+    margin-left: 2rem;
+}
+
+.ai-input {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.ai-input input {
+    flex: 1;
+    padding: 0.75rem;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+}
+
+.ai-input button {
+    padding: 0.75rem 1rem;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* Exercise Cards */
+.exercise-card {
+    background: white;
+    border: 1px solid #ecf0f1;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.exercise-card h5 {
+    margin-top: 0;
+    color: #2c3e50;
+}
+
+.exercise-instructions,
+.exercise-hints,
+.exercise-expected {
+    margin-bottom: 1rem;
+}
+
+.exercise-instructions h6,
+.exercise-hints h6,
+.exercise-expected h6 {
+    color: #7f8c8d;
+    margin-bottom: 0.5rem;
+}
+
+/* Empty States */
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #7f8c8d;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+    margin-bottom: 0.5rem;
+}
+
+/* Notifications */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 1rem;
+    border-radius: 4px;
+    color: white;
+    font-weight: bold;
+    z-index: 1001;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.notification.success {
+    background-color: #27ae60;
+}
+
+.notification.error {
+    background-color: #e74c3c;
+}
+
+.notification.info {
+    background-color: #3498db;
+}
+
+.notification.warning {
+    background-color: #f39c12;
+}
+
+.notification button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 0.5rem;
+}
+
+/* Auth Buttons Styling */
+.auth-buttons {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.btn-auth {
+    padding: 0.4rem 0.8rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-login {
+    background-color: transparent;
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.btn-login:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.btn-register {
+    background-color: #3498db;
+    color: white;
+    border: 1px solid #3498db;
+}
+
+.btn-register:hover {
+    background-color: #2980b9;
+    border-color: #2980b9;
+}
+
+/* Account Section Updates */
+.account-section {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+.nav-links {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.nav-links a {
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    transition: background-color 0.3s;
+    font-size: 0.95rem;
+}
+
+.nav-links a:hover,
+.nav-links a.active {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.logo h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.logo i {
+    margin-right: 0.5rem;
+    color: #3498db;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+/* Account Dropdown Styling */
+.account-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.account-trigger {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    transition: background-color 0.3s;
+    position: relative;
+    border: none;
+    background: none;
+    color: inherit;
+    font: inherit;
+}
+
+.account-trigger:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.account-trigger:focus {
+    outline: none;
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.8rem;
+    color: white;
+}
+
+.user-avatar.admin-avatar {
+    background: linear-gradient(45deg, #e74c3c, #c0392b);
+}
+
+.user-avatar.instructor-avatar {
+    background: linear-gradient(45deg, #f39c12, #e67e22);
+}
+
+.user-avatar.student-avatar {
+    background: linear-gradient(45deg, #3498db, #2980b9);
+}
+
+.avatar-initials {
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.user-name {
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.account-trigger i {
+    color: white;
+    font-size: 0.7rem;
+}
+
+.account-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    min-width: 200px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    padding: 0.5rem 0;
+    z-index: 1000;
+    display: none;
+    margin-top: 5px;
+    border: 1px solid #e0e0e0;
+}
+
+.account-menu.show {
+    display: block !important;
+    visibility: visible !important;
+}
+
+.account-menu a {
+    display: block;
+    padding: 0.75rem 1rem;
+    color: #2c3e50;
+    text-decoration: none;
+    transition: background-color 0.3s;
+    font-size: 0.9rem;
+}
+
+.account-menu a:hover {
+    background-color: #f8f9fa;
+}
+
+.account-menu hr {
+    margin: 0.5rem 0;
+    border: none;
+    border-top: 1px solid #ecf0f1;
+}
+
+.account-menu i {
+    margin-right: 0.5rem;
+    width: 16px;
+    text-align: center;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .dashboard-tabs {
+        flex-direction: column;
+    }
+    
+    .courses-grid,
+    .lab-environments-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .enrollment-methods {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal-content {
+        width: 95%;
+        margin: 2% auto;
+    }
+    
+    .header-content {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+    
+    .nav-links {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .auth-buttons {
+        justify-content: center;
+    }
 }
 
 .course-card {
@@ -90,4 +1520,495 @@ button[type="button"] {
 
 button[type="button"]:hover {
     background-color: #7f8c8d;
+}
+
+/* Password visibility toggle styling */
+.password-container {
+    position: relative;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: #666;
+    padding: 0;
+    width: 25px;
+    height: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.password-toggle:hover {
+    color: #333;
+    background-color: rgba(0,0,0,0.1);
+    border-radius: 50%;
+}
+
+/* Input field adjustments for password toggle */
+input[type="password"] + .password-toggle,
+input[type="text"] + .password-toggle {
+    right: 5px;
+}
+
+/* Dashboard and Auth Actions */
+.dashboard-actions, .auth-actions {
+    text-align: center;
+    margin-top: 2rem;
+}
+
+.dashboard-actions a, .auth-actions button {
+    display: inline-block;
+    padding: 12px 24px;
+    margin: 0 10px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.dashboard-actions a {
+    background-color: #3498db;
+    color: white;
+    border: 2px solid #3498db;
+}
+
+.dashboard-actions a:hover {
+    background-color: #2980b9;
+    border-color: #2980b9;
+    transform: translateY(-2px);
+}
+
+.auth-actions button {
+    border: 2px solid transparent;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.auth-actions .btn-primary {
+    background-color: #3498db;
+    color: white;
+    border-color: #3498db;
+}
+
+.auth-actions .btn-primary:hover {
+    background-color: #2980b9;
+    border-color: #2980b9;
+}
+
+.auth-actions .btn-secondary {
+    background-color: transparent;
+    color: #3498db;
+    border-color: #3498db;
+}
+
+.auth-actions .btn-secondary:hover {
+    background-color: #3498db;
+    color: white;
+}
+
+/* Password match indicator styling */
+.password-match-indicator {
+    margin-top: 5px;
+    font-size: 0.9em;
+    font-weight: bold;
+    padding: 5px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.password-match-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.password-match-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Form field spacing improvements */
+form div {
+    margin-bottom: 1.5rem;
+}
+
+/* Input focus styling */
+input[type="text"]:focus, 
+input[type="email"]:focus, 
+input[type="password"]:focus, 
+textarea:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+/* Button spacing */
+button + button {
+    margin-left: 10px;
+}
+
+/* Password strength indicator */
+.password-strength {
+    margin-top: 5px;
+    font-size: 0.8em;
+    color: #666;
+}
+
+/* Responsive form adjustments */
+@media (max-width: 768px) {
+    form {
+        max-width: 90%;
+        padding: 1rem;
+    }
+    
+    input[type="text"], 
+    input[type="email"], 
+    input[type="password"], 
+    textarea {
+        font-size: 16px; /* Prevents zoom on mobile */
+    }
+}
+
+/* Account Section Styling */
+.account-section {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+/* Auth Buttons (when not logged in) */
+.auth-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.auth-btn {
+    padding: 8px 16px;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+}
+
+.login-btn {
+    color: white;
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.login-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.register-btn {
+    background-color: #3498db;
+    color: white;
+}
+
+.register-btn:hover {
+    background-color: #2980b9;
+}
+
+/* Account Dropdown (when logged in) */
+.account-dropdown {
+    position: relative;
+}
+
+.account-trigger {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 20px;
+    transition: background-color 0.3s ease;
+}
+
+.account-trigger:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.account-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #3498db, #2980b9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+    color: white;
+    margin-right: 8px;
+}
+
+.dropdown-arrow {
+    font-size: 10px;
+    color: #bdc3c7;
+    transition: transform 0.3s ease;
+}
+
+.account-dropdown.open .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.account-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 220px;
+    overflow: hidden;
+    z-index: 1000;
+    opacity: 0;
+    transform: translateY(-10px);
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.account-dropdown.open .account-menu {
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
+}
+
+.account-info {
+    padding: 16px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.account-name {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 4px;
+}
+
+.account-email {
+    font-size: 0.9em;
+    color: #7f8c8d;
+}
+
+.account-menu hr {
+    margin: 0;
+    border: none;
+    height: 1px;
+    background-color: #e9ecef;
+}
+
+.account-menu a {
+    display: block;
+    padding: 12px 16px;
+    color: #2c3e50;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+}
+
+.account-menu a:hover {
+    background-color: #f8f9fa;
+}
+
+.account-menu a:last-child {
+    color: #e74c3c;
+}
+
+.account-menu a:last-child:hover {
+    background-color: #fdedec;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    nav {
+        order: 2;
+    }
+    
+    .account-section {
+        order: 1;
+    }
+    
+    .account-menu {
+        right: -10px;
+        min-width: 200px;
+    }
+}
+
+/* Edit Course Modal */
+.edit-course-modal {
+    width: 600px;
+    max-width: 90vw;
+}
+
+.edit-course-modal .form-group {
+    margin-bottom: 1rem;
+}
+
+.edit-course-modal label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.edit-course-modal input,
+.edit-course-modal select,
+.edit-course-modal textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+.edit-course-modal textarea {
+    resize: vertical;
+    font-family: inherit;
+}
+
+.edit-course-modal input:focus,
+.edit-course-modal select:focus,
+.edit-course-modal textarea:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+}
+
+.course-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.course-actions .btn {
+    flex: 0 0 auto;
+}
+
+
+/* Edit Course Tabs */
+.edit-tabs {
+    display: flex;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    padding: 10px 20px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    font-weight: 500;
+}
+
+.tab-btn.active {
+    border-bottom-color: #3498db;
+    color: #3498db;
+}
+
+.edit-tab-content {
+    display: none;
+}
+
+.edit-tab-content.active {
+    display: block;
+}
+
+/* Slides Editor */
+.slides-editor {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.slides-actions {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.slides-list-editor {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.slide-editor-item {
+    border-bottom: 1px solid #eee;
+    padding: 15px;
+}
+
+.slide-editor-item:last-child {
+    border-bottom: none;
+}
+
+.slide-editor-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.slide-number {
+    background: #3498db;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    min-width: 30px;
+    text-align: center;
+}
+
+.slide-title {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.slide-controls {
+    display: flex;
+    gap: 5px;
+}
+
+.btn-small {
+    padding: 4px 8px;
+    border: 1px solid #ddd;
+    background: white;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8em;
+}
+
+.btn-small:hover {
+    background: #f8f9fa;
+}
+
+.btn-small.btn-danger {
+    background: #dc3545;
+    color: white;
+    border-color: #dc3545;
+}
+
+.slide-content {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    resize: vertical;
+    font-family: inherit;
 }

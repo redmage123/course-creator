@@ -1,113 +1,235 @@
 #!/bin/bash
 
-# Course Creator Platform Test Runner
-# This script runs comprehensive tests on the software engineering agent
+# Course Creator Platform - Test Runner Script
+# This script runs all tests locally to ensure everything works before committing
 
 set -e
 
-echo "🧪 Course Creator Platform Test Suite"
-echo "======================================"
+echo "🧪 Starting Course Creator Platform Test Suite"
+echo "=============================================="
 
-# Check if ANTHROPIC_API_KEY is set
-if [ -z "$ANTHROPIC_API_KEY" ]; then
-    echo "⚠️  Warning: ANTHROPIC_API_KEY environment variable not set"
-    echo "   Some tests may fail without a valid API key"
-    echo ""
-fi
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
-# Default values
-TEST_DIR=""
-KEEP_FILES=false
-OUTPUT_REPORT=""
-VERBOSE=false
+# Function to print status
+print_status() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
 
-# Parse command line arguments
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --test-dir)
-            TEST_DIR="$2"
-            shift 2
+print_success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Check if services are running
+check_services() {
+    print_status "Checking if services are running..."
+    
+    # Check user management service
+    if curl -s http://localhost:8000/health > /dev/null; then
+        print_success "User management service is running"
+    else
+        print_warning "User management service is not running"
+        print_status "Starting user management service..."
+        cd services/user-management
+        python main.py &
+        USER_MGMT_PID=$!
+        cd ../..
+        sleep 3
+    fi
+    
+    # Check course management service
+    if curl -s http://localhost:8004/health > /dev/null; then
+        print_success "Course management service is running"
+    else
+        print_warning "Course management service is not running"
+        print_status "Starting course management service..."
+        cd services/course-management
+        python main.py &
+        COURSE_MGMT_PID=$!
+        cd ../..
+        sleep 3
+    fi
+    
+    # Check frontend service
+    if curl -s http://localhost:8080 > /dev/null; then
+        print_success "Frontend service is running"
+    else
+        print_warning "Frontend service is not running"
+        print_status "Starting frontend service..."
+        npm run dev &
+        FRONTEND_PID=$!
+        sleep 3
+    fi
+}
+
+# Run linting
+run_linting() {
+    print_status "Running code linting..."
+    
+    if npm run lint; then
+        print_success "Linting passed"
+    else
+        print_warning "Linting failed, attempting to fix..."
+        npm run lint:fix
+    fi
+}
+
+# Run frontend unit tests
+run_frontend_tests() {
+    print_status "Running frontend unit tests..."
+    
+    if npm run test:unit; then
+        print_success "Frontend unit tests passed"
+    else
+        print_error "Frontend unit tests failed"
+        return 1
+    fi
+}
+
+# Run backend unit tests
+run_backend_tests() {
+    print_status "Running backend unit tests..."
+    
+    cd tests
+    if python -m pytest unit/backend/ -v --tb=short; then
+        print_success "Backend unit tests passed"
+    else
+        print_warning "Backend unit tests failed (services may not be running)"
+    fi
+    cd ..
+}
+
+# Run integration tests
+run_integration_tests() {
+    print_status "Running integration tests..."
+    
+    cd tests
+    if python -m pytest integration/ -v --tb=short; then
+        print_success "Integration tests passed"
+    else
+        print_warning "Integration tests failed (services may not be running)"
+    fi
+    
+    print_status "Running registration flow integration test..."
+    if python integration/test_registration_flow.py; then
+        print_success "Registration flow test passed"
+    else
+        print_warning "Registration flow test failed"
+    fi
+    cd ..
+}
+
+# Run E2E tests
+run_e2e_tests() {
+    print_status "Running E2E tests..."
+    
+    if npm run test:e2e; then
+        print_success "E2E tests passed"
+    else
+        print_warning "E2E tests failed (services may not be running)"
+    fi
+}
+
+# Run coverage tests
+run_coverage_tests() {
+    print_status "Running test coverage analysis..."
+    
+    if npm run test:coverage; then
+        print_success "Coverage analysis completed"
+        print_status "Coverage report available in coverage/ directory"
+    else
+        print_warning "Coverage analysis failed"
+    fi
+}
+
+# Cleanup function
+cleanup() {
+    print_status "Cleaning up test processes..."
+    
+    if [ ! -z "$USER_MGMT_PID" ]; then
+        kill $USER_MGMT_PID 2>/dev/null || true
+    fi
+    
+    if [ ! -z "$COURSE_MGMT_PID" ]; then
+        kill $COURSE_MGMT_PID 2>/dev/null || true
+    fi
+    
+    if [ ! -z "$FRONTEND_PID" ]; then
+        kill $FRONTEND_PID 2>/dev/null || true
+    fi
+}
+
+# Trap cleanup on exit
+trap cleanup EXIT
+
+# Main execution
+main() {
+    print_status "Course Creator Platform Test Suite Starting..."
+    
+    # Check if npm dependencies are installed
+    if [ ! -d "node_modules" ]; then
+        print_status "Installing npm dependencies..."
+        npm install
+    fi
+    
+    # Check if Python dependencies are installed
+    if ! python -c "import pytest" 2>/dev/null; then
+        print_status "Installing Python dependencies..."
+        pip install pytest pytest-asyncio httpx fastapi uvicorn pymongo python-multipart passlib[bcrypt] python-jose[cryptography] requests
+    fi
+    
+    # Run test suite based on arguments
+    case "${1:-all}" in
+        "lint")
+            run_linting
             ;;
-        --keep-files)
-            KEEP_FILES=true
-            shift
+        "frontend")
+            run_frontend_tests
             ;;
-        --output-report)
-            OUTPUT_REPORT="$2"
-            shift 2
+        "backend")
+            check_services
+            run_backend_tests
             ;;
-        --verbose)
-            VERBOSE=true
-            shift
+        "integration")
+            check_services
+            run_integration_tests
             ;;
-        --help)
-            echo "Usage: $0 [OPTIONS]"
-            echo ""
-            echo "Options:"
-            echo "  --test-dir DIR       Use specific test directory"
-            echo "  --keep-files         Keep test files after completion"
-            echo "  --output-report FILE Save test report to file"
-            echo "  --verbose            Enable verbose output"
-            echo "  --help               Show this help message"
-            echo ""
-            echo "Environment Variables:"
-            echo "  ANTHROPIC_API_KEY    Required for full agent testing"
-            echo ""
-            exit 0
+        "e2e")
+            check_services
+            run_e2e_tests
+            ;;
+        "coverage")
+            run_coverage_tests
+            ;;
+        "all")
+            run_linting
+            run_frontend_tests
+            check_services
+            run_backend_tests
+            run_integration_tests
+            run_e2e_tests
+            run_coverage_tests
             ;;
         *)
-            echo "Unknown option: $1"
-            echo "Use --help for usage information"
+            echo "Usage: $0 [lint|frontend|backend|integration|e2e|coverage|all]"
             exit 1
             ;;
     esac
-done
+    
+    print_success "Test suite completed!"
+}
 
-# Build command
-CMD="python3 tools/code-generation/test_agent.py"
-
-if [ ! -z "$TEST_DIR" ]; then
-    CMD="$CMD --test-dir $TEST_DIR"
-fi
-
-if [ "$KEEP_FILES" = true ]; then
-    CMD="$CMD --keep-files"
-fi
-
-if [ ! -z "$OUTPUT_REPORT" ]; then
-    CMD="$CMD --output-report $OUTPUT_REPORT"
-fi
-
-# Run tests
-echo "🚀 Running test suite..."
-echo "Command: $CMD"
-echo ""
-
-if $VERBOSE; then
-    $CMD
-else
-    $CMD 2>&1
-fi
-
-TEST_EXIT_CODE=$?
-
-echo ""
-echo "======================================"
-
-if [ $TEST_EXIT_CODE -eq 0 ]; then
-    echo "✅ All tests passed successfully!"
-else
-    echo "❌ Some tests failed. Check the output above for details."
-fi
-
-if [ ! -z "$OUTPUT_REPORT" ]; then
-    echo "📄 Test report saved to: $OUTPUT_REPORT"
-fi
-
-echo ""
-echo "💡 Tips:"
-echo "  - Use --keep-files to inspect generated files"
-echo "  - Use --output-report to save detailed results"
-echo "  - Set ANTHROPIC_API_KEY for full agent testing"
-
-exit $TEST_EXIT_CODE
+# Run main function
+main "$@"

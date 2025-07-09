@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - Course Creator</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <h1><i class="fas fa-graduation-cap"></i> Course Creator</h1>
+                </div>
+                <nav class="nav-links">
+                    <a href="index.html">Home</a>
+                    <a href="student-dashboard.html" class="active">My Courses</a>
+                    <a href="#" onclick="logout()">Logout</a>
+                </nav>
+                <div class="account-section">
+                    <div class="account-dropdown">
+                        <div class="account-trigger" onclick="toggleAccountDropdown()">
+                            <div class="user-avatar student-avatar">
+                                <span class="avatar-initials">ST</span>
+                            </div>
+                            <span class="user-name">Student</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="account-menu" id="accountMenu">
+                            <a href="profile.html"><i class="fas fa-user"></i> Profile</a>
+                            <a href="settings.html"><i class="fas fa-cog"></i> Settings</a>
+                            <a href="help.html"><i class="fas fa-question-circle"></i> Help</a>
+                            <hr>
+                            <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <div class="dashboard-header">
+                <h2><i class="fas fa-book-open"></i> My Courses</h2>
+                <p>Access your enrolled courses and lab environments</p>
+            </div>
+
+            <div class="dashboard-tabs">
+                <button class="tab-button active" onclick="showTab('enrolled-courses')">
+                    <i class="fas fa-book"></i> Enrolled Courses
+                </button>
+                <button class="tab-button" onclick="showTab('lab-environments')">
+                    <i class="fas fa-flask"></i> Lab Environments
+                </button>
+            </div>
+
+            <!-- Enrolled Courses Tab -->
+            <div id="enrolled-courses-tab" class="tab-content active">
+                <div class="section-header">
+                    <h3>Your Enrolled Courses</h3>
+                </div>
+                <div id="enrolled-courses-list" class="courses-grid">
+                    <!-- Enrolled courses will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Lab Environments Tab -->
+            <div id="lab-environments-tab" class="tab-content">
+                <div class="section-header">
+                    <h3>Interactive Lab Environments</h3>
+                    <p>Access hands-on lab environments for your courses</p>
+                </div>
+                <div id="lab-environments-list" class="lab-environments-grid">
+                    <!-- Lab environments will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Course Detail Modal -->
+    <div id="courseModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalCourseTitle">Course Details</h3>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="modalCourseContent">
+                    <!-- Course content will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lab Environment Modal -->
+    <div id="labModal" class="modal">
+        <div class="modal-content lab-modal">
+            <div class="modal-header">
+                <h3 id="modalLabTitle">Lab Environment</h3>
+                <span class="close" onclick="closeLabModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="modalLabContent">
+                    <!-- Lab content will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+    <script src="js/student-dashboard.js"></script>
+</body>
+</html>

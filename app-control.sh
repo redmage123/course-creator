@@ -158,6 +158,9 @@ setup_database() {
     # Wait a bit more for PostgreSQL to be ready
     sleep 2
     
+    # Set postgres password from environment
+    export PGPASSWORD="$POSTGRES_PASSWORD"
+    
     # Create user and database
     psql -h "$DB_HOST" -p "$DB_PORT" -d postgres -U postgres -c "
         DO \$\$
@@ -301,6 +304,12 @@ start_service() {
     
     # Start the service
     cd "$service_dir"
+    
+    # Export environment variables for the service
+    export DB_PASSWORD="$DB_PASSWORD"
+    export POSTGRES_PASSWORD="$POSTGRES_PASSWORD"
+    export JWT_SECRET_KEY="$JWT_SECRET_KEY"
+    export ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY"
     
     if [ -f "main.py" ]; then
         python main.py > "$log_file" 2>&1 &

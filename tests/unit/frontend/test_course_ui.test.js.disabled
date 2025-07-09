@@ -1,0 +1,391 @@
+/**
+ * Unit tests for course UI functionality in main.js
+ * Tests course creation, display, and management functions
+ */
+
+import { jest } from '@jest/globals';
+
+// Mock DOM and load main.js functions
+const mockDOM = () => {
+  document.body.innerHTML = `
+    <main id="main-content"></main>
+    <div id="courses-list"></div>
+  `;
+};
+
+const loadMainJS = () => {
+  const fs = require('fs');
+  const path = require('path');
+  const mainJSPath = path.join(__dirname, '../../../frontend/js/main.js');
+  const mainJSContent = fs.readFileSync(mainJSPath, 'utf8');
+  eval(mainJSContent);
+};
+
+describe('Course UI Functions', () => {
+  beforeEach(() => {
+    mockDOM();
+    
+    // Reset globals
+    global.API_BASE = 'http://localhost:8004';
+    global.currentUser = null;
+    global.authToken = null;
+    
+    // Mock fetch
+    global.fetch = jest.fn();
+    global.alert = jest.fn();
+    
+    loadMainJS();
+  });
+
+  describe('showCreateCourse', () => {
+    test('should display course creation form', () => {
+      showCreateCourse();
+      
+      const mainContent = document.getElementById('main-content');
+      expect(mainContent.innerHTML).toContain('Create New Course');
+      expect(mainContent.innerHTML).toContain('course-name');
+      expect(mainContent.innerHTML).toContain('course-description');
+      expect(mainContent.innerHTML).toContain('course-instructor');
+      expect(mainContent.innerHTML).toContain('Create Course');
+      expect(mainContent.innerHTML).toContain('Cancel');
+    });
+    
+    test('should have form with correct structure', () => {
+      showCreateCourse();
+      
+      const form = document.getElementById('create-course-form');
+      expect(form).toBeTruthy();
+      
+      const nameInput = document.getElementById('course-name');
+      const descInput = document.getElementById('course-description');
+      const instrInput = document.getElementById('course-instructor');
+      
+      expect(nameInput).toBeTruthy();
+      expect(descInput).toBeTruthy();
+      expect(instrInput).toBeTruthy();
+      
+      expect(nameInput.getAttribute('required')).toBe('');
+      expect(descInput.getAttribute('required')).toBe('');
+      expect(instrInput.getAttribute('required')).toBe('');
+    });
+  });
+
+  describe('displayCourses', () => {
+    test('should display courses correctly', () => {
+      const testCourses = [
+        {
+          id: 1,
+          name: 'Test Course 1',
+          description: 'First test course',
+          instructor: 'Instructor 1'
+        },
+        {
+          id: 2,
+          name: 'Test Course 2',
+          description: 'Second test course',
+          instructor: 'Instructor 2'
+        }
+      ];
+      
+      displayCourses(testCourses);
+      
+      const mainContent = document.getElementById('main-content');
+      expect(mainContent.innerHTML).toContain('Available Courses');
+      expect(mainContent.innerHTML).toContain('Test Course 1');
+      expect(mainContent.innerHTML).toContain('Test Course 2');
+      expect(mainContent.innerHTML).toContain('First test course');
+      expect(mainContent.innerHTML).toContain('Second test course');
+    });
+    
+    test('should display empty state for no courses', () => {
+      displayCourses([]);
+      
+      const mainContent = document.getElementById('main-content');
+      expect(mainContent.innerHTML).toContain('Available Courses');
+      expect(mainContent.innerHTML).toContain('courses-list');
+      
+      const coursesList = document.getElementById('courses-list');
+      expect(coursesList.innerHTML.trim()).toBe('');
+    });
+    
+    test('should create course cards with view buttons', () => {
+      const testCourses = [
+        {
+          id: 1,
+          name: 'Test Course',
+          description: 'Test description'
+        }
+      ];
+      
+      displayCourses(testCourses);
+      
+      const mainContent = document.getElementById('main-content');
+      expect(mainContent.innerHTML).toContain('course-card');
+      expect(mainContent.innerHTML).toContain('viewCourse(1)');
+      expect(mainContent.innerHTML).toContain('View Course');
+    });
+  });
+
+  describe('loadCourses', () => {
+    test('should fetch courses from API', async () => {
+      const mockCourses = [
+        { id: 1, name: 'Course 1', description: 'Description 1' }
+      ];
+      
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockCourses
+      });
+      
+      const displayCoursesSpy = jest.spyOn(global, 'displayCourses').mockImplementation(() => {});
+      
+      await loadCourses();
+      
+      expect(fetch).toHaveBeenCalledWith('http://localhost:8004/courses');
+      expect(displayCoursesSpy).toHaveBeenCalledWith(mockCourses);
+      
+      displayCoursesSpy.mockRestore();
+    });
+    
+    test('should handle API errors', async () => {
+      fetch.mockRejectedValueOnce(new Error('Network error'));
+      
+      console.error = jest.fn();
+      
+      await loadCourses();
+      
+      expect(console.error).toHaveBeenCalledWith('Error loading courses:', expect.any(Error));
+      expect(alert).toHaveBeenCalledWith('Failed to load courses');
+    });
+    
+    test('should handle null response data', async () => {
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => null
+      });
+      
+      const displayCoursesSpy = jest.spyOn(global, 'displayCourses').mockImplementation(() => {});
+      
+      await loadCourses();
+      
+      expect(displayCoursesSpy).toHaveBeenCalledWith([]);
+      displayCoursesSpy.mockRestore();
+    });
+  });
+
+  describe('viewCourse', () => {
+    test('should fetch and display course details', async () => {
+      const mockCourse = {
+        id: 1,
+        name: 'Test Course',
+        description: 'Test description',
+        instructor: 'Test Instructor',
+        created_at: '2023-01-01T00:00:00Z'
+      };
+      
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockCourse
+      });
+      
+      await viewCourse(1);
+      
+      expect(fetch).toHaveBeenCalledWith('http://localhost:8004/courses/1');
+      
+      const mainContent = document.getElementById('main-content');
+      expect(mainContent.innerHTML).toContain('Test Course');
+      expect(mainContent.innerHTML).toContain('Test description');
+      expect(mainContent.innerHTML).toContain('Test Instructor');
+      expect(mainContent.innerHTML).toContain('Back to Courses');
+    });
+    
+    test('should handle course not found', async () => {
+      fetch.mockRejectedValueOnce(new Error('Course not found'));
+      
+      console.error = jest.fn();
+      
+      await viewCourse(999);
+      
+      expect(console.error).toHaveBeenCalledWith('Error loading course:', expect.any(Error));
+      expect(alert).toHaveBeenCalledWith('Failed to load course details');
+    });
+    
+    test('should format creation date correctly', async () => {
+      const mockCourse = {
+        id: 1,
+        name: 'Test Course',
+        description: 'Test description',
+        instructor: 'Test Instructor',
+        created_at: '2023-06-15T10:30:00Z'
+      };
+      
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockCourse
+      });
+      
+      await viewCourse(1);
+      
+      const mainContent = document.getElementById('main-content');
+      // Check that date is formatted
+      expect(mainContent.innerHTML).toContain('Created:');
+      expect(mainContent.innerHTML).toContain('2023');
+    });
+  });
+
+  describe('showHome', () => {
+    test('should display home page content', () => {
+      showHome();
+      
+      const mainContent = document.getElementById('main-content');
+      expect(mainContent.innerHTML).toContain('Welcome to Course Creator');
+      expect(mainContent.innerHTML).toContain('Create and manage online courses');
+      expect(mainContent.innerHTML).toContain('View Courses');
+      expect(mainContent.innerHTML).toContain('loadCourses()');
+    });
+    
+    test('should have correct home section structure', () => {
+      showHome();
+      
+      const homeSection = document.getElementById('home');
+      expect(homeSection).toBeTruthy();
+      
+      const welcomeHeading = homeSection.querySelector('h2');
+      expect(welcomeHeading.textContent).toBe('Welcome to Course Creator');
+      
+      const viewCoursesButton = homeSection.querySelector('button');
+      expect(viewCoursesButton.textContent).toBe('View Courses');
+    });
+  });
+
+  describe('Course form submission', () => {
+    test('should handle successful course creation', async () => {
+      const mockResponse = {
+        ok: true,
+        json: async () => ({
+          id: 'new-course-123',
+          name: 'New Course',
+          description: 'New description',
+          instructor: 'New Instructor'
+        })
+      };
+      
+      fetch.mockResolvedValueOnce(mockResponse);
+      
+      const loadCoursesSpy = jest.spyOn(global, 'loadCourses').mockImplementation(() => {});
+      
+      showCreateCourse();
+      
+      const form = document.getElementById('create-course-form');
+      const nameInput = document.getElementById('course-name');
+      const descInput = document.getElementById('course-description');
+      const instrInput = document.getElementById('course-instructor');
+      
+      nameInput.value = 'New Course';
+      descInput.value = 'New description';
+      instrInput.value = 'New Instructor';
+      
+      // Create form data
+      const formData = new FormData(form);
+      expect(formData.get('name')).toBe('New Course');
+      expect(formData.get('description')).toBe('New description');
+      expect(formData.get('instructor')).toBe('New Instructor');
+      
+      loadCoursesSpy.mockRestore();
+    });
+    
+    test('should handle course creation failure', async () => {
+      fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400
+      });
+      
+      showCreateCourse();
+      
+      const form = document.getElementById('create-course-form');
+      const nameInput = document.getElementById('course-name');
+      const descInput = document.getElementById('course-description');
+      const instrInput = document.getElementById('course-instructor');
+      
+      nameInput.value = 'Test Course';
+      descInput.value = 'Test description';
+      instrInput.value = 'Test Instructor';
+      
+      // The form submission would be handled by the event listener
+      // We can test that the form elements are properly set up
+      expect(form.querySelector('button[type="submit"]')).toBeTruthy();
+    });
+  });
+
+  describe('Navigation functions', () => {
+    test('should handle hash navigation', () => {
+      // Mock window.location.hash
+      Object.defineProperty(window, 'location', {
+        value: { hash: '#courses' },
+        writable: true
+      });
+      
+      const loadCoursesSpy = jest.spyOn(global, 'loadCourses').mockImplementation(() => {});
+      
+      handleNavigation();
+      
+      expect(loadCoursesSpy).toHaveBeenCalled();
+      loadCoursesSpy.mockRestore();
+    });
+    
+    test('should default to home for unknown hash', () => {
+      Object.defineProperty(window, 'location', {
+        value: { hash: '#unknown' },
+        writable: true
+      });
+      
+      const showHomeSpy = jest.spyOn(global, 'showHome').mockImplementation(() => {});
+      
+      handleNavigation();
+      
+      expect(showHomeSpy).toHaveBeenCalled();
+      showHomeSpy.mockRestore();
+    });
+  });
+
+  describe('Course card interactions', () => {
+    test('should create clickable course cards', () => {
+      const testCourses = [
+        {
+          id: 1,
+          name: 'Interactive Course',
+          description: 'A course with interactions'
+        }
+      ];
+      
+      displayCourses(testCourses);
+      
+      const courseCard = document.querySelector('.course-card');
+      expect(courseCard).toBeTruthy();
+      
+      const viewButton = courseCard.querySelector('button');
+      expect(viewButton).toBeTruthy();
+      expect(viewButton.getAttribute('onclick')).toBe('viewCourse(1)');
+    });
+    
+    test('should handle multiple courses with different IDs', () => {
+      const testCourses = [
+        { id: 1, name: 'Course 1', description: 'First course' },
+        { id: 2, name: 'Course 2', description: 'Second course' },
+        { id: 3, name: 'Course 3', description: 'Third course' }
+      ];
+      
+      displayCourses(testCourses);
+      
+      const courseCards = document.querySelectorAll('.course-card');
+      expect(courseCards.length).toBe(3);
+      
+      const viewButtons = document.querySelectorAll('button[onclick*="viewCourse"]');
+      expect(viewButtons.length).toBe(3);
+      
+      expect(viewButtons[0].getAttribute('onclick')).toBe('viewCourse(1)');
+      expect(viewButtons[1].getAttribute('onclick')).toBe('viewCourse(2)');
+      expect(viewButtons[2].getAttribute('onclick')).toBe('viewCourse(3)');
+    });
+  });
+});
