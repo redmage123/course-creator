@@ -150,6 +150,9 @@ function displayCourses(courses) {
                 <button class="btn btn-sm btn-danger" onclick="deleteCourse('${course.id}')">
                     <i class="fas fa-trash"></i> Delete
                 </button>
+                <button class="btn btn-sm btn-success" onclick="saveCourseContent('${course.id}')">
+                    <i class="fas fa-save"></i> Save
+                </button>
             </div>
         </div>
     `).join('');
@@ -214,7 +217,31 @@ async function generateCourseContent(courseId) {
         const course = userCourses.find(c => c.id == courseId);
         if (!course) return;
         
-        showNotification('Generating course content...', 'info');
+        showNotification('Starting syllabus generation...', 'info');
+        
+        // Step 1: Generate syllabus first
+        const syllabusResponse = await fetch('http://176.9.99.103:8001/syllabus/generate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                course_id: courseId,
+                title: course.title,
+                description: course.description,
+                category: course.category,
+                difficulty_level: course.difficulty_level,
+                estimated_duration: course.estimated_duration
+            })
+        });
+        
+        if (syllabusResponse.ok) {
+            const syllabusData = await syllabusResponse.json();
+            showSyllabusPreview(courseId, syllabusData.syllabus);
+            return; // Wait for user approval
+        } else {
+            throw new Error('Failed to generate syllabus');
+        }
         
         // Generate slides
         const slidesResponse = await fetch('http://176.9.99.103:8001/slides/generate', {
@@ -1831,4 +1858,180 @@ document.addEventListener('click', function(e) {
         const tabName = e.target.textContent.trim().toLowerCase().replace(/\s+/g, '-');
         showTab(tabName.replace('my-', '').replace('create-', 'create-').replace('student-', 'student-'), e);
     }
-});
+});function showSyllabusPreview(courseId, syllabus) {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal-content syllabus-preview-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-file-alt"></i> Course Syllabus Preview</h3>
+                <button class="modal-close" onclick="closeModal(this)">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="syllabus-content">
+                    <div class="syllabus-section">
+                        <h4>Course Overview</h4>
+                        <p>${syllabus.overview}</p>
+                    </div>
+                    
+                    <div class="syllabus-section">
+                        <h4>Learning Objectives</h4>
+                        <ul>
+                            ${syllabus.objectives.map(obj => `<li>${obj}</li>`).join('')}
+                        </ul>
+                    </div>
+                    
+                    <div class="syllabus-section">
+                        <h4>Prerequisites</h4>
+                        <ul>
+                            ${syllabus.prerequisites.map(req => `<li>${req}</li>`).join('')}
+                        </ul>
+                    </div>
+                    
+                    <div class="syllabus-section">
+                        <h4>Course Modules</h4>
+                        ${syllabus.modules.map(module => `
+                            <div class="module-item">
+                                <h5>${module.title} <span class="duration">(${module.duration_hours}h)</span></h5>
+                                <div class="module-details">
+                                    <div class="module-topics">
+                                        <strong>Topics:</strong> ${module.topics.join(', ')}
+                                    </div>
+                                    <div class="module-outcomes">
+                                        <strong>Learning Outcomes:</strong> ${module.learning_outcomes.join('; ')}
+                                    </div>
+                                    <div class="module-assessments">
+                                        <strong>Assessments:</strong> ${module.assessments.join(', ')}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div class="syllabus-section">
+                        <h4>Assessment Strategy</h4>
+                        <p>${syllabus.assessment_strategy}</p>
+                    </div>
+                    
+                    <div class="syllabus-section">
+                        <h4>Resources</h4>
+                        <ul>
+                            ${syllabus.resources.map(res => `<li>${res}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="feedback-section">
+                    <h4>Feedback & Refinement</h4>
+                    <textarea id="syllabusFeedback" placeholder="Provide feedback to refine the syllabus (e.g., 'Add more advanced topics', 'Reduce module 2 duration', 'Include more practical exercises')..." rows="4"></textarea>
+                    <div class="feedback-buttons">
+                        <button class="btn btn-warning" onclick="refineSyllabus('${courseId}')">
+                            <i class="fas fa-edit"></i> Refine Syllabus
+                        </button>
+                        <button class="btn btn-success" onclick="approveSyllabus('${courseId}')">
+                            <i class="fas fa-check"></i> Approve & Generate Content
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Store syllabus data for refinement
+    window.currentSyllabus = syllabus;
+}
+
+async function refineSyllabus(courseId) {
+    const feedback = document.getElementById('syllabusFeedback').value;
+    if (!feedback.trim()) {
+        showNotification('Please provide feedback for refinement', 'warning');
+        return;
+    }
+    
+    try {
+        showNotification('Refining syllabus based on feedback...', 'info');
+        
+        const response = await fetch('http://176.9.99.103:8001/syllabus/refine', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                course_id: courseId,
+                feedback: feedback,
+                current_syllabus: window.currentSyllabus
+            })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            showNotification('Syllabus refined successfully!', 'success');
+            
+            // Close current modal and show updated syllabus
+            document.querySelector('.modal-overlay').remove();
+            showSyllabusPreview(courseId, result.syllabus);
+        } else {
+            throw new Error('Failed to refine syllabus');
+        }
+    } catch (error) {
+        console.error('Error refining syllabus:', error);
+        showNotification('Error refining syllabus', 'error');
+    }
+}
+
+async function approveSyllabus(courseId) {
+    try {
+        showNotification('Generating course content from approved syllabus...', 'info');
+        
+        const response = await fetch('http://176.9.99.103:8001/content/generate-from-syllabus', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                course_id: courseId
+            })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            showNotification(`Generated ${result.slides.length} slides, ${result.exercises.length} exercises, and ${result.quizzes.length} quizzes!`, 'success');
+            
+            // Close modal and refresh content
+            document.querySelector('.modal-overlay').remove();
+            loadUserCourses();
+        } else {
+            throw new Error('Failed to generate content from syllabus');
+        }
+    } catch (error) {
+        console.error('Error generating content:', error);
+        showNotification('Error generating content from syllabus', 'error');
+    }
+}
+
+async function saveCourseContent(courseId) {
+    try {
+        showNotification("Saving course content...", "info");
+        
+        const response = await fetch("http://176.9.99.103:8001/courses/save", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                course_id: courseId
+            })
+        });
+        
+        if (response.ok) {
+            showNotification("Course content saved successfully\!", "success");
+        } else {
+            throw new Error("Failed to save course content");
+        }
+    } catch (error) {
+        console.error("Error saving course content:", error);
+        showNotification("Error saving course content", "error");
+    }
+}

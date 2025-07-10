@@ -2012,3 +2012,101 @@ button + button {
     resize: vertical;
     font-family: inherit;
 }
+
+
+/* Syllabus Preview Modal */
+.syllabus-preview-modal {
+    width: 800px;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow: auto;
+}
+
+.syllabus-content {
+    margin-bottom: 2rem;
+}
+
+.syllabus-section {
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+}
+
+.syllabus-section h4 {
+    margin: 0 0 1rem 0;
+    color: #2c3e50;
+    border-bottom: 2px solid #3498db;
+    padding-bottom: 0.5rem;
+}
+
+.syllabus-section ul {
+    margin: 0;
+    padding-left: 1.5rem;
+}
+
+.syllabus-section li {
+    margin-bottom: 0.5rem;
+}
+
+.module-item {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.module-item h5 {
+    margin: 0 0 0.5rem 0;
+    color: #2c3e50;
+}
+
+.duration {
+    color: #6c757d;
+    font-weight: normal;
+    font-size: 0.9em;
+}
+
+.module-details {
+    margin-top: 0.5rem;
+}
+
+.module-topics, .module-outcomes, .module-assessments {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.module-topics strong, .module-outcomes strong, .module-assessments strong {
+    color: #495057;
+}
+
+.feedback-section {
+    border-top: 2px solid #e9ecef;
+    padding-top: 1.5rem;
+}
+
+.feedback-section h4 {
+    margin: 0 0 1rem 0;
+    color: #2c3e50;
+}
+
+.feedback-section textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    resize: vertical;
+    margin-bottom: 1rem;
+}
+
+.feedback-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+.feedback-buttons .btn {
+    padding: 0.5rem 1rem;
+}

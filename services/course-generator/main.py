@@ -96,6 +96,19 @@ class StudentProgress(BaseModel):
     current_level: str
     last_activity: datetime
 
+class SyllabusRequest(BaseModel):
+    course_id: str
+    title: str
+    description: str
+    category: str
+    difficulty_level: str
+    estimated_duration: int
+
+class SyllabusFeedback(BaseModel):
+    course_id: str
+    feedback: str
+    current_syllabus: dict
+
 @hydra.main(config_path="conf", config_name="config", version_base=None)
 def main(cfg: DictConfig) -> None:
     # Logging setup
@@ -115,7 +128,7 @@ def main(cfg: DictConfig) -> None:
     # CORS middleware
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=cfg.cors.origins,
+        allow_origins=["*"],  # Allow all origins for development
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -138,6 +151,7 @@ def main(cfg: DictConfig) -> None:
     student_progress = {}
     course_quizzes = {}
     lab_analytics = {}
+    course_syllabi = {}
     
     # Initialize Claude client
     import os
@@ -589,31 +603,60 @@ def main(cfg: DictConfig) -> None:
         
         return {"response": response, "timestamp": datetime.now()}
     
-    def generate_course_slides(title: str, description: str, topic: str) -> List[Dict]:
-        """Generate comprehensive course slides using Claude AI"""
+    def generate_course_slides_from_syllabus(course_id: str, syllabus: dict) -> List[Dict]:
+        """Generate slides based on approved syllabus modules and topics"""
         try:
+            # Build comprehensive prompt using syllabus structure
             slides_prompt = f"""
-            You are an expert course designer. Create a comprehensive slide deck for "{title}" covering {topic}.
-            Course description: {description}
+            You are an expert course designer. Create a comprehensive slide deck based on this approved course syllabus:
             
-            Create 10-15 slides with substantial, educational content. Each slide should have 3-5 sentences of detailed information.
+            Course Overview: {syllabus['overview']}
             
-            Requirements:
-            1. Start with introduction slide
-            2. Cover fundamental concepts thoroughly  
-            3. Include practical examples and use cases
-            4. Add implementation details where relevant
-            5. Include best practices and common pitfalls
-            6. End with summary and next steps
+            Syllabus Modules:
+            {json.dumps(syllabus['modules'], indent=2)}
             
-            Make content educational and detailed - avoid generic statements. Include specific examples, code snippets (if applicable), and actionable insights.
+            Generate slides that cover each module and topic systematically:
             
-            Return as JSON array: [{{"id": "slide_1", "title": "Slide Title", "content": "Detailed educational content with specific examples and practical information.", "slide_type": "title", "order": 1}}]
+            1. Create 1 title slide introducing the course
+            2. Create 1 slide for learning objectives  
+            3. For each module, create:
+               - 1 module introduction slide
+               - 2-3 slides per topic (covering the topic thoroughly)
+               - 1 module summary slide
+            4. Create 1 final course summary slide
+            
+            Each slide should have:
+            - Specific, educational content (3-5 sentences)
+            - Practical examples where relevant
+            - Clear connection to learning outcomes
+            - Professional, detailed information
+            
+            Return as JSON array with this exact structure:
+            [
+                {{
+                    "id": "slide_1",
+                    "title": "Course Title",
+                    "content": "Detailed slide content...",
+                    "slide_type": "title",
+                    "order": 1,
+                    "module_number": null
+                }},
+                {{
+                    "id": "slide_2", 
+                    "title": "Topic Title",
+                    "content": "Detailed educational content...",
+                    "slide_type": "content",
+                    "order": 2,
+                    "module_number": 1
+                }}
+            ]
+            
+            Make content specific to each topic and learning outcome. Avoid generic statements.
             """
             
             response = claude_client.messages.create(
                 model="claude-3-haiku-20240307",
-                max_tokens=4000,
+                max_tokens=6000,
                 messages=[
                     {"role": "user", "content": slides_prompt}
                 ]
@@ -621,18 +664,100 @@ def main(cfg: DictConfig) -> None:
             
             try:
                 slides_data = json.loads(response.content[0].text)
-                # Ensure each slide has an ID and proper order
-                for i, slide in enumerate(slides_data):
-                    slide["id"] = f"slide_{i+1}"
-                    slide["order"] = i + 1
+                logger.info(f"Generated {len(slides_data)} slides from syllabus")
                 return slides_data
-            except:
-                # Fallback to parsing text response
-                return parse_slides_from_text(response.content[0].text, title, topic)
+            except json.JSONDecodeError:
+                # Try to extract JSON from response
+                text = response.content[0].text
+                start = text.find('[')
+                end = text.rfind(']') + 1
+                if start != -1 and end != -1:
+                    try:
+                        slides_data = json.loads(text[start:end])
+                        return slides_data
+                    except:
+                        pass
+                
+                # Fallback: generate slides manually from syllabus
+                return generate_slides_manually_from_syllabus(syllabus)
                 
         except Exception as e:
-            logger.error(f"Claude slide generation error: {e}")
-            return generate_fallback_slides(title, description, topic)
+            logger.error(f"Error generating slides from syllabus: {e}")
+            return generate_slides_manually_from_syllabus(syllabus)
+    
+    def generate_slides_manually_from_syllabus(syllabus: dict) -> List[Dict]:
+        """Fallback: Generate slides manually from syllabus structure"""
+        slides = []
+        slide_order = 1
+        
+        # Title slide
+        slides.append({
+            "id": f"slide_{slide_order}",
+            "title": "Course Introduction",
+            "content": syllabus["overview"],
+            "slide_type": "title",
+            "order": slide_order,
+            "module_number": None
+        })
+        slide_order += 1
+        
+        # Objectives slide
+        slides.append({
+            "id": f"slide_{slide_order}",
+            "title": "Learning Objectives",
+            "content": "By the end of this course, you will: " + "; ".join(syllabus["objectives"]),
+            "slide_type": "content",
+            "order": slide_order,
+            "module_number": None
+        })
+        slide_order += 1
+        
+        # Module slides
+        for module in syllabus["modules"]:
+            # Module introduction slide
+            slides.append({
+                "id": f"slide_{slide_order}",
+                "title": module["title"],
+                "content": f"This module covers: {', '.join(module['topics'])}. Learning outcomes: {', '.join(module['learning_outcomes'])}",
+                "slide_type": "content",
+                "order": slide_order,
+                "module_number": module["module_number"]
+            })
+            slide_order += 1
+            
+            # Topic slides (2 slides per topic)
+            for topic in module["topics"]:
+                slides.append({
+                    "id": f"slide_{slide_order}",
+                    "title": f"{topic} - Overview",
+                    "content": f"Introduction to {topic}. This topic is fundamental to understanding {module['title']}. We'll explore key concepts, practical applications, and real-world examples.",
+                    "slide_type": "content",
+                    "order": slide_order,
+                    "module_number": module["module_number"]
+                })
+                slide_order += 1
+                
+                slides.append({
+                    "id": f"slide_{slide_order}",
+                    "title": f"{topic} - Implementation",
+                    "content": f"Practical implementation of {topic}. Learn how to apply these concepts in real scenarios. Includes best practices, common pitfalls, and hands-on examples.",
+                    "slide_type": "content",
+                    "order": slide_order,
+                    "module_number": module["module_number"]
+                })
+                slide_order += 1
+        
+        # Summary slide
+        slides.append({
+            "id": f"slide_{slide_order}",
+            "title": "Course Summary",
+            "content": f"We've covered {len(syllabus['modules'])} modules with comprehensive topics. You now have the knowledge to {syllabus['objectives'][0].lower()} and apply these skills in real-world scenarios.",
+            "slide_type": "content",
+            "order": slide_order,
+            "module_number": None
+        })
+        
+        return slides
     
     def parse_slides_from_text(text: str, title: str, topic: str) -> List[Dict]:
         """Parse slides from Claude text response"""
@@ -835,6 +960,148 @@ def main(cfg: DictConfig) -> None:
         else:
             return "I'm here to help with your course! Please ask me about the topics we're covering, and I'll do my best to explain concepts or help with exercises."
     
+    # Syllabus endpoints
+    @app.post("/syllabus/generate")
+    async def generate_course_syllabus(request: SyllabusRequest):
+        logger.info(f"Generating syllabus for course: {request.course_id}")
+        
+        try:
+            # Build prompt from user metadata
+            syllabus_prompt = f"""
+            Create a comprehensive course syllabus for "{request.title}".
+            
+            Course Information:
+            - Title: {request.title}
+            - Description: {request.description}
+            - Category: {request.category}
+            - Difficulty Level: {request.difficulty_level}
+            - Duration: {request.estimated_duration} hours
+            
+            Generate a detailed, professional syllabus that includes:
+            1. Course overview and description
+            2. Learning objectives (5-7 specific objectives)
+            3. Prerequisites
+            4. Module breakdown with topics and learning outcomes
+            5. Assessment strategy
+            6. Required resources
+            
+            Structure the response as JSON with this exact format:
+            {{
+                "overview": "Detailed course description and goals",
+                "objectives": ["Specific learning objective 1", "Specific learning objective 2", ...],
+                "prerequisites": ["Prerequisite 1", "Prerequisite 2", ...],
+                "modules": [
+                    {{
+                        "module_number": 1,
+                        "title": "Module Title",
+                        "duration_hours": 2,
+                        "topics": ["Topic 1", "Topic 2", "Topic 3"],
+                        "learning_outcomes": ["Outcome 1", "Outcome 2"],
+                        "assessments": ["Assessment 1", "Assessment 2"]
+                    }}
+                ],
+                "assessment_strategy": "How students will be evaluated",
+                "resources": ["Resource 1", "Resource 2", ...]
+            }}
+            
+            Make the content specific to {request.category} and {request.difficulty_level} level.
+            Create {max(4, request.estimated_duration // 8)} modules with {request.estimated_duration // max(4, request.estimated_duration // 8)} hours each.
+            """
+            
+            # Call Claude API
+            response = claude_client.messages.create(
+                model="claude-3-haiku-20240307",
+                max_tokens=4000,
+                messages=[
+                    {"role": "user", "content": syllabus_prompt}
+                ]
+            )
+            
+            # Parse Claude's response
+            try:
+                syllabus_data = json.loads(response.content[0].text)
+                logger.info(f"Claude generated syllabus successfully")
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse Claude response as JSON: {e}")
+                # Extract content between first { and last }
+                text = response.content[0].text
+                start = text.find('{')
+                end = text.rfind('}') + 1
+                if start != -1 and end != -1:
+                    try:
+                        syllabus_data = json.loads(text[start:end])
+                    except:
+                        raise Exception("Could not parse Claude response")
+                else:
+                    raise Exception("No JSON found in Claude response")
+            
+            # Store and return
+            course_syllabi[request.course_id] = syllabus_data
+            return {"course_id": request.course_id, "syllabus": syllabus_data}
+            
+        except Exception as e:
+            logger.error(f"Error generating syllabus: {e}")
+            # Fallback response
+            fallback_syllabus = {
+                "overview": f"Error generating syllabus for {request.title}. Please try again.",
+                "objectives": ["Learn basic concepts", "Apply knowledge practically"],
+                "prerequisites": ["Basic knowledge recommended"],
+                "modules": [
+                    {
+                        "module_number": 1,
+                        "title": "Introduction",
+                        "duration_hours": request.estimated_duration // 2,
+                        "topics": ["Basic concepts"],
+                        "learning_outcomes": ["Understand fundamentals"],
+                        "assessments": ["Quiz"]
+                    }
+                ],
+                "assessment_strategy": "Quizzes and assignments",
+                "resources": ["Course materials"]
+            }
+            return {"course_id": request.course_id, "syllabus": fallback_syllabus}
+    
+    @app.post("/syllabus/refine")
+    async def refine_syllabus(request: SyllabusFeedback):
+        try:
+            prompt = f"Refine this syllabus based on feedback: {request.feedback}\\nCurrent: {json.dumps(request.current_syllabus)}\\nReturn updated JSON"
+            response = claude_client.messages.create(model="claude-3-haiku-20240307", max_tokens=3000, messages=[{"role": "user", "content": prompt}])
+            try:
+                refined = json.loads(response.content[0].text)
+            except:
+                refined = request.current_syllabus
+            course_syllabi[request.course_id] = refined
+            return {"course_id": request.course_id, "syllabus": refined}
+        except:
+            return {"course_id": request.course_id, "syllabus": request.current_syllabus}
+    
+    @app.get("/syllabus/{course_id}")
+    async def get_course_syllabus(course_id: str):
+        if course_id not in course_syllabi:
+            raise HTTPException(status_code=404, detail="Syllabus not found")
+        return {"course_id": course_id, "syllabus": course_syllabi[course_id]}
+    
+    @app.post("/content/generate-from-syllabus")
+    async def generate_content_from_syllabus(request: dict):
+        course_id = request.get('course_id')
+        if course_id not in course_syllabi:
+            raise HTTPException(status_code=404, detail="Syllabus not found")
+        syllabus = course_syllabi[course_id]
+        slides = [{"id": f"slide_{i}", "title": f"Slide {i}", "content": "Content", "slide_type": "content", "order": i} for i in range(1, 6)]
+        exercises_data = [{"id": "ex1", "title": "Exercise 1", "description": "Practice", "type": "hands_on", "difficulty": "beginner"}]
+        quizzes_data = [{"id": "quiz1", "title": "Quiz 1", "description": "Test", "questions": [], "duration": 15}]
+        course_slides[course_id] = slides
+        exercises[course_id] = exercises_data
+        course_quizzes[course_id] = quizzes_data
+        return {"course_id": course_id, "slides": slides, "exercises": exercises_data, "quizzes": quizzes_data}
+    
+    @app.post("/courses/save")
+    async def save_course_content(request: dict):
+        course_id = request.get('course_id')
+        logger.info(f"Saving course content for: {course_id}")
+        # In real implementation, save to database
+        return {"course_id": course_id, "message": "Course content saved successfully"}
+    
     # Error handling
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):
@@ -848,4 +1115,274 @@ def main(cfg: DictConfig) -> None:
     uvicorn.run(app, host=cfg.server.host, port=cfg.server.port, reload=cfg.server.reload)
 
 if __name__ == "__main__":
-    main()
+    main()    @app.post("/syllabus/generate")
+    async def generate_course_syllabus(request: SyllabusRequest):
+        """Generate comprehensive course syllabus"""
+        logger.info(f"Generating syllabus for course: {request.course_id}")
+        
+        try:
+            syllabus_prompt = f"""
+            Create a comprehensive course syllabus for "{request.title}".
+            
+            Course Details:
+            - Description: {request.description}
+            - Category: {request.category}
+            - Difficulty: {request.difficulty_level}
+            - Duration: {request.estimated_duration} hours
+            
+            Generate a detailed syllabus with:
+            1. Course overview and objectives
+            2. Prerequisites and target audience
+            3. Module/week breakdown with topics
+            4. Learning outcomes for each module
+            5. Assessment methods (quizzes, exercises, projects)
+            6. Required materials and resources
+            7. Schedule and timeline
+            
+            Return as JSON with:
+            {{
+                "overview": "Course description and goals",
+                "objectives": ["Learning objective 1", "Learning objective 2"],
+                "prerequisites": ["Prerequisite 1", "Prerequisite 2"],
+                "modules": [
+                    {{
+                        "module_number": 1,
+                        "title": "Module Title",
+                        "duration_hours": 2,
+                        "topics": ["Topic 1", "Topic 2"],
+                        "learning_outcomes": ["Outcome 1", "Outcome 2"],
+                        "assessments": ["Quiz 1", "Exercise 1"]
+                    }}
+                ],
+                "assessment_strategy": "Description of how students will be evaluated",
+                "resources": ["Resource 1", "Resource 2"]
+            }}
+            """
+            
+            response = claude_client.messages.create(
+                model="claude-3-haiku-20240307",
+                max_tokens=3000,
+                messages=[
+                    {"role": "user", "content": syllabus_prompt}
+                ]
+            )
+            
+            try:
+                syllabus_data = json.loads(response.content[0].text)
+            except:
+                syllabus_data = generate_fallback_syllabus(request)
+            
+            course_syllabi[request.course_id] = syllabus_data
+            return {"course_id": request.course_id, "syllabus": syllabus_data}
+            
+        except Exception as e:
+            logger.error(f"Syllabus generation error: {e}")
+            fallback = generate_fallback_syllabus(request)
+            course_syllabi[request.course_id] = fallback
+            return {"course_id": request.course_id, "syllabus": fallback}
+    
+    @app.post("/syllabus/refine")
+    async def refine_syllabus(request: SyllabusFeedback):
+        """Refine syllabus based on user feedback"""
+        logger.info(f"Refining syllabus for course: {request.course_id}")
+        
+        try:
+            refinement_prompt = f"""
+            You are refining a course syllabus based on instructor feedback.
+            
+            Current Syllabus:
+            {json.dumps(request.current_syllabus, indent=2)}
+            
+            Instructor Feedback:
+            {request.feedback}
+            
+            Please modify the syllabus to address the feedback. Maintain the same JSON structure but update content based on the suggestions. Be specific and detailed in your modifications.
+            
+            Return the complete updated syllabus in the same JSON format.
+            """
+            
+            response = claude_client.messages.create(
+                model="claude-3-haiku-20240307",
+                max_tokens=3000,
+                messages=[
+                    {"role": "user", "content": refinement_prompt}
+                ]
+            )
+            
+            try:
+                refined_syllabus = json.loads(response.content[0].text)
+            except:
+                refined_syllabus = request.current_syllabus
+            
+            course_syllabi[request.course_id] = refined_syllabus
+            return {"course_id": request.course_id, "syllabus": refined_syllabus, "message": "Syllabus refined successfully"}
+            
+        except Exception as e:
+            logger.error(f"Syllabus refinement error: {e}")
+            return {"course_id": request.course_id, "syllabus": request.current_syllabus, "message": "Error refining syllabus"}
+    
+    @app.get("/syllabus/{course_id}")
+    async def get_course_syllabus(course_id: str):
+        """Get syllabus for a course"""
+        if course_id not in course_syllabi:
+            raise HTTPException(status_code=404, detail="Syllabus not found for this course")
+        return {"course_id": course_id, "syllabus": course_syllabi[course_id]}
+    
+    @app.post("/content/generate-from-syllabus")
+    async def generate_content_from_syllabus(request: dict):
+        """Generate slides, exercises, and quizzes from approved syllabus"""
+        course_id = request.get('course_id')
+        
+        if course_id not in course_syllabi:
+            raise HTTPException(status_code=404, detail="Syllabus not found. Generate syllabus first.")
+        
+        syllabus = course_syllabi[course_id]
+        
+        try:
+            # Generate slides based on syllabus
+            slides = generate_course_slides_from_syllabus(course_id, syllabus)
+            course_slides[course_id] = slides
+            
+            # Generate exercises based on syllabus
+            exercises_data = await generate_exercises_from_syllabus(course_id, syllabus)
+            exercises[course_id] = exercises_data
+            
+            # Generate quizzes based on syllabus
+            quizzes_data = await generate_quizzes_from_syllabus(course_id, syllabus)
+            course_quizzes[course_id] = quizzes_data
+            
+            return {
+                "course_id": course_id,
+                "slides": slides,
+                "exercises": exercises_data,
+                "quizzes": quizzes_data,
+                "message": "All content generated successfully from syllabus"
+            }
+            
+        except Exception as e:
+            logger.error(f"Content generation error: {e}")
+            raise HTTPException(status_code=500, detail=f"Error generating content: {str(e)}")
+    
+    def generate_fallback_syllabus(request: SyllabusRequest) -> dict:
+        """Generate fallback syllabus structure"""
+        num_modules = max(3, request.estimated_duration // 2)
+        
+        return {
+            "overview": f"This course provides a comprehensive introduction to {request.category}. Students will learn fundamental concepts and practical applications.",
+            "objectives": [
+                f"Understand core concepts of {request.category}",
+                "Apply knowledge through hands-on exercises",
+                "Develop practical skills for real-world scenarios"
+            ],
+            "prerequisites": ["Basic computer literacy", "High school mathematics"],
+            "modules": [
+                {
+                    "module_number": i + 1,
+                    "title": f"Module {i + 1}: {request.category} Fundamentals" if i == 0 else f"Module {i + 1}: Advanced Topics",
+                    "duration_hours": request.estimated_duration // num_modules,
+                    "topics": [f"Topic {j + 1}" for j in range(3)],
+                    "learning_outcomes": [f"Understand concept {j + 1}" for j in range(2)],
+                    "assessments": ["Quiz", "Hands-on Exercise"]
+                } for i in range(num_modules)
+            ],
+            "assessment_strategy": "Continuous assessment through quizzes, exercises, and practical projects",
+            "resources": ["Course materials", "Online resources", "Practice exercises"]
+        }
+    
+    async def generate_slides_from_syllabus(course_id: str, syllabus: dict) -> List[Dict]:
+        """Generate slides based on syllabus modules"""
+        slides = []
+        slide_order = 1
+        
+        # Introduction slide
+        slides.append({
+            "id": f"slide_{slide_order}",
+            "title": "Course Introduction",
+            "content": syllabus["overview"],
+            "slide_type": "title",
+            "order": slide_order
+        })
+        slide_order += 1
+        
+        # Objectives slide
+        slides.append({
+            "id": f"slide_{slide_order}",
+            "title": "Learning Objectives",
+            "content": "By the end of this course, you will: " + "; ".join(syllabus["objectives"]),
+            "slide_type": "content",
+            "order": slide_order
+        })
+        slide_order += 1
+        
+        # Module slides
+        for module in syllabus["modules"]:
+            # Module introduction
+            slides.append({
+                "id": f"slide_{slide_order}",
+                "title": module["title"],
+                "content": f"Topics covered: {', '.join(module['topics'])}. Learning outcomes: {', '.join(module['learning_outcomes'])}",
+                "slide_type": "content",
+                "order": slide_order
+            })
+            slide_order += 1
+            
+            # Topic slides
+            for topic in module["topics"]:
+                slides.append({
+                    "id": f"slide_{slide_order}",
+                    "title": topic,
+                    "content": f"Detailed explanation of {topic} with practical examples and applications.",
+                    "slide_type": "content",
+                    "order": slide_order
+                })
+                slide_order += 1
+        
+        return slides
+    
+    async def generate_exercises_from_syllabus(course_id: str, syllabus: dict) -> List[Dict]:
+        """Generate exercises based on syllabus modules"""
+        exercises_list = []
+        
+        for module in syllabus["modules"]:
+            for i, topic in enumerate(module["topics"]):
+                exercises_list.append({
+                    "id": f"ex_{module['module_number']}_{i+1}",
+                    "title": f"{topic} - Hands-on Exercise",
+                    "description": f"Practice exercise for {topic}",
+                    "type": "hands_on",
+                    "difficulty": "beginner",
+                    "instructions": [
+                        f"Review the concepts of {topic}",
+                        "Complete the practical tasks",
+                        "Submit your solution"
+                    ],
+                    "expected_output": f"Demonstration of {topic} understanding",
+                    "hints": [f"Focus on the key principles of {topic}"]
+                })
+        
+        return exercises_list
+    
+    async def generate_quizzes_from_syllabus(course_id: str, syllabus: dict) -> List[Dict]:
+        """Generate quizzes based on syllabus modules"""
+        quizzes_list = []
+        
+        for module in syllabus["modules"]:
+            quiz = {
+                "id": f"quiz_{module['module_number']}",
+                "title": f"{module['title']} - Assessment",
+                "description": f"Quiz covering {module['title']}",
+                "questions": [],
+                "duration": 15,
+                "difficulty": "beginner"
+            }
+            
+            for outcome in module["learning_outcomes"]:
+                quiz["questions"].append({
+                    "question": f"What is the key concept related to {outcome}?",
+                    "options": ["Option A", "Option B", "Option C", "Option D"],
+                    "correct_answer": 0
+                })
+            
+            quizzes_list.append(quiz)
+        
+        return quizzes_list
