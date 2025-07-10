@@ -21,9 +21,9 @@ database:
   url: postgresql+asyncpg://course_user:${oc.env:DB_PASSWORD}@localhost:5433/course_creator
 
 jwt:
-  secret_key: "your-secret-key-here-change-in-production"
+  secret_key: ${oc.env:JWT_SECRET_KEY,"your-secret-key-here-change-in-production"}
   algorithm: HS256
-  token_expiry: 30
+  token_expiry: 15  # Reduced from 30 to 15 minutes for better security
 
 service:
   host: 0.0.0.0

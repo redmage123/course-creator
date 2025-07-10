@@ -18,6 +18,7 @@ from pydantic import BaseModel, EmailStr
 import databases
 import sqlalchemy
 import sqlalchemy.dialects.postgresql
+import uuid
 
 # Pydantic models
 class UserBase(BaseModel):
@@ -53,6 +54,15 @@ class UserUpdate(BaseModel):
 class AdminUserCreate(UserCreate):
     role: str = "student"
 
+class UserSession(BaseModel):
+    id: str
+    user_id: str
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    expires_at: datetime
+    created_at: datetime
+    last_accessed_at: datetime
+
 @hydra.main(config_path="conf", config_name="config", version_base=None)
 def main(cfg: DictConfig) -> None:
     # Setup logging
@@ -84,6 +94,20 @@ def main(cfg: DictConfig) -> None:
         sqlalchemy.Column('last_login', sqlalchemy.DateTime(timezone=True))
     )
     
+    # Define user sessions table
+    user_sessions_table = sqlalchemy.Table(
+        'user_sessions',
+        sqlalchemy.MetaData(),
+        sqlalchemy.Column('id', sqlalchemy.dialects.postgresql.UUID, primary_key=True, server_default=sqlalchemy.text('uuid_generate_v4()')),
+        sqlalchemy.Column('user_id', sqlalchemy.dialects.postgresql.UUID, sqlalchemy.ForeignKey('users.id'), nullable=False),
+        sqlalchemy.Column('token_hash', sqlalchemy.String(255), unique=True, nullable=False),
+        sqlalchemy.Column('ip_address', sqlalchemy.String(45)),
+        sqlalchemy.Column('user_agent', sqlalchemy.String(255)),
+        sqlalchemy.Column('expires_at', sqlalchemy.DateTime(timezone=True), nullable=False),
+        sqlalchemy.Column('created_at', sqlalchemy.DateTime(timezone=True), server_default=sqlalchemy.text('CURRENT_TIMESTAMP')),
+        sqlalchemy.Column('last_accessed_at', sqlalchemy.DateTime(timezone=True), server_default=sqlalchemy.text('CURRENT_TIMESTAMP'))
+    )
+    
     # Security
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
@@ -104,8 +128,88 @@ def main(cfg: DictConfig) -> None:
         allow_headers=["*"],
     )
     
+    # Session management functions
+    async def create_user_session(user_id: str, token: str, ip_address: str = None, user_agent: str = None):
+        """Create a new user session in the database"""
+        session_id = str(uuid.uuid4())
+        token_hash = pwd_context.hash(token)
+        expires_at = datetime.utcnow() + timedelta(minutes=cfg.jwt.token_expiry)
+        
+        # Clean up old sessions for this user (keep only last 3 sessions)
+        await cleanup_old_sessions(user_id, max_sessions=3)
+        
+        query = user_sessions_table.insert().values(
+            id=session_id,
+            user_id=user_id,
+            token_hash=token_hash,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            expires_at=expires_at
+        )
+        await database.execute(query)
+        return session_id
+    
+    async def validate_session(token: str, user_id: str):
+        """Validate if session exists and is not expired"""
+        query = user_sessions_table.select().where(
+            sqlalchemy.and_(
+                user_sessions_table.c.user_id == user_id,
+                user_sessions_table.c.expires_at > datetime.utcnow()
+            )
+        )
+        sessions = await database.fetch_all(query)
+        
+        # Check if token matches any active session
+        for session in sessions:
+            if pwd_context.verify(token, session["token_hash"]):
+                # Update last accessed time
+                update_query = user_sessions_table.update().where(
+                    user_sessions_table.c.id == session["id"]
+                ).values(last_accessed_at=datetime.utcnow())
+                await database.execute(update_query)
+                return True
+        return False
+    
+    async def cleanup_old_sessions(user_id: str, max_sessions: int = 3):
+        """Keep only the most recent sessions for a user"""
+        query = sqlalchemy.text("""
+            DELETE FROM user_sessions 
+            WHERE user_id = :user_id 
+            AND id NOT IN (
+                SELECT id FROM user_sessions 
+                WHERE user_id = :user_id 
+                ORDER BY created_at DESC 
+                LIMIT :max_sessions
+            )
+        """)
+        await database.execute(query, {"user_id": user_id, "max_sessions": max_sessions})
+    
+    async def invalidate_session(token: str, user_id: str):
+        """Invalidate a specific session"""
+        query = user_sessions_table.select().where(
+            user_sessions_table.c.user_id == user_id
+        )
+        sessions = await database.fetch_all(query)
+        
+        for session in sessions:
+            if pwd_context.verify(token, session["token_hash"]):
+                delete_query = user_sessions_table.delete().where(
+                    user_sessions_table.c.id == session["id"]
+                )
+                await database.execute(delete_query)
+                return True
+        return False
+    
+    async def cleanup_expired_sessions():
+        """Remove all expired sessions from database"""
+        query = user_sessions_table.delete().where(
+            user_sessions_table.c.expires_at < datetime.utcnow()
+        )
+        result = await database.execute(query)
+        return result
+
     # Dependencies
-    async def get_current_user(token: str = Depends(oauth2_scheme)):
+    async def get_current_user(token: str = Depends(oauth2_scheme), request: Request = None):
         credentials_exception = HTTPException(
             status_code=401,
             detail="Could not validate credentials",
@@ -122,6 +226,15 @@ def main(cfg: DictConfig) -> None:
                 raise credentials_exception
         except JWTError:
             raise credentials_exception
+        
+        # Validate session exists and is not expired
+        session_valid = await validate_session(token, user_id)
+        if not session_valid:
+            raise HTTPException(
+                status_code=401,
+                detail="Session expired or invalid",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
             
         query = users_table.select().where(users_table.c.id == user_id)
         user = await database.fetch_one(query)
@@ -176,7 +289,7 @@ def main(cfg: DictConfig) -> None:
         }
     
     @app.post("/auth/login", response_model=Token)
-    async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    async def login(form_data: OAuth2PasswordRequestForm = Depends(), request: Request = None):
         logger.info(f"Login attempt for user: {form_data.username}")
         
         # Find user by email
@@ -190,12 +303,89 @@ def main(cfg: DictConfig) -> None:
             )
 
         access_token = jwt.encode(
-            {"sub": str(user["id"]), "exp": datetime.utcnow() + timedelta(minutes=30)},
+            {"sub": str(user["id"]), "exp": datetime.utcnow() + timedelta(minutes=cfg.jwt.token_expiry)},
             cfg.jwt.secret_key,
             algorithm=cfg.jwt.algorithm
         )
         
+        # Create session in database
+        ip_address = request.client.host if request else None
+        user_agent = request.headers.get("User-Agent") if request else None
+        session_id = await create_user_session(str(user["id"]), access_token, ip_address, user_agent)
+        
+        # Update last login time
+        update_query = users_table.update().where(
+            users_table.c.id == user["id"]
+        ).values(last_login=datetime.utcnow())
+        await database.execute(update_query)
+        
+        logger.info(f"User {user['email']} logged in successfully. Session ID: {session_id}")
+        
         return {"access_token": access_token, "token_type": "bearer"}
+    
+    @app.post("/auth/logout")
+    async def logout(current_user: User = Depends(get_current_user), token: str = Depends(oauth2_scheme)):
+        """Logout user and invalidate session"""
+        logger.info(f"User {current_user.email} logging out")
+        
+        # Invalidate the current session
+        success = await invalidate_session(token, current_user.id)
+        
+        if success:
+            logger.info(f"Session invalidated for user {current_user.email}")
+            return {"message": "Successfully logged out"}
+        else:
+            logger.warning(f"Failed to invalidate session for user {current_user.email}")
+            return {"message": "Logout completed"}
+    
+    @app.get("/auth/sessions")
+    async def get_user_sessions(current_user: User = Depends(get_current_user)):
+        """Get all active sessions for the current user"""
+        query = user_sessions_table.select().where(
+            sqlalchemy.and_(
+                user_sessions_table.c.user_id == current_user.id,
+                user_sessions_table.c.expires_at > datetime.utcnow()
+            )
+        ).order_by(user_sessions_table.c.created_at.desc())
+        
+        sessions = await database.fetch_all(query)
+        
+        session_list = []
+        for session in sessions:
+            session_data = {
+                "id": str(session["id"]),
+                "ip_address": session["ip_address"],
+                "user_agent": session["user_agent"],
+                "created_at": session["created_at"],
+                "last_accessed_at": session["last_accessed_at"],
+                "expires_at": session["expires_at"]
+            }
+            session_list.append(session_data)
+        
+        return {"sessions": session_list}
+    
+    @app.delete("/auth/sessions/{session_id}")
+    async def revoke_session(session_id: str, current_user: User = Depends(get_current_user)):
+        """Revoke a specific session"""
+        query = user_sessions_table.delete().where(
+            sqlalchemy.and_(
+                user_sessions_table.c.id == session_id,
+                user_sessions_table.c.user_id == current_user.id
+            )
+        )
+        
+        result = await database.execute(query)
+        if result:
+            logger.info(f"Session {session_id} revoked for user {current_user.email}")
+            return {"message": "Session revoked successfully"}
+        else:
+            raise HTTPException(status_code=404, detail="Session not found")
+    
+    @app.post("/auth/cleanup-sessions")
+    async def cleanup_sessions_endpoint(current_user: User = Depends(require_admin)):
+        """Admin endpoint to cleanup expired sessions"""
+        result = await cleanup_expired_sessions()
+        return {"message": f"Cleaned up expired sessions", "rows_affected": result}
     
     @app.post("/auth/register", response_model=User)
     async def register(user: UserCreate):
@@ -263,6 +453,30 @@ def main(cfg: DictConfig) -> None:
             {"id": 2, "name": "instructor", "description": "Course Instructor"},
             {"id": 3, "name": "student", "description": "Student"}
         ]
+
+    @app.get("/users/by-email/{email}")
+    async def get_user_by_email(email: str):
+        """Get user by email address"""
+        try:
+            async with database.transaction():
+                user = await database.fetch_one(
+                    "SELECT id, email, username, full_name, role FROM users WHERE email = :email",
+                    {"email": email}
+                )
+                
+                if not user:
+                    raise HTTPException(status_code=404, detail="User not found")
+                
+                return {
+                    "id": str(user["id"]),
+                    "email": user["email"],
+                    "username": user["username"],
+                    "full_name": user["full_name"],
+                    "role": user["role"]
+                }
+        except Exception as e:
+            logger.error(f"Error getting user by email: {e}")
+            raise HTTPException(status_code=500, detail="Failed to get user")
 
     # Admin endpoints
     @app.get("/admin/users", response_model=List[User])

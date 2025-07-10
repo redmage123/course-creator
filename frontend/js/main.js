@@ -66,7 +66,30 @@ function closeAccountDropdown() {
 }
 
 // Logout function - make it global
-window.logout = function() {
+window.logout = async function() {
+    try {
+        // Call server logout endpoint to invalidate session
+        if (authToken) {
+            const response = await fetch(`${AUTH_API_BASE}/auth/logout`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                console.log('Server session invalidated successfully');
+            } else {
+                console.warn('Failed to invalidate server session, continuing with client logout');
+            }
+        }
+    } catch (error) {
+        console.error('Error during server logout:', error);
+        // Continue with client-side logout even if server logout fails
+    }
+    
+    // Clear client-side data
     authToken = null;
     currentUser = null;
     localStorage.removeItem('authToken');

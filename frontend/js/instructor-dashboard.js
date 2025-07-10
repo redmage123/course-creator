@@ -164,13 +164,30 @@ async function handleCourseCreation(e) {
     const formData = new FormData(e.target);
     console.log('Current user:', currentUser);
     
+    // Get the user's UUID if we don't have it
+    let instructorId = currentUser.id;
+    if (!instructorId && currentUser.email) {
+        try {
+            const userResponse = await fetch(`http://176.9.99.103:8000/users/by-email/${currentUser.email}`);
+            if (userResponse.ok) {
+                const userData = await userResponse.json();
+                instructorId = userData.id;
+                // Update currentUser with full data
+                currentUser = userData;
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            }
+        } catch (error) {
+            console.error('Error fetching user data:', error);
+        }
+    }
+    
     const courseData = {
         title: formData.get('title'),
         description: formData.get('description'),
         category: formData.get('category'),
         difficulty_level: formData.get('difficulty_level'),
         estimated_duration: parseInt(formData.get('estimated_duration')) || 1,
-        instructor_id: currentUser.id || currentUser.email || currentUser.username || 'unknown'
+        instructor_id: instructorId || 'unknown'
     };
     
     console.log('Course data being sent:', courseData);

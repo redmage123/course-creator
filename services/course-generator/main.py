@@ -157,6 +157,77 @@ def main(cfg: DictConfig) -> None:
     import os
     claude_client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", "YOUR_CLAUDE_API_KEY"))
     
+    # Define sync helper functions
+    def generate_exercises_from_syllabus_sync(course_id: str, syllabus: dict) -> List[Dict]:
+        """Generate exercises based on syllabus modules (synchronous version)"""
+        exercises_list = []
+        
+        for module in syllabus.get("modules", []):
+            for i, topic in enumerate(module.get("topics", [])):
+                exercises_list.append({
+                    "id": f"ex_{module.get('module_number', 1)}_{i+1}",
+                    "title": f"{topic} - Hands-on Exercise",
+                    "description": f"Practice exercise for {topic}. Apply the concepts learned in this module through practical activities.",
+                    "type": "hands_on",
+                    "difficulty": "beginner",
+                    "instructions": [
+                        f"Review the key concepts of {topic}",
+                        f"Complete the practical tasks related to {topic}",
+                        "Test your understanding with the provided scenarios",
+                        "Submit your solution and reflection"
+                    ],
+                    "expected_output": f"Demonstration of {topic} understanding through practical application",
+                    "hints": [f"Focus on the key principles of {topic}", "Break down complex problems into smaller steps"]
+                })
+        
+        return exercises_list
+    
+    def generate_quizzes_from_syllabus_sync(course_id: str, syllabus: dict) -> List[Dict]:
+        """Generate quizzes based on syllabus modules (synchronous version)"""
+        quizzes_list = []
+        
+        for module in syllabus.get("modules", []):
+            quiz = {
+                "id": f"quiz_{module.get('module_number', 1)}",
+                "title": f"{module.get('title', 'Module')} - Knowledge Assessment",
+                "description": f"Quiz covering the key concepts from {module.get('title', 'this module')}",
+                "questions": [],
+                "duration": 15 + (len(module.get('topics', [])) * 3),  # 15 min base + 3 min per topic
+                "difficulty": "beginner"
+            }
+            
+            # Generate questions based on learning outcomes
+            for i, outcome in enumerate(module.get("learning_outcomes", [])):
+                quiz["questions"].append({
+                    "question": f"Which of the following best describes the key concept related to {outcome}?",
+                    "options": [
+                        f"The primary principle of {outcome}",
+                        f"A secondary aspect of {outcome}",
+                        f"An unrelated concept",
+                        f"A prerequisite for {outcome}"
+                    ],
+                    "correct_answer": 0,
+                    "explanation": f"This question tests understanding of {outcome} as covered in the module."
+                })
+            
+            # Add topic-based questions
+            for i, topic in enumerate(module.get("topics", [])):
+                quiz["questions"].append({
+                    "question": f"What is the most important aspect of {topic} in practical applications?",
+                    "options": [
+                        f"Implementation strategies for {topic}",
+                        f"Historical background of {topic}",
+                        f"Theoretical foundations only",
+                        f"Advanced variations of {topic}"
+                    ],
+                    "correct_answer": 0,
+                    "explanation": f"This focuses on practical application of {topic}."
+                })
+            
+            quizzes_list.append(quiz)
+        
+        return quizzes_list
+    
     @app.get("/")
     async def root():
         return {"message": "Course Generator Service"}
@@ -656,7 +727,7 @@ def main(cfg: DictConfig) -> None:
             
             response = claude_client.messages.create(
                 model="claude-3-haiku-20240307",
-                max_tokens=6000,
+                max_tokens=4000,
                 messages=[
                     {"role": "user", "content": slides_prompt}
                 ]
@@ -1086,14 +1157,66 @@ def main(cfg: DictConfig) -> None:
         course_id = request.get('course_id')
         if course_id not in course_syllabi:
             raise HTTPException(status_code=404, detail="Syllabus not found")
+        
         syllabus = course_syllabi[course_id]
-        slides = [{"id": f"slide_{i}", "title": f"Slide {i}", "content": "Content", "slide_type": "content", "order": i} for i in range(1, 6)]
-        exercises_data = [{"id": "ex1", "title": "Exercise 1", "description": "Practice", "type": "hands_on", "difficulty": "beginner"}]
-        quizzes_data = [{"id": "quiz1", "title": "Quiz 1", "description": "Test", "questions": [], "duration": 15}]
-        course_slides[course_id] = slides
-        exercises[course_id] = exercises_data
-        course_quizzes[course_id] = quizzes_data
-        return {"course_id": course_id, "slides": slides, "exercises": exercises_data, "quizzes": quizzes_data}
+        logger.info(f"Generating content from syllabus for course: {course_id}")
+        
+        try:
+            # Generate slides based on syllabus
+            slides = generate_course_slides_from_syllabus(course_id, syllabus)
+            course_slides[course_id] = slides
+            
+            # Generate exercises based on syllabus
+            exercises_data = generate_exercises_from_syllabus_sync(course_id, syllabus)
+            exercises[course_id] = exercises_data
+            
+            # Generate quizzes based on syllabus
+            quizzes_data = generate_quizzes_from_syllabus_sync(course_id, syllabus)
+            course_quizzes[course_id] = quizzes_data
+            
+            # Create lab environment for this course
+            lab_id = str(uuid.uuid4())
+            lab_config = generate_lab_environment(
+                f"AI Lab for {syllabus.get('overview', 'Course')[:50]}...", 
+                f"Interactive lab environment for hands-on learning", 
+                "ai_assisted"
+            )
+            
+            lab_environments[lab_id] = {
+                "id": lab_id,
+                "course_id": course_id,
+                "name": f"AI Lab Environment",
+                "description": f"Interactive learning environment with AI assistance",
+                "environment_type": "ai_assisted",
+                "config": lab_config,
+                "exercises": exercises_data[:3],  # First 3 exercises for lab
+                "status": "ready"
+            }
+            
+            logger.info(f"Generated {len(slides)} slides, {len(exercises_data)} exercises, {len(quizzes_data)} quizzes, and lab environment")
+            
+            return {
+                "course_id": course_id,
+                "slides": slides,
+                "exercises": exercises_data,
+                "quizzes": quizzes_data,
+                "lab": lab_environments[lab_id],
+                "message": "All content generated successfully from syllabus"
+            }
+            
+        except Exception as e:
+            logger.error(f"Content generation error: {e}")
+            # Fallback to simple content
+            slides = generate_fallback_slides("Course Content", syllabus.get('overview', ''), 'General')
+            course_slides[course_id] = slides
+            
+            exercises_data = [{"id": "ex1", "title": "Practice Exercise", "description": "Complete the learning activities", "type": "hands_on", "difficulty": "beginner"}]
+            exercises[course_id] = exercises_data
+            
+            quizzes_data = [{"id": "quiz1", "title": "Knowledge Check", "description": "Test your understanding", "questions": [], "duration": 15}]
+            course_quizzes[course_id] = quizzes_data
+            
+            return {"course_id": course_id, "slides": slides, "exercises": exercises_data, "quizzes": quizzes_data}
     
     @app.post("/courses/save")
     async def save_course_content(request: dict):
@@ -1228,40 +1351,6 @@ if __name__ == "__main__":
             raise HTTPException(status_code=404, detail="Syllabus not found for this course")
         return {"course_id": course_id, "syllabus": course_syllabi[course_id]}
     
-    @app.post("/content/generate-from-syllabus")
-    async def generate_content_from_syllabus(request: dict):
-        """Generate slides, exercises, and quizzes from approved syllabus"""
-        course_id = request.get('course_id')
-        
-        if course_id not in course_syllabi:
-            raise HTTPException(status_code=404, detail="Syllabus not found. Generate syllabus first.")
-        
-        syllabus = course_syllabi[course_id]
-        
-        try:
-            # Generate slides based on syllabus
-            slides = generate_course_slides_from_syllabus(course_id, syllabus)
-            course_slides[course_id] = slides
-            
-            # Generate exercises based on syllabus
-            exercises_data = await generate_exercises_from_syllabus(course_id, syllabus)
-            exercises[course_id] = exercises_data
-            
-            # Generate quizzes based on syllabus
-            quizzes_data = await generate_quizzes_from_syllabus(course_id, syllabus)
-            course_quizzes[course_id] = quizzes_data
-            
-            return {
-                "course_id": course_id,
-                "slides": slides,
-                "exercises": exercises_data,
-                "quizzes": quizzes_data,
-                "message": "All content generated successfully from syllabus"
-            }
-            
-        except Exception as e:
-            logger.error(f"Content generation error: {e}")
-            raise HTTPException(status_code=500, detail=f"Error generating content: {str(e)}")
     
     def generate_fallback_syllabus(request: SyllabusRequest) -> dict:
         """Generate fallback syllabus structure"""
@@ -1386,3 +1475,10 @@ if __name__ == "__main__":
             quizzes_list.append(quiz)
         
         return quizzes_list
+    
+
+    # Start the server
+    uvicorn.run(app, host=cfg.server.host, port=cfg.server.port, reload=cfg.server.reload)
+
+if __name__ == "__main__":
+    main()
