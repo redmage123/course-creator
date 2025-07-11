@@ -1,0 +1,64 @@
+🧪 Starting Course Creator Platform Test Suite
+==============================================
+[0;34m[INFO][0m Course Creator Platform Test Suite Starting...
+[0;34m[INFO][0m Running code linting...
+
+> course-creator@1.0.0 lint
+> eslint frontend/js/**/*.js
+
+
+/home/bbrelin/course-creator/frontend/js/instructor-dashboard.js
+   264:9   error  Unreachable code                                 no-unreachable
+   919:19  error  'result' is assigned a value but never used      no-unused-vars
+  1157:42  error  Unnecessary escape character: \'                 no-useless-escape
+  1161:52  error  Unnecessary escape character: \'                 no-useless-escape
+  1186:42  error  Unnecessary escape character: \'                 no-useless-escape
+  1186:92  error  Unnecessary escape character: \'                 no-useless-escape
+  1190:52  error  Unnecessary escape character: \'                 no-useless-escape
+  1256:71  error  Unnecessary escape character: \'                 no-useless-escape
+  1658:10  error  'switchEditTab' is defined but never used        no-unused-vars
+  1666:10  error  'addNewSlide' is defined but never used          no-unused-vars
+  1751:16  error  'regenerateAllSlides' is defined but never used  no-unused-vars
+  1807:10  error  'previewSlideshow' is defined but never used     no-unused-vars
+  1963:16  error  'refineSyllabus' is defined but never used       no-unused-vars
+  2001:16  error  'approveSyllabus' is defined but never used      no-unused-vars
+  2031:16  error  'saveCourseContent' is defined but never used    no-unused-vars
+  2046:64  error  Unnecessary escape character: \!                 no-useless-escape
+
+/home/bbrelin/course-creator/frontend/js/main.js
+    1:7   error  'API_BASE' is assigned a value but never used  no-unused-vars
+  114:10  error  'getDashboardLink' is defined but never used   no-unused-vars
+
+✖ 18 problems (18 errors, 0 warnings)
+
+[1;33m[WARNING][0m Linting failed, attempting to fix...
+
+> course-creator@1.0.0 lint:fix
+> eslint frontend/js/**/*.js --fix
+
+
+/home/bbrelin/course-creator/frontend/js/instructor-dashboard.js
+   264:9   error  Unreachable code                                 no-unreachable
+   919:19  error  'result' is assigned a value but never used      no-unused-vars
+  1157:42  error  Unnecessary escape character: \'                 no-useless-escape
+  1161:52  error  Unnecessary escape character: \'                 no-useless-escape
+  1186:42  error  Unnecessary escape character: \'                 no-useless-escape
+  1186:92  error  Unnecessary escape character: \'                 no-useless-escape
+  1190:52  error  Unnecessary escape character: \'                 no-useless-escape
+  1256:71  error  Unnecessary escape character: \'                 no-useless-escape
+  1658:10  error  'switchEditTab' is defined but never used        no-unused-vars
+  1666:10  error  'addNewSlide' is defined but never used          no-unused-vars
+  1751:16  error  'regenerateAllSlides' is defined but never used  no-unused-vars
+  1807:10  error  'previewSlideshow' is defined but never used     no-unused-vars
+  1963:16  error  'refineSyllabus' is defined but never used       no-unused-vars
+  2001:16  error  'approveSyllabus' is defined but never used      no-unused-vars
+  2031:16  error  'saveCourseContent' is defined but never used    no-unused-vars
+  2046:64  error  Unnecessary escape character: \!                 no-useless-escape
+
+/home/bbrelin/course-creator/frontend/js/main.js
+    1:7   error  'API_BASE' is assigned a value but never used  no-unused-vars
+  114:10  error  'getDashboardLink' is defined but never used   no-unused-vars
+
+✖ 18 problems (18 errors, 0 warnings)
+
+[0;34m[INFO][0m Cleaning up test processes...

@@ -14,7 +14,11 @@ cors:
     - "http://localhost:8001"
     - "http://localhost:8003"
     - "http://localhost:8004"
-    - "http://176.9.99.103:3000"
+    - "http://${oc.env:HOST_IP,176.9.99.103}:3000"
+    - "http://${oc.env:HOST_IP,176.9.99.103}:8000"
+    - "http://${oc.env:HOST_IP,176.9.99.103}:8001"
+    - "http://${oc.env:HOST_IP,176.9.99.103}:8003"
+    - "http://${oc.env:HOST_IP,176.9.99.103}:8004"
 
 database:
   url: postgresql+asyncpg://course_user:${DB_PASSWORD}@localhost:5433/course_creator

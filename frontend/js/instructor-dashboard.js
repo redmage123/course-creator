@@ -13,6 +13,61 @@ document.addEventListener('DOMContentLoaded', function() {
     loadCoursesForContentSelector();
 });
 
+// Notification system
+function showNotification(message, type = 'info', duration = 5000) {
+    // Remove existing notifications
+    const existing = document.querySelector('.notification');
+    if (existing) {
+        existing.remove();
+    }
+    
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <i class="fas ${getNotificationIcon(type)}"></i>
+            <span>${message}</span>
+        </div>
+        <button class="notification-close" onclick="this.parentElement.remove()">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    // Add to page
+    document.body.appendChild(notification);
+    
+    // Auto-remove after duration
+    if (duration > 0) {
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, duration);
+    }
+}
+
+function getNotificationIcon(type) {
+    switch (type) {
+        case 'success': return 'fa-check-circle';
+        case 'error': return 'fa-exclamation-circle';
+        case 'warning': return 'fa-exclamation-triangle';
+        case 'info': 
+        default: return 'fa-info-circle';
+    }
+}
+
+// Helper function to get initials
+function getInitials(name) {
+    if (!name) return 'U';
+    const words = name.split(' ');
+    if (words.length >= 2) {
+        return (words[0][0] + words[1][0]).toUpperCase();
+    } else {
+        return name.substring(0, 2).toUpperCase();
+    }
+}
+
+
 function initializeDashboard() {
     // Check if user is logged in
     currentUser = getCurrentUser();
@@ -26,6 +81,13 @@ function initializeDashboard() {
     
     // Set up event listeners
     setupEventListeners();
+    
+    // Initialize dashboard with overview section
+    showSection('overview');
+    
+    // Load initial data
+    loadUserCourses();
+    updateNavigationStats();
 }
 
 function setupEventListeners() {
@@ -38,45 +100,213 @@ function setupEventListeners() {
 }
 
 function updateUserDisplay() {
+    // Update header user display
     const userName = document.getElementById('userName');
     const avatarInitials = document.getElementById('avatarInitials');
     
+    // Update sidebar user display
+    const sidebarUserName = document.getElementById('sidebarUserName');
+    const sidebarAvatarInitials = document.getElementById('sidebarAvatarInitials');
+    const sidebarUserRole = document.getElementById('sidebarUserRole');
+    
     if (currentUser) {
         const displayName = currentUser.full_name || currentUser.username || currentUser.email || 'Instructor';
+        const initials = getInitials(displayName);
+        const role = currentUser.role || 'instructor';
+        
+        // Update header
         if (userName) userName.textContent = displayName;
-        if (avatarInitials) avatarInitials.textContent = getInitials(displayName);
+        if (avatarInitials) avatarInitials.textContent = initials;
+        
+        // Update sidebar
+        if (sidebarUserName) sidebarUserName.textContent = displayName;
+        if (sidebarAvatarInitials) sidebarAvatarInitials.textContent = initials;
+        if (sidebarUserRole) {
+            sidebarUserRole.textContent = role.charAt(0).toUpperCase() + role.slice(1);
+        }
     }
 }
 
-// Tab management
+// Section management for new sidebar navigation
 // eslint-disable-next-line no-unused-vars
-function showTab(tabName, event = null) {
-    // Hide all tabs
-    document.querySelectorAll('.tab-content').forEach(tab => {
-        tab.classList.remove('active');
+function showSection(sectionName) {
+    // Hide all content sections
+    document.querySelectorAll('.content-section').forEach(section => {
+        section.classList.remove('active');
     });
     
-    // Remove active class from all buttons
-    document.querySelectorAll('.tab-button').forEach(button => {
-        button.classList.remove('active');
+    // Remove active class from all nav links
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
     });
     
-    // Show selected tab
-    document.getElementById(tabName + '-tab').classList.add('active');
+    // Show selected section
+    const targetSection = document.getElementById(sectionName + '-section');
+    if (targetSection) {
+        targetSection.classList.add('active');
+    }
     
-    // Add active class to corresponding button
-    if (event && event.target) {
-        event.target.classList.add('active');
-    } else {
-        // If no event, find the button by matching text content
-        const buttons = document.querySelectorAll('.tab-button');
-        buttons.forEach(button => {
-            const buttonText = button.textContent.trim().toLowerCase();
-            const targetText = tabName.toLowerCase().replace('-', ' ');
-            if (buttonText.includes(targetText) || targetText.includes(buttonText.replace('my ', ''))) {
-                button.classList.add('active');
+    // Add active class to corresponding nav link
+    const targetLink = document.querySelector(`[data-section="${sectionName}"]`);
+    if (targetLink) {
+        targetLink.classList.add('active');
+    }
+    
+    // Update breadcrumb
+    const breadcrumb = document.getElementById('currentSection');
+    if (breadcrumb) {
+        const sectionTitles = {
+            'overview': 'Overview',
+            'courses': 'My Courses',
+            'create-course': 'Create Course',
+            'students': 'Students',
+            'content': 'Content',
+            'analytics': 'Analytics'
+        };
+        breadcrumb.textContent = sectionTitles[sectionName] || 'Dashboard';
+    }
+    
+    // Load section-specific data
+    loadSectionData(sectionName);
+    
+    // Update nav badges and stats when switching sections
+    updateNavigationStats();
+}
+
+// Load data specific to each section
+function loadSectionData(sectionName) {
+    switch (sectionName) {
+        case 'overview':
+            loadOverviewMetrics();
+            loadRecentActivity();
+            break;
+        case 'courses':
+            loadUserCourses();
+            break;
+        case 'students':
+            loadCoursesForSelector();
+            break;
+        case 'content':
+            loadCoursesForContentSelector();
+            break;
+        case 'create-course':
+            // Form is ready by default
+            break;
+        case 'analytics':
+            // Analytics placeholder for now
+            break;
+    }
+}
+
+// Load overview metrics for dashboard
+async function loadOverviewMetrics() {
+    try {
+        // Get total students across all courses
+        let totalStudents = 0;
+        let totalCourses = userCourses.length;
+        let activeCourses = userCourses.filter(course => course.is_published).length;
+        
+        // Calculate lab sessions and other metrics
+        let totalLabSessions = 0;
+        
+        for (const course of userCourses) {
+            try {
+                const token = localStorage.getItem('authToken');
+                const studentsResponse = await fetch(CONFIG.ENDPOINTS.COURSE_STUDENTS(course.id), {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (studentsResponse.ok) {
+                    const students = await studentsResponse.json();
+                    totalStudents += students.length;
+                }
+            } catch (error) {
+                console.log('Error fetching students for course:', course.id);
             }
-        });
+        }
+        
+        // Update metric cards
+        updateMetricCard('overviewTotalStudents', totalStudents, 'studentChange', '+2 this week');
+        updateMetricCard('overviewActiveCourses', activeCourses, 'courseChange', 'No change');
+        updateMetricCard('overviewAvgProgress', '75%', 'progressChange', '+5% this week');
+        updateMetricCard('overviewLabSessions', totalLabSessions, 'labChange', '+3 today');
+        
+    } catch (error) {
+        console.error('Error loading overview metrics:', error);
+    }
+}
+
+// Update individual metric card
+function updateMetricCard(valueId, value, changeId, changeText) {
+    const valueElement = document.getElementById(valueId);
+    const changeElement = document.getElementById(changeId);
+    
+    if (valueElement) {
+        valueElement.textContent = value;
+    }
+    if (changeElement) {
+        changeElement.textContent = changeText;
+    }
+}
+
+// Load recent activity for overview
+function loadRecentActivity() {
+    const activityList = document.getElementById('recentActivityList');
+    if (!activityList) return;
+    
+    // For now, show static activity - this would come from an API in production
+    const activities = [
+        {
+            icon: 'fas fa-user-plus',
+            text: '<strong>New student enrolled</strong> in Python Fundamentals',
+            time: '2 hours ago'
+        },
+        {
+            icon: 'fas fa-flask',
+            text: '<strong>Lab session completed</strong> by 3 students',
+            time: '4 hours ago'
+        },
+        {
+            icon: 'fas fa-check-circle',
+            text: '<strong>Course published</strong> - JavaScript Basics',
+            time: '1 day ago'
+        }
+    ];
+    
+    activityList.innerHTML = activities.map(activity => `
+        <div class="activity-item">
+            <div class="activity-icon">
+                <i class="${activity.icon}"></i>
+            </div>
+            <div class="activity-content">
+                <p>${activity.text}</p>
+                <span class="activity-time">${activity.time}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Update navigation stats in sidebar
+function updateNavigationStats() {
+    const courseCount = document.getElementById('courseCount');
+    const studentCount = document.getElementById('studentCount');
+    const totalStudents = document.getElementById('totalStudents');
+    const activeCourses = document.getElementById('activeCourses');
+    
+    if (courseCount) {
+        courseCount.textContent = userCourses.length;
+    }
+    
+    if (activeCourses) {
+        activeCourses.textContent = userCourses.filter(course => course.is_published).length;
+    }
+    
+    // Student count would need to be calculated from course enrollments
+    // For now, using placeholder values
+    if (studentCount) {
+        studentCount.textContent = '0';
+    }
+    if (totalStudents) {
+        totalStudents.textContent = '0';
     }
 }
 
@@ -84,7 +314,7 @@ function showTab(tabName, event = null) {
 async function loadUserCourses() {
     try {
         const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-        const response = await fetch('http://176.9.99.103:8004/courses', {
+        const response = await fetch(CONFIG.ENDPOINTS.COURSES, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -93,6 +323,7 @@ async function loadUserCourses() {
         if (response.ok) {
             userCourses = await response.json();
             displayCourses(userCourses);
+            updateNavigationStats();
         }
     } catch (error) {
         console.error('Error loading courses:', error);
@@ -109,7 +340,7 @@ function displayCourses(courses) {
                 <i class="fas fa-book"></i>
                 <h3>No courses yet</h3>
                 <p>Create your first course to get started!</p>
-                <button class="btn btn-primary" onclick="showTab('create-course', event)">
+                <button class="btn btn-primary" onclick="showSection('create-course')">
                     <i class="fas fa-plus"></i> Create Course
                 </button>
             </div>
@@ -117,45 +348,89 @@ function displayCourses(courses) {
         return;
     }
     
-    coursesList.innerHTML = courses.map(course => `
-        <div class="course-card">
-            <div class="course-header">
-                <h4>${course.title}</h4>
-                <div class="course-status ${course.is_published ? 'published' : 'draft'}">
-                    ${course.is_published ? 'Published' : 'Draft'}
+    coursesList.innerHTML = courses.map(course => {
+        const lastModified = course.updated_at ? new Date(course.updated_at).toLocaleDateString() : 'Recently';
+        const enrollmentCount = course.enrollment_count || 0;
+        const completionRate = course.completion_rate || 0;
+        
+        return `
+            <div class="course-card enhanced">
+                <div class="course-header">
+                    <div class="course-title-section">
+                        <h4>${course.title}</h4>
+                        <div class="course-meta-badges">
+                            <span class="course-status ${course.is_published ? 'published' : 'draft'}">
+                                <i class="fas ${course.is_published ? 'fa-check-circle' : 'fa-clock'}"></i>
+                                ${course.is_published ? 'Published' : 'Draft'}
+                            </span>
+                            <span class="course-category-badge">${course.category}</span>
+                        </div>
+                    </div>
+                    <div class="course-metrics">
+                        <div class="metric-item">
+                            <span class="metric-value">${enrollmentCount}</span>
+                            <span class="metric-label">Students</span>
+                        </div>
+                        <div class="metric-item">
+                            <span class="metric-value">${completionRate}%</span>
+                            <span class="metric-label">Completion</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <p class="course-description">${course.description}</p>
+                
+                <div class="course-details">
+                    <div class="course-meta">
+                        <span class="meta-item">
+                            <i class="fas fa-signal"></i>
+                            ${course.difficulty_level}
+                        </span>
+                        <span class="meta-item">
+                            <i class="fas fa-clock"></i>
+                            ${course.estimated_duration}h
+                        </span>
+                        <span class="meta-item">
+                            <i class="fas fa-calendar"></i>
+                            ${lastModified}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="course-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${course.content_progress || 0}%"></div>
+                    </div>
+                    <span class="progress-text">${course.content_progress || 0}% Content Complete</span>
+                </div>
+                
+                <div class="course-actions">
+                    <div class="primary-actions">
+                        <button class="btn btn-sm btn-primary" onclick="manageCourse('${course.id}')" title="Manage Course">
+                            <i class="fas fa-cog"></i> Manage
+                        </button>
+                        <button class="btn btn-sm btn-success" onclick="generateCourseContent('${course.id}')" title="Generate Content">
+                            <i class="fas fa-magic"></i> Generate
+                        </button>
+                        <button class="btn btn-sm btn-info" onclick="viewCourseContent('${course.id}')" title="View Content">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                    </div>
+                    <div class="secondary-actions">
+                        <button class="btn btn-sm btn-secondary" onclick="viewCourseStudents('${course.id}')" title="View Students">
+                            <i class="fas fa-users"></i>
+                        </button>
+                        <button class="btn btn-sm btn-warning" onclick="editCourse('${course.id}')" title="Edit Course">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteCourse('${course.id}')" title="Delete Course">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
-            <p class="course-description">${course.description}</p>
-            <div class="course-meta">
-                <span class="course-category">${course.category}</span>
-                <span class="course-difficulty">${course.difficulty_level}</span>
-                <span class="course-duration">${course.estimated_duration}h</span>
-            </div>
-            <div class="course-actions">
-                <button class="btn btn-sm btn-primary" onclick="manageCourse('${course.id}')">
-                    <i class="fas fa-cog"></i> Manage
-                </button>
-                <button class="btn btn-sm btn-secondary" onclick="viewCourseStudents('${course.id}')">
-                    <i class="fas fa-users"></i> Students
-                </button>
-                <button class="btn btn-sm btn-success" onclick="generateCourseContent('${course.id}')">
-                    <i class="fas fa-magic"></i> Generate Content
-                </button>
-                <button class="btn btn-sm btn-info" onclick="viewCourseContent('${course.id}')">
-                    <i class="fas fa-eye"></i> View Content
-                </button>
-                <button class="btn btn-sm btn-warning" onclick="editCourse('${course.id}')">
-                    <i class="fas fa-edit"></i> Edit
-                </button>
-                <button class="btn btn-sm btn-danger" onclick="deleteCourse('${course.id}')">
-                    <i class="fas fa-trash"></i> Delete
-                </button>
-                <button class="btn btn-sm btn-success" onclick="saveCourseContent('${course.id}')">
-                    <i class="fas fa-save"></i> Save
-                </button>
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 async function handleCourseCreation(e) {
@@ -168,7 +443,7 @@ async function handleCourseCreation(e) {
     let instructorId = currentUser.id;
     if (!instructorId && currentUser.email) {
         try {
-            const userResponse = await fetch(`http://176.9.99.103:8000/users/by-email/${currentUser.email}`);
+            const userResponse = await fetch(CONFIG.ENDPOINTS.USER_BY_EMAIL(currentUser.email));
             if (userResponse.ok) {
                 const userData = await userResponse.json();
                 instructorId = userData.id;
@@ -194,7 +469,7 @@ async function handleCourseCreation(e) {
     
     try {
         const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-        const response = await fetch('http://176.9.99.103:8004/courses', {
+        const response = await fetch(CONFIG.ENDPOINTS.COURSES, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -215,8 +490,8 @@ async function handleCourseCreation(e) {
             loadUserCourses();
             loadCoursesForSelector();
             
-            // Show courses tab
-            showTab('courses');
+            // Show courses section
+            showSection('courses');
         } else {
             const errorData = await response.json();
             console.error('API Error:', errorData);
@@ -228,16 +503,115 @@ async function handleCourseCreation(e) {
     }
 }
 
+// Course management functions
+
+// eslint-disable-next-line no-unused-vars
+function manageCourse(courseId) {
+    // Implement course management interface
+    showNotification('Course management interface coming soon', 'info');
+}
+
+// eslint-disable-next-line no-unused-vars
+function viewCourseStudents(courseId) {
+    // Switch to students section and load this course
+    showSection('students');
+    const courseSelector = document.getElementById('selectedCourse');
+    if (courseSelector) {
+        courseSelector.value = courseId;
+        loadCourseStudents();
+    }
+}
+
+// eslint-disable-next-line no-unused-vars
+function viewCourseContent(courseId) {
+    // Switch to content section and load this course
+    showSection('content');
+    const courseSelector = document.getElementById('contentCourseSelect');
+    if (courseSelector) {
+        courseSelector.value = courseId;
+        loadCourseContent();
+    }
+}
+
+// eslint-disable-next-line no-unused-vars
+function editCourse(courseId) {
+    // Implement course editing
+    showNotification('Course editing interface coming soon', 'info');
+}
+
+// eslint-disable-next-line no-unused-vars
+function deleteCourse(courseId) {
+    if (confirm('Are you sure you want to delete this course? This action cannot be undone.')) {
+        // Implement course deletion
+        showNotification('Course deletion not yet implemented', 'warning');
+    }
+}
+
+// eslint-disable-next-line no-unused-vars
+function saveCourseContent(courseId) {
+    // Implement course content saving
+    showNotification('Course content saved successfully', 'success');
+}
+
+// Load course students
+function loadCourseStudents() {
+    const courseId = document.getElementById('selectedCourse')?.value;
+    if (!courseId) return;
+    
+    // Implement student loading for selected course
+    showNotification('Loading course students...', 'info');
+}
+
+// Load course content
+
+// Course filtering and search
+function filterCourses() {
+    const filter = document.getElementById('courseStatusFilter')?.value;
+    const searchTerm = document.getElementById('courseSearch')?.value.toLowerCase();
+    
+    let filteredCourses = userCourses;
+    
+    if (filter && filter !== 'all') {
+        filteredCourses = filteredCourses.filter(course => {
+            if (filter === 'published') return course.is_published;
+            if (filter === 'draft') return !course.is_published;
+            if (filter === 'archived') return course.is_archived;
+            return true;
+        });
+    }
+    
+    if (searchTerm) {
+        filteredCourses = filteredCourses.filter(course => 
+            course.title.toLowerCase().includes(searchTerm) ||
+            course.description.toLowerCase().includes(searchTerm) ||
+            course.category.toLowerCase().includes(searchTerm)
+        );
+    }
+    
+    displayCourses(filteredCourses);
+}
+
+// Search courses
+function searchCourses() {
+    filterCourses();
+}
+
+// Reset form
+function resetForm() {
+    document.getElementById('courseForm')?.reset();
+}
+
 // eslint-disable-next-line no-unused-vars
 async function generateCourseContent(courseId) {
     try {
         const course = userCourses.find(c => c.id == courseId);
         if (!course) return;
         
-        showNotification('Starting syllabus generation...', 'info');
+        // Show progress modal for syllabus generation
+        showProgressModal('Generating Syllabus', 'Analyzing course requirements and creating syllabus...');
         
         // Step 1: Generate syllabus first
-        const syllabusResponse = await fetch('http://176.9.99.103:8001/syllabus/generate', {
+        const syllabusResponse = await fetch(CONFIG.ENDPOINTS.GENERATE_SYLLABUS, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -254,72 +628,28 @@ async function generateCourseContent(courseId) {
         
         if (syllabusResponse.ok) {
             const syllabusData = await syllabusResponse.json();
-            showSyllabusPreview(courseId, syllabusData.syllabus);
+            
+            // Update progress modal with success
+            updateProgressModal('Syllabus Generated Successfully!', 
+                '✅ Course syllabus has been created<br>✅ Learning objectives defined<br>✅ Modules structured<br><br><em>Please review and approve the syllabus to continue.</em>');
+            
+            // Close progress modal after delay and show syllabus preview
+            setTimeout(() => {
+                closeProgressModal();
+                showSyllabusPreview(courseId, syllabusData.syllabus);
+            }, 2000);
+            
             return; // Wait for user approval
         } else {
             throw new Error('Failed to generate syllabus');
         }
-        
-        // Generate slides
-        const slidesResponse = await fetch('http://176.9.99.103:8001/slides/generate', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                course_id: courseId,
-                title: course.title,
-                description: course.description,
-                topic: course.category
-            })
-        });
-        
-        // Generate lab environment
-        const labResponse = await fetch('http://176.9.99.103:8001/lab/create', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                course_id: courseId,
-                name: `${course.title} Lab`,
-                description: `Interactive lab environment for ${course.title}`,
-                environment_type: 'simulation',
-                config: {},
-                exercises: []
-            })
-        });
-        
-        // Generate exercises
-        const exercisesResponse = await fetch('http://176.9.99.103:8001/exercises/generate', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                course_id: courseId,
-                topic: course.category,
-                difficulty: course.difficulty_level
-            })
-        });
-        
-        if (slidesResponse.ok && labResponse.ok && exercisesResponse.ok) {
-            showNotification('Course content generated successfully!', 'success');
-            
-            // Store the generated content IDs for future reference
-            const slidesData = await slidesResponse.json();
-            const labData = await labResponse.json();
-            const exercisesData = await exercisesResponse.json();
-            
-            console.log('Generated content:', { slidesData, labData, exercisesData });
-            
-            // Refresh content selector if visible
-            loadCoursesForContentSelector();
-        } else {
-            throw new Error('Failed to generate content');
-        }
     } catch (error) {
         console.error('Error generating content:', error);
+        updateProgressModal('Syllabus Generation Failed', 
+            `❌ Error generating syllabus: ${error.message}<br><br>Please try again or contact support if the problem persists.`);
+        setTimeout(() => {
+            closeProgressModal();
+        }, 3000);
         showNotification('Error generating course content', 'error');
     }
 }
@@ -328,7 +658,7 @@ async function generateCourseContent(courseId) {
 async function loadCoursesForSelector() {
     try {
         const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-        const response = await fetch('http://176.9.99.103:8004/courses', {
+        const response = await fetch(CONFIG.ENDPOINTS.COURSES, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -338,12 +668,43 @@ async function loadCoursesForSelector() {
             const courses = await response.json();
             const selector = document.getElementById('selectedCourse');
             
-            selector.innerHTML = '<option value="">Select a course...</option>' +
-                courses.map(course => `<option value="${course.id}">${course.title}</option>`).join('');
+            if (selector) {
+                selector.innerHTML = '<option value="">Select a course...</option>' +
+                    courses.map(course => `<option value="${course.id}">${course.title}</option>`).join('');
+            }
         }
     } catch (error) {
         console.error('Error loading courses for selector:', error);
     }
+}
+
+// Load courses for content selector
+async function loadCoursesForContentSelector() {
+    try {
+        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+        const response = await fetch(CONFIG.ENDPOINTS.COURSES, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            const courses = await response.json();
+            const selector = document.getElementById('contentCourseSelect');
+            
+            if (selector) {
+                selector.innerHTML = '<option value="">Select a course...</option>' +
+                    courses.map(course => `<option value="${course.id}">${course.title}</option>`).join('');
+            }
+        }
+    } catch (error) {
+        console.error('Error loading courses for content selector:', error);
+    }
+}
+
+// Analytics view helper
+function viewAnalytics() {
+    showSection('analytics');
 }
 
 async function handleSingleEnrollment(e) {
@@ -362,7 +723,7 @@ async function handleSingleEnrollment(e) {
     };
     
     try {
-        const response = await fetch('http://176.9.99.103:8004/instructor/enroll-student', {
+        const response = await fetch(CONFIG.ENDPOINTS.ENROLL_STUDENT, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -407,7 +768,7 @@ async function handleBulkEnrollment(e) {
     };
     
     try {
-        const response = await fetch('http://176.9.99.103:8004/instructor/register-students', {
+        const response = await fetch(CONFIG.ENDPOINTS.REGISTER_STUDENTS, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -442,7 +803,7 @@ async function loadCourseStudents() {
     }
     
     try {
-        const response = await fetch(`http://176.9.99.103:8004/instructor/course/${courseId}/students`);
+        const response = await fetch(CONFIG.ENDPOINTS.COURSE_STUDENTS(courseId));
         
         if (response.ok) {
             const result = await response.json();
@@ -504,7 +865,7 @@ async function removeStudent(enrollmentId) {
     }
     
     try {
-        const response = await fetch(`http://176.9.99.103:8004/instructor/enrollment/${enrollmentId}`, {
+        const response = await fetch(CONFIG.ENDPOINTS.REMOVE_ENROLLMENT(enrollmentId), {
             method: 'DELETE'
         });
         
@@ -522,28 +883,10 @@ async function removeStudent(enrollmentId) {
 
 // Utility functions
 // eslint-disable-next-line no-unused-vars
-function resetForm() {
-    document.getElementById('courseForm').reset();
-}
 
 // eslint-disable-next-line no-unused-vars
-function manageCourse(courseId) {
-    // Navigate to course management page
-    window.location.href = `course-manage.html?id=${courseId}`;
-}
 
-// eslint-disable-next-line no-unused-vars
-function viewCourseStudents(courseId) {
-    // Switch to student management tab and select the course
-    showTab('student-management');
-    document.getElementById('selectedCourse').value = courseId;
-    loadCourseStudents();
-}
 
-function getInitials(name) {
-    if (!name) return 'IN';
-    return name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2);
-}
 
 function showNotification(message, type = 'info') {
     // Create notification element
@@ -591,7 +934,7 @@ function getCurrentUser() {
 async function loadCoursesForContentSelector() {
     try {
         const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-        const response = await fetch('http://176.9.99.103:8004/courses', {
+        const response = await fetch(CONFIG.ENDPOINTS.COURSES, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -614,58 +957,234 @@ async function loadCoursesForContentSelector() {
 // eslint-disable-next-line no-unused-vars
 async function loadCourseContent() {
     const courseId = document.getElementById('contentCourseSelect').value;
+    
     if (!courseId) {
         document.getElementById('course-content-display').innerHTML = '<p>Select a course to view its content</p>';
         return;
     }
     
     const course = userCourses.find(c => c.id == courseId);
+    
     if (!course) {
         document.getElementById('course-content-display').innerHTML = '<p>Course not found</p>';
         return;
     }
     
+    // Show loading state
     document.getElementById('course-content-display').innerHTML = `
         <div class="course-content-header">
             <h4>${course.title}</h4>
             <p>${course.description}</p>
         </div>
-        
-        <div class="content-sections">
-            <div class="content-section">
-                <h5><i class="fas fa-presentation"></i> Slides</h5>
-                <div id="slides-content" class="content-area">
-                    <button class="btn btn-primary" onclick="loadSlides('${courseId}')">
-                        <i class="fas fa-download"></i> Load Slides
-                    </button>
-                </div>
-            </div>
-            
-            <div class="content-section">
-                <h5><i class="fas fa-flask"></i> Lab Environment</h5>
-                <div id="lab-content" class="content-area">
-                    <button class="btn btn-primary" onclick="loadLabEnvironment('${courseId}')">
-                        <i class="fas fa-download"></i> Load Lab Environment
-                    </button>
-                </div>
-            </div>
-            
-            <div class="content-section">
-                <h5><i class="fas fa-question-circle"></i> Quizzes & Tests</h5>
-                <div id="quizzes-content" class="content-area">
-                    <button class="btn btn-primary" onclick="loadQuizzes('${courseId}')">
-                        <i class="fas fa-download"></i> Load Quizzes
-                    </button>
-                </div>
-            </div>
+        <div class="loading-state">
+            <i class="fas fa-spinner fa-spin"></i> Loading course content...
         </div>
     `;
+    
+    // Fetch and display the actual content
+    try {
+        const token = localStorage.getItem('authToken');
+        
+        // Fetch slides
+        let slidesContent = '';
+        try {
+            const slidesResponse = await fetch(CONFIG.ENDPOINTS.SLIDES(courseId), {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (slidesResponse.ok) {
+                const slidesData = await slidesResponse.json();
+                if (slidesData && slidesData.slides && slidesData.slides.length > 0) {
+                    slidesContent = `
+                        <p><strong>${slidesData.slides.length} slide${slidesData.slides.length === 1 ? '' : 's'} available</strong></p>
+                        <div class="slides-list">
+                            ${slidesData.slides.slice(0, 5).map((slide, index) => `
+                                <div class="slide-preview">
+                                    <strong>Slide ${slide.order || index + 1}: ${slide.title}</strong>
+                                    <p>${(slide.content || '').substring(0, 100)}${slide.content && slide.content.length > 100 ? '...' : ''}</p>
+                                </div>
+                            `).join('')}
+                            ${slidesData.slides.length > 5 ? `<p><em>... and ${slidesData.slides.length - 5} more slides</em></p>` : ''}
+                        </div>
+                        <button class="btn btn-primary" onclick="viewAllSlides('${courseId}')">
+                            <i class="fas fa-eye"></i> View All Slides
+                        </button>
+                    `;
+                } else {
+                    slidesContent = '<p class="info">No slides available for this course.</p><button class="btn btn-primary" onclick="generateCourseContent(\'' + courseId + '\')">Generate Slides</button>';
+                }
+            } else if (slidesResponse.status === 404) {
+                slidesContent = '<p class="info">No slides have been generated for this course yet.</p><button class="btn btn-primary" onclick="generateCourseContent(\'' + courseId + '\')">Generate Course Content</button>';
+            } else {
+                slidesContent = `<p class="error">Error loading slides (${slidesResponse.status})</p>`;
+            }
+        } catch (error) {
+            console.warn('Error fetching slides:', error);
+            slidesContent = '<p class="error">Failed to fetch slides. Please check your connection.</p>';
+        }
+        
+        // Fetch lab environment
+        let labContent = '';
+        try {
+            const labResponse = await fetch(CONFIG.ENDPOINTS.LAB_BY_COURSE(courseId), {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (labResponse.ok) {
+                const labData = await labResponse.json();
+                if (labData && labData.description) {
+                    labContent = `
+                        <p><strong>Lab Environment Available</strong></p>
+                        <p>${labData.description}</p>
+                        <button class="btn btn-primary" onclick="openEmbeddedLab('${courseId}')">
+                            <i class="fas fa-flask"></i> Open Lab
+                        </button>
+                    `;
+                } else {
+                    labContent = '<p class="info">No lab environment configured for this course.</p>';
+                }
+            } else if (labResponse.status === 404) {
+                labContent = '<p class="info">No lab environment available for this course.</p><button class="btn btn-secondary" onclick="generateCourseContent(\'' + courseId + '\')">Generate Lab Environment</button>';
+            } else {
+                labContent = `<p class="error">Error loading lab environment (${labResponse.status})</p>`;
+            }
+        } catch (error) {
+            console.warn('Error fetching lab environment:', error);
+            labContent = '<p class="error">Failed to fetch lab environment</p>';
+        }
+        
+        // Fetch quizzes
+        let quizzesContent = '';
+        try {
+            const quizzesResponse = await fetch(CONFIG.ENDPOINTS.QUIZZES(courseId), {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (quizzesResponse.ok) {
+                const quizzesData = await quizzesResponse.json();
+                if (quizzesData && quizzesData.quizzes && quizzesData.quizzes.length > 0) {
+                    quizzesContent = `
+                        <p><strong>${quizzesData.quizzes.length} quiz${quizzesData.quizzes.length === 1 ? '' : 'zes'} available</strong></p>
+                        <div class="quizzes-list">
+                            ${quizzesData.quizzes.map(quiz => `
+                                <div class="quiz-preview">
+                                    <strong>${quiz.title}</strong>
+                                    <p>${quiz.questions?.length || 0} questions</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                } else {
+                    quizzesContent = '<p class="info">No quizzes available for this course.</p>';
+                }
+            } else if (quizzesResponse.status === 404) {
+                quizzesContent = '<p class="info">No quizzes available for this course.</p><button class="btn btn-secondary" onclick="generateCourseContent(\'' + courseId + '\')">Generate Quizzes</button>';
+            } else {
+                quizzesContent = `<p class="error">Error loading quizzes (${quizzesResponse.status})</p>`;
+            }
+        } catch (error) {
+            console.warn('Error fetching quizzes:', error);
+            quizzesContent = '<p class="error">Failed to fetch quizzes</p>';
+        }
+        
+        // Display all content
+        document.getElementById('course-content-display').innerHTML = `
+            <div class="course-content-header">
+                <h4>${course.title}</h4>
+                <p>${course.description}</p>
+            </div>
+            
+            <div class="content-sections">
+                <div class="content-section">
+                    <h5><i class="fas fa-presentation"></i> Slides</h5>
+                    <div class="content-area">
+                        ${slidesContent}
+                    </div>
+                </div>
+                
+                <div class="content-section">
+                    <h5><i class="fas fa-flask"></i> Lab Environment</h5>
+                    <div class="content-area">
+                        ${labContent}
+                    </div>
+                </div>
+                
+                <div class="content-section">
+                    <h5><i class="fas fa-question-circle"></i> Quizzes & Tests</h5>
+                    <div class="content-area">
+                        ${quizzesContent}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+    } catch (error) {
+        console.error('Error loading course content:', error);
+        document.getElementById('course-content-display').innerHTML = `
+            <div class="course-content-header">
+                <h4>${course.title}</h4>
+                <p>${course.description}</p>
+            </div>
+            <div class="error-state">
+                <p class="error">Error loading course content: ${error.message}</p>
+                <button class="btn btn-primary" onclick="loadCourseContent()">Retry</button>
+            </div>
+        `;
+    }
+}
+
+// Function to view all slides
+function viewAllSlides(courseId) {
+    const token = localStorage.getItem('authToken');
+    
+    fetch(CONFIG.ENDPOINTS.SLIDES(courseId), {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.slides) {
+            // Create modal to show all slides
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content slides-modal">
+                    <div class="modal-header">
+                        <h3>All Slides - ${data.slides[0]?.title || 'Course Slides'}</h3>
+                        <button class="modal-close" onclick="this.parentElement.parentElement.parentElement.remove()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="slides-container">
+                            ${data.slides.map((slide, index) => `
+                                <div class="slide-item" data-slide="${index + 1}">
+                                    <h4>Slide ${slide.order}: ${slide.title}</h4>
+                                    <div class="slide-content">${slide.content}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading slides:', error);
+        showNotification('Error loading slides', 'error');
+    });
 }
 
 // eslint-disable-next-line no-unused-vars
 async function loadSlides(courseId) {
     try {
-        const response = await fetch(`http://176.9.99.103:8001/slides/${courseId}`);
+        const response = await fetch(CONFIG.ENDPOINTS.SLIDES(courseId));
         
         if (response.ok) {
             const slidesData = await response.json();
@@ -727,7 +1246,7 @@ async function loadSlides(courseId) {
 // eslint-disable-next-line no-unused-vars
 async function loadLabEnvironment(courseId) {
     try {
-        const response = await fetch(`http://176.9.99.103:8001/lab/${courseId}`);
+        const response = await fetch(CONFIG.ENDPOINTS.LAB_BY_COURSE(courseId));
         
         if (response.ok) {
             const labData = await response.json();
@@ -799,7 +1318,7 @@ async function loadLabEnvironment(courseId) {
 // eslint-disable-next-line no-unused-vars
 async function loadQuizzes(courseId) {
     try {
-        const response = await fetch(`http://176.9.99.103:8001/quizzes/${courseId}`);
+        const response = await fetch(CONFIG.ENDPOINTS.QUIZZES(courseId));
         
         if (response.ok) {
             const quizzesData = await response.json();
@@ -863,13 +1382,6 @@ async function loadQuizzes(courseId) {
     }
 }
 
-// eslint-disable-next-line no-unused-vars
-function viewCourseContent(courseId) {
-    // Switch to content management tab and select the course
-    showTab('content-management');
-    document.getElementById('contentCourseSelect').value = courseId;
-    loadCourseContent();
-}
 
 // eslint-disable-next-line no-unused-vars
 function downloadSlides(courseId) {
@@ -907,7 +1419,7 @@ async function launchLabEnvironment(courseId) {
             }
         };
         
-        const response = await fetch(`http://176.9.99.103:8001/lab/launch`, {
+        const response = await fetch(CONFIG.ENDPOINTS.LAB_LAUNCH, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -916,7 +1428,7 @@ async function launchLabEnvironment(courseId) {
         });
         
         if (response.ok) {
-            const result = await response.json();
+            await response.json();
             showNotification('AI Lab Environment initialized successfully!', 'success');
             
             // Refresh the lab content to show updated status
@@ -935,7 +1447,7 @@ async function stopLabEnvironment(courseId) {
     try {
         showNotification('Stopping lab environment...', 'info');
         
-        const response = await fetch(`http://176.9.99.103:8001/lab/stop/${courseId}`, {
+        const response = await fetch(CONFIG.ENDPOINTS.LAB_STOP(courseId), {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -959,7 +1471,7 @@ async function stopLabEnvironment(courseId) {
 // eslint-disable-next-line no-unused-vars
 async function accessLabEnvironment(courseId) {
     try {
-        const response = await fetch(`http://176.9.99.103:8001/lab/access/${courseId}`);
+        const response = await fetch(CONFIG.ENDPOINTS.LAB_ACCESS(courseId));
         
         if (response.ok) {
             const result = await response.json();
@@ -991,24 +1503,60 @@ function openEmbeddedLab(courseId) {
         <html>
         <head>
             <title>AI Lab Environment - ${course.title}</title>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+            <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
             <style>
-                body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
-                .lab-container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-                .lab-header { border-bottom: 2px solid #3498db; padding-bottom: 15px; margin-bottom: 20px; }
-                .lab-header h1 { color: #2c3e50; margin: 0; }
-                .lab-header p { color: #7f8c8d; margin: 5px 0 0 0; }
-                .progress-bar { width: 100%; height: 20px; background: #ecf0f1; border-radius: 10px; overflow: hidden; margin: 20px 0; }
-                .progress-fill { height: 100%; background: linear-gradient(90deg, #3498db, #2ecc71); width: 0%; transition: width 0.3s; }
-                .exercise-section { margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #3498db; }
-                .chat-container { border: 1px solid #ddd; height: 400px; overflow-y: auto; padding: 10px; margin: 20px 0; background: white; border-radius: 8px; }
-                .message { margin: 10px 0; padding: 10px; border-radius: 8px; }
-                .trainer-message { background: #e8f4fd; border-left: 4px solid #3498db; }
-                .student-message { background: #f0f8e8; border-left: 4px solid #2ecc71; text-align: right; }
-                .input-container { display: flex; gap: 10px; margin: 10px 0; }
-                .input-container input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
-                .input-container button { padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; }
-                .exercise-card { background: white; padding: 15px; margin: 10px 0; border-radius: 8px; border: 1px solid #ddd; }
-                .quiz-section { background: #fff3cd; padding: 15px; border-radius: 8px; border: 1px solid #ffc107; margin: 20px 0; }
+                body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background: #1e1e1e; color: #ffffff; overflow: hidden; }
+                .lab-container { height: 100vh; display: grid; grid-template-rows: auto auto 1fr; }
+                .lab-header { background: #2d2d30; padding: 15px 20px; border-bottom: 1px solid #3e3e42; }
+                .lab-header h1 { color: #ffffff; margin: 0; font-size: 1.5em; }
+                .lab-header p { color: #cccccc; margin: 5px 0 0 0; }
+                .progress-section { background: #252526; padding: 10px 20px; border-bottom: 1px solid #3e3e42; }
+                .progress-bar { width: 100%; height: 6px; background: #3e3e42; border-radius: 3px; overflow: hidden; }
+                .progress-fill { height: 100%; background: linear-gradient(90deg, #007acc, #00aa00); width: 0%; transition: width 0.3s; }
+                .progress-text { font-size: 0.9em; color: #cccccc; margin-top: 5px; }
+                .main-layout { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; height: 100%; }
+                .exercise-panel { background: #252526; border-right: 1px solid #3e3e42; border-bottom: 1px solid #3e3e42; padding: 15px; overflow-y: auto; }
+                .chat-panel { background: #252526; border-bottom: 1px solid #3e3e42; padding: 15px; display: flex; flex-direction: column; }
+                .code-panel { background: #1e1e1e; border-right: 1px solid #3e3e42; display: flex; flex-direction: column; }
+                .output-panel { background: #252526; display: flex; flex-direction: column; }
+                .panel-header { font-weight: 600; margin-bottom: 10px; color: #ffffff; display: flex; align-items: center; gap: 8px; }
+                .exercise-card { background: #2d2d30; padding: 15px; border-radius: 6px; border: 1px solid #3e3e42; margin-bottom: 15px; }
+                .exercise-card h4 { color: #ffffff; margin: 0 0 10px 0; }
+                .exercise-card p { color: #cccccc; line-height: 1.5; margin: 10px 0; }
+                .chat-container { flex: 1; overflow-y: auto; padding: 10px; background: #1e1e1e; border-radius: 6px; border: 1px solid #3e3e42; margin-bottom: 10px; }
+                .message { margin: 8px 0; padding: 10px 12px; border-radius: 6px; max-width: 85%; }
+                .trainer-message { background: #0e4f88; border-left: 3px solid #007acc; }
+                .student-message { background: #1a4d1a; border-left: 3px solid #00aa00; margin-left: auto; }
+                .input-container { display: flex; gap: 8px; }
+                .input-container input { flex: 1; padding: 8px 12px; border: 1px solid #3e3e42; border-radius: 4px; background: #1e1e1e; color: #ffffff; }
+                .input-container button { padding: 8px 12px; background: #007acc; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9em; }
+                .input-container button:hover { background: #005a9e; }
+                .code-editor { height: calc(100% - 40px); border: none; }
+                .code-toolbar { background: #2d2d30; padding: 8px 15px; border-bottom: 1px solid #3e3e42; display: flex; gap: 8px; align-items: center; }
+                .code-toolbar select { background: #1e1e1e; color: #ffffff; border: 1px solid #3e3e42; padding: 4px 8px; border-radius: 3px; }
+                .code-toolbar button { padding: 6px 12px; background: #007acc; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 0.85em; }
+                .code-toolbar button:hover { background: #005a9e; }
+                .code-toolbar button.analyze { background: #6f42c1; }
+                .code-toolbar button.analyze:hover { background: #5a2d91; }
+                .output-content { flex: 1; padding: 15px; overflow-y: auto; font-family: 'Consolas', 'Monaco', monospace; }
+                .output-section { margin-bottom: 15px; }
+                .output-section h4 { color: #ffffff; margin: 0 0 8px 0; font-size: 0.9em; }
+                .test-result { padding: 8px 12px; margin: 4px 0; border-radius: 4px; font-family: monospace; font-size: 0.85em; }
+                .test-passed { background: #1a4d1a; border-left: 3px solid #00aa00; }
+                .test-failed { background: #4d1a1a; border-left: 3px solid #ff4444; }
+                .error-output { background: #4d1a1a; color: #ffcccc; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 0.85em; white-space: pre-wrap; }
+                .success-output { background: #1a4d1a; color: #ccffcc; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 0.85em; white-space: pre-wrap; }
+                .console-output { background: #1e1e1e; color: #cccccc; padding: 10px; border-radius: 4px; font-family: monospace; font-size: 0.85em; white-space: pre-wrap; border: 1px solid #3e3e42; }
+                .ai-analysis { background: #2d1b69; border: 1px solid #6f42c1; border-radius: 6px; padding: 12px; margin: 10px 0; }
+                .ai-analysis h4 { color: #ffffff; margin: 0 0 8px 0; display: flex; align-items: center; gap: 6px; }
+                .ai-analysis p { color: #e0e0e0; margin: 6px 0; line-height: 1.4; }
+                .suggestion { background: #1a4d1a; border-left: 3px solid #00aa00; padding: 8px 12px; margin: 6px 0; border-radius: 0 4px 4px 0; }
+                .warning { background: #4d3d1a; border-left: 3px solid #ffaa00; padding: 8px 12px; margin: 6px 0; border-radius: 0 4px 4px 0; }
+                .scrollbar::-webkit-scrollbar { width: 8px; }
+                .scrollbar::-webkit-scrollbar-track { background: #1e1e1e; }
+                .scrollbar::-webkit-scrollbar-thumb { background: #3e3e42; border-radius: 4px; }
+                .scrollbar::-webkit-scrollbar-thumb:hover { background: #4e4e52; }
             </style>
         </head>
         <body>
@@ -1019,40 +1567,79 @@ function openEmbeddedLab(courseId) {
                 </div>
                 
                 <div class="progress-section">
-                    <h3>📊 Learning Progress</h3>
                     <div class="progress-bar">
                         <div class="progress-fill" id="progressFill"></div>
                     </div>
-                    <p id="progressText">Starting your learning journey...</p>
+                    <div class="progress-text" id="progressText">Starting your learning journey...</div>
                 </div>
                 
-                <div class="exercise-section">
-                    <h3>🎯 Current Exercise</h3>
-                    <div id="currentExercise">
-                        <div class="exercise-card">
-                            <h4>Welcome to the Lab Environment!</h4>
-                            <p>I'm your AI expert trainer for <strong>${course.title}</strong>. I'll guide you through hands-on exercises, track your progress, and provide personalized quizzes based on your learning.</p>
-                            <p>Let's start with a quick assessment to understand your current knowledge level.</p>
+                <div class="main-layout">
+                    <!-- Exercise Instructions Panel -->
+                    <div class="exercise-panel scrollbar">
+                        <div class="panel-header">
+                            <span>🎯</span> Current Exercise
+                        </div>
+                        <div id="currentExercise">
+                            <div class="exercise-card">
+                                <h4>Welcome to the Programming Lab!</h4>
+                                <p>I'm your AI expert trainer for <strong>${course.title}</strong>. I'll guide you through hands-on coding exercises, analyze your code, and provide personalized feedback.</p>
+                                <p>Ready to start coding? Use the editor below and I'll help you every step of the way!</p>
+                            </div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="chat-container" id="chatContainer">
-                    <div class="message trainer-message">
-                        <strong>🤖 AI Trainer:</strong> Hello! I'm your expert instructor for ${course.title}. I'll adapt my teaching to your pace and provide real-time feedback. What would you like to learn first?
+                    
+                    <!-- Chat Panel -->
+                    <div class="chat-panel">
+                        <div class="panel-header">
+                            <span>💬</span> AI Trainer Chat
+                        </div>
+                        <div class="chat-container scrollbar" id="chatContainer">
+                            <div class="message trainer-message">
+                                <strong>🤖 AI Trainer:</strong> Hello! I'm your expert instructor for ${course.title}. I'll analyze your code and provide real-time guidance. Ready to code?
+                            </div>
+                        </div>
+                        <div class="input-container">
+                            <input type="text" id="userInput" placeholder="Ask for help or feedback..." onkeypress="handleKeyPress(event)">
+                            <button onclick="sendMessage()">Send</button>
+                            <button onclick="clearSession()" style="background:#d32f2f;margin-left:5px;" title="Clear session and start fresh">🗑️</button>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="input-container">
-                    <input type="text" id="userInput" placeholder="Ask a question or request an exercise..." onkeypress="handleKeyPress(event)">
-                    <button onclick="sendMessage()">Send</button>
-                    <button onclick="requestExercise()">Request Exercise</button>
-                    <button onclick="requestQuiz()">Take Quiz</button>
-                </div>
-                
-                <div class="quiz-section" id="quizSection" style="display: none;">
-                    <h3>📝 Adaptive Quiz</h3>
-                    <div id="quizContent"></div>
+                    
+                    <!-- Code Editor Panel -->
+                    <div class="code-panel">
+                        <div class="code-toolbar">
+                            <select id="languageSelect" onchange="changeLanguage()">
+                                <option value="javascript">JavaScript</option>
+                                <option value="python">Python</option>
+                            </select>
+                            <button onclick="runCode()">▶ Run</button>
+                            <button onclick="analyzeCode()" class="analyze">🔍 Analyze Code</button>
+                            <button onclick="requestHint()">💡 Get Hint</button>
+                            <button onclick="submitSolution()">✅ Submit</button>
+                        </div>
+                        <div id="codeEditor" class="code-editor"></div>
+                    </div>
+                    
+                    <!-- Output Panel -->
+                    <div class="output-panel">
+                        <div class="panel-header">
+                            <span>📋</span> Output & Analysis
+                        </div>
+                        <div class="output-content scrollbar" id="outputContent">
+                            <div class="output-section">
+                                <h4>Console Output</h4>
+                                <div id="consoleOutput" class="console-output">Ready to run code...</div>
+                            </div>
+                            <div class="output-section">
+                                <h4>Test Results</h4>
+                                <div id="testResults"></div>
+                            </div>
+                            <div class="output-section" id="aiAnalysisSection" style="display: none;">
+                                <h4>🤖 AI Code Analysis</h4>
+                                <div id="aiAnalysisContent"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -1064,17 +1651,550 @@ function openEmbeddedLab(courseId) {
                     knowledge_areas: [],
                     current_level: 'beginner'
                 };
+                let editor = null;
+                let pyodide = null;
+                let currentLanguage = 'javascript';
+                let currentExerciseData = null;
+                let sessionData = {
+                    codeFiles: {},
+                    conversationHistory: [],
+                    currentExercise: null,
+                    progressData: {}
+                };
+                let autoSaveInterval;
+                
+                // Session persistence functions
+                async function loadLabSession() {
+                    try {
+                        const studentId = window.parent.currentUser?.id || 'demo-student';
+                        const response = await fetch(\`\${window.parent.CONFIG.API_URLS.COURSE_GENERATOR}/lab/session/\${courseId}/\${studentId}\`);
+                        
+                        if (response.ok) {
+                            const result = await response.json();
+                            if (result.session_found) {
+                                const session = result.session_data;
+                                sessionData = {
+                                    codeFiles: session.code_files || {},
+                                    conversationHistory: session.ai_conversation_history || [],
+                                    currentExercise: session.current_exercise,
+                                    progressData: session.progress_data || {}
+                                };
+                                
+                                // Restore code in editor if available
+                                if (sessionData.codeFiles[currentLanguage] && editor) {
+                                    editor.setValue(sessionData.codeFiles[currentLanguage]);
+                                }
+                                
+                                // Restore conversation history
+                                restoreConversationHistory();
+                                
+                                addMessage('Previous session restored successfully!', 'system');
+                                console.log('Lab session loaded:', sessionData);
+                            } else {
+                                addMessage('Starting fresh lab session. Welcome!', 'system');
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error loading lab session:', error);
+                        addMessage('Starting fresh lab session. Welcome!', 'system');
+                    }
+                }
+                
+                async function saveLabSession() {
+                    try {
+                        const studentId = window.parent.currentUser?.id || 'demo-student';
+                        
+                        // Update session data with current state
+                        if (editor) {
+                            sessionData.codeFiles[currentLanguage] = editor.getValue();
+                        }
+                        
+                        const response = await fetch(\`\${window.parent.CONFIG.API_URLS.COURSE_GENERATOR}/lab/session/save\`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                course_id: courseId,
+                                student_id: studentId,
+                                session_data: {
+                                    language: currentLanguage,
+                                    lastActiveTime: new Date().toISOString()
+                                },
+                                ai_conversation_history: sessionData.conversationHistory,
+                                code_files: sessionData.codeFiles,
+                                current_exercise: sessionData.currentExercise,
+                                progress_data: sessionData.progressData
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            console.log('Lab session saved successfully');
+                            return true;
+                        } else {
+                            console.error('Failed to save lab session');
+                            return false;
+                        }
+                    } catch (error) {
+                        console.error('Error saving lab session:', error);
+                        return false;
+                    }
+                }
+                
+                function restoreConversationHistory() {
+                    const chat = document.getElementById('chatContainer');
+                    chat.innerHTML = '';
+                    
+                    sessionData.conversationHistory.forEach(msg => {
+                        const messageDiv = document.createElement('div');
+                        messageDiv.className = \`message \${msg.role === 'user' ? 'student' : 'trainer'}\`;
+                        messageDiv.innerHTML = \`
+                            <div class="message-content">\${msg.content}</div>
+                            <div class="message-time">\${new Date(msg.timestamp).toLocaleTimeString()}</div>
+                        \`;
+                        chat.appendChild(messageDiv);
+                    });
+                    
+                    chat.scrollTop = chat.scrollHeight;
+                }
+                
+                function startAutoSave() {
+                    // Auto-save every 30 seconds
+                    autoSaveInterval = setInterval(saveLabSession, 30000);
+                    
+                    // Save on beforeunload
+                    window.addEventListener('beforeunload', () => {
+                        saveLabSession();
+                    });
+                }
+                
+                // Initialize Monaco Editor and Pyodide
+                async function initializeEditor() {
+                    // Initialize Monaco Editor
+                    require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' } });
+                    require(['vs/editor/editor.main'], function () {
+                        editor = monaco.editor.create(document.getElementById('codeEditor'), {
+                            value: getDefaultCode(),
+                            language: currentLanguage,
+                            theme: 'vs-dark',
+                            automaticLayout: true,
+                            fontSize: 14,
+                            minimap: { enabled: true },
+                            scrollBeyondLastLine: false,
+                            wordWrap: 'on'
+                        });
+                        
+                        // Add event listener for real-time code analysis
+                        editor.getModel().onDidChangeContent(() => {
+                            clearTimeout(window.codeAnalysisTimeout);
+                            window.codeAnalysisTimeout = setTimeout(analyzeCodeRealTime, 1000);
+                        });
+                        
+                        // Load previous session after editor is ready
+                        setTimeout(loadLabSession, 1000);
+                    });
+                    
+                    // Initialize Pyodide for Python execution
+                    try {
+                        pyodide = await loadPyodide();
+                        addMessage('Python environment ready! You can now run Python code.', 'trainer');
+                    } catch (error) {
+                        console.error('Failed to load Pyodide:', error);
+                        addMessage('Python environment failed to load. JavaScript execution is still available.', 'trainer');
+                    }
+                    
+                    // Start auto-save functionality
+                    startAutoSave();
+                }
+                
+                async function clearSession() {
+                    if (confirm('Are you sure you want to clear your lab session? This will reset all your code and conversation history.')) {
+                        try {
+                            const studentId = window.parent.currentUser?.id || 'demo-student';
+                            
+                            const response = await fetch(\`\${window.parent.CONFIG.API_URLS.COURSE_GENERATOR}/lab/session/\${courseId}/\${studentId}\`, {
+                                method: 'DELETE'
+                            });
+                            
+                            if (response.ok) {
+                                // Reset local session data
+                                sessionData = {
+                                    codeFiles: {},
+                                    conversationHistory: [],
+                                    currentExercise: null,
+                                    progressData: {}
+                                };
+                                
+                                // Clear chat
+                                document.getElementById('chatContainer').innerHTML = \`
+                                    <div class="message trainer-message">
+                                        <strong>🤖 AI Trainer:</strong> Session cleared! Hello! I'm your expert instructor for ${course.title}. I'll analyze your code and provide real-time guidance. Ready to code?
+                                    </div>
+                                \`;
+                                
+                                // Reset editor to default code
+                                if (editor) {
+                                    editor.setValue(getDefaultCode());
+                                }
+                                
+                                // Clear output
+                                clearOutput();
+                                
+                                addMessage('Session cleared successfully! Starting fresh.', 'system');
+                            } else {
+                                addMessage('Failed to clear session on server, but local data has been reset.', 'system');
+                            }
+                        } catch (error) {
+                            console.error('Error clearing session:', error);
+                            addMessage('Error clearing session, but local data has been reset.', 'system');
+                        }
+                    }
+                }
+                
+                function getDefaultCode() {
+                    const examples = {
+                        javascript: \`// Welcome to JavaScript coding!
+// Try writing a simple function
+function greet(name) {
+    return "Hello, " + name + "!";
+}
+
+console.log(greet("World"));
+\`,
+                        python: \`# Welcome to Python coding!
+# Try writing a simple function
+def greet(name):
+    return f"Hello, {name}!"
+
+print(greet("World"))
+\`
+                    };
+                    return examples[currentLanguage] || examples.javascript;
+                }
+                
+                function changeLanguage() {
+                    const select = document.getElementById('languageSelect');
+                    
+                    // Save current code before switching
+                    if (editor && currentLanguage) {
+                        sessionData.codeFiles[currentLanguage] = editor.getValue();
+                    }
+                    
+                    currentLanguage = select.value;
+                    
+                    if (editor) {
+                        const model = editor.getModel();
+                        monaco.editor.setModelLanguage(model, currentLanguage);
+                        
+                        // Load saved code for this language or use default
+                        const savedCode = sessionData.codeFiles[currentLanguage];
+                        editor.setValue(savedCode || getDefaultCode());
+                    }
+                    
+                    clearOutput();
+                    addMessage(\`Switched to \${currentLanguage.charAt(0).toUpperCase() + currentLanguage.slice(1)}. Ready to code!\`, 'trainer');
+                }
+                
+                async function runCode() {
+                    const code = editor.getValue();
+                    const output = document.getElementById('consoleOutput');
+                    
+                    if (!code.trim()) {
+                        output.innerHTML = '<span style="color: #ffaa00;">No code to run. Please write some code first.</span>';
+                        return;
+                    }
+                    
+                    output.innerHTML = 'Running code...';
+                    
+                    try {
+                        if (currentLanguage === 'javascript') {
+                            await runJavaScript(code);
+                        } else if (currentLanguage === 'python') {
+                            await runPython(code);
+                        }
+                        
+                        // Run tests if available
+                        if (currentExerciseData && currentExerciseData.tests) {
+                            await runTests();
+                        }
+                        
+                    } catch (error) {
+                        output.innerHTML = \`<span style="color: #ff4444;">Error: \${error.message}</span>\`;
+                    }
+                }
+                
+                async function runJavaScript(code) {
+                    const output = document.getElementById('consoleOutput');
+                    const originalLog = console.log;
+                    const logs = [];
+                    
+                    // Capture console.log output
+                    console.log = (...args) => {
+                        logs.push(args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)).join(' '));
+                    };
+                    
+                    try {
+                        // Create a new function to execute the code in isolation
+                        const executeCode = new Function(code);
+                        executeCode();
+                        
+                        output.innerHTML = logs.length > 0 ? 
+                            logs.map(log => \`<div>\${log}</div>\`).join('') : 
+                            '<span style="color: #00aa00;">Code executed successfully (no output)</span>';
+                    } catch (error) {
+                        output.innerHTML = \`<span style="color: #ff4444;">JavaScript Error: \${error.message}</span>\`;
+                        throw error;
+                    } finally {
+                        console.log = originalLog;
+                    }
+                }
+                
+                async function runPython(code) {
+                    const output = document.getElementById('consoleOutput');
+                    
+                    if (!pyodide) {
+                        output.innerHTML = '<span style="color: #ff4444;">Python environment not loaded</span>';
+                        return;
+                    }
+                    
+                    try {
+                        // Capture stdout
+                        pyodide.runPython(\`
+import sys
+from io import StringIO
+sys.stdout = StringIO()
+\`);
+                        
+                        // Run the user code
+                        pyodide.runPython(code);
+                        
+                        // Get the output
+                        const stdout = pyodide.runPython('sys.stdout.getvalue()');
+                        
+                        output.innerHTML = stdout ? 
+                            stdout.split('\\n').map(line => \`<div>\${line}</div>\`).join('') : 
+                            '<span style="color: #00aa00;">Code executed successfully (no output)</span>';
+                            
+                        // Reset stdout
+                        pyodide.runPython('sys.stdout = sys.__stdout__');
+                        
+                    } catch (error) {
+                        output.innerHTML = \`<span style="color: #ff4444;">Python Error: \${error.message}</span>\`;
+                        throw error;
+                    }
+                }
+                
+                async function analyzeCode() {
+                    const code = editor.getValue();
+                    if (!code.trim()) {
+                        addMessage('Please write some code first, then I can analyze it for you!', 'trainer');
+                        return;
+                    }
+                    
+                    const analysisSection = document.getElementById('aiAnalysisSection');
+                    const analysisContent = document.getElementById('aiAnalysisContent');
+                    
+                    analysisSection.style.display = 'block';
+                    analysisContent.innerHTML = '<div style="color: #cccccc;">🤖 Analyzing your code...</div>';
+                    
+                    try {
+                        // Send code to AI for analysis
+                        const response = await fetch(\`\${window.parent.CONFIG.API_URLS.COURSE_GENERATOR}/lab/analyze-code\`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                course_id: courseId,
+                                code: code,
+                                language: currentLanguage,
+                                context: {
+                                    course_title: '${course.title}',
+                                    course_category: '${course.category}',
+                                    difficulty_level: '${course.difficulty_level}',
+                                    exercise: currentExerciseData
+                                }
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            const result = await response.json();
+                            displayAnalysis(result.analysis);
+                            addMessage(result.chat_message || 'I\\'ve analyzed your code! Check the analysis panel for detailed feedback.', 'trainer');
+                        } else {
+                            throw new Error('Failed to analyze code');
+                        }
+                    } catch (error) {
+                        console.error('Error analyzing code:', error);
+                        analysisContent.innerHTML = '<div style="color: #ff4444;">Failed to analyze code. Please try again.</div>';
+                        addMessage('Sorry, I couldn\\'t analyze your code right now. Please try again.', 'trainer');
+                    }
+                }
+                
+                function displayAnalysis(analysis) {
+                    const analysisContent = document.getElementById('aiAnalysisContent');
+                    
+                    let html = '<div class="ai-analysis">';
+                    html += '<h4>🤖 AI Code Analysis</h4>';
+                    
+                    if (analysis.overall_quality) {
+                        html += \`<p><strong>Overall Quality:</strong> \${analysis.overall_quality}</p>\`;
+                    }
+                    
+                    if (analysis.suggestions && analysis.suggestions.length > 0) {
+                        html += '<div>';
+                        analysis.suggestions.forEach(suggestion => {
+                            html += \`<div class="suggestion">💡 \${suggestion}</div>\`;
+                        });
+                        html += '</div>';
+                    }
+                    
+                    if (analysis.warnings && analysis.warnings.length > 0) {
+                        html += '<div>';
+                        analysis.warnings.forEach(warning => {
+                            html += \`<div class="warning">⚠️ \${warning}</div>\`;
+                        });
+                        html += '</div>';
+                    }
+                    
+                    if (analysis.best_practices) {
+                        html += \`<p><strong>Best Practices:</strong> \${analysis.best_practices}</p>\`;
+                    }
+                    
+                    if (analysis.improvements) {
+                        html += \`<p><strong>Potential Improvements:</strong> \${analysis.improvements}</p>\`;
+                    }
+                    
+                    html += '</div>';
+                    analysisContent.innerHTML = html;
+                }
+                
+                async function analyzeCodeRealTime() {
+                    const code = editor.getValue();
+                    if (!code.trim() || code === getDefaultCode()) return;
+                    
+                    // Simple real-time analysis
+                    const lines = code.split('\\n').length;
+                    const analysisContent = document.getElementById('aiAnalysisContent');
+                    const analysisSection = document.getElementById('aiAnalysisSection');
+                    
+                    if (lines > 5) {
+                        analysisSection.style.display = 'block';
+                        analysisContent.innerHTML = \`
+                            <div style="color: #cccccc; font-size: 0.8em;">
+                                💭 Real-time: \${lines} lines of code. Click "Analyze Code" for detailed AI feedback.
+                            </div>
+                        \`;
+                    }
+                }
+                
+                async function requestHint() {
+                    const code = editor.getValue();
+                    
+                    try {
+                        const response = await fetch(\`\${window.parent.CONFIG.API_URLS.COURSE_GENERATOR}/lab/get-hint\`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                course_id: courseId,
+                                code: code,
+                                language: currentLanguage,
+                                exercise: currentExerciseData
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            const result = await response.json();
+                            addMessage(\`💡 Hint: \${result.hint}\`, 'trainer');
+                        } else {
+                            addMessage('Let me give you a general hint: Break down the problem into smaller steps and tackle them one by one!', 'trainer');
+                        }
+                    } catch (error) {
+                        addMessage('Here\\'s a helpful tip: Read the exercise description carefully and think about what functions or concepts you might need.', 'trainer');
+                    }
+                }
+                
+                async function submitSolution() {
+                    const code = editor.getValue();
+                    if (!code.trim()) {
+                        addMessage('Please write some code before submitting!', 'trainer');
+                        return;
+                    }
+                    
+                    addMessage('Great! Let me check your solution...', 'trainer');
+                    
+                    // Run the code first
+                    await runCode();
+                    
+                    // Analyze the solution
+                    await analyzeCode();
+                    
+                    // Update progress
+                    progressData.completed_exercises++;
+                    updateProgress(progressData);
+                    
+                    addMessage('Solution submitted! Check the analysis panel for feedback. Ready for the next challenge?', 'trainer');
+                }
+                
+                async function runTests() {
+                    const testResults = document.getElementById('testResults');
+                    if (!currentExerciseData || !currentExerciseData.tests) {
+                        testResults.innerHTML = '<div style="color: #cccccc;">No tests available for this exercise.</div>';
+                        return;
+                    }
+                    
+                    const code = editor.getValue();
+                    let results = '';
+                    
+                    try {
+                        for (let i = 0; i < currentExerciseData.tests.length; i++) {
+                            const test = currentExerciseData.tests[i];
+                            let passed = false;
+                            
+                            try {
+                                if (currentLanguage === 'javascript') {
+                                    // Simple test execution for JavaScript
+                                    const testCode = \`\${code}\\n\${test.code}\`;
+                                    const testResult = new Function(testCode)();
+                                    passed = testResult === test.expected;
+                                } else if (currentLanguage === 'python' && pyodide) {
+                                    // Simple test execution for Python
+                                    pyodide.runPython(code);
+                                    const result = pyodide.runPython(test.code);
+                                    passed = result === test.expected;
+                                }
+                                
+                                results += \`<div class="test-result \${passed ? 'test-passed' : 'test-failed'}">
+                                    \${passed ? '✅' : '❌'} Test \${i + 1}: \${test.description}
+                                    \${!passed ? \`<br>Expected: \${test.expected}, Got: (check your logic)\` : ''}
+                                </div>\`;
+                            } catch (error) {
+                                results += \`<div class="test-result test-failed">❌ Test \${i + 1}: \${test.description}<br>Error: \${error.message}</div>\`;
+                            }
+                        }
+                    } catch (error) {
+                        results = \`<div class="test-result test-failed">❌ Error running tests: \${error.message}</div>\`;
+                    }
+                    
+                    testResults.innerHTML = results;
+                }
+                
+                function clearOutput() {
+                    document.getElementById('consoleOutput').innerHTML = 'Ready to run code...';
+                    document.getElementById('testResults').innerHTML = '';
+                    document.getElementById('aiAnalysisSection').style.display = 'none';
+                }
                 
                 async function sendMessage() {
                     const input = document.getElementById('userInput');
                     const message = input.value.trim();
                     if (!message) return;
                     
-                    // Add user message to chat
                     addMessage(message, 'student');
                     input.value = '';
                     
-                    // Send to AI trainer
                     await processUserMessage(message);
                 }
                 
@@ -1088,21 +2208,41 @@ function openEmbeddedLab(courseId) {
                     const chat = document.getElementById('chatContainer');
                     const messageDiv = document.createElement('div');
                     messageDiv.className = \`message \${type}-message\`;
-                    messageDiv.innerHTML = \`<strong>\${type === 'student' ? '👨‍🎓 You' : '🤖 AI Trainer'}:</strong> \${message}\`;
+                    
+                    const displayName = type === 'student' ? '👨‍🎓 You' : 
+                                       type === 'trainer' ? '🤖 AI Trainer' : 
+                                       type === 'system' ? '⚙️ System' : '💬 Message';
+                    
+                    messageDiv.innerHTML = \`
+                        <div class="message-content"><strong>\${displayName}:</strong> \${message}</div>
+                        <div class="message-time">\${new Date().toLocaleTimeString()}</div>
+                    \`;
                     chat.appendChild(messageDiv);
                     chat.scrollTop = chat.scrollHeight;
+                    
+                    // Track conversation history (but not system messages)
+                    if (type === 'student' || type === 'trainer') {
+                        sessionData.conversationHistory.push({
+                            role: type === 'student' ? 'user' : 'assistant',
+                            content: message,
+                            timestamp: new Date().toISOString()
+                        });
+                    }
                 }
                 
                 async function processUserMessage(message) {
                     try {
-                        const response = await fetch('http://176.9.99.103:8001/lab/chat', {
+                        const response = await fetch(\`\${window.parent.CONFIG.API_URLS.COURSE_GENERATOR}/lab/chat\`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
                             },
                             body: JSON.stringify({
                                 course_id: courseId,
+                                student_id: window.parent.currentUser?.id || 'demo-student',
                                 user_message: message,
+                                current_code: editor ? editor.getValue() : '',
+                                language: currentLanguage,
                                 context: {
                                     course_title: '${course.title}',
                                     course_description: '${course.description}',
@@ -1117,14 +2257,13 @@ function openEmbeddedLab(courseId) {
                             const result = await response.json();
                             addMessage(result.response, 'trainer');
                             
-                            // Update progress if provided
-                            if (result.progress_update) {
-                                updateProgress(result.progress_update);
-                            }
-                            
-                            // Show exercise if provided
                             if (result.exercise) {
                                 showExercise(result.exercise);
+                            }
+                            
+                            if (result.code_suggestion) {
+                                editor.setValue(result.code_suggestion);
+                                addMessage('I\\'ve updated the code editor with a suggestion!', 'trainer');
                             }
                         }
                     } catch (error) {
@@ -1133,99 +2272,30 @@ function openEmbeddedLab(courseId) {
                     }
                 }
                 
-                async function requestExercise() {
-                    try {
-                        const response = await fetch('http://176.9.99.103:8001/lab/generate-exercise', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                course_id: courseId,
-                                student_progress: progressData,
-                                context: {
-                                    course_title: '${course.title}',
-                                    course_category: '${course.category}',
-                                    difficulty_level: '${course.difficulty_level}'
-                                }
-                            })
-                        });
-                        
-                        if (response.ok) {
-                            const result = await response.json();
-                            showExercise(result.exercise);
-                            addMessage('I\'ve generated a new exercise based on your progress. Give it a try!', 'trainer');
-                        }
-                    } catch (error) {
-                        console.error('Error requesting exercise:', error);
-                        addMessage('Sorry, I couldn\'t generate an exercise right now. Please try again.', 'trainer');
-                    }
-                }
-                
-                async function requestQuiz() {
-                    try {
-                        const response = await fetch('http://176.9.99.103:8001/lab/generate-quiz', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                course_id: courseId,
-                                student_progress: progressData,
-                                context: {
-                                    course_title: '${course.title}',
-                                    course_category: '${course.category}',
-                                    difficulty_level: '${course.difficulty_level}'
-                                }
-                            })
-                        });
-                        
-                        if (response.ok) {
-                            const result = await response.json();
-                            showQuiz(result.quiz);
-                            addMessage('I\'ve created a personalized quiz based on what you\'ve learned so far!', 'trainer');
-                        }
-                    } catch (error) {
-                        console.error('Error requesting quiz:', error);
-                        addMessage('Sorry, I couldn\'t generate a quiz right now. Please try again.', 'trainer');
-                    }
-                }
-                
                 function showExercise(exercise) {
+                    currentExerciseData = exercise;
                     const exerciseDiv = document.getElementById('currentExercise');
-                    exerciseDiv.innerHTML = \`
+                    
+                    let html = \`
                         <div class="exercise-card">
                             <h4>\${exercise.title}</h4>
                             <p>\${exercise.description}</p>
-                            <div class="exercise-content">\${exercise.content}</div>
-                            <button onclick="submitExercise('\${exercise.id}')">Submit Solution</button>
-                        </div>
-                    \`;
-                }
-                
-                function showQuiz(quiz) {
-                    const quizSection = document.getElementById('quizSection');
-                    const quizContent = document.getElementById('quizContent');
-                    
-                    quizContent.innerHTML = \`
-                        <h4>\${quiz.title}</h4>
-                        <p>\${quiz.description}</p>
-                        <div class="quiz-questions">
-                            \${quiz.questions.map((q, i) => \`
-                                <div class="question" style="margin: 15px 0; padding: 10px; background: white; border-radius: 4px;">
-                                    <p><strong>Question \${i + 1}:</strong> \${q.question}</p>
-                                    \${q.options.map((option, j) => \`
-                                        <label style="display: block; margin: 5px 0;">
-                                            <input type="radio" name="q\${i}" value="\${j}"> \${option}
-                                        </label>
-                                    \`).join('')}
-                                </div>
-                            \`).join('')}
-                        </div>
-                        <button onclick="submitQuiz('\${quiz.id}')">Submit Quiz</button>
                     \`;
                     
-                    quizSection.style.display = 'block';
+                    if (exercise.starter_code) {
+                        html += \`<p><strong>Starter Code:</strong></p>\`;
+                        editor.setValue(exercise.starter_code);
+                    }
+                    
+                    if (exercise.examples) {
+                        html += \`<p><strong>Examples:</strong></p><pre>\${exercise.examples}</pre>\`;
+                    }
+                    
+                    html += \`</div>\`;
+                    exerciseDiv.innerHTML = html;
+                    
+                    // Clear previous outputs
+                    clearOutput();
                 }
                 
                 function updateProgress(progress) {
@@ -1235,25 +2305,14 @@ function openEmbeddedLab(courseId) {
                     
                     const percentage = (progressData.completed_exercises / Math.max(progressData.total_exercises, 1)) * 100;
                     progressFill.style.width = percentage + '%';
-                    progressText.textContent = \`Completed \${progressData.completed_exercises} of \${progressData.total_exercises} exercises (\${Math.round(percentage)}%)\`;
+                    progressText.textContent = \`Completed \${progressData.completed_exercises} exercises - Keep coding!\`;
                 }
                 
-                async function submitExercise(exerciseId) {
-                    // This would submit the exercise solution
-                    addMessage('Exercise submitted! Great work. Let me provide feedback...', 'trainer');
-                    progressData.completed_exercises++;
+                // Initialize everything when the page loads
+                window.onload = async function() {
+                    await initializeEditor();
+                    addMessage('🚀 Welcome to the Programming Lab! I\\'m your AI coding assistant. I can help you learn, debug code, and provide real-time feedback. Try writing some code and click "Analyze Code" to see what I think!', 'trainer');
                     updateProgress(progressData);
-                }
-                
-                async function submitQuiz(quizId) {
-                    // This would submit the quiz answers
-                    addMessage('Quiz submitted! Let me analyze your answers and provide feedback...', 'trainer');
-                    document.getElementById('quizSection').style.display = 'none';
-                }
-                
-                // Initialize the lab environment
-                window.onload = function() {
-                    addMessage('Lab environment loaded successfully! I\'m ready to help you learn ${course.title}. What would you like to explore first?', 'trainer');
                 };
             </script>
         </body>
@@ -1351,7 +2410,7 @@ function exportQuizzes(courseId) {
 // eslint-disable-next-line no-unused-vars
 async function viewLabAnalytics(courseId) {
     try {
-        const response = await fetch(`http://176.9.99.103:8001/lab/analytics/${courseId}`);
+        const response = await fetch(CONFIG.ENDPOINTS.LAB_ANALYTICS(courseId));
         
         if (response.ok) {
             const analytics = await response.json();
@@ -1496,7 +2555,7 @@ async function editCourse(courseId) {
     // Load existing slides
     let courseSlides = [];
     try {
-        const slidesResponse = await fetch(`http://176.9.99.103:8001/slides/${courseId}`);
+        const slidesResponse = await fetch(CONFIG.ENDPOINTS.SLIDES(courseId));
         if (slidesResponse.ok) {
             const slidesData = await slidesResponse.json();
             courseSlides = slidesData.slides || [];
@@ -1611,7 +2670,7 @@ async function saveCourseChanges(courseId) {
         };
         
         const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-        const courseResponse = await fetch(`http://176.9.99.103:8004/courses/${courseId}`, {
+        const courseResponse = await fetch(CONFIG.ENDPOINTS.COURSE_BY_ID(courseId), {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -1629,7 +2688,7 @@ async function saveCourseChanges(courseId) {
         // Save slides if they were edited
         if (window.editingSlides) {
             const slidesData = collectSlidesFromEditor();
-            const slidesResponse = await fetch(`http://176.9.99.103:8001/slides/update/${courseId}`, {
+            const slidesResponse = await fetch(CONFIG.ENDPOINTS.UPDATE_SLIDES(courseId), {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1646,7 +2705,10 @@ async function saveCourseChanges(courseId) {
         }
         
         showNotification('Course updated successfully!', 'success');
-        document.querySelector('.modal-overlay').remove();
+        const modalOverlay = document.querySelector('.modal-overlay');
+        if (modalOverlay) {
+            modalOverlay.remove();
+        }
         loadUserCourses();
         
     } catch (error) {
@@ -1655,6 +2717,7 @@ async function saveCourseChanges(courseId) {
     }
 }
 
+// eslint-disable-next-line no-unused-vars
 function switchEditTab(tabName, button) {
     document.querySelectorAll('.edit-tab-content').forEach(tab => tab.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
@@ -1663,6 +2726,7 @@ function switchEditTab(tabName, button) {
     button.classList.add('active');
 }
 
+// eslint-disable-next-line no-unused-vars
 function addNewSlide() {
     const slidesList = document.getElementById('slidesList');
     const slideCount = slidesList.children.length;
@@ -1748,6 +2812,7 @@ function collectSlidesFromEditor() {
     return slides;
 }
 
+// Used in onclick handlers
 async function regenerateAllSlides(courseId) {
     if (!confirm('This will replace all slides with AI-generated content. Continue?')) return;
     
@@ -1758,7 +2823,7 @@ async function regenerateAllSlides(courseId) {
         const description = document.getElementById('editDescription').value;
         const category = document.getElementById('editCategory').value;
         
-        const response = await fetch('http://176.9.99.103:8001/slides/generate', {
+        const response = await fetch(CONFIG.ENDPOINTS.GENERATE_SLIDES, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1804,6 +2869,7 @@ async function regenerateAllSlides(courseId) {
     }
 }
 
+// Used in onclick handlers
 function previewSlideshow() {
     const slides = collectSlidesFromEditor();
     if (slides.length === 0) {
@@ -1849,7 +2915,7 @@ async function deleteCourse(courseId) {
     
     try {
         const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-        const response = await fetch(`http://176.9.99.103:8004/courses/${courseId}`, {
+        const response = await fetch(CONFIG.ENDPOINTS.COURSE_BY_ID(courseId), {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -1873,7 +2939,7 @@ async function deleteCourse(courseId) {
 document.addEventListener('click', function(e) {
     if (e.target.classList.contains('tab-button')) {
         const tabName = e.target.textContent.trim().toLowerCase().replace(/\s+/g, '-');
-        showTab(tabName.replace('my-', '').replace('create-', 'create-').replace('student-', 'student-'), e);
+        showSection(tabName.replace('my-', '').replace('create-', 'create-').replace('student-', 'students'));
     }
 });function showSyllabusPreview(courseId, syllabus) {
     const modal = document.createElement('div');
@@ -1960,6 +3026,7 @@ document.addEventListener('click', function(e) {
     window.currentSyllabus = syllabus;
 }
 
+// Used in onclick handlers
 async function refineSyllabus(courseId) {
     const feedback = document.getElementById('syllabusFeedback').value;
     if (!feedback.trim()) {
@@ -1970,7 +3037,7 @@ async function refineSyllabus(courseId) {
     try {
         showNotification('Refining syllabus based on feedback...', 'info');
         
-        const response = await fetch('http://176.9.99.103:8001/syllabus/refine', {
+        const response = await fetch(CONFIG.ENDPOINTS.REFINE_SYLLABUS, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1987,7 +3054,10 @@ async function refineSyllabus(courseId) {
             showNotification('Syllabus refined successfully!', 'success');
             
             // Close current modal and show updated syllabus
-            document.querySelector('.modal-overlay').remove();
+            const modalOverlay = document.querySelector('.modal-overlay');
+            if (modalOverlay) {
+                modalOverlay.remove();
+            }
             showSyllabusPreview(courseId, result.syllabus);
         } else {
             throw new Error('Failed to refine syllabus');
@@ -1998,11 +3068,13 @@ async function refineSyllabus(courseId) {
     }
 }
 
+// Used in onclick handlers
 async function approveSyllabus(courseId) {
     try {
-        showNotification('Generating course content from approved syllabus...', 'info');
+        // Show progress modal
+        showProgressModal('Generating Course Content', 'Preparing to generate slides, exercises, and quizzes...');
         
-        const response = await fetch('http://176.9.99.103:8001/content/generate-from-syllabus', {
+        const response = await fetch(CONFIG.ENDPOINTS.GENERATE_CONTENT, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -2014,28 +3086,132 @@ async function approveSyllabus(courseId) {
         
         if (response.ok) {
             const result = await response.json();
-            showNotification(`Generated ${result.slides.length} slides, ${result.exercises.length} exercises, and ${result.quizzes.length} quizzes!`, 'success');
             
-            // Close modal and refresh content
-            document.querySelector('.modal-overlay').remove();
-            loadUserCourses();
+            // Update progress modal with success
+            updateProgressModal('Content Generation Complete!', 
+                `✅ Generated ${result.slides.length} slides<br>
+                 ✅ Generated ${result.exercises.length} exercises<br>
+                 ✅ Generated ${result.quizzes.length} quizzes<br><br>
+                 <em>Content has been saved and is now available for viewing.</em>`);
+            
+            // Close syllabus modal first if it exists
+            const syllabusModal = document.querySelector('.modal-overlay');
+            if (syllabusModal) {
+                syllabusModal.remove();
+            }
+            
+            // Close modal after a delay and refresh content
+            setTimeout(() => {
+                closeProgressModal();
+                loadUserCourses();
+                // Refresh the content view if we're on content section
+                if (document.getElementById('content-section') && document.getElementById('content-section').classList.contains('active')) {
+                    loadCourseContent();
+                }
+            }, 3000);
+            
+            showNotification(`Generated ${result.slides.length} slides, ${result.exercises.length} exercises, and ${result.quizzes.length} quizzes!`, 'success');
         } else {
             throw new Error('Failed to generate content from syllabus');
         }
     } catch (error) {
         console.error('Error generating content:', error);
+        updateProgressModal('Content Generation Failed', 
+            `❌ Error generating content: ${error.message}<br><br>
+             Please try again or contact support if the problem persists.`);
+        setTimeout(() => {
+            closeProgressModal();
+        }, 3000);
         showNotification('Error generating content from syllabus', 'error');
     }
 }
 
+// Progress modal functions
+function showProgressModal(title, message) {
+    // Close any existing progress modal
+    const existingModal = document.querySelector('.progress-modal-overlay');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    const modal = document.createElement('div');
+    modal.className = 'progress-modal-overlay';
+    modal.innerHTML = `
+        <div class="progress-modal-content">
+            <div class="progress-modal-header">
+                <h3><i class="fas fa-cog fa-spin"></i> ${title}</h3>
+            </div>
+            <div class="progress-modal-body">
+                <div class="progress-message">${message}</div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Start progress animation
+    const progressFill = modal.querySelector('.progress-fill');
+    let width = 0;
+    const interval = setInterval(() => {
+        width += Math.random() * 10;
+        if (width > 90) width = 90; // Don't complete until we get actual result
+        progressFill.style.width = width + '%';
+    }, 500);
+    
+    // Store interval for cleanup
+    modal.progressInterval = interval;
+}
+
+function updateProgressModal(title, message) {
+    const modal = document.querySelector('.progress-modal-overlay');
+    if (modal) {
+        // Clear the progress interval
+        if (modal.progressInterval) {
+            clearInterval(modal.progressInterval);
+        }
+        
+        // Update content
+        const header = modal.querySelector('.progress-modal-header h3');
+        const messageDiv = modal.querySelector('.progress-message');
+        const progressFill = modal.querySelector('.progress-fill');
+        
+        if (header) {
+            header.innerHTML = `<i class="fas fa-check-circle"></i> ${title}`;
+        }
+        if (messageDiv) {
+            messageDiv.innerHTML = message;
+        }
+        if (progressFill) {
+            progressFill.style.width = '100%';
+        }
+    }
+}
+
+function closeProgressModal() {
+    const modal = document.querySelector('.progress-modal-overlay');
+    if (modal) {
+        // Clear any running interval
+        if (modal.progressInterval) {
+            clearInterval(modal.progressInterval);
+        }
+        modal.remove();
+    }
+}
+
+// Used in onclick handlers
 async function saveCourseContent(courseId) {
     try {
-        showNotification("Saving course content...", "info");
+        showNotification('Saving course content...', 'info');
         
-        const response = await fetch("http://176.9.99.103:8001/courses/save", {
-            method: "POST",
+        const response = await fetch(CONFIG.ENDPOINTS.SAVE_COURSE, {
+            method: 'POST',
             headers: {
-                "Content-Type": "application/json"
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
                 course_id: courseId
@@ -2043,12 +3219,12 @@ async function saveCourseContent(courseId) {
         });
         
         if (response.ok) {
-            showNotification("Course content saved successfully\!", "success");
+            showNotification('Course content saved successfully!', 'success');
         } else {
-            throw new Error("Failed to save course content");
+            throw new Error('Failed to save course content');
         }
     } catch (error) {
-        console.error("Error saving course content:", error);
-        showNotification("Error saving course content", "error");
+        console.error('Error saving course content:', error);
+        showNotification('Error saving course content', 'error');
     }
 }

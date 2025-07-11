@@ -1,5 +1,4 @@
-const API_BASE = 'http://176.9.99.103:8004';
-const AUTH_API_BASE = 'http://176.9.99.103:8000';
+const AUTH_API_BASE = CONFIG.API_URLS.USER_MANAGEMENT;
 
 // Global state
 let currentUser = null;
@@ -89,6 +88,9 @@ window.logout = async function() {
         // Continue with client-side logout even if server logout fails
     }
     
+    // Stop idle monitoring
+    stopIdleMonitoring();
+    
     // Clear client-side data
     authToken = null;
     currentUser = null;
@@ -111,28 +113,6 @@ window.logout = async function() {
 // Function references for onclick handlers will be resolved when functions are defined later
 
 
-function getDashboardLink() {
-    if (!currentUser) return '';
-    
-    switch (currentUser.role) {
-        case 'admin':
-            return `<a href="admin.html" class="btn btn-primary">
-                        <i class="fas fa-shield-alt"></i> Admin Dashboard
-                    </a>`;
-        case 'instructor':
-            return `<a href="instructor-dashboard.html" class="btn btn-primary">
-                        <i class="fas fa-chalkboard-teacher"></i> Instructor Dashboard
-                    </a>`;
-        case 'student':
-            return `<a href="student-dashboard.html" class="btn btn-primary">
-                        <i class="fas fa-graduation-cap"></i> Student Dashboard
-                    </a>`;
-        default:
-            return `<a href="instructor-dashboard.html" class="btn btn-primary">
-                        <i class="fas fa-chalkboard-teacher"></i> Dashboard
-                    </a>`;
-    }
-}
 
 function showHome() {
     const main = document.getElementById('main-content');
@@ -183,6 +163,9 @@ function showLogin() {
                     <button type="submit">Login</button>
                     <button type="button" onclick="showHome()">Cancel</button>
                 </div>
+                <div style="margin-top: 15px; text-align: center;">
+                    <a href="#" onclick="showPasswordReset()" style="color: #007bff; text-decoration: none; font-size: 14px;">Forgot Password?</a>
+                </div>
             </form>
         </section>
     `;
@@ -206,6 +189,9 @@ function showLogin() {
                 authToken = data.access_token;
                 localStorage.setItem('authToken', authToken);
                 localStorage.setItem('userEmail', formData.get('username'));
+                
+                // Start idle monitoring
+                startIdleMonitoring();
                 
                 // Get user profile to check role
                 try {
@@ -379,6 +365,78 @@ function togglePasswordVisibility(inputId, buttonId) {
 
 // Password visibility toggle is handled by onclick attributes in HTML
 // No need for additional event listeners
+
+// Password reset functionality
+function showPasswordReset() {
+    const main = document.getElementById('main-content');
+    main.innerHTML = `
+        <section>
+            <h2>Reset Password</h2>
+            <p>Enter your email address and new password to reset your password.</p>
+            <form id="password-reset-form">
+                <div>
+                    <label for="reset-email">Email:</label>
+                    <input type="email" id="reset-email" name="email" required>
+                </div>
+                <div>
+                    <label for="new-password">New Password:</label>
+                    <div style="position: relative;">
+                        <input type="password" id="new-password" name="new_password" required minlength="6">
+                        <button type="button" onclick="togglePasswordVisibility('new-password', 'toggle-new-password')" id="toggle-new-password" style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 14px;">👁️</button>
+                    </div>
+                </div>
+                <div>
+                    <label for="confirm-password">Confirm New Password:</label>
+                    <div style="position: relative;">
+                        <input type="password" id="confirm-password" name="confirm_password" required minlength="6">
+                        <button type="button" onclick="togglePasswordVisibility('confirm-password', 'toggle-confirm-password')" id="toggle-confirm-password" style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 14px;">👁️</button>
+                    </div>
+                </div>
+                <div>
+                    <button type="submit">Reset Password</button>
+                    <button type="button" onclick="showLogin()">Back to Login</button>
+                </div>
+            </form>
+        </section>
+    `;
+    
+    document.getElementById('password-reset-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const newPassword = formData.get('new_password');
+        const confirmPassword = formData.get('confirm_password');
+        
+        if (newPassword !== confirmPassword) {
+            alert('Passwords do not match!');
+            return;
+        }
+        
+        try {
+            const response = await fetch(CONFIG.ENDPOINTS.RESET_PASSWORD, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: formData.get('email'),
+                    new_password: newPassword
+                })
+            });
+            
+            if (response.ok) {
+                alert('Password reset successfully! You can now login with your new password.');
+                showLogin();
+            } else {
+                const errorData = await response.json();
+                alert('Password reset failed: ' + (errorData.detail || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Error resetting password:', error);
+            alert('Password reset failed: Network error - please check if services are running');
+        }
+    });
+}
 
 // Setup password matching validation
 function setupPasswordMatchValidation() {
@@ -737,6 +795,9 @@ function checkAuth() {
         } else {
             currentUser = { email: savedEmail };
         }
+        
+        // Start idle monitoring for existing session
+        startIdleMonitoring();
     }
 }
 
@@ -790,6 +851,146 @@ document.addEventListener('click', function(event) {
         }
     }
 });
+
+// Idle timeout management
+let idleTimer = null;
+let warningTimer = null;
+let lastActivityTime = Date.now();
+const IDLE_TIMEOUT_MINUTES = 15; // User idle timeout
+const WARNING_MINUTES = 2; // Warn 2 minutes before timeout
+const ACTIVITY_EVENTS = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+
+function startIdleMonitoring() {
+    if (!authToken) return;
+    
+    // Reset activity tracking
+    lastActivityTime = Date.now();
+    
+    // Add activity listeners
+    ACTIVITY_EVENTS.forEach(event => {
+        document.addEventListener(event, resetIdleTimer, true);
+    });
+    
+    // Start the idle timer
+    resetIdleTimer();
+}
+
+function stopIdleMonitoring() {
+    // Remove activity listeners
+    ACTIVITY_EVENTS.forEach(event => {
+        document.removeEventListener(event, resetIdleTimer, true);
+    });
+    
+    // Clear timers
+    if (idleTimer) {
+        clearTimeout(idleTimer);
+        idleTimer = null;
+    }
+    if (warningTimer) {
+        clearTimeout(warningTimer);
+        warningTimer = null;
+    }
+}
+
+// Make resetIdleTimer globally available
+window.resetIdleTimer = function resetIdleTimer() {
+    lastActivityTime = Date.now();
+    
+    // Clear existing timers
+    if (idleTimer) {
+        clearTimeout(idleTimer);
+    }
+    if (warningTimer) {
+        clearTimeout(warningTimer);
+    }
+    
+    // Remove any existing warning notification
+    const existingWarning = document.querySelector('.idle-warning-notification');
+    if (existingWarning) {
+        existingWarning.remove();
+    }
+    
+    // Set warning timer (warn X minutes before idle timeout)
+    const warningTimeMs = (IDLE_TIMEOUT_MINUTES - WARNING_MINUTES) * 60 * 1000;
+    warningTimer = setTimeout(showIdleWarning, warningTimeMs);
+    
+    // Set idle timeout timer
+    const idleTimeMs = IDLE_TIMEOUT_MINUTES * 60 * 1000;
+    idleTimer = setTimeout(handleIdleTimeout, idleTimeMs);
+}
+
+function showIdleWarning() {
+    const message = `You will be logged out in ${WARNING_MINUTES} minute${WARNING_MINUTES !== 1 ? 's' : ''} due to inactivity. Move your mouse or press a key to stay logged in.`;
+    
+    // Create persistent warning notification
+    const warning = document.createElement('div');
+    warning.className = 'notification notification-warning idle-warning-notification';
+    warning.style.position = 'fixed';
+    warning.style.top = '20px';
+    warning.style.right = '20px';
+    warning.style.zIndex = '10001';
+    warning.style.minWidth = '350px';
+    warning.innerHTML = `
+        <div class="notification-content">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>${message}</span>
+        </div>
+        <button class="notification-close" onclick="this.parentElement.remove(); resetIdleTimer();">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    document.body.appendChild(warning);
+    
+    // Add countdown
+    let secondsLeft = WARNING_MINUTES * 60;
+    const countdownInterval = setInterval(() => {
+        secondsLeft--;
+        const minutesLeft = Math.floor(secondsLeft / 60);
+        const secondsRemaining = secondsLeft % 60;
+        
+        const messageSpan = warning.querySelector('.notification-content span');
+        if (messageSpan) {
+            if (secondsLeft > 60) {
+                messageSpan.textContent = `You will be logged out in ${minutesLeft}:${secondsRemaining.toString().padStart(2, '0')} due to inactivity. Move your mouse or press a key to stay logged in.`;
+            } else {
+                messageSpan.textContent = `You will be logged out in ${secondsLeft} second${secondsLeft !== 1 ? 's' : ''} due to inactivity!`;
+            }
+        }
+        
+        if (secondsLeft <= 0 || !document.body.contains(warning)) {
+            clearInterval(countdownInterval);
+        }
+    }, 1000);
+}
+
+function handleIdleTimeout() {
+    stopIdleMonitoring();
+    showNotification('You have been logged out due to inactivity.', 'info', 5000);
+    setTimeout(() => {
+        logout();
+    }, 1000);
+}
+
+// Enhanced fetch wrapper to handle 401 responses automatically
+window.authenticatedFetch = async function(url, options = {}) {
+    const defaultOptions = {
+        headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+            ...options.headers
+        }
+    };
+    
+    const response = await fetch(url, { ...options, ...defaultOptions });
+    
+    if (response.status === 401) {
+        handleSessionExpired();
+        throw new Error('Session expired');
+    }
+    
+    return response;
+};
 
 // Set up account dropdown event listener (now using onclick attribute instead)
 function setupAccountDropdownListener() {

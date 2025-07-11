@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Content Loading</title>
+    <script src="js/config.js"></script>
+    <link rel="stylesheet" href="css/main.css">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-container { max-width: 800px; margin: 0 auto; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        button { margin: 5px; padding: 10px 15px; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Test Course Content Loading</h1>
+        <button onclick="testContentLoading()">Test Content Loading</button>
+        <div id="results"></div>
+        <div id="content-display"></div>
+    </div>
+    
+    <script>
+        let userCourses = [];
+        
+        async function testContentLoading() {
+            const results = document.getElementById('results');
+            const contentDisplay = document.getElementById('content-display');
+            
+            try {
+                results.innerHTML = '<div class="result">Starting content loading test...</div>';
+                
+                // Step 1: Login
+                const loginResponse = await fetch('http://176.9.99.103:8000/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: 'username=bbrelin@gmail.com&password=foobar123'
+                });
+                
+                const loginData = await loginResponse.json();
+                const token = loginData.access_token;
+                localStorage.setItem('authToken', token);
+                
+                results.innerHTML += '<div class="result" style="background: #d4edda;">✅ Login successful</div>';
+                
+                // Step 2: Get courses
+                const coursesResponse = await fetch('http://176.9.99.103:8004/courses', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                userCourses = await coursesResponse.json();
+                results.innerHTML += `<div class="result" style="background: #d4edda;">✅ Found ${userCourses.length} courses</div>`;
+                
+                if (userCourses.length === 0) {
+                    results.innerHTML += '<div class="result" style="background: #f8d7da;">❌ No courses found</div>';
+                    return;
+                }
+                
+                // Step 3: Test the actual loadCourseContent function
+                const courseId = userCourses[0].id;
+                results.innerHTML += `<div class="result">Testing content loading for: ${userCourses[0].title}</div>`;
+                
+                // Simulate the dropdown selection
+                const mockDropdown = document.createElement('select');
+                mockDropdown.id = 'contentCourseSelect';
+                mockDropdown.value = courseId;
+                document.body.appendChild(mockDropdown);
+                
+                const mockDisplay = document.createElement('div');
+                mockDisplay.id = 'course-content-display';
+                contentDisplay.appendChild(mockDisplay);
+                
+                // Call the actual function (copy the logic here since we can't import it)
+                await testLoadCourseContent();
+                
+                results.innerHTML += '<div class="result" style="background: #d4edda;">✅ Content loading test completed</div>';
+                
+            } catch (error) {
+                results.innerHTML += `<div class="result" style="background: #f8d7da;">❌ Test failed: ${error.message}</div>`;
+                console.error('Test error:', error);
+            }
+        }
+        
+        async function testLoadCourseContent() {
+            const courseId = document.getElementById('contentCourseSelect').value;
+            
+            if (!courseId) {
+                document.getElementById('course-content-display').innerHTML = '<p>Select a course to view its content</p>';
+                return;
+            }
+            
+            const course = userCourses.find(c => c.id == courseId);
+            
+            if (!course) {
+                document.getElementById('course-content-display').innerHTML = '<p>Course not found</p>';
+                return;
+            }
+            
+            // Show loading state
+            document.getElementById('course-content-display').innerHTML = `
+                <div class="course-content-header">
+                    <h4>${course.title}</h4>
+                    <p>${course.description}</p>
+                </div>
+                <div class="loading-state">
+                    <i class="fas fa-spinner fa-spin"></i> Loading course content...
+                </div>
+            `;
+            
+            try {
+                const token = localStorage.getItem('authToken');
+                
+                // Fetch slides
+                let slidesContent = '';
+                try {
+                    const slidesResponse = await fetch(CONFIG.ENDPOINTS.SLIDES(courseId), {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    
+                    if (slidesResponse.ok) {
+                        const slidesData = await slidesResponse.json();
+                        if (slidesData && slidesData.slides && slidesData.slides.length > 0) {
+                            slidesContent = `
+                                <p><strong>${slidesData.slides.length} slide${slidesData.slides.length === 1 ? '' : 's'} available</strong></p>
+                                <div class="slides-list">
+                                    ${slidesData.slides.slice(0, 3).map((slide, index) => `
+                                        <div class="slide-preview">
+                                            <strong>Slide ${slide.order || index + 1}: ${slide.title}</strong>
+                                            <p>${(slide.content || '').substring(0, 100)}${slide.content && slide.content.length > 100 ? '...' : ''}</p>
+                                        </div>
+                                    `).join('')}
+                                    ${slidesData.slides.length > 3 ? `<p><em>... and ${slidesData.slides.length - 3} more slides</em></p>` : ''}
+                                </div>
+                            `;
+                        } else {
+                            slidesContent = '<p class="info">No slides available for this course.</p>';
+                        }
+                    } else if (slidesResponse.status === 404) {
+                        slidesContent = '<p class="info">No slides have been generated for this course yet.</p>';
+                    } else {
+                        slidesContent = `<p class="error">Error loading slides (${slidesResponse.status})</p>`;
+                    }
+                } catch (error) {
+                    slidesContent = '<p class="error">Failed to fetch slides. Please check your connection.</p>';
+                }
+                
+                // Fetch lab (expect 404)
+                let labContent = '';
+                try {
+                    const labResponse = await fetch(CONFIG.ENDPOINTS.LAB_BY_COURSE(courseId), {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    
+                    if (labResponse.ok) {
+                        const labData = await labResponse.json();
+                        if (labData && labData.description) {
+                            labContent = `<p><strong>Lab Environment Available</strong></p><p>${labData.description}</p>`;
+                        } else {
+                            labContent = '<p class="info">No lab environment configured for this course.</p>';
+                        }
+                    } else if (labResponse.status === 404) {
+                        labContent = '<p class="info">No lab environment available for this course.</p>';
+                    } else {
+                        labContent = `<p class="error">Error loading lab environment (${labResponse.status})</p>`;
+                    }
+                } catch (error) {
+                    labContent = '<p class="error">Failed to fetch lab environment</p>';
+                }
+                
+                // Fetch quizzes (expect 404)
+                let quizzesContent = '';
+                try {
+                    const quizzesResponse = await fetch(CONFIG.ENDPOINTS.QUIZZES(courseId), {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    
+                    if (quizzesResponse.ok) {
+                        const quizzesData = await quizzesResponse.json();
+                        if (quizzesData && quizzesData.quizzes && quizzesData.quizzes.length > 0) {
+                            quizzesContent = `<p><strong>${quizzesData.quizzes.length} quiz${quizzesData.quizzes.length === 1 ? '' : 'zes'} available</strong></p>`;
+                        } else {
+                            quizzesContent = '<p class="info">No quizzes available for this course.</p>';
+                        }
+                    } else if (quizzesResponse.status === 404) {
+                        quizzesContent = '<p class="info">No quizzes available for this course.</p>';
+                    } else {
+                        quizzesContent = `<p class="error">Error loading quizzes (${quizzesResponse.status})</p>`;
+                    }
+                } catch (error) {
+                    quizzesContent = '<p class="error">Failed to fetch quizzes</p>';
+                }
+                
+                // Display all content
+                document.getElementById('course-content-display').innerHTML = `
+                    <div class="course-content-header">
+                        <h4>${course.title}</h4>
+                        <p>${course.description}</p>
+                    </div>
+                    
+                    <div class="content-sections">
+                        <div class="content-section">
+                            <h5><i class="fas fa-presentation"></i> Slides</h5>
+                            <div class="content-area">
+                                ${slidesContent}
+                            </div>
+                        </div>
+                        
+                        <div class="content-section">
+                            <h5><i class="fas fa-flask"></i> Lab Environment</h5>
+                            <div class="content-area">
+                                ${labContent}
+                            </div>
+                        </div>
+                        
+                        <div class="content-section">
+                            <h5><i class="fas fa-question-circle"></i> Quizzes & Tests</h5>
+                            <div class="content-area">
+                                ${quizzesContent}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Error loading course content:', error);
+                document.getElementById('course-content-display').innerHTML = `
+                    <div class="course-content-header">
+                        <h4>${course.title}</h4>
+                        <p>${course.description}</p>
+                    </div>
+                    <div class="error-state">
+                        <p class="error">Error loading course content: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

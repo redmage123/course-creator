@@ -63,6 +63,10 @@ class UserSession(BaseModel):
     created_at: datetime
     last_accessed_at: datetime
 
+class PasswordResetRequest(BaseModel):
+    email: str
+    new_password: str
+
 @hydra.main(config_path="conf", config_name="config", version_base=None)
 def main(cfg: DictConfig) -> None:
     # Setup logging
@@ -172,17 +176,29 @@ def main(cfg: DictConfig) -> None:
     
     async def cleanup_old_sessions(user_id: str, max_sessions: int = 3):
         """Keep only the most recent sessions for a user"""
-        query = sqlalchemy.text("""
-            DELETE FROM user_sessions 
-            WHERE user_id = :user_id 
-            AND id NOT IN (
-                SELECT id FROM user_sessions 
-                WHERE user_id = :user_id 
-                ORDER BY created_at DESC 
-                LIMIT :max_sessions
-            )
-        """)
-        await database.execute(query, {"user_id": user_id, "max_sessions": max_sessions})
+        try:
+            # First get sessions to keep
+            keep_query = user_sessions_table.select().where(
+                user_sessions_table.c.user_id == user_id
+            ).order_by(user_sessions_table.c.created_at.desc()).limit(max_sessions)
+            
+            sessions_to_keep = await database.fetch_all(keep_query)
+            
+            if len(sessions_to_keep) >= max_sessions:
+                # Get IDs of sessions to keep
+                keep_ids = [str(session["id"]) for session in sessions_to_keep]
+                
+                # Delete sessions not in the keep list
+                delete_query = user_sessions_table.delete().where(
+                    sqlalchemy.and_(
+                        user_sessions_table.c.user_id == user_id,
+                        ~user_sessions_table.c.id.in_(keep_ids)
+                    )
+                )
+                await database.execute(delete_query)
+        except Exception as e:
+            logger.error(f"Error cleaning up old sessions: {e}")
+            # Don't fail the login if cleanup fails
     
     async def invalidate_session(token: str, user_id: str):
         """Invalidate a specific session"""
@@ -338,6 +354,37 @@ def main(cfg: DictConfig) -> None:
             logger.warning(f"Failed to invalidate session for user {current_user.email}")
             return {"message": "Logout completed"}
     
+    @app.get("/auth/validate")
+    async def validate_session_endpoint(current_user: User = Depends(get_current_user), token: str = Depends(oauth2_scheme)):
+        """Validate current session and return session info"""
+        logger.info(f"Session validation for user {current_user.email}")
+        
+        # Get session information
+        try:
+            token_hash = pwd_context.hash(token)
+            query = user_sessions_table.select().where(
+                sqlalchemy.and_(
+                    user_sessions_table.c.user_id == current_user.id,
+                    user_sessions_table.c.expires_at > datetime.utcnow()
+                )
+            ).order_by(user_sessions_table.c.last_accessed_at.desc()).limit(1)
+            
+            session = await database.fetch_one(query)
+            if session:
+                return {
+                    "valid": True,
+                    "user_id": str(current_user.id),
+                    "email": current_user.email,
+                    "expires_at": session["expires_at"].isoformat(),
+                    "message": "Session is valid"
+                }
+            else:
+                raise HTTPException(status_code=401, detail="No valid session found")
+                
+        except Exception as e:
+            logger.error(f"Error validating session: {e}")
+            raise HTTPException(status_code=401, detail="Invalid session")
+    
     @app.get("/auth/sessions")
     async def get_user_sessions(current_user: User = Depends(get_current_user)):
         """Get all active sessions for the current user"""
@@ -453,6 +500,38 @@ def main(cfg: DictConfig) -> None:
             {"id": 2, "name": "instructor", "description": "Course Instructor"},
             {"id": 3, "name": "student", "description": "Student"}
         ]
+
+    @app.post("/auth/reset-password")
+    async def reset_password(request: PasswordResetRequest):
+        """Reset user password - ADMIN ONLY or for development"""
+        try:
+            # Hash the new password
+            hashed_password = pwd_context.hash(request.new_password)
+            
+            # Update user password
+            query = users_table.update().where(
+                users_table.c.email == request.email
+            ).values(hashed_password=hashed_password)
+            
+            result = await database.execute(query)
+            
+            if result:
+                # Invalidate all sessions for this user
+                delete_sessions_query = user_sessions_table.delete().where(
+                    user_sessions_table.c.user_id.in_(
+                        users_table.select().where(users_table.c.email == request.email).with_only_columns([users_table.c.id])
+                    )
+                )
+                await database.execute(delete_sessions_query)
+                
+                logger.info(f"Password reset for user: {request.email}")
+                return {"message": "Password reset successfully", "email": request.email}
+            else:
+                raise HTTPException(status_code=404, detail="User not found")
+                
+        except Exception as e:
+            logger.error(f"Password reset error: {e}")
+            raise HTTPException(status_code=500, detail="Password reset failed")
 
     @app.get("/users/by-email/{email}")
     async def get_user_by_email(email: str):

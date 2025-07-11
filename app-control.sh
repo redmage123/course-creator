@@ -310,6 +310,7 @@ start_service() {
     export POSTGRES_PASSWORD="$POSTGRES_PASSWORD"
     export JWT_SECRET_KEY="$JWT_SECRET_KEY"
     export ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY"
+    export HOST_IP="$HOST_IP"
     
     if [ -f "main.py" ]; then
         python main.py > "$log_file" 2>&1 &
@@ -499,6 +500,34 @@ stop_all() {
     log_success "Platform stopped"
 }
 
+restart_service() {
+    local service_name="$1"
+    
+    if [ -z "$service_name" ]; then
+        log_error "Service name required for restart"
+        return 1
+    fi
+    
+    # Find the service port
+    local port=""
+    for service_config in "${SERVICES[@]}"; do
+        if [[ "$service_config" == "$service_name:"* ]]; then
+            port="${service_config#*:}"
+            break
+        fi
+    done
+    
+    if [ -z "$port" ]; then
+        log_error "Unknown service: $service_name"
+        return 1
+    fi
+    
+    log_info "Restarting $service_name..."
+    stop_service "$service_name"
+    sleep 1
+    start_service "$service_name" "$port"
+}
+
 restart_all() {
     log_info "Restarting Course Creator Platform..."
     stop_all
@@ -610,13 +639,37 @@ clean_all() {
 # Main command handling
 case "${1:-}" in
     start)
-        start_all
+        if [ -n "$2" ]; then
+            # Start specific service
+            for service_config in "${SERVICES[@]}"; do
+                if [[ "$service_config" == "$2:"* ]]; then
+                    port="${service_config#*:}"
+                    check_python_env
+                    start_service "$2" "$port"
+                    exit $?
+                fi
+            done
+            log_error "Unknown service: $2"
+            exit 1
+        else
+            start_all
+        fi
         ;;
     stop)
-        stop_all
+        if [ -n "$2" ]; then
+            # Stop specific service
+            stop_service "$2"
+        else
+            stop_all
+        fi
         ;;
     restart)
-        restart_all
+        if [ -n "$2" ]; then
+            # Restart specific service
+            restart_service "$2"
+        else
+            restart_all
+        fi
         ;;
     status)
         show_status
@@ -646,24 +699,32 @@ case "${1:-}" in
     *)
         echo "Course Creator Platform Control Script"
         echo
-        echo "Usage: $0 {start|stop|restart|status|logs|clean|install-deps|init-db|start-db|stop-db}"
+        echo "Usage: $0 {start|stop|restart|status|logs|clean|install-deps|init-db|start-db|stop-db} [service-name]"
         echo
         echo "Commands:"
-        echo "  start        Start database, all services and frontend"
-        echo "  stop         Stop all services, frontend and database"
-        echo "  restart      Restart entire platform including database"
-        echo "  status       Show status of database and all services"
-        echo "  logs         Show logs for a service (or 'all')"
-        echo "  clean        Stop services and clean up logs/pids"
-        echo "  install-deps Install Python dependencies for all services"
+        echo "  start [service]  Start database, all services and frontend (or specific service)"
+        echo "  stop [service]   Stop all services, frontend and database (or specific service)"
+        echo "  restart [service] Restart entire platform including database (or specific service)"
+        echo "  status           Show status of database and all services"
+        echo "  logs [service]   Show logs for a service (or 'all')"
+        echo "  clean            Stop services and clean up logs/pids"
+        echo "  install-deps     Install Python dependencies for all services"
         echo
         echo "Database Commands:"
-        echo "  init-db      Initialize PostgreSQL database cluster"
-        echo "  start-db     Start only the PostgreSQL database"
-        echo "  stop-db      Stop only the PostgreSQL database"
+        echo "  init-db          Initialize PostgreSQL database cluster"
+        echo "  start-db         Start only the PostgreSQL database"
+        echo "  stop-db          Stop only the PostgreSQL database"
+        echo
+        echo "Service Names:"
+        for service_config in "${SERVICES[@]}"; do
+            service_name="${service_config%:*}"
+            echo "  $service_name"
+        done
         echo
         echo "Examples:"
         echo "  $0 start"
+        echo "  $0 start course-generator"
+        echo "  $0 restart course-generator"
         echo "  $0 status"
         echo "  $0 logs user-management"
         echo "  $0 logs all"

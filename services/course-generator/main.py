@@ -16,6 +16,8 @@ import uvicorn
 import anthropic
 import json
 import asyncio
+import asyncpg
+import os
 
 # Models
 class CourseTemplate(BaseModel):
@@ -73,6 +75,7 @@ class LabLaunchRequest(BaseModel):
 
 class ChatRequest(BaseModel):
     course_id: str
+    student_id: str
     user_message: str
     context: Dict
 
@@ -95,6 +98,23 @@ class StudentProgress(BaseModel):
     knowledge_areas: List[str]
     current_level: str
     last_activity: datetime
+
+class LabSessionRequest(BaseModel):
+    course_id: str
+    student_id: str
+    session_data: Optional[Dict] = {}
+    code_files: Optional[Dict] = {}
+    current_exercise: Optional[str] = None
+    progress_data: Optional[Dict] = {}
+
+class SaveLabStateRequest(BaseModel):
+    course_id: str
+    student_id: str
+    session_data: Dict
+    ai_conversation_history: List[Dict]
+    code_files: Dict
+    current_exercise: Optional[str] = None
+    progress_data: Optional[Dict] = {}
 
 class SyllabusRequest(BaseModel):
     course_id: str
@@ -134,6 +154,15 @@ def main(cfg: DictConfig) -> None:
         allow_headers=["*"],
     )
     
+    # Startup and shutdown events
+    @app.on_event("startup")
+    async def startup_event():
+        await init_database()
+    
+    @app.on_event("shutdown")
+    async def shutdown_event():
+        await close_database()
+    
     # In-memory storage for demo
     templates = {
         "basic": {
@@ -153,8 +182,175 @@ def main(cfg: DictConfig) -> None:
     lab_analytics = {}
     course_syllabi = {}
     
+    # Database connection
+    db_pool = None
+    
+    async def init_database():
+        """Initialize database connection pool"""
+        global db_pool
+        try:
+            # Get database URL from config or environment
+            db_password = os.getenv("DB_PASSWORD", "c0urs3:atao12e")
+            db_url = f"postgresql://course_user:{db_password}@localhost:5433/course_creator"
+            
+            db_pool = await asyncpg.create_pool(
+                db_url,
+                min_size=1,
+                max_size=10
+            )
+            logger.info("Database connection pool initialized")
+        except Exception as e:
+            logger.error(f"Failed to initialize database: {e}")
+    
+    async def close_database():
+        """Close database connection pool"""
+        global db_pool
+        if db_pool:
+            await db_pool.close()
+            logger.info("Database connection pool closed")
+    
+    # Database functions for slides
+    async def save_slides_to_db(course_id: str, slides_data: List[Dict]):
+        """Save slides to database"""
+        if not db_pool:
+            logger.error("Database pool not initialized")
+            return False
+            
+        try:
+            async with db_pool.acquire() as conn:
+                # Delete existing slides for this course
+                await conn.execute("DELETE FROM slides WHERE course_id = $1", course_id)
+                
+                # Insert new slides
+                for slide in slides_data:
+                    await conn.execute("""
+                        INSERT INTO slides (course_id, title, content, slide_type, order_number, module_number)
+                        VALUES ($1, $2, $3, $4, $5, $6)
+                    """, 
+                    course_id, 
+                    slide.get('title', ''),
+                    slide.get('content', ''),
+                    slide.get('slide_type', 'content'),
+                    slide.get('order', 0),
+                    slide.get('module_number')
+                    )
+                
+                logger.info(f"Saved {len(slides_data)} slides to database for course {course_id}")
+                return True
+        except Exception as e:
+            logger.error(f"Error saving slides to database: {e}")
+            return False
+    
+    async def load_slides_from_db(course_id: str) -> List[Dict]:
+        """Load slides from database"""
+        if not db_pool:
+            logger.error("Database pool not initialized")
+            return []
+            
+        try:
+            async with db_pool.acquire() as conn:
+                rows = await conn.fetch("""
+                    SELECT title, content, slide_type, order_number, module_number
+                    FROM slides 
+                    WHERE course_id = $1 
+                    ORDER BY order_number ASC
+                """, course_id)
+                
+                slides = []
+                for row in rows:
+                    slides.append({
+                        'id': f"slide_{row['order_number']}",
+                        'title': row['title'],
+                        'content': row['content'],
+                        'slide_type': row['slide_type'],
+                        'order': row['order_number'],
+                        'module_number': row['module_number']
+                    })
+                
+                logger.info(f"Loaded {len(slides)} slides from database for course {course_id}")
+                return slides
+        except Exception as e:
+            logger.error(f"Error loading slides from database: {e}")
+            return []
+
+    # Database functions for lab sessions
+    async def save_lab_session(course_id: str, student_id: str, session_data: dict, ai_history: list, code_files: dict, current_exercise: str = None, progress_data: dict = None):
+        """Save or update lab session state"""
+        if not db_pool:
+            logger.error("Database pool not initialized")
+            return False
+            
+        try:
+            async with db_pool.acquire() as conn:
+                # Use UPSERT (INSERT ... ON CONFLICT) to update existing session
+                await conn.execute("""
+                    INSERT INTO lab_sessions 
+                    (course_id, student_id, session_data, ai_conversation_history, code_files, current_exercise, progress_data)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7)
+                    ON CONFLICT (course_id, student_id) 
+                    DO UPDATE SET 
+                        session_data = EXCLUDED.session_data,
+                        ai_conversation_history = EXCLUDED.ai_conversation_history,
+                        code_files = EXCLUDED.code_files,
+                        current_exercise = EXCLUDED.current_exercise,
+                        progress_data = EXCLUDED.progress_data,
+                        updated_at = CURRENT_TIMESTAMP,
+                        last_accessed_at = CURRENT_TIMESTAMP
+                """, 
+                course_id, 
+                student_id,
+                json.dumps(session_data) if session_data else '{}',
+                json.dumps(ai_history) if ai_history else '[]',
+                json.dumps(code_files) if code_files else '{}',
+                current_exercise,
+                json.dumps(progress_data) if progress_data else '{}'
+                )
+                
+                logger.info(f"Saved lab session for student {student_id} in course {course_id}")
+                return True
+        except Exception as e:
+            logger.error(f"Error saving lab session: {e}")
+            return False
+    
+    async def load_lab_session(course_id: str, student_id: str) -> dict:
+        """Load lab session state from database"""
+        if not db_pool:
+            logger.error("Database pool not initialized")
+            return {}
+            
+        try:
+            async with db_pool.acquire() as conn:
+                row = await conn.fetchrow("""
+                    SELECT session_data, ai_conversation_history, code_files, 
+                           current_exercise, progress_data, last_accessed_at
+                    FROM lab_sessions 
+                    WHERE course_id = $1 AND student_id = $2
+                """, course_id, student_id)
+                
+                if row:
+                    # Update last accessed time
+                    await conn.execute("""
+                        UPDATE lab_sessions 
+                        SET last_accessed_at = CURRENT_TIMESTAMP 
+                        WHERE course_id = $1 AND student_id = $2
+                    """, course_id, student_id)
+                    
+                    return {
+                        'session_data': json.loads(row['session_data']) if row['session_data'] else {},
+                        'ai_conversation_history': json.loads(row['ai_conversation_history']) if row['ai_conversation_history'] else [],
+                        'code_files': json.loads(row['code_files']) if row['code_files'] else {},
+                        'current_exercise': row['current_exercise'],
+                        'progress_data': json.loads(row['progress_data']) if row['progress_data'] else {},
+                        'last_accessed_at': row['last_accessed_at'].isoformat() if row['last_accessed_at'] else None
+                    }
+                else:
+                    logger.info(f"No existing lab session found for student {student_id} in course {course_id}")
+                    return {}
+        except Exception as e:
+            logger.error(f"Error loading lab session: {e}")
+            return {}
+
     # Initialize Claude client
-    import os
     claude_client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", "YOUR_CLAUDE_API_KEY"))
     
     # Define sync helper functions
@@ -273,13 +469,24 @@ def main(cfg: DictConfig) -> None:
         slides_data = generate_course_slides(request.title, request.description, request.topic)
         course_slides[request.course_id] = slides_data
         
+        # Save to database
+        await save_slides_to_db(request.course_id, slides_data)
+        
         return {"course_id": request.course_id, "slides": slides_data}
     
     @app.get("/slides/{course_id}")
     async def get_course_slides(course_id: str):
-        if course_id not in course_slides:
-            raise HTTPException(status_code=404, detail="Slides not found for this course")
-        return {"course_id": course_id, "slides": course_slides[course_id]}
+        # Try to load from database first
+        slides_data = await load_slides_from_db(course_id)
+        
+        if not slides_data:
+            # Fallback to in-memory storage
+            if course_id in course_slides:
+                slides_data = course_slides[course_id]
+            else:
+                raise HTTPException(status_code=404, detail="Slides not found for this course")
+        
+        return {"course_id": course_id, "slides": slides_data}
     
     @app.put("/slides/update/{course_id}")
     async def update_course_slides(course_id: str, request: dict):
@@ -288,6 +495,9 @@ def main(cfg: DictConfig) -> None:
         
         slides_data = request.get('slides', [])
         course_slides[course_id] = slides_data
+        
+        # Save to database
+        await save_slides_to_db(course_id, slides_data)
         
         return {"course_id": course_id, "slides": slides_data, "message": "Slides updated successfully"}
     
@@ -437,42 +647,155 @@ def main(cfg: DictConfig) -> None:
         if lab["status"] != "running":
             return {"access_url": None, "status": lab["status"]}
         
-        return {"access_url": f"lab://localhost:8001/lab/{course_id}", "status": "running"}
+        # Return null access_url to force frontend to use embedded lab
+        return {"access_url": None, "status": "running"}
+    
+    @app.post("/lab/session/save")
+    async def save_lab_session_state(request: SaveLabStateRequest):
+        """Save lab session state with AI conversation history"""
+        logger.info(f"Saving lab session for student {request.student_id} in course {request.course_id}")
+        
+        success = await save_lab_session(
+            request.course_id,
+            request.student_id,
+            request.session_data,
+            request.ai_conversation_history,
+            request.code_files,
+            request.current_exercise,
+            request.progress_data
+        )
+        
+        if success:
+            return {"message": "Lab session saved successfully", "timestamp": datetime.now().isoformat()}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to save lab session")
+    
+    @app.get("/lab/session/{course_id}/{student_id}")
+    async def load_lab_session_state(course_id: str, student_id: str):
+        """Load lab session state with AI conversation history"""
+        logger.info(f"Loading lab session for student {student_id} in course {course_id}")
+        
+        session_data = await load_lab_session(course_id, student_id)
+        
+        if session_data:
+            return {
+                "course_id": course_id,
+                "student_id": student_id,
+                "session_found": True,
+                "session_data": session_data
+            }
+        else:
+            return {
+                "course_id": course_id,
+                "student_id": student_id,
+                "session_found": False,
+                "session_data": {
+                    "session_data": {},
+                    "ai_conversation_history": [],
+                    "code_files": {},
+                    "current_exercise": None,
+                    "progress_data": {},
+                    "last_accessed_at": None
+                }
+            }
+    
+    @app.delete("/lab/session/{course_id}/{student_id}")
+    async def clear_lab_session(course_id: str, student_id: str):
+        """Clear/reset lab session for a student"""
+        logger.info(f"Clearing lab session for student {student_id} in course {course_id}")
+        
+        if not db_pool:
+            raise HTTPException(status_code=500, detail="Database not available")
+            
+        try:
+            async with db_pool.acquire() as conn:
+                result = await conn.execute("""
+                    DELETE FROM lab_sessions 
+                    WHERE course_id = $1 AND student_id = $2
+                """, course_id, student_id)
+                
+                return {"message": "Lab session cleared successfully", "course_id": course_id, "student_id": student_id}
+        except Exception as e:
+            logger.error(f"Error clearing lab session: {e}")
+            raise HTTPException(status_code=500, detail="Failed to clear lab session")
     
     @app.post("/lab/chat")
     async def chat_with_trainer(request: ChatRequest):
-        """Chat with AI expert trainer"""
+        """Chat with AI expert trainer using persistent conversation history"""
         if request.course_id not in active_labs:
             raise HTTPException(status_code=404, detail="Lab not found")
         
         lab = active_labs[request.course_id]
         
+        # Load existing conversation history
+        session_data = await load_lab_session(request.course_id, request.student_id)
+        conversation_history = session_data.get('ai_conversation_history', [])
+        
         # Update analytics
         lab_analytics[request.course_id]["ai_interactions"] += 1
         
-        # Create context-aware prompt
-        context_prompt = f"""
+        # Build conversation messages for Claude
+        messages = []
+        
+        # Add system context as first message
+        system_message = f"""
         {lab['trainer_context']}
         
         Current Context:
         - Course: {request.context.get('course_title', 'Unknown')}
         - Student Progress: {request.context.get('student_progress', {})}
-        - User Message: {request.user_message}
+        - Current Exercise: {session_data.get('current_exercise', 'None')}
         
-        Respond as the expert trainer, providing helpful, educational guidance.
+        You are the expert trainer for this course. Use the conversation history to maintain context and provide personalized, educational guidance.
         """
         
+        # Add conversation history
+        for msg in conversation_history:
+            if msg.get('role') in ['user', 'assistant']:
+                messages.append({
+                    "role": msg['role'],
+                    "content": msg['content']
+                })
+        
+        # Add current user message
+        messages.append({
+            "role": "user", 
+            "content": request.user_message
+        })
+        
         try:
-            # Call Claude API
+            # Call Claude API with conversation history
             response = claude_client.messages.create(
                 model="claude-3-haiku-20240307",
                 max_tokens=500,
-                messages=[
-                    {"role": "user", "content": context_prompt}
-                ]
+                system=system_message,
+                messages=messages
             )
             
             trainer_response = response.content[0].text
+            
+            # Update conversation history
+            conversation_history.append({
+                "role": "user",
+                "content": request.user_message,
+                "timestamp": datetime.now().isoformat()
+            })
+            conversation_history.append({
+                "role": "assistant", 
+                "content": trainer_response,
+                "timestamp": datetime.now().isoformat()
+            })
+            
+            # Save updated session with conversation history
+            await save_lab_session(
+                request.course_id,
+                request.student_id,
+                session_data.get('session_data', {}),
+                conversation_history,
+                session_data.get('code_files', {}),
+                session_data.get('current_exercise'),
+                session_data.get('progress_data', {})
+            )
             
             # Check if response suggests an exercise
             exercise = None
@@ -487,7 +810,8 @@ def main(cfg: DictConfig) -> None:
             return {
                 "response": trainer_response,
                 "exercise": exercise,
-                "progress_update": None
+                "progress_update": None,
+                "conversation_length": len(conversation_history)
             }
             
         except Exception as e:
@@ -697,17 +1021,18 @@ def main(cfg: DictConfig) -> None:
             4. Create 1 final course summary slide
             
             Each slide should have:
-            - Specific, educational content (3-5 sentences)
+            - Content formatted as clear bullet points (3-5 bullet points)
             - Practical examples where relevant
             - Clear connection to learning outcomes
             - Professional, detailed information
+            - Use bullet points (•) or dashes (-) for all content formatting
             
             Return as JSON array with this exact structure:
             [
                 {{
                     "id": "slide_1",
                     "title": "Course Title",
-                    "content": "Detailed slide content...",
+                    "content": "• Key point one\n• Key point two\n• Key point three",
                     "slide_type": "title",
                     "order": 1,
                     "module_number": null
@@ -715,7 +1040,7 @@ def main(cfg: DictConfig) -> None:
                 {{
                     "id": "slide_2", 
                     "title": "Topic Title",
-                    "content": "Detailed educational content...",
+                    "content": "• Main concept explained\n• Practical example provided\n• Connection to objectives",
                     "slide_type": "content",
                     "order": 2,
                     "module_number": 1
@@ -723,6 +1048,7 @@ def main(cfg: DictConfig) -> None:
             ]
             
             Make content specific to each topic and learning outcome. Avoid generic statements.
+            IMPORTANT: All slide content must be formatted as bullet points, not paragraphs.
             """
             
             response = claude_client.messages.create(
@@ -1166,6 +1492,9 @@ def main(cfg: DictConfig) -> None:
             slides = generate_course_slides_from_syllabus(course_id, syllabus)
             course_slides[course_id] = slides
             
+            # Save slides to database
+            await save_slides_to_db(course_id, slides)
+            
             # Generate exercises based on syllabus
             exercises_data = generate_exercises_from_syllabus_sync(course_id, syllabus)
             exercises[course_id] = exercises_data
@@ -1209,6 +1538,9 @@ def main(cfg: DictConfig) -> None:
             # Fallback to simple content
             slides = generate_fallback_slides("Course Content", syllabus.get('overview', ''), 'General')
             course_slides[course_id] = slides
+            
+            # Save fallback slides to database
+            await save_slides_to_db(course_id, slides)
             
             exercises_data = [{"id": "ex1", "title": "Practice Exercise", "description": "Complete the learning activities", "type": "hands_on", "difficulty": "beginner"}]
             exercises[course_id] = exercises_data
@@ -1476,6 +1808,217 @@ if __name__ == "__main__":
         
         return quizzes_list
     
+    @app.post("/lab/analyze-code")
+    async def analyze_code(request: dict):
+        """Analyze student code using AI"""
+        logger.info(f"Analyzing code for course: {request.get('course_id')}")
+        
+        try:
+            code = request.get('code', '')
+            language = request.get('language', 'javascript')
+            context = request.get('context', {})
+            
+            if not code.strip():
+                return {
+                    "analysis": {
+                        "overall_quality": "No code provided",
+                        "suggestions": ["Please write some code first!"],
+                        "warnings": [],
+                        "best_practices": "Start by writing a simple function or variable declaration.",
+                        "improvements": "Focus on understanding the problem requirements first."
+                    },
+                    "chat_message": "I don't see any code to analyze. Please write some code first!"
+                }
+            
+            # Build analysis prompt
+            analysis_prompt = f"""
+You are an expert {language} instructor analyzing student code. Provide constructive, educational feedback.
+
+Course Context: {context.get('course_title', 'Programming')}
+Difficulty Level: {context.get('difficulty_level', 'beginner')}
+Current Exercise: {context.get('exercise', {}).get('title', 'General coding practice')}
+
+Student Code ({language}):
+```{language}
+{code}
+```
+
+Analyze this code and provide feedback as a JSON object with these keys:
+- overall_quality: Brief assessment (1-2 sentences)
+- suggestions: Array of specific improvement suggestions (3-5 items)
+- warnings: Array of potential issues or bugs (if any)
+- best_practices: String describing relevant best practices
+- improvements: String with specific optimization or enhancement ideas
+
+Focus on:
+1. Code correctness and logic
+2. Best practices for {language}
+3. Readability and style
+4. Educational guidance appropriate for {context.get('difficulty_level', 'beginner')} level
+5. Encouraging tone while being constructive
+
+Return only valid JSON.
+"""
+
+            # Get analysis from Claude
+            response = client.messages.create(
+                model="claude-3-sonnet-20240229",
+                max_tokens=1000,
+                messages=[
+                    {"role": "user", "content": analysis_prompt}
+                ]
+            )
+            
+            try:
+                analysis = json.loads(response.content[0].text)
+            except:
+                # Fallback analysis
+                analysis = {
+                    "overall_quality": "Code analysis completed",
+                    "suggestions": [
+                        "Consider adding comments to explain your logic",
+                        "Make sure variable names are descriptive",
+                        "Test your code with different inputs"
+                    ],
+                    "warnings": [],
+                    "best_practices": f"Follow {language} naming conventions and keep functions focused on single tasks.",
+                    "improvements": "Consider breaking complex logic into smaller functions for better readability."
+                }
+            
+            # Generate chat message
+            chat_message = f"Great work! I've analyzed your {language} code. "
+            if analysis.get('suggestions'):
+                chat_message += f"I have {len(analysis['suggestions'])} suggestions for improvement. "
+            chat_message += "Check the analysis panel for detailed feedback!"
+            
+            return {
+                "analysis": analysis,
+                "chat_message": chat_message
+            }
+            
+        except Exception as e:
+            logger.error(f"Code analysis error: {e}")
+            return {
+                "analysis": {
+                    "overall_quality": "Analysis temporarily unavailable",
+                    "suggestions": ["Keep coding! Practice makes perfect."],
+                    "warnings": [],
+                    "best_practices": "Focus on writing clean, readable code with good variable names.",
+                    "improvements": "Test your code thoroughly and consider edge cases."
+                },
+                "chat_message": "I'm having trouble analyzing your code right now, but keep coding! You're doing great."
+            }
+    
+    @app.post("/lab/get-hint")
+    async def get_hint(request: dict):
+        """Get a coding hint from AI"""
+        logger.info(f"Providing hint for course: {request.get('course_id')}")
+        
+        try:
+            code = request.get('code', '')
+            language = request.get('language', 'javascript')
+            exercise = request.get('exercise', {})
+            
+            hint_prompt = f"""
+You are a helpful {language} programming tutor. A student is working on this exercise and needs a hint.
+
+Exercise: {exercise.get('title', 'Programming challenge')}
+Description: {exercise.get('description', 'Write some code')}
+
+Student's current code:
+```{language}
+{code if code.strip() else 'No code written yet'}
+```
+
+Provide a helpful hint that:
+1. Guides them toward the solution without giving it away
+2. Is appropriate for beginners
+3. Focuses on the next logical step
+4. Encourages them to think through the problem
+
+Give ONE specific, actionable hint in 1-2 sentences.
+"""
+
+            response = client.messages.create(
+                model="claude-3-sonnet-20240229",
+                max_tokens=200,
+                messages=[
+                    {"role": "user", "content": hint_prompt}
+                ]
+            )
+            
+            hint = response.content[0].text.strip()
+            
+            return {"hint": hint}
+            
+        except Exception as e:
+            logger.error(f"Hint generation error: {e}")
+            fallback_hints = [
+                "Try breaking the problem down into smaller steps.",
+                "Think about what variables or functions you might need.",
+                "Start with a simple example and build from there.",
+                "Consider the input and what output you want to produce.",
+                "Look at the exercise description again for clues."
+            ]
+            import random
+            return {"hint": random.choice(fallback_hints)}
+    
+    @app.post("/lab/chat")
+    async def lab_chat(request: dict):
+        """Enhanced chat with code context"""
+        logger.info(f"Lab chat for course: {request.get('course_id')}")
+        
+        try:
+            user_message = request.get('user_message', '')
+            current_code = request.get('current_code', '')
+            language = request.get('language', 'javascript')
+            context = request.get('context', {})
+            
+            chat_prompt = f"""
+You are an expert {language} programming instructor and coding mentor. You're helping a student learn {context.get('course_title', 'programming')} in an interactive coding environment.
+
+Course: {context.get('course_title', 'Programming')}
+Student Level: {context.get('difficulty_level', 'beginner')}
+
+Student's current code:
+```{language}
+{current_code if current_code.strip() else 'No code written yet'}
+```
+
+Student asks: "{user_message}"
+
+Respond as a supportive coding mentor. Be:
+1. Encouraging and positive
+2. Educational and helpful
+3. Specific and actionable
+4. Appropriate for {context.get('difficulty_level', 'beginner')} level
+
+If they're asking for help with code, provide guidance without giving away the complete solution.
+If they're asking about concepts, explain clearly with examples.
+Keep responses conversational and under 3 sentences.
+"""
+
+            response = client.messages.create(
+                model="claude-3-sonnet-20240229",
+                max_tokens=300,
+                messages=[
+                    {"role": "user", "content": chat_prompt}
+                ]
+            )
+            
+            ai_response = response.content[0].text.strip()
+            
+            return {
+                "response": ai_response,
+                "timestamp": datetime.now()
+            }
+            
+        except Exception as e:
+            logger.error(f"Lab chat error: {e}")
+            return {
+                "response": "I'm here to help! Feel free to ask me about your code, programming concepts, or if you need a hint with the current exercise.",
+                "timestamp": datetime.now()
+            }
 
     # Start the server
     uvicorn.run(app, host=cfg.server.host, port=cfg.server.port, reload=cfg.server.reload)

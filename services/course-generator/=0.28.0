@@ -1,0 +1,2 @@
+Requirement already satisfied: asyncpg in /home/bbrelin/course-creator/.venv/lib/python3.10/site-packages (0.30.0)
+Requirement already satisfied: async-timeout>=4.0.3 in /home/bbrelin/course-creator/.venv/lib/python3.10/site-packages (from asyncpg) (5.0.1)

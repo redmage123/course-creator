@@ -1,0 +1,75 @@
+# Testing dependencies for Course Creator Platform
+
+# Core testing framework
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+pytest-html>=3.2.0
+pytest-xdist>=3.3.0
+pytest-mock>=3.11.0
+
+# HTTP testing
+requests>=2.31.0
+httpx>=0.24.0
+responses>=0.23.0
+
+# Database testing
+pytest-postgresql>=5.0.0
+asyncpg>=0.28.0
+
+# Security testing
+bandit>=1.7.5
+safety>=2.3.0
+
+# Performance testing
+pytest-benchmark>=4.0.0
+locust>=2.15.0
+
+# Code quality
+black>=23.7.0
+isort>=5.12.0
+flake8>=6.0.0
+mypy>=1.5.0
+
+# API testing
+fastapi[all]>=0.103.0
+starlette>=0.27.0
+
+# Authentication testing
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+
+# E2E testing (for Python scripts that might call Playwright)
+playwright>=1.37.0
+
+# Utilities
+faker>=19.3.0
+factory-boy>=3.3.0
+freezegun>=1.2.2
+coverage>=7.2.0
+
+# Environment management
+python-dotenv>=1.0.0
+
+# Time and date testing
+arrow>=1.2.3
+
+# Mock services
+responses>=0.23.0
+httpretty>=1.1.4
+
+# Database migration testing
+alembic>=1.11.0
+
+# Configuration testing
+pydantic>=2.0.0
+omegaconf>=2.3.0
+
+# Logging and monitoring
+structlog>=23.1.0
+
+# File handling testing
+aiofiles>=23.1.0
+
+# UUID and other utilities
+uuid>=1.30
