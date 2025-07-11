@@ -931,55 +931,39 @@ function getCurrentUser() {
 }
 
 // Content Management Functions
-async function loadCoursesForContentSelector() {
-    try {
-        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
-        const response = await fetch(CONFIG.ENDPOINTS.COURSES, {
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-        
-        if (response.ok) {
-            const courses = await response.json();
-            const selector = document.getElementById('contentCourseSelect');
-            
-            if (selector) {
-                selector.innerHTML = '<option value="">Select a course...</option>' +
-                    courses.map(course => `<option value="${course.id}">${course.title}</option>`).join('');
-            }
-        }
-    } catch (error) {
-        console.error('Error loading courses for content selector:', error);
-    }
-}
-
 // eslint-disable-next-line no-unused-vars
 async function loadCourseContent() {
     const courseId = document.getElementById('contentCourseSelect').value;
+    console.log('Loading content for course ID:', courseId);
+    
+    const displayDiv = document.getElementById('course-content-display');
+    console.log('Display div exists:', !!displayDiv);
     
     if (!courseId) {
-        document.getElementById('course-content-display').innerHTML = '<p>Select a course to view its content</p>';
+        displayDiv.innerHTML = '<p>Select a course to view its content</p>';
         return;
     }
     
     const course = userCourses.find(c => c.id == courseId);
+    console.log('Found course:', course);
+    console.log('Available courses:', userCourses);
     
     if (!course) {
-        document.getElementById('course-content-display').innerHTML = '<p>Course not found</p>';
+        displayDiv.innerHTML = '<p>Course not found</p>';
         return;
     }
     
     // Show loading state
-    document.getElementById('course-content-display').innerHTML = `
+    displayDiv.innerHTML = `
         <div class="course-content-header">
             <h4>${course.title}</h4>
-            <p>${course.description}</p>
         </div>
         <div class="loading-state">
             <i class="fas fa-spinner fa-spin"></i> Loading course content...
         </div>
     `;
+    
+    console.log('Set loading state, now fetching content...');
     
     // Fetch and display the actual content
     try {
@@ -996,6 +980,7 @@ async function loadCourseContent() {
             
             if (slidesResponse.ok) {
                 const slidesData = await slidesResponse.json();
+                console.log('Slides data received:', slidesData);
                 if (slidesData && slidesData.slides && slidesData.slides.length > 0) {
                     slidesContent = `
                         <p><strong>${slidesData.slides.length} slide${slidesData.slides.length === 1 ? '' : 's'} available</strong></p>
@@ -1003,7 +988,7 @@ async function loadCourseContent() {
                             ${slidesData.slides.slice(0, 5).map((slide, index) => `
                                 <div class="slide-preview">
                                     <strong>Slide ${slide.order || index + 1}: ${slide.title}</strong>
-                                    <p>${(slide.content || '').substring(0, 100)}${slide.content && slide.content.length > 100 ? '...' : ''}</p>
+                                    <div>${formatSlideContentPreview(slide.content || '', 100)}</div>
                                 </div>
                             `).join('')}
                             ${slidesData.slides.length > 5 ? `<p><em>... and ${slidesData.slides.length - 5} more slides</em></p>` : ''}
@@ -1094,7 +1079,7 @@ async function loadCourseContent() {
         }
         
         // Display all content
-        document.getElementById('course-content-display').innerHTML = `
+        displayDiv.innerHTML = `
             <div class="course-content-header">
                 <h4>${course.title}</h4>
                 <p>${course.description}</p>
@@ -1122,11 +1107,25 @@ async function loadCourseContent() {
                     </div>
                 </div>
             </div>
+            
+            <div class="content-actions">
+                <button class="btn btn-primary" onclick="editCourseContent('${courseId}')">
+                    <i class="fas fa-edit"></i> Edit Content
+                </button>
+                <button class="btn btn-success" onclick="launchLabEnvironment('${courseId}')">
+                    <i class="fas fa-flask"></i> Launch Lab
+                </button>
+                <button class="btn btn-info" onclick="viewQuizzes('${courseId}')">
+                    <i class="fas fa-question-circle"></i> View Quizzes
+                </button>
+            </div>
         `;
+        
+        console.log('Content displayed successfully');
         
     } catch (error) {
         console.error('Error loading course content:', error);
-        document.getElementById('course-content-display').innerHTML = `
+        displayDiv.innerHTML = `
             <div class="course-content-header">
                 <h4>${course.title}</h4>
                 <p>${course.description}</p>
@@ -1136,6 +1135,472 @@ async function loadCourseContent() {
                 <button class="btn btn-primary" onclick="loadCourseContent()">Retry</button>
             </div>
         `;
+    }
+}
+
+// Content action functions
+// eslint-disable-next-line no-unused-vars
+async function editCourseContent(courseId) {
+    try {
+        const course = userCourses.find(c => c.id == courseId);
+        if (!course) return;
+        
+        // Show loading
+        showProgressModal('Loading Content Editor', 'Fetching course content for editing...');
+        
+        // Fetch current content
+        const token = localStorage.getItem('authToken');
+        const slidesResponse = await fetch(CONFIG.ENDPOINTS.SLIDES(courseId), {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        let slides = [];
+        if (slidesResponse.ok) {
+            const slidesData = await slidesResponse.json();
+            slides = slidesData.slides || [];
+        }
+        
+        closeProgressModal();
+        showContentEditor(courseId, course, slides);
+        
+    } catch (error) {
+        console.error('Error loading content for editing:', error);
+        closeProgressModal();
+        showNotification('Error loading content for editing', 'error');
+    }
+}
+
+// eslint-disable-next-line no-unused-vars
+async function launchLabEnvironment(courseId) {
+    try {
+        // First check if lab environment exists
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(CONFIG.ENDPOINTS.LAB_BY_COURSE(courseId), {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            const labData = await response.json();
+            if (labData && labData.lab) {
+                // Lab exists, open it
+                openEmbeddedLab(courseId);
+            } else {
+                showNotification('No lab environment found for this course. Generate content first.', 'warning');
+            }
+        } else {
+            showNotification('Lab environment not available. Generate content first.', 'warning');
+        }
+    } catch (error) {
+        console.error('Error launching lab environment:', error);
+        showNotification('Error launching lab environment', 'error');
+    }
+}
+
+// eslint-disable-next-line no-unused-vars
+async function viewQuizzes(courseId) {
+    console.log('Loading quizzes for course ID:', courseId);
+    
+    try {
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(CONFIG.ENDPOINTS.QUIZZES(courseId), {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            const quizzesData = await response.json();
+            console.log('Quizzes data received:', quizzesData);
+            
+            if (quizzesData && quizzesData.quizzes && quizzesData.quizzes.length > 0) {
+                showQuizModal(courseId, quizzesData.quizzes);
+            } else {
+                showNotification('No quizzes found for this course', 'info');
+            }
+        } else {
+            throw new Error('Failed to load quizzes');
+        }
+    } catch (error) {
+        console.error('Error loading quizzes:', error);
+        showNotification('Error loading quizzes', 'error');
+    }
+}
+
+function showQuizModal(courseId, quizzes) {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay quiz-modal';
+    modal.innerHTML = `
+        <div class="modal-content quiz-modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-question-circle"></i> Course Quizzes</h3>
+                <button class="close-btn" onclick="this.closest('.modal-overlay').remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="quizzes-list">
+                    ${quizzes.map((quiz, index) => `
+                        <div class="quiz-item">
+                            <div class="quiz-header">
+                                <h4>Quiz ${index + 1}: ${quiz.title || 'Untitled Quiz'}</h4>
+                                <span class="quiz-stats">${quiz.questions ? quiz.questions.length : 0} questions</span>
+                            </div>
+                            <div class="quiz-content">
+                                ${quiz.questions ? quiz.questions.map((q, qIndex) => `
+                                    <div class="question-preview">
+                                        <strong>Q${qIndex + 1}:</strong> ${q.question}
+                                        <div class="answer-options">
+                                            ${q.options ? q.options.map((option, oIndex) => `
+                                                <div class="option ${q.correct_answer === oIndex ? 'correct' : ''}">
+                                                    ${String.fromCharCode(65 + oIndex)}) ${option}
+                                                    ${q.correct_answer === oIndex ? ' ✓' : ''}
+                                                </div>
+                                            `).join('') : ''}
+                                        </div>
+                                    </div>
+                                `).join('') : '<p>No questions available</p>'}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+// Content Editor Modal
+function showContentEditor(courseId, course, slides) {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay content-editor-modal';
+    modal.innerHTML = `
+        <div class="modal-content content-editor-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-edit"></i> Edit Course Content: ${course.title}</h3>
+                <button class="modal-close" onclick="closeModal(this)">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="content-editor-tabs">
+                    <button class="tab-button active" onclick="showEditorTab('slides')">
+                        <i class="fas fa-presentation"></i> Slides (${slides.length})
+                    </button>
+                    <button class="tab-button" onclick="showEditorTab('settings')">
+                        <i class="fas fa-cog"></i> Settings
+                    </button>
+                </div>
+                
+                <div id="slides-editor" class="editor-tab active">
+                    <div class="editor-toolbar">
+                        <button class="btn btn-primary" onclick="addNewSlide('${courseId}')">
+                            <i class="fas fa-plus"></i> Add Slide
+                        </button>
+                        <button class="btn btn-secondary" onclick="startSlideshow('${courseId}')">
+                            <i class="fas fa-play"></i> Start Slideshow
+                        </button>
+                    </div>
+                    
+                    <div class="slides-list">
+                        ${slides.map((slide, index) => `
+                            <div class="slide-editor-item" data-slide-id="${slide.id}">
+                                <div class="slide-header">
+                                    <div class="slide-info">
+                                        <span class="slide-number">${slide.order || index + 1}</span>
+                                        <h4>${slide.title}</h4>
+                                        <span class="slide-type">${slide.slide_type}</span>
+                                    </div>
+                                    <div class="slide-actions">
+                                        <button class="btn btn-sm btn-secondary" onclick="editSlide('${courseId}', '${slide.id}')">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteSlide('${courseId}', '${slide.id}')">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="slide-content-preview">
+                                    <div>${formatSlideContentPreview(slide.content, 200)}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <div id="settings-editor" class="editor-tab">
+                    <div class="settings-form">
+                        <h4>Course Settings</h4>
+                        <div class="form-group">
+                            <label>Course Title</label>
+                            <input type="text" id="edit-course-title" value="${course.title}" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Course Description</label>
+                            <textarea id="edit-course-description" class="form-control" rows="3">${course.description}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select id="edit-course-category" class="form-control">
+                                <option value="Information Technology" ${course.category === 'Information Technology' ? 'selected' : ''}>Information Technology</option>
+                                <option value="Business" ${course.category === 'Business' ? 'selected' : ''}>Business</option>
+                                <option value="Science" ${course.category === 'Science' ? 'selected' : ''}>Science</option>
+                                <option value="Arts" ${course.category === 'Arts' ? 'selected' : ''}>Arts</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Difficulty Level</label>
+                            <select id="edit-course-difficulty" class="form-control">
+                                <option value="beginner" ${course.difficulty_level === 'beginner' ? 'selected' : ''}>Beginner</option>
+                                <option value="intermediate" ${course.difficulty_level === 'intermediate' ? 'selected' : ''}>Intermediate</option>
+                                <option value="advanced" ${course.difficulty_level === 'advanced' ? 'selected' : ''}>Advanced</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" onclick="saveCourseSettings('${courseId}')">
+                            <i class="fas fa-save"></i> Save Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+// Editor tab switching
+function showEditorTab(tabName) {
+    // Hide all tabs
+    document.querySelectorAll('.editor-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab
+    document.getElementById(tabName + '-editor').classList.add('active');
+    event.target.classList.add('active');
+}
+
+// Slide editing functions
+function editSlide(courseId, slideId) {
+    showNotification('Individual slide editing coming soon!', 'info');
+}
+
+function deleteSlide(courseId, slideId) {
+    if (confirm('Are you sure you want to delete this slide?')) {
+        showNotification('Slide deletion coming soon!', 'info');
+    }
+}
+
+function addNewSlide(courseId) {
+    showNotification('Add new slide functionality coming soon!', 'info');
+}
+
+function saveCourseSettings(courseId) {
+    const title = document.getElementById('edit-course-title').value;
+    const description = document.getElementById('edit-course-description').value;
+    const category = document.getElementById('edit-course-category').value;
+    const difficulty = document.getElementById('edit-course-difficulty').value;
+    
+    if (!title.trim()) {
+        showNotification('Course title is required', 'error');
+        return;
+    }
+    
+    showNotification('Course settings saved successfully!', 'success');
+    // TODO: Implement actual API call to save course settings
+}
+
+// Slideshow functionality
+function startSlideshow(courseId) {
+    showSlideshowModal(courseId);
+}
+
+async function showSlideshowModal(courseId) {
+    try {
+        // Fetch slides
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(CONFIG.ENDPOINTS.SLIDES(courseId), {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load slides');
+        }
+        
+        const slidesData = await response.json();
+        const slides = slidesData.slides || [];
+        
+        if (slides.length === 0) {
+            showNotification('No slides available for slideshow', 'warning');
+            return;
+        }
+        
+        // Close content editor modal
+        const editorModal = document.querySelector('.content-editor-modal');
+        if (editorModal) {
+            editorModal.remove();
+        }
+        
+        // Create slideshow modal
+        const slideshowModal = document.createElement('div');
+        slideshowModal.className = 'slideshow-modal';
+        slideshowModal.innerHTML = `
+            <div class="slideshow-container">
+                <div class="slideshow-header">
+                    <div class="slideshow-title">
+                        <h2>${slides[0].title}</h2>
+                    </div>
+                    <div class="slideshow-controls">
+                        <span class="slide-counter">1 / ${slides.length}</span>
+                        <button class="btn btn-secondary" onclick="exitSlideshow()">
+                            <i class="fas fa-times"></i> Exit
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="slideshow-content">
+                    <div class="slide-display">
+                        <div class="slide-content">
+                            ${formatSlideContent(slides[0].content)}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="slideshow-navigation">
+                    <button class="btn btn-primary" onclick="previousSlide()" disabled>
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </button>
+                    <button class="btn btn-primary" onclick="nextSlide()">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(slideshowModal);
+        
+        // Store slides data globally for navigation
+        window.currentSlideshow = {
+            slides: slides,
+            currentIndex: 0
+        };
+        
+        // Add keyboard navigation
+        document.addEventListener('keydown', handleSlideshowKeyboard);
+        
+    } catch (error) {
+        console.error('Error loading slideshow:', error);
+        showNotification('Error loading slideshow', 'error');
+    }
+}
+
+// Slideshow navigation functions
+function formatSlideContent(content) {
+    // Split by bullet points and newlines, then format properly
+    const lines = content.split('\n').filter(line => line.trim() !== '');
+    const formattedLines = lines.map(line => {
+        if (line.trim().startsWith('•')) {
+            return `<li>${line.trim().substring(1).trim()}</li>`;
+        } else {
+            return `<p>${line.trim()}</p>`;
+        }
+    });
+    
+    return `<ul>${formattedLines.join('')}</ul>`;
+}
+
+function formatSlideContentPreview(content, maxLength = 200) {
+    // Format content with proper line breaks and truncate if needed
+    const lines = content.split('\n').filter(line => line.trim() !== '');
+    const formattedLines = [];
+    let currentLength = 0;
+    
+    for (const line of lines) {
+        const lineText = line.trim().startsWith('•') ? line.trim().substring(1).trim() : line.trim();
+        if (currentLength + lineText.length > maxLength) {
+            formattedLines.push('...');
+            break;
+        }
+        
+        if (line.trim().startsWith('•')) {
+            formattedLines.push(`• ${lineText}`);
+        } else {
+            formattedLines.push(lineText);
+        }
+        currentLength += lineText.length;
+    }
+    
+    return formattedLines.join('<br>');
+}
+
+function nextSlide() {
+    console.log('nextSlide called, currentSlideshow:', window.currentSlideshow);
+    if (!window.currentSlideshow || window.currentSlideshow.currentIndex >= window.currentSlideshow.slides.length - 1) {
+        console.log('Cannot go to next slide - at end or no slideshow');
+        return;
+    }
+    
+    window.currentSlideshow.currentIndex++;
+    console.log('Moving to slide:', window.currentSlideshow.currentIndex);
+    updateSlideDisplay();
+}
+
+function previousSlide() {
+    if (!window.currentSlideshow || window.currentSlideshow.currentIndex <= 0) {
+        return;
+    }
+    
+    window.currentSlideshow.currentIndex--;
+    updateSlideDisplay();
+}
+
+function updateSlideDisplay() {
+    const slideshow = window.currentSlideshow;
+    const slide = slideshow.slides[slideshow.currentIndex];
+    
+    console.log('Updating slide display to slide:', slideshow.currentIndex, slide.title);
+    
+    // Update slide content
+    const slideContent = document.querySelector('.slide-content');
+    const slideTitle = document.querySelector('.slideshow-title h2');
+    const slideCounter = document.querySelector('.slide-counter');
+    
+    if (slideContent) slideContent.innerHTML = formatSlideContent(slide.content);
+    if (slideTitle) slideTitle.textContent = slide.title;
+    if (slideCounter) slideCounter.textContent = `${slideshow.currentIndex + 1} / ${slideshow.slides.length}`;
+    
+    // Update navigation buttons
+    const prevBtn = document.querySelector('.slideshow-navigation .btn:first-child');
+    const nextBtn = document.querySelector('.slideshow-navigation .btn:last-child');
+    
+    if (prevBtn) prevBtn.disabled = slideshow.currentIndex === 0;
+    if (nextBtn) nextBtn.disabled = slideshow.currentIndex === slideshow.slides.length - 1;
+    
+    console.log('Slide display updated');
+}
+
+function exitSlideshow() {
+    const modal = document.querySelector('.slideshow-modal');
+    if (modal) {
+        modal.remove();
+    }
+    
+    // Clean up
+    document.removeEventListener('keydown', handleSlideshowKeyboard);
+    window.currentSlideshow = null;
+}
+
+function handleSlideshowKeyboard(event) {
+    if (event.key === 'ArrowLeft') {
+        previousSlide();
+    } else if (event.key === 'ArrowRight') {
+        nextSlide();
+    } else if (event.key === 'Escape') {
+        exitSlideshow();
     }
 }
 
@@ -1252,7 +1717,7 @@ async function loadLabEnvironment(courseId) {
             const labData = await response.json();
             const labContainer = document.getElementById('lab-content');
             
-            if (labData.lab) {
+            if (labData.lab && labContainer) {
                 labContainer.innerHTML = `
                     <div class="lab-environment">
                         <div class="lab-header">
@@ -1311,7 +1776,12 @@ async function loadLabEnvironment(courseId) {
         }
     } catch (error) {
         console.error('Error loading lab environment:', error);
-        document.getElementById('lab-content').innerHTML = '<p class="error">Error loading lab environment. Make sure content has been generated.</p>';
+        const labContainer = document.getElementById('lab-content');
+        if (labContainer) {
+            labContainer.innerHTML = '<p class="error">Error loading lab environment. Make sure content has been generated.</p>';
+        } else {
+            console.warn('lab-content element not found, skipping UI update');
+        }
     }
 }
 
@@ -1431,8 +1901,13 @@ async function launchLabEnvironment(courseId) {
             await response.json();
             showNotification('AI Lab Environment initialized successfully!', 'success');
             
-            // Refresh the lab content to show updated status
-            loadLabEnvironment(courseId);
+            // Open the lab popup window after successful initialization
+            openEmbeddedLab(courseId);
+            
+            // Refresh the lab content to show updated status (if lab-content element exists)
+            if (document.getElementById('lab-content')) {
+                loadLabEnvironment(courseId);
+            }
         } else {
             throw new Error('Failed to launch lab environment');
         }
@@ -1457,8 +1932,10 @@ async function stopLabEnvironment(courseId) {
         if (response.ok) {
             showNotification('Lab environment stopped successfully!', 'success');
             
-            // Refresh the lab content to show updated status
-            loadLabEnvironment(courseId);
+            // Refresh the lab content to show updated status (if lab-content element exists)
+            if (document.getElementById('lab-content')) {
+                loadLabEnvironment(courseId);
+            }
         } else {
             throw new Error('Failed to stop lab environment');
         }
@@ -1492,19 +1969,40 @@ async function accessLabEnvironment(courseId) {
 
 // eslint-disable-next-line no-unused-vars
 function openEmbeddedLab(courseId) {
-    const course = userCourses.find(c => c.id == courseId);
-    if (!course) return;
+    console.log('openEmbeddedLab called with courseId:', courseId);
+    console.log('Available courses:', userCourses);
     
-    // Create a new window for the lab environment
-    const labWindow = window.open('', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+    const course = userCourses.find(c => c.id == courseId);
+    if (!course) {
+        console.error('Course not found for lab environment. CourseId:', courseId, 'Available courses:', userCourses);
+        showNotification('Course not found for lab environment', 'error');
+        return;
+    }
+    
+    console.log('Opening embedded lab for course:', course.title);
+    
+    try {
+        // Create a new window for the lab environment
+        const labWindow = window.open('about:blank', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+        
+        if (!labWindow) {
+            showNotification('Popup blocked! Please allow popups for this site and try again.', 'warning');
+            return;
+        }
+        
+        console.log('Lab window created successfully');
+        
+        // Add a small delay to ensure window is ready
+        setTimeout(() => {
+            try {
     
     labWindow.document.write(`
         <!DOCTYPE html>
         <html>
         <head>
-            <title>AI Lab Environment - ${course.title}</title>
+            <title>AI Lab Environment - \${course.title}</title>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
-            <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+            <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
             <style>
                 body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background: #1e1e1e; color: #ffffff; overflow: hidden; }
                 .lab-container { height: 100vh; display: grid; grid-template-rows: auto auto 1fr; }
@@ -1563,7 +2061,7 @@ function openEmbeddedLab(courseId) {
             <div class="lab-container">
                 <div class="lab-header">
                     <h1>🧪 AI Lab Environment</h1>
-                    <p>Course: ${course.title} | Expert Trainer: AI Assistant</p>
+                    <p>Course: \${course.title} | Expert Trainer: AI Assistant</p>
                 </div>
                 
                 <div class="progress-section">
@@ -1582,7 +2080,7 @@ function openEmbeddedLab(courseId) {
                         <div id="currentExercise">
                             <div class="exercise-card">
                                 <h4>Welcome to the Programming Lab!</h4>
-                                <p>I'm your AI expert trainer for <strong>${course.title}</strong>. I'll guide you through hands-on coding exercises, analyze your code, and provide personalized feedback.</p>
+                                <p>I'm your AI expert trainer for <strong>\${course.title}</strong>. I'll guide you through hands-on coding exercises, analyze your code, and provide personalized feedback.</p>
                                 <p>Ready to start coding? Use the editor below and I'll help you every step of the way!</p>
                             </div>
                         </div>
@@ -1595,7 +2093,7 @@ function openEmbeddedLab(courseId) {
                         </div>
                         <div class="chat-container scrollbar" id="chatContainer">
                             <div class="message trainer-message">
-                                <strong>🤖 AI Trainer:</strong> Hello! I'm your expert instructor for ${course.title}. I'll analyze your code and provide real-time guidance. Ready to code?
+                                <strong>🤖 AI Trainer:</strong> Hello! I'm your expert instructor for \${course.title}. I'll analyze your code and provide real-time guidance. Ready to code?
                             </div>
                         </div>
                         <div class="input-container">
@@ -1644,7 +2142,7 @@ function openEmbeddedLab(courseId) {
             </div>
             
             <script>
-                let courseId = '${courseId}';
+                let courseId = '\${courseId}';
                 let progressData = {
                     completed_exercises: 0,
                     total_exercises: 0,
@@ -1667,7 +2165,8 @@ function openEmbeddedLab(courseId) {
                 async function loadLabSession() {
                     try {
                         const studentId = window.parent.currentUser?.id || 'demo-student';
-                        const response = await fetch(\`\${window.parent.CONFIG.API_URLS.COURSE_GENERATOR}/lab/session/\${courseId}/\${studentId}\`);
+                        const baseUrl = window.parent?.CONFIG?.API_URLS?.COURSE_GENERATOR || 'http://localhost:8000';
+                        const response = await fetch(\\`\\${baseUrl}/lab/session/\\${courseId}/\\${studentId}\\`);
                         
                         if (response.ok) {
                             const result = await response.json();
@@ -1709,7 +2208,8 @@ function openEmbeddedLab(courseId) {
                             sessionData.codeFiles[currentLanguage] = editor.getValue();
                         }
                         
-                        const response = await fetch(\`\${window.parent.CONFIG.API_URLS.COURSE_GENERATOR}/lab/session/save\`, {
+                        const baseUrl = window.parent?.CONFIG?.API_URLS?.COURSE_GENERATOR || 'http://localhost:8000';
+                        const response = await fetch(\\`\\${baseUrl}/lab/session/save\\`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
@@ -1747,11 +2247,11 @@ function openEmbeddedLab(courseId) {
                     
                     sessionData.conversationHistory.forEach(msg => {
                         const messageDiv = document.createElement('div');
-                        messageDiv.className = \`message \${msg.role === 'user' ? 'student' : 'trainer'}\`;
-                        messageDiv.innerHTML = \`
-                            <div class="message-content">\${msg.content}</div>
-                            <div class="message-time">\${new Date(msg.timestamp).toLocaleTimeString()}</div>
-                        \`;
+                        messageDiv.className = \\`message \\${msg.role === 'user' ? 'student' : 'trainer'}\\`;
+                        messageDiv.innerHTML = \\`
+                            <div class="message-content">\\${msg.content}</div>
+                            <div class="message-time">\\${new Date(msg.timestamp).toLocaleTimeString()}</div>
+                        \\`;
                         chat.appendChild(messageDiv);
                     });
                     
@@ -1770,29 +2270,49 @@ function openEmbeddedLab(courseId) {
                 
                 // Initialize Monaco Editor and Pyodide
                 async function initializeEditor() {
-                    // Initialize Monaco Editor
-                    require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' } });
-                    require(['vs/editor/editor.main'], function () {
-                        editor = monaco.editor.create(document.getElementById('codeEditor'), {
-                            value: getDefaultCode(),
-                            language: currentLanguage,
-                            theme: 'vs-dark',
-                            automaticLayout: true,
-                            fontSize: 14,
-                            minimap: { enabled: true },
-                            scrollBeyondLastLine: false,
-                            wordWrap: 'on'
+                    // Initialize Monaco Editor with better error handling
+                    try {
+                        require.config({ 
+                            paths: { 
+                                vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' 
+                            },
+                            'vs/nls': {
+                                availableLanguages: {
+                                    '*': 'en'
+                                }
+                            }
                         });
-                        
-                        // Add event listener for real-time code analysis
-                        editor.getModel().onDidChangeContent(() => {
-                            clearTimeout(window.codeAnalysisTimeout);
-                            window.codeAnalysisTimeout = setTimeout(analyzeCodeRealTime, 1000);
+                        require(['vs/editor/editor.main'], function () {
+                            try {
+                                editor = monaco.editor.create(document.getElementById('codeEditor'), {
+                                    value: getDefaultCode(),
+                                    language: currentLanguage,
+                                    theme: 'vs-dark',
+                                    automaticLayout: true,
+                                    fontSize: 14,
+                                    minimap: { enabled: false },
+                                    scrollBeyondLastLine: false,
+                                    wordWrap: 'on'
+                                });
+                                
+                                // Add event listener for real-time code analysis
+                                editor.getModel().onDidChangeContent(() => {
+                                    clearTimeout(window.codeAnalysisTimeout);
+                                    window.codeAnalysisTimeout = setTimeout(analyzeCodeRealTime, 1000);
+                                });
+                                
+                                addMessage('Code editor loaded successfully! You can now start coding.', 'trainer');
+                                
+                                // Load previous session after editor is ready
+                                setTimeout(loadLabSession, 1000);
+                            } catch (error) {
+                                console.error('Error creating Monaco editor:', error);
+                                createFallbackEditor();
+                            }
+                        }, function(error) {
+                            console.error('Error loading Monaco editor:', error);
+                            createFallbackEditor();
                         });
-                        
-                        // Load previous session after editor is ready
-                        setTimeout(loadLabSession, 1000);
-                    });
                     
                     // Initialize Pyodide for Python execution
                     try {
@@ -1805,6 +2325,43 @@ function openEmbeddedLab(courseId) {
                     
                     // Start auto-save functionality
                     startAutoSave();
+                    
+                    } catch (error) {
+                        console.error('Error initializing editor:', error);
+                        createFallbackEditor();
+                    }
+                }
+                
+                function createFallbackEditor() {
+                    // Create a simple textarea fallback if Monaco fails
+                    const editorContainer = document.getElementById('codeEditor');
+                    editorContainer.innerHTML = \\`
+                        <textarea id="fallbackEditor" style="width: 100%; height: 100%; background: #1e1e1e; color: #d4d4d4; border: none; padding: 10px; font-family: 'Courier New', monospace; font-size: 14px; resize: none; outline: none;"></textarea>
+                    \\`;
+                    
+                    // Set the default code value after creating the textarea
+                    const textarea = document.getElementById('fallbackEditor');
+                    if (textarea) {
+                        textarea.value = getDefaultCode();
+                    }
+                    
+                    // Create a fallback editor object with getValue/setValue methods
+                    editor = {
+                        getValue: function() {
+                            return document.getElementById('fallbackEditor').value;
+                        },
+                        setValue: function(value) {
+                            document.getElementById('fallbackEditor').value = value;
+                        },
+                        getModel: function() {
+                            return {
+                                onDidChangeContent: function() {}
+                            };
+                        }
+                    };
+                    
+                    addMessage('Code editor loaded in fallback mode. Basic functionality available.', 'trainer');
+                    setTimeout(loadLabSession, 1000);
                 }
                 
                 async function clearSession() {
@@ -1812,7 +2369,8 @@ function openEmbeddedLab(courseId) {
                         try {
                             const studentId = window.parent.currentUser?.id || 'demo-student';
                             
-                            const response = await fetch(\`\${window.parent.CONFIG.API_URLS.COURSE_GENERATOR}/lab/session/\${courseId}/\${studentId}\`, {
+                            const baseUrl = window.parent?.CONFIG?.API_URLS?.COURSE_GENERATOR || 'http://localhost:8000';
+                            const response = await fetch(\\`\\${baseUrl}/lab/session/\\${courseId}/\\${studentId}\\`, {
                                 method: 'DELETE'
                             });
                             
@@ -1826,11 +2384,11 @@ function openEmbeddedLab(courseId) {
                                 };
                                 
                                 // Clear chat
-                                document.getElementById('chatContainer').innerHTML = \`
+                                document.getElementById('chatContainer').innerHTML = \\`
                                     <div class="message trainer-message">
-                                        <strong>🤖 AI Trainer:</strong> Session cleared! Hello! I'm your expert instructor for ${course.title}. I'll analyze your code and provide real-time guidance. Ready to code?
+                                        <strong>🤖 AI Trainer:</strong> Session cleared! Hello! I'm your expert instructor for \\${course.title}. I'll analyze your code and provide real-time guidance. Ready to code?
                                     </div>
-                                \`;
+                                \\`;
                                 
                                 // Reset editor to default code
                                 if (editor) {
@@ -1853,21 +2411,21 @@ function openEmbeddedLab(courseId) {
                 
                 function getDefaultCode() {
                     const examples = {
-                        javascript: \`// Welcome to JavaScript coding!
+                        javascript: \\`// Welcome to JavaScript coding!
 // Try writing a simple function
 function greet(name) {
     return "Hello, " + name + "!";
 }
 
 console.log(greet("World"));
-\`,
-                        python: \`# Welcome to Python coding!
+\\`,
+                        python: \\`# Welcome to Python coding!
 # Try writing a simple function
 def greet(name):
     return f"Hello, {name}!"
 
 print(greet("World"))
-\`
+\\`
                     };
                     return examples[currentLanguage] || examples.javascript;
                 }
@@ -1892,10 +2450,14 @@ print(greet("World"))
                     }
                     
                     clearOutput();
-                    addMessage(\`Switched to \${currentLanguage.charAt(0).toUpperCase() + currentLanguage.slice(1)}. Ready to code!\`, 'trainer');
+                    addMessage(\\`Switched to \\${currentLanguage.charAt(0).toUpperCase() + currentLanguage.slice(1)}. Ready to code!\\`, 'trainer');
                 }
                 
                 async function runCode() {
+                    if (!editor) {
+                        addMessage('Editor not ready yet. Please wait a moment and try again.', 'trainer');
+                        return;
+                    }
                     const code = editor.getValue();
                     const output = document.getElementById('consoleOutput');
                     
@@ -1919,7 +2481,7 @@ print(greet("World"))
                         }
                         
                     } catch (error) {
-                        output.innerHTML = \`<span style="color: #ff4444;">Error: \${error.message}</span>\`;
+                        output.innerHTML = \\`<span style="color: #ff4444;">Error: \\${error.message}</span>\\`;
                     }
                 }
                 
@@ -1939,10 +2501,10 @@ print(greet("World"))
                         executeCode();
                         
                         output.innerHTML = logs.length > 0 ? 
-                            logs.map(log => \`<div>\${log}</div>\`).join('') : 
+                            logs.map(log => \\`<div>\\${log}</div>\\`).join('') : 
                             '<span style="color: #00aa00;">Code executed successfully (no output)</span>';
                     } catch (error) {
-                        output.innerHTML = \`<span style="color: #ff4444;">JavaScript Error: \${error.message}</span>\`;
+                        output.innerHTML = \\`<span style="color: #ff4444;">JavaScript Error: \\${error.message}</span>\\`;
                         throw error;
                     } finally {
                         console.log = originalLog;
@@ -1959,11 +2521,11 @@ print(greet("World"))
                     
                     try {
                         // Capture stdout
-                        pyodide.runPython(\`
+                        pyodide.runPython(\\`
 import sys
 from io import StringIO
 sys.stdout = StringIO()
-\`);
+\\`);
                         
                         // Run the user code
                         pyodide.runPython(code);
@@ -1972,19 +2534,23 @@ sys.stdout = StringIO()
                         const stdout = pyodide.runPython('sys.stdout.getvalue()');
                         
                         output.innerHTML = stdout ? 
-                            stdout.split('\\n').map(line => \`<div>\${line}</div>\`).join('') : 
+                            stdout.split('\\n').map(line => \\`<div>\\${line}</div>\\`).join('') : 
                             '<span style="color: #00aa00;">Code executed successfully (no output)</span>';
                             
                         // Reset stdout
                         pyodide.runPython('sys.stdout = sys.__stdout__');
                         
                     } catch (error) {
-                        output.innerHTML = \`<span style="color: #ff4444;">Python Error: \${error.message}</span>\`;
+                        output.innerHTML = \\`<span style="color: #ff4444;">Python Error: \\${error.message}</span>\\`;
                         throw error;
                     }
                 }
                 
                 async function analyzeCode() {
+                    if (!editor) {
+                        addMessage('Editor not ready yet. Please wait a moment and try again.', 'trainer');
+                        return;
+                    }
                     const code = editor.getValue();
                     if (!code.trim()) {
                         addMessage('Please write some code first, then I can analyze it for you!', 'trainer');
@@ -1999,7 +2565,8 @@ sys.stdout = StringIO()
                     
                     try {
                         // Send code to AI for analysis
-                        const response = await fetch(\`\${window.parent.CONFIG.API_URLS.COURSE_GENERATOR}/lab/analyze-code\`, {
+                        const baseUrl = window.parent?.CONFIG?.API_URLS?.COURSE_GENERATOR || 'http://localhost:8000';
+                        const response = await fetch(\\`\\${baseUrl}/lab/analyze-code\\`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
@@ -2009,9 +2576,9 @@ sys.stdout = StringIO()
                                 code: code,
                                 language: currentLanguage,
                                 context: {
-                                    course_title: '${course.title}',
-                                    course_category: '${course.category}',
-                                    difficulty_level: '${course.difficulty_level}',
+                                    course_title: '\${course.title}',
+                                    course_category: '\${course.category}',
+                                    difficulty_level: '\${course.difficulty_level}',
                                     exercise: currentExerciseData
                                 }
                             })
@@ -2038,13 +2605,13 @@ sys.stdout = StringIO()
                     html += '<h4>🤖 AI Code Analysis</h4>';
                     
                     if (analysis.overall_quality) {
-                        html += \`<p><strong>Overall Quality:</strong> \${analysis.overall_quality}</p>\`;
+                        html += \\`<p><strong>Overall Quality:</strong> \\${analysis.overall_quality}</p>\\`;
                     }
                     
                     if (analysis.suggestions && analysis.suggestions.length > 0) {
                         html += '<div>';
                         analysis.suggestions.forEach(suggestion => {
-                            html += \`<div class="suggestion">💡 \${suggestion}</div>\`;
+                            html += \\`<div class="suggestion">💡 \\${suggestion}</div>\\`;
                         });
                         html += '</div>';
                     }
@@ -2052,17 +2619,17 @@ sys.stdout = StringIO()
                     if (analysis.warnings && analysis.warnings.length > 0) {
                         html += '<div>';
                         analysis.warnings.forEach(warning => {
-                            html += \`<div class="warning">⚠️ \${warning}</div>\`;
+                            html += \\`<div class="warning">⚠️ \\${warning}</div>\\`;
                         });
                         html += '</div>';
                     }
                     
                     if (analysis.best_practices) {
-                        html += \`<p><strong>Best Practices:</strong> \${analysis.best_practices}</p>\`;
+                        html += \\`<p><strong>Best Practices:</strong> \\${analysis.best_practices}</p>\\`;
                     }
                     
                     if (analysis.improvements) {
-                        html += \`<p><strong>Potential Improvements:</strong> \${analysis.improvements}</p>\`;
+                        html += \\`<p><strong>Potential Improvements:</strong> \\${analysis.improvements}</p>\\`;
                     }
                     
                     html += '</div>';
@@ -2080,19 +2647,24 @@ sys.stdout = StringIO()
                     
                     if (lines > 5) {
                         analysisSection.style.display = 'block';
-                        analysisContent.innerHTML = \`
+                        analysisContent.innerHTML = \\`
                             <div style="color: #cccccc; font-size: 0.8em;">
-                                💭 Real-time: \${lines} lines of code. Click "Analyze Code" for detailed AI feedback.
+                                💭 Real-time: \\${lines} lines of code. Click "Analyze Code" for detailed AI feedback.
                             </div>
-                        \`;
+                        \\`;
                     }
                 }
                 
                 async function requestHint() {
+                    if (!editor) {
+                        addMessage('Editor not ready yet. Please wait a moment and try again.', 'trainer');
+                        return;
+                    }
                     const code = editor.getValue();
                     
                     try {
-                        const response = await fetch(\`\${window.parent.CONFIG.API_URLS.COURSE_GENERATOR}/lab/get-hint\`, {
+                        const baseUrl = window.parent?.CONFIG?.API_URLS?.COURSE_GENERATOR || 'http://localhost:8000';
+                        const response = await fetch(\\`\\${baseUrl}/lab/get-hint\\`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
@@ -2107,7 +2679,7 @@ sys.stdout = StringIO()
                         
                         if (response.ok) {
                             const result = await response.json();
-                            addMessage(\`💡 Hint: \${result.hint}\`, 'trainer');
+                            addMessage(\\`💡 Hint: \\${result.hint}\\`, 'trainer');
                         } else {
                             addMessage('Let me give you a general hint: Break down the problem into smaller steps and tackle them one by one!', 'trainer');
                         }
@@ -2117,6 +2689,10 @@ sys.stdout = StringIO()
                 }
                 
                 async function submitSolution() {
+                    if (!editor) {
+                        addMessage('Editor not ready yet. Please wait a moment and try again.', 'trainer');
+                        return;
+                    }
                     const code = editor.getValue();
                     if (!code.trim()) {
                         addMessage('Please write some code before submitting!', 'trainer');
@@ -2156,7 +2732,7 @@ sys.stdout = StringIO()
                             try {
                                 if (currentLanguage === 'javascript') {
                                     // Simple test execution for JavaScript
-                                    const testCode = \`\${code}\\n\${test.code}\`;
+                                    const testCode = \\`\\${code}\\n\\${test.code}\\`;
                                     const testResult = new Function(testCode)();
                                     passed = testResult === test.expected;
                                 } else if (currentLanguage === 'python' && pyodide) {
@@ -2166,16 +2742,17 @@ sys.stdout = StringIO()
                                     passed = result === test.expected;
                                 }
                                 
-                                results += \`<div class="test-result \${passed ? 'test-passed' : 'test-failed'}">
-                                    \${passed ? '✅' : '❌'} Test \${i + 1}: \${test.description}
-                                    \${!passed ? \`<br>Expected: \${test.expected}, Got: (check your logic)\` : ''}
-                                </div>\`;
+                                const expectedText = !passed ? \\`<br>Expected: \\${test.expected}, Got: (check your logic)\\` : '';
+                                results += \\`<div class="test-result \\${passed ? 'test-passed' : 'test-failed'}">
+                                    \\${passed ? '✅' : '❌'} Test \\${i + 1}: \\${test.description}
+                                    \\${expectedText}
+                                </div>\\`;
                             } catch (error) {
-                                results += \`<div class="test-result test-failed">❌ Test \${i + 1}: \${test.description}<br>Error: \${error.message}</div>\`;
+                                results += \\`<div class="test-result test-failed">❌ Test \\${i + 1}: \\${test.description}<br>Error: \\${error.message}</div>\\`;
                             }
                         }
                     } catch (error) {
-                        results = \`<div class="test-result test-failed">❌ Error running tests: \${error.message}</div>\`;
+                        results = \\`<div class="test-result test-failed">❌ Error running tests: \\${error.message}</div>\\`;
                     }
                     
                     testResults.innerHTML = results;
@@ -2207,16 +2784,16 @@ sys.stdout = StringIO()
                 function addMessage(message, type) {
                     const chat = document.getElementById('chatContainer');
                     const messageDiv = document.createElement('div');
-                    messageDiv.className = \`message \${type}-message\`;
+                    messageDiv.className = \\`message \\${type}-message\\`;
                     
                     const displayName = type === 'student' ? '👨‍🎓 You' : 
                                        type === 'trainer' ? '🤖 AI Trainer' : 
                                        type === 'system' ? '⚙️ System' : '💬 Message';
                     
-                    messageDiv.innerHTML = \`
-                        <div class="message-content"><strong>\${displayName}:</strong> \${message}</div>
-                        <div class="message-time">\${new Date().toLocaleTimeString()}</div>
-                    \`;
+                    messageDiv.innerHTML = \\`
+                        <div class="message-content"><strong>\\${displayName}:</strong> \\${message}</div>
+                        <div class="message-time">\\${new Date().toLocaleTimeString()}</div>
+                    \\`;
                     chat.appendChild(messageDiv);
                     chat.scrollTop = chat.scrollHeight;
                     
@@ -2232,7 +2809,8 @@ sys.stdout = StringIO()
                 
                 async function processUserMessage(message) {
                     try {
-                        const response = await fetch(\`\${window.parent.CONFIG.API_URLS.COURSE_GENERATOR}/lab/chat\`, {
+                        const baseUrl = window.parent?.CONFIG?.API_URLS?.COURSE_GENERATOR || 'http://localhost:8000';
+                        const response = await fetch(\\`\\${baseUrl}/lab/chat\\`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
@@ -2244,10 +2822,10 @@ sys.stdout = StringIO()
                                 current_code: editor ? editor.getValue() : '',
                                 language: currentLanguage,
                                 context: {
-                                    course_title: '${course.title}',
-                                    course_description: '${course.description}',
-                                    course_category: '${course.category}',
-                                    difficulty_level: '${course.difficulty_level}',
+                                    course_title: '\${course.title}',
+                                    course_description: '\${course.description}',
+                                    course_category: '\${course.category}',
+                                    difficulty_level: '\${course.difficulty_level}',
                                     student_progress: progressData
                                 }
                             })
@@ -2276,22 +2854,22 @@ sys.stdout = StringIO()
                     currentExerciseData = exercise;
                     const exerciseDiv = document.getElementById('currentExercise');
                     
-                    let html = \`
+                    let html = \\`
                         <div class="exercise-card">
-                            <h4>\${exercise.title}</h4>
-                            <p>\${exercise.description}</p>
-                    \`;
+                            <h4>\\${exercise.title}</h4>
+                            <p>\\${exercise.description}</p>
+                    \\`;
                     
                     if (exercise.starter_code) {
-                        html += \`<p><strong>Starter Code:</strong></p>\`;
+                        html += \\`<p><strong>Starter Code:</strong></p>\\`;
                         editor.setValue(exercise.starter_code);
                     }
                     
                     if (exercise.examples) {
-                        html += \`<p><strong>Examples:</strong></p><pre>\${exercise.examples}</pre>\`;
+                        html += \\`<p><strong>Examples:</strong></p><pre>\\${exercise.examples}</pre>\\`;
                     }
                     
-                    html += \`</div>\`;
+                    html += \\`</div>\\`;
                     exerciseDiv.innerHTML = html;
                     
                     // Clear previous outputs
@@ -2305,7 +2883,7 @@ sys.stdout = StringIO()
                     
                     const percentage = (progressData.completed_exercises / Math.max(progressData.total_exercises, 1)) * 100;
                     progressFill.style.width = percentage + '%';
-                    progressText.textContent = \`Completed \${progressData.completed_exercises} exercises - Keep coding!\`;
+                    progressText.textContent = \\`Completed \\${progressData.completed_exercises} exercises - Keep coding!\\`;
                 }
                 
                 // Initialize everything when the page loads
@@ -2318,26 +2896,21 @@ sys.stdout = StringIO()
         </body>
         </html>
     `);
+    
+                console.log('Lab window HTML written successfully');
+            } catch (error) {
+                console.error('Error writing to lab window:', error);
+                showNotification('Error setting up lab environment', 'error');
+            }
+        }, 100);
+        
+    } catch (error) {
+        console.error('Error opening lab environment:', error);
+        showNotification('Error opening lab environment', 'error');
+    }
 }
 
 // Slide navigation functions
-// eslint-disable-next-line no-unused-vars
-function nextSlide() {
-    if (window.currentSlides && window.currentSlideIndex < window.currentSlides.length - 1) {
-        window.currentSlideIndex++;
-        updateSlideDisplay();
-        updateSlideNavigation();
-    }
-}
-
-// eslint-disable-next-line no-unused-vars
-function previousSlide() {
-    if (window.currentSlides && window.currentSlideIndex > 0) {
-        window.currentSlideIndex--;
-        updateSlideDisplay();
-        updateSlideNavigation();
-    }
-}
 
 // eslint-disable-next-line no-unused-vars
 function showSlidesOverview() {
