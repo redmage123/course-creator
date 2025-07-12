@@ -1,3 +1,566 @@
+// Lab environment JavaScript functions (global scope)
+let exercises = [];
+let currentLanguage = 'javascript';
+let terminalHistory = [];
+let historyIndex = -1;
+let currentDirectory = '/home/student';
+let currentExercise = null;
+let panelStates = {
+    exercises: true,
+    editor: true,
+    terminal: true,
+    assistant: true
+};
+let showingSolution = {};
+
+// File system simulation
+const fileSystem = {
+    '/home/student': {
+        'readme.txt': 'Welcome to the lab environment!\nThis is a simulated file system.',
+        'examples': {
+            'hello.sh': '#!/bin/bash\necho "Hello from the lab!"',
+            'test.py': 'print("Python in the lab!")',
+            'sample.js': 'console.log("JavaScript in the lab!");'
+        }
+    }
+};
+
+// Panel management
+function togglePanel(panelName) {
+    panelStates[panelName] = !panelStates[panelName];
+    updateLayout();
+    updateToggleButtons();
+}
+
+function updateLayout() {
+    const mainLayout = document.querySelector('.main-layout');
+    if (!mainLayout) return;
+    
+    // Reset all layout classes
+    mainLayout.className = 'main-layout';
+    
+    // Get visible panels
+    const visiblePanels = Object.keys(panelStates).filter(panel => panelStates[panel]);
+    
+    // Update panel visibility
+    const exercisePanel = document.getElementById('exercisePanel');
+    const editorPanel = document.getElementById('editorPanel');
+    const terminalPanel = document.getElementById('terminalPanel');
+    const assistantPanel = document.getElementById('assistantPanel');
+    
+    if (exercisePanel) exercisePanel.classList.toggle('panel-hidden', !panelStates.exercises);
+    if (editorPanel) editorPanel.classList.toggle('panel-hidden', !panelStates.editor);
+    if (terminalPanel) terminalPanel.classList.toggle('panel-hidden', !panelStates.terminal);
+    if (assistantPanel) assistantPanel.classList.toggle('panel-hidden', !panelStates.assistant);
+    
+    // Apply appropriate grid layout based on visible panels
+    if (visiblePanels.length === 4) {
+        mainLayout.style.gridTemplateColumns = '300px 1fr 300px';
+        mainLayout.style.gridTemplateRows = '1fr 300px';
+    } else if (visiblePanels.length === 3) {
+        if (!panelStates.terminal) {
+            mainLayout.style.gridTemplateColumns = '300px 1fr 300px';
+            mainLayout.style.gridTemplateRows = '1fr';
+        } else {
+            mainLayout.style.gridTemplateColumns = '300px 1fr';
+            mainLayout.style.gridTemplateRows = '1fr 300px';
+        }
+    } else if (visiblePanels.length === 2) {
+        mainLayout.style.gridTemplateColumns = '300px 1fr';
+        mainLayout.style.gridTemplateRows = '1fr';
+    } else {
+        mainLayout.style.gridTemplateColumns = '1fr';
+        mainLayout.style.gridTemplateRows = '1fr';
+    }
+}
+
+function updateToggleButtons() {
+    const buttons = {
+        exercises: document.getElementById('toggleExercises'),
+        editor: document.getElementById('toggleEditor'),
+        terminal: document.getElementById('toggleTerminal'),
+        assistant: document.getElementById('toggleAssistant')
+    };
+    
+    Object.keys(buttons).forEach(panel => {
+        const button = buttons[panel];
+        if (button) {
+            button.classList.toggle('inactive', !panelStates[panel]);
+        }
+    });
+}
+
+// Initialize the lab environment
+function initializeLab() {
+    console.log('Initializing lab environment...');
+    loadExercises();
+    updateLayout();
+    addMessage('Welcome! Toggle panels using the controls above, select exercises, or ask me anything!', 'system');
+    console.log('Lab initialization complete');
+}
+
+// Load predefined exercises
+function loadExercises() {
+    console.log('Loading exercises...');
+    exercises = [
+        {
+            id: 1,
+            title: "Personal Information System",
+            description: "Create a program that collects and displays user information. Practice with variables, input/output, and string manipulation.",
+            difficulty: "easy",
+            starterCode: "// Create a personal information system\\n// 1. Create variables for name, age, email, and favorite color\\n// 2. Display a formatted profile\\n// 3. Calculate birth year from age\\n\\n// Your code here:",
+            solution: "// Personal Information System\\nconst name = 'John Doe';\\nconst age = 25;\\nconst email = 'john.doe@example.com';\\nconst favoriteColor = 'blue';\\n\\n// Calculate birth year\\nconst currentYear = new Date().getFullYear();\\nconst birthYear = currentYear - age;\\n\\n// Display profile\\nconsole.log('=== Personal Profile ===');\\nconsole.log('Name: ' + name);\\nconsole.log('Age: ' + age + ' years old');\\nconsole.log('Email: ' + email);\\nconsole.log('Favorite Color: ' + favoriteColor);\\nconsole.log('Birth Year: ' + birthYear);\\nconsole.log('Profile created on: ' + new Date().toLocaleDateString());"
+        },
+        {
+            id: 2,
+            title: "Grade Calculator with File Output",
+            description: "Build a grade calculator that processes student scores and generates a report. Practice with arrays, loops, and file I/O concepts.",
+            difficulty: "medium",
+            starterCode: "// Grade Calculator System\\n// 1. Create an array of student scores\\n// 2. Calculate average, highest, and lowest scores\\n// 3. Assign letter grades\\n// 4. Generate a summary report\\n\\nconst scores = [85, 92, 78, 96, 88, 74, 90, 83, 91, 87];\\n\\n// Your code here:",
+            solution: "// Grade Calculator System\\nconst scores = [85, 92, 78, 96, 88, 74, 90, 83, 91, 87];\\nconst studentNames = ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank', 'Grace', 'Henry', 'Ivy', 'Jack'];\\n\\n// Calculate statistics\\nconst average = scores.reduce((sum, score) => sum + score, 0) / scores.length;\\nconst highest = Math.max(...scores);\\nconst lowest = Math.min(...scores);\\n\\n// Function to get letter grade\\nfunction getLetterGrade(score) {\\n    if (score >= 90) return 'A';\\n    if (score >= 80) return 'B';\\n    if (score >= 70) return 'C';\\n    if (score >= 60) return 'D';\\n    return 'F';\\n}\\n\\n// Generate report\\nconsole.log('=== CLASS GRADE REPORT ===');\\nconsole.log('Class Average: ' + average.toFixed(2));\\nconsole.log('Highest Score: ' + highest);\\nconsole.log('Lowest Score: ' + lowest);\\nconsole.log('\\\\n=== INDIVIDUAL GRADES ===');\\n\\nfor (let i = 0; i < scores.length; i++) {\\n    const letterGrade = getLetterGrade(scores[i]);\\n    console.log(studentNames[i] + ': ' + scores[i] + ' (' + letterGrade + ')');\\n}\\n\\n// Summary statistics\\nconst gradeDistribution = {};\\nscores.forEach(score => {\\n    const grade = getLetterGrade(score);\\n    gradeDistribution[grade] = (gradeDistribution[grade] || 0) + 1;\\n});\\n\\nconsole.log('\\\\n=== GRADE DISTRIBUTION ===');\\nfor (const grade in gradeDistribution) {\\n    console.log(grade + ': ' + gradeDistribution[grade] + ' students');\\n}"
+        },
+        {
+            id: 3,
+            title: "Password Strength Checker",
+            description: "Build a password validation system that checks password strength and provides feedback. Practice with functions, conditionals, and string methods.",
+            difficulty: "medium",
+            starterCode: "// Password Strength Checker\\n// 1. Create a function to check password strength\\n// 2. Check for length, uppercase, lowercase, numbers, special chars\\n// 3. Provide specific feedback for improvements\\n// 4. Rate password as Weak, Medium, or Strong\\n\\nfunction checkPasswordStrength(password) {\\n    // Your code here\\n}\\n\\n// Test with different passwords\\nconst testPasswords = ['123', 'password', 'Password123', 'MyStr0ng!Pass'];\\n\\n// Your testing code here:",
+            solution: "// Password Strength Checker\\nfunction checkPasswordStrength(password) {\\n    const criteria = {\\n        length: password.length >= 8,\\n        uppercase: /[A-Z]/.test(password),\\n        lowercase: /[a-z]/.test(password),\\n        numbers: /\\\\d/.test(password),\\n        special: /[!@#$%^&*(),.?\\\":{}|<>]/.test(password)\\n    };\\n    \\n    const score = Object.values(criteria).filter(Boolean).length;\\n    \\n    let strength = 'Weak';\\n    if (score >= 4) strength = 'Strong';\\n    else if (score >= 3) strength = 'Medium';\\n    \\n    return {\\n        strength: strength,\\n        score: score,\\n        criteria: criteria,\\n        feedback: generateFeedback(criteria)\\n    };\\n}\\n\\nfunction generateFeedback(criteria) {\\n    const feedback = [];\\n    if (!criteria.length) feedback.push('Use at least 8 characters');\\n    if (!criteria.uppercase) feedback.push('Add uppercase letters');\\n    if (!criteria.lowercase) feedback.push('Add lowercase letters');\\n    if (!criteria.numbers) feedback.push('Add numbers');\\n    if (!criteria.special) feedback.push('Add special characters');\\n    return feedback;\\n}\\n\\n// Test with different passwords\\nconst testPasswords = ['123', 'password', 'Password123', 'MyStr0ng!Pass'];\\n\\ntestPasswords.forEach(password => {\\n    const result = checkPasswordStrength(password);\\n    console.log('\\\\n=== Password: \"' + password + '\" ===');\\n    console.log('Strength: ' + result.strength + ' (' + result.score + '/5)');\\n    if (result.feedback.length > 0) {\\n        console.log('Improvements needed:');\\n        result.feedback.forEach(tip => console.log('- ' + tip));\\n    } else {\\n        console.log('✓ Password meets all criteria!');\\n    }\\n});"
+        }
+    ];
+    
+    console.log('Loaded', exercises.length, 'exercises');
+    displayExercises();
+}
+
+// Display exercises in the sidebar
+function displayExercises() {
+    console.log('Displaying exercises...');
+    const exerciseList = document.getElementById('exerciseList');
+    if (!exerciseList) {
+        console.error('Exercise list element not found!');
+        return;
+    }
+    exerciseList.innerHTML = exercises.map(exercise => `
+        <div class="exercise-item" onclick="selectExercise(${exercise.id})">
+            <h4>${exercise.title}</h4>
+            <p>${exercise.description}</p>
+            <span class="exercise-difficulty difficulty-${exercise.difficulty}">${exercise.difficulty.toUpperCase()}</span>
+            <div class="exercise-controls">
+                <button class="solution-toggle-btn" onclick="event.stopPropagation(); toggleSolution(${exercise.id})" id="solutionBtn${exercise.id}">
+                    👁️ Show Solution
+                </button>
+            </div>
+        </div>
+    `).join('');
+    console.log('Exercises displayed in DOM');
+}
+
+// Exercise selection
+function selectExercise(exerciseId) {
+    console.log('Selecting exercise:', exerciseId);
+    
+    currentExercise = exercises.find(ex => ex.id === exerciseId);
+    if (!currentExercise) {
+        console.error('Exercise not found:', exerciseId);
+        return;
+    }
+    
+    // Update UI
+    document.querySelectorAll('.exercise-item').forEach(item => item.classList.remove('active'));
+    event.target.closest('.exercise-item').classList.add('active');
+    
+    // Load exercise code (always start with starter code)
+    const editor = document.getElementById('codeEditor');
+    if (editor) {
+        editor.value = currentExercise.starterCode.replace(/\\n/g, '\n');
+        // Reset solution toggle state
+        showingSolution[exerciseId] = false;
+        const button = document.getElementById('solutionBtn' + exerciseId);
+        if (button) {
+            button.textContent = '👁️ Show Solution';
+            button.classList.remove('active');
+        }
+    }
+    
+    // Update terminal with exercise info
+    addToTerminal(`Exercise loaded: ${currentExercise.title}\nRun your code to see the output.`, 'output');
+    
+    // Add message to chat
+    addMessage(`Great! You've selected "${currentExercise.title}". ${currentExercise.description} Feel free to ask for hints if you need help!`, 'assistant');
+}
+
+// Solution toggle functionality
+function toggleSolution(exerciseId) {
+    const exercise = exercises.find(ex => ex.id === exerciseId);
+    if (!exercise) return;
+    
+    const editor = document.getElementById('codeEditor');
+    const button = document.getElementById('solutionBtn' + exerciseId);
+    
+    if (!editor || !button) return;
+    
+    if (showingSolution[exerciseId]) {
+        // Hide solution - show starter code
+        editor.value = exercise.starterCode.replace(/\\n/g, '\n');
+        button.textContent = '👁️ Show Solution';
+        button.classList.remove('active');
+        showingSolution[exerciseId] = false;
+        addToTerminal('Switched back to starter code', 'output');
+    } else {
+        // Show solution
+        editor.value = exercise.solution.replace(/\\n/g, '\n');
+        button.textContent = '🚫 Hide Solution';
+        button.classList.add('active');
+        showingSolution[exerciseId] = true;
+        addToTerminal('Showing solution code', 'output');
+    }
+}
+
+// Change programming language
+function changeLanguage() {
+    const select = document.getElementById('languageSelect');
+    currentLanguage = select.value;
+    
+    const editor = document.getElementById('codeEditor');
+    if (editor) {
+        // Set appropriate starter code for the language
+        if (currentExercise) {
+            // If showing solution, keep showing solution, otherwise show starter code
+            if (showingSolution[currentExercise.id]) {
+                editor.value = currentExercise.solution.replace(/\\n/g, '\n');
+            } else {
+                editor.value = currentExercise.starterCode.replace(/\\n/g, '\n');
+            }
+        } else {
+            // Default starter code for each language
+            if (currentLanguage === 'python') {
+                editor.value = '# Python code\nprint("Hello, World!")';
+            } else if (currentLanguage === 'shell') {
+                editor.value = '#!/bin/bash\n# Bash script\necho "Hello, World!"';
+            } else if (currentLanguage === 'html') {
+                editor.value = '<!DOCTYPE html>\n<html>\n<head>\n    <title>My Page</title>\n</head>\n<body>\n    <h1>Hello, World!</h1>\n</body>\n</html>';
+            } else if (currentLanguage === 'css') {
+                editor.value = '/* CSS Styles */\nbody {\n    font-family: Arial, sans-serif;\n    background-color: #f0f0f0;\n}\n\nh1 {\n    color: #333;\n}';
+            } else {
+                editor.value = '// JavaScript code\nconsole.log("Hello, World!");';
+            }
+        }
+    }
+    
+    addMessage(`Switched to ${currentLanguage.charAt(0).toUpperCase() + currentLanguage.slice(1)}. Ready to code!`, 'assistant');
+}
+
+// Helper function to add styled output to terminal
+function addToTerminal(text, type = 'normal') {
+    const terminalOutput = document.getElementById('terminalOutput');
+    if (!terminalOutput) return;
+    
+    const div = document.createElement('div');
+    if (type === 'output') {
+        div.className = 'code-output';
+    } else if (type === 'error') {
+        div.className = 'code-error';
+    }
+    div.textContent = text;
+    
+    terminalOutput.appendChild(div);
+    terminalOutput.scrollTop = terminalOutput.scrollHeight;
+}
+
+// Code execution
+function runCode() {
+    const editor = document.getElementById('codeEditor');
+    
+    if (!editor) {
+        addMessage('Code editor not available. Enable it using the panel controls above.', 'assistant');
+        return;
+    }
+    
+    const code = editor.value;
+    
+    if (!code.trim()) {
+        addToTerminal('Please write some code first!', 'error');
+        return;
+    }
+    
+    addToTerminal('> Running code...', 'normal');
+    
+    try {
+        if (currentLanguage === 'javascript') {
+            // JavaScript execution
+            let logs = [];
+            const originalLog = console.log;
+            console.log = function(...args) {
+                logs.push(args.join(' '));
+                originalLog.apply(console, arguments);
+            };
+            
+            // Execute the code
+            eval(code);
+            
+            // Restore console.log
+            console.log = originalLog;
+            
+            // Show output
+            if (logs.length > 0) {
+                addToTerminal(logs.join('\n'), 'output');
+            } else {
+                addToTerminal('Code executed successfully (no console output)', 'output');
+            }
+        } else {
+            // For other languages, show simulation message
+            addToTerminal(`${currentLanguage.charAt(0).toUpperCase() + currentLanguage.slice(1)} code simulation:`, 'output');
+            addToTerminal(code, 'output');
+            addToTerminal('(Note: Actual execution requires server-side processing)', 'output');
+        }
+        
+        // Add success message to chat
+        addMessage('Great! Your code ran successfully. Check the terminal for the output!', 'assistant');
+        
+    } catch (error) {
+        addToTerminal('Error: ' + error.message, 'error');
+        
+        // Add error help to chat
+        addMessage(`I see there's an error: "${error.message}". Would you like me to help you fix it?`, 'assistant');
+    }
+}
+
+// Clear code
+function clearCode() {
+    const editor = document.getElementById('codeEditor');
+    if (editor) {
+        if (currentExercise) {
+            editor.value = currentExercise.starterCode.replace(/\\n/g, '\n');
+        } else {
+            if (currentLanguage === 'python') {
+                editor.value = '# Write your Python code here...\nprint("Hello, World!")';
+            } else if (currentLanguage === 'shell') {
+                editor.value = '#!/bin/bash\n# Write your bash script here...\necho "Hello, World!"';
+            } else {
+                editor.value = '// Write your JavaScript code here...\nconsole.log("Hello, World!");';
+            }
+        }
+    }
+    addToTerminal('Code cleared. Ready to start fresh!', 'output');
+}
+
+// Chat functionality
+function addMessage(message, type) {
+    const chatContainer = document.getElementById('chatContainer');
+    if (!chatContainer) return;
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${type}-message`;
+    messageDiv.textContent = message;
+    chatContainer.appendChild(messageDiv);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+    
+    if (message) {
+        addMessage(message, 'user');
+        input.value = '';
+        
+        // Simulate AI response
+        setTimeout(() => {
+            addMessage('I can help you with that! Can you share your code so I can provide specific feedback?', 'assistant');
+        }, 1000);
+    }
+}
+
+// Terminal Functions
+function handleTerminalInput(event) {
+    if (event.key === 'Enter') {
+        const input = document.getElementById('terminalInput');
+        const command = input.value.trim();
+        
+        if (command) {
+            executeTerminalCommand(command);
+            terminalHistory.push(command);
+            historyIndex = terminalHistory.length;
+        }
+        
+        input.value = '';
+    } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        if (historyIndex > 0) {
+            historyIndex--;
+            document.getElementById('terminalInput').value = terminalHistory[historyIndex];
+        }
+    } else if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        if (historyIndex < terminalHistory.length - 1) {
+            historyIndex++;
+            document.getElementById('terminalInput').value = terminalHistory[historyIndex];
+        } else {
+            historyIndex = terminalHistory.length;
+            document.getElementById('terminalInput').value = '';
+        }
+    }
+}
+
+function executeTerminalCommand(command) {
+    const terminalOutput = document.getElementById('terminalOutput');
+    if (!terminalOutput) return;
+    
+    const promptLine = `student@lab:${currentDirectory.replace('/home/student', '~')}$ ${command}\n`;
+    
+    terminalOutput.textContent += promptLine;
+    
+    const parts = command.split(' ');
+    const cmd = parts[0].toLowerCase();
+    const args = parts.slice(1);
+    
+    let output = '';
+    
+    switch (cmd) {
+        case 'help':
+            output = 'Available commands:\n' +
+                   'ls [path]          - List directory contents\n' +
+                   'cd <path>          - Change directory\n' +
+                   'pwd                - Print working directory\n' +
+                   'cat <file>         - Display file contents\n' +
+                   'echo <text>        - Display text\n' +
+                   'mkdir <dir>        - Create directory\n' +
+                   'touch <file>       - Create empty file\n' +
+                   'clear              - Clear terminal\n' +
+                   'whoami             - Display current user\n' +
+                   'date               - Display current date\n' +
+                   'help               - Show this help\n';
+            break;
+        
+        case 'ls':
+            output = simulateLS(args[0] || currentDirectory);
+            break;
+        
+        case 'pwd':
+            output = currentDirectory + '\n';
+            break;
+        
+        case 'cd':
+            output = simulateCD(args[0] || '/home/student');
+            break;
+        
+        case 'cat':
+            output = simulateCAT(args[0]);
+            break;
+        
+        case 'echo':
+            output = args.join(' ') + '\n';
+            break;
+        
+        case 'whoami':
+            output = 'student\n';
+            break;
+        
+        case 'date':
+            output = new Date().toString() + '\n';
+            break;
+        
+        case 'clear':
+            clearTerminal();
+            return;
+        
+        case 'mkdir':
+            output = simulateMKDIR(args[0]);
+            break;
+        
+        case 'touch':
+            output = simulateTOUCH(args[0]);
+            break;
+        
+        default:
+            output = `bash: ${cmd}: command not found\n`;
+            break;
+    }
+    
+    terminalOutput.textContent += output;
+    terminalOutput.textContent += `student@lab:${currentDirectory.replace('/home/student', '~')}$ `;
+    terminalOutput.scrollTop = terminalOutput.scrollHeight;
+}
+
+function simulateLS(path) {
+    // Simplified file listing
+    if (path === '.' || path === currentDirectory || !path) {
+        return 'readme.txt  examples/\n';
+    } else if (path === 'examples') {
+        return 'hello.sh  test.py  sample.js\n';
+    } else {
+        return `ls: cannot access '${path}': No such file or directory\n`;
+    }
+}
+
+function simulateCD(path) {
+    if (path === '.' || path === currentDirectory) {
+        return '';
+    } else if (path === '..' && currentDirectory !== '/home/student') {
+        currentDirectory = '/home/student';
+        return '';
+    } else if (path === 'examples' && currentDirectory === '/home/student') {
+        currentDirectory = '/home/student/examples';
+        return '';
+    } else if (path === '/home/student' || path === '~') {
+        currentDirectory = '/home/student';
+        return '';
+    } else {
+        return `bash: cd: ${path}: No such file or directory\n`;
+    }
+}
+
+function simulateCAT(filename) {
+    if (!filename) {
+        return 'cat: missing file operand\n';
+    }
+    
+    if (filename === 'readme.txt' && currentDirectory === '/home/student') {
+        return 'Welcome to the lab environment!\nThis is a simulated file system.\n';
+    } else if (filename === 'hello.sh' && currentDirectory.includes('examples')) {
+        return '#!/bin/bash\necho "Hello from the lab!"\n';
+    } else {
+        return `cat: ${filename}: No such file or directory\n`;
+    }
+}
+
+function simulateMKDIR(dirname) {
+    if (!dirname) {
+        return 'mkdir: missing operand\n';
+    }
+    return `Directory '${dirname}' created (simulated)\n`;
+}
+
+function simulateTOUCH(filename) {
+    if (!filename) {
+        return 'touch: missing file operand\n';
+    }
+    return `File '${filename}' created (simulated)\n`;
+}
+
+function clearTerminal() {
+    const terminalOutput = document.getElementById('terminalOutput');
+    if (terminalOutput) {
+        terminalOutput.innerHTML = '';
+        terminalOutput.textContent = 'Terminal cleared.\n\nstudent@lab:~$ ';
+    }
+}
+
+function focusTerminalInput() {
+    const terminalInput = document.getElementById('terminalInput');
+    if (terminalInput) {
+        terminalInput.focus();
+    }
+}
+
+// Auto-focus terminal on load
+function initializeTerminal() {
+    setTimeout(() => {
+        focusTerminalInput();
+    }, 100);
+}
+
 // Lab environment HTML template
 function generateLabHtml(course, courseId) {
     return `<!DOCTYPE html>
