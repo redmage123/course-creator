@@ -4043,3 +4043,766 @@ function deleteLab(labId) {
 function showAddStudentForm(courseId) {
     showNotification('Add student form coming soon', 'info');
 }
+
+// ===================================
+// CONTENT MANAGEMENT FUNCTIONS
+// ===================================
+
+// Global variables for content management
+let uploadedFiles = {
+    syllabus: null,
+    slides: null,
+    materials: []
+};
+let currentUploadRequest = null;
+
+// Content Tab Management
+// eslint-disable-next-line no-unused-vars
+function showContentTab(tabName) {
+    // Remove active class from all tabs and content
+    document.querySelectorAll('.content-tabs .tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.content-tab').forEach(tab => tab.classList.remove('active'));
+    
+    // Add active class to clicked tab and corresponding content
+    event.target.classList.add('active');
+    const tabContent = document.getElementById(`${tabName}-content-tab`);
+    if (tabContent) {
+        tabContent.classList.add('active');
+    }
+    
+    // Load data if needed
+    if (tabName === 'export') {
+        loadExportCourseOptions();
+    }
+}
+
+// ===================================
+// FILE UPLOAD FUNCTIONALITY
+// ===================================
+
+// Initialize file upload handlers
+function initializeFileUpload() {
+    // Syllabus upload
+    const syllabusInput = document.getElementById('syllabusFileInput');
+    const syllabusArea = document.getElementById('syllabusUploadArea');
+    const syllabusBtn = document.getElementById('uploadSyllabusBtn');
+    
+    if (syllabusInput) {
+        syllabusInput.addEventListener('change', function(e) {
+            handleFileSelection(e.target.files[0], 'syllabus');
+        });
+    }
+    
+    if (syllabusArea) {
+        setupDragAndDrop(syllabusArea, 'syllabus');
+    }
+    
+    // Slides upload
+    const slidesInput = document.getElementById('slidesFileInput');
+    const slidesArea = document.getElementById('slidesUploadArea');
+    const slidesBtn = document.getElementById('uploadSlidesBtn');
+    
+    if (slidesInput) {
+        slidesInput.addEventListener('change', function(e) {
+            handleFileSelection(e.target.files[0], 'slides');
+        });
+    }
+    
+    if (slidesArea) {
+        setupDragAndDrop(slidesArea, 'slides');
+    }
+    
+    // Materials upload
+    const materialsInput = document.getElementById('materialsFileInput');
+    const materialsArea = document.getElementById('materialsUploadArea');
+    const materialsBtn = document.getElementById('uploadMaterialsBtn');
+    
+    if (materialsInput) {
+        materialsInput.addEventListener('change', function(e) {
+            handleFileSelection(Array.from(e.target.files), 'materials');
+        });
+    }
+    
+    if (materialsArea) {
+        setupDragAndDrop(materialsArea, 'materials');
+    }
+}
+
+// Setup drag and drop functionality
+function setupDragAndDrop(area, type) {
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        area.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+        area.addEventListener(eventName, () => area.classList.add('drag-over'), false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        area.addEventListener(eventName, () => area.classList.remove('drag-over'), false);
+    });
+    
+    area.addEventListener('drop', function(e) {
+        const files = e.dataTransfer.files;
+        if (type === 'materials') {
+            handleFileSelection(Array.from(files), type);
+        } else {
+            handleFileSelection(files[0], type);
+        }
+    });
+}
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+// Handle file selection
+function handleFileSelection(files, type) {
+    if (type === 'materials') {
+        uploadedFiles.materials = files;
+        updateFileDisplay(files, type);
+        enableUploadButton(type);
+    } else {
+        const file = files;
+        if (file && validateFile(file, type)) {
+            uploadedFiles[type] = file;
+            updateFileDisplay([file], type);
+            enableUploadButton(type);
+        }
+    }
+}
+
+// Validate file types
+function validateFile(file, type) {
+    const allowedTypes = {
+        syllabus: ['.pdf', '.doc', '.docx', '.txt'],
+        slides: ['.ppt', '.pptx', '.pdf', '.json'],
+        materials: ['.pdf', '.doc', '.docx', '.zip', '.jpg', '.png', '.mp4', '.mp3']
+    };
+    
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+    const allowed = allowedTypes[type];
+    
+    if (!allowed.includes(fileExtension)) {
+        showNotification(`Invalid file type. Allowed types: ${allowed.join(', ')}`, 'error');
+        return false;
+    }
+    
+    // Check file size (50MB max)
+    const maxSize = 50 * 1024 * 1024;
+    if (file.size > maxSize) {
+        showNotification('File size too large. Maximum size is 50MB.', 'error');
+        return false;
+    }
+    
+    return true;
+}
+
+// Update file display
+function updateFileDisplay(files, type) {
+    const area = document.getElementById(`${type}UploadArea`);
+    const placeholder = area.querySelector('.upload-placeholder');
+    
+    // Create or update file list
+    let fileList = area.querySelector('.file-list');
+    if (!fileList) {
+        fileList = document.createElement('div');
+        fileList.className = 'file-list';
+        area.appendChild(fileList);
+    }
+    
+    fileList.innerHTML = '';
+    
+    files.forEach(file => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+        fileItem.innerHTML = `
+            <div class="file-info">
+                <i class="fas fa-file"></i>
+                <div class="file-details">
+                    <div class="file-name">${file.name}</div>
+                    <div class="file-size">${formatFileSize(file.size)}</div>
+                </div>
+            </div>
+            <div class="file-actions">
+                <button class="btn btn-sm btn-danger" onclick="removeFile('${type}', '${file.name}')">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+        fileList.appendChild(fileItem);
+    });
+    
+    placeholder.style.display = files.length > 0 ? 'none' : 'block';
+}
+
+// Format file size
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Enable upload button
+function enableUploadButton(type) {
+    const btn = document.getElementById(`upload${type.charAt(0).toUpperCase() + type.slice(1)}Btn`);
+    if (btn) {
+        btn.disabled = false;
+    }
+}
+
+// Remove file
+// eslint-disable-next-line no-unused-vars
+function removeFile(type, fileName) {
+    if (type === 'materials') {
+        uploadedFiles.materials = uploadedFiles.materials.filter(file => file.name !== fileName);
+        updateFileDisplay(uploadedFiles.materials, type);
+        if (uploadedFiles.materials.length === 0) {
+            document.getElementById('uploadMaterialsBtn').disabled = true;
+        }
+    } else {
+        uploadedFiles[type] = null;
+        const area = document.getElementById(`${type}UploadArea`);
+        const fileList = area.querySelector('.file-list');
+        const placeholder = area.querySelector('.upload-placeholder');
+        
+        if (fileList) fileList.remove();
+        if (placeholder) placeholder.style.display = 'block';
+        
+        document.getElementById(`upload${type.charAt(0).toUpperCase() + type.slice(1)}Btn`).disabled = true;
+    }
+}
+
+// ===================================
+// UPLOAD FUNCTIONS
+// ===================================
+
+// Upload syllabus and process with AI
+// eslint-disable-next-line no-unused-vars
+async function uploadSyllabus() {
+    if (!uploadedFiles.syllabus) {
+        showNotification('Please select a syllabus file first', 'error');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', uploadedFiles.syllabus);
+    formData.append('type', 'syllabus');
+    formData.append('process_with_ai', 'true');
+    
+    try {
+        showUploadProgress('Uploading and processing syllabus...');
+        
+        const response = await fetch(`${CONFIG.BASE_URL}/api/content/upload`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: formData
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            hideUploadProgress();
+            showNotification('Syllabus uploaded successfully! AI processing started.', 'success');
+            
+            // Reset file selection
+            uploadedFiles.syllabus = null;
+            removeFile('syllabus', uploadedFiles.syllabus?.name);
+            
+            // Show processing status
+            showAIProcessingStatus(result.processing_id);
+            
+        } else {
+            throw new Error('Upload failed');
+        }
+    } catch (error) {
+        console.error('Error uploading syllabus:', error);
+        hideUploadProgress();
+        showNotification('Failed to upload syllabus', 'error');
+    }
+}
+
+// Upload slides
+// eslint-disable-next-line no-unused-vars
+async function uploadSlides() {
+    if (!uploadedFiles.slides) {
+        showNotification('Please select a slides file first', 'error');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', uploadedFiles.slides);
+    formData.append('type', 'slides');
+    
+    try {
+        showUploadProgress('Uploading slides...');
+        
+        const response = await fetch(`${CONFIG.BASE_URL}/api/content/upload`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: formData
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            hideUploadProgress();
+            showNotification('Slides uploaded successfully!', 'success');
+            
+            // Reset file selection
+            uploadedFiles.slides = null;
+            removeFile('slides', uploadedFiles.slides?.name);
+            
+        } else {
+            throw new Error('Upload failed');
+        }
+    } catch (error) {
+        console.error('Error uploading slides:', error);
+        hideUploadProgress();
+        showNotification('Failed to upload slides', 'error');
+    }
+}
+
+// Upload materials
+// eslint-disable-next-line no-unused-vars
+async function uploadMaterials() {
+    if (!uploadedFiles.materials || uploadedFiles.materials.length === 0) {
+        showNotification('Please select materials to upload first', 'error');
+        return;
+    }
+    
+    const formData = new FormData();
+    uploadedFiles.materials.forEach(file => {
+        formData.append('files', file);
+    });
+    formData.append('type', 'materials');
+    
+    try {
+        showUploadProgress('Uploading materials...');
+        
+        const response = await fetch(`${CONFIG.BASE_URL}/api/content/upload`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: formData
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            hideUploadProgress();
+            showNotification('Materials uploaded successfully!', 'success');
+            
+            // Reset file selection
+            uploadedFiles.materials = [];
+            const area = document.getElementById('materialsUploadArea');
+            const fileList = area.querySelector('.file-list');
+            const placeholder = area.querySelector('.upload-placeholder');
+            
+            if (fileList) fileList.remove();
+            if (placeholder) placeholder.style.display = 'block';
+            document.getElementById('uploadMaterialsBtn').disabled = true;
+            
+        } else {
+            throw new Error('Upload failed');
+        }
+    } catch (error) {
+        console.error('Error uploading materials:', error);
+        hideUploadProgress();
+        showNotification('Failed to upload materials', 'error');
+    }
+}
+
+// Show upload progress
+function showUploadProgress(message) {
+    const progressDiv = document.getElementById('uploadProgress');
+    const progressText = document.getElementById('uploadProgressText');
+    const progressFill = document.getElementById('uploadProgressFill');
+    
+    if (progressDiv && progressText && progressFill) {
+        progressText.textContent = message;
+        progressFill.style.width = '10%';
+        progressDiv.style.display = 'block';
+        
+        // Simulate progress
+        let progress = 10;
+        const interval = setInterval(() => {
+            progress += Math.random() * 20;
+            if (progress > 90) progress = 90;
+            progressFill.style.width = progress + '%';
+        }, 500);
+        
+        // Store interval for cleanup
+        progressDiv.progressInterval = interval;
+    }
+}
+
+// Hide upload progress
+function hideUploadProgress() {
+    const progressDiv = document.getElementById('uploadProgress');
+    if (progressDiv) {
+        if (progressDiv.progressInterval) {
+            clearInterval(progressDiv.progressInterval);
+        }
+        progressDiv.style.display = 'none';
+    }
+}
+
+// Cancel upload
+// eslint-disable-next-line no-unused-vars
+function cancelUpload() {
+    if (currentUploadRequest) {
+        currentUploadRequest.abort();
+        currentUploadRequest = null;
+    }
+    hideUploadProgress();
+    showNotification('Upload cancelled', 'info');
+}
+
+// Show AI processing status
+function showAIProcessingStatus(processingId) {
+    // This would show a modal or section tracking AI processing
+    showNotification('AI is processing your content. You will be notified when complete.', 'info');
+    
+    // Poll for processing status
+    pollProcessingStatus(processingId);
+}
+
+// Poll processing status
+async function pollProcessingStatus(processingId) {
+    try {
+        const response = await fetch(`${CONFIG.BASE_URL}/api/content/processing/${processingId}`, {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+        
+        if (response.ok) {
+            const status = await response.json();
+            
+            if (status.status === 'completed') {
+                showNotification('AI processing completed! Your content is ready.', 'success');
+                // Refresh content if user is on manage tab
+                const manageTab = document.getElementById('manage-content-tab');
+                if (manageTab && manageTab.classList.contains('active')) {
+                    loadCourseContent();
+                }
+            } else if (status.status === 'failed') {
+                showNotification('AI processing failed. Please try again.', 'error');
+            } else {
+                // Continue polling
+                setTimeout(() => pollProcessingStatus(processingId), 5000);
+            }
+        }
+    } catch (error) {
+        console.error('Error checking processing status:', error);
+    }
+}
+
+// ===================================
+// EXPORT FUNCTIONALITY
+// ===================================
+
+// Load export course options
+function loadExportCourseOptions() {
+    const select = document.getElementById('exportCourseSelect');
+    if (select && userCourses) {
+        select.innerHTML = '<option value="">Select a course...</option>';
+        userCourses.forEach(course => {
+            const option = document.createElement('option');
+            option.value = course.id;
+            option.textContent = course.title;
+            select.appendChild(option);
+        });
+    }
+}
+
+// Load export options for selected course
+// eslint-disable-next-line no-unused-vars
+function loadExportOptions() {
+    const courseId = document.getElementById('exportCourseSelect').value;
+    const exportOptions = document.getElementById('exportOptions');
+    
+    if (courseId) {
+        exportOptions.style.display = 'block';
+    } else {
+        exportOptions.style.display = 'none';
+    }
+}
+
+// Export slides in various formats
+// eslint-disable-next-line no-unused-vars
+async function exportSlides(format) {
+    const courseId = document.getElementById('exportCourseSelect').value;
+    if (!courseId) {
+        showNotification('Please select a course first', 'error');
+        return;
+    }
+    
+    try {
+        showNotification('Preparing slides export...', 'info');
+        
+        const response = await fetch(`${CONFIG.BASE_URL}/api/content/export/slides`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({
+                course_id: courseId,
+                format: format
+            })
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const filename = `slides_${courseId}.${getFileExtension(format)}`;
+            downloadFile(blob, filename);
+            showNotification('Slides exported successfully!', 'success');
+        } else {
+            throw new Error('Export failed');
+        }
+    } catch (error) {
+        console.error('Error exporting slides:', error);
+        showNotification('Failed to export slides', 'error');
+    }
+}
+
+// Export exercises in various formats
+// eslint-disable-next-line no-unused-vars
+async function exportExercises(format) {
+    const courseId = document.getElementById('exportCourseSelect').value;
+    if (!courseId) {
+        showNotification('Please select a course first', 'error');
+        return;
+    }
+    
+    try {
+        showNotification('Preparing exercises export...', 'info');
+        
+        const response = await fetch(`${CONFIG.BASE_URL}/api/content/export/exercises`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({
+                course_id: courseId,
+                format: format
+            })
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const filename = `exercises_${courseId}.${getFileExtension(format)}`;
+            downloadFile(blob, filename);
+            showNotification('Exercises exported successfully!', 'success');
+        } else {
+            throw new Error('Export failed');
+        }
+    } catch (error) {
+        console.error('Error exporting exercises:', error);
+        showNotification('Failed to export exercises', 'error');
+    }
+}
+
+// Export quizzes in various formats
+// eslint-disable-next-line no-unused-vars
+async function exportQuizzes(format) {
+    const courseId = document.getElementById('exportCourseSelect').value;
+    if (!courseId) {
+        showNotification('Please select a course first', 'error');
+        return;
+    }
+    
+    try {
+        showNotification('Preparing quizzes export...', 'info');
+        
+        const response = await fetch(`${CONFIG.BASE_URL}/api/content/export/quizzes`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({
+                course_id: courseId,
+                format: format
+            })
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const filename = `quizzes_${courseId}.${getFileExtension(format)}`;
+            downloadFile(blob, filename);
+            showNotification('Quizzes exported successfully!', 'success');
+        } else {
+            throw new Error('Export failed');
+        }
+    } catch (error) {
+        console.error('Error exporting quizzes:', error);
+        showNotification('Failed to export quizzes', 'error');
+    }
+}
+
+// Export complete course
+// eslint-disable-next-line no-unused-vars
+async function exportCompleteCourse(format) {
+    const courseId = document.getElementById('exportCourseSelect').value;
+    if (!courseId) {
+        showNotification('Please select a course first', 'error');
+        return;
+    }
+    
+    try {
+        showNotification('Preparing complete course export...', 'info');
+        
+        const response = await fetch(`${CONFIG.BASE_URL}/api/content/export/complete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({
+                course_id: courseId,
+                format: format
+            })
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const filename = `course_complete_${courseId}.${getFileExtension(format)}`;
+            downloadFile(blob, filename);
+            showNotification('Complete course exported successfully!', 'success');
+        } else {
+            throw new Error('Export failed');
+        }
+    } catch (error) {
+        console.error('Error exporting complete course:', error);
+        showNotification('Failed to export complete course', 'error');
+    }
+}
+
+// Get file extension for format
+function getFileExtension(format) {
+    const extensions = {
+        'powerpoint': 'pptx',
+        'json': 'json',
+        'pdf': 'pdf',
+        'zip': 'zip',
+        'excel': 'xlsx',
+        'scorm': 'zip'
+    };
+    return extensions[format] || 'zip';
+}
+
+// Download file
+function downloadFile(blob, filename) {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+}
+
+// ===================================
+// AI GENERATION FUNCTIONS
+// ===================================
+
+// Generate content from uploaded syllabus
+// eslint-disable-next-line no-unused-vars
+async function generateFromSyllabus() {
+    const generateSlides = document.getElementById('generateSlides').checked;
+    const generateExercises = document.getElementById('generateExercises').checked;
+    const generateQuizzes = document.getElementById('generateQuizzes').checked;
+    const generateLabs = document.getElementById('generateLabs').checked;
+    
+    if (!generateSlides && !generateExercises && !generateQuizzes && !generateLabs) {
+        showNotification('Please select at least one content type to generate', 'error');
+        return;
+    }
+    
+    try {
+        showNotification('Starting AI content generation...', 'info');
+        
+        const response = await fetch(`${CONFIG.BASE_URL}/api/content/generate/from-syllabus`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({
+                generate_slides: generateSlides,
+                generate_exercises: generateExercises,
+                generate_quizzes: generateQuizzes,
+                generate_labs: generateLabs
+            })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            showNotification('AI content generation started! You will be notified when complete.', 'success');
+            showAIProcessingStatus(result.processing_id);
+        } else {
+            throw new Error('Generation failed');
+        }
+    } catch (error) {
+        console.error('Error generating content from syllabus:', error);
+        showNotification('Failed to start content generation', 'error');
+    }
+}
+
+// Generate custom content
+// eslint-disable-next-line no-unused-vars
+async function generateCustomContent() {
+    const prompt = document.getElementById('aiPrompt').value.trim();
+    const contentType = document.getElementById('contentType').value;
+    
+    if (!prompt) {
+        showNotification('Please enter a description for what you want to generate', 'error');
+        return;
+    }
+    
+    try {
+        showNotification('Generating custom content...', 'info');
+        
+        const response = await fetch(`${CONFIG.BASE_URL}/api/content/generate/custom`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({
+                prompt: prompt,
+                content_type: contentType
+            })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            showNotification('Custom content generation started! You will be notified when complete.', 'success');
+            showAIProcessingStatus(result.processing_id);
+            
+            // Clear the form
+            document.getElementById('aiPrompt').value = '';
+        } else {
+            throw new Error('Generation failed');
+        }
+    } catch (error) {
+        console.error('Error generating custom content:', error);
+        showNotification('Failed to generate custom content', 'error');
+    }
+}
+
+// Initialize content management when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    initializeFileUpload();
+});

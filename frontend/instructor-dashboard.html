@@ -402,25 +402,297 @@
                         <div class="section-header-content">
                             <div class="header-title">
                                 <h2>Content Management</h2>
-                                <p>Edit and manage your course content</p>
+                                <p>Upload, manage, and export your course content</p>
                             </div>
                             <div class="header-actions">
+                                <button class="btn btn-primary" onclick="openContentUploadModal()">
+                                    <i class="fas fa-upload"></i> Upload Content
+                                </button>
                                 <button class="btn btn-secondary" onclick="showSection('courses')">
                                     <i class="fas fa-arrow-left"></i> Back to Courses
                                 </button>
                             </div>
                         </div>
                     </div>
-                    <div class="content-management-section">
-                        <div class="course-content-selector">
-                            <label for="contentCourseSelect">Select Course:</label>
-                            <select id="contentCourseSelect" onchange="loadCourseContent()">
-                                <option value="">Select a course...</option>
-                            </select>
+                    
+                    <!-- Content Management Tabs -->
+                    <div class="content-tabs">
+                        <button class="tab-btn active" onclick="showContentTab('manage')">
+                            <i class="fas fa-edit"></i> Manage Content
+                        </button>
+                        <button class="tab-btn" onclick="showContentTab('upload')">
+                            <i class="fas fa-upload"></i> Upload & Import
+                        </button>
+                        <button class="tab-btn" onclick="showContentTab('export')">
+                            <i class="fas fa-download"></i> Export & Download
+                        </button>
+                        <button class="tab-btn" onclick="showContentTab('ai-generate')">
+                            <i class="fas fa-magic"></i> AI Generation
+                        </button>
+                    </div>
+
+                    <!-- Manage Content Tab -->
+                    <div id="manage-content-tab" class="content-tab active">
+                        <div class="content-management-section">
+                            <div class="course-content-selector">
+                                <label for="contentCourseSelect">Select Course:</label>
+                                <select id="contentCourseSelect" onchange="loadCourseContent()">
+                                    <option value="">Select a course...</option>
+                                </select>
+                            </div>
+                            
+                            <div id="course-content-display" class="course-content-display">
+                                <!-- Course content will be loaded here -->
+                            </div>
                         </div>
-                        
-                        <div id="course-content-display" class="course-content-display">
-                            <!-- Course content will be loaded here -->
+                    </div>
+
+                    <!-- Upload & Import Tab -->
+                    <div id="upload-content-tab" class="content-tab">
+                        <div class="upload-section">
+                            <div class="upload-grid">
+                                <!-- Syllabus Upload -->
+                                <div class="upload-card">
+                                    <div class="upload-header">
+                                        <i class="fas fa-file-alt"></i>
+                                        <h3>Upload Syllabus</h3>
+                                        <p>Upload your custom syllabus and let AI generate course content</p>
+                                    </div>
+                                    <div class="upload-area" id="syllabusUploadArea">
+                                        <input type="file" id="syllabusFileInput" accept=".pdf,.doc,.docx,.txt" style="display: none;">
+                                        <div class="upload-placeholder" onclick="document.getElementById('syllabusFileInput').click();">
+                                            <i class="fas fa-cloud-upload-alt"></i>
+                                            <p>Drop your syllabus here or click to browse</p>
+                                            <small>Supports: PDF, DOC, DOCX, TXT</small>
+                                        </div>
+                                    </div>
+                                    <div class="upload-actions">
+                                        <button class="btn btn-primary" onclick="uploadSyllabus()" disabled id="uploadSyllabusBtn">
+                                            <i class="fas fa-upload"></i> Upload & Process
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Slides Upload -->
+                                <div class="upload-card">
+                                    <div class="upload-header">
+                                        <i class="fas fa-presentation"></i>
+                                        <h3>Upload Slides</h3>
+                                        <p>Upload your existing presentation slides</p>
+                                    </div>
+                                    <div class="upload-area" id="slidesUploadArea">
+                                        <input type="file" id="slidesFileInput" accept=".ppt,.pptx,.pdf,.json" style="display: none;">
+                                        <div class="upload-placeholder" onclick="document.getElementById('slidesFileInput').click();">
+                                            <i class="fas fa-cloud-upload-alt"></i>
+                                            <p>Drop your slides here or click to browse</p>
+                                            <small>Supports: PPT, PPTX, PDF, JSON</small>
+                                        </div>
+                                    </div>
+                                    <div class="upload-actions">
+                                        <button class="btn btn-primary" onclick="uploadSlides()" disabled id="uploadSlidesBtn">
+                                            <i class="fas fa-upload"></i> Upload Slides
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Supplementary Materials -->
+                                <div class="upload-card">
+                                    <div class="upload-header">
+                                        <i class="fas fa-folder-open"></i>
+                                        <h3>Supplementary Materials</h3>
+                                        <p>Upload additional course resources and materials</p>
+                                    </div>
+                                    <div class="upload-area" id="materialsUploadArea">
+                                        <input type="file" id="materialsFileInput" multiple accept=".pdf,.doc,.docx,.zip,.jpg,.png,.mp4,.mp3" style="display: none;">
+                                        <div class="upload-placeholder" onclick="document.getElementById('materialsFileInput').click();">
+                                            <i class="fas fa-cloud-upload-alt"></i>
+                                            <p>Drop materials here or click to browse</p>
+                                            <small>Multiple files supported: PDF, DOC, ZIP, Images, Videos</small>
+                                        </div>
+                                    </div>
+                                    <div class="upload-actions">
+                                        <button class="btn btn-primary" onclick="uploadMaterials()" disabled id="uploadMaterialsBtn">
+                                            <i class="fas fa-upload"></i> Upload Materials
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Upload Progress -->
+                            <div id="uploadProgress" class="upload-progress" style="display: none;">
+                                <div class="progress-header">
+                                    <h4>Processing Upload...</h4>
+                                    <button class="btn btn-sm btn-danger" onclick="cancelUpload()">Cancel</button>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="uploadProgressFill"></div>
+                                </div>
+                                <div class="progress-text" id="uploadProgressText">Preparing...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Export & Download Tab -->
+                    <div id="export-content-tab" class="content-tab">
+                        <div class="export-section">
+                            <div class="course-selector">
+                                <label for="exportCourseSelect">Select Course to Export:</label>
+                                <select id="exportCourseSelect" onchange="loadExportOptions()">
+                                    <option value="">Select a course...</option>
+                                </select>
+                            </div>
+
+                            <div id="exportOptions" class="export-options" style="display: none;">
+                                <!-- Slides Export -->
+                                <div class="export-card">
+                                    <div class="export-header">
+                                        <i class="fas fa-presentation"></i>
+                                        <h3>Export Slides</h3>
+                                        <p>Download course slides in multiple formats</p>
+                                    </div>
+                                    <div class="export-formats">
+                                        <button class="btn btn-outline-primary" onclick="exportSlides('powerpoint')">
+                                            <i class="fas fa-file-powerpoint"></i> PowerPoint (.pptx)
+                                        </button>
+                                        <button class="btn btn-outline-primary" onclick="exportSlides('json')">
+                                            <i class="fas fa-file-code"></i> JSON (.json)
+                                        </button>
+                                        <button class="btn btn-outline-primary" onclick="exportSlides('pdf')">
+                                            <i class="fas fa-file-pdf"></i> PDF (.pdf)
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Exercises Export -->
+                                <div class="export-card">
+                                    <div class="export-header">
+                                        <i class="fas fa-code"></i>
+                                        <h3>Export Exercises</h3>
+                                        <p>Download course exercises and coding challenges</p>
+                                    </div>
+                                    <div class="export-formats">
+                                        <button class="btn btn-outline-success" onclick="exportExercises('json')">
+                                            <i class="fas fa-file-code"></i> JSON (.json)
+                                        </button>
+                                        <button class="btn btn-outline-success" onclick="exportExercises('pdf')">
+                                            <i class="fas fa-file-pdf"></i> PDF (.pdf)
+                                        </button>
+                                        <button class="btn btn-outline-success" onclick="exportExercises('zip')">
+                                            <i class="fas fa-file-archive"></i> ZIP Archive
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Quizzes Export -->
+                                <div class="export-card">
+                                    <div class="export-header">
+                                        <i class="fas fa-question-circle"></i>
+                                        <h3>Export Quizzes</h3>
+                                        <p>Download course quizzes and assessments</p>
+                                    </div>
+                                    <div class="export-formats">
+                                        <button class="btn btn-outline-warning" onclick="exportQuizzes('json')">
+                                            <i class="fas fa-file-code"></i> JSON (.json)
+                                        </button>
+                                        <button class="btn btn-outline-warning" onclick="exportQuizzes('pdf')">
+                                            <i class="fas fa-file-pdf"></i> PDF (.pdf)
+                                        </button>
+                                        <button class="btn btn-outline-warning" onclick="exportQuizzes('excel')">
+                                            <i class="fas fa-file-excel"></i> Excel (.xlsx)
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Complete Course Export -->
+                                <div class="export-card">
+                                    <div class="export-header">
+                                        <i class="fas fa-archive"></i>
+                                        <h3>Complete Course Package</h3>
+                                        <p>Download entire course with all materials</p>
+                                    </div>
+                                    <div class="export-formats">
+                                        <button class="btn btn-outline-info" onclick="exportCompleteCourse('zip')">
+                                            <i class="fas fa-file-archive"></i> Complete ZIP Package
+                                        </button>
+                                        <button class="btn btn-outline-info" onclick="exportCompleteCourse('scorm')">
+                                            <i class="fas fa-graduation-cap"></i> SCORM Package
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AI Generation Tab -->
+                    <div id="ai-generate-content-tab" class="content-tab">
+                        <div class="ai-generation-section">
+                            <div class="ai-options-grid">
+                                <!-- Generate from Syllabus -->
+                                <div class="ai-card">
+                                    <div class="ai-header">
+                                        <i class="fas fa-file-alt"></i>
+                                        <h3>Generate from Syllabus</h3>
+                                        <p>Use uploaded syllabus to generate course content</p>
+                                    </div>
+                                    <div class="ai-options">
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" id="generateSlides" checked>
+                                            <span class="checkmark"></span>
+                                            Generate Presentation Slides
+                                        </label>
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" id="generateExercises" checked>
+                                            <span class="checkmark"></span>
+                                            Generate Coding Exercises
+                                        </label>
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" id="generateQuizzes" checked>
+                                            <span class="checkmark"></span>
+                                            Generate Quizzes & Assessments
+                                        </label>
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" id="generateLabs" checked>
+                                            <span class="checkmark"></span>
+                                            Generate Lab Environment
+                                        </label>
+                                    </div>
+                                    <div class="ai-actions">
+                                        <button class="btn btn-primary" onclick="generateFromSyllabus()">
+                                            <i class="fas fa-magic"></i> Generate Content
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Custom AI Generation -->
+                                <div class="ai-card">
+                                    <div class="ai-header">
+                                        <i class="fas fa-brain"></i>
+                                        <h3>Custom AI Generation</h3>
+                                        <p>Generate specific content with custom prompts</p>
+                                    </div>
+                                    <div class="custom-generation">
+                                        <div class="form-group">
+                                            <label for="aiPrompt">Describe what you want to generate:</label>
+                                            <textarea id="aiPrompt" rows="4" placeholder="E.g., Create 10 multiple choice questions about Python loops, or Generate slides for database normalization concepts..."></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="contentType">Content Type:</label>
+                                            <select id="contentType">
+                                                <option value="slides">Presentation Slides</option>
+                                                <option value="exercises">Coding Exercises</option>
+                                                <option value="quizzes">Quizzes & Questions</option>
+                                                <option value="lab">Lab Environment</option>
+                                                <option value="mixed">Mixed Content</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="ai-actions">
+                                        <button class="btn btn-primary" onclick="generateCustomContent()">
+                                            <i class="fas fa-magic"></i> Generate
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>
