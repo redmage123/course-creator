@@ -398,16 +398,28 @@ student@lab:~$ </div>
         // Get course info from URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const courseName = urlParams.get('course') || 'Programming Course';
-        const courseId = urlParams.get('courseId') || 'default';
+        // courseId is declared in lab-template.js, just assign the value
+        courseId = urlParams.get('courseId') || 'default';
         
         // Update title
         document.querySelector('.lab-title').textContent = `🧪 ${courseName} - Lab`;
         
         // Initialize when page loads
         window.onload = function() {
-            initializeLab();
-            updateToggleButtons();
-            initializeTerminal();
+            console.log('Page loaded, initializing lab...');
+            // Small delay to ensure DOM is fully ready
+            setTimeout(() => {
+                initializeLab();
+                updateToggleButtons();
+                initializeTerminal();
+                // Force exercise display after initialization
+                setTimeout(() => {
+                    console.log('Force displaying exercises...');
+                    if (typeof displayExercises === 'function') {
+                        displayExercises();
+                    }
+                }, 200);
+            }, 100);
         };
     </script>
 </body>

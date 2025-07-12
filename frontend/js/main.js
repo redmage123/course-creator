@@ -998,12 +998,107 @@ function setupAccountDropdownListener() {
     // but keeping it for any future event listener setup
 }
 
+// Access control functions
+function checkPageAccess() {
+    const currentUser = getCurrentUser();
+    const currentPage = window.location.pathname.split('/').pop();
+    
+    // If user is not logged in, allow access to main pages only
+    if (!currentUser || !currentUser.role) {
+        const allowedPages = ['index.html', ''];
+        if (!allowedPages.includes(currentPage)) {
+            window.location.href = 'index.html';
+            return false;
+        }
+        return true;
+    }
+    
+    // Role-based access control
+    const userRole = currentUser.role;
+    
+    // Define page access rules
+    const pageAccess = {
+        'student': ['student-dashboard.html', 'lab.html'],
+        'instructor': ['instructor-dashboard.html', 'lab.html'],
+        'admin': ['admin.html', 'instructor-dashboard.html', 'student-dashboard.html', 'lab.html']
+    };
+    
+    // Check if current user role has access to current page
+    const allowedPages = pageAccess[userRole] || [];
+    
+    // Add general pages that all authenticated users can access
+    const generalPages = ['index.html', ''];
+    const allAllowedPages = [...allowedPages, ...generalPages];
+    
+    if (!allAllowedPages.includes(currentPage)) {
+        // Redirect to appropriate dashboard based on role
+        switch (userRole) {
+            case 'student':
+                window.location.href = 'student-dashboard.html';
+                break;
+            case 'instructor':
+                window.location.href = 'instructor-dashboard.html';
+                break;
+            case 'admin':
+                window.location.href = 'admin.html';
+                break;
+            default:
+                window.location.href = 'index.html';
+        }
+        return false;
+    }
+    
+    return true;
+}
+
+function preventUnauthorizedAccess() {
+    // Add event listeners to prevent navigation to unauthorized pages
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('a[href]');
+        if (!link) return;
+        
+        const href = link.getAttribute('href');
+        if (!href || href.startsWith('#') || href.startsWith('javascript:') || href.includes('://')) {
+            return; // Skip anchors, javascript links, and external links
+        }
+        
+        const currentUser = getCurrentUser();
+        if (!currentUser || !currentUser.role) return;
+        
+        // Check if the target page is allowed for current user
+        const targetPage = href.split('/').pop();
+        const userRole = currentUser.role;
+        
+        const pageAccess = {
+            'student': ['student-dashboard.html', 'lab.html', 'index.html', ''],
+            'instructor': ['instructor-dashboard.html', 'lab.html', 'index.html', ''],
+            'admin': ['admin.html', 'instructor-dashboard.html', 'student-dashboard.html', 'lab.html', 'index.html', '']
+        };
+        
+        const allowedPages = pageAccess[userRole] || [];
+        
+        if (!allowedPages.includes(targetPage)) {
+            e.preventDefault();
+            showNotification(`Access denied: You don't have permission to access ${targetPage}`, 'error');
+        }
+    });
+}
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Course Creator Platform loaded');
+    
+    // Check page access before initializing
+    if (!checkPageAccess()) {
+        return; // Access denied, redirect happened
+    }
+    
     checkAuth();
     updateAccountSection();
     updateNavigation();
+    
+    // Set up access control
+    preventUnauthorizedAccess();
     
     // Set up account dropdown event listener
     setupAccountDropdownListener();

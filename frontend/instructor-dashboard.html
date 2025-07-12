@@ -90,6 +90,12 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a href="#" class="nav-link" onclick="showSection('labs')" data-section="labs">
+                            <i class="fas fa-flask"></i>
+                            <span>Labs</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a href="#" class="nav-link" onclick="showSection('analytics')" data-section="analytics">
                             <i class="fas fa-chart-line"></i>
                             <span>Analytics</span>
@@ -419,6 +425,54 @@
                     </div>
                 </section>
 
+                <!-- Labs Section -->
+                <section id="labs-section" class="content-section">
+                    <div class="section-header">
+                        <div class="section-header-content">
+                            <div class="header-title">
+                                <h2>Lab Management</h2>
+                                <p>Create and manage custom lab environments</p>
+                            </div>
+                            <div class="header-actions">
+                                <button class="btn btn-primary" onclick="openCreateLabModal()">
+                                    <i class="fas fa-plus"></i> Create Custom Lab
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="labs-management-section">
+                        <div class="lab-course-selector">
+                            <label for="labCourseSelect">Select Course:</label>
+                            <select id="labCourseSelect" onchange="loadCourseLabs()">
+                                <option value="">Select a course...</option>
+                            </select>
+                        </div>
+                        
+                        <div class="labs-tabs">
+                            <button class="tab-btn active" onclick="showLabTab('existing')">
+                                <i class="fas fa-list"></i> Existing Labs
+                            </button>
+                            <button class="tab-btn" onclick="showLabTab('templates')">
+                                <i class="fas fa-clone"></i> Lab Templates
+                            </button>
+                        </div>
+
+                        <!-- Existing Labs Tab -->
+                        <div id="existing-labs-tab" class="tab-content active">
+                            <div id="course-labs-list" class="labs-grid">
+                                <!-- Course labs will be loaded here -->
+                            </div>
+                        </div>
+
+                        <!-- Lab Templates Tab -->
+                        <div id="templates-labs-tab" class="tab-content">
+                            <div class="lab-templates-grid" id="labTemplatesList">
+                                <!-- Lab templates will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <!-- Analytics Section -->
                 <section id="analytics-section" class="content-section">
                     <div class="section-header">
@@ -436,6 +490,108 @@
 
             </div>
         </main>
+    </div>
+
+    <!-- Create Lab Modal -->
+    <div id="createLabModal" class="modal">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3>Create Custom Lab</h3>
+                <span class="close" onclick="closeCreateLabModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="createLabForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="labTitle">Lab Title</label>
+                            <input type="text" id="labTitle" name="title" required placeholder="e.g., Python Data Analysis Lab">
+                        </div>
+                        <div class="form-group">
+                            <label for="labCourse">Course</label>
+                            <select id="labCourse" name="course_id" required>
+                                <option value="">Select a course...</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="labDescription">Description</label>
+                        <textarea id="labDescription" name="description" rows="3" placeholder="Describe the lab objectives and what students will learn..."></textarea>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="labDifficulty">Difficulty Level</label>
+                            <select id="labDifficulty" name="difficulty">
+                                <option value="beginner">Beginner</option>
+                                <option value="intermediate">Intermediate</option>
+                                <option value="advanced">Advanced</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="labDuration">Estimated Duration (minutes)</label>
+                            <input type="number" id="labDuration" name="duration" min="15" max="300" value="60">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="labEnvironment">Environment Type</label>
+                        <select id="labEnvironment" name="environment_type" onchange="updateEnvironmentOptions()">
+                            <option value="programming">Programming Environment</option>
+                            <option value="terminal">Terminal/Command Line</option>
+                            <option value="web">Web Development</option>
+                            <option value="data">Data Science</option>
+                            <option value="security">Security/Penetration Testing</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="programmingLanguageGroup">
+                        <label for="labLanguage">Programming Language</label>
+                        <select id="labLanguage" name="language">
+                            <option value="python">Python</option>
+                            <option value="javascript">JavaScript</option>
+                            <option value="java">Java</option>
+                            <option value="cpp">C++</option>
+                            <option value="c">C</option>
+                            <option value="go">Go</option>
+                            <option value="rust">Rust</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="labExercises">Lab Exercises (JSON format)</label>
+                        <textarea id="labExercises" name="exercises" rows="10" placeholder='[
+  {
+    "id": 1,
+    "title": "Exercise 1",
+    "description": "Exercise description",
+    "difficulty": "easy",
+    "starterCode": "// Your code here",
+    "solution": "// Solution code"
+  }
+]'></textarea>
+                        <small class="form-help">Define exercises in JSON format. Use the template above as a guide.</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="labSandboxed" name="sandboxed" checked>
+                            Enable Sandboxed Environment
+                        </label>
+                        <small class="form-help">Recommended for security. Students will have restricted access to system commands.</small>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Create Lab
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="closeCreateLabModal()">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <script src="js/config.js"></script>

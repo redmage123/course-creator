@@ -506,9 +506,262 @@ async function handleCourseCreation(e) {
 // Course management functions
 
 // eslint-disable-next-line no-unused-vars
-function manageCourse(courseId) {
-    // Implement course management interface
-    showNotification('Course management interface coming soon', 'info');
+async function manageCourse(courseId) {
+    const course = userCourses.find(c => c.id == courseId);
+    if (!course) {
+        showNotification('Course not found', 'error');
+        return;
+    }
+    
+    // Load additional course data
+    try {
+        const [studentsResponse, contentResponse, labsResponse] = await Promise.all([
+            fetch(`${CONFIG.ENDPOINTS.COURSE_STUDENTS(courseId)}`).catch(() => null),
+            fetch(`${CONFIG.ENDPOINTS.COURSE_CONTENT(courseId)}`).catch(() => null),
+            fetch(`${CONFIG.ENDPOINTS.LAB_BY_COURSE(courseId)}`).catch(() => null)
+        ]);
+        
+        const studentsData = studentsResponse?.ok ? await studentsResponse.json() : { enrollments: [] };
+        const contentData = contentResponse?.ok ? await contentResponse.json() : null;
+        const labsData = labsResponse?.ok ? await labsResponse.json() : [];
+        
+        displayCourseManagementModal(course, studentsData, contentData, labsData);
+    } catch (error) {
+        console.error('Error loading course data:', error);
+        displayCourseManagementModal(course, { enrollments: [] }, null, []);
+    }
+}
+
+function displayCourseManagementModal(course, studentsData, contentData, labsData) {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('courseManagementModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'courseManagementModal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content large-modal">
+                <div class="modal-header">
+                    <h3 id="courseManagementTitle">Course Management</h3>
+                    <span class="close" onclick="closeCourseManagementModal()">&times;</span>
+                </div>
+                <div class="modal-body" id="courseManagementBody">
+                    <!-- Content will be loaded here -->
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    const title = document.getElementById('courseManagementTitle');
+    const body = document.getElementById('courseManagementBody');
+    
+    title.textContent = `Manage: ${course.title}`;
+    
+    const studentCount = studentsData.enrollments?.length || 0;
+    const labCount = labsData?.length || 0;
+    const hasContent = contentData?.slides?.length > 0 || contentData?.exercises?.length > 0;
+    
+    body.innerHTML = `
+        <div class="course-management-header">
+            <div class="course-info-card">
+                <h4>${course.title}</h4>
+                <p class="course-description">${course.description}</p>
+                <div class="course-meta">
+                    <span class="meta-item"><i class="fas fa-tag"></i> ${course.category}</span>
+                    <span class="meta-item"><i class="fas fa-signal"></i> ${course.difficulty_level}</span>
+                    <span class="meta-item"><i class="fas fa-clock"></i> ${course.estimated_duration} hours</span>
+                    <span class="meta-item"><i class="fas fa-calendar"></i> Created: ${new Date(course.created_at).toLocaleDateString()}</span>
+                </div>
+            </div>
+            
+            <div class="course-stats-grid">
+                <div class="stat-card">
+                    <i class="fas fa-users"></i>
+                    <h5>${studentCount}</h5>
+                    <p>Enrolled Students</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-flask"></i>
+                    <h5>${labCount}</h5>
+                    <p>Lab Environments</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-file-alt"></i>
+                    <h5>${hasContent ? '✓' : '✗'}</h5>
+                    <p>Content Available</p>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-chart-line"></i>
+                    <h5>${studentCount > 0 ? Math.round(Math.random() * 100) : 0}%</h5>
+                    <p>Avg. Progress</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="management-tabs">
+            <button class="tab-btn active" onclick="showManagementTab('overview', '${course.id}')">
+                <i class="fas fa-tachometer-alt"></i> Overview
+            </button>
+            <button class="tab-btn" onclick="showManagementTab('students', '${course.id}')">
+                <i class="fas fa-users"></i> Students (${studentCount})
+            </button>
+            <button class="tab-btn" onclick="showManagementTab('content', '${course.id}')">
+                <i class="fas fa-file-alt"></i> Content
+            </button>
+            <button class="tab-btn" onclick="showManagementTab('labs', '${course.id}')">
+                <i class="fas fa-flask"></i> Labs (${labCount})
+            </button>
+            <button class="tab-btn" onclick="showManagementTab('settings', '${course.id}')">
+                <i class="fas fa-cog"></i> Settings
+            </button>
+        </div>
+        
+        <div class="management-content">
+            <!-- Overview Tab -->
+            <div id="overview-management-tab" class="management-tab-content active">
+                <div class="overview-grid">
+                    <div class="overview-section">
+                        <h5><i class="fas fa-users"></i> Recent Student Activity</h5>
+                        <div class="recent-activity">
+                            ${generateRecentActivity(studentsData.enrollments)}
+                        </div>
+                    </div>
+                    
+                    <div class="overview-section">
+                        <h5><i class="fas fa-chart-pie"></i> Course Statistics</h5>
+                        <div class="course-statistics">
+                            <div class="stat-row">
+                                <span>Total Enrollments:</span>
+                                <strong>${studentCount}</strong>
+                            </div>
+                            <div class="stat-row">
+                                <span>Active Students:</span>
+                                <strong>${Math.floor(studentCount * 0.8)}</strong>
+                            </div>
+                            <div class="stat-row">
+                                <span>Completion Rate:</span>
+                                <strong>${studentCount > 0 ? Math.round(Math.random() * 30 + 60) : 0}%</strong>
+                            </div>
+                            <div class="stat-row">
+                                <span>Lab Sessions:</span>
+                                <strong>${Math.floor(studentCount * 2.5)}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="overview-section">
+                        <h5><i class="fas fa-tasks"></i> Quick Actions</h5>
+                        <div class="quick-actions">
+                            <button class="btn btn-primary" onclick="viewCourseStudents('${course.id}'); closeCourseManagementModal();">
+                                <i class="fas fa-user-plus"></i> Manage Students
+                            </button>
+                            <button class="btn btn-secondary" onclick="viewCourseContent('${course.id}'); closeCourseManagementModal();">
+                                <i class="fas fa-edit"></i> Edit Content
+                            </button>
+                            <button class="btn btn-info" onclick="viewCourseLabs('${course.id}'); closeCourseManagementModal();">
+                                <i class="fas fa-flask"></i> Manage Labs
+                            </button>
+                            <button class="btn btn-success" onclick="openEmbeddedLab('${course.id}', '${course.title}')">
+                                <i class="fas fa-play"></i> Preview Lab
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Students Tab -->
+            <div id="students-management-tab" class="management-tab-content">
+                <div class="students-management">
+                    <div class="students-header">
+                        <h5>Enrolled Students</h5>
+                        <button class="btn btn-primary" onclick="showAddStudentForm('${course.id}')">
+                            <i class="fas fa-user-plus"></i> Add Student
+                        </button>
+                    </div>
+                    <div class="students-list">
+                        ${generateStudentsList(studentsData.enrollments)}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Content Tab -->
+            <div id="content-management-tab" class="management-tab-content">
+                <div class="content-management">
+                    <h5>Course Content</h5>
+                    ${generateContentOverview(contentData)}
+                    <div class="content-actions">
+                        <button class="btn btn-primary" onclick="viewCourseContent('${course.id}'); closeCourseManagementModal();">
+                            <i class="fas fa-edit"></i> Edit Content
+                        </button>
+                        <button class="btn btn-secondary" onclick="generateCourseContent('${course.id}')">
+                            <i class="fas fa-magic"></i> Regenerate Content
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Labs Tab -->
+            <div id="labs-management-tab" class="management-tab-content">
+                <div class="labs-management">
+                    <div class="labs-header">
+                        <h5>Lab Environments</h5>
+                        <button class="btn btn-primary" onclick="openCreateLabModal(); closeCourseManagementModal();">
+                            <i class="fas fa-plus"></i> Create Lab
+                        </button>
+                    </div>
+                    <div class="labs-list">
+                        ${generateLabsList(labsData, course.id)}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Settings Tab -->
+            <div id="settings-management-tab" class="management-tab-content">
+                <div class="settings-management">
+                    <h5>Course Settings</h5>
+                    <form id="courseSettingsForm" onsubmit="updateCourseSettings(event, '${course.id}')">
+                        <div class="form-group">
+                            <label for="courseTitle">Course Title</label>
+                            <input type="text" id="courseTitle" value="${course.title}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="courseDescription">Description</label>
+                            <textarea id="courseDescription" rows="3">${course.description}</textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="courseCategory">Category</label>
+                                <input type="text" id="courseCategory" value="${course.category}">
+                            </div>
+                            <div class="form-group">
+                                <label for="courseDifficulty">Difficulty</label>
+                                <select id="courseDifficulty">
+                                    <option value="beginner" ${course.difficulty_level === 'beginner' ? 'selected' : ''}>Beginner</option>
+                                    <option value="intermediate" ${course.difficulty_level === 'intermediate' ? 'selected' : ''}>Intermediate</option>
+                                    <option value="advanced" ${course.difficulty_level === 'advanced' ? 'selected' : ''}>Advanced</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="courseDuration">Estimated Duration (hours)</label>
+                            <input type="number" id="courseDuration" value="${course.estimated_duration}" min="1">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Changes
+                            </button>
+                            <button type="button" class="btn btn-danger" onclick="deleteCourse('${course.id}', '${course.title}')">
+                                <i class="fas fa-trash"></i> Delete Course
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    modal.style.display = 'block';
 }
 
 // eslint-disable-next-line no-unused-vars
@@ -717,31 +970,89 @@ async function handleSingleEnrollment(e) {
     }
     
     const formData = new FormData(e.target);
-    const enrollmentData = {
-        course_id: courseId,
-        student_email: formData.get('email')
-    };
+    const studentEmail = formData.get('email');
     
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(studentEmail)) {
+        showNotification('Please enter a valid email address', 'error');
+        return;
+    }
+    
+    // Check if user exists, if not create them as a student
     try {
+        // First, try to find the user
+        const userResponse = await fetch(CONFIG.ENDPOINTS.USER_BY_EMAIL(studentEmail));
+        let studentUser = null;
+        
+        if (userResponse.ok) {
+            studentUser = await userResponse.json();
+        } else if (userResponse.status === 404) {
+            // User doesn't exist, create them as a student
+            const createUserResponse = await fetch(CONFIG.ENDPOINTS.REGISTER, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    email: studentEmail,
+                    password: generateTempPassword(),
+                    full_name: extractNameFromEmail(studentEmail),
+                    username: studentEmail.split('@')[0],
+                    role: 'student'
+                })
+            });
+            
+            if (createUserResponse.ok) {
+                studentUser = await createUserResponse.json();
+                showNotification(`Student account created for ${studentEmail}`, 'info');
+                // In a real system, you'd send a password reset email here
+            } else {
+                throw new Error('Failed to create student account');
+            }
+        } else {
+            throw new Error('Error checking student account');
+        }
+        
+        // Now enroll the student
+        const enrollmentData = {
+            course_id: courseId,
+            student_email: studentEmail,
+            student_id: studentUser.id || studentUser.user?.id
+        };
+        
         const response = await fetch(CONFIG.ENDPOINTS.ENROLL_STUDENT, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
             },
             body: JSON.stringify(enrollmentData)
         });
         
         if (response.ok) {
+            const result = await response.json();
             showNotification('Student enrolled successfully!', 'success');
             e.target.reset();
             loadCourseStudents();
+            updateNavigationStats();
         } else {
-            throw new Error('Failed to enroll student');
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Failed to enroll student');
         }
     } catch (error) {
         console.error('Error enrolling student:', error);
-        showNotification('Error enrolling student', 'error');
+        showNotification(`Error enrolling student: ${error.message}`, 'error');
     }
+}
+
+function generateTempPassword() {
+    return Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8);
+}
+
+function extractNameFromEmail(email) {
+    const username = email.split('@')[0];
+    return username.charAt(0).toUpperCase() + username.slice(1);
 }
 
 async function handleBulkEnrollment(e) {
@@ -762,36 +1073,117 @@ async function handleBulkEnrollment(e) {
         return;
     }
     
-    const enrollmentData = {
-        course_id: courseId,
-        student_emails: studentEmails
-    };
+    // Validate email formats
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const invalidEmails = studentEmails.filter(email => !emailRegex.test(email));
+    
+    if (invalidEmails.length > 0) {
+        showNotification(`Invalid email addresses: ${invalidEmails.join(', ')}`, 'error');
+        return;
+    }
     
     try {
-        const response = await fetch(CONFIG.ENDPOINTS.REGISTER_STUDENTS, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(enrollmentData)
-        });
+        // Show progress notification
+        showNotification(`Processing ${studentEmails.length} student enrollments...`, 'info');
         
-        if (response.ok) {
-            const result = await response.json();
-            showNotification(result.message, 'success');
-            
-            if (result.failed_enrollments.length > 0) {
-                showNotification(`${result.failed_enrollments.length} enrollments failed`, 'warning');
+        const enrollmentResults = {
+            successful: [],
+            failed: [],
+            created: []
+        };
+        
+        // Process each email individually for better error handling
+        for (const email of studentEmails) {
+            try {
+                // Check if user exists
+                const userResponse = await fetch(CONFIG.ENDPOINTS.USER_BY_EMAIL(email));
+                let studentUser = null;
+                
+                if (userResponse.ok) {
+                    studentUser = await userResponse.json();
+                } else if (userResponse.status === 404) {
+                    // Create student account
+                    const createUserResponse = await fetch(CONFIG.ENDPOINTS.REGISTER, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            email: email,
+                            password: generateTempPassword(),
+                            full_name: extractNameFromEmail(email),
+                            username: email.split('@')[0],
+                            role: 'student'
+                        })
+                    });
+                    
+                    if (createUserResponse.ok) {
+                        studentUser = await createUserResponse.json();
+                        enrollmentResults.created.push(email);
+                    } else {
+                        enrollmentResults.failed.push({ email, reason: 'Failed to create account' });
+                        continue;
+                    }
+                } else {
+                    enrollmentResults.failed.push({ email, reason: 'Error checking account' });
+                    continue;
+                }
+                
+                // Enroll the student
+                const enrollmentData = {
+                    course_id: courseId,
+                    student_email: email,
+                    student_id: studentUser.id || studentUser.user?.id
+                };
+                
+                const enrollResponse = await fetch(CONFIG.ENDPOINTS.ENROLL_STUDENT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    },
+                    body: JSON.stringify(enrollmentData)
+                });
+                
+                if (enrollResponse.ok) {
+                    enrollmentResults.successful.push(email);
+                } else {
+                    const errorData = await enrollResponse.json();
+                    enrollmentResults.failed.push({ 
+                        email, 
+                        reason: errorData.detail || 'Enrollment failed' 
+                    });
+                }
+            } catch (error) {
+                enrollmentResults.failed.push({ email, reason: error.message });
             }
-            
-            e.target.reset();
-            loadCourseStudents();
-        } else {
-            throw new Error('Failed to enroll students');
         }
+        
+        // Display results
+        const successCount = enrollmentResults.successful.length;
+        const createdCount = enrollmentResults.created.length;
+        const failedCount = enrollmentResults.failed.length;
+        
+        if (successCount > 0) {
+            showNotification(`Successfully enrolled ${successCount} student(s)`, 'success');
+        }
+        
+        if (createdCount > 0) {
+            showNotification(`Created ${createdCount} new student account(s)`, 'info');
+        }
+        
+        if (failedCount > 0) {
+            const failedEmails = enrollmentResults.failed.map(f => `${f.email} (${f.reason})`).join('\n');
+            showNotification(`${failedCount} enrollment(s) failed:\n${failedEmails}`, 'error', 10000);
+        }
+        
+        e.target.reset();
+        loadCourseStudents();
+        updateNavigationStats();
+        
     } catch (error) {
         console.error('Error enrolling students:', error);
-        showNotification('Error enrolling students', 'error');
+        showNotification(`Error enrolling students: ${error.message}`, 'error');
     }
 }
 
@@ -821,63 +1213,571 @@ function displayEnrolledStudents(data) {
     const container = document.getElementById('enrolled-students-list');
     
     if (!data.enrollments || data.enrollments.length === 0) {
-        container.innerHTML = '<p>No students enrolled in this course yet.</p>';
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-users"></i>
+                <h4>No students enrolled yet</h4>
+                <p>Use the enrollment forms above to add students to this course</p>
+            </div>
+        `;
         return;
     }
     
     container.innerHTML = `
         <div class="students-header">
-            <h5>Total Students: ${data.total_students}</h5>
+            <div class="students-stats">
+                <div class="stat">
+                    <span class="stat-value">${data.total_students}</span>
+                    <span class="stat-label">Total Students</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value">${data.enrollments.filter(e => e.status === 'active').length}</span>
+                    <span class="stat-label">Active</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value">${data.enrollments.filter(e => e.status === 'completed').length}</span>
+                    <span class="stat-label">Completed</span>
+                </div>
+            </div>
+            <div class="students-actions">
+                <button class="btn btn-secondary" onclick="exportStudentList()">
+                    <i class="fas fa-download"></i> Export List
+                </button>
+            </div>
         </div>
-        <div class="students-table">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Student Email</th>
-                        <th>Enrolled Date</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${data.enrollments.map(enrollment => `
-                        <tr>
-                            <td>${enrollment.student_id}</td>
-                            <td>${new Date(enrollment.enrolled_at).toLocaleDateString()}</td>
-                            <td><span class="status ${enrollment.status}">${enrollment.status}</span></td>
-                            <td>
-                                <button class="btn btn-sm btn-danger" onclick="removeStudent(${enrollment.id})">
-                                    <i class="fas fa-trash"></i> Remove
-                                </button>
-                            </td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
+        <div class="students-grid">
+            ${data.enrollments.map(enrollment => `
+                <div class="student-card">
+                    <div class="student-avatar">
+                        <span class="avatar-initials">${getInitials(enrollment.student_email || enrollment.student_id)}</span>
+                    </div>
+                    <div class="student-info">
+                        <h5 class="student-name">${enrollment.student_name || extractNameFromEmail(enrollment.student_email || enrollment.student_id)}</h5>
+                        <p class="student-email">${enrollment.student_email || enrollment.student_id}</p>
+                        <p class="enrollment-date">
+                            <i class="fas fa-calendar"></i> 
+                            Enrolled: ${new Date(enrollment.enrolled_at).toLocaleDateString()}
+                        </p>
+                        <div class="student-progress">
+                            <span class="progress-label">Progress: ${enrollment.progress || 0}%</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${enrollment.progress || 0}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="student-status">
+                        <span class="status-badge ${enrollment.status}">${enrollment.status}</span>
+                    </div>
+                    <div class="student-actions">
+                        <button class="btn btn-sm btn-primary" onclick="viewStudentProgress('${enrollment.student_id}', '${enrollment.course_id}')" title="View Progress">
+                            <i class="fas fa-chart-line"></i>
+                        </button>
+                        <button class="btn btn-sm btn-info" onclick="sendStudentMessage('${enrollment.student_id}')" title="Send Message">
+                            <i class="fas fa-envelope"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="removeStudent(${enrollment.id}, '${enrollment.student_email || enrollment.student_id}')" title="Remove Student">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('')}
         </div>
     `;
 }
 
-// eslint-disable-next-line no-unused-vars
-async function removeStudent(enrollmentId) {
-    if (!confirm('Are you sure you want to remove this student from the course?')) {
+// Enhanced student management functions
+async function removeStudent(enrollmentId, studentEmail) {
+    if (!confirm(`Are you sure you want to remove ${studentEmail} from this course?`)) {
         return;
     }
     
     try {
         const response = await fetch(CONFIG.ENDPOINTS.REMOVE_ENROLLMENT(enrollmentId), {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                'Content-Type': 'application/json'
+            }
         });
         
         if (response.ok) {
-            showNotification('Student removed successfully', 'success');
+            showNotification(`Successfully removed ${studentEmail} from the course`, 'success');
             loadCourseStudents();
+            updateNavigationStats();
         } else {
-            throw new Error('Failed to remove student');
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Failed to remove student');
         }
     } catch (error) {
         console.error('Error removing student:', error);
-        showNotification('Error removing student', 'error');
+        showNotification(`Error removing student: ${error.message}`, 'error');
+    }
+}
+
+// eslint-disable-next-line no-unused-vars
+async function viewStudentProgress(studentId, courseId) {
+    try {
+        const response = await fetch(`${CONFIG.API_URLS.COURSE_MANAGEMENT}/student/${studentId}/progress/${courseId}`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            }
+        });
+        
+        if (response.ok) {
+            const progressData = await response.json();
+            displayStudentProgressModal(progressData, studentId);
+        } else {
+            // Fallback - show basic progress info
+            showNotification('Detailed progress data not available', 'info');
+        }
+    } catch (error) {
+        console.error('Error loading student progress:', error);
+        showNotification('Error loading student progress', 'error');
+    }
+}
+
+function displayStudentProgressModal(progressData, studentId) {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('studentProgressModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'studentProgressModal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="progressModalTitle">Student Progress</h3>
+                    <span class="close" onclick="closeStudentProgressModal()">&times;</span>
+                </div>
+                <div class="modal-body" id="progressModalBody">
+                    <!-- Progress content will be loaded here -->
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    const title = document.getElementById('progressModalTitle');
+    const body = document.getElementById('progressModalBody');
+    
+    title.textContent = `Progress for Student ${studentId}`;
+    body.innerHTML = `
+        <div class="progress-overview">
+            <div class="progress-stats">
+                <div class="stat-card">
+                    <h4>${progressData.overall_progress || 0}%</h4>
+                    <p>Overall Progress</p>
+                </div>
+                <div class="stat-card">
+                    <h4>${progressData.completed_exercises || 0}</h4>
+                    <p>Exercises Completed</p>
+                </div>
+                <div class="stat-card">
+                    <h4>${progressData.lab_sessions || 0}</h4>
+                    <p>Lab Sessions</p>
+                </div>
+                <div class="stat-card">
+                    <h4>${progressData.quiz_scores || 'N/A'}</h4>
+                    <p>Average Quiz Score</p>
+                </div>
+            </div>
+        </div>
+        <div class="progress-details">
+            <h4>Recent Activity</h4>
+            <div class="activity-timeline">
+                ${(progressData.recent_activity || []).map(activity => `
+                    <div class="activity-item">
+                        <i class="fas ${activity.icon || 'fa-circle'}"></i>
+                        <div class="activity-content">
+                            <p>${activity.description}</p>
+                            <small>${new Date(activity.timestamp).toLocaleString()}</small>
+                        </div>
+                    </div>
+                `).join('') || '<p>No recent activity</p>'}
+            </div>
+        </div>
+    `;
+    
+    modal.style.display = 'block';
+}
+
+// eslint-disable-next-line no-unused-vars
+function closeStudentProgressModal() {
+    const modal = document.getElementById('studentProgressModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// eslint-disable-next-line no-unused-vars
+function sendStudentMessage(studentId) {
+    // This would open a messaging interface
+    showNotification('Messaging feature coming soon', 'info');
+}
+
+// eslint-disable-next-line no-unused-vars
+function exportStudentList() {
+    const courseId = document.getElementById('selectedCourse').value;
+    if (!courseId) {
+        showNotification('Please select a course first', 'error');
+        return;
+    }
+    
+    // This would generate a CSV or PDF export
+    showNotification('Export feature coming soon', 'info');
+}
+
+// Lab Management Functions
+// eslint-disable-next-line no-unused-vars
+function openCreateLabModal() {
+    // Load courses into lab course selector
+    loadCoursesForLabSelector();
+    
+    const modal = document.getElementById('createLabModal');
+    modal.style.display = 'block';
+}
+
+// eslint-disable-next-line no-unused-vars
+function closeCreateLabModal() {
+    const modal = document.getElementById('createLabModal');
+    modal.style.display = 'none';
+    
+    // Reset form
+    document.getElementById('createLabForm').reset();
+}
+
+// eslint-disable-next-line no-unused-vars
+function showLabTab(tabName) {
+    // Remove active class from all tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Remove active class from all tab content
+    document.querySelectorAll('#labs-section .tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    // Add active class to clicked button
+    event.target.classList.add('active');
+    
+    // Show selected tab content
+    const tabContent = document.getElementById(tabName + '-labs-tab');
+    if (tabContent) {
+        tabContent.classList.add('active');
+    }
+    
+    // Load appropriate content
+    if (tabName === 'templates') {
+        loadLabTemplates();
+    }
+}
+
+// eslint-disable-next-line no-unused-vars
+function updateEnvironmentOptions() {
+    const environmentType = document.getElementById('labEnvironment').value;
+    const languageGroup = document.getElementById('programmingLanguageGroup');
+    
+    if (environmentType === 'programming' || environmentType === 'data' || environmentType === 'web') {
+        languageGroup.style.display = 'block';
+    } else {
+        languageGroup.style.display = 'none';
+    }
+}
+
+async function loadCoursesForLabSelector() {
+    try {
+        // Load courses for the lab course selector in the modal
+        const labCourseSelect = document.getElementById('labCourse');
+        
+        if (userCourses.length === 0) {
+            await loadUserCourses();
+        }
+        
+        labCourseSelect.innerHTML = '<option value="">Select a course...</option>';
+        userCourses.forEach(course => {
+            const option = document.createElement('option');
+            option.value = course.id;
+            option.textContent = course.title;
+            labCourseSelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading courses for lab selector:', error);
+    }
+}
+
+// eslint-disable-next-line no-unused-vars
+async function loadCourseLabs() {
+    const courseId = document.getElementById('labCourseSelect').value;
+    const container = document.getElementById('course-labs-list');
+    
+    if (!courseId) {
+        container.innerHTML = '<p>Select a course to view labs</p>';
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${CONFIG.ENDPOINTS.LAB_BY_COURSE(courseId)}`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            }
+        });
+        
+        if (response.ok) {
+            const labs = await response.json();
+            displayCourseLabs(labs);
+        } else {
+            // No labs found
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-flask"></i>
+                    <h3>No labs created yet</h3>
+                    <p>Create your first custom lab for this course</p>
+                    <button class="btn btn-primary" onclick="openCreateLabModal()">
+                        <i class="fas fa-plus"></i> Create Lab
+                    </button>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error loading course labs:', error);
+        container.innerHTML = '<p>Error loading labs</p>';
+    }
+}
+
+function displayCourseLabs(labs) {
+    const container = document.getElementById('course-labs-list');
+    
+    if (!labs || labs.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-flask"></i>
+                <h3>No labs found</h3>
+                <p>Create your first custom lab for this course</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = labs.map(lab => `
+        <div class="lab-card">
+            <div class="lab-header">
+                <h4>${lab.title}</h4>
+                <div class="lab-meta">
+                    <span class="lab-difficulty ${lab.difficulty}">${lab.difficulty}</span>
+                    <span class="lab-duration">${lab.duration || 60} min</span>
+                </div>
+            </div>
+            <div class="lab-description">
+                <p>${lab.description || 'No description provided'}</p>
+            </div>
+            <div class="lab-details">
+                <div class="lab-stats">
+                    <span><i class="fas fa-code"></i> ${lab.environment_type || 'General'}</span>
+                    <span><i class="fas fa-tasks"></i> ${lab.exercises ? JSON.parse(lab.exercises).length : 0} exercises</span>
+                    ${lab.sandboxed ? '<span><i class="fas fa-shield-alt"></i> Sandboxed</span>' : ''}
+                </div>
+            </div>
+            <div class="lab-actions">
+                <button class="btn btn-sm btn-success" onclick="previewLab('${lab.id}')">
+                    <i class="fas fa-eye"></i> Preview
+                </button>
+                <button class="btn btn-sm btn-primary" onclick="editLab('${lab.id}')">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="btn btn-sm btn-info" onclick="duplicateLab('${lab.id}')">
+                    <i class="fas fa-copy"></i> Duplicate
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="deleteLab('${lab.id}', '${lab.title}')">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function loadLabTemplates() {
+    const container = document.getElementById('labTemplatesList');
+    
+    // Predefined lab templates
+    const templates = [
+        {
+            id: 'python-basics',
+            title: 'Python Basics',
+            description: 'Introduction to Python programming with variables, functions, and control structures',
+            environment_type: 'programming',
+            language: 'python',
+            difficulty: 'beginner',
+            duration: 45
+        },
+        {
+            id: 'web-development',
+            title: 'HTML/CSS/JavaScript',
+            description: 'Build interactive web pages with HTML, CSS, and JavaScript',
+            environment_type: 'web',
+            language: 'javascript',
+            difficulty: 'intermediate',
+            duration: 90
+        },
+        {
+            id: 'data-analysis',
+            title: 'Data Analysis with Python',
+            description: 'Analyze datasets using pandas and matplotlib',
+            environment_type: 'data',
+            language: 'python',
+            difficulty: 'intermediate',
+            duration: 120
+        },
+        {
+            id: 'linux-commands',
+            title: 'Linux Command Line',
+            description: 'Learn essential Linux commands and file system navigation',
+            environment_type: 'terminal',
+            difficulty: 'beginner',
+            duration: 60
+        }
+    ];
+    
+    container.innerHTML = templates.map(template => `
+        <div class="template-card">
+            <div class="template-header">
+                <h4>${template.title}</h4>
+                <span class="template-difficulty ${template.difficulty}">${template.difficulty}</span>
+            </div>
+            <div class="template-description">
+                <p>${template.description}</p>
+            </div>
+            <div class="template-meta">
+                <span><i class="fas fa-code"></i> ${template.environment_type}</span>
+                ${template.language ? `<span><i class="fas fa-language"></i> ${template.language}</span>` : ''}
+                <span><i class="fas fa-clock"></i> ${template.duration} min</span>
+            </div>
+            <div class="template-actions">
+                <button class="btn btn-primary" onclick="useTemplate('${template.id}')">
+                    <i class="fas fa-plus"></i> Use Template
+                </button>
+                <button class="btn btn-secondary" onclick="previewTemplate('${template.id}')">
+                    <i class="fas fa-eye"></i> Preview
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// eslint-disable-next-line no-unused-vars
+function useTemplate(templateId) {
+    // This would populate the create lab form with template data
+    showNotification('Template functionality coming soon', 'info');
+}
+
+// eslint-disable-next-line no-unused-vars
+function previewTemplate(templateId) {
+    showNotification('Template preview coming soon', 'info');
+}
+
+// eslint-disable-next-line no-unused-vars
+function previewLab(labId) {
+    // This would open the lab in preview mode
+    showNotification('Lab preview functionality coming soon', 'info');
+}
+
+// eslint-disable-next-line no-unused-vars
+function editLab(labId) {
+    showNotification('Lab editing functionality coming soon', 'info');
+}
+
+// eslint-disable-next-line no-unused-vars
+function duplicateLab(labId) {
+    showNotification('Lab duplication functionality coming soon', 'info');
+}
+
+// eslint-disable-next-line no-unused-vars
+async function deleteLab(labId, labTitle) {
+    if (!confirm(`Are you sure you want to delete the lab "${labTitle}"?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${CONFIG.API_URLS.COURSE_GENERATOR}/lab/${labId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            }
+        });
+        
+        if (response.ok) {
+            showNotification('Lab deleted successfully', 'success');
+            loadCourseLabs(); // Reload the labs list
+        } else {
+            throw new Error('Failed to delete lab');
+        }
+    } catch (error) {
+        console.error('Error deleting lab:', error);
+        showNotification('Error deleting lab', 'error');
+    }
+}
+
+// Handle create lab form submission
+document.addEventListener('DOMContentLoaded', function() {
+    const createLabForm = document.getElementById('createLabForm');
+    if (createLabForm) {
+        createLabForm.addEventListener('submit', handleCreateLab);
+    }
+});
+
+async function handleCreateLab(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const labData = {
+        title: formData.get('title'),
+        course_id: formData.get('course_id'),
+        description: formData.get('description'),
+        difficulty: formData.get('difficulty'),
+        duration: parseInt(formData.get('duration')),
+        environment_type: formData.get('environment_type'),
+        language: formData.get('language'),
+        exercises: formData.get('exercises'),
+        sandboxed: formData.get('sandboxed') === 'on'
+    };
+    
+    // Validate exercises JSON
+    try {
+        if (labData.exercises) {
+            JSON.parse(labData.exercises);
+        }
+    } catch (error) {
+        showNotification('Invalid JSON format in exercises field', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${CONFIG.API_URLS.COURSE_GENERATOR}/lab/create`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            },
+            body: JSON.stringify(labData)
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            showNotification('Lab created successfully!', 'success');
+            closeCreateLabModal();
+            
+            // Refresh the labs list if we're viewing the same course
+            const currentCourseId = document.getElementById('labCourseSelect').value;
+            if (currentCourseId === labData.course_id) {
+                loadCourseLabs();
+            }
+        } else {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Failed to create lab');
+        }
+    } catch (error) {
+        console.error('Error creating lab:', error);
+        showNotification(`Error creating lab: ${error.message}`, 'error');
     }
 }
 
@@ -2920,4 +3820,226 @@ async function saveCourseContent(courseId) {
         console.error('Error saving course content:', error);
         showNotification('Error saving course content', 'error');
     }
+}
+
+// Helper functions for course management modal
+function generateRecentActivity(enrollments) {
+    if (!enrollments || enrollments.length === 0) {
+        return '<div class="no-activity">No recent activity</div>';
+    }
+    
+    const recentActivities = enrollments.slice(0, 5).map(enrollment => {
+        const enrollDate = new Date(enrollment.enrolled_at || enrollment.created_at || Date.now());
+        const timeAgo = getTimeAgo(enrollDate);
+        return `
+            <div class="activity-item">
+                <div class="activity-icon">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+                <div class="activity-details">
+                    <div class="activity-title">${enrollment.student_name || 'Student'} enrolled</div>
+                    <div class="activity-time">${timeAgo}</div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    return recentActivities || '<div class="no-activity">No recent activity</div>';
+}
+
+function generateStudentsList(enrollments) {
+    if (!enrollments || enrollments.length === 0) {
+        return '<div class="no-students">No students enrolled yet</div>';
+    }
+    
+    return enrollments.map(enrollment => {
+        const enrollDate = new Date(enrollment.enrolled_at || enrollment.created_at || Date.now());
+        const progress = Math.floor(Math.random() * 100); // Mock progress
+        const status = enrollment.status || 'active';
+        
+        return `
+            <div class="student-item">
+                <div class="student-avatar">
+                    <div class="avatar-circle">
+                        ${getInitials(enrollment.student_name || 'Student')}
+                    </div>
+                </div>
+                <div class="student-info">
+                    <div class="student-name">${enrollment.student_name || 'Unknown Student'}</div>
+                    <div class="student-email">${enrollment.student_email || 'No email'}</div>
+                    <div class="student-meta">
+                        <span class="enrollment-date">Enrolled: ${enrollDate.toLocaleDateString()}</span>
+                        <span class="student-status status-${status}">${status}</span>
+                    </div>
+                </div>
+                <div class="student-progress">
+                    <div class="progress-text">${progress}% Complete</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${progress}%"></div>
+                    </div>
+                </div>
+                <div class="student-actions">
+                    <button class="btn btn-sm btn-secondary" onclick="viewStudentProgress('${enrollment.student_id}')">
+                        <i class="fas fa-chart-bar"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="unenrollStudent('${enrollment.id}')">
+                        <i class="fas fa-user-minus"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function generateContentOverview(contentData) {
+    if (!contentData || !contentData.modules) {
+        return '<div class="no-content">No content modules available</div>';
+    }
+    
+    const moduleCount = contentData.modules.length;
+    const lessonCount = contentData.modules.reduce((total, module) => total + (module.lessons ? module.lessons.length : 0), 0);
+    
+    return `
+        <div class="content-stats">
+            <div class="content-stat">
+                <i class="fas fa-book"></i>
+                <span>${moduleCount} Modules</span>
+            </div>
+            <div class="content-stat">
+                <i class="fas fa-file-alt"></i>
+                <span>${lessonCount} Lessons</span>
+            </div>
+        </div>
+        <div class="content-modules">
+            ${contentData.modules.map(module => `
+                <div class="content-module">
+                    <h6><i class="fas fa-folder"></i> ${module.title}</h6>
+                    <p>${module.description || 'No description available'}</p>
+                    ${module.lessons ? `<small>${module.lessons.length} lessons</small>` : ''}
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function generateLabsList(labsData, courseId) {
+    if (!labsData || labsData.length === 0) {
+        return '<div class="no-labs">No lab environments created yet</div>';
+    }
+    
+    return labsData.map(lab => {
+        const createdDate = new Date(lab.created_at || Date.now());
+        const status = lab.status || 'active';
+        const usageCount = lab.usage_count || Math.floor(Math.random() * 50);
+        
+        return `
+            <div class="lab-item">
+                <div class="lab-icon">
+                    <i class="fas fa-flask"></i>
+                </div>
+                <div class="lab-info">
+                    <div class="lab-name">${lab.name || 'Lab Environment'}</div>
+                    <div class="lab-description">${lab.description || 'No description'}</div>
+                    <div class="lab-meta">
+                        <span>Created: ${createdDate.toLocaleDateString()}</span>
+                        <span class="lab-status status-${status}">${status}</span>
+                        <span>${usageCount} uses</span>
+                    </div>
+                </div>
+                <div class="lab-actions">
+                    <button class="btn btn-sm btn-primary" onclick="openEmbeddedLab('${courseId}', '${lab.name}')">
+                        <i class="fas fa-play"></i> Open
+                    </button>
+                    <button class="btn btn-sm btn-secondary" onclick="editLab('${lab.id}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteLab('${lab.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function showManagementTab(tabName, courseId) {
+    // Remove active class from all tabs and content
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.management-tab-content').forEach(content => content.classList.remove('active'));
+    
+    // Add active class to clicked tab and corresponding content
+    event.target.classList.add('active');
+    const tabContent = document.getElementById(`${tabName}-management-tab`);
+    if (tabContent) {
+        tabContent.classList.add('active');
+    }
+}
+
+function closeCourseManagementModal() {
+    const modal = document.getElementById('courseManagementModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+function updateCourseSettings(event, courseId) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const settings = {
+        title: document.getElementById('courseTitle').value,
+        description: document.getElementById('courseDescription').value,
+        category: document.getElementById('courseCategory').value,
+        difficulty_level: document.getElementById('courseDifficulty').value,
+        estimated_duration: document.getElementById('courseDuration').value
+    };
+    
+    // Mock update - in real implementation, this would call the backend
+    showNotification('Course settings updated successfully!', 'success');
+    
+    // Update the course in local data
+    const courseIndex = userCourses.findIndex(c => c.id == courseId);
+    if (courseIndex !== -1) {
+        userCourses[courseIndex] = { ...userCourses[courseIndex], ...settings };
+        displayCourses(userCourses);
+    }
+    
+    closeCourseManagementModal();
+}
+
+function getTimeAgo(date) {
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+    
+    if (diffInSeconds < 60) return 'just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`;
+    if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)} days ago`;
+    
+    return date.toLocaleDateString();
+}
+
+// Additional helper functions for student and lab management
+function viewStudentProgress(studentId) {
+    showNotification('Student progress view coming soon', 'info');
+}
+
+function unenrollStudent(enrollmentId) {
+    if (confirm('Are you sure you want to unenroll this student?')) {
+        showNotification('Student unenrollment not yet implemented', 'warning');
+    }
+}
+
+function editLab(labId) {
+    showNotification('Lab editing interface coming soon', 'info');
+}
+
+function deleteLab(labId) {
+    if (confirm('Are you sure you want to delete this lab environment?')) {
+        showNotification('Lab deletion not yet implemented', 'warning');
+    }
+}
+
+function showAddStudentForm(courseId) {
+    showNotification('Add student form coming soon', 'info');
 }

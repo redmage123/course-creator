@@ -13,7 +13,21 @@ let panelStates = {
 };
 let showingSolution = {};
 
-// File system simulation
+// Sandboxed lab environment variables
+let sandboxRoot = '/home/student'; // Chroot-like restriction
+let isLabSandboxed = false;
+let studentId = null;
+let sessionId = null;
+let allowedCommands = ['help', 'ls', 'cd', 'pwd', 'cat', 'echo', 'mkdir', 'touch', 'clear', 'whoami', 'date', 'nano', 'vim', 'python', 'node', 'gcc'];
+let blockedPaths = ['/etc', '/root', '/sys', '/proc', '/dev'];
+
+// Progress tracking variables
+let courseId = null;
+let exerciseProgress = {};
+let labStartTime = null;
+let totalLabTime = 0;
+
+// File system simulation with sandbox restrictions
 const fileSystem = {
     '/home/student': {
         'readme.txt': 'Welcome to the lab environment!\nThis is a simulated file system.',
@@ -93,10 +107,84 @@ function updateToggleButtons() {
 // Initialize the lab environment
 function initializeLab() {
     console.log('Initializing lab environment...');
+    
+    // Check if this is a sandboxed environment
+    const urlParams = new URLSearchParams(window.location.search);
+    isLabSandboxed = urlParams.get('sandboxed') === 'true';
+    studentId = urlParams.get('studentId');
+    sessionId = urlParams.get('sessionId');
+    courseId = urlParams.get('courseId');
+    
+    // Initialize progress tracking
+    initializeProgressTracking();
+    
+    if (isLabSandboxed) {
+        console.log('Lab running in sandboxed mode');
+        initializeSandbox();
+    }
+    
     loadExercises();
     updateLayout();
-    addMessage('Welcome! Toggle panels using the controls above, select exercises, or ask me anything!', 'system');
+    
+    const welcomeMessage = isLabSandboxed 
+        ? `Welcome to your secure lab environment! Session ID: ${sessionId || 'Unknown'}\nYou are in a sandboxed terminal with restricted access for security.`
+        : 'Welcome! Toggle panels using the controls above, select exercises, or ask me anything!';
+    
+    addMessage(welcomeMessage, 'system');
     console.log('Lab initialization complete');
+}
+
+function initializeProgressTracking() {
+    labStartTime = new Date();
+    
+    // Load existing progress for this student and course
+    if (studentId && courseId) {
+        loadStudentProgress();
+    }
+    
+    // Set up automatic progress saving
+    setInterval(saveProgressToServer, 30000); // Save every 30 seconds
+    
+    // Save progress when the page is about to unload
+    window.addEventListener('beforeunload', function() {
+        saveProgressToServer();
+    });
+    
+    console.log('Progress tracking initialized');
+}
+
+function initializeSandbox() {
+    // Set up sandbox restrictions
+    console.log('Setting up sandbox restrictions...');
+    
+    // Restrict file system access to sandbox root
+    const restrictedFS = {};
+    restrictedFS[sandboxRoot] = fileSystem[sandboxRoot];
+    
+    // Add sandbox-specific files
+    if (!restrictedFS[sandboxRoot]['.sandbox_info']) {
+        restrictedFS[sandboxRoot]['.sandbox_info'] = `Sandbox Environment\nStudent ID: ${studentId}\nSession ID: ${sessionId}\nRestricted to: ${sandboxRoot}\n`;
+    }
+    
+    // Add security notice
+    if (!restrictedFS[sandboxRoot]['security_notice.txt']) {
+        restrictedFS[sandboxRoot]['security_notice.txt'] = 
+            'SECURITY NOTICE:\n' +
+            '================\n' +
+            'This is a sandboxed environment for educational purposes.\n' +
+            'You have restricted access to system commands and files.\n' +
+            'All activities are logged for security and assessment purposes.\n' +
+            'Do not attempt to bypass security restrictions.\n';
+    }
+    
+    // Update file system to restricted version
+    Object.keys(fileSystem).forEach(key => {
+        if (!key.startsWith(sandboxRoot)) {
+            delete fileSystem[key];
+        }
+    });
+    
+    console.log('Sandbox initialized successfully');
 }
 
 // Load predefined exercises
@@ -141,6 +229,15 @@ function displayExercises() {
         console.error('Exercise list element not found!');
         return;
     }
+    
+    // Ensure the exercises panel is visible
+    const exercisePanel = document.getElementById('exercisePanel');
+    if (exercisePanel) {
+        exercisePanel.classList.remove('panel-hidden');
+        panelStates.exercises = true;
+        console.log('Exercise panel made visible');
+    }
+    
     exerciseList.innerHTML = exercises.map(exercise => `
         <div class="exercise-item" onclick="selectExercise(${exercise.id})">
             <h4>${exercise.title}</h4>
@@ -153,12 +250,25 @@ function displayExercises() {
             </div>
         </div>
     `).join('');
-    console.log('Exercises displayed in DOM');
+    
+    console.log('Exercises displayed in DOM, count:', exercises.length);
+    
+    // Update the toggle button state
+    const toggleButton = document.getElementById('toggleExercises');
+    if (toggleButton) {
+        toggleButton.classList.add('active');
+    }
+    
+    // Force layout update
+    updateLayout();
 }
 
 // Exercise selection
 function selectExercise(exerciseId) {
     console.log('Selecting exercise:', exerciseId);
+    
+    // Track exercise selection for progress
+    trackExerciseStart(exerciseId);
     
     currentExercise = exercises.find(ex => ex.id === exerciseId);
     if (!currentExercise) {
@@ -284,6 +394,11 @@ function runCode() {
         return;
     }
     
+    // Track code execution for progress
+    if (currentExercise) {
+        trackCodeExecution(currentExercise.id, code);
+    }
+    
     addToTerminal('> Running code...', 'normal');
     
     try {
@@ -313,6 +428,11 @@ function runCode() {
             addToTerminal(`${currentLanguage.charAt(0).toUpperCase() + currentLanguage.slice(1)} code simulation:`, 'output');
             addToTerminal(code, 'output');
             addToTerminal('(Note: Actual execution requires server-side processing)', 'output');
+        }
+        
+        // Check for exercise completion
+        if (currentExercise) {
+            checkForExerciseCompletion(currentExercise.id, code);
         }
         
         // Add success message to chat
@@ -407,13 +527,27 @@ function executeTerminalCommand(command) {
     const terminalOutput = document.getElementById('terminalOutput');
     if (!terminalOutput) return;
     
-    const promptLine = `student@lab:${currentDirectory.replace('/home/student', '~')}$ ${command}\n`;
+    // Log command execution for security monitoring
+    if (isLabSandboxed) {
+        logCommandExecution(command);
+    }
+    
+    const promptLine = `student@lab:${currentDirectory.replace(sandboxRoot, '~')}$ ${command}\n`;
     
     terminalOutput.textContent += promptLine;
     
     const parts = command.split(' ');
     const cmd = parts[0].toLowerCase();
     const args = parts.slice(1);
+    
+    // Security check: validate command is allowed
+    if (isLabSandboxed && !isCommandAllowed(cmd)) {
+        const output = `Permission denied: Command '${cmd}' is not allowed in this sandboxed environment.\nType 'help' to see available commands.\n`;
+        terminalOutput.textContent += output;
+        addPrompt();
+        scrollToBottom();
+        return;
+    }
     
     let output = '';
     
@@ -442,7 +576,7 @@ function executeTerminalCommand(command) {
             break;
         
         case 'cd':
-            output = simulateCD(args[0] || '/home/student');
+            output = simulateCD(args[0] || sandboxRoot);
             break;
         
         case 'cat':
@@ -495,16 +629,35 @@ function simulateLS(path) {
 }
 
 function simulateCD(path) {
+    // Resolve target path
+    let targetPath;
+    
     if (path === '.' || path === currentDirectory) {
         return '';
-    } else if (path === '..' && currentDirectory !== '/home/student') {
-        currentDirectory = '/home/student';
-        return '';
-    } else if (path === 'examples' && currentDirectory === '/home/student') {
-        currentDirectory = '/home/student/examples';
-        return '';
-    } else if (path === '/home/student' || path === '~') {
-        currentDirectory = '/home/student';
+    } else if (path === '..') {
+        if (currentDirectory === sandboxRoot) {
+            return ''; // Can't go above sandbox root
+        }
+        targetPath = currentDirectory.substring(0, currentDirectory.lastIndexOf('/')) || sandboxRoot;
+    } else if (path === '~') {
+        targetPath = sandboxRoot;
+    } else if (path.startsWith('/')) {
+        targetPath = path; // Absolute path
+    } else {
+        targetPath = currentDirectory + '/' + path; // Relative path
+    }
+    
+    // Validate sandbox access
+    const accessCheck = validateSandboxAccess(targetPath);
+    if (!accessCheck.allowed) {
+        return accessCheck.message + '\n';
+    }
+    
+    // Check if directory exists in our simulated file system
+    if (targetPath === sandboxRoot || 
+        targetPath === sandboxRoot + '/examples' ||
+        (fileSystem[targetPath] && typeof fileSystem[targetPath] === 'object')) {
+        currentDirectory = targetPath;
         return '';
     } else {
         return `bash: cd: ${path}: No such file or directory\n`;
@@ -539,11 +692,357 @@ function simulateTOUCH(filename) {
     return `File '${filename}' created (simulated)\n`;
 }
 
+// Security and sandboxing functions
+function isCommandAllowed(cmd) {
+    if (!isLabSandboxed) return true;
+    return allowedCommands.includes(cmd);
+}
+
+function isPathAllowed(path) {
+    if (!isLabSandboxed) return true;
+    
+    // Resolve relative paths
+    const resolvedPath = resolvePath(path);
+    
+    // Check if path is within sandbox root
+    if (!resolvedPath.startsWith(sandboxRoot)) {
+        return false;
+    }
+    
+    // Check if path is in blocked paths
+    for (const blockedPath of blockedPaths) {
+        if (resolvedPath.startsWith(blockedPath)) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+function resolvePath(path) {
+    if (!path) return currentDirectory;
+    
+    if (path.startsWith('/')) {
+        return path; // Absolute path
+    } else {
+        // Relative path - resolve relative to current directory
+        return currentDirectory + '/' + path;
+    }
+}
+
+function logCommandExecution(command) {
+    const logEntry = {
+        timestamp: new Date().toISOString(),
+        studentId: studentId,
+        sessionId: sessionId,
+        command: command,
+        directory: currentDirectory
+    };
+    
+    // Store in localStorage for now - in production this would be sent to server
+    const logs = JSON.parse(localStorage.getItem('commandLogs') || '[]');
+    logs.push(logEntry);
+    
+    // Keep only last 1000 entries
+    if (logs.length > 1000) {
+        logs.splice(0, logs.length - 1000);
+    }
+    
+    localStorage.setItem('commandLogs', JSON.stringify(logs));
+    
+    console.log('Command logged:', logEntry);
+}
+
+function validateSandboxAccess(path) {
+    if (!isLabSandboxed) return { allowed: true };
+    
+    if (!isPathAllowed(path)) {
+        return {
+            allowed: false,
+            message: `Access denied: Path '${path}' is outside the sandbox or in a restricted area.`
+        };
+    }
+    
+    return { allowed: true };
+}
+
+// Progress tracking functions
+function trackExerciseStart(exerciseId) {
+    if (!exerciseProgress[exerciseId]) {
+        exerciseProgress[exerciseId] = {
+            started: new Date().toISOString(),
+            attempts: 0,
+            completed: false,
+            timeSpent: 0,
+            lastActivity: new Date().toISOString()
+        };
+    }
+    
+    exerciseProgress[exerciseId].lastActivity = new Date().toISOString();
+    saveProgressToLocalStorage();
+}
+
+function trackExerciseCompletion(exerciseId) {
+    if (!exerciseProgress[exerciseId]) {
+        trackExerciseStart(exerciseId);
+    }
+    
+    exerciseProgress[exerciseId].completed = true;
+    exerciseProgress[exerciseId].completedAt = new Date().toISOString();
+    exerciseProgress[exerciseId].lastActivity = new Date().toISOString();
+    
+    saveProgressToLocalStorage();
+    saveProgressToServer();
+    
+    // Update UI to show completion
+    updateExerciseUI(exerciseId, true);
+    
+    console.log(`Exercise ${exerciseId} completed!`);
+}
+
+function trackCodeExecution(exerciseId, code) {
+    if (!exerciseProgress[exerciseId]) {
+        trackExerciseStart(exerciseId);
+    }
+    
+    exerciseProgress[exerciseId].attempts++;
+    exerciseProgress[exerciseId].lastActivity = new Date().toISOString();
+    
+    // Store the code attempt
+    if (!exerciseProgress[exerciseId].codeAttempts) {
+        exerciseProgress[exerciseId].codeAttempts = [];
+    }
+    
+    exerciseProgress[exerciseId].codeAttempts.push({
+        code: code,
+        timestamp: new Date().toISOString()
+    });
+    
+    // Keep only last 10 attempts
+    if (exerciseProgress[exerciseId].codeAttempts.length > 10) {
+        exerciseProgress[exerciseId].codeAttempts.splice(0, 1);
+    }
+    
+    saveProgressToLocalStorage();
+}
+
+function updateExerciseUI(exerciseId, completed) {
+    const exerciseElement = document.querySelector(`[onclick="selectExercise(${exerciseId})"]`);
+    if (exerciseElement) {
+        if (completed) {
+            exerciseElement.classList.add('completed');
+            const checkmark = exerciseElement.querySelector('.completion-checkmark');
+            if (!checkmark) {
+                const checkmarkElement = document.createElement('div');
+                checkmarkElement.className = 'completion-checkmark';
+                checkmarkElement.innerHTML = '<i class="fas fa-check-circle"></i>';
+                exerciseElement.appendChild(checkmarkElement);
+            }
+        }
+    }
+}
+
+async function loadStudentProgress() {
+    try {
+        // Try to load from server first
+        const response = await fetch(`${window.CONFIG?.ENDPOINTS?.LAB_SESSION_LOAD(courseId, studentId)}`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            }
+        });
+        
+        if (response.ok) {
+            const serverProgress = await response.json();
+            exerciseProgress = serverProgress.exerciseProgress || {};
+            totalLabTime = serverProgress.totalLabTime || 0;
+            console.log('Progress loaded from server');
+        } else {
+            // Fallback to localStorage
+            loadProgressFromLocalStorage();
+        }
+    } catch (error) {
+        console.error('Error loading progress from server:', error);
+        // Fallback to localStorage
+        loadProgressFromLocalStorage();
+    }
+    
+    // Update UI for completed exercises
+    Object.keys(exerciseProgress).forEach(exerciseId => {
+        if (exerciseProgress[exerciseId].completed) {
+            updateExerciseUI(parseInt(exerciseId), true);
+        }
+    });
+}
+
+function loadProgressFromLocalStorage() {
+    const progressKey = `labProgress_${studentId}_${courseId}`;
+    const savedProgress = localStorage.getItem(progressKey);
+    
+    if (savedProgress) {
+        try {
+            const progressData = JSON.parse(savedProgress);
+            exerciseProgress = progressData.exerciseProgress || {};
+            totalLabTime = progressData.totalLabTime || 0;
+            console.log('Progress loaded from localStorage');
+        } catch (error) {
+            console.error('Error parsing saved progress:', error);
+        }
+    }
+}
+
+function saveProgressToLocalStorage() {
+    if (!studentId || !courseId) return;
+    
+    const progressKey = `labProgress_${studentId}_${courseId}`;
+    const progressData = {
+        exerciseProgress: exerciseProgress,
+        totalLabTime: calculateTotalLabTime(),
+        lastUpdated: new Date().toISOString()
+    };
+    
+    localStorage.setItem(progressKey, JSON.stringify(progressData));
+}
+
+async function saveProgressToServer() {
+    if (!studentId || !courseId) return;
+    
+    try {
+        const progressData = {
+            student_id: studentId,
+            course_id: courseId,
+            session_id: sessionId,
+            exercise_progress: exerciseProgress,
+            total_lab_time: calculateTotalLabTime(),
+            last_activity: new Date().toISOString()
+        };
+        
+        const response = await fetch(`${window.CONFIG?.ENDPOINTS?.LAB_SESSION_SAVE}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            },
+            body: JSON.stringify(progressData)
+        });
+        
+        if (response.ok) {
+            console.log('Progress saved to server');
+        } else {
+            console.warn('Failed to save progress to server, using localStorage fallback');
+            saveProgressToLocalStorage();
+        }
+    } catch (error) {
+        console.error('Error saving progress to server:', error);
+        saveProgressToLocalStorage();
+    }
+}
+
+function calculateTotalLabTime() {
+    if (!labStartTime) return totalLabTime;
+    
+    const currentTime = new Date();
+    const sessionTime = Math.floor((currentTime - labStartTime) / 1000); // in seconds
+    return totalLabTime + sessionTime;
+}
+
+function getProgressSummary() {
+    const totalExercises = exercises.length;
+    const completedExercises = Object.values(exerciseProgress).filter(p => p.completed).length;
+    const progressPercentage = totalExercises > 0 ? Math.round((completedExercises / totalExercises) * 100) : 0;
+    
+    return {
+        totalExercises,
+        completedExercises,
+        progressPercentage,
+        totalTime: calculateTotalLabTime()
+    };
+}
+
+function checkForExerciseCompletion(exerciseId, code) {
+    const exercise = exercises.find(ex => ex.id === exerciseId);
+    if (!exercise || exerciseProgress[exerciseId]?.completed) {
+        return; // Exercise not found or already completed
+    }
+    
+    // Simple completion detection based on code content and patterns
+    let isCompleted = false;
+    
+    // Check if the code contains key elements from the solution
+    if (exercise.solution) {
+        const solutionKeywords = extractKeywords(exercise.solution);
+        const codeKeywords = extractKeywords(code);
+        
+        // If code contains at least 70% of solution keywords, consider it complete
+        const matchingKeywords = solutionKeywords.filter(keyword => 
+            codeKeywords.some(codeKeyword => codeKeyword.includes(keyword) || keyword.includes(codeKeyword))
+        );
+        
+        const completionThreshold = Math.max(1, Math.floor(solutionKeywords.length * 0.7));
+        isCompleted = matchingKeywords.length >= completionThreshold;
+    } else {
+        // Fallback: check for basic completion indicators
+        const codeLines = code.split('\n').filter(line => line.trim().length > 0);
+        isCompleted = codeLines.length >= 3; // At least 3 non-empty lines
+    }
+    
+    if (isCompleted) {
+        trackExerciseCompletion(exerciseId);
+        
+        // Show completion message
+        addMessage(`🎉 Congratulations! You've completed the exercise "${exercise.title}"! Great work!`, 'assistant');
+        addToTerminal(`✅ Exercise "${exercise.title}" completed!`, 'success');
+        
+        // Update progress summary display if it exists
+        updateProgressDisplay();
+    }
+}
+
+function extractKeywords(code) {
+    // Extract meaningful keywords from code (variables, functions, etc.)
+    const keywords = [];
+    
+    // Remove comments and strings to focus on actual code
+    const cleanCode = code
+        .replace(/\/\*[\s\S]*?\*\//g, '') // Remove /* */ comments
+        .replace(/\/\/.*$/gm, '') // Remove // comments
+        .replace(/"[^"]*"/g, '') // Remove double-quoted strings
+        .replace(/'[^']*'/g, ''); // Remove single-quoted strings
+    
+    // Extract words that look like identifiers (letters, numbers, underscore)
+    const matches = cleanCode.match(/[a-zA-Z_][a-zA-Z0-9_]*/g);
+    
+    if (matches) {
+        // Filter out common language keywords
+        const commonKeywords = ['var', 'let', 'const', 'function', 'if', 'else', 'for', 'while', 'return', 'console', 'log', 'print'];
+        keywords.push(...matches.filter(word => 
+            word.length > 2 && !commonKeywords.includes(word.toLowerCase())
+        ));
+    }
+    
+    return [...new Set(keywords)]; // Remove duplicates
+}
+
+function updateProgressDisplay() {
+    const summary = getProgressSummary();
+    
+    // Update any progress indicators in the UI
+    const progressElements = document.querySelectorAll('.progress-indicator');
+    progressElements.forEach(element => {
+        element.textContent = `${summary.completedExercises}/${summary.totalExercises} exercises completed (${summary.progressPercentage}%)`;
+    });
+    
+    // Log progress for debugging
+    console.log('Progress updated:', summary);
+}
+
 function clearTerminal() {
     const terminalOutput = document.getElementById('terminalOutput');
     if (terminalOutput) {
         terminalOutput.innerHTML = '';
-        terminalOutput.textContent = 'Terminal cleared.\n\nstudent@lab:~$ ';
+        const prompt = isLabSandboxed 
+            ? `Terminal cleared.\nSecure Lab Environment - Session: ${sessionId}\n\nstudent@lab:~$ `
+            : 'Terminal cleared.\n\nstudent@lab:~$ ';
+        terminalOutput.textContent = prompt;
     }
 }
 
