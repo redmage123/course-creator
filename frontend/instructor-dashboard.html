@@ -393,8 +393,17 @@
                 <!-- Content Section -->
                 <section id="content-section" class="content-section">
                     <div class="section-header">
-                        <h2>Content Management</h2>
-                        <p>Edit and manage your course content</p>
+                        <div class="section-header-content">
+                            <div class="header-title">
+                                <h2>Content Management</h2>
+                                <p>Edit and manage your course content</p>
+                            </div>
+                            <div class="header-actions">
+                                <button class="btn btn-secondary" onclick="showSection('courses')">
+                                    <i class="fas fa-arrow-left"></i> Back to Courses
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <div class="content-management-section">
                         <div class="course-content-selector">
@@ -431,6 +440,7 @@
 
     <script src="js/config.js"></script>
     <script src="js/main.js"></script>
+    <script src="js/lab-template.js"></script>
     <script src="js/instructor-dashboard.js"></script>
 </body>
 </html>
