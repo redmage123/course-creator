@@ -7,23 +7,29 @@ const getHost = () => {
     if (typeof window !== 'undefined' && window.location) {
         const hostname = window.location.hostname;
         
+        // If accessing via the external IP, use that for API calls too
+        if (hostname === '176.9.99.103') {
+            return '176.9.99.103';
+        }
+        
         // Development environments
         if (hostname === 'localhost' || hostname === '127.0.0.1') {
-            return 'localhost';
+            // Even in development, use the external IP for API calls
+            return '176.9.99.103';
         }
         
         // Production or other environments
         return hostname;
     }
     
-    // Fallback for server-side or unknown environments
-    return 'localhost';
+    // Fallback - use the external IP
+    return '176.9.99.103';
 };
 
 // Configuration object
 const CONFIG = {
-    // Host configuration
-    HOST: getHost(),
+    // Host configuration - force to external IP
+    HOST: '176.9.99.103',
     
     // Service ports
     PORTS: {
@@ -72,6 +78,7 @@ const CONFIG = {
             SLIDES: (courseId) => `${urls.COURSE_GENERATOR}/slides/${courseId}`,
             UPDATE_SLIDES: (courseId) => `${urls.COURSE_GENERATOR}/slides/update/${courseId}`,
             GENERATE_SLIDES: `${urls.COURSE_GENERATOR}/slides/generate`,
+            SYLLABUS: (courseId) => `${urls.COURSE_GENERATOR}/syllabus/${courseId}`,
             LAB_BY_COURSE: (courseId) => `${urls.COURSE_GENERATOR}/lab/${courseId}`,
             QUIZZES: (courseId) => `${urls.COURSE_GENERATOR}/quizzes/${courseId}`,
             LAB_LAUNCH: `${urls.COURSE_GENERATOR}/lab/launch`,

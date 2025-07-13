@@ -6,6 +6,10 @@ services:
     cors_origins:
       - "http://localhost:3000"
       - "http://localhost:8000"
+      - "http://localhost:8080"
+      - "http://176.9.99.103:3000"
+      - "http://176.9.99.103:8000"
+      - "http://176.9.99.103:8080"
 
   content_generator:
     host: "0.0.0.0"

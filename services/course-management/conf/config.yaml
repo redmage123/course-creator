@@ -23,6 +23,11 @@ cors:
 database:
   url: postgresql+asyncpg://course_user:${DB_PASSWORD}@localhost:5433/course_creator
 
+jwt:
+  secret_key: ${oc.env:JWT_SECRET_KEY,"your-secret-key-here-change-in-production"}
+  algorithm: HS256
+  token_expiry: 15
+
 service:
   host: 0.0.0.0
   port: 8004

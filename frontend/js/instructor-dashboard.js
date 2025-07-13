@@ -324,6 +324,15 @@ async function loadUserCourses() {
             userCourses = await response.json();
             displayCourses(userCourses);
             updateNavigationStats();
+        } else if (response.status === 401) {
+            // Authentication failed - redirect to login
+            console.log('Authentication failed, redirecting to login');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('token');
+            window.location.href = 'index.html';
+        } else {
+            console.error('Failed to load courses:', response.status, response.statusText);
+            showNotification('Error loading courses', 'error');
         }
     } catch (error) {
         console.error('Error loading courses:', error);
@@ -1834,6 +1843,7 @@ function getCurrentUser() {
 // eslint-disable-next-line no-unused-vars
 async function loadCourseContent() {
     const courseId = document.getElementById('contentCourseSelect').value;
+    console.log('=== loadCourseContent DEBUG START ===');
     console.log('Loading content for course ID:', courseId);
     
     const displayDiv = document.getElementById('course-content-display');
@@ -1869,6 +1879,59 @@ async function loadCourseContent() {
     try {
         const token = localStorage.getItem('authToken');
         
+        // Fetch syllabus
+        let syllabusContent = '';
+        try {
+            const syllabusResponse = await fetch(CONFIG.ENDPOINTS.SYLLABUS(courseId), {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (syllabusResponse.ok) {
+                const syllabusData = await syllabusResponse.json();
+                console.log('Syllabus data received:', syllabusData);
+                if (syllabusData && syllabusData.syllabus) {
+                    const syllabus = syllabusData.syllabus;
+                    syllabusContent = `
+                        <p><strong>Course Overview Available</strong></p>
+                        <div class="syllabus-preview">
+                            <p><strong>Overview:</strong> ${syllabus.overview ? syllabus.overview.substring(0, 200) + '...' : 'No overview available'}</p>
+                            <p><strong>Modules:</strong> ${syllabus.modules ? syllabus.modules.length : 0} modules</p>
+                            <p><strong>Objectives:</strong> ${syllabus.objectives ? syllabus.objectives.length : 0} learning objectives</p>
+                        </div>
+                        <div class="syllabus-actions">
+                            <button class="btn btn-secondary" onclick="viewSyllabus('${courseId}')">
+                                <i class="fas fa-eye"></i> View Full Syllabus
+                            </button>
+                            <button class="btn btn-primary" onclick="editSyllabus('${courseId}')">
+                                <i class="fas fa-edit"></i> Edit Syllabus
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    syllabusContent = '<p class="info">No syllabus available for this course.</p>';
+                }
+            } else if (syllabusResponse.status === 404) {
+                syllabusContent = `
+                    <p class="info">No syllabus has been generated for this course yet.</p>
+                    <button class="btn btn-primary" onclick="generateSyllabus('${courseId}')">
+                        <i class="fas fa-plus"></i> Generate Syllabus
+                    </button>
+                `;
+            } else {
+                syllabusContent = `<p class="error">Error loading syllabus (${syllabusResponse.status})</p>`;
+            }
+        } catch (error) {
+            console.warn('Error fetching syllabus:', error);
+            syllabusContent = `
+                <p class="info">Syllabus can be generated for this course.</p>
+                <button class="btn btn-secondary" onclick="generateSyllabus('${courseId}')">
+                    <i class="fas fa-magic"></i> Generate Course Syllabus
+                </button>
+            `;
+        }
+        
         // Fetch slides
         let slidesContent = '';
         try {
@@ -1885,16 +1948,17 @@ async function loadCourseContent() {
                     slidesContent = `
                         <p><strong>${slidesData.slides.length} slide${slidesData.slides.length === 1 ? '' : 's'} available</strong></p>
                         <div class="slides-list">
-                            ${slidesData.slides.slice(0, 5).map((slide, index) => `
-                                <div class="slide-preview">
+                            ${slidesData.slides.slice(0, 5).map((slide, index) => {
+                                const slideId = slide.id || 'slide-' + index;
+                                return `<div class="slide-preview">
                                     <strong>Slide ${slide.order || index + 1}: ${slide.title}</strong>
-                                    <div>${formatSlideContentPreview(slide.content || '', 100)}</div>
-                                </div>
-                            `).join('')}
+                                    <div>${formatSlideContentPreview(slide.content || '', 100, slideId)}</div>
+                                </div>`;
+                            }).join('')}
                             ${slidesData.slides.length > 5 ? `<p><em>... and ${slidesData.slides.length - 5} more slides</em></p>` : ''}
                         </div>
                         <button class="btn btn-primary" onclick="viewAllSlides('${courseId}')">
-                            <i class="fas fa-eye"></i> View All Slides
+                            <i class="fas fa-list"></i> View Slides (Vertical Stack)
                         </button>
                     `;
                 } else {
@@ -2003,30 +2067,59 @@ async function loadCourseContent() {
         }
         
         // Display all content
+        console.log('=== RENDERING CONTENT ===');
+        console.log('syllabusContent length:', syllabusContent.length);
+        console.log('slidesContent length:', slidesContent.length);
+        console.log('labContent length:', labContent.length);
+        console.log('quizzesContent length:', quizzesContent.length);
+        console.log('syllabusContent preview:', syllabusContent.substring(0, 100));
+        console.log('slidesContent preview:', slidesContent.substring(0, 100));
+        
+        // Force browser refresh by clearing first
+        displayDiv.innerHTML = '';
+        
+        // Add a timestamp to force rendering
+        const timestamp = new Date().getTime();
+        
         displayDiv.innerHTML = `
             <div class="course-content-header">
                 <h4>${course.title}</h4>
                 <p>${course.description}</p>
             </div>
             
-            <div class="content-sections">
-                <div class="content-section">
-                    <h5><i class="fas fa-presentation"></i> Slides</h5>
-                    <div class="content-area">
+            <div class="content-grid">
+                <div class="content-card">
+                    <div class="content-card-header">
+                        <h5><i class="fas fa-file-alt"></i> Course Syllabus</h5>
+                    </div>
+                    <div class="content-card-body">
+                        ${syllabusContent}
+                    </div>
+                </div>
+                
+                <div class="content-card">
+                    <div class="content-card-header">
+                        <h5><i class="fas fa-presentation"></i> Slides</h5>
+                    </div>
+                    <div class="content-card-body">
                         ${slidesContent}
                     </div>
                 </div>
                 
-                <div class="content-section">
-                    <h5><i class="fas fa-flask"></i> Lab Environment</h5>
-                    <div class="content-area">
+                <div class="content-card">
+                    <div class="content-card-header">
+                        <h5><i class="fas fa-flask"></i> Lab Environment</h5>
+                    </div>
+                    <div class="content-card-body">
                         ${labContent}
                     </div>
                 </div>
                 
-                <div class="content-section">
-                    <h5><i class="fas fa-question-circle"></i> Quizzes & Tests</h5>
-                    <div class="content-area">
+                <div class="content-card">
+                    <div class="content-card-header">
+                        <h5><i class="fas fa-question-circle"></i> Quizzes & Tests</h5>
+                    </div>
+                    <div class="content-card-body">
                         ${quizzesContent}
                     </div>
                 </div>
@@ -2246,7 +2339,7 @@ function showContentEditor(courseId, course, slides) {
                                     </div>
                                 </div>
                                 <div class="slide-content-preview">
-                                    <div>${formatSlideContentPreview(slide.content, 200)}</div>
+                                    <div>${formatSlideContentPreview(slide.content, 200, slide.id || 'edit-slide-' + index)}</div>
                                 </div>
                             </div>
                         `).join('')}
@@ -2358,7 +2451,18 @@ async function showSlideshowModal(courseId) {
         const slidesData = await response.json();
         const slides = slidesData.slides || [];
         
-        if (slides.length === 0) {
+        // Use the direct function
+        showSlideshowModalDirect(slides);
+        
+    } catch (error) {
+        console.error('Error loading slideshow:', error);
+        showNotification('Error loading slideshow', 'error');
+    }
+}
+
+function showSlideshowModalDirect(slides) {
+    try {
+        if (!slides || slides.length === 0) {
             showNotification('No slides available for slideshow', 'warning');
             return;
         }
@@ -2376,7 +2480,7 @@ async function showSlideshowModal(courseId) {
             <div class="slideshow-container">
                 <div class="slideshow-header">
                     <div class="slideshow-title">
-                        <h2>${slides[0].title}</h2>
+                        <h2>${slides[0].title || 'Slide 1'}</h2>
                     </div>
                     <div class="slideshow-controls">
                         <span class="slide-counter">1 / ${slides.length}</span>
@@ -2395,10 +2499,10 @@ async function showSlideshowModal(courseId) {
                 </div>
                 
                 <div class="slideshow-navigation">
-                    <button class="btn btn-primary" onclick="previousSlide()" disabled>
+                    <button class="btn btn-primary" onclick="previousSlide()" id="prevSlideBtn">
                         <i class="fas fa-chevron-left"></i> Previous
                     </button>
-                    <button class="btn btn-primary" onclick="nextSlide()">
+                    <button class="btn btn-primary" onclick="nextSlide()" id="nextSlideBtn">
                         Next <i class="fas fa-chevron-right"></i>
                     </button>
                 </div>
@@ -2413,6 +2517,9 @@ async function showSlideshowModal(courseId) {
             currentIndex: 0
         };
         
+        // Initialize the slide display and button states
+        updateSlideDisplay();
+        
         // Add keyboard navigation
         document.addEventListener('keydown', handleSlideshowKeyboard);
         
@@ -2424,41 +2531,136 @@ async function showSlideshowModal(courseId) {
 
 // Slideshow navigation functions
 function formatSlideContent(content) {
-    // Split by bullet points and newlines, then format properly
-    const lines = content.split('\n').filter(line => line.trim() !== '');
-    const formattedLines = lines.map(line => {
-        if (line.trim().startsWith('•')) {
-            return `<li>${line.trim().substring(1).trim()}</li>`;
-        } else {
-            return `<p>${line.trim()}</p>`;
-        }
-    });
-    
-    return `<ul>${formattedLines.join('')}</ul>`;
-}
-
-function formatSlideContentPreview(content, maxLength = 200) {
-    // Format content with proper line breaks and truncate if needed
-    const lines = content.split('\n').filter(line => line.trim() !== '');
-    const formattedLines = [];
-    let currentLength = 0;
-    
-    for (const line of lines) {
-        const lineText = line.trim().startsWith('•') ? line.trim().substring(1).trim() : line.trim();
-        if (currentLength + lineText.length > maxLength) {
-            formattedLines.push('...');
-            break;
-        }
-        
-        if (line.trim().startsWith('•')) {
-            formattedLines.push(`• ${lineText}`);
-        } else {
-            formattedLines.push(lineText);
-        }
-        currentLength += lineText.length;
+    if (!content || content.trim() === '') {
+        return '<p>No content available for this slide.</p>';
     }
     
-    return formattedLines.join('<br>');
+    // Clean the content and remove excess whitespace
+    const cleanContent = content.trim();
+    
+    // Handle content that already has bullet points with \n separators
+    if (cleanContent.includes('•') || cleanContent.includes('- ') || cleanContent.includes('\\n')) {
+        // Split by various newline patterns and create proper HTML list
+        const lines = cleanContent.split(/[\n\r]+|\\n/).filter(line => line.trim() !== '');
+        const bulletPoints = lines.map(line => {
+            let cleaned = line.trim();
+            // Remove bullet markers if present
+            cleaned = cleaned.replace(/^[•\-\*]\s*/, '');
+            // Clean up and ensure proper capitalization
+            cleaned = cleaned.trim();
+            if (cleaned.length > 0) {
+                cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+                // Ensure proper punctuation
+                if (!cleaned.match(/[.!?]$/)) {
+                    cleaned += '.';
+                }
+                return `<li>${cleaned}</li>`;
+            }
+            return '';
+        }).filter(item => item !== '').slice(0, 5); // Limit to max 5 bullet points
+        
+        if (bulletPoints.length > 0) {
+            return `<ul class="slide-content-list">${bulletPoints.join('')}</ul>`;
+        }
+    }
+    
+    // First, check if content already has HTML structure
+    if (content.includes('<li>') || content.includes('<ul>') || content.includes('<p>')) {
+        // If it's already formatted HTML but has too many points, limit it
+        if (content.includes('<li>')) {
+            const liMatches = content.match(/<li[^>]*>.*?<\/li>/g);
+            if (liMatches && liMatches.length > 5) {
+                const limitedLis = liMatches.slice(0, 5);
+                return `<ul class="slide-content-list">${limitedLis.join('')}</ul>`;
+            }
+        }
+        return cleanContent; // Already formatted
+    }
+    
+    // Split content into sentences for bullet point conversion (limit to 5 points)
+    const sentences = cleanContent.split(/[.!?]\s+/).filter(s => s.trim() !== '' && s.trim().length > 10).slice(0, 5);
+    
+    // If we have 2 or fewer meaningful sentences, keep as paragraph
+    if (sentences.length <= 2) {
+        return `<p>${cleanContent}</p>`;
+    }
+    
+    // Convert sentences to bullet points for better slide formatting (3-5 points)
+    const bulletPoints = sentences.slice(0, 5).map(sentence => {
+        let cleaned = sentence.trim();
+        // Remove trailing punctuation
+        cleaned = cleaned.replace(/[.!?;:,]+$/, '');
+        // Ensure first letter is capitalized
+        cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+        // Add period if needed
+        if (!cleaned.match(/[.!?]$/)) {
+            cleaned += '.';
+        }
+        return `<li>${cleaned}</li>`;
+    });
+    
+    // Ensure we have at least 3 points for consistency
+    if (bulletPoints.length >= 3) {
+        return `<ul class="slide-content-list">${bulletPoints.join('')}</ul>`;
+    } else {
+        // If less than 3 points, return as paragraph
+        return `<p>${cleanContent}</p>`;
+    }
+}
+
+function formatSlideContentPreview(content, maxLength = 200, slideId = null) {
+    if (!content || content.trim() === '') {
+        return '<em>No content available</em>';
+    }
+    
+    // Clean the content and remove excess whitespace
+    const cleanContent = content.trim().replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    
+    // If content is short enough, just return it
+    if (cleanContent.length <= maxLength) {
+        return cleanContent;
+    }
+    
+    // Truncate the content at a word boundary
+    let truncatedContent = cleanContent.substring(0, maxLength);
+    const lastSpace = truncatedContent.lastIndexOf(' ');
+    if (lastSpace > maxLength * 0.8) { // Only truncate at word boundary if it's not too far back
+        truncatedContent = truncatedContent.substring(0, lastSpace);
+    }
+    
+    // Generate unique ID for this preview
+    const previewId = slideId ? `preview-${slideId}` : `preview-${Math.random().toString(36).substr(2, 9)}`;
+    
+    return `<span id="short-${previewId}">${truncatedContent}<span class="slide-preview-toggle" onclick="toggleSlidePreview('${previewId}')" style="color: #2563eb; cursor: pointer; font-weight: 500;">... <i class="fas fa-chevron-down"></i> Show more</span></span><span id="full-${previewId}" style="display: none;">${cleanContent} <span class="slide-preview-toggle" onclick="toggleSlidePreview('${previewId}')" style="color: #2563eb; cursor: pointer; font-weight: 500;"><i class="fas fa-chevron-up"></i> Show less</span></span>`;
+}
+
+// Toggle slide preview expansion
+function toggleSlidePreview(previewId) {
+    console.log('toggleSlidePreview called with:', previewId);
+    const shortContent = document.getElementById(`short-${previewId}`);
+    const fullContent = document.getElementById(`full-${previewId}`);
+    
+    console.log('Found elements:', { shortContent, fullContent });
+    
+    if (!shortContent || !fullContent) {
+        console.error('Could not find preview elements for:', previewId);
+        return;
+    }
+    
+    const isExpanded = fullContent.style.display !== 'none';
+    console.log('isExpanded:', isExpanded);
+    
+    if (isExpanded) {
+        // Collapse - show short content, hide full content
+        shortContent.style.display = 'inline';
+        fullContent.style.display = 'none';
+        console.log('Collapsed preview');
+    } else {
+        // Expand - hide short content, show full content
+        shortContent.style.display = 'none';
+        fullContent.style.display = 'inline';
+        console.log('Expanded preview');
+    }
 }
 
 function nextSlide() {
@@ -2469,42 +2671,117 @@ function nextSlide() {
     }
     
     window.currentSlideshow.currentIndex++;
-    console.log('Moving to slide:', window.currentSlideshow.currentIndex);
-    updateSlideDisplay();
+    console.log('Moving to slide:', window.currentSlideshow.currentIndex + 1, 'of', window.currentSlideshow.slides.length);
+    console.log('About to call updateSlideDisplay()');
+    try {
+        updateSlideDisplay();
+        console.log('updateSlideDisplay() completed');
+    } catch (error) {
+        console.error('Error in updateSlideDisplay():', error);
+    }
 }
 
 function previousSlide() {
+    console.log('previousSlide called, currentSlideshow:', window.currentSlideshow);
     if (!window.currentSlideshow || window.currentSlideshow.currentIndex <= 0) {
+        console.log('Cannot go to previous slide - at beginning or no slideshow');
         return;
     }
     
     window.currentSlideshow.currentIndex--;
-    updateSlideDisplay();
+    console.log('Moving to slide:', window.currentSlideshow.currentIndex + 1, 'of', window.currentSlideshow.slides.length);
+    console.log('About to call updateSlideDisplay()');
+    try {
+        updateSlideDisplay();
+        console.log('updateSlideDisplay() completed');
+    } catch (error) {
+        console.error('Error in updateSlideDisplay():', error);
+    }
 }
 
 function updateSlideDisplay() {
+    console.log('=== updateSlideDisplay() called ===');
     const slideshow = window.currentSlideshow;
-    const slide = slideshow.slides[slideshow.currentIndex];
+    console.log('Current slideshow object:', slideshow);
     
-    console.log('Updating slide display to slide:', slideshow.currentIndex, slide.title);
+    if (!slideshow) {
+        console.error('No slideshow object found');
+        return;
+    }
+    if (!slideshow.slides) {
+        console.error('No slides array found');
+        return;
+    }
+    if (slideshow.currentIndex < 0) {
+        console.error('Current index is negative:', slideshow.currentIndex);
+        return;
+    }
+    if (slideshow.currentIndex >= slideshow.slides.length) {
+        console.error('Current index exceeds slides length:', slideshow.currentIndex, 'vs', slideshow.slides.length);
+        return;
+    }
+    
+    console.log('Slideshow validation passed, continuing with update...');
+    
+    const slide = slideshow.slides[slideshow.currentIndex];
+    console.log('Updating slide display to slide:', slideshow.currentIndex + 1, 'of', slideshow.slides.length, '- Title:', slide.title);
     
     // Update slide content
-    const slideContent = document.querySelector('.slide-content');
-    const slideTitle = document.querySelector('.slideshow-title h2');
-    const slideCounter = document.querySelector('.slide-counter');
+    console.log('Looking for DOM elements...');
+    const slideContent = document.querySelector('.slideshow-modal .slide-content');
+    const slideTitle = document.querySelector('.slideshow-modal .slideshow-title h2');
+    const slideCounter = document.querySelector('.slideshow-modal .slide-counter');
     
-    if (slideContent) slideContent.innerHTML = formatSlideContent(slide.content);
-    if (slideTitle) slideTitle.textContent = slide.title;
-    if (slideCounter) slideCounter.textContent = `${slideshow.currentIndex + 1} / ${slideshow.slides.length}`;
+    console.log('DOM elements found:', {
+        slideContent: slideContent ? 'YES' : 'NO',
+        slideTitle: slideTitle ? 'YES' : 'NO', 
+        slideCounter: slideCounter ? 'YES' : 'NO'
+    });
     
-    // Update navigation buttons
-    const prevBtn = document.querySelector('.slideshow-navigation .btn:first-child');
-    const nextBtn = document.querySelector('.slideshow-navigation .btn:last-child');
+    if (slideContent) {
+        slideContent.innerHTML = formatSlideContent(slide.content);
+        console.log('Updated slide content');
+    } else {
+        console.error('Could not find slide content element');
+    }
     
-    if (prevBtn) prevBtn.disabled = slideshow.currentIndex === 0;
-    if (nextBtn) nextBtn.disabled = slideshow.currentIndex === slideshow.slides.length - 1;
+    if (slideTitle) {
+        slideTitle.textContent = slide.title || `Slide ${slideshow.currentIndex + 1}`;
+        console.log('Updated slide title');
+    } else {
+        console.error('Could not find slide title element');
+    }
     
-    console.log('Slide display updated');
+    if (slideCounter) {
+        slideCounter.textContent = `${slideshow.currentIndex + 1} / ${slideshow.slides.length}`;
+        console.log('Updated slide counter');
+    } else {
+        console.error('Could not find slide counter element');
+    }
+    
+    // Update navigation buttons using IDs
+    const prevBtn = document.getElementById('prevSlideBtn');
+    const nextBtn = document.getElementById('nextSlideBtn');
+    
+    if (prevBtn) {
+        prevBtn.disabled = slideshow.currentIndex === 0;
+        prevBtn.style.opacity = prevBtn.disabled ? '0.5' : '1';
+        prevBtn.style.cursor = prevBtn.disabled ? 'not-allowed' : 'pointer';
+        console.log('Previous button disabled:', prevBtn.disabled);
+    } else {
+        console.error('Could not find previous button');
+    }
+    
+    if (nextBtn) {
+        nextBtn.disabled = slideshow.currentIndex === slideshow.slides.length - 1;
+        nextBtn.style.opacity = nextBtn.disabled ? '0.5' : '1';
+        nextBtn.style.cursor = nextBtn.disabled ? 'not-allowed' : 'pointer';
+        console.log('Next button disabled:', nextBtn.disabled);
+    } else {
+        console.error('Could not find next button');
+    }
+    
+    console.log('Slide display update completed');
 }
 
 function exitSlideshow() {
@@ -2540,28 +2817,8 @@ function viewAllSlides(courseId) {
     .then(response => response.json())
     .then(data => {
         if (data.slides) {
-            // Create modal to show all slides
-            const modal = document.createElement('div');
-            modal.className = 'modal-overlay';
-            modal.innerHTML = `
-                <div class="modal-content slides-modal">
-                    <div class="modal-header">
-                        <h3>All Slides - ${data.slides[0]?.title || 'Course Slides'}</h3>
-                        <button class="modal-close" onclick="this.parentElement.parentElement.parentElement.remove()">×</button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="slides-container">
-                            ${data.slides.map((slide, index) => `
-                                <div class="slide-item" data-slide="${index + 1}">
-                                    <h4>Slide ${slide.order}: ${slide.title}</h4>
-                                    <div class="slide-content">${slide.content}</div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
+            // Use the new vertical slides view
+            showVerticalSlidesView(data.slides);
         }
     })
     .catch(error => {
@@ -2895,7 +3152,8 @@ async function accessLabEnvironment(courseId) {
 
 // eslint-disable-next-line no-unused-vars
 function openEmbeddedLab(courseId) {
-    console.log('openEmbeddedLab called with courseId:', courseId);
+    console.log('=== openEmbeddedLab DEBUG ===');
+    console.log('CourseId:', courseId);
     console.log('Available courses:', userCourses);
     
     const course = userCourses.find(c => c.id == courseId);
@@ -2905,28 +3163,47 @@ function openEmbeddedLab(courseId) {
         return;
     }
     
-    console.log('Opening embedded lab for course:', course.title);
+    console.log('Found course:', course.title);
     
     try {
-        // Create a new window for the lab environment
+        // Test popup blocker first
+        console.log('Attempting to open popup window...');
         const labWindow = window.open('about:blank', '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
         
         if (!labWindow) {
+            console.error('Popup was blocked!');
             showNotification('Popup blocked! Please allow popups for this site and try again.', 'warning');
             return;
         }
         
-        console.log('Lab window created successfully');
+        console.log('Popup window created successfully');
         
         // Load the dedicated lab page with course parameters
         const labUrl = `lab.html?course=${encodeURIComponent(course.title)}&courseId=${encodeURIComponent(courseId)}`;
+        console.log('Loading lab URL:', labUrl);
+        
         labWindow.location.href = labUrl;
         
-        console.log('Lab window loaded successfully');
+        console.log('Lab window navigation initiated');
+        
+        // Add a small delay to check if window loaded
+        setTimeout(() => {
+            try {
+                if (labWindow.closed) {
+                    console.warn('Lab window was closed immediately');
+                    showNotification('Lab window was closed. Please check popup settings.', 'warning');
+                } else {
+                    console.log('Lab window appears to be open and loading');
+                    showNotification('Lab environment opened in new window', 'success');
+                }
+            } catch (e) {
+                console.log('Cannot check lab window status (normal due to cross-origin)');
+            }
+        }, 1000);
         
     } catch (error) {
         console.error('Error opening lab environment:', error);
-        showNotification('Error opening lab environment', 'error');
+        showNotification('Error opening lab environment: ' + error.message, 'error');
     }
 }
 
@@ -2939,7 +3216,7 @@ function showSlidesOverview() {
     if (slidesContainer.classList.contains('overview-mode')) {
         // Switch back to single slide mode
         slidesContainer.classList.remove('overview-mode');
-        updateSlideDisplay();
+        updateSlideDisplayEditor();
     } else {
         // Switch to overview mode
         slidesContainer.classList.add('overview-mode');
@@ -2948,7 +3225,7 @@ function showSlidesOverview() {
     }
 }
 
-function updateSlideDisplay() {
+function updateSlideDisplayEditor() {
     const slides = document.querySelectorAll('.slide-item');
     slides.forEach((slide, index) => {
         slide.classList.toggle('active', index === window.currentSlideIndex);
@@ -3663,9 +3940,12 @@ async function refineSyllabus(courseId) {
 
 // Used in onclick handlers
 async function approveSyllabus(courseId) {
+    console.log('=== approveSyllabus called with courseId:', courseId);
     try {
         // Show progress modal
+        console.log('Showing progress modal...');
         showProgressModal('Generating Course Content', 'Preparing to generate slides, exercises, and quizzes...');
+        console.log('Progress modal should be visible now');
         
         const response = await fetch(CONFIG.ENDPOINTS.GENERATE_CONTENT, {
             method: 'POST',
@@ -3721,9 +4001,11 @@ async function approveSyllabus(courseId) {
 
 // Progress modal functions
 function showProgressModal(title, message) {
+    console.log('=== showProgressModal called with:', title, message);
     // Close any existing progress modal
     const existingModal = document.querySelector('.progress-modal-overlay');
     if (existingModal) {
+        console.log('Removing existing progress modal');
         existingModal.remove();
     }
     
@@ -4799,6 +5081,728 @@ async function generateCustomContent() {
     } catch (error) {
         console.error('Error generating custom content:', error);
         showNotification('Failed to generate custom content', 'error');
+    }
+}
+
+// Content Tab Management
+function showContentTab(tabName) {
+    // Hide all content tabs
+    const tabs = document.querySelectorAll('.content-tab');
+    tabs.forEach(tab => tab.classList.remove('active'));
+    
+    // Remove active class from all tab buttons
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach(btn => btn.classList.remove('active'));
+    
+    // Show selected tab
+    const selectedTab = document.getElementById(`${tabName}-content-tab`);
+    if (selectedTab) {
+        selectedTab.classList.add('active');
+    }
+    
+    // Activate corresponding button
+    const activeButton = event?.target || document.querySelector(`[onclick="showContentTab('${tabName}')"]`);
+    if (activeButton) {
+        activeButton.classList.add('active');
+    }
+}
+
+
+// Syllabus management functions
+async function viewSyllabus(courseId) {
+    try {
+        const syllabusUrl = CONFIG.ENDPOINTS.SYLLABUS(courseId);
+        console.log('Fetching syllabus from URL:', syllabusUrl);
+        console.log('CONFIG.ENDPOINTS.SYLLABUS function:', CONFIG.ENDPOINTS.SYLLABUS);
+        
+        const response = await fetch(syllabusUrl, {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+        
+        if (!response.ok) {
+            console.error('Syllabus fetch failed. Status:', response.status, 'URL:', syllabusUrl);
+            throw new Error('Failed to load syllabus');
+        }
+        
+        const data = await response.json();
+        showSyllabusModal(data.syllabus, 'view');
+        
+    } catch (error) {
+        console.error('Error loading syllabus:', error);
+        showNotification('Failed to load syllabus', 'error');
+    }
+}
+
+async function editSyllabus(courseId) {
+    try {
+        const response = await fetch(CONFIG.ENDPOINTS.SYLLABUS(courseId), {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load syllabus');
+        }
+        
+        const data = await response.json();
+        showSyllabusModal(data.syllabus, 'edit', courseId);
+        
+    } catch (error) {
+        console.error('Error loading syllabus:', error);
+        showNotification('Failed to load syllabus for editing', 'error');
+    }
+}
+
+async function generateSyllabus(courseId) {
+    try {
+        // Get course details first
+        const courseResponse = await fetch(CONFIG.ENDPOINTS.COURSE_BY_ID(courseId), {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+        
+        if (!courseResponse.ok) {
+            throw new Error('Failed to load course details');
+        }
+        
+        const course = await courseResponse.json();
+        
+        showNotification('Generating syllabus...', 'info');
+        
+        const response = await fetch(CONFIG.ENDPOINTS.GENERATE_SYLLABUS, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({
+                course_id: courseId,
+                title: course.title,
+                description: course.description,
+                category: course.category || 'General',
+                difficulty_level: course.difficulty_level || 'Beginner',
+                estimated_duration: course.estimated_duration || 4
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to generate syllabus');
+        }
+        
+        const result = await response.json();
+        showNotification('Syllabus generated successfully!', 'success');
+        
+        // Refresh the course content display
+        loadCourseContent();
+        
+    } catch (error) {
+        console.error('Error generating syllabus:', error);
+        showNotification('Failed to generate syllabus', 'error');
+    }
+}
+
+async function regenerateSyllabus(courseId) {
+    if (!confirm('Are you sure you want to regenerate the syllabus? This will replace the current syllabus.')) {
+        return;
+    }
+    
+    await generateSyllabus(courseId);
+}
+
+// Show syllabus in a modal
+function showSyllabusModal(syllabus, mode = 'view', courseId = null) {
+    const modal = document.createElement('div');
+    modal.className = 'modal syllabus-modal';
+    modal.id = 'syllabusModal';
+    
+    const isEditable = mode === 'edit';
+    const modalTitle = isEditable ? 'Edit Syllabus' : 'View Syllabus';
+    
+    modal.innerHTML = `
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3>${modalTitle}</h3>
+                <button class="modal-close" onclick="closeSyllabusModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="syllabus-content">
+                    <div class="syllabus-section">
+                        <h4>Course Overview</h4>
+                        ${isEditable ? 
+                            `<textarea id="syllabusOverview" rows="4">${syllabus.overview || ''}</textarea>` :
+                            `<p>${syllabus.overview || 'No overview available'}</p>`
+                        }
+                    </div>
+                    
+                    <div class="syllabus-section">
+                        <h4>Learning Objectives</h4>
+                        ${isEditable ? 
+                            `<textarea id="syllabusObjectives" rows="6">${syllabus.objectives ? syllabus.objectives.join('\n') : ''}</textarea>` :
+                            `<ul>${syllabus.objectives ? syllabus.objectives.map(obj => `<li>${obj}</li>`).join('') : '<li>No objectives listed</li>'}</ul>`
+                        }
+                    </div>
+                    
+                    <div class="syllabus-section">
+                        <h4>Prerequisites</h4>
+                        ${isEditable ? 
+                            `<textarea id="syllabusPrerequisites" rows="3">${syllabus.prerequisites ? syllabus.prerequisites.join('\n') : ''}</textarea>` :
+                            `<ul>${syllabus.prerequisites ? syllabus.prerequisites.map(prereq => `<li>${prereq}</li>`).join('') : '<li>No prerequisites listed</li>'}</ul>`
+                        }
+                    </div>
+                    
+                    <div class="syllabus-section">
+                        <h4>Course Modules</h4>
+                        <div class="modules-container">
+                            ${syllabus.modules ? syllabus.modules.map(module => `
+                                <div class="module-card">
+                                    <h5>Module ${module.module_number}: ${module.title}</h5>
+                                    ${module.description ? `<p class="module-description"><strong>Description:</strong> ${module.description}</p>` : ''}
+                                    <p><strong>Duration:</strong> ${module.duration_hours} hours</p>
+                                    <div class="module-topics">
+                                        <p><strong>Topics Covered:</strong></p>
+                                        <ul class="topics-list">${module.topics ? module.topics.map(topic => `<li>${topic}</li>`).join('') : '<li>No topics listed</li>'}</ul>
+                                    </div>
+                                    <div class="module-outcomes">
+                                        <p><strong>Learning Outcomes:</strong></p>
+                                        <ul class="outcomes-list">${module.learning_outcomes ? module.learning_outcomes.map(outcome => `<li>${outcome}</li>`).join('') : '<li>No outcomes listed</li>'}</ul>
+                                    </div>
+                                </div>
+                            `).join('') : '<p>No modules defined</p>'}
+                        </div>
+                    </div>
+                    
+                    <div class="syllabus-section">
+                        <h4>Assessment Strategy</h4>
+                        ${isEditable ? 
+                            `<textarea id="syllabusAssessment" rows="4">${syllabus.assessment_strategy || ''}</textarea>` :
+                            `<p>${syllabus.assessment_strategy || 'No assessment strategy defined'}</p>`
+                        }
+                    </div>
+                    
+                    <div class="syllabus-section">
+                        <h4>Resources</h4>
+                        ${isEditable ? 
+                            `<textarea id="syllabusResources" rows="4">${syllabus.resources ? syllabus.resources.join('\n') : ''}</textarea>` :
+                            `<ul>${syllabus.resources ? syllabus.resources.map(resource => `<li>${resource}</li>`).join('') : '<li>No resources listed</li>'}</ul>`
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                ${isEditable ? 
+                    `<button class="btn btn-primary" onclick="saveSyllabus('${courseId}')">Save Changes</button>` : 
+                    ''
+                }
+                <button class="btn btn-secondary" onclick="closeSyllabusModal()">Close</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.style.display = 'flex';
+    
+    // Prevent background scrolling
+    document.body.style.overflow = 'hidden';
+}
+
+// Close syllabus modal and refresh dashboard
+function closeSyllabusModal() {
+    const modal = document.getElementById('syllabusModal');
+    if (modal) {
+        modal.remove();
+    }
+    
+    // Restore background scrolling
+    document.body.style.overflow = 'auto';
+    
+    // Refresh the course content to ensure it's up to date
+    const courseSelect = document.getElementById('contentCourseSelect');
+    if (courseSelect && courseSelect.value) {
+        loadCourseContent();
+    }
+}
+
+// Account menu modal functions
+function showProfileModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal account-modal';
+    modal.id = 'profileModal';
+    
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Profile Settings</h3>
+                <button class="modal-close" onclick="closeAccountModal('profileModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="profile-section">
+                    <h4>Account Information</h4>
+                    <div class="form-group">
+                        <label for="profileFullName">Full Name</label>
+                        <input type="text" id="profileFullName" value="${currentUser?.full_name || 'Instructor Name'}" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="profileEmail">Email</label>
+                        <input type="email" id="profileEmail" value="${currentUser?.email || 'instructor@example.com'}" class="form-control" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="profileBio">Bio</label>
+                        <textarea id="profileBio" rows="3" class="form-control" placeholder="Tell us about yourself...">${currentUser?.bio || ''}</textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="saveProfile()">Save Changes</button>
+                <button class="btn btn-secondary" onclick="closeAccountModal('profileModal')">Cancel</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function showSettingsModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal account-modal';
+    modal.id = 'settingsModal';
+    
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Settings</h3>
+                <button class="modal-close" onclick="closeAccountModal('settingsModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-section">
+                    <h4>Preferences</h4>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="emailNotifications" checked>
+                            <span class="checkmark"></span>
+                            Email notifications for course updates
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="weeklyReports" checked>
+                            <span class="checkmark"></span>
+                            Weekly progress reports
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label for="defaultCourseType">Default Course Type</label>
+                        <select id="defaultCourseType" class="form-control">
+                            <option value="programming">Programming</option>
+                            <option value="mathematics">Mathematics</option>
+                            <option value="science">Science</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h4>Dashboard Layout</h4>
+                    <div class="form-group">
+                        <label for="dashboardTheme">Theme</label>
+                        <select id="dashboardTheme" class="form-control">
+                            <option value="light">Light</option>
+                            <option value="dark">Dark</option>
+                            <option value="auto">Auto (System)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+                <button class="btn btn-secondary" onclick="closeAccountModal('settingsModal')">Cancel</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+function showHelpModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal account-modal';
+    modal.id = 'helpModal';
+    
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Help & Support</h3>
+                <button class="modal-close" onclick="closeAccountModal('helpModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="help-section">
+                    <h4>Getting Started</h4>
+                    <ul>
+                        <li><strong>Create a Course:</strong> Click "Create Course" to start building your course content</li>
+                        <li><strong>Manage Content:</strong> Use the Content section to upload files and manage course materials</li>
+                        <li><strong>View Students:</strong> Monitor student progress in the Students section</li>
+                        <li><strong>Generate AI Content:</strong> Use AI to automatically create syllabi, slides, and exercises</li>
+                    </ul>
+                </div>
+                
+                <div class="help-section">
+                    <h4>Contact Support</h4>
+                    <p>Need additional help? Contact our support team:</p>
+                    <p><strong>Email:</strong> support@courseplatform.com</p>
+                    <p><strong>Documentation:</strong> <a href="#" target="_blank">View User Guide</a></p>
+                </div>
+                
+                <div class="help-section">
+                    <h4>Keyboard Shortcuts</h4>
+                    <ul>
+                        <li><strong>Ctrl + N:</strong> Create new course</li>
+                        <li><strong>Ctrl + S:</strong> Save current work</li>
+                        <li><strong>Esc:</strong> Close active modal</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeAccountModal('helpModal')">Close</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+
+// Close account modals and maintain dashboard state
+function closeAccountModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.remove();
+    }
+    
+    // Restore background scrolling
+    document.body.style.overflow = 'auto';
+    
+    // Close account dropdown if open
+    const accountMenu = document.getElementById('accountMenu');
+    if (accountMenu) {
+        accountMenu.classList.remove('show');
+    }
+    
+    // NO dashboard refresh needed - this was the issue!
+    // The user stays on whatever section they were on
+}
+
+// Save profile changes
+async function saveProfile() {
+    try {
+        const fullName = document.getElementById('profileFullName').value;
+        const bio = document.getElementById('profileBio').value;
+        
+        // Here you would typically make an API call to save profile
+        // For now, just show success message
+        showNotification('Profile updated successfully!', 'success');
+        closeAccountModal('profileModal');
+        
+        // Update the UI with new name
+        const userNameElements = document.querySelectorAll('#userName, .user-name');
+        userNameElements.forEach(element => {
+            if (element) element.textContent = fullName;
+        });
+        
+    } catch (error) {
+        console.error('Error saving profile:', error);
+        showNotification('Failed to save profile changes', 'error');
+    }
+}
+
+// Save settings changes
+async function saveSettings() {
+    try {
+        const emailNotifications = document.getElementById('emailNotifications').checked;
+        const weeklyReports = document.getElementById('weeklyReports').checked;
+        const defaultCourseType = document.getElementById('defaultCourseType').value;
+        const dashboardTheme = document.getElementById('dashboardTheme').value;
+        
+        // Here you would typically make an API call to save settings
+        // For now, just show success message
+        showNotification('Settings saved successfully!', 'success');
+        closeAccountModal('settingsModal');
+        
+    } catch (error) {
+        console.error('Error saving settings:', error);
+        showNotification('Failed to save settings', 'error');
+    }
+}
+
+// Save syllabus changes
+async function saveSyllabus(courseId) {
+    try {
+        const overview = document.getElementById('syllabusOverview').value;
+        const objectives = document.getElementById('syllabusObjectives').value.split('\n').filter(obj => obj.trim());
+        const prerequisites = document.getElementById('syllabusPrerequisites').value.split('\n').filter(prereq => prereq.trim());
+        const assessment = document.getElementById('syllabusAssessment').value;
+        const resources = document.getElementById('syllabusResources').value.split('\n').filter(resource => resource.trim());
+        
+        const syllabusData = {
+            overview,
+            objectives,
+            prerequisites,
+            assessment_strategy: assessment,
+            resources,
+            modules: [] // For now, keeping existing modules - full module editing would need more complex UI
+        };
+        
+        showNotification('Saving syllabus...', 'info');
+        
+        const response = await fetch(CONFIG.ENDPOINTS.REFINE_SYLLABUS, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: JSON.stringify({
+                course_id: courseId,
+                feedback: 'Manual edit via instructor dashboard',
+                current_syllabus: syllabusData
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to save syllabus');
+        }
+        
+        showNotification('Syllabus saved successfully!', 'success');
+        closeSyllabusModal();
+        
+    } catch (error) {
+        console.error('Error saving syllabus:', error);
+        showNotification('Failed to save syllabus', 'error');
+    }
+}
+
+// Global event handlers
+document.addEventListener('keydown', function(e) {
+    // Close modals with Escape key
+    if (e.key === 'Escape') {
+        // Close any open modals
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(modal => modal.remove());
+        document.body.style.overflow = 'auto';
+        
+        // Close account dropdown
+        const accountMenu = document.getElementById('accountMenu');
+        if (accountMenu) {
+            accountMenu.classList.remove('show');
+        }
+    }
+});
+
+// Click outside to close account dropdown
+document.addEventListener('click', function(e) {
+    const accountDropdown = document.getElementById('accountDropdown');
+    const accountMenu = document.getElementById('accountMenu');
+    
+    if (accountDropdown && accountMenu && !accountDropdown.contains(e.target)) {
+        accountMenu.classList.remove('show');
+    }
+});
+
+// Fix account dropdown toggle
+function toggleAccountDropdown() {
+    const accountMenu = document.getElementById('accountMenu');
+    if (accountMenu) {
+        accountMenu.classList.toggle('show');
+    }
+}
+
+// View slides function (referenced in content management)
+function getAuthToken() {
+    return localStorage.getItem('authToken') || localStorage.getItem('token');
+}
+
+async function viewSlides(courseId) {
+    try {
+        const response = await fetch(CONFIG.ENDPOINTS.SLIDES(courseId), {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load slides');
+        }
+        
+        const slidesData = await response.json();
+        const slides = slidesData.slides || slidesData; // Handle different response formats
+        
+        if (slides.length === 0) {
+            showNotification('No slides available for this course', 'warning');
+            return;
+        }
+        
+        // Show normal vertical stack view instead of slideshow
+        showVerticalSlidesView(slides);
+        
+    } catch (error) {
+        console.error('Error loading slides:', error);
+        showNotification('Failed to load slides', 'error');
+    }
+}
+
+// New function to show slides in vertical stack view
+function showVerticalSlidesView(slides) {
+    try {
+        if (!slides || slides.length === 0) {
+            showNotification('No slides available', 'warning');
+            return;
+        }
+        
+        // Create modal for vertical slides view
+        const slidesModal = document.createElement('div');
+        slidesModal.className = 'slides-modal vertical-view';
+        slidesModal.innerHTML = `
+            <div class="slides-container">
+                <div class="slides-header">
+                    <div class="slides-title">
+                        <h2><i class="fas fa-presentation"></i> Course Slides</h2>
+                        <span class="slides-count">${slides.length} slide${slides.length === 1 ? '' : 's'}</span>
+                    </div>
+                    <div class="slides-controls">
+                        <button class="btn btn-primary" onclick="startSlideshowFromVertical()">
+                            <i class="fas fa-play"></i> Slideshow Mode
+                        </button>
+                        <button class="btn btn-secondary" onclick="closeVerticalSlidesView()">
+                            <i class="fas fa-times"></i> Close
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="slides-content-vertical">
+                    ${slides.map((slide, index) => `
+                        <div class="slide-card" data-slide-index="${index}">
+                            <div class="slide-card-header">
+                                <h3><span class="slide-number">${index + 1}.</span> ${slide.title || `Slide ${index + 1}`}</h3>
+                            </div>
+                            <div class="slide-card-content">
+                                ${formatSlideContent(slide.content)}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(slidesModal);
+        
+        // Store slides data globally for slideshow mode
+        window.currentVerticalSlides = slides;
+        
+    } catch (error) {
+        console.error('Error showing vertical slides view:', error);
+        showNotification('Error displaying slides', 'error');
+    }
+}
+
+// Function to close vertical slides view
+function closeVerticalSlidesView() {
+    const slidesModal = document.querySelector('.slides-modal.vertical-view');
+    if (slidesModal) {
+        slidesModal.remove();
+    }
+    window.currentVerticalSlides = null;
+}
+
+// Function to start slideshow from vertical view
+function startSlideshowFromVertical() {
+    console.log('startSlideshowFromVertical called, currentVerticalSlides:', window.currentVerticalSlides);
+    
+    if (window.currentVerticalSlides && window.currentVerticalSlides.length > 0) {
+        console.log('Starting slideshow with', window.currentVerticalSlides.length, 'slides');
+        // Store slides data before closing the view (since closeVerticalSlidesView clears it)
+        const slidesToShow = window.currentVerticalSlides;
+        // Close vertical view
+        closeVerticalSlidesView();
+        // Start slideshow with the stored slides
+        showSlideshowModalDirect(slidesToShow);
+    } else {
+        console.error('No slides available for slideshow');
+        showNotification('No slides available for slideshow', 'error');
+    }
+}
+
+// Edit slides function (referenced in content management)
+async function editSlides(courseId) {
+    try {
+        const response = await fetch(CONFIG.ENDPOINTS.COURSE_BY_ID(courseId), {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load course details');
+        }
+        
+        const course = await response.json();
+        editCourseContent(courseId);
+        
+    } catch (error) {
+        console.error('Error loading course for editing:', error);
+        showNotification('Failed to load course for editing', 'error');
+    }
+}
+
+// Generate slides function (referenced in content management)
+async function generateSlides(courseId) {
+    try {
+        // Check if course has a syllabus first
+        const syllabusResponse = await fetch(CONFIG.ENDPOINTS.SYLLABUS(courseId), {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+        
+        if (syllabusResponse.ok) {
+            // Generate slides from existing syllabus
+            const syllabusData = await syllabusResponse.json();
+            
+            showNotification('Generating slides from syllabus...', 'info');
+            
+            const response = await fetch(CONFIG.ENDPOINTS.GENERATE_CONTENT, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getAuthToken()}`
+                },
+                body: JSON.stringify({
+                    course_id: courseId,
+                    syllabus: syllabusData.syllabus
+                })
+            });
+            
+            if (response.ok) {
+                showNotification('Slides generated successfully!', 'success');
+                // Refresh the course content display
+                loadCourseContent();
+            } else {
+                throw new Error('Failed to generate slides');
+            }
+        } else {
+            // No syllabus exists, generate general course content
+            showNotification('Generating course content including slides...', 'info');
+            await generateCourseContent(courseId);
+        }
+        
+    } catch (error) {
+        console.error('Error generating slides:', error);
+        showNotification('Failed to generate slides', 'error');
     }
 }
 

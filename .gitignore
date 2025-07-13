@@ -66,6 +66,28 @@ backend.log
 frontend.log
 platform_generator.log
 
+# MCP and Daemon files
+*.pid
+*daemon*.pid
+course-creator-mcp*.pid
+mcp-daemon*.log
+*-daemon*.log
+*-error.log
+mcp-stdout.log
+mcp-stderr.log
+
+# MCP Runtime files
+mcp_runtime/
+mcp_sessions/
+mcp_state/
+
+# MCP Server files
+mcp_server*.py
+mcp_manager*.py
+mcp-*.py
+mcp-control.sh
+mcp-daemon.sh
+
 # Database
 *.db
 *.sqlite
@@ -92,6 +114,18 @@ dir.out
 .pids/
 outputs/
 content_files/
+
+# MCP Configuration and Cache
+.config/claude-desktop/
+mcp_cache/
+mcp_temp/
+
+# MCP Service and Documentation files
+course-creator-mcp.service
+mcp-unified-setup.md
+mcp-setup.md
+mcp-daemon-setup.md
+mcp_server_unified.py
 
 # Development files
 *_original.py

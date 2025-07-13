@@ -209,6 +209,127 @@ def main(cfg: DictConfig) -> None:
             await db_pool.close()
             logger.info("Database connection pool closed")
     
+    # Database functions for syllabi
+    async def save_syllabus_to_db(course_id: str, syllabus_data: dict):
+        """Save syllabus to database"""
+        if not db_pool:
+            logger.error("Database pool not initialized")
+            return False
+        
+        try:
+            async with db_pool.acquire() as conn:
+                await conn.execute("""
+                    INSERT INTO syllabi (course_id, syllabus_data, updated_at)
+                    VALUES ($1, $2, NOW())
+                    ON CONFLICT (course_id) 
+                    DO UPDATE SET syllabus_data = EXCLUDED.syllabus_data, updated_at = NOW()
+                """, 
+                uuid.UUID(course_id), 
+                json.dumps(syllabus_data)
+                )
+                
+                logger.info(f"Saved syllabus to database for course {course_id}")
+                return True
+        except Exception as e:
+            logger.error(f"Error saving syllabus to database: {e}")
+            return False
+
+    async def load_syllabus_from_db(course_id: str) -> dict:
+        """Load syllabus from database"""
+        if not db_pool:
+            logger.error("Database pool not initialized")
+            return None
+        
+        try:
+            async with db_pool.acquire() as conn:
+                row = await conn.fetchrow("""
+                    SELECT syllabus_data
+                    FROM syllabi 
+                    WHERE course_id = $1
+                """, uuid.UUID(course_id))
+                
+                if row:
+                    syllabus_data = json.loads(row['syllabus_data'])
+                    logger.info(f"Loaded syllabus from database for course {course_id}")
+                    return syllabus_data
+                else:
+                    logger.info(f"No syllabus found in database for course {course_id}")
+                    return None
+        except Exception as e:
+            logger.error(f"Error loading syllabus from database: {e}")
+            return None
+
+    # Database functions for lab environments
+    async def save_lab_environment_to_db(course_id: str, lab_data: dict):
+        """Save lab environment to database"""
+        if not db_pool:
+            logger.error("Database pool not initialized")
+            return False
+        
+        try:
+            async with db_pool.acquire() as conn:
+                await conn.execute("""
+                    INSERT INTO lab_environments (course_id, name, description, environment_type, config, exercises, status, updated_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+                    ON CONFLICT (course_id) 
+                    DO UPDATE SET 
+                        name = EXCLUDED.name,
+                        description = EXCLUDED.description,
+                        environment_type = EXCLUDED.environment_type,
+                        config = EXCLUDED.config,
+                        exercises = EXCLUDED.exercises,
+                        status = EXCLUDED.status,
+                        updated_at = NOW()
+                """, 
+                uuid.UUID(course_id), 
+                lab_data.get('name', 'AI Lab Environment'),
+                lab_data.get('description', 'Interactive lab environment'),
+                lab_data.get('environment_type', 'ai_assisted'),
+                json.dumps(lab_data.get('config', {})),
+                json.dumps(lab_data.get('exercises', [])),
+                lab_data.get('status', 'ready')
+                )
+                
+                logger.info(f"Saved lab environment to database for course {course_id}")
+                return True
+        except Exception as e:
+            logger.error(f"Error saving lab environment to database: {e}")
+            return False
+
+    async def load_lab_environment_from_db(course_id: str) -> dict:
+        """Load lab environment from database"""
+        if not db_pool:
+            logger.error("Database pool not initialized")
+            return None
+        
+        try:
+            async with db_pool.acquire() as conn:
+                row = await conn.fetchrow("""
+                    SELECT id, name, description, environment_type, config, exercises, status
+                    FROM lab_environments 
+                    WHERE course_id = $1
+                """, uuid.UUID(course_id))
+                
+                if row:
+                    lab_data = {
+                        "id": str(row['id']),
+                        "course_id": course_id,
+                        "name": row['name'],
+                        "description": row['description'],
+                        "environment_type": row['environment_type'],
+                        "config": json.loads(row['config']) if row['config'] else {},
+                        "exercises": json.loads(row['exercises']) if row['exercises'] else [],
+                        "status": row['status']
+                    }
+                    logger.info(f"Loaded lab environment from database for course {course_id}")
+                    return lab_data
+                else:
+                    logger.info(f"No lab environment found in database for course {course_id}")
+                    return None
+        except Exception as e:
+            logger.error(f"Error loading lab environment from database: {e}")
+            return None
+
     # Database functions for slides
     async def save_slides_to_db(course_id: str, slides_data: List[Dict]):
         """Save slides to database"""
@@ -355,7 +476,91 @@ def main(cfg: DictConfig) -> None:
     
     # Define sync helper functions
     def generate_exercises_from_syllabus_sync(course_id: str, syllabus: dict) -> List[Dict]:
-        """Generate exercises based on syllabus modules (synchronous version)"""
+        """Generate exercises based on syllabus modules using LLM with full syllabus context"""
+        try:
+            # Build comprehensive prompt using syllabus structure
+            exercises_prompt = f"""
+            You are an expert educator creating practical, hands-on exercises for this course syllabus.
+            
+            Course Overview: {syllabus.get('overview', '')}
+            
+            Full Syllabus Modules:
+            {json.dumps(syllabus.get('modules', []), indent=2)}
+            
+            CRITICAL REQUIREMENTS FOR EXERCISES:
+            1. Create SPECIFIC, actionable exercises based on the exact topics and commands in the syllabus
+            2. For technical topics: Include actual commands, file names, step-by-step procedures
+            3. For business topics: Include real scenarios, frameworks, and practical applications
+            4. Each exercise must have clear, measurable objectives and expected outcomes
+            5. Provide detailed instructions that students can follow independently
+            6. Include realistic scenarios and practical applications
+            
+            EXAMPLES OF GOOD EXERCISES:
+            - For "File operations (cp, mv, rm, touch)": Create exercise with specific commands like "Create a file called 'test.txt' using touch, copy it to 'backup.txt' using cp, then rename the original to 'original.txt' using mv"
+            - For "Python variables (int, str, list, dict)": "Create variables: age = 25, name = 'John', scores = [85, 92, 78], student = {{'name': 'John', 'age': 25}}. Print each variable type using type() function"
+            - For "Market segmentation strategies": "Analyze a given company case study and create demographic, psychographic, and behavioral segments using provided customer data"
+            
+            For each module, create 1-2 exercises that cover the specific topics mentioned in the syllabus.
+            Return ONLY valid JSON array with this structure:
+            [
+                {{
+                    "id": "ex_1_1",
+                    "title": "Specific Exercise Title",
+                    "description": "Clear description of what students will accomplish",
+                    "type": "hands_on",
+                    "difficulty": "beginner",
+                    "module_number": 1,
+                    "topics_covered": ["specific topic 1", "specific topic 2"],
+                    "instructions": [
+                        "Step 1: Specific action with actual commands/tools",
+                        "Step 2: Another specific action",
+                        "Step 3: Verification or testing step"
+                    ],
+                    "expected_output": "Specific, measurable outcome description",
+                    "hints": ["Specific helpful hint", "Another practical tip"],
+                    "evaluation_criteria": ["Criterion 1", "Criterion 2"],
+                    "estimated_time": "15-30 minutes"
+                }}
+            ]
+            
+            Generate exercises that directly utilize the specific commands, tools, concepts, and techniques mentioned in each module's topics.
+            """
+            
+            response = claude_client.messages.create(
+                model="claude-3-haiku-20240307",
+                max_tokens=4000,
+                messages=[
+                    {"role": "user", "content": exercises_prompt}
+                ]
+            )
+            
+            try:
+                exercises_data = json.loads(response.content[0].text)
+                logger.info(f"Generated {len(exercises_data)} exercises from syllabus using LLM")
+                return exercises_data
+            except json.JSONDecodeError:
+                # Try to extract JSON from response
+                text = response.content[0].text
+                start = text.find('[')
+                end = text.rfind(']') + 1
+                if start != -1 and end != 0:
+                    try:
+                        exercises_data = json.loads(text[start:end])
+                        logger.info(f"Extracted {len(exercises_data)} exercises from LLM response")
+                        return exercises_data
+                    except:
+                        pass
+                
+                # Fallback to programmatic generation
+                logger.warning("LLM response parsing failed, using fallback exercise generation")
+                return generate_exercises_fallback(syllabus)
+                
+        except Exception as e:
+            logger.error(f"Error generating exercises from syllabus with LLM: {e}")
+            return generate_exercises_fallback(syllabus)
+    
+    def generate_exercises_fallback(syllabus: dict) -> List[Dict]:
+        """Fallback exercise generation when LLM fails"""
         exercises_list = []
         
         for module in syllabus.get("modules", []):
@@ -366,6 +571,8 @@ def main(cfg: DictConfig) -> None:
                     "description": f"Practice exercise for {topic}. Apply the concepts learned in this module through practical activities.",
                     "type": "hands_on",
                     "difficulty": "beginner",
+                    "module_number": module.get('module_number', 1),
+                    "topics_covered": [topic],
                     "instructions": [
                         f"Review the key concepts of {topic}",
                         f"Complete the practical tasks related to {topic}",
@@ -373,13 +580,101 @@ def main(cfg: DictConfig) -> None:
                         "Submit your solution and reflection"
                     ],
                     "expected_output": f"Demonstration of {topic} understanding through practical application",
-                    "hints": [f"Focus on the key principles of {topic}", "Break down complex problems into smaller steps"]
+                    "hints": [f"Focus on the key principles of {topic}", "Break down complex problems into smaller steps"],
+                    "evaluation_criteria": ["Correctness of implementation", "Understanding of concepts"],
+                    "estimated_time": "15-30 minutes"
                 })
         
         return exercises_list
     
     def generate_quizzes_from_syllabus_sync(course_id: str, syllabus: dict) -> List[Dict]:
-        """Generate quizzes based on syllabus modules (synchronous version)"""
+        """Generate quizzes based on syllabus modules using LLM with full syllabus context"""
+        try:
+            # Build comprehensive prompt using syllabus structure
+            quizzes_prompt = f"""
+            You are an expert educator creating comprehensive assessment quizzes for this course syllabus.
+            
+            Course Overview: {syllabus.get('overview', '')}
+            
+            Full Syllabus Modules:
+            {json.dumps(syllabus.get('modules', []), indent=2)}
+            
+            CRITICAL REQUIREMENTS FOR QUIZZES:
+            1. Create SPECIFIC questions based on the exact topics, commands, and concepts in the syllabus
+            2. For technical topics: Include questions about actual commands, syntax, parameters, and practical usage
+            3. For business topics: Include scenario-based questions using real frameworks and methodologies
+            4. Each question must test understanding of specific knowledge from the syllabus content
+            5. Provide realistic distractors (wrong answers) that are plausible but clearly incorrect
+            6. Include detailed explanations for correct answers
+            7. Cover both conceptual understanding and practical application
+            
+            EXAMPLES OF GOOD QUIZ QUESTIONS:
+            - For "File operations (cp, mv, rm, touch)": "Which command would you use to copy 'file1.txt' to 'backup.txt'?" Options: ["cp file1.txt backup.txt", "mv file1.txt backup.txt", "rm file1.txt backup.txt", "touch file1.txt backup.txt"]
+            - For "Python variables (int, str, list, dict)": "What will be the output of: x = [1, 2, 3]; print(type(x))?" Options: ["<class 'list'>", "<class 'dict'>", "<class 'tuple'>", "<class 'str'>"]
+            - For "Market segmentation (demographic, psychographic, behavioral)": "A company targeting customers based on their lifestyle and values is using which segmentation approach?" Options: ["Psychographic", "Demographic", "Geographic", "Behavioral"]
+            
+            For each module, create 3-5 questions that test the specific topics and learning outcomes mentioned in the syllabus.
+            Return ONLY valid JSON array with this structure:
+            [
+                {{
+                    "id": "quiz_1",
+                    "title": "Module Title - Knowledge Assessment",
+                    "description": "Comprehensive quiz covering specific module concepts",
+                    "module_number": 1,
+                    "duration": 20,
+                    "difficulty": "beginner",
+                    "questions": [
+                        {{
+                            "question": "Specific question based on syllabus content",
+                            "options": ["Correct answer", "Plausible distractor 1", "Plausible distractor 2", "Plausible distractor 3"],
+                            "correct_answer": 0,
+                            "explanation": "Detailed explanation of why this is correct and why others are wrong",
+                            "topic_tested": "Specific topic from syllabus",
+                            "difficulty": "beginner"
+                        }}
+                    ]
+                }}
+            ]
+            
+            Generate questions that directly test knowledge of the specific commands, tools, concepts, and techniques mentioned in each module's topics and learning outcomes.
+            Ensure questions are practical and test real understanding, not just memorization.
+            """
+            
+            response = claude_client.messages.create(
+                model="claude-3-haiku-20240307",
+                max_tokens=4000,
+                messages=[
+                    {"role": "user", "content": quizzes_prompt}
+                ]
+            )
+            
+            try:
+                quizzes_data = json.loads(response.content[0].text)
+                logger.info(f"Generated {len(quizzes_data)} quizzes from syllabus using LLM")
+                return quizzes_data
+            except json.JSONDecodeError:
+                # Try to extract JSON from response
+                text = response.content[0].text
+                start = text.find('[')
+                end = text.rfind(']') + 1
+                if start != -1 and end != 0:
+                    try:
+                        quizzes_data = json.loads(text[start:end])
+                        logger.info(f"Extracted {len(quizzes_data)} quizzes from LLM response")
+                        return quizzes_data
+                    except:
+                        pass
+                
+                # Fallback to programmatic generation
+                logger.warning("LLM response parsing failed, using fallback quiz generation")
+                return generate_quizzes_fallback(syllabus)
+                
+        except Exception as e:
+            logger.error(f"Error generating quizzes from syllabus with LLM: {e}")
+            return generate_quizzes_fallback(syllabus)
+    
+    def generate_quizzes_fallback(syllabus: dict) -> List[Dict]:
+        """Fallback quiz generation when LLM fails"""
         quizzes_list = []
         
         for module in syllabus.get("modules", []):
@@ -387,6 +682,7 @@ def main(cfg: DictConfig) -> None:
                 "id": f"quiz_{module.get('module_number', 1)}",
                 "title": f"{module.get('title', 'Module')} - Knowledge Assessment",
                 "description": f"Quiz covering the key concepts from {module.get('title', 'this module')}",
+                "module_number": module.get('module_number', 1),
                 "questions": [],
                 "duration": 15 + (len(module.get('topics', [])) * 3),  # 15 min base + 3 min per topic
                 "difficulty": "beginner"
@@ -403,7 +699,9 @@ def main(cfg: DictConfig) -> None:
                         f"A prerequisite for {outcome}"
                     ],
                     "correct_answer": 0,
-                    "explanation": f"This question tests understanding of {outcome} as covered in the module."
+                    "explanation": f"This question tests understanding of {outcome} as covered in the module.",
+                    "topic_tested": outcome,
+                    "difficulty": "beginner"
                 })
             
             # Add topic-based questions
@@ -417,7 +715,9 @@ def main(cfg: DictConfig) -> None:
                         f"Advanced variations of {topic}"
                     ],
                     "correct_answer": 0,
-                    "explanation": f"This focuses on practical application of {topic}."
+                    "explanation": f"This focuses on practical application of {topic}.",
+                    "topic_tested": topic,
+                    "difficulty": "beginner"
                 })
             
             quizzes_list.append(quiz)
@@ -522,9 +822,16 @@ def main(cfg: DictConfig) -> None:
     
     @app.get("/lab/{course_id}")
     async def get_lab_environment(course_id: str):
+        # First check database for persistent lab environment
+        lab_data = await load_lab_environment_from_db(course_id)
+        if lab_data:
+            return {"lab_id": lab_data["id"], "lab": lab_data}
+        
+        # Fallback to memory (for backward compatibility)
         for lab_id, lab in lab_environments.items():
             if lab["course_id"] == course_id:
                 return {"lab_id": lab_id, "lab": lab}
+                
         raise HTTPException(status_code=404, detail="Lab environment not found")
     
     @app.get("/student/lab-access/{course_id}/{student_id}")
@@ -1003,52 +1310,70 @@ def main(cfg: DictConfig) -> None:
         try:
             # Build comprehensive prompt using syllabus structure
             slides_prompt = f"""
-            You are an expert course designer. Create a comprehensive slide deck based on this approved course syllabus:
-            
+            You are an expert educator creating actual teaching content. Create detailed, educational slides for this course syllabus.
+
             Course Overview: {syllabus['overview']}
             
             Syllabus Modules:
             {json.dumps(syllabus['modules'], indent=2)}
             
-            Generate slides that cover each module and topic systematically:
+            ABSOLUTE REQUIREMENTS - FAILURE TO FOLLOW WILL RESULT IN REJECTION:
+            1. NEVER write introductory, meta-commentary, or overview language
+            2. NEVER use phrases like "Introduction to...", "We'll explore...", "This topic is...", "Learn about..."
+            3. EVERY bullet point MUST teach specific, concrete information
+            4. For technical topics: Include actual commands, syntax, parameters, and examples
+            5. For business topics: Include specific methods, tools, frameworks, and real scenarios
+            6. NO descriptions of what will be taught - only teach the actual content
             
-            1. Create 1 title slide introducing the course
-            2. Create 1 slide for learning objectives  
-            3. For each module, create:
-               - 1 module introduction slide
-               - 2-3 slides per topic (covering the topic thoroughly)
-               - 1 module summary slide
-            4. Create 1 final course summary slide
+            BANNED PHRASES (DO NOT USE ANY OF THESE):
+            - "Introduction to..."
+            - "We'll explore..."
+            - "This topic is fundamental..."
+            - "Learn about..."
+            - "Understanding..."
+            - "Overview of..."
+            - "Key concepts..."
+            - "Important aspects..."
+            - "Real-world applications..."
+            - "Practical examples..."
             
-            Each slide should have:
-            - Content formatted as clear bullet points (3-5 bullet points)
-            - Practical examples where relevant
-            - Clear connection to learning outcomes
-            - Professional, detailed information
-            - Use bullet points (•) or dashes (-) for all content formatting
+            REQUIRED APPROACH:
+            - Start immediately with specific facts, commands, or procedures
+            - Use actual syntax, commands, and concrete examples
+            - Provide step-by-step instructions where applicable
+            - Give specific parameter values and real-world examples
             
-            Return as JSON array with this exact structure:
+            GOOD Linux Commands Example:
+            "• ls command lists directory contents: ls -la shows detailed file info
+            • cd command changes directories: cd /home/user navigates to user directory  
+            • cp copies files: cp file1.txt backup.txt creates a copy
+            • rm deletes files: rm file.txt removes the file permanently
+            • chmod changes permissions: chmod 755 file.txt gives read/write/execute to owner"
+            
+            BAD Example (NEVER DO THIS):
+            "• Introduction to Essential Linux commands for file and directory management
+            • This topic is fundamental to understanding Linux Command Line Essentials
+            • We'll explore key concepts, practical applications, and real-world examples"
+            
+            For the topic "Essential Linux commands for file and directory management", write:
+            "• ls lists files: ls shows filenames, ls -l shows details, ls -la includes hidden files
+            • cd changes directory: cd /home goes to home, cd .. goes up one level
+            • pwd shows current directory path: /home/username/documents
+            • mkdir creates directories: mkdir newfolder creates a new folder
+            • cp copies files: cp source.txt destination.txt duplicates the file"
+            
+            Generate slides covering each module and topic with ONLY actual educational content.
+            Return ONLY valid JSON array with this structure:
             [
                 {{
                     "id": "slide_1",
-                    "title": "Course Title",
-                    "content": "• Key point one\n• Key point two\n• Key point three",
-                    "slide_type": "title",
+                    "title": "Actual Topic Title",
+                    "content": "• Specific fact with actual command/syntax/example\\n• Another concrete fact with details\\n• Third specific point with real information\\n• Fourth practical detail with exact syntax",
+                    "slide_type": "content", 
                     "order": 1,
-                    "module_number": null
-                }},
-                {{
-                    "id": "slide_2", 
-                    "title": "Topic Title",
-                    "content": "• Main concept explained\n• Practical example provided\n• Connection to objectives",
-                    "slide_type": "content",
-                    "order": 2,
                     "module_number": 1
                 }}
             ]
-            
-            Make content specific to each topic and learning outcome. Avoid generic statements.
-            IMPORTANT: All slide content must be formatted as bullet points, not paragraphs.
             """
             
             response = claude_client.messages.create(
@@ -1111,11 +1436,12 @@ def main(cfg: DictConfig) -> None:
         
         # Module slides
         for module in syllabus["modules"]:
-            # Module introduction slide
+            # Module introduction slide with actual topics listed as bullet points
+            topics_bullets = '\n'.join([f"• {topic}" for topic in module["topics"]])
             slides.append({
                 "id": f"slide_{slide_order}",
                 "title": module["title"],
-                "content": f"This module covers: {', '.join(module['topics'])}. Learning outcomes: {', '.join(module['learning_outcomes'])}",
+                "content": topics_bullets,
                 "slide_type": "content",
                 "order": slide_order,
                 "module_number": module["module_number"]
@@ -1124,20 +1450,36 @@ def main(cfg: DictConfig) -> None:
             
             # Topic slides (2 slides per topic)
             for topic in module["topics"]:
-                slides.append({
-                    "id": f"slide_{slide_order}",
-                    "title": f"{topic} - Overview",
-                    "content": f"Introduction to {topic}. This topic is fundamental to understanding {module['title']}. We'll explore key concepts, practical applications, and real-world examples.",
-                    "slide_type": "content",
-                    "order": slide_order,
-                    "module_number": module["module_number"]
-                })
-                slide_order += 1
+                # Generate actual educational content for each topic
+                if "python" in topic.lower() and "variable" in topic.lower():
+                    content = "• Variables store data using assignment operator (=): name = 'John', age = 25\n• Python uses dynamic typing - no need to declare variable types\n• Variable names must start with letter or underscore, can contain letters, numbers, underscores\n• Use descriptive names: student_count instead of sc"
+                elif "python" in topic.lower() and "data type" in topic.lower():
+                    content = "• Integers: whole numbers like 42, -17, 0\n• Floats: decimal numbers like 3.14, -2.5, 1.0\n• Strings: text in quotes like 'hello', \"Python\", '''multi-line'''\n• Booleans: True or False values for logical operations\n• Check type with type() function: type(42) returns <class 'int'>"
+                elif "python" in topic.lower() and ("loop" in topic.lower() or "conditional" in topic.lower()):
+                    content = "• if statement: if age >= 18: print('Adult')\n• elif for multiple conditions: elif age >= 13: print('Teen')\n• else for default case: else: print('Child')\n• for loop iterates over sequences: for i in range(5): print(i)\n• while loop repeats while condition true: while x < 10: x += 1"
+                elif "function" in topic.lower():
+                    content = "• Define function with def keyword: def greet(name): return f'Hello {name}'\n• Call function: result = greet('Alice')\n• Parameters are inputs: def add(x, y): return x + y\n• Return statement sends value back: return x * 2\n• Functions promote code reuse and organization"
+                elif "class" in topic.lower() or "object" in topic.lower():
+                    content = "• Class definition: class Person: def __init__(self, name): self.name = name\n• Create object: person = Person('John')\n• Methods are functions in classes: def speak(self): return f'{self.name} says hello'\n• Attributes store object data: person.name, person.age\n• Constructor __init__ initializes new objects"
+                else:
+                    # Generate more specific content based on topic keywords
+                    topic_lower = topic.lower()
+                    if any(word in topic_lower for word in ['command', 'linux', 'bash', 'terminal']):
+                        content = f"• {topic} syntax and basic usage\n• Common parameters and options available\n• Example commands with real file/directory names\n• Output interpretation and error handling\n• Practical use cases in daily system administration"
+                    elif any(word in topic_lower for word in ['file', 'directory', 'folder']):
+                        content = f"• File operations: create, copy, move, delete using touch, cp, mv, rm\n• Directory navigation: ls, cd, pwd commands\n• File permissions: chmod, chown commands with numeric values\n• File content viewing: cat, less, head, tail commands\n• Wildcards and pattern matching: *.txt, file?, [abc]*.log"
+                    elif any(word in topic_lower for word in ['database', 'sql', 'query']):
+                        content = f"• SQL syntax: SELECT column FROM table WHERE condition\n• Data manipulation: INSERT, UPDATE, DELETE statements\n• Table relationships: JOIN operations and foreign keys\n• Database design: normalization and primary keys\n• Query optimization and indexing strategies"
+                    elif any(word in topic_lower for word in ['network', 'protocol', 'tcp', 'ip']):
+                        content = f"• Network protocols: TCP/IP, HTTP, HTTPS, DNS fundamentals\n• IP addressing: IPv4 classes, subnetting, CIDR notation\n• Port numbers: well-known ports (80, 443, 22, 21)\n• Network troubleshooting: ping, traceroute, netstat commands\n• Network security: firewalls, VPNs, SSL/TLS encryption"
+                    else:
+                        # Last resort - still try to be more specific
+                        content = f"• Key terminology and definitions for {topic}\n• Step-by-step procedures and methodologies\n• Practical examples with specific parameters\n• Common tools and techniques used\n• Best practices and troubleshooting approaches"
                 
                 slides.append({
                     "id": f"slide_{slide_order}",
-                    "title": f"{topic} - Implementation",
-                    "content": f"Practical implementation of {topic}. Learn how to apply these concepts in real scenarios. Includes best practices, common pitfalls, and hands-on examples.",
+                    "title": f"{topic}",
+                    "content": content,
                     "slide_type": "content",
                     "order": slide_order,
                     "module_number": module["module_number"]
@@ -1374,11 +1716,22 @@ def main(cfg: DictConfig) -> None:
             - Difficulty Level: {request.difficulty_level}
             - Duration: {request.estimated_duration} hours
             
+            CRITICAL REQUIREMENTS FOR MODULE CONTENT:
+            1. Each module MUST have a detailed description explaining what the module covers
+            2. Topics must be SPECIFIC and EXPLICIT - include actual commands, tools, concepts, and techniques
+            3. For technical courses, list specific commands, file names, configurations, and practical examples
+            4. For non-technical courses, include specific methods, frameworks, theories, and case studies
+            
+            EXAMPLES OF EXPLICIT CONTENT:
+            - For Linux: "File system hierarchy (/bin, /etc, /home, /var), commands (ls, cd, pwd, cp, mv, rm, chmod, chown)"
+            - For Python: "Data types (int, str, list, dict), control structures (if/else, for/while loops), functions (def, return, parameters)"
+            - For Marketing: "Market segmentation strategies (demographic, psychographic, behavioral), tools (Google Analytics, Facebook Ads Manager)"
+            
             Generate a detailed, professional syllabus that includes:
             1. Course overview and description
             2. Learning objectives (5-7 specific objectives)
             3. Prerequisites
-            4. Module breakdown with topics and learning outcomes
+            4. Module breakdown with DETAILED descriptions and SPECIFIC topics
             5. Assessment strategy
             6. Required resources
             
@@ -1391,10 +1744,11 @@ def main(cfg: DictConfig) -> None:
                     {{
                         "module_number": 1,
                         "title": "Module Title",
+                        "description": "Detailed explanation of what this module covers, its importance, and what students will learn",
                         "duration_hours": 2,
-                        "topics": ["Topic 1", "Topic 2", "Topic 3"],
-                        "learning_outcomes": ["Outcome 1", "Outcome 2"],
-                        "assessments": ["Assessment 1", "Assessment 2"]
+                        "topics": ["Specific topic with actual commands/tools/examples", "Another specific topic with details", "Concrete concept with practical application"],
+                        "learning_outcomes": ["Specific measurable outcome", "Another specific outcome"],
+                        "assessments": ["Specific assessment type", "Another assessment"]
                     }}
                 ],
                 "assessment_strategy": "How students will be evaluated",
@@ -1403,6 +1757,7 @@ def main(cfg: DictConfig) -> None:
             
             Make the content specific to {request.category} and {request.difficulty_level} level.
             Create {max(4, request.estimated_duration // 8)} modules with {request.estimated_duration // max(4, request.estimated_duration // 8)} hours each.
+            ENSURE each module has explicit, detailed topics that include specific commands, tools, concepts, or examples relevant to the subject matter.
             """
             
             # Call Claude API
@@ -1432,8 +1787,11 @@ def main(cfg: DictConfig) -> None:
                 else:
                     raise Exception("No JSON found in Claude response")
             
-            # Store and return
+            # Store in memory and database
             course_syllabi[request.course_id] = syllabus_data
+            save_result = await save_syllabus_to_db(request.course_id, syllabus_data)
+            if not save_result:
+                logger.warning(f"Failed to save syllabus to database for course {request.course_id}")
             return {"course_id": request.course_id, "syllabus": syllabus_data}
             
         except Exception as e:
@@ -1468,23 +1826,39 @@ def main(cfg: DictConfig) -> None:
             except:
                 refined = request.current_syllabus
             course_syllabi[request.course_id] = refined
+            await save_syllabus_to_db(request.course_id, refined)
             return {"course_id": request.course_id, "syllabus": refined}
         except:
             return {"course_id": request.course_id, "syllabus": request.current_syllabus}
     
     @app.get("/syllabus/{course_id}")
     async def get_course_syllabus(course_id: str):
-        if course_id not in course_syllabi:
-            raise HTTPException(status_code=404, detail="Syllabus not found")
-        return {"course_id": course_id, "syllabus": course_syllabi[course_id]}
+        # Try to load from database first
+        syllabus_data = await load_syllabus_from_db(course_id)
+        
+        if not syllabus_data:
+            # Fallback to in-memory storage
+            if course_id in course_syllabi:
+                syllabus_data = course_syllabi[course_id]
+            else:
+                raise HTTPException(status_code=404, detail="Syllabus not found for this course")
+        
+        return {"course_id": course_id, "syllabus": syllabus_data}
     
     @app.post("/content/generate-from-syllabus")
     async def generate_content_from_syllabus(request: dict):
         course_id = request.get('course_id')
-        if course_id not in course_syllabi:
-            raise HTTPException(status_code=404, detail="Syllabus not found")
         
-        syllabus = course_syllabi[course_id]
+        # Try to load syllabus from database first
+        syllabus = await load_syllabus_from_db(course_id)
+        
+        if not syllabus:
+            # Fallback to in-memory storage
+            if course_id in course_syllabi:
+                syllabus = course_syllabi[course_id]
+            else:
+                raise HTTPException(status_code=404, detail="Syllabus not found for this course")
+        
         logger.info(f"Generating content from syllabus for course: {course_id}")
         
         try:
@@ -1511,7 +1885,7 @@ def main(cfg: DictConfig) -> None:
                 "ai_assisted"
             )
             
-            lab_environments[lab_id] = {
+            lab_data = {
                 "id": lab_id,
                 "course_id": course_id,
                 "name": f"AI Lab Environment",
@@ -1522,6 +1896,10 @@ def main(cfg: DictConfig) -> None:
                 "status": "ready"
             }
             
+            # Save to both memory (for backward compatibility) and database
+            lab_environments[lab_id] = lab_data
+            await save_lab_environment_to_db(course_id, lab_data)
+            
             logger.info(f"Generated {len(slides)} slides, {len(exercises_data)} exercises, {len(quizzes_data)} quizzes, and lab environment")
             
             return {
@@ -1529,7 +1907,7 @@ def main(cfg: DictConfig) -> None:
                 "slides": slides,
                 "exercises": exercises_data,
                 "quizzes": quizzes_data,
-                "lab": lab_environments[lab_id],
+                "lab": lab_data,
                 "message": "All content generated successfully from syllabus"
             }
             
@@ -1585,10 +1963,23 @@ if __name__ == "__main__":
             - Difficulty: {request.difficulty_level}
             - Duration: {request.estimated_duration} hours
             
+            CRITICAL REQUIREMENTS FOR EXPLICIT CONTENT:
+            1. Each module MUST include a comprehensive description explaining its purpose and scope
+            2. Topics must be SPECIFIC and DETAILED - include actual commands, tools, techniques, and practical examples
+            3. For technical subjects: List specific commands, file paths, configurations, syntax, and tools
+            4. For business/soft skills: Include specific methodologies, frameworks, case studies, and practical applications
+            5. Avoid vague terms - be concrete and actionable
+            
+            EXAMPLES OF EXPLICIT TOPIC FORMATTING:
+            - Linux Fundamentals: "File system navigation (cd, pwd, ls -la), file operations (cp, mv, rm, touch), permissions (chmod 755, chown user:group), text processing (grep, awk, sed)"
+            - Python Programming: "Variable assignment and data types (int, str, list, dict, tuple), control flow (if/elif/else, for/while loops), function definition (def, return, *args, **kwargs)"
+            - Project Management: "Agile methodologies (Scrum ceremonies, sprint planning, daily standups), tools (Jira workflow, Kanban boards), risk assessment matrices"
+            - Data Analysis: "Data cleaning (pandas.dropna(), fillna()), visualization (matplotlib.pyplot, seaborn.heatmap()), statistical analysis (numpy.mean(), scipy.stats)"
+            
             Generate a detailed syllabus with:
-            1. Course overview and objectives
+            1. Course overview and objectives  
             2. Prerequisites and target audience
-            3. Module/week breakdown with topics
+            3. Module/week breakdown with DETAILED descriptions and EXPLICIT topics
             4. Learning outcomes for each module
             5. Assessment methods (quizzes, exercises, projects)
             6. Required materials and resources
@@ -1603,15 +1994,19 @@ if __name__ == "__main__":
                     {{
                         "module_number": 1,
                         "title": "Module Title",
+                        "description": "Comprehensive description of what this module teaches, its importance, and how it builds on previous knowledge",
                         "duration_hours": 2,
-                        "topics": ["Topic 1", "Topic 2"],
-                        "learning_outcomes": ["Outcome 1", "Outcome 2"],
-                        "assessments": ["Quiz 1", "Exercise 1"]
+                        "topics": ["Specific topic with actual commands/tools/examples", "Detailed topic with concrete techniques", "Practical topic with explicit methods"],
+                        "learning_outcomes": ["Measurable outcome with specific skills", "Concrete outcome with actionable abilities"],
+                        "assessments": ["Specific assessment type", "Practical evaluation method"]
                     }}
                 ],
                 "assessment_strategy": "Description of how students will be evaluated",
                 "resources": ["Resource 1", "Resource 2"]
             }}
+            
+            ENSURE ALL TOPICS are explicit and include specific commands, tools, methods, or examples relevant to {request.category}.
+            Make content appropriate for {request.difficulty_level} level learners.
             """
             
             response = claude_client.messages.create(
@@ -1700,6 +2095,7 @@ if __name__ == "__main__":
                 {
                     "module_number": i + 1,
                     "title": f"Module {i + 1}: {request.category} Fundamentals" if i == 0 else f"Module {i + 1}: Advanced Topics",
+                    "description": f"This module covers fundamental concepts and practical applications in {request.category}. Students will learn core principles and apply them through hands-on exercises.",
                     "duration_hours": request.estimated_duration // num_modules,
                     "topics": [f"Topic {j + 1}" for j in range(3)],
                     "learning_outcomes": [f"Understand concept {j + 1}" for j in range(2)],
@@ -1761,52 +2157,14 @@ if __name__ == "__main__":
         return slides
     
     async def generate_exercises_from_syllabus(course_id: str, syllabus: dict) -> List[Dict]:
-        """Generate exercises based on syllabus modules"""
-        exercises_list = []
-        
-        for module in syllabus["modules"]:
-            for i, topic in enumerate(module["topics"]):
-                exercises_list.append({
-                    "id": f"ex_{module['module_number']}_{i+1}",
-                    "title": f"{topic} - Hands-on Exercise",
-                    "description": f"Practice exercise for {topic}",
-                    "type": "hands_on",
-                    "difficulty": "beginner",
-                    "instructions": [
-                        f"Review the concepts of {topic}",
-                        "Complete the practical tasks",
-                        "Submit your solution"
-                    ],
-                    "expected_output": f"Demonstration of {topic} understanding",
-                    "hints": [f"Focus on the key principles of {topic}"]
-                })
-        
-        return exercises_list
+        """Generate exercises based on syllabus modules using LLM with full syllabus context"""
+        # Use the sync version for consistency
+        return generate_exercises_from_syllabus_sync(course_id, syllabus)
     
     async def generate_quizzes_from_syllabus(course_id: str, syllabus: dict) -> List[Dict]:
-        """Generate quizzes based on syllabus modules"""
-        quizzes_list = []
-        
-        for module in syllabus["modules"]:
-            quiz = {
-                "id": f"quiz_{module['module_number']}",
-                "title": f"{module['title']} - Assessment",
-                "description": f"Quiz covering {module['title']}",
-                "questions": [],
-                "duration": 15,
-                "difficulty": "beginner"
-            }
-            
-            for outcome in module["learning_outcomes"]:
-                quiz["questions"].append({
-                    "question": f"What is the key concept related to {outcome}?",
-                    "options": ["Option A", "Option B", "Option C", "Option D"],
-                    "correct_answer": 0
-                })
-            
-            quizzes_list.append(quiz)
-        
-        return quizzes_list
+        """Generate quizzes based on syllabus modules using LLM with full syllabus context"""
+        # Use the sync version for consistency
+        return generate_quizzes_from_syllabus_sync(course_id, syllabus)
     
     @app.post("/lab/analyze-code")
     async def analyze_code(request: dict):

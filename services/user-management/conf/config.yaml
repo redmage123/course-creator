@@ -20,9 +20,10 @@ cors:
     - "http://${oc.env:HOST_IP,176.9.99.103}:8001"
     - "http://${oc.env:HOST_IP,176.9.99.103}:8003"
     - "http://${oc.env:HOST_IP,176.9.99.103}:8004"
+    - "http://${oc.env:HOST_IP,176.9.99.103}:8080"
 
 database:
-  url: postgresql+asyncpg://course_user:${oc.env:DB_PASSWORD}@localhost:5433/course_creator
+  url: postgresql+asyncpg://course_user:${oc.env:DB_PASSWORD,c0urs3:atao12e}@localhost:5433/course_creator
 
 jwt:
   secret_key: ${oc.env:JWT_SECRET_KEY,"your-secret-key-here-change-in-production"}

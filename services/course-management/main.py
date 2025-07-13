@@ -5,6 +5,7 @@ Course Management Service - PostgreSQL Database Integration
 from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.security import OAuth2PasswordBearer
 from typing import List, Optional
 import logging
 import hydra
@@ -16,6 +17,7 @@ import asyncpg
 import os
 import uuid
 from contextlib import asynccontextmanager
+from jose import JWTError, jwt
 
 # Models
 class Course(BaseModel):
@@ -94,10 +96,12 @@ async def lifespan(app: FastAPI):
     
     # Startup
     db_password = os.getenv('DB_PASSWORD', '')
-    if not db_password:
-        raise ValueError("DB_PASSWORD environment variable not set")
     
-    database_url = f"postgresql://course_user:{db_password}@localhost:5433/course_creator"
+    # Use the correct database configuration on port 5433
+    if db_password:
+        database_url = f"postgresql://course_user:{db_password}@localhost:5433/course_creator"
+    else:
+        raise ValueError("DB_PASSWORD environment variable is required")
     db_manager = DatabaseManager(database_url)
     await db_manager.connect()
     
@@ -132,6 +136,34 @@ def main(cfg: DictConfig) -> None:
         allow_headers=["*"],
     )
     
+    # OAuth2 scheme for token authentication
+    oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+    
+    # Authentication dependency
+    async def get_current_user(token: str = Depends(oauth2_scheme)):
+        """Extract user information from JWT token"""
+        credentials_exception = HTTPException(
+            status_code=401,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        try:
+            # Use the same JWT secret as user management service
+            payload = jwt.decode(
+                token, 
+                cfg.jwt.secret_key, 
+                algorithms=[cfg.jwt.algorithm]
+            )
+            user_id: str = payload.get("sub")
+            if user_id is None:
+                logger.error("No 'sub' field in JWT payload")
+                raise credentials_exception
+            logger.info(f"Authenticated user: {user_id}")
+            return {"user_id": user_id}
+        except JWTError as e:
+            logger.error(f"JWT validation error: {e}")
+            raise credentials_exception
+    
     @app.get("/")
     async def root():
         return {"message": "Course Management Service"}
@@ -140,18 +172,31 @@ def main(cfg: DictConfig) -> None:
     async def health():
         return {"status": "healthy", "timestamp": datetime.now()}
     
+    @app.get("/debug-auth")
+    async def debug_auth():
+        """Debug endpoint to check JWT configuration"""
+        return {
+            "jwt_secret_length": len(cfg.jwt.secret_key) if hasattr(cfg, 'jwt') else 0,
+            "jwt_algorithm": cfg.jwt.algorithm if hasattr(cfg, 'jwt') else "N/A",
+            "config_available": hasattr(cfg, 'jwt')
+        }
+    
     @app.get("/courses", response_model=List[Course])
-    async def get_courses():
-        """Get all courses from database"""
+    async def get_courses(current_user: dict = Depends(get_current_user)):
+        """Get courses for the authenticated instructor"""
         try:
+            instructor_id = current_user["user_id"]
+            logger.info(f"Loading courses for instructor: {instructor_id}")
+            
             async with db_manager.get_connection() as conn:
                 rows = await conn.fetch("""
                     SELECT id, title, description, instructor_id, category, 
                            difficulty_level, estimated_duration, price, is_published,
                            thumbnail_url, created_at, updated_at
                     FROM courses
+                    WHERE instructor_id = $1
                     ORDER BY created_at DESC
-                """)
+                """, uuid.UUID(instructor_id))
                 
                 courses = []
                 for row in rows:
@@ -171,7 +216,7 @@ def main(cfg: DictConfig) -> None:
                     )
                     courses.append(course)
                 
-                logger.info(f"Retrieved {len(courses)} courses from database")
+                logger.info(f"Retrieved {len(courses)} courses for instructor {instructor_id}")
                 return courses
                 
         except Exception as e:
