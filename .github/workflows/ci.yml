@@ -1,0 +1,585 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  PYTHON_VERSION: '3.9'
+  NODE_VERSION: '18'
+  POSTGRES_VERSION: '13'
+  REDIS_VERSION: '7'
+
+jobs:
+  lint-and-format:
+    name: Lint and Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      
+      - name: Cache Python dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt', '**/test_requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      - name: Cache Node dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r test_requirements.txt
+          pip install black isort flake8 mypy bandit safety
+      
+      - name: Install Node dependencies
+        run: |
+          cd frontend
+          npm ci
+      
+      - name: Run Python linting
+        run: |
+          # Check code formatting with black
+          black --check --diff services/
+          
+          # Check import sorting with isort
+          isort --check-only --diff services/
+          
+          # Run flake8 linting
+          flake8 services/ --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 services/ --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
+      
+      - name: Run JavaScript linting
+        run: |
+          cd frontend
+          npm run lint
+      
+      - name: Run Python type checking
+        run: |
+          mypy services/ --ignore-missing-imports --no-error-summary
+      
+      - name: Run security scanning
+        run: |
+          # Run bandit security scan
+          bandit -r services/ -f json -o bandit-report.json || true
+          
+          # Run safety check for dependencies
+          safety check --json --output safety-report.json || true
+      
+      - name: Upload security reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            safety-report.json
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [user-management, course-management, content-storage, course-generator, content-management]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Cache Python dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt', '**/test_requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r test_requirements.txt
+          pip install -r services/${{ matrix.service }}/requirements.txt
+      
+      - name: Run unit tests
+        run: |
+          python -m pytest tests/unit/services/test_${{ matrix.service | replace('-', '_') }}.py \
+            -v \
+            --cov=services/${{ matrix.service }} \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-fail-under=80 \
+            --junit-xml=test-results-${{ matrix.service }}.xml
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: unittests,${{ matrix.service }}
+          name: codecov-${{ matrix.service }}
+          fail_ci_if_error: true
+      
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results-${{ matrix.service }}
+          path: |
+            test-results-${{ matrix.service }}.xml
+            htmlcov/
+
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      
+      - name: Cache Python dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt', '**/test_requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      - name: Cache Node dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r test_requirements.txt
+      
+      - name: Install Node dependencies
+        run: |
+          cd frontend
+          npm ci
+      
+      - name: Run frontend Python tests
+        run: |
+          python -m pytest tests/frontend/ -v --html=frontend-test-report.html --self-contained-html
+      
+      - name: Run frontend JavaScript tests
+        run: |
+          cd frontend
+          npm test
+      
+      - name: Run frontend E2E tests
+        run: |
+          cd frontend
+          npm run test:e2e
+      
+      - name: Upload frontend test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: frontend-test-results
+          path: |
+            frontend-test-report.html
+            frontend/test-results/
+            frontend/coverage/
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:${{ env.POSTGRES_VERSION }}
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: course_creator_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:${{ env.REDIS_VERSION }}
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Cache Python dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt', '**/test_requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r test_requirements.txt
+          
+          # Install all service dependencies
+          for service in services/*/; do
+            if [ -f "$service/requirements.txt" ]; then
+              pip install -r "$service/requirements.txt"
+            fi
+          done
+      
+      - name: Set up test database
+        run: |
+          python setup-database.py --test
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/course_creator_test
+          REDIS_URL: redis://localhost:6379/1
+      
+      - name: Start services
+        run: |
+          # Start services in background for integration tests
+          python scripts/start_services.py --test &
+          sleep 30  # Wait for services to start
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/course_creator_test
+          REDIS_URL: redis://localhost:6379/1
+          JWT_SECRET_KEY: test_secret_key_for_ci
+      
+      - name: Run integration tests
+        run: |
+          python -m pytest tests/integration/ \
+            -v \
+            --html=integration-test-report.html \
+            --self-contained-html \
+            --junit-xml=integration-test-results.xml
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/course_creator_test
+          REDIS_URL: redis://localhost:6379/1
+          JWT_SECRET_KEY: test_secret_key_for_ci
+      
+      - name: Upload integration test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: integration-test-results
+          path: |
+            integration-test-report.html
+            integration-test-results.xml
+
+  security-tests:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Cache Python dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt', '**/test_requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r test_requirements.txt
+          pip install bandit safety
+      
+      - name: Run Bandit security scan
+        run: |
+          bandit -r services/ -f json -o bandit-report.json
+        continue-on-error: true
+      
+      - name: Run Safety dependency check
+        run: |
+          safety check --json --output safety-report.json
+        continue-on-error: true
+      
+      - name: Run security tests
+        run: |
+          python -m pytest tests/security/ \
+            -v \
+            --html=security-test-report.html \
+            --self-contained-html \
+            --junit-xml=security-test-results.xml
+        continue-on-error: true
+      
+      - name: Upload security test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: security-test-results
+          path: |
+            bandit-report.json
+            safety-report.json
+            security-test-report.html
+            security-test-results.xml
+
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    services:
+      postgres:
+        image: postgres:${{ env.POSTGRES_VERSION }}
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: course_creator_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:${{ env.REDIS_VERSION }}
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Cache Python dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt', '**/test_requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r test_requirements.txt
+          pip install locust
+      
+      - name: Set up test database
+        run: |
+          python setup-database.py --test
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/course_creator_test
+          REDIS_URL: redis://localhost:6379/1
+      
+      - name: Start services
+        run: |
+          python scripts/start_services.py --test &
+          sleep 30
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/course_creator_test
+          REDIS_URL: redis://localhost:6379/1
+          JWT_SECRET_KEY: test_secret_key_for_ci
+      
+      - name: Run performance tests
+        run: |
+          python -m pytest tests/performance/ \
+            -v \
+            --benchmark-only \
+            --html=performance-test-report.html \
+            --self-contained-html \
+            --junit-xml=performance-test-results.xml
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/course_creator_test
+          REDIS_URL: redis://localhost:6379/1
+          JWT_SECRET_KEY: test_secret_key_for_ci
+      
+      - name: Upload performance test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: performance-test-results
+          path: |
+            performance-test-report.html
+            performance-test-results.xml
+
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    needs: [lint-and-format, unit-tests, frontend-tests, integration-tests]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      
+      - name: Cache Python dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt', '**/test_requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      - name: Cache Node dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r test_requirements.txt
+          
+          cd frontend
+          npm ci
+      
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm run build
+      
+      - name: Run comprehensive test suite
+        run: |
+          python scripts/run_tests.py --category all --verbose
+      
+      - name: Generate test report
+        run: |
+          python scripts/generate_test_report.py
+      
+      - name: Upload comprehensive test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: comprehensive-test-results
+          path: |
+            test_reports/
+            coverage/
+
+  deploy-test-results:
+    name: Deploy Test Results
+    runs-on: ubuntu-latest
+    needs: [build-and-test]
+    if: always()
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+      
+      - name: Deploy test results to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./comprehensive-test-results/test_reports
+          destination_dir: test-results/${{ github.run_number }}
+      
+      - name: Comment test results on PR
+        uses: actions/github-script@v6
+        if: github.event_name == 'pull_request'
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            let comment = '## Test Results Summary\n\n';
+            
+            // Add test results summary
+            const testResults = [
+              'unit-tests',
+              'frontend-tests', 
+              'integration-tests',
+              'security-tests'
+            ];
+            
+            for (const testType of testResults) {
+              const artifactPath = `./${testType}`;
+              if (fs.existsSync(artifactPath)) {
+                comment += `✅ ${testType} completed\n`;
+              } else {
+                comment += `❌ ${testType} failed\n`;
+              }
+            }
+            
+            comment += '\n📊 [Full test results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  notify-results:
+    name: Notify Results
+    runs-on: ubuntu-latest
+    needs: [build-and-test]
+    if: always()
+    steps:
+      - name: Notify on success
+        if: needs.build-and-test.result == 'success'
+        run: |
+          echo "🎉 All tests passed! Build is ready for deployment."
+      
+      - name: Notify on failure
+        if: needs.build-and-test.result == 'failure'
+        run: |
+          echo "💥 Tests failed! Please check the logs and fix the issues."
+          exit 1

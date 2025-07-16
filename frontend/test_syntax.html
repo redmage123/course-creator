@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Syntax Test</title>
+</head>
+<body>
+    <script>
+        window.startSlideshow = function(courseId) {
+            const slides = [{title: "Test", content: "Test content"}];
+            
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+            
+            const slideshowWindow = window.open('', '_blank', 'width=1200,height=800');
+            
+            slideshowWindow.document.write('<!DOCTYPE html><html><head>');
+            slideshowWindow.document.write('<title>Slideshow - Course ' + courseId + '</title>');
+            slideshowWindow.document.write('</head><body>');
+            slideshowWindow.document.write('<h1>Test Slideshow</h1>');
+            slideshowWindow.document.write('<script>');
+            slideshowWindow.document.write('document.addEventListener("keydown", function(e) {');
+            slideshowWindow.document.write('    if (e.key === "ArrowRight" || e.keyCode === 32) console.log("next");');
+            slideshowWindow.document.write('    if (e.key === "ArrowLeft") console.log("prev");');
+            slideshowWindow.document.write('    if (e.key === "Escape") window.close();');
+            slideshowWindow.document.write('});');
+            slideshowWindow.document.write('</script></body></html>');
+            
+            slideshowWindow.document.close();
+        };
+        
+        console.log('Test function loaded');
+    </script>
+</body>
+</html>

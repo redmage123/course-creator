@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Minimal Test</title>
+</head>
+<body>
+    <script>
+        // This should reproduce the exact error
+        window.startSlideshow = function(courseId) {
+            console.log('Starting slideshow for course:', courseId);
+            
+            const slides = window.currentCourseContent?.slides || [];
+            if (slides.length === 0) {
+                console.log('No slides to display');
+                return;
+            }
+            
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+            
+            const slideshowWindow = window.open('', '_blank', 'width=1200,height=800,fullscreen=yes');
+            
+            slideshowWindow.document.write('<!DOCTYPE html><html><head>');
+            slideshowWindow.document.write('<title>Slideshow - Course ' + courseId + '</title>');
+            slideshowWindow.document.write('<style>');
+            slideshowWindow.document.write('body { margin: 0; font-family: Arial, sans-serif; background: #000; color: #fff; overflow: hidden; }');
+            slideshowWindow.document.write('.slideshow-container { position: relative; width: 100%; height: 100vh; }');
+            slideshowWindow.document.write('.slide { display: none; padding: 40px; text-align: center; position: absolute; width: calc(100% - 80px); height: calc(100% - 80px); }');
+            slideshowWindow.document.write('.slide.active { display: block; }');
+            slideshowWindow.document.write('.slide h1 { font-size: 3em; margin-bottom: 30px; }');
+            slideshowWindow.document.write('.slide-content { font-size: 1.5em; line-height: 1.6; }');
+            slideshowWindow.document.write('.slide-nav { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); }');
+            slideshowWindow.document.write('.nav-btn { background: #333; color: #fff; border: none; padding: 10px 20px; margin: 0 10px; cursor: pointer; }');
+            slideshowWindow.document.write('.nav-btn:hover { background: #555; }');
+            slideshowWindow.document.write('.slide-counter { position: absolute; top: 20px; right: 20px; font-size: 1.2em; }');
+            slideshowWindow.document.write('</style></head><body>');
+            slideshowWindow.document.write('<div class="slideshow-container">');
+            slideshowWindow.document.write('<div class="slide-counter">');
+            slideshowWindow.document.write('<span id="currentSlide">1</span> / <span id="totalSlides">' + slides.length + '</span>');
+            slideshowWindow.document.write('</div>');
+            
+            slides.forEach((slide, index) => {
+                slideshowWindow.document.write('<div class="slide ' + (index === 0 ? 'active' : '') + '">');
+                slideshowWindow.document.write('<h1>' + escapeHtml(slide.title || 'Slide ' + (index + 1)) + '</h1>');
+                slideshowWindow.document.write('<div class="slide-content">' + escapeHtml(slide.content || 'No content available') + '</div>');
+                slideshowWindow.document.write('</div>');
+            });
+            
+            slideshowWindow.document.write('<div class="slide-nav">');
+            slideshowWindow.document.write('<button class="nav-btn" onclick="prevSlide()">Previous</button>');
+            slideshowWindow.document.write('<button class="nav-btn" onclick="nextSlide()">Next</button>');
+            slideshowWindow.document.write('<button class="nav-btn" onclick="window.close()">Close</button>');
+            slideshowWindow.document.write('</div></div>');
+            
+            slideshowWindow.document.write('<' + 'script>');
+            slideshowWindow.document.write('let currentSlideIndex = 0;');
+            slideshowWindow.document.write('const slides = document.querySelectorAll(".slide");');
+            slideshowWindow.document.write('function showSlide(index) {');
+            slideshowWindow.document.write('    slides.forEach(slide => slide.classList.remove("active"));');
+            slideshowWindow.document.write('    slides[index].classList.add("active");');
+            slideshowWindow.document.write('    document.getElementById("currentSlide").textContent = index + 1;');
+            slideshowWindow.document.write('}');
+            slideshowWindow.document.write('function nextSlide() {');
+            slideshowWindow.document.write('    currentSlideIndex = (currentSlideIndex + 1) % slides.length;');
+            slideshowWindow.document.write('    showSlide(currentSlideIndex);');
+            slideshowWindow.document.write('}');
+            slideshowWindow.document.write('function prevSlide() {');
+            slideshowWindow.document.write('    currentSlideIndex = (currentSlideIndex - 1 + slides.length) % slides.length;');
+            slideshowWindow.document.write('    showSlide(currentSlideIndex);');
+            slideshowWindow.document.write('}');
+            slideshowWindow.document.write('document.addEventListener("keydown", function(e) {');
+            slideshowWindow.document.write('    if (e.key === "ArrowRight" || e.keyCode === 32) nextSlide();');
+            slideshowWindow.document.write('    if (e.key === "ArrowLeft") prevSlide();');
+            slideshowWindow.document.write('    if (e.key === "Escape") window.close();');
+            slideshowWindow.document.write('});');
+            slideshowWindow.document.write('</' + 'script></body></html>');
+            
+            slideshowWindow.document.close();
+        };
+        
+        // Test it
+        window.currentCourseContent = {
+            slides: [
+                {title: "Test Slide 1", content: "Test content 1"},
+                {title: "Test Slide 2", content: "Test content 2"}
+            ]
+        };
+        
+        console.log('Test loaded. Try calling startSlideshow("123")');
+    </script>
+</body>
+</html>

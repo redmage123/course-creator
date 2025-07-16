@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lab Debug Test</title>
+</head>
+<body>
+    <h1>Lab Debug Test</h1>
+    <div id="debug-output"></div>
+    <div id="exerciseList"></div>
+    <div id="exercisePanel"></div>
+
+    <script type="module">
+        // Import the configuration
+        import { CONFIG } from './js/config.js';
+        
+        // Make CONFIG available globally
+        window.CONFIG = CONFIG;
+        
+        console.log('CONFIG loaded:', CONFIG);
+        
+        // Test API call
+        const courseId = 'b892987a-0781-471c-81b6-09e09654adf2';
+        const apiUrl = `${CONFIG.ENDPOINTS.EXERCISES(courseId)}`;
+        
+        console.log('API URL:', apiUrl);
+        
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(data => {
+                console.log('API Response:', data);
+                const exercises = data.exercises || [];
+                console.log('Exercises count:', exercises.length);
+                
+                const debugOutput = document.getElementById('debug-output');
+                debugOutput.innerHTML = `
+                    <h3>Debug Info:</h3>
+                    <p>CONFIG loaded: ${typeof CONFIG}</p>
+                    <p>API URL: ${apiUrl}</p>
+                    <p>Exercises count: ${exercises.length}</p>
+                    <p>First exercise: ${exercises[0] ? exercises[0].title : 'None'}</p>
+                `;
+                
+                // Test exercise display
+                const exerciseList = document.getElementById('exerciseList');
+                if (exerciseList && exercises.length > 0) {
+                    exerciseList.innerHTML = exercises.map(exercise => `
+                        <div style="border: 1px solid #ccc; padding: 10px; margin: 5px;">
+                            <h4>${exercise.title}</h4>
+                            <p>${exercise.description}</p>
+                            <span>Difficulty: ${exercise.difficulty}</span>
+                        </div>
+                    `).join('');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                const debugOutput = document.getElementById('debug-output');
+                debugOutput.innerHTML = `<p>Error: ${error.message}</p>`;
+            });
+    </script>
+</body>
+</html>

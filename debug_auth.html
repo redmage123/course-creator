@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auth Debug</title>
+</head>
+<body>
+    <h1>Authentication Debug</h1>
+    <div id="debug-output"></div>
+    
+    <script>
+        function debugAuth() {
+            let debugInfo;
+            
+            try {
+                const authToken = localStorage.getItem('authToken');
+                const currentUser = localStorage.getItem('currentUser');
+                const userEmail = localStorage.getItem('userEmail');
+                
+                debugInfo = {
+                    authToken: authToken ? `Present (${authToken.substring(0, 20)}...)` : 'Missing',
+                    currentUser: currentUser ? JSON.parse(currentUser) : 'Missing',
+                    userEmail: userEmail || 'Missing',
+                    allLocalStorageKeys: Object.keys(localStorage),
+                    storageLength: localStorage.length
+                };
+                
+                console.log('Auth debug info:', debugInfo);
+            } catch (error) {
+                debugInfo = {
+                    error: error.message,
+                    localStorage: 'Error accessing localStorage'
+                };
+                console.error('Error in debugAuth:', error);
+            }
+            
+            document.getElementById('debug-output').innerHTML = `
+                <h2>Authentication Debug Results</h2>
+                <pre>${JSON.stringify(debugInfo, null, 2)}</pre>
+                <p>Timestamp: ${new Date().toISOString()}</p>
+            `;
+        }
+        
+        // Run debug when page loads
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', debugAuth);
+        } else {
+            debugAuth();
+        }
+    </script>
+</body>
+</html>

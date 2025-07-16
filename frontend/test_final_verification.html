@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Final Toggle Functions Verification</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .test-result { margin: 5px 0; padding: 5px; border-radius: 3px; }
+        .pass { background-color: #d4edda; color: #155724; }
+        .fail { background-color: #f8d7da; color: #721c24; }
+        .test-button { margin: 5px; padding: 8px 15px; }
+        .lab-simulation { display: grid; grid-template-columns: 200px 1fr; gap: 10px; margin: 20px 0; }
+        .panel { border: 1px solid #ccc; padding: 10px; min-height: 100px; }
+    </style>
+</head>
+<body>
+    <h1>Lab Toggle Functions - Final Verification</h1>
+    
+    <div class="test-section">
+        <h2>Function Availability Test</h2>
+        <div id="function-test-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Lab Simulation Test</h2>
+        <div class="lab-simulation">
+            <div class="panel" id="exercises-panel">
+                <h3>Exercises Panel</h3>
+                <div id="exercise-list">No exercises loaded</div>
+            </div>
+            <div class="panel" id="editor-panel">
+                <h3>Editor Panel</h3>
+                <textarea id="codeEditor" placeholder="Code goes here..."></textarea>
+            </div>
+        </div>
+        
+        <div>
+            <button class="test-button" onclick="togglePanel('exercises')">Toggle Exercises</button>
+            <button class="test-button" onclick="togglePanel('editor')">Toggle Editor</button>
+            <button class="test-button" onclick="runCode()">Run Code</button>
+            <button class="test-button" onclick="clearCode()">Clear Code</button>
+            <button class="test-button" onclick="changeLanguage()">Change Language</button>
+            <button class="test-button" onclick="sendMessage()">Send Message</button>
+        </div>
+        
+        <div id="interaction-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Exercise Display Test</h2>
+        <button onclick="testExerciseDisplay()">Test Exercise Display</button>
+        <div id="exercise-display-results"></div>
+    </div>
+    
+    <!-- Load lab template synchronously -->
+    <script src="js/lab-template.js"></script>
+    
+    <script>
+        // Test all required functions
+        function testAllFunctions() {
+            console.log('Testing all functions...');
+            
+            const results = document.getElementById('function-test-results');
+            results.innerHTML = '';
+            
+            const requiredFunctions = [
+                'togglePanel',
+                'focusTerminalInput',
+                'runCode',
+                'clearCode',
+                'sendMessage',
+                'changeLanguage',
+                'selectExercise',
+                'toggleSolution',
+                'displayExercises',
+                'forceDisplayExercises'
+            ];
+            
+            let passCount = 0;
+            
+            requiredFunctions.forEach(funcName => {
+                const div = document.createElement('div');
+                div.className = 'test-result';
+                
+                if (typeof window[funcName] === 'function') {
+                    div.className += ' pass';
+                    div.textContent = `✓ ${funcName} is available`;
+                    passCount++;
+                } else {
+                    div.className += ' fail';
+                    div.textContent = `✗ ${funcName} is NOT available`;
+                }
+                
+                results.appendChild(div);
+            });
+            
+            // Summary
+            const summary = document.createElement('div');
+            summary.style.marginTop = '10px';
+            summary.style.fontWeight = 'bold';
+            summary.textContent = `Summary: ${passCount}/${requiredFunctions.length} functions available`;
+            summary.className = passCount === requiredFunctions.length ? 'pass' : 'fail';
+            results.appendChild(summary);
+            
+            return passCount === requiredFunctions.length;
+        }
+        
+        // Test exercise display
+        function testExerciseDisplay() {
+            const resultsDiv = document.getElementById('exercise-display-results');
+            
+            try {
+                // Mock some exercises
+                window.exercises = [
+                    {
+                        id: 'test1',
+                        title: 'Test Exercise 1',
+                        description: 'Test description 1',
+                        difficulty: 'beginner'
+                    },
+                    {
+                        id: 'test2',
+                        title: 'Test Exercise 2',
+                        description: 'Test description 2',
+                        difficulty: 'intermediate'
+                    }
+                ];
+                
+                // Create mock DOM elements
+                const mockExerciseList = document.createElement('div');
+                mockExerciseList.id = 'exerciseList';
+                document.body.appendChild(mockExerciseList);
+                
+                const mockExercisePanel = document.createElement('div');
+                mockExercisePanel.id = 'exercisePanel';
+                mockExercisePanel.classList = { add: () => {}, remove: () => {} };
+                document.body.appendChild(mockExercisePanel);
+                
+                // Test display
+                window.displayExercises();
+                
+                resultsDiv.innerHTML = '<p class="pass">✓ displayExercises executed successfully</p>';
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<p class="fail">✗ displayExercises failed: ${error.message}</p>`;
+            }
+        }
+        
+        // Monitor interactions
+        function monitorInteractions() {
+            const resultsDiv = document.getElementById('interaction-results');
+            
+            // Override console.log to capture function calls
+            const originalLog = console.log;
+            console.log = function(...args) {
+                if (args[0] && typeof args[0] === 'string' && args[0].includes('called')) {
+                    const div = document.createElement('div');
+                    div.className = 'test-result pass';
+                    div.textContent = `✓ ${args[0]}`;
+                    resultsDiv.appendChild(div);
+                }
+                originalLog.apply(console, arguments);
+            };
+        }
+        
+        // Run tests when page loads
+        window.onload = function() {
+            console.log('Page loaded, testing functions...');
+            
+            const allFunctionsWork = testAllFunctions();
+            monitorInteractions();
+            
+            if (allFunctionsWork) {
+                console.log('✓ All functions are available and ready!');
+            } else {
+                console.log('✗ Some functions are missing!');
+            }
+        };
+    </script>
+</body>
+</html>

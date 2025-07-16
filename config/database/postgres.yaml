@@ -1,7 +1,7 @@
 database:
   type: "postgresql"
   host: ${oc.env:DB_HOST,localhost}
-  port: ${oc.env:DB_PORT,5432}
+  port: ${oc.env:DB_PORT,5433}
   name: ${oc.env:DB_NAME,course_creator}
   user: ${oc.env:DB_USER,postgres}
   password: ${oc.env:DB_PASSWORD,password}

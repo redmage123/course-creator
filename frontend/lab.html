@@ -205,7 +205,7 @@
             background: #0c0c0c; 
         }
         
-        .terminal-output { 
+        .terminal-window { 
             flex: 1; 
             padding: 10px; 
             font-family: 'Courier New', monospace; 
@@ -215,15 +215,27 @@
             overflow-y: auto; 
             white-space: pre-wrap; 
             cursor: text;
+            display: flex;
+            flex-direction: column;
         }
         
-        .terminal-input-container { 
-            display: flex; 
-            align-items: center; 
-            padding: 8px 10px; 
-            background: #1a1a1a; 
-            border-top: 1px solid #3e3e42; 
-            flex-shrink: 0;
+        .terminal-content {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 10px;
+        }
+        
+        .terminal-line {
+            display: block;
+            margin: 0;
+            padding: 0;
+            line-height: 1.2;
+        }
+        
+        .terminal-current-line {
+            display: flex;
+            align-items: center;
+            margin-top: 5px;
         }
         
         .terminal-prompt { 
@@ -231,6 +243,7 @@
             font-family: 'Courier New', monospace; 
             font-size: 13px; 
             margin-right: 8px; 
+            flex-shrink: 0;
         }
         
         .terminal-input { 
@@ -367,16 +380,19 @@
         
         <!-- Terminal Panel -->
         <div class="panel terminal-panel" id="terminalPanel">
-            <div class="panel-header">🖥️ Terminal & Output</div>
-            <div class="terminal-output" id="terminalOutput" onclick="focusTerminalInput()">Welcome to the Lab Terminal!
-This terminal shows both command output and code execution results.
-Type commands below to interact with the shell environment.
-For help, type 'help' and press Enter.
-
-student@lab:~$ </div>
-            <div class="terminal-input-container">
-                <span class="terminal-prompt">student@lab:~$</span>
-                <input type="text" class="terminal-input" id="terminalInput" onkeypress="handleTerminalInput(event)" placeholder="Type your command here..." autocomplete="off">
+            <div class="panel-header">🖥️ Terminal</div>
+            <div class="terminal-window" id="terminalWindow" onclick="focusTerminalInput()">
+                <div class="terminal-content" id="terminalContent">
+                    <div class="terminal-line">Welcome to the Lab Terminal!</div>
+                    <div class="terminal-line">This terminal shows both command output and code execution results.</div>
+                    <div class="terminal-line">Type commands and press Enter to interact with the shell environment.</div>
+                    <div class="terminal-line">For help, type 'help' and press Enter.</div>
+                    <div class="terminal-line"></div>
+                </div>
+                <div class="terminal-current-line">
+                    <span class="terminal-prompt">student@lab:~$</span>
+                    <input type="text" class="terminal-input" id="terminalInput" onkeypress="handleTerminalInput(event)" placeholder="" autocomplete="off">
+                </div>
             </div>
         </div>
         
@@ -393,25 +409,57 @@ student@lab:~$ </div>
         </div>
     </div>
     
+    <!-- Load lab template first to ensure functions are available -->
     <script src="js/lab-template.js"></script>
+    
+    <!-- Then load configuration and initialize -->
+    <script type="module">
+        // Import the configuration
+        import { CONFIG } from './js/config.js';
+        
+        // Make CONFIG available globally
+        window.CONFIG = CONFIG;
+        
+        // Initialize after config is loaded
+        console.log('Config loaded, initializing lab...');
+        console.log('togglePanel function available:', typeof window.togglePanel);
+        
+        if (typeof window.initializeAfterLoad === 'function') {
+            window.initializeAfterLoad();
+        } else {
+            console.log('initializeAfterLoad not found');
+        }
+    </script>
     <script>
         // Get course info from URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const courseName = urlParams.get('course') || 'Programming Course';
-        // courseId is declared in lab-template.js, just assign the value
-        courseId = urlParams.get('courseId') || 'default';
+        const courseId = urlParams.get('courseId') || 'default';
+        
+        // Make course info available globally
+        window.currentCourseId = courseId;
+        window.currentCourseName = courseName;
         
         // Update title
         document.querySelector('.lab-title').textContent = `🧪 ${courseName} - Lab`;
         
-        // Initialize when page loads
-        window.onload = function() {
+        // Initialize after scripts are loaded
+        window.initializeAfterLoad = function() {
             console.log('Page loaded, initializing lab...');
+            console.log('Course ID:', courseId);
+            console.log('Course Name:', courseName);
+            
             // Small delay to ensure DOM is fully ready
             setTimeout(() => {
-                initializeLab();
-                updateToggleButtons();
-                initializeTerminal();
+                if (typeof initializeLab === 'function') {
+                    initializeLab();
+                }
+                if (typeof updateToggleButtons === 'function') {
+                    updateToggleButtons();
+                }
+                if (typeof initializeTerminal === 'function') {
+                    initializeTerminal();
+                }
                 // Force exercise display after initialization
                 setTimeout(() => {
                     console.log('Force displaying exercises...');
@@ -420,6 +468,13 @@ student@lab:~$ </div>
                     }
                 }, 200);
             }, 100);
+        }
+        
+        // Fallback for direct script loading
+        window.onload = function() {
+            if (typeof initializeLab !== 'undefined') {
+                window.initializeAfterLoad();
+            }
         };
     </script>
 </body>

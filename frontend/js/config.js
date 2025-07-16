@@ -75,6 +75,7 @@ const CONFIG = {
             GENERATE_SYLLABUS: `${urls.COURSE_GENERATOR}/syllabus/generate`,
             REFINE_SYLLABUS: `${urls.COURSE_GENERATOR}/syllabus/refine`,
             GENERATE_CONTENT: `${urls.COURSE_GENERATOR}/content/generate-from-syllabus`,
+            REGENERATE_CONTENT: `${urls.COURSE_GENERATOR}/content/regenerate`,
             SLIDES: (courseId) => `${urls.COURSE_GENERATOR}/slides/${courseId}`,
             UPDATE_SLIDES: (courseId) => `${urls.COURSE_GENERATOR}/slides/update/${courseId}`,
             GENERATE_SLIDES: `${urls.COURSE_GENERATOR}/slides/generate`,
@@ -91,14 +92,27 @@ const CONFIG = {
             LAB_SESSION_SAVE: `${urls.COURSE_GENERATOR}/lab/session/save`,
             LAB_SESSION_LOAD: (courseId, studentId) => `${urls.COURSE_GENERATOR}/lab/session/${courseId}/${studentId}`,
             LAB_SESSION_CLEAR: (courseId, studentId) => `${urls.COURSE_GENERATOR}/lab/session/${courseId}/${studentId}`,
-            SAVE_COURSE: `${urls.COURSE_GENERATOR}/courses/save`
+            SAVE_COURSE: `${urls.COURSE_GENERATOR}/courses/save`,
+            GENERATE_CUSTOM_LAB: `${urls.COURSE_GENERATOR}/lab/generate-custom`,
+            REFRESH_LAB_EXERCISES: `${urls.COURSE_GENERATOR}/lab/refresh-exercises`,
+            EXERCISES: (courseId) => `${urls.COURSE_GENERATOR}/exercises/${courseId}`,
+            
+            // Quiz endpoints
+            QUIZ_GENERATE_FOR_COURSE: `${urls.COURSE_GENERATOR}/quiz/generate-for-course`,
+            QUIZ_GENERATE: `${urls.COURSE_GENERATOR}/quiz/generate`,
+            QUIZ_GET_COURSE_QUIZZES: (courseId) => `${urls.COURSE_GENERATOR}/quiz/course/${courseId}`,
+            QUIZ_GET_BY_ID: (quizId) => `${urls.COURSE_GENERATOR}/quiz/${quizId}`,
+            QUIZ_SUBMIT: (quizId) => `${urls.COURSE_GENERATOR}/quiz/${quizId}/submit`,
+            QUIZ_ANALYTICS: (courseId) => `${urls.COURSE_GENERATOR}/quiz/analytics/${courseId}`
         }
     }
 };
 
-// Export for use in other modules
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = CONFIG;
-} else {
+// Export for ES6 modules
+export { CONFIG };
+export default CONFIG;
+
+// Legacy support for non-module scripts
+if (typeof window !== 'undefined') {
     window.CONFIG = CONFIG;
 }

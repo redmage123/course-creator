@@ -154,11 +154,16 @@ def main(cfg: DictConfig) -> None:
         return session_id
     
     async def validate_session(token: str, user_id: str):
-        """Validate if session exists and is not expired"""
+        """Validate if session exists and is not expired based on inactivity"""
+        # Calculate inactivity timeout (30 minutes of inactivity)
+        inactivity_timeout = timedelta(minutes=cfg.jwt.token_expiry)
+        cutoff_time = datetime.utcnow() - inactivity_timeout
+        
+        # Query sessions that are still active based on last activity
         query = user_sessions_table.select().where(
             sqlalchemy.and_(
                 user_sessions_table.c.user_id == user_id,
-                user_sessions_table.c.expires_at > datetime.utcnow()
+                user_sessions_table.c.last_accessed_at > cutoff_time
             )
         )
         sessions = await database.fetch_all(query)
@@ -166,10 +171,14 @@ def main(cfg: DictConfig) -> None:
         # Check if token matches any active session
         for session in sessions:
             if pwd_context.verify(token, session["token_hash"]):
-                # Update last accessed time
+                # Update last accessed time to extend session
+                current_time = datetime.utcnow()
                 update_query = user_sessions_table.update().where(
                     user_sessions_table.c.id == session["id"]
-                ).values(last_accessed_at=datetime.utcnow())
+                ).values(
+                    last_accessed_at=current_time,
+                    expires_at=current_time + inactivity_timeout  # Also update expires_at for consistency
+                )
                 await database.execute(update_query)
                 return True
         return False
@@ -217,9 +226,14 @@ def main(cfg: DictConfig) -> None:
         return False
     
     async def cleanup_expired_sessions():
-        """Remove all expired sessions from database"""
+        """Remove all expired sessions from database based on inactivity"""
+        # Calculate inactivity timeout (30 minutes of inactivity)
+        inactivity_timeout = timedelta(minutes=cfg.jwt.token_expiry)
+        cutoff_time = datetime.utcnow() - inactivity_timeout
+        
+        # Delete sessions that haven't been accessed within the timeout period
         query = user_sessions_table.delete().where(
-            user_sessions_table.c.expires_at < datetime.utcnow()
+            user_sessions_table.c.last_accessed_at < cutoff_time
         )
         result = await database.execute(query)
         return result
@@ -361,11 +375,15 @@ def main(cfg: DictConfig) -> None:
         
         # Get session information
         try:
+            # Calculate inactivity timeout
+            inactivity_timeout = timedelta(minutes=cfg.jwt.token_expiry)
+            cutoff_time = datetime.utcnow() - inactivity_timeout
+            
             token_hash = pwd_context.hash(token)
             query = user_sessions_table.select().where(
                 sqlalchemy.and_(
                     user_sessions_table.c.user_id == current_user.id,
-                    user_sessions_table.c.expires_at > datetime.utcnow()
+                    user_sessions_table.c.last_accessed_at > cutoff_time
                 )
             ).order_by(user_sessions_table.c.last_accessed_at.desc()).limit(1)
             
@@ -388,10 +406,14 @@ def main(cfg: DictConfig) -> None:
     @app.get("/auth/sessions")
     async def get_user_sessions(current_user: User = Depends(get_current_user)):
         """Get all active sessions for the current user"""
+        # Calculate inactivity timeout
+        inactivity_timeout = timedelta(minutes=cfg.jwt.token_expiry)
+        cutoff_time = datetime.utcnow() - inactivity_timeout
+        
         query = user_sessions_table.select().where(
             sqlalchemy.and_(
                 user_sessions_table.c.user_id == current_user.id,
-                user_sessions_table.c.expires_at > datetime.utcnow()
+                user_sessions_table.c.last_accessed_at > cutoff_time
             )
         ).order_by(user_sessions_table.c.created_at.desc())
         

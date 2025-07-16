@@ -58,7 +58,7 @@
             <nav class="sidebar-nav">
                 <ul class="nav-menu">
                     <li class="nav-item">
-                        <a href="#" class="nav-link active" onclick="showSection('overview')" data-section="overview">
+                        <a href="#" class="nav-link" onclick="showSection('overview')" data-section="overview">
                             <i class="fas fa-tachometer-alt"></i>
                             <span>Overview</span>
                         </a>
@@ -93,6 +93,12 @@
                         <a href="#" class="nav-link" onclick="showSection('labs')" data-section="labs">
                             <i class="fas fa-flask"></i>
                             <span>Labs</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" onclick="showSection('quizzes')" data-section="quizzes">
+                            <i class="fas fa-question-circle"></i>
+                            <span>Quizzes</span>
                         </a>
                     </li>
                     <li class="nav-item">
@@ -134,7 +140,7 @@
             <div class="main-content">
 
                 <!-- Overview Section -->
-                <section id="overview-section" class="content-section active">
+                <section id="overview-section" class="content-section">
                     <div class="overview-header">
                         <h1>Welcome back!</h1>
                         <p>Here's what's happening with your courses today</p>
@@ -746,6 +752,50 @@
                 </section>
 
                 <!-- Analytics Section -->
+                <section id="quizzes-section" class="content-section">
+                    <div class="section-header">
+                        <h2>Quizzes & Assessments</h2>
+                        <p>Create, manage, and view course quizzes and assessments</p>
+                    </div>
+                    
+                    <div class="quizzes-content">
+                        <div class="quizzes-controls">
+                            <div class="controls-row">
+                                <div class="quiz-filters">
+                                    <select id="quizCourseFilter" onchange="filterQuizzes()">
+                                        <option value="all">All Courses</option>
+                                    </select>
+                                    <select id="quizDifficultyFilter" onchange="filterQuizzes()">
+                                        <option value="all">All Difficulties</option>
+                                        <option value="beginner">Beginner</option>
+                                        <option value="intermediate">Intermediate</option>
+                                        <option value="advanced">Advanced</option>
+                                    </select>
+                                </div>
+                                <div class="quiz-actions">
+                                    <button class="btn btn-primary" onclick="generateQuizzesForCourse()">
+                                        <i class="fas fa-magic"></i> Generate Quizzes
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="createCustomQuiz()">
+                                        <i class="fas fa-plus"></i> Create Custom Quiz
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="quizzes-grid" id="quizzesGrid">
+                            <div class="empty-state">
+                                <i class="fas fa-question-circle fa-3x"></i>
+                                <h3>No Quizzes Available</h3>
+                                <p>Generate quizzes for your courses or create custom assessments</p>
+                                <button class="btn btn-primary" onclick="generateQuizzesForCourse()">
+                                    <i class="fas fa-magic"></i> Generate Your First Quiz
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <section id="analytics-section" class="content-section">
                     <div class="section-header">
                         <h2>Analytics & Insights</h2>
@@ -866,9 +916,2503 @@
         </div>
     </div>
 
-    <script src="js/config.js"></script>
-    <script src="js/main.js"></script>
+    <!-- Modern ES6 module system -->
+    <!-- <script type="module" src="js/main-modular.js"></script> -->
     <script src="js/lab-template.js"></script>
-    <script src="js/instructor-dashboard.js"></script>
+    
+    <!-- Temporary fix: Load a simplified version that works with existing functionality -->
+    <script type="module">
+        // Import the configuration
+        import { CONFIG } from './js/config.js';
+        
+        // Make CONFIG available globally
+        window.CONFIG = CONFIG;
+        
+        // Simple course loading that matches the old system
+        let userCourses = [];
+        
+        // Define getCurrentUser function that was missing
+        function getCurrentUser() {
+            try {
+                const userJson = localStorage.getItem('currentUser');
+                if (userJson) {
+                    return JSON.parse(userJson);
+                }
+                return null;
+            } catch (error) {
+                console.error('Error getting current user:', error);
+                return null;
+            }
+        }
+        
+        // Initialize when DOM is ready
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('Instructor dashboard initializing...');
+            
+            // Check if user is logged in
+            const currentUser = getCurrentUser();
+            if (!currentUser) {
+                console.log('No user found, redirecting to login');
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            console.log('User found:', currentUser);
+            
+            // Load courses using the old approach that works
+            await loadUserCourses();
+            
+            // Show courses section by default after successful initialization
+            showSection('courses');
+        });
+        
+        // Load courses function that works with the existing API
+        async function loadUserCourses() {
+            try {
+                const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                console.log('Loading courses with token:', token ? 'Present' : 'Missing');
+                
+                if (!token) {
+                    console.error('No authentication token found');
+                    return;
+                }
+                
+                const response = await fetch(CONFIG.ENDPOINTS.COURSES, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('Courses response status:', response.status);
+                
+                if (response.status === 401) {
+                    console.error('Authentication failed - token may be expired');
+                    showNotification('Session expired. Please log in again.', 'error');
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('currentUser');
+                    localStorage.removeItem('userEmail');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 2000);
+                    return;
+                }
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Courses data received:', data);
+                    
+                    // Handle different response formats
+                    if (Array.isArray(data)) {
+                        userCourses = data;
+                    } else if (data.courses) {
+                        userCourses = data.courses;
+                    } else {
+                        userCourses = [];
+                    }
+                    
+                    console.log('User courses loaded:', userCourses.length);
+                    
+                    // Update the UI immediately
+                    updateCoursesDisplay();
+                    
+                    // Also update the overview section to show course count
+                    updateOverviewStats();
+                } else {
+                    console.error('Failed to load courses:', response.status, response.statusText);
+                    const errorText = await response.text();
+                    console.error('Error response:', errorText);
+                    
+                    // Show error message to user
+                    const errorMsg = `Failed to load courses (${response.status}): ${errorText}`;
+                    showNotification(errorMsg, 'error');
+                }
+            } catch (error) {
+                console.error('Error loading courses:', error);
+                showNotification('Error loading courses: ' + error.message, 'error');
+            }
+        }
+        
+        // Update courses display
+        function updateCoursesDisplay() {
+            console.log('Updating courses display with', userCourses.length, 'courses');
+            console.log('User courses:', userCourses);
+            
+            // Update courses list if it exists
+            const coursesList = document.getElementById('courses-list');
+            console.log('Courses list element:', coursesList);
+            
+            if (coursesList) {
+                const coursesHTML = userCourses.map(course => `
+                    <div class="course-card enhanced">
+                        <div class="course-header">
+                            <h3>${course.title}</h3>
+                            <div class="course-status ${course.is_published ? 'published' : 'draft'}">
+                                ${course.is_published ? 'Published' : 'Draft'}
+                            </div>
+                        </div>
+                        <div class="course-body">
+                            <p class="course-description">${course.description || 'No description available'}</p>
+                            <div class="course-meta">
+                                <span class="course-category"><i class="fas fa-tag"></i> ${course.category}</span>
+                                <span class="course-level"><i class="fas fa-signal"></i> ${course.difficulty_level}</span>
+                                <span class="course-duration"><i class="fas fa-clock"></i> ${course.estimated_duration} weeks</span>
+                            </div>
+                        </div>
+                        <div class="course-actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            <button class="btn btn-primary" onclick="showSection('content')">
+                                <i class="fas fa-edit"></i> Edit Content
+                            </button>
+                            <button class="btn btn-secondary" onclick="viewCourseDetails('${course.id}')">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                            <button class="btn btn-danger" onclick="confirmDeleteCourse('${course.id}')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+                
+                coursesList.innerHTML = coursesHTML;
+            }
+        }
+        
+        // View course details - navigate to course content view
+        function viewCourseDetails(courseId) {
+            console.log('Viewing course details for:', courseId);
+            
+            const course = userCourses.find(c => c.id === courseId);
+            if (!course) {
+                showNotification('Course not found', 'error');
+                return;
+            }
+            
+            // Store current course for content display
+            window.currentCourse = course;
+            
+            // Navigate to course content view
+            showCourseContentView(course);
+            
+        }
+        
+        // Fetch course content from database
+        async function fetchCourseContent(courseId) {
+            console.log('Fetching course content for:', courseId);
+            
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('No authentication token');
+            }
+            
+            try {
+                // Fetch course content from various endpoints
+                const [syllabusResponse, slidesResponse, labsResponse, quizzesResponse] = await Promise.all([
+                    fetch(`${CONFIG.ENDPOINTS.SYLLABUS(courseId)}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }),
+                    fetch(`${CONFIG.ENDPOINTS.SLIDES(courseId)}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }),
+                    fetch(`${CONFIG.ENDPOINTS.LAB_BY_COURSE(courseId)}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }),
+                    fetch(`${CONFIG.ENDPOINTS.QUIZZES(courseId)}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    })
+                ]);
+                
+                // Process quiz response - API returns {course_id, quizzes: []}
+                const quizResponse = quizzesResponse.ok ? await quizzesResponse.json() : null;
+                const quizzes = quizResponse && quizResponse.quizzes ? quizResponse.quizzes : [];
+                
+                // Process syllabus response - API returns {course_id, syllabus: {}}
+                const syllabusData = syllabusResponse.ok ? await syllabusResponse.json() : null;
+                const syllabus = syllabusData && syllabusData.syllabus ? syllabusData.syllabus : null;
+                
+                // Process slides response - API returns {course_id, slides: []}
+                const slidesData = slidesResponse.ok ? await slidesResponse.json() : null;
+                const slides = slidesData && slidesData.slides ? slidesData.slides : [];
+                
+                const courseContent = {
+                    syllabus: syllabus,
+                    slides: slides,
+                    labs: labsResponse.ok ? await labsResponse.json() : [],
+                    quizzes: quizzes
+                };
+                
+                return courseContent;
+                
+            } catch (error) {
+                console.error('Error fetching course content:', error);
+                return {
+                    syllabus: null,
+                    slides: [],
+                    labs: [],
+                    quizzes: []
+                };
+            }
+        }
+        
+        // Load course content and refresh the content view
+        async function loadCourseContent(courseId) {
+            console.log('Loading course content for:', courseId);
+            
+            try {
+                // Find the course in the loaded courses
+                const courses = await loadUserCourses();
+                const course = courses.find(c => c.id === courseId);
+                
+                if (course) {
+                    // Show the course content view
+                    await showCourseContentView(course);
+                    console.log('Course content loaded successfully');
+                } else {
+                    console.error('Course not found:', courseId);
+                }
+            } catch (error) {
+                console.error('Error loading course content:', error);
+            }
+        }
+        
+        // Populate quiz list in the quiz pane
+        async function populateQuizList(courseId, quizzes) {
+            const quizListElement = document.getElementById(`quiz-list-${courseId}`);
+            if (!quizListElement) {
+                console.error(`Quiz list element not found for course ${courseId}`);
+                return;
+            }
+            
+            console.log(`Populating quiz list for course ${courseId}`);
+            
+            // Try to get quizzes from session first
+            if (!quizzes) {
+                if (window.currentCourseContent && window.currentCourseContent.quizzes) {
+                    if (Array.isArray(window.currentCourseContent.quizzes)) {
+                        quizzes = window.currentCourseContent.quizzes;
+                    }
+                }
+            }
+            
+            // Load quizzes from API if not in session
+            if (!quizzes || quizzes.length === 0) {
+                try {
+                    const response = await fetch(`${CONFIG.ENDPOINTS.QUIZ_GET_COURSE_QUIZZES(courseId)}`, {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success) {
+                            quizzes = data.quizzes || [];
+                        } else {
+                            quizzes = [];
+                        }
+                    } else {
+                        quizzes = [];
+                    }
+                } catch (error) {
+                    console.error('Error loading quizzes:', error);
+                    quizzes = [];
+                }
+            }
+            
+            console.log(`Found ${quizzes.length} quizzes for course ${courseId}`);
+            
+            if (!quizzes || quizzes.length === 0) {
+                quizListElement.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-question-circle fa-2x"></i>
+                        <p>No quizzes found</p>
+                        <p class="text-muted">Generate or create quizzes to get started</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Show quiz preview in the pane (first 3 quizzes)
+            const previewQuizzes = quizzes.slice(0, 3);
+            quizListElement.innerHTML = `
+                <div class="quiz-preview-list">
+                    ${previewQuizzes.map(quiz => `
+                        <div class="quiz-preview-item">
+                            <div class="quiz-preview-header">
+                                <span class="quiz-preview-title">${quiz.title}</span>
+                                <span class="quiz-preview-count">${quiz.questions.length} questions</span>
+                            </div>
+                            <div class="quiz-preview-topic">${quiz.topic}</div>
+                        </div>
+                    `).join('')}
+                    ${quizzes.length > 3 ? `
+                        <div class="quiz-preview-more">
+                            <span>+${quizzes.length - 3} more quizzes</span>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            // Create quiz items from actual data
+            let quizHtml = '';
+            quizzes.forEach((quiz, index) => {
+                const questionCount = quiz.questions ? quiz.questions.length : 0;
+                const duration = quiz.duration || quiz.timeLimit || 'No limit';
+                
+                quizHtml += `
+                    <div class="quiz-item" onclick="viewQuizDetails('${courseId}', ${index}); event.stopPropagation();">
+                        <div class="quiz-icon">
+                            <i class="fas fa-question-circle"></i>
+                        </div>
+                        <div class="quiz-info">
+                            <div class="quiz-title">${quiz.title || `Quiz ${index + 1}`}</div>
+                            <div class="quiz-meta">${questionCount} questions • ${duration}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            quizListElement.innerHTML = quizHtml;
+        }
+        
+        // Show course content view with tabs
+        async function showCourseContentView(course) {
+            console.log('Showing course content view for:', course.title);
+            
+            // Update content section to show course-specific content
+            const contentSection = document.getElementById('content-section');
+            if (!contentSection) {
+                console.error('Content section not found');
+                return;
+            }
+            
+            // Fetch course content from database
+            try {
+                const courseContent = await fetchCourseContent(course.id);
+                console.log('Course content fetched:', courseContent);
+                
+                // Store course content globally for pane access
+                window.currentCourseContent = courseContent;
+                
+            } catch (error) {
+                console.error('Error fetching course content:', error);
+                // Continue with basic course info if fetch fails
+                window.currentCourseContent = {
+                    syllabus: null,
+                    slides: [],
+                    labs: [],
+                    quizzes: []
+                };
+            }
+            
+            // Update the content section with 4-pane layout
+            contentSection.innerHTML = `
+                <div class="section-header">
+                    <div class="section-header-content">
+                        <div class="header-title">
+                            <h2>${course.title}</h2>
+                            <p>${course.description || 'Course content and materials'}</p>
+                        </div>
+                        <div class="header-actions">
+                            <button class="btn btn-secondary" onclick="showSection('courses')">
+                                <i class="fas fa-arrow-left"></i> Back to Courses
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 4-Pane Layout -->
+                <div class="course-panes-container">
+                    <!-- Top Row -->
+                    <div class="course-panes-row">
+                        <!-- Syllabus Pane (Top Left) -->
+                        <div class="course-pane syllabus-pane" onclick="openSyllabusPane('${course.id}')">
+                            <div class="pane-header">
+                                <h3><i class="fas fa-book"></i> Syllabus</h3>
+                                <div class="pane-actions">
+                                    <button class="btn btn-sm btn-primary" onclick="generateSyllabus('${course.id}'); event.stopPropagation();">
+                                        <i class="fas fa-magic"></i> Generate
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="pane-content">
+                                <div class="syllabus-preview">
+                                    <div class="syllabus-info">
+                                        <p><strong>Category:</strong> ${course.category}</p>
+                                        <p><strong>Level:</strong> ${course.difficulty_level}</p>
+                                        <p><strong>Duration:</strong> ${course.estimated_duration} weeks</p>
+                                        <p><strong>Status:</strong> ${course.is_published ? 'Published' : 'Draft'}</p>
+                                    </div>
+                                    <div class="syllabus-content">
+                                        <h4>Course Description</h4>
+                                        <p>${course.description || 'No description available'}</p>
+                                        <div class="syllabus-actions">
+                                            <button class="btn btn-sm btn-secondary" onclick="viewFullSyllabus('${course.id}'); event.stopPropagation();">
+                                                <i class="fas fa-eye"></i> View Full Syllabus
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Slides Pane (Top Right) -->
+                        <div class="course-pane slides-pane" onclick="viewSlidesVertical('${course.id}')">
+                            <div class="pane-header">
+                                <h3><i class="fas fa-images"></i> Slides</h3>
+                                <div class="pane-actions">
+                                    <button class="btn btn-sm btn-primary" onclick="generateSlides('${course.id}'); event.stopPropagation();">
+                                        <i class="fas fa-plus"></i> Generate
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="pane-content">
+                                <div class="slides-preview">
+                                    <div class="slides-stack">
+                                        <div class="slide-thumbnail">
+                                            <div class="slide-number">1</div>
+                                            <div class="slide-content">Introduction</div>
+                                        </div>
+                                        <div class="slide-thumbnail">
+                                            <div class="slide-number">2</div>
+                                            <div class="slide-content">Getting Started</div>
+                                        </div>
+                                        <div class="slide-thumbnail">
+                                            <div class="slide-number">3</div>
+                                            <div class="slide-content">Practice</div>
+                                        </div>
+                                    </div>
+                                    <div class="slides-actions">
+                                        <button class="btn btn-sm btn-secondary" onclick="viewSlidesVertical('${course.id}'); event.stopPropagation();">
+                                            <i class="fas fa-list"></i> Vertical View
+                                        </button>
+                                        <button class="btn btn-sm btn-primary" onclick="startSlideshow('${course.id}'); event.stopPropagation();">
+                                            <i class="fas fa-play"></i> Slideshow
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Bottom Row -->
+                    <div class="course-panes-row">
+                        <!-- Labs Pane (Bottom Left) -->
+                        <div class="course-pane labs-pane" onclick="openLabEnvironment('${course.id}')">
+                            <div class="pane-header">
+                                <h3><i class="fas fa-flask"></i> Labs</h3>
+                                <div class="pane-actions">
+                                    <button class="btn btn-sm btn-secondary" onclick="refreshLabExercises('${course.id}'); event.stopPropagation();" title="Refresh exercises">
+                                        <i class="fas fa-sync"></i> Refresh
+                                    </button>
+                                    <button class="btn btn-sm btn-primary" onclick="createNewLab('${course.id}'); event.stopPropagation();">
+                                        <i class="fas fa-plus"></i> Create
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="pane-content">
+                                <div class="labs-preview">
+                                    <div class="lab-environment-info">
+                                        <div class="lab-widget">
+                                            <i class="fas fa-code"></i>
+                                            <span>Code Editor</span>
+                                        </div>
+                                        <div class="lab-widget">
+                                            <i class="fas fa-terminal"></i>
+                                            <span>Terminal</span>
+                                        </div>
+                                        <div class="lab-widget">
+                                            <i class="fas fa-robot"></i>
+                                            <span>AI Assistant</span>
+                                        </div>
+                                        <div class="lab-widget">
+                                            <i class="fas fa-tasks"></i>
+                                            <span>Exercises</span>
+                                        </div>
+                                    </div>
+                                    <div class="lab-actions">
+                                        <button class="btn btn-sm btn-primary" onclick="startLabEnvironment('${course.id}'); event.stopPropagation();">
+                                            <i class="fas fa-play"></i> Start Lab
+                                        </button>
+                                        <button class="btn btn-sm btn-secondary" onclick="configureLab('${course.id}'); event.stopPropagation();">
+                                            <i class="fas fa-cog"></i> Configure
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Quizzes Pane (Bottom Right) -->
+                        <div class="course-pane quizzes-pane" onclick="openQuizzesPane('${course.id}')">
+                            <div class="pane-header">
+                                <h3><i class="fas fa-question-circle"></i> Quizzes</h3>
+                                <div class="pane-actions">
+                                    <button class="btn btn-sm btn-primary" onclick="generateQuizzes('${course.id}'); event.stopPropagation();">
+                                        <i class="fas fa-plus"></i> Generate
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="pane-content">
+                                <div class="quizzes-preview">
+                                    <div class="quiz-list" id="quiz-list-${course.id}">
+                                        <!-- Dynamic quiz content will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Populate dynamic quiz content
+            populateQuizList(course.id, window.currentCourseContent.quizzes);
+            
+            // Navigate to content section
+            showSection('content');
+        }
+        
+        
+        // Confirm delete course
+        function confirmDeleteCourse(courseId) {
+            console.log('Confirming delete for course:', courseId);
+            
+            const course = userCourses.find(c => c.id === courseId);
+            if (!course) {
+                showNotification('Course not found', 'error');
+                return;
+            }
+            
+            if (confirm(`Are you sure you want to delete "${course.title}"? This action cannot be undone.`)) {
+                deleteCourse(courseId);
+            }
+        }
+        
+        // Delete course
+        async function deleteCourse(courseId) {
+            console.log('Deleting course:', courseId);
+            
+            try {
+                const response = await fetch(`${CONFIG.ENDPOINTS.COURSES}/${courseId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    showNotification('Course deleted successfully', 'success');
+                    // Remove from local array
+                    userCourses = userCourses.filter(c => c.id !== courseId);
+                    // Update display
+                    updateCoursesDisplay();
+                    updateOverviewStats();
+                } else {
+                    throw new Error('Failed to delete course');
+                }
+            } catch (error) {
+                console.error('Error deleting course:', error);
+                showNotification('Error deleting course: ' + error.message, 'error');
+            }
+        }
+        
+        // Update overview stats
+        function updateOverviewStats() {
+            console.log('Updating overview stats');
+            
+            // Update overview section
+            const overviewSection = document.getElementById('overview-section');
+            if (overviewSection) {
+                const statsHTML = `
+                    <h2>Dashboard Overview</h2>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3>${userCourses.length}</h3>
+                            <p>Courses</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>0</h3>
+                            <p>Students</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>0</h3>
+                            <p>Assignments</p>
+                        </div>
+                    </div>
+                    <div class="courses-preview">
+                        <h3>Recent Courses</h3>
+                        ${userCourses.slice(0, 3).map(course => `
+                            <div class="course-preview">
+                                <strong>${course.title}</strong>
+                                <p>${course.description}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                
+                overviewSection.innerHTML = statsHTML;
+            }
+        }
+        
+        // Show notification function
+        function showNotification(message, type = 'info') {
+            console.log(`Notification (${type}): ${message}`);
+            // For now, just log to console. In a full implementation, this would show a toast or modal
+        }
+        
+        // Progress notification for long-running operations
+        function showProgressNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification progress-notification ${type}`;
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <div class="notification-icon">
+                        <i class="fas fa-spinner fa-spin"></i>
+                    </div>
+                    <div class="notification-message">${message}</div>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            return {
+                update: function(newMessage, newType = 'info') {
+                    const iconElement = notification.querySelector('.notification-icon i');
+                    const messageElement = notification.querySelector('.notification-message');
+                    
+                    notification.className = `notification progress-notification ${newType}`;
+                    messageElement.textContent = newMessage;
+                    
+                    if (newType === 'success') {
+                        iconElement.className = 'fas fa-check';
+                    } else if (newType === 'error') {
+                        iconElement.className = 'fas fa-times';
+                    } else {
+                        iconElement.className = 'fas fa-spinner fa-spin';
+                    }
+                },
+                close: function() {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }
+            };
+        }
+        
+        // Simple showSection function for navigation
+        window.showSection = function(sectionName) {
+            console.log('🔍 showSection called with:', sectionName);
+            console.log('🔍 Call stack:', new Error().stack);
+            
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Show target section
+            const targetSection = document.getElementById(sectionName + '-section');
+            if (targetSection) {
+                targetSection.classList.add('active');
+                console.log('Successfully activated section:', sectionName);
+                
+                // If showing courses section, ensure courses are populated
+                if (sectionName === 'courses') {
+                    console.log('Courses section activated, updating courses display...');
+                    updateCoursesDisplay();
+                }
+            } else {
+                console.error('Target section not found:', sectionName + '-section');
+            }
+            
+            // Update nav links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            const activeNavLink = document.querySelector(`[data-section="${sectionName}"]`);
+            if (activeNavLink) {
+                activeNavLink.classList.add('active');
+            }
+            
+            // Update breadcrumb
+            const breadcrumb = document.getElementById('currentSection');
+            if (breadcrumb) {
+                breadcrumb.textContent = sectionName.charAt(0).toUpperCase() + sectionName.slice(1).replace('-', ' ');
+            }
+        };
+        
+        // Pane interaction functions
+        window.openSyllabusPane = function(courseId) {
+            console.log('Opening syllabus pane for course:', courseId);
+            
+            const syllabus = window.currentCourseContent?.syllabus;
+            if (!syllabus) {
+                showNotification('No syllabus found for this course', 'warning');
+                return;
+            }
+            
+            console.log('Syllabus data:', syllabus);
+            
+            // Helper function to render prerequisites
+            const renderPrerequisites = (prerequisites) => {
+                if (!prerequisites || prerequisites.length === 0) {
+                    return '<p><em>No prerequisites required</em></p>';
+                }
+                return `<ul>${prerequisites.map(prereq => `<li>${prereq}</li>`).join('')}</ul>`;
+            };
+            
+            // Helper function to render modules
+            const renderModules = (modules) => {
+                if (!modules || modules.length === 0) {
+                    return '<p><em>No modules available</em></p>';
+                }
+                
+                return modules.map(module => `
+                    <div class="syllabus-module">
+                        <div class="module-header">
+                            <h6>Module ${module.module_number}: ${module.title}</h6>
+                            ${module.duration ? `<span class="module-duration">${module.duration} minutes</span>` : module.duration_hours ? `<span class="module-duration">${module.duration_hours} hours</span>` : ''}
+                        </div>
+                        <div class="module-description">
+                            ${module.description || 'No description available'}
+                        </div>
+                        ${(module.objectives || module.learning_outcomes) && (module.objectives || module.learning_outcomes).length > 0 ? `
+                            <div class="module-objectives">
+                                <strong>Module Objectives:</strong>
+                                <ul>
+                                    ${(module.objectives || module.learning_outcomes).map(obj => `<li>${obj}</li>`).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+                        ${module.topics && module.topics.length > 0 ? `
+                            <div class="module-topics">
+                                <strong>Topics:</strong>
+                                <ul>
+                                    ${module.topics.map(topic => {
+                                        // Handle both string topics and object topics
+                                        if (typeof topic === 'string') {
+                                            return `<li>${topic}</li>`;
+                                        } else {
+                                            return `
+                                                <li>
+                                                    <strong>${topic.title}</strong>
+                                                    ${topic.duration ? ` (${topic.duration} min)` : ''}
+                                                    ${topic.description ? `<br><em>${topic.description}</em>` : ''}
+                                                    ${topic.objectives && topic.objectives.length > 0 ? `
+                                                        <ul>
+                                                            ${topic.objectives.map(obj => `<li>${obj}</li>`).join('')}
+                                                        </ul>
+                                                    ` : ''}
+                                                </li>
+                                            `;
+                                        }
+                                    }).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            };
+            
+            // Create syllabus modal
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content large">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-book"></i> Course Syllabus</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="syllabus-content">
+                            <div class="syllabus-header">
+                                <h4>${syllabus.title || 'Course Syllabus'}</h4>
+                                <div class="syllabus-meta">
+                                    ${syllabus.level ? `<span class="syllabus-level"><i class="fas fa-signal"></i> ${syllabus.level}</span>` : ''}
+                                    ${syllabus.duration ? `<span class="syllabus-duration"><i class="fas fa-clock"></i> ${syllabus.duration} hours</span>` : ''}
+                                </div>
+                            </div>
+                            
+                            <div class="syllabus-overview">
+                                <h5><i class="fas fa-info-circle"></i> Course Overview</h5>
+                                <p>${syllabus.description || syllabus.overview || 'No description available'}</p>
+                            </div>
+                            
+                            ${syllabus.target_audience ? `
+                                <div class="syllabus-audience">
+                                    <h5><i class="fas fa-users"></i> Target Audience</h5>
+                                    <p>${syllabus.target_audience}</p>
+                                </div>
+                            ` : ''}
+                            
+                            <div class="syllabus-prerequisites">
+                                <h5><i class="fas fa-check-circle"></i> Prerequisites</h5>
+                                ${renderPrerequisites(syllabus.prerequisites)}
+                            </div>
+                            
+                            <div class="syllabus-objectives">
+                                <h5><i class="fas fa-bullseye"></i> Learning Objectives</h5>
+                                ${(syllabus.objectives || []).length > 0 ? `
+                                    <ul>
+                                        ${syllabus.objectives.map(obj => `<li>${obj}</li>`).join('')}
+                                    </ul>
+                                ` : '<p><em>No learning objectives specified</em></p>'}
+                            </div>
+                            
+                            <div class="syllabus-modules">
+                                <h5><i class="fas fa-list-alt"></i> Course Modules</h5>
+                                ${renderModules(syllabus.modules)}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
+                        <button class="btn btn-outline-primary" onclick="generateSyllabus('${courseId}')">Regenerate</button>
+                        <button class="btn btn-primary" onclick="showSyllabusRefinementModal('${courseId}')">Regenerate with Suggestions</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        };
+        
+        window.generateSyllabus = async function(courseId) {
+            console.log('Generating syllabus for course:', courseId);
+            
+            const progressNotification = showProgressNotification('Generating syllabus with AI...', 'info');
+            
+            try {
+                const token = localStorage.getItem('authToken');
+                console.log('Auth token available:', !!token);
+                
+                // Get course data from the current course
+                const course = window.currentCourse;
+                console.log('Current course data:', course);
+                
+                if (!course) {
+                    throw new Error('Course data not available');
+                }
+                
+                const payload = {
+                    course_id: courseId,
+                    title: course.title,
+                    description: course.description || 'No description provided',
+                    category: course.category || 'General',
+                    difficulty_level: course.difficulty_level || 'beginner',
+                    estimated_duration: course.estimated_duration || 4
+                };
+                
+                console.log('Syllabus generation payload:', payload);
+                console.log('API endpoint:', CONFIG.ENDPOINTS.GENERATE_SYLLABUS);
+                
+                const response = await fetch(`${CONFIG.ENDPOINTS.GENERATE_SYLLABUS}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    // Update stored content
+                    if (window.currentCourseContent) {
+                        window.currentCourseContent.syllabus = result.syllabus;
+                    }
+                    
+                    progressNotification.update('Syllabus generated successfully!', 'success');
+                    
+                    // Refresh the content view
+                    setTimeout(() => {
+                        progressNotification.close();
+                        openSyllabusPane(courseId);
+                    }, 1500);
+                } else {
+                    // Log error response details
+                    console.error('API response error:', response.status, response.statusText);
+                    try {
+                        const errorData = await response.json();
+                        console.error('API error details:', errorData);
+                    } catch (jsonError) {
+                        console.error('Failed to parse error response:', jsonError);
+                    }
+                    throw new Error(`Failed to generate syllabus: ${response.status} ${response.statusText}`);
+                }
+            } catch (error) {
+                console.error('Error generating syllabus:', error);
+                progressNotification.update('Error generating syllabus', 'error');
+                setTimeout(() => progressNotification.close(), 3000);
+            }
+        };
+        
+        window.viewFullSyllabus = function(courseId) {
+            console.log('Viewing full syllabus for course:', courseId);
+            openSyllabusPane(courseId);
+        };
+        
+        window.showSyllabusRefinementModal = function(courseId) {
+            console.log('Showing syllabus refinement modal for course:', courseId);
+            
+            const syllabus = window.currentCourseContent?.syllabus;
+            if (!syllabus) {
+                showNotification('No syllabus found for this course', 'warning');
+                return;
+            }
+            
+            // Create refinement modal
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content large">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-edit"></i> Refine Syllabus</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="refinement-form">
+                            <h4>Provide your suggestions to improve the syllabus:</h4>
+                            <p class="help-text">Be specific about what you'd like to change, add, or improve. For example:</p>
+                            <ul class="example-suggestions">
+                                <li>Add more practical examples for Module 2</li>
+                                <li>Include advanced topics in data structures</li>
+                                <li>Extend the duration of the functions module</li>
+                                <li>Add prerequisites for database concepts</li>
+                                <li>Include hands-on projects for each module</li>
+                            </ul>
+                            <div class="form-group">
+                                <label for="syllabusRefinementFeedback">Your Suggestions:</label>
+                                <textarea id="syllabusRefinementFeedback" class="form-control" rows="6" 
+                                    placeholder="Enter your suggestions for improving the syllabus..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                        <button class="btn btn-primary" onclick="refineSyllabus('${courseId}')">Refine Syllabus</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Focus on the textarea
+            setTimeout(() => {
+                document.getElementById('syllabusRefinementFeedback').focus();
+            }, 100);
+        };
+        
+        window.refineSyllabus = async function(courseId) {
+            console.log('Refining syllabus for course:', courseId);
+            
+            const feedback = document.getElementById('syllabusRefinementFeedback').value.trim();
+            if (!feedback) {
+                showNotification('Please provide your suggestions before refining the syllabus', 'warning');
+                return;
+            }
+            
+            const syllabus = window.currentCourseContent?.syllabus;
+            if (!syllabus) {
+                showNotification('No syllabus found for this course', 'error');
+                return;
+            }
+            
+            const progressNotification = showProgressNotification('Refining syllabus with your suggestions...', 'info');
+            
+            try {
+                const token = localStorage.getItem('authToken');
+                
+                const payload = {
+                    course_id: courseId,
+                    feedback: feedback,
+                    current_syllabus: syllabus
+                };
+                
+                console.log('Syllabus refinement payload:', payload);
+                
+                const response = await fetch(`${CONFIG.ENDPOINTS.REFINE_SYLLABUS}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    // Update stored content
+                    if (window.currentCourseContent) {
+                        window.currentCourseContent.syllabus = result.syllabus;
+                    }
+                    
+                    progressNotification.update('Syllabus refined successfully!', 'success');
+                    
+                    // Close the refinement modal
+                    document.querySelector('.modal-overlay').remove();
+                    
+                    // Refresh the syllabus view
+                    setTimeout(() => {
+                        progressNotification.close();
+                        openSyllabusPane(courseId);
+                    }, 1500);
+                } else {
+                    // Log error response details
+                    console.error('API response error:', response.status, response.statusText);
+                    try {
+                        const errorData = await response.json();
+                        console.error('Error response data:', errorData);
+                    } catch (e) {
+                        console.error('Could not parse error response as JSON');
+                    }
+                    throw new Error('Failed to refine syllabus');
+                }
+            } catch (error) {
+                console.error('Error refining syllabus:', error);
+                progressNotification.update('Error refining syllabus', 'error');
+                setTimeout(() => progressNotification.close(), 3000);
+            }
+        };
+        
+        window.openSlidesPane = function(courseId) {
+            console.log('Opening slides pane for course:', courseId);
+            
+            // Ensure slides is always an array
+            let slides = [];
+            if (window.currentCourseContent && window.currentCourseContent.slides) {
+                if (Array.isArray(window.currentCourseContent.slides)) {
+                    slides = window.currentCourseContent.slides;
+                } else {
+                    console.warn('Slides data is not an array, using empty array');
+                    slides = [];
+                }
+            }
+            
+            console.log('Slides data:', slides);
+            
+            // Create slides modal
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content large">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-images"></i> Course Slides</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="slides-content">
+                            ${slides.length === 0 ? `
+                                <div class="empty-state">
+                                    <i class="fas fa-images fa-3x"></i>
+                                    <h4>No slides found</h4>
+                                    <p>Generate slides to get started</p>
+                                    <button class="btn btn-primary" onclick="generateSlides('${courseId}')">Generate Slides</button>
+                                </div>
+                            ` : `
+                                <div class="slides-grid">
+                                    ${slides.map((slide, index) => `
+                                        <div class="slide-thumbnail" data-slide-index="${index}">
+                                            <div class="slide-number">${index + 1}</div>
+                                            <div class="slide-content">
+                                                <h5>${slide.title || 'Slide ' + (index + 1)}</h5>
+                                                <div class="slide-preview">
+                                                    ${slide.content ? slide.content.substring(0, 100) + '...' : 'No content'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
+                        <button class="btn btn-info" onclick="viewSlidesVertical('${courseId}')">Vertical View</button>
+                        <button class="btn btn-success" onclick="startSlideshow('${courseId}')">Start Slideshow</button>
+                        <button class="btn btn-primary" onclick="generateSlides('${courseId}')">Generate New</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        };
+        
+        window.generateSlides = async function(courseId) {
+            console.log('Generating slides for course:', courseId);
+            
+            const progressNotification = showProgressNotification('Generating slides with AI...', 'info');
+            
+            try {
+                const token = localStorage.getItem('authToken');
+                
+                // Get course data from the current course
+                const course = window.currentCourse;
+                console.log('Current course data for slides:', course);
+                
+                if (!course) {
+                    throw new Error('Course data not available');
+                }
+                
+                const payload = {
+                    course_id: courseId,
+                    title: course.title,
+                    description: course.description || 'No description provided',
+                    topic: course.category || 'General'
+                };
+                
+                console.log('Slides generation payload:', payload);
+                console.log('API endpoint:', CONFIG.ENDPOINTS.GENERATE_SLIDES);
+                
+                const response = await fetch(`${CONFIG.ENDPOINTS.GENERATE_SLIDES}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    // Update stored content
+                    if (window.currentCourseContent) {
+                        window.currentCourseContent.slides = result.slides || [];
+                    }
+                    
+                    progressNotification.update('Slides generated successfully!', 'success');
+                    
+                    // Refresh the content view
+                    setTimeout(() => {
+                        progressNotification.close();
+                        viewSlidesVertical(courseId);
+                    }, 1500);
+                } else {
+                    // Log error response details
+                    console.error('API response error:', response.status, response.statusText);
+                    try {
+                        const errorData = await response.json();
+                        console.error('Error response data:', errorData);
+                    } catch (e) {
+                        console.error('Could not parse error response as JSON');
+                    }
+                    throw new Error('Failed to generate slides');
+                }
+            } catch (error) {
+                console.error('Error generating slides:', error);
+                progressNotification.update('Error generating slides', 'error');
+                setTimeout(() => progressNotification.close(), 3000);
+            }
+        };
+        
+        window.viewSlidesVertical = function(courseId) {
+            console.log('Viewing slides in vertical stack for course:', courseId);
+            
+            // Ensure slides is always an array
+            let slides = [];
+            if (window.currentCourseContent && window.currentCourseContent.slides) {
+                if (Array.isArray(window.currentCourseContent.slides)) {
+                    slides = window.currentCourseContent.slides;
+                } else {
+                    console.warn('Slides data is not an array, using empty array');
+                    slides = [];
+                }
+            }
+            
+            console.log('Slides data for vertical view:', slides);
+            
+            if (slides.length === 0) {
+                showNotification('No slides to display', 'warning');
+                return;
+            }
+            
+            // Create vertical slides modal
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content extra-large">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-list"></i> Vertical Slides View</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="slides-stack">
+                            ${slides.map((slide, index) => `
+                                <div class="slide-item">
+                                    <div class="slide-header">
+                                        <span class="slide-number">${index + 1}</span>
+                                        <h4>${slide.title || 'Slide ' + (index + 1)}</h4>
+                                    </div>
+                                    <div class="slide-body">
+                                        ${(slide.content || 'No content available').replace(/\n/g, '<br>')}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
+                        <button class="btn btn-outline-primary" onclick="this.closest('.modal-overlay').remove(); openSlidesPane('${courseId}')">Thumbnail View</button>
+                        <button class="btn btn-primary" onclick="startSlideshow('${courseId}')">Start Slideshow</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        };
+        
+        window.startSlideshow = function(courseId) {
+            console.log('Starting slideshow for course:', courseId);
+            
+            const slides = window.currentCourseContent?.slides || [];
+            if (slides.length === 0) {
+                showNotification('No slides to display', 'warning');
+                return;
+            }
+            
+            // HTML escape function
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+            
+            // Open slideshow in new window
+            const slideshowWindow = window.open('', '_blank', 'width=1200,height=800,fullscreen=yes');
+            
+            // Create HTML document structure
+            slideshowWindow.document.write('<!DOCTYPE html><html><head>');
+            slideshowWindow.document.write('<title>Slideshow - Course ' + courseId + '</title>');
+            slideshowWindow.document.write('<style>');
+            slideshowWindow.document.write('body { margin: 0; font-family: Arial, sans-serif; background: #000; color: #fff; overflow: hidden; }');
+            slideshowWindow.document.write('.slideshow-container { position: relative; width: 100%; height: 100vh; }');
+            slideshowWindow.document.write('.slide { display: none; padding: 40px; text-align: center; position: absolute; width: calc(100% - 80px); height: calc(100% - 80px); }');
+            slideshowWindow.document.write('.slide.active { display: block; }');
+            slideshowWindow.document.write('.slide h1 { font-size: 3em; margin-bottom: 30px; }');
+            slideshowWindow.document.write('.slide-content { font-size: 1.5em; line-height: 1.6; }');
+            slideshowWindow.document.write('.slide-nav { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); }');
+            slideshowWindow.document.write('.nav-btn { background: #333; color: #fff; border: none; padding: 10px 20px; margin: 0 10px; cursor: pointer; }');
+            slideshowWindow.document.write('.nav-btn:hover { background: #555; }');
+            slideshowWindow.document.write('.slide-counter { position: absolute; top: 20px; right: 20px; font-size: 1.2em; }');
+            slideshowWindow.document.write('</style></head><body>');
+            slideshowWindow.document.write('<div class="slideshow-container">');
+            slideshowWindow.document.write('<div class="slide-counter">');
+            slideshowWindow.document.write('<span id="currentSlide">1</span> / <span id="totalSlides">' + slides.length + '</span>');
+            slideshowWindow.document.write('</div>');
+            
+            // Add slides
+            slides.forEach((slide, index) => {
+                slideshowWindow.document.write('<div class="slide ' + (index === 0 ? 'active' : '') + '">');
+                slideshowWindow.document.write('<h1>' + escapeHtml(slide.title || 'Slide ' + (index + 1)) + '</h1>');
+                slideshowWindow.document.write('<div class="slide-content">' + escapeHtml(slide.content || 'No content available') + '</div>');
+                slideshowWindow.document.write('</div>');
+            });
+            
+            slideshowWindow.document.write('<div class="slide-nav">');
+            slideshowWindow.document.write('<button class="nav-btn" onclick="prevSlide()">Previous</button>');
+            slideshowWindow.document.write('<button class="nav-btn" onclick="nextSlide()">Next</button>');
+            slideshowWindow.document.write('<button class="nav-btn" onclick="window.close()">Close</button>');
+            slideshowWindow.document.write('</div></div>');
+            
+            // Add JavaScript in separate script tag
+            slideshowWindow.document.write('<' + 'script>');
+            slideshowWindow.document.write('let currentSlideIndex = 0;');
+            slideshowWindow.document.write('const slides = document.querySelectorAll(".slide");');
+            slideshowWindow.document.write('function showSlide(index) {');
+            slideshowWindow.document.write('    slides.forEach(slide => slide.classList.remove("active"));');
+            slideshowWindow.document.write('    slides[index].classList.add("active");');
+            slideshowWindow.document.write('    document.getElementById("currentSlide").textContent = index + 1;');
+            slideshowWindow.document.write('}');
+            slideshowWindow.document.write('function nextSlide() {');
+            slideshowWindow.document.write('    currentSlideIndex = (currentSlideIndex + 1) % slides.length;');
+            slideshowWindow.document.write('    showSlide(currentSlideIndex);');
+            slideshowWindow.document.write('}');
+            slideshowWindow.document.write('function prevSlide() {');
+            slideshowWindow.document.write('    currentSlideIndex = (currentSlideIndex - 1 + slides.length) % slides.length;');
+            slideshowWindow.document.write('    showSlide(currentSlideIndex);');
+            slideshowWindow.document.write('}');
+            slideshowWindow.document.write('document.addEventListener("keydown", function(e) {');
+            slideshowWindow.document.write('    if (e.key === "ArrowRight" || e.keyCode === 32) nextSlide();');
+            slideshowWindow.document.write('    if (e.key === "ArrowLeft") prevSlide();');
+            slideshowWindow.document.write('    if (e.key === "Escape") window.close();');
+            slideshowWindow.document.write('});');
+            slideshowWindow.document.write('</' + 'script></body></html>');
+            
+            slideshowWindow.document.close();
+        };
+        
+        window.openLabEnvironment = function(courseId) {
+            console.log('Opening lab environment for course:', courseId);
+            
+            const labs = window.currentCourseContent?.labs || [];
+            
+            // Create lab environment modal
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content large">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-flask"></i> Lab Environment</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="lab-content">
+                            ${labs.length === 0 ? `
+                                <div class="empty-state">
+                                    <i class="fas fa-flask fa-3x"></i>
+                                    <h4>No labs configured</h4>
+                                    <p>Create a lab environment to get started</p>
+                                    <button class="btn btn-primary" onclick="createNewLab('${courseId}')">Create Lab</button>
+                                </div>
+                            ` : `
+                                <div class="labs-grid">
+                                    ${labs.map((lab, index) => `
+                                        <div class="lab-widget" data-lab-index="${index}">
+                                            <div class="lab-header">
+                                                <h5>${lab.name || 'Lab ' + (index + 1)}</h5>
+                                                <div class="lab-status ${lab.status || 'inactive'}">
+                                                    ${lab.status || 'inactive'}
+                                                </div>
+                                            </div>
+                                            <div class="lab-environment-info">
+                                                <p><strong>Type:</strong> ${lab.type || 'Virtual Environment'}</p>
+                                                <p><strong>Language:</strong> ${lab.language || 'Python'}</p>
+                                                <p><strong>Tools:</strong> ${lab.tools ? lab.tools.join(', ') : 'VS Code, Terminal'}</p>
+                                            </div>
+                                            <div class="lab-actions">
+                                                <button class="btn btn-sm btn-success" onclick="startLabEnvironment('${courseId}', '${index}')">
+                                                    <i class="fas fa-play"></i> Start Lab
+                                                </button>
+                                                <button class="btn btn-sm btn-secondary" onclick="configureLab('${courseId}', '${index}')">
+                                                    <i class="fas fa-cog"></i> Configure
+                                                </button>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
+                        <button class="btn btn-primary" onclick="createNewLab('${courseId}')">Create New Lab</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        };
+        
+        window.createNewLab = function(courseId) {
+            console.log('Creating new lab for course:', courseId);
+            
+            // Create lab creation modal
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content medium">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-plus"></i> Create New Lab</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="createLabForm">
+                            <div class="form-group">
+                                <label for="labName">Lab Name:</label>
+                                <input type="text" id="labName" name="name" required placeholder="e.g., Python Basics Lab">
+                            </div>
+                            <div class="form-group">
+                                <label for="labType">Environment Type:</label>
+                                <select id="labType" name="type" required>
+                                    <option value="python">Python Environment</option>
+                                    <option value="javascript">JavaScript Environment</option>
+                                    <option value="java">Java Environment</option>
+                                    <option value="docker">Docker Container</option>
+                                    <option value="web">Web Development</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="labDescription">Description:</label>
+                                <textarea id="labDescription" name="description" rows="3" placeholder="Describe what students will learn..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="labTools">Tools & Software:</label>
+                                <input type="text" id="labTools" name="tools" placeholder="VS Code, Terminal, Git (comma-separated)">
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                        <button class="btn btn-primary" onclick="submitLabCreation('${courseId}')">Create Lab</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        };
+        
+        window.startLabEnvironment = function(courseId, labIndex = 0) {
+            console.log('Starting lab environment for course:', courseId, 'lab:', labIndex);
+            
+            const progressNotification = showProgressNotification('Starting lab environment...', 'info');
+            
+            // Simulate lab startup
+            setTimeout(() => {
+                progressNotification.update('Lab environment ready!', 'success');
+                
+                // Open lab in new window with course information
+                const labUrl = `lab.html?courseId=${courseId}&course=${encodeURIComponent(window.currentCourseContent?.title || 'Programming Course')}`;
+                const labWindow = window.open(labUrl, '_blank', 'width=1400,height=900,resizable=yes,scrollbars=yes');
+                
+                if (labWindow) {
+                    setTimeout(() => {
+                        progressNotification.close();
+                    }, 2000);
+                } else {
+                    progressNotification.update('Popup blocked. Please allow popups for this site.', 'error');
+                    setTimeout(() => progressNotification.close(), 3000);
+                }
+            }, 2000);
+        };
+        
+        window.configureLab = function(courseId, labIndex = 0) {
+            console.log('Configuring lab for course:', courseId, 'lab:', labIndex);
+            
+            const labs = window.currentCourseContent?.labs || [];
+            const lab = labs[labIndex] || {};
+            
+            // Create lab configuration modal
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content large">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-cog"></i> Configure Lab Environment</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="lab-config">
+                            <div class="config-section">
+                                <h4>Environment Settings</h4>
+                                <div class="config-grid">
+                                    <div class="config-item">
+                                        <label>CPU Cores:</label>
+                                        <select>
+                                            <option value="1">1 Core</option>
+                                            <option value="2" selected>2 Cores</option>
+                                            <option value="4">4 Cores</option>
+                                        </select>
+                                    </div>
+                                    <div class="config-item">
+                                        <label>Memory:</label>
+                                        <select>
+                                            <option value="1">1 GB</option>
+                                            <option value="2" selected>2 GB</option>
+                                            <option value="4">4 GB</option>
+                                            <option value="8">8 GB</option>
+                                        </select>
+                                    </div>
+                                    <div class="config-item">
+                                        <label>Storage:</label>
+                                        <select>
+                                            <option value="5">5 GB</option>
+                                            <option value="10" selected>10 GB</option>
+                                            <option value="20">20 GB</option>
+                                        </select>
+                                    </div>
+                                    <div class="config-item">
+                                        <label>Timeout:</label>
+                                        <select>
+                                            <option value="30">30 minutes</option>
+                                            <option value="60" selected>1 hour</option>
+                                            <option value="120">2 hours</option>
+                                            <option value="240">4 hours</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="config-section">
+                                <h4>Software & Tools</h4>
+                                <div class="tools-checklist">
+                                    <label><input type="checkbox" checked> VS Code</label>
+                                    <label><input type="checkbox" checked> Terminal</label>
+                                    <label><input type="checkbox" checked> Git</label>
+                                    <label><input type="checkbox"> Docker</label>
+                                    <label><input type="checkbox"> Node.js</label>
+                                    <label><input type="checkbox"> Python</label>
+                                    <label><input type="checkbox"> AI Assistant</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                        <button class="btn btn-primary" onclick="saveLabConfiguration('${courseId}', '${labIndex}')">Save Configuration</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        };
+        
+        window.openQuizzesPane = async function(courseId) {
+            console.log('Opening quizzes pane for course:', courseId);
+            
+            // First try to get quizzes from current session (generated quizzes)
+            let quizzes = [];
+            if (window.currentCourseContent && window.currentCourseContent.quizzes) {
+                if (Array.isArray(window.currentCourseContent.quizzes)) {
+                    quizzes = window.currentCourseContent.quizzes;
+                }
+            }
+            
+            // If no quizzes in session, try to load from API
+            if (quizzes.length === 0) {
+                const progressNotification = showProgressNotification('Loading quizzes...', 'info');
+                
+                try {
+                    const response = await fetch(`${CONFIG.ENDPOINTS.QUIZ_GET_COURSE_QUIZZES(courseId)}`, {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success) {
+                            quizzes = data.quizzes || [];
+                        }
+                    }
+                    
+                    progressNotification.close();
+                } catch (error) {
+                    console.error('Error loading quizzes:', error);
+                    progressNotification.update('Error loading quizzes', 'error');
+                    setTimeout(() => progressNotification.close(), 3000);
+                }
+            }
+            
+            console.log('Found quizzes for modal:', quizzes.length);
+                
+                // Create quizzes modal
+                const modal = document.createElement('div');
+                modal.className = 'modal-overlay';
+                modal.innerHTML = `
+                    <div class="modal-content large">
+                        <div class="modal-header">
+                            <h3><i class="fas fa-question-circle"></i> Course Quizzes</h3>
+                            <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="quizzes-content">
+                                ${quizzes.length === 0 ? `
+                                    <div class="empty-state">
+                                        <i class="fas fa-question-circle fa-3x"></i>
+                                        <h4>No quizzes found</h4>
+                                        <p>Generate quizzes to get started</p>
+                                        <button class="btn btn-primary" onclick="generateQuizzes('${courseId}'); this.closest('.modal-overlay').remove();">Generate Quizzes</button>
+                                    </div>
+                                ` : `
+                                    <div class="quiz-list">
+                                        ${quizzes.map((quiz, index) => `
+                                            <div class="quiz-item" onclick="selectQuizItem('${quiz.id}', '${courseId}', ${index})" data-quiz-id="${quiz.id}">
+                                                <div class="quiz-header">
+                                                    <h5 class="quiz-title">${quiz.title || 'Quiz ' + (index + 1)}</h5>
+                                                    <div class="quiz-stats">
+                                                        <span class="question-count">${quiz.questions ? quiz.questions.length : 0} questions</span>
+                                                        <span class="quiz-difficulty ${quiz.difficulty || 'medium'}">${quiz.difficulty || 'Medium'}</span>
+                                                    </div>
+                                                </div>
+                                                <div class="quiz-preview">
+                                                    <p>${quiz.topic || 'No topic specified'}</p>
+                                                </div>
+                                                <div class="quiz-actions" style="display: none;">
+                                                    <button class="btn btn-sm btn-primary" onclick="previewQuiz('${quiz.id}'); event.stopPropagation();">
+                                                        <i class="fas fa-eye"></i> Preview
+                                                    </button>
+                                                    <button class="btn btn-sm btn-success" onclick="viewQuizResults('${quiz.id}'); event.stopPropagation();">
+                                                        <i class="fas fa-chart-bar"></i> Results
+                                                    </button>
+                                                    <button class="btn btn-sm btn-secondary" onclick="openQuizForStudents('${quiz.id}'); event.stopPropagation();">
+                                                        <i class="fas fa-external-link-alt"></i> Open
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                `}
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
+                            <button class="btn btn-primary" onclick="generateQuizzes('${courseId}')">Generate New</button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+        };
+        
+        window.generateQuizzes = async function(courseId) {
+            console.log('Generating quizzes for course:', courseId);
+            
+            const progressNotification = showProgressNotification('Generating quizzes with AI...', 'info');
+            
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await fetch(`${CONFIG.ENDPOINTS.QUIZ_GENERATE_FOR_COURSE}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        course_id: courseId
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    // Update stored content
+                    if (window.currentCourseContent) {
+                        window.currentCourseContent.quizzes = result.quizzes || [];
+                        console.log('Stored quizzes in session:', window.currentCourseContent.quizzes.length);
+                        // Refresh the quiz list display
+                        populateQuizList(courseId, window.currentCourseContent.quizzes);
+                    }
+                    
+                    progressNotification.update('Quizzes generated successfully!', 'success');
+                    
+                    // Refresh the content view
+                    setTimeout(() => {
+                        progressNotification.close();
+                        openQuizzesPane(courseId);
+                    }, 1500);
+                } else {
+                    throw new Error('Failed to generate quizzes');
+                }
+            } catch (error) {
+                console.error('Error generating quizzes:', error);
+                progressNotification.update('Error generating quizzes', 'error');
+                setTimeout(() => progressNotification.close(), 3000);
+            }
+        };
+        
+        window.viewAllQuizzes = function(courseId) {
+            console.log('Viewing all quizzes for course:', courseId);
+            
+            // Ensure quizzes is always an array - this fixes the "quizzes.map is not a function" error
+            let quizzes = [];
+            if (window.currentCourseContent && window.currentCourseContent.quizzes) {
+                if (Array.isArray(window.currentCourseContent.quizzes)) {
+                    quizzes = window.currentCourseContent.quizzes;
+                } else {
+                    console.warn('Quizzes data is not an array, defaulting to empty array:', window.currentCourseContent.quizzes);
+                    quizzes = [];
+                }
+            }
+            if (quizzes.length === 0) {
+                showNotification('No quizzes to display', 'warning');
+                return;
+            }
+            
+            // Create comprehensive quiz view modal
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content extra-large">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-list"></i> All Quizzes</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="quizzes-detailed">
+                            ${quizzes.map((quiz, index) => `
+                                <div class="quiz-detail-item">
+                                    <div class="quiz-detail-header">
+                                        <h4>${quiz.title || 'Quiz ' + (index + 1)}</h4>
+                                        <span class="quiz-difficulty ${quiz.difficulty || 'medium'}">${quiz.difficulty || 'Medium'}</span>
+                                    </div>
+                                    <div class="quiz-detail-content">
+                                        <p><strong>Description:</strong> ${quiz.description || 'No description'}</p>
+                                        <p><strong>Questions:</strong> ${quiz.questions ? quiz.questions.length : 0}</p>
+                                        <p><strong>Time Limit:</strong> ${quiz.timeLimit || 'No limit'}</p>
+                                        <div class="quiz-questions">
+                                            ${quiz.questions ? quiz.questions.map((q, qIndex) => `
+                                                <div class="question-preview">
+                                                    <h6>Question ${qIndex + 1}: ${q.question}</h6>
+                                                    <div class="question-options">
+                                                        ${q.options ? q.options.map((option, oIndex) => `
+                                                            <div class="option ${oIndex === q.correctAnswer ? 'correct' : ''}">
+                                                                ${String.fromCharCode(65 + oIndex)}. ${option}
+                                                            </div>
+                                                        `).join('') : ''}
+                                                    </div>
+                                                </div>
+                                            `).join('') : '<p>No questions available</p>'}
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
+                        <button class="btn btn-primary" onclick="createQuiz('${courseId}')">Create New Quiz</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        };
+        
+        window.createQuiz = function(courseId) {
+            console.log('Creating quiz for course:', courseId);
+            
+            // Create quiz creation modal
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content large">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-plus"></i> Create New Quiz</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="createQuizForm">
+                            <div class="form-group">
+                                <label for="quizTitle">Quiz Title:</label>
+                                <input type="text" id="quizTitle" name="title" required placeholder="e.g., Python Basics Assessment">
+                            </div>
+                            <div class="form-group">
+                                <label for="quizDescription">Description:</label>
+                                <textarea id="quizDescription" name="description" rows="2" placeholder="Brief description of the quiz..."></textarea>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="quizDifficulty">Difficulty:</label>
+                                    <select id="quizDifficulty" name="difficulty">
+                                        <option value="easy">Easy</option>
+                                        <option value="medium" selected>Medium</option>
+                                        <option value="hard">Hard</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="quizTimeLimit">Time Limit (minutes):</label>
+                                    <input type="number" id="quizTimeLimit" name="timeLimit" min="1" max="120" value="30">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="questionCount">Number of Questions:</label>
+                                <input type="number" id="questionCount" name="questionCount" min="1" max="50" value="10">
+                            </div>
+                            <div class="form-group">
+                                <label for="quizTopics">Topics to Cover:</label>
+                                <textarea id="quizTopics" name="topics" rows="3" placeholder="List topics separated by commas..."></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                        <button class="btn btn-primary" onclick="submitQuizCreation('${courseId}')">Create Quiz</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        };
+        
+        // Helper functions for form submissions
+        window.submitLabCreation = function(courseId) {
+            console.log('Submitting lab creation for course:', courseId);
+            
+            const form = document.getElementById('createLabForm');
+            if (!form) {
+                console.error('Lab creation form not found');
+                return;
+            }
+            
+            const formData = new FormData(form);
+            const labData = {
+                name: formData.get('name'),
+                type: formData.get('type'),
+                description: formData.get('description'),
+                tools: formData.get('tools')?.split(',').map(t => t.trim()).filter(Boolean) || []
+            };
+            
+            console.log('Lab data:', labData);
+            
+            // Close modal
+            const modal = document.querySelector('.modal-overlay');
+            if (modal) {
+                modal.remove();
+            }
+            
+            // Add to current course content
+            if (window.currentCourseContent) {
+                if (!window.currentCourseContent.labs) {
+                    window.currentCourseContent.labs = [];
+                }
+                window.currentCourseContent.labs.push(labData);
+            }
+            
+            showNotification('Lab created successfully!', 'success');
+        };
+        
+        window.saveLabConfiguration = function(courseId, labIndex) {
+            console.log('Saving lab configuration for course:', courseId, 'lab:', labIndex);
+            
+            // Get configuration values from the modal
+            const modal = document.querySelector('.modal-overlay');
+            if (!modal) return;
+            
+            const configData = {
+                cpu: modal.querySelector('select[value="2"]')?.value || '2',
+                memory: modal.querySelector('select[value="2"]')?.value || '2',
+                storage: modal.querySelector('select[value="10"]')?.value || '10',
+                timeout: modal.querySelector('select[value="60"]')?.value || '60',
+                tools: Array.from(modal.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.nextSibling.textContent.trim())
+            };
+            
+            console.log('Lab configuration:', configData);
+            
+            // Close modal
+            modal.remove();
+            
+            showNotification('Lab configuration saved!', 'success');
+        };
+        
+        window.refreshLabExercises = async function(courseId) {
+            console.log('Refreshing lab exercises for course:', courseId);
+            
+            const progressNotification = showProgressNotification('Refreshing lab exercises...', 'info');
+            
+            try {
+                const token = localStorage.getItem('authToken');
+                
+                // Fallback URL if CONFIG is not available
+                const refreshUrl = CONFIG?.ENDPOINTS?.REFRESH_LAB_EXERCISES || 'http://176.9.99.103:8001/lab/refresh-exercises';
+                
+                const response = await fetch(refreshUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        course_id: courseId
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        // Update stored exercises
+                        if (window.currentCourseContent) {
+                            window.currentCourseContent.exercises = result.exercises;
+                        }
+                        
+                        progressNotification.update(`Successfully refreshed ${result.exercises.length} exercises!`, 'success');
+                        
+                        // Close any open modals
+                        const modals = document.querySelectorAll('.modal-overlay');
+                        modals.forEach(modal => modal.remove());
+                        
+                        // Refresh the content view after a short delay
+                        setTimeout(() => {
+                            loadCourseContent(courseId);
+                        }, 1500);
+                    } else {
+                        progressNotification.update(result.message || 'Failed to refresh exercises', 'error');
+                    }
+                } else {
+                    console.error('HTTP Error:', response.status, response.statusText);
+                    let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                    
+                    try {
+                        const errorData = await response.json();
+                        errorMessage = errorData.message || errorMessage;
+                    } catch (e) {
+                        console.error('Could not parse error response as JSON:', e);
+                        const errorText = await response.text();
+                        console.error('Error response text:', errorText);
+                        errorMessage = `Server returned: ${response.status} ${response.statusText}`;
+                    }
+                    
+                    progressNotification.update(`Error: ${errorMessage}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error refreshing lab exercises:', error);
+                progressNotification.update(`Error refreshing exercises: ${error.message}`, 'error');
+            }
+        };
+        
+        window.submitQuizCreation = function(courseId) {
+            console.log('Submitting quiz creation for course:', courseId);
+            
+            const form = document.getElementById('createQuizForm');
+            if (!form) {
+                console.error('Quiz creation form not found');
+                return;
+            }
+            
+            const formData = new FormData(form);
+            const quizData = {
+                title: formData.get('title'),
+                description: formData.get('description'),
+                difficulty: formData.get('difficulty'),
+                timeLimit: formData.get('timeLimit'),
+                questionCount: formData.get('questionCount'),
+                topics: formData.get('topics')?.split(',').map(t => t.trim()).filter(Boolean) || []
+            };
+            
+            console.log('Quiz data:', quizData);
+            
+            // Close modal
+            const modal = document.querySelector('.modal-overlay');
+            if (modal) {
+                modal.remove();
+            }
+            
+            // Add to current course content
+            if (window.currentCourseContent) {
+                if (!window.currentCourseContent.quizzes) {
+                    window.currentCourseContent.quizzes = [];
+                }
+                window.currentCourseContent.quizzes.push(quizData);
+                // Refresh the quiz list display
+                populateQuizList(courseId, window.currentCourseContent.quizzes);
+            }
+            
+            showNotification('Quiz created successfully!', 'success');
+        };
+        
+        // Additional quiz functions
+        window.viewQuizDetails = function(courseId, quizIndex) {
+            console.log('Viewing quiz details for course:', courseId, 'quiz:', quizIndex);
+            
+            // Ensure quizzes is always an array - this fixes the "quizzes.map is not a function" error
+            let quizzes = [];
+            if (window.currentCourseContent && window.currentCourseContent.quizzes) {
+                if (Array.isArray(window.currentCourseContent.quizzes)) {
+                    quizzes = window.currentCourseContent.quizzes;
+                } else {
+                    console.warn('Quizzes data is not an array, defaulting to empty array:', window.currentCourseContent.quizzes);
+                    quizzes = [];
+                }
+            }
+            const quiz = quizzes[quizIndex];
+            
+            if (!quiz) {
+                showNotification('Quiz not found', 'error');
+                return;
+            }
+            
+            // Create detailed quiz view modal
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content large">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-eye"></i> Quiz Details</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="quiz-details">
+                            <h4>${quiz.title}</h4>
+                            <p><strong>Description:</strong> ${quiz.description || 'No description'}</p>
+                            <p><strong>Difficulty:</strong> ${quiz.difficulty || 'Medium'}</p>
+                            <p><strong>Time Limit:</strong> ${quiz.timeLimit || 'No limit'} minutes</p>
+                            <p><strong>Topics:</strong> ${quiz.topics ? quiz.topics.join(', ') : 'None specified'}</p>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
+                        <button class="btn btn-primary" onclick="editQuiz('${courseId}', '${quizIndex}')">Edit Quiz</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        };
+        
+        window.editQuiz = function(courseId, quizIndex) {
+            console.log('Editing quiz for course:', courseId, 'quiz:', quizIndex);
+            showNotification('Quiz editing functionality coming soon', 'info');
+        };
+        
+        window.previewQuizOld = function(courseId, quizIndex) {
+            console.log('Previewing quiz for course:', courseId, 'quiz:', quizIndex);
+            showNotification('Quiz preview functionality coming soon', 'info');
+        };
+        
+        // Make functions available globally
+        window.loadUserCourses = loadUserCourses;
+        window.userCourses = userCourses;
+        window.viewCourseDetails = viewCourseDetails;
+        window.showCourseContentView = showCourseContentView;
+        window.confirmDeleteCourse = confirmDeleteCourse;
+        window.deleteCourse = deleteCourse;
+        window.updateCoursesDisplay = updateCoursesDisplay;
+        
+        // Debug: Log that functions are available
+        console.log('Functions made globally available:');
+        console.log('- viewCourseDetails:', typeof window.viewCourseDetails);
+        console.log('- confirmDeleteCourse:', typeof window.confirmDeleteCourse);
+        console.log('- deleteCourse:', typeof window.deleteCourse);
+        console.log('- updateCoursesDisplay:', typeof window.updateCoursesDisplay);
+        
+        // Add missing functions to prevent errors
+        window.toggleAccountDropdown = function() {
+            console.log('toggleAccountDropdown called');
+            const dropdown = document.getElementById('accountDropdown');
+            const menu = document.getElementById('accountMenu');
+            
+            if (dropdown && menu) {
+                // Toggle the open class on the dropdown container
+                dropdown.classList.toggle('open');
+                
+                // Toggle the show class on the menu
+                menu.classList.toggle('show');
+                
+                console.log('Dropdown toggled:', dropdown.classList.contains('open'));
+            }
+        };
+        
+        window.showProfileModal = function() {
+            console.log('showProfileModal called');
+            alert('Profile modal not implemented yet');
+        };
+        
+        window.showSettingsModal = function() {
+            console.log('showSettingsModal called');
+            alert('Settings modal not implemented yet');
+        };
+        
+        window.showHelpModal = function() {
+            console.log('showHelpModal called');
+            alert('Help modal not implemented yet');
+        };
+        
+        window.logout = function() {
+            console.log('logout called');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('userEmail');
+            window.location.href = 'index.html';
+        };
+        
+        window.viewAnalytics = function() {
+            console.log('viewAnalytics called');
+            showSection('analytics');
+        };
+        
+        window.resetForm = function() {
+            console.log('resetForm called');
+            // Reset any forms on the page
+            document.querySelectorAll('form').forEach(form => form.reset());
+        };
+        
+        window.loadCourseStudents = function() {
+            console.log('loadCourseStudents called');
+            // Implement student loading logic
+            const selectedCourse = document.getElementById('selectedCourse').value;
+            if (selectedCourse) {
+                console.log('Loading students for course:', selectedCourse);
+            }
+        };
+        
+        window.loadCourseLabs = function() {
+            console.log('loadCourseLabs called');
+            // Implement lab loading logic
+            const selectedCourse = document.getElementById('labCourseSelect').value;
+            if (selectedCourse) {
+                console.log('Loading labs for course:', selectedCourse);
+            }
+        };
+        
+        window.filterQuizzes = function() {
+            console.log('filterQuizzes called');
+            // Implement quiz filtering logic
+            const courseFilter = document.getElementById('quizCourseFilter').value;
+            const difficultyFilter = document.getElementById('quizDifficultyFilter').value;
+            console.log('Filtering quizzes:', { courseFilter, difficultyFilter });
+        };
+        
+        window.showContentTab = function(tabName) {
+            console.log('showContentTab called with:', tabName);
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            // Add active class to clicked tab
+            const activeTab = document.querySelector(`[onclick="showContentTab('${tabName}')"]`);
+            if (activeTab) {
+                activeTab.classList.add('active');
+            }
+        };
+        
+        window.showLabTab = function(tabName) {
+            console.log('showLabTab called with:', tabName);
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            // Add active class to clicked tab
+            const activeTab = document.querySelector(`[onclick="showLabTab('${tabName}')"]`);
+            if (activeTab) {
+                activeTab.classList.add('active');
+            }
+        };
+        
+        window.openContentUploadModal = function() {
+            console.log('openContentUploadModal called');
+            alert('Content upload modal not implemented yet');
+        };
+        
+        window.openCreateLabModal = function() {
+            console.log('openCreateLabModal called');
+            
+            // Remove any existing modals to prevent stacking
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.remove();
+            });
+            
+            // Get the existing modal from the HTML
+            const modal = document.getElementById('createLabModal');
+            if (modal) {
+                modal.style.display = 'block';
+            } else {
+                console.error('Create Lab Modal not found in DOM');
+            }
+        };
+        
+        window.closeCreateLabModal = function() {
+            console.log('closeCreateLabModal called');
+            const modal = document.getElementById('createLabModal');
+            if (modal) {
+                modal.style.display = 'none';
+                
+                // Clear form data
+                const form = modal.querySelector('form');
+                if (form) {
+                    form.reset();
+                }
+            }
+        };
+        
+        // Add click outside to close modal functionality
+        document.addEventListener('click', function(event) {
+            // Close any dynamically created modals when clicking outside
+            if (event.target.classList.contains('modal')) {
+                event.target.remove();
+            }
+            
+            // Close create lab modal when clicking outside
+            const createLabModal = document.getElementById('createLabModal');
+            if (createLabModal && event.target === createLabModal) {
+                closeCreateLabModal();
+            }
+        });
+        
+        window.filterCourses = function() {
+            console.log('filterCourses called');
+            // Implement course filtering logic
+        };
+        
+        window.searchCourses = function() {
+            console.log('searchCourses called');
+            // Implement course search logic
+        };
+        
+        // Add click-outside handler to close dropdown
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('accountDropdown');
+            const menu = document.getElementById('accountMenu');
+            
+            if (dropdown && menu) {
+                // Check if the click was outside the dropdown
+                if (!dropdown.contains(event.target)) {
+                    dropdown.classList.remove('open');
+                    menu.classList.remove('show');
+                }
+            }
+        });
+        
+        // Add any other missing functions as needed
+        console.log('Missing functions added to prevent errors');
+        
+        // Quiz Management Functions
+        async function generateQuizzesForCourse() {
+            console.log('Generating quizzes for course...');
+            
+            // Get selected course
+            const courseSelector = document.getElementById('courseSelector');
+            const courseId = courseSelector ? courseSelector.value : null;
+            
+            if (!courseId) {
+                showNotification('Please select a course first', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${CONFIG.ENDPOINTS.QUIZ_GENERATE_FOR_COURSE}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    },
+                    body: JSON.stringify({ course_id: courseId })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        // Store quizzes in session
+                        if (!window.currentCourseContent) {
+                            window.currentCourseContent = {};
+                        }
+                        window.currentCourseContent.quizzes = data.quizzes || [];
+                        console.log('Stored quizzes in session (generateQuizzesForCourse):', window.currentCourseContent.quizzes.length);
+                        
+                        showNotification(`Generated ${data.generated_quizzes} quizzes successfully!`, 'success');
+                        loadQuizzesForCourse(courseId);
+                    } else {
+                        showNotification(data.message || 'Failed to generate quizzes', 'error');
+                    }
+                } else {
+                    showNotification('Failed to generate quizzes', 'error');
+                }
+            } catch (error) {
+                console.error('Error generating quizzes:', error);
+                showNotification('Error generating quizzes', 'error');
+            }
+        }
+        
+        async function createCustomQuiz() {
+            const courseSelector = document.getElementById('courseSelector');
+            const courseId = courseSelector ? courseSelector.value : null;
+            
+            if (!courseId) {
+                showNotification('Please select a course first', 'error');
+                return;
+            }
+            
+            const topic = prompt('Enter quiz topic:');
+            if (!topic) return;
+            
+            const difficulty = prompt('Enter difficulty level (beginner/intermediate/advanced):') || 'beginner';
+            const questionCount = parseInt(prompt('Enter number of questions (5-20):') || '10');
+            
+            if (questionCount < 5 || questionCount > 20) {
+                showNotification('Question count must be between 5 and 20', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${CONFIG.ENDPOINTS.QUIZ_GENERATE}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    },
+                    body: JSON.stringify({
+                        course_id: courseId,
+                        topic: topic,
+                        difficulty: difficulty,
+                        question_count: questionCount,
+                        difficulty_level: difficulty,
+                        instructor_context: {},
+                        student_tracking: {}
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        showNotification('Custom quiz created successfully!', 'success');
+                        loadQuizzesForCourse(courseId);
+                    } else {
+                        showNotification(data.message || 'Failed to create custom quiz', 'error');
+                    }
+                } else {
+                    showNotification('Failed to create custom quiz', 'error');
+                }
+            } catch (error) {
+                console.error('Error creating custom quiz:', error);
+                showNotification('Error creating custom quiz', 'error');
+            }
+        }
+        
+        async function loadQuizzesForCourse(courseId) {
+            if (!courseId) return;
+            
+            try {
+                const response = await fetch(`${CONFIG.ENDPOINTS.QUIZ_GET_COURSE_QUIZZES(courseId)}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        displayQuizzes(data.quizzes || []);
+                    } else {
+                        displayQuizzes([]);
+                    }
+                } else {
+                    console.error('Failed to load quizzes');
+                    displayQuizzes([]);
+                }
+            } catch (error) {
+                console.error('Error loading quizzes:', error);
+                displayQuizzes([]);
+            }
+        }
+        
+        function displayQuizzes(quizzes) {
+            const quizzesGrid = document.getElementById('quizzesGrid');
+            
+            if (quizzes.length === 0) {
+                quizzesGrid.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-question-circle fa-3x"></i>
+                        <h3>No Quizzes Available</h3>
+                        <p>Generate quizzes for your courses or create custom assessments</p>
+                        <button class="btn btn-primary" onclick="generateQuizzesForCourse()">
+                            <i class="fas fa-magic"></i> Generate Your First Quiz
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+            
+            quizzesGrid.innerHTML = `
+                <div class="quiz-grid">
+                    ${quizzes.map(quiz => `
+                        <div class="quiz-card">
+                            <div class="quiz-header">
+                                <h3 class="quiz-title">${quiz.title}</h3>
+                                <span class="quiz-badge difficulty-${quiz.difficulty}">${quiz.difficulty}</span>
+                            </div>
+                            <div class="quiz-content">
+                                <div class="quiz-meta">
+                                    <span class="quiz-topic">${quiz.topic}</span>
+                                    <span class="quiz-questions">${quiz.questions.length} questions</span>
+                                </div>
+                                <div class="quiz-description">
+                                    <p>Auto-generated quiz covering ${quiz.topic} topics</p>
+                                </div>
+                            </div>
+                            <div class="quiz-actions">
+                                <button class="btn btn-sm btn-primary" onclick="previewQuiz('${quiz.id}')">
+                                    <i class="fas fa-eye"></i> Preview
+                                </button>
+                                <button class="btn btn-sm btn-success" onclick="viewQuizResults('${quiz.id}')">
+                                    <i class="fas fa-chart-bar"></i> Results
+                                </button>
+                                <button class="btn btn-sm btn-secondary" onclick="openQuizForStudents('${quiz.id}')">
+                                    <i class="fas fa-external-link-alt"></i> Open
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        window.previewQuiz = function(quizId) {
+            window.open(`quiz.html?quizId=${quizId}&userType=instructor`, '_blank');
+        };
+        
+        window.openQuizForStudents = function(quizId) {
+            window.open(`quiz.html?quizId=${quizId}&userType=student`, '_blank');
+        };
+        
+        window.viewQuizResults = function(quizId) {
+            showNotification('Quiz results viewing will be implemented', 'info');
+        };
+        
+        window.filterQuizzes = function() {
+            const courseFilter = document.getElementById('quizCourseFilter').value;
+            const difficultyFilter = document.getElementById('quizDifficultyFilter').value;
+            
+            // If a course is selected, load quizzes for that course
+            if (courseFilter && courseFilter !== 'all') {
+                loadQuizzesForCourse(courseFilter);
+            }
+            
+            // Apply difficulty filter if needed
+            if (difficultyFilter && difficultyFilter !== 'all') {
+                const quizCards = document.querySelectorAll('.quiz-card');
+                quizCards.forEach(card => {
+                    const badge = card.querySelector('.quiz-badge');
+                    if (badge && badge.textContent.toLowerCase() === difficultyFilter) {
+                        card.style.display = 'block';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            } else {
+                // Show all quizzes
+                const quizCards = document.querySelectorAll('.quiz-card');
+                quizCards.forEach(card => {
+                    card.style.display = 'block';
+                });
+            }
+        };
+        
+        // Load quizzes when switching to quiz section
+        window.loadQuizzesSection = function() {
+            const courseSelector = document.getElementById('courseSelector');
+            const courseId = courseSelector ? courseSelector.value : null;
+            
+            if (courseId) {
+                loadQuizzesForCourse(courseId);
+            }
+        };
+        
+        // Override showSection to handle quiz section
+        const originalShowSection = window.showSection;
+        window.showSection = function(sectionName) {
+            if (originalShowSection) {
+                originalShowSection(sectionName);
+            }
+            
+            if (sectionName === 'quizzes') {
+                loadQuizzesSection();
+            }
+        };
+        
+        // Function to handle individual quiz selection
+        window.selectQuizItem = function(quizId, courseId, index) {
+            console.log('Selecting quiz:', quizId, 'from course:', courseId);
+            
+            // Remove previous selections
+            document.querySelectorAll('.quiz-item').forEach(item => {
+                item.classList.remove('selected');
+                const actions = item.querySelector('.quiz-actions');
+                if (actions) {
+                    actions.style.display = 'none';
+                }
+            });
+            
+            // Select current quiz
+            const selectedItem = document.querySelector(`[data-quiz-id="${quizId}"]`);
+            if (selectedItem) {
+                selectedItem.classList.add('selected');
+                const actions = selectedItem.querySelector('.quiz-actions');
+                if (actions) {
+                    actions.style.display = 'block';
+                }
+            }
+        };
+    </script>
 </body>
 </html>

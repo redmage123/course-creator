@@ -148,12 +148,18 @@ def main(cfg: DictConfig) -> None:
             headers={"WWW-Authenticate": "Bearer"},
         )
         try:
+            logger.info(f"Attempting to validate JWT token: {token[:50]}...")
+            logger.info(f"Using JWT secret length: {len(cfg.jwt.secret_key)}")
+            logger.info(f"Using JWT algorithm: {cfg.jwt.algorithm}")
+            
             # Use the same JWT secret as user management service
             payload = jwt.decode(
                 token, 
                 cfg.jwt.secret_key, 
                 algorithms=[cfg.jwt.algorithm]
             )
+            logger.info(f"JWT payload decoded successfully: {payload}")
+            
             user_id: str = payload.get("sub")
             if user_id is None:
                 logger.error("No 'sub' field in JWT payload")
@@ -162,6 +168,8 @@ def main(cfg: DictConfig) -> None:
             return {"user_id": user_id}
         except JWTError as e:
             logger.error(f"JWT validation error: {e}")
+            logger.error(f"Token was: {token[:50]}...")
+            logger.error(f"Secret key first 10 chars: {cfg.jwt.secret_key[:10]}...")
             raise credentials_exception
     
     @app.get("/")

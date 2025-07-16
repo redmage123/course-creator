@@ -21,6 +21,7 @@ SERVICES=(
     "course-generator:8001"
     "content-storage:8003"
     "course-management:8004"
+    "content-management:8005"
 )
 
 FRONTEND_PORT=3000
@@ -311,6 +312,9 @@ start_service() {
     export JWT_SECRET_KEY="$JWT_SECRET_KEY"
     export ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY"
     export HOST_IP="$HOST_IP"
+    
+    # Set PYTHONPATH to include the service directory for imports
+    export PYTHONPATH="$PWD:$PYTHONPATH"
     
     if [ -f "main.py" ]; then
         python main.py > "$log_file" 2>&1 &

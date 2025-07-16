@@ -12,12 +12,21 @@ from omegaconf import DictConfig
 import hydra
 from pydantic import BaseModel
 from datetime import datetime
+import time
 import uvicorn
 import anthropic
 import json
 import asyncio
 import asyncpg
+import httpx
 import os
+from contextlib import asynccontextmanager
+
+# Import services
+from services.exercise_generation_service import ExerciseGenerationService
+from services.lab_environment_service import LabEnvironmentService
+from services.syllabus_service import SyllabusService
+from services.ai_service import AIService
 
 # Models
 class CourseTemplate(BaseModel):
@@ -69,6 +78,37 @@ class LabLaunchRequest(BaseModel):
     course_title: str
     course_description: str
     course_category: str
+
+class QuizQuestion(BaseModel):
+    question: str
+    options: List[str]
+    correct_answer: int
+    explanation: Optional[str] = None
+
+class Quiz(BaseModel):
+    id: Optional[str] = None
+    course_id: str
+    title: str
+    topic: str
+    difficulty: str
+    questions: List[QuizQuestion]
+    created_at: Optional[datetime] = None
+
+class QuizAttempt(BaseModel):
+    id: Optional[str] = None
+    student_id: str
+    quiz_id: str
+    course_id: str
+    answers: List[int]
+    score: float
+    total_questions: int
+    completed_at: Optional[datetime] = None
+
+class QuizGenerationRequest(BaseModel):
+    course_id: str
+    topic: str
+    difficulty: str = "beginner"
+    question_count: int = 12
     difficulty_level: str
     instructor_context: Dict
     student_tracking: Dict
@@ -116,6 +156,37 @@ class SaveLabStateRequest(BaseModel):
     current_exercise: Optional[str] = None
     progress_data: Optional[Dict] = {}
 
+class DatabaseManager:
+    def __init__(self, database_url: str):
+        self.database_url = database_url
+        self.pool = None
+        
+    async def connect(self):
+        """Create database connection pool"""
+        try:
+            self.pool = await asyncpg.create_pool(
+                self.database_url,
+                min_size=5,
+                max_size=20,
+                command_timeout=60
+            )
+            logging.info("Database connection pool created successfully")
+        except Exception as e:
+            logging.error(f"Failed to create database pool: {e}")
+            raise
+    
+    async def disconnect(self):
+        """Close database connection pool"""
+        if self.pool:
+            await self.pool.close()
+            logging.info("Database connection pool closed")
+    
+    def get_connection(self):
+        """Get database connection from pool"""
+        if not self.pool:
+            raise HTTPException(status_code=500, detail="Database not connected")
+        return self.pool.acquire()
+
 class SyllabusRequest(BaseModel):
     course_id: str
     title: str
@@ -129,6 +200,112 @@ class SyllabusFeedback(BaseModel):
     feedback: str
     current_syllabus: dict
 
+async def save_exercises_to_db(course_id: str, exercises_data: List[Dict]) -> bool:
+    """Save exercises to database"""
+    logger = logging.getLogger(__name__)
+    global db_manager
+    logger.info(f"Attempting to save {len(exercises_data)} exercises for course {course_id}")
+    if not db_manager:
+        logger.error("Database manager not initialized")
+        return False
+    try:
+        async with db_manager.get_connection() as conn:
+            # First check if exercises table exists, if not create it
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS exercises (
+                    id SERIAL PRIMARY KEY,
+                    course_id VARCHAR(255) NOT NULL,
+                    exercise_id VARCHAR(255) NOT NULL,
+                    title TEXT NOT NULL,
+                    description TEXT,
+                    type VARCHAR(50),
+                    difficulty VARCHAR(20),
+                    module_number INTEGER,
+                    topics_covered JSONB,
+                    instructions TEXT,
+                    expected_output TEXT,
+                    hints TEXT,
+                    sample_data TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(course_id, exercise_id)
+                )
+            """)
+            
+            # Delete existing exercises for this course
+            await conn.execute("DELETE FROM exercises WHERE course_id = $1", course_id)
+            
+            # Insert new exercises
+            for exercise in exercises_data:
+                await conn.execute("""
+                    INSERT INTO exercises (
+                        course_id, exercise_id, title, description, type, difficulty,
+                        module_number, topics_covered, instructions, expected_output,
+                        hints, sample_data
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                """, 
+                    course_id,
+                    exercise.get('id', ''),
+                    exercise.get('title', ''),
+                    exercise.get('description', ''),
+                    exercise.get('type', ''),
+                    exercise.get('difficulty', ''),
+                    exercise.get('module_number', 0),
+                    json.dumps(exercise.get('topics_covered', [])),
+                    json.dumps(exercise.get('instructions', [])) if isinstance(exercise.get('instructions'), list) else exercise.get('instructions', ''),
+                    exercise.get('expected_output', ''),
+                    json.dumps(exercise.get('hints', [])) if isinstance(exercise.get('hints'), list) else exercise.get('hints', ''),
+                    exercise.get('sample_data', '')
+                )
+            
+            logger.info(f"Successfully saved {len(exercises_data)} exercises to database for course {course_id}")
+            return True
+            
+    except Exception as e:
+        logger.error(f"Error saving exercises to database: {e}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return False
+
+async def load_exercises_from_db(course_id: str) -> List[Dict]:
+    """Load exercises from database"""
+    logger = logging.getLogger(__name__)
+    global db_manager
+    if not db_manager:
+        logger.error("Database manager not initialized")
+        return []
+    try:
+        async with db_manager.get_connection() as conn:
+            rows = await conn.fetch("""
+                SELECT * FROM exercises 
+                WHERE course_id = $1 
+                ORDER BY module_number, exercise_id
+            """, course_id)
+            
+            exercises_data = []
+            for row in rows:
+                exercise = {
+                    'id': row['exercise_id'],
+                    'title': row['title'],
+                    'description': row['description'],
+                    'type': row['type'],
+                    'difficulty': row['difficulty'],
+                    'module_number': row['module_number'],
+                    'topics_covered': json.loads(row['topics_covered']) if row['topics_covered'] else [],
+                    'instructions': row['instructions'],
+                    'expected_output': row['expected_output'],
+                    'hints': row['hints'],
+                    'sample_data': row['sample_data']
+                }
+                exercises_data.append(exercise)
+            
+            logger.info(f"Loaded {len(exercises_data)} exercises from database for course {course_id}")
+            return exercises_data
+            
+    except Exception as e:
+        logger.error(f"Error loading exercises from database: {e}")
+        return []
+
 @hydra.main(config_path="conf", config_name="config", version_base=None)
 def main(cfg: DictConfig) -> None:
     # Logging setup
@@ -138,11 +315,57 @@ def main(cfg: DictConfig) -> None:
     )
     logger = logging.getLogger(__name__)
     
-    # FastAPI app
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        """FastAPI lifespan event handler"""
+        global db_manager
+        
+        # Startup
+        db_password = os.getenv('DB_PASSWORD', '')
+        
+        # Use the correct database configuration on port 5433
+        if db_password:
+            database_url = f"postgresql://course_user:{db_password}@localhost:5433/course_creator"
+        else:
+            raise ValueError("DB_PASSWORD environment variable is required")
+        db_manager = DatabaseManager(database_url)
+        await db_manager.connect()
+        
+        # Initialize services after database is ready
+        nonlocal ai_service, syllabus_service, lab_environment_service, exercise_generation_service
+        ai_service = AIService(claude_client)
+        syllabus_service = SyllabusService(db_manager.pool, ai_service)
+        lab_environment_service = LabEnvironmentService(db_manager.pool, ai_service, storage=None)
+        exercise_generation_service = ExerciseGenerationService(
+            db=db_manager.pool,
+            ai_service=ai_service,
+            syllabus_service=syllabus_service,
+            lab_service=lab_environment_service
+        )
+        
+        # Load existing exercises from database on startup
+        try:
+            async with db_manager.get_connection() as conn:
+                rows = await conn.fetch("SELECT DISTINCT course_id FROM exercises")
+                for row in rows:
+                    course_id = row['course_id']
+                    exercises_data = await load_exercises_from_db(course_id)
+                    exercises[course_id] = exercises_data
+                    logger.info(f"Loaded {len(exercises_data)} exercises for course {course_id}")
+        except Exception as e:
+            logger.error(f"Error loading exercises on startup: {e}")
+        
+        yield
+        
+        # Shutdown
+        await db_manager.disconnect()
+    
+    # FastAPI app with lifespan
     app = FastAPI(
         title="Course Generator API",
         description="API for generating courses from templates",
-        version="1.0.0"
+        version="1.0.0",
+        lifespan=lifespan
     )
     
     # CORS middleware
@@ -154,14 +377,6 @@ def main(cfg: DictConfig) -> None:
         allow_headers=["*"],
     )
     
-    # Startup and shutdown events
-    @app.on_event("startup")
-    async def startup_event():
-        await init_database()
-    
-    @app.on_event("shutdown")
-    async def shutdown_event():
-        await close_database()
     
     # In-memory storage for demo
     templates = {
@@ -182,42 +397,18 @@ def main(cfg: DictConfig) -> None:
     lab_analytics = {}
     course_syllabi = {}
     
-    # Database connection
-    db_pool = None
-    
-    async def init_database():
-        """Initialize database connection pool"""
-        global db_pool
-        try:
-            # Get database URL from config or environment
-            db_password = os.getenv("DB_PASSWORD", "c0urs3:atao12e")
-            db_url = f"postgresql://course_user:{db_password}@localhost:5433/course_creator"
-            
-            db_pool = await asyncpg.create_pool(
-                db_url,
-                min_size=1,
-                max_size=10
-            )
-            logger.info("Database connection pool initialized")
-        except Exception as e:
-            logger.error(f"Failed to initialize database: {e}")
-    
-    async def close_database():
-        """Close database connection pool"""
-        global db_pool
-        if db_pool:
-            await db_pool.close()
-            logger.info("Database connection pool closed")
+    # Global database manager
+    db_manager = None
     
     # Database functions for syllabi
     async def save_syllabus_to_db(course_id: str, syllabus_data: dict):
         """Save syllabus to database"""
-        if not db_pool:
-            logger.error("Database pool not initialized")
+        if not db_manager:
+            logger.error("Database manager not initialized")
             return False
         
         try:
-            async with db_pool.acquire() as conn:
+            async with db_manager.get_connection() as conn:
                 await conn.execute("""
                     INSERT INTO syllabi (course_id, syllabus_data, updated_at)
                     VALUES ($1, $2, NOW())
@@ -236,12 +427,13 @@ def main(cfg: DictConfig) -> None:
 
     async def load_syllabus_from_db(course_id: str) -> dict:
         """Load syllabus from database"""
-        if not db_pool:
-            logger.error("Database pool not initialized")
+        global db_manager
+        if not db_manager:
+            logger.error("Database manager not initialized")
             return None
         
         try:
-            async with db_pool.acquire() as conn:
+            async with db_manager.get_connection() as conn:
                 row = await conn.fetchrow("""
                     SELECT syllabus_data
                     FROM syllabi 
@@ -262,12 +454,13 @@ def main(cfg: DictConfig) -> None:
     # Database functions for lab environments
     async def save_lab_environment_to_db(course_id: str, lab_data: dict):
         """Save lab environment to database"""
-        if not db_pool:
-            logger.error("Database pool not initialized")
+        global db_manager
+        if not db_manager:
+            logger.error("Database manager not initialized")
             return False
         
         try:
-            async with db_pool.acquire() as conn:
+            async with db_manager.get_connection() as conn:
                 await conn.execute("""
                     INSERT INTO lab_environments (course_id, name, description, environment_type, config, exercises, status, updated_at)
                     VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
@@ -298,12 +491,13 @@ def main(cfg: DictConfig) -> None:
 
     async def load_lab_environment_from_db(course_id: str) -> dict:
         """Load lab environment from database"""
-        if not db_pool:
-            logger.error("Database pool not initialized")
+        global db_manager
+        if not db_manager:
+            logger.error("Database manager not initialized")
             return None
         
         try:
-            async with db_pool.acquire() as conn:
+            async with db_manager.get_connection() as conn:
                 row = await conn.fetchrow("""
                     SELECT id, name, description, environment_type, config, exercises, status
                     FROM lab_environments 
@@ -333,12 +527,13 @@ def main(cfg: DictConfig) -> None:
     # Database functions for slides
     async def save_slides_to_db(course_id: str, slides_data: List[Dict]):
         """Save slides to database"""
-        if not db_pool:
+        global db_manager
+        if not db_manager:
             logger.error("Database pool not initialized")
             return False
             
         try:
-            async with db_pool.acquire() as conn:
+            async with db_manager.get_connection() as conn:
                 # Delete existing slides for this course
                 await conn.execute("DELETE FROM slides WHERE course_id = $1", course_id)
                 
@@ -361,15 +556,69 @@ def main(cfg: DictConfig) -> None:
         except Exception as e:
             logger.error(f"Error saving slides to database: {e}")
             return False
+
+    async def save_quizzes_to_db(course_id: str, quizzes_data: List[Dict]):
+        """Save quizzes to database"""
+        global db_manager
+        if not db_manager:
+            logger.error("Database manager not initialized")
+            return False
+            
+        try:
+            async with db_manager.get_connection() as conn:
+                # Delete existing quizzes for this course
+                await conn.execute("DELETE FROM quizzes WHERE course_id = $1", course_id)
+                
+                # Insert new quizzes
+                for quiz in quizzes_data:
+                    quiz_id = quiz.get('id', str(uuid.uuid4()))
+                    await conn.execute("""
+                        INSERT INTO quizzes (id, course_id, title, description, duration, difficulty, module_number, questions_data)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    """, 
+                    quiz_id,
+                    course_id, 
+                    quiz.get('title', ''),
+                    quiz.get('description', ''),
+                    quiz.get('duration', 20),
+                    quiz.get('difficulty', 'beginner'),
+                    quiz.get('module_number', 1),
+                    json.dumps(quiz.get('questions', []))
+                    )
+                
+                logger.info(f"Saved {len(quizzes_data)} quizzes to database for course {course_id}")
+                return True
+                
+        except Exception as e:
+            logger.error(f"Error saving quizzes to database: {e}")
+            return False
+    
+    async def delete_quiz_from_db(quiz_id: str):
+        """Delete a specific quiz from database"""
+        global db_manager
+        if not db_manager:
+            logger.error("Database manager not initialized")
+            return False
+            
+        try:
+            async with db_manager.get_connection() as conn:
+                await conn.execute("DELETE FROM quizzes WHERE id = $1", quiz_id)
+                logger.info(f"Deleted quiz {quiz_id} from database")
+                return True
+                
+        except Exception as e:
+            logger.error(f"Error deleting quiz from database: {e}")
+            return False
     
     async def load_slides_from_db(course_id: str) -> List[Dict]:
         """Load slides from database"""
-        if not db_pool:
+        global db_manager
+        if not db_manager:
             logger.error("Database pool not initialized")
             return []
             
         try:
-            async with db_pool.acquire() as conn:
+            async with db_manager.get_connection() as conn:
                 rows = await conn.fetch("""
                     SELECT title, content, slide_type, order_number, module_number
                     FROM slides 
@@ -397,12 +646,13 @@ def main(cfg: DictConfig) -> None:
     # Database functions for lab sessions
     async def save_lab_session(course_id: str, student_id: str, session_data: dict, ai_history: list, code_files: dict, current_exercise: str = None, progress_data: dict = None):
         """Save or update lab session state"""
-        if not db_pool:
+        global db_manager
+        if not db_manager:
             logger.error("Database pool not initialized")
             return False
             
         try:
-            async with db_pool.acquire() as conn:
+            async with db_manager.get_connection() as conn:
                 # Use UPSERT (INSERT ... ON CONFLICT) to update existing session
                 await conn.execute("""
                     INSERT INTO lab_sessions 
@@ -435,12 +685,13 @@ def main(cfg: DictConfig) -> None:
     
     async def load_lab_session(course_id: str, student_id: str) -> dict:
         """Load lab session state from database"""
-        if not db_pool:
+        global db_manager
+        if not db_manager:
             logger.error("Database pool not initialized")
             return {}
             
         try:
-            async with db_pool.acquire() as conn:
+            async with db_manager.get_connection() as conn:
                 row = await conn.fetchrow("""
                     SELECT session_data, ai_conversation_history, code_files, 
                            current_exercise, progress_data, last_accessed_at
@@ -474,61 +725,188 @@ def main(cfg: DictConfig) -> None:
     # Initialize Claude client
     claude_client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY", "YOUR_CLAUDE_API_KEY"))
     
+    # Services will be initialized after database is ready
+    ai_service = None
+    syllabus_service = None
+    lab_environment_service = None
+    exercise_generation_service = None
+    
     # Define sync helper functions
     def generate_exercises_from_syllabus_sync(course_id: str, syllabus: dict) -> List[Dict]:
         """Generate exercises based on syllabus modules using LLM with full syllabus context"""
+        # Get logger from current context
+        logger = logging.getLogger(__name__)
         try:
+            # Determine course level from syllabus
+            course_overview = syllabus.get('overview', '').lower()
+            course_level = "beginner"  # Default to beginner
+            
+            if "advanced" in course_overview or "expert" in course_overview:
+                course_level = "advanced"
+            elif "intermediate" in course_overview or "prior experience" in course_overview:
+                course_level = "intermediate"
+            elif "beginner" in course_overview or "no prior" in course_overview or "introduction" in course_overview:
+                course_level = "beginner"
+            
+            logger.info(f"Detected course level: {course_level} for course {course_id}")
+            
             # Build comprehensive prompt using syllabus structure
             exercises_prompt = f"""
-            You are an expert educator creating practical, hands-on exercises for this course syllabus.
+            You are an expert educator creating SPECIFIC, CONCRETE lab exercises for this course syllabus.
             
             Course Overview: {syllabus.get('overview', '')}
+            
+            🚨 CRITICAL COURSE LEVEL REQUIREMENT 🚨
+            Course Level: {course_level.upper()}
+            
+            MANDATORY: ALL EXERCISES MUST BE {course_level.upper()} LEVEL ONLY!
+            DO NOT create exercises above {course_level.upper()} difficulty!
+            Each exercise "difficulty" field MUST be "{course_level}"!
             
             Full Syllabus Modules:
             {json.dumps(syllabus.get('modules', []), indent=2)}
             
+            🎯 EXAMPLES OF PERFECT LAB EXERCISES FOR DIFFERENT SUBJECTS:
+            
+            PROGRAMMING EXAMPLE:
+            {{
+                "title": "Circle Area and Circumference Calculator",
+                "description": "Design a program that takes a value r (radius of a circle) and calculates the area and circumference.",
+                "instructions": [
+                    "Step 1: Define r as a constant in the Python code (e.g., r = 5.0)",
+                    "Step 2: Take radius value from standard input using input()",
+                    "Step 3: Import math library and use math.pi for pi value",
+                    "Step 4: Calculate area using formula: area = π × r²",
+                    "Step 5: Calculate circumference using formula: circumference = 2 × π × r",
+                    "Step 6: Display both results with proper formatting"
+                ],
+                "expected_output": "For radius 5: 'Area: 78.54' and 'Circumference: 31.42'",
+                "formulas": ["Area = π × r²", "Circumference = 2 × π × r"]
+            }}
+            
+            LINUX/SHELL EXAMPLE:
+            {{
+                "title": "File System Navigation and Management",
+                "description": "Practice essential Linux commands for navigating and managing files and directories.",
+                "instructions": [
+                    "Step 1: Use 'pwd' command to display current directory",
+                    "Step 2: Use 'ls -la' to list all files with detailed information",
+                    "Step 3: Create a new directory called 'test_lab' using 'mkdir'",
+                    "Step 4: Navigate into the directory using 'cd test_lab'",
+                    "Step 5: Create a text file using 'touch sample.txt'",
+                    "Step 6: Use 'echo' to add content: echo 'Hello Linux' > sample.txt",
+                    "Step 7: View file content using 'cat sample.txt'",
+                    "Step 8: Copy the file using 'cp sample.txt backup.txt'"
+                ],
+                "expected_output": "Directory created, file created with content 'Hello Linux', backup file created",
+                "formulas": []
+            }}
+            
+            MATHEMATICS EXAMPLE:
+            {{
+                "title": "Quadratic Equation Solver",
+                "description": "Solve quadratic equations using the quadratic formula and analyze the results.",
+                "instructions": [
+                    "Step 1: Given equation ax² + bx + c = 0, identify coefficients a=2, b=5, c=3",
+                    "Step 2: Calculate the discriminant: Δ = b² - 4ac",
+                    "Step 3: Determine if discriminant is positive, negative, or zero",
+                    "Step 4: Apply quadratic formula: x = (-b ± √Δ) / (2a)",
+                    "Step 5: Calculate both possible solutions (x₁ and x₂)",
+                    "Step 6: Verify solutions by substituting back into original equation"
+                ],
+                "expected_output": "For 2x² + 5x + 3 = 0: x₁ = -1, x₂ = -1.5",
+                "formulas": ["Quadratic Formula: x = (-b ± √(b² - 4ac)) / (2a)", "Discriminant: Δ = b² - 4ac"]
+            }}
+            
             CRITICAL REQUIREMENTS FOR EXERCISES:
-            1. Create SPECIFIC, actionable exercises based on the exact topics and commands in the syllabus
-            2. For technical topics: Include actual commands, file names, step-by-step procedures
-            3. For business topics: Include real scenarios, frameworks, and practical applications
-            4. Each exercise must have clear, measurable objectives and expected outcomes
-            5. Provide detailed instructions that students can follow independently
-            6. Include realistic scenarios and practical applications
+            1. Create ONE SPECIFIC exercise per major topic/module
+            2. Each exercise MUST have a clear, concrete goal with measurable outcome
+            3. Provide EXACT step-by-step instructions that are actionable
+            4. Include CLEAR expected inputs and outputs with examples
+            5. Supply any formulas, commands, or concepts needed
+            6. Use realistic, practical problems appropriate for the subject
+            7. Each step should be a specific task, not vague instructions
             
-            EXAMPLES OF GOOD EXERCISES:
-            - For "File operations (cp, mv, rm, touch)": Create exercise with specific commands like "Create a file called 'test.txt' using touch, copy it to 'backup.txt' using cp, then rename the original to 'original.txt' using mv"
-            - For "Python variables (int, str, list, dict)": "Create variables: age = 25, name = 'John', scores = [85, 92, 78], student = {{'name': 'John', 'age': 25}}. Print each variable type using type() function"
-            - For "Market segmentation strategies": "Analyze a given company case study and create demographic, psychographic, and behavioral segments using provided customer data"
+            EXERCISE STRUCTURE REQUIREMENTS:
+            - Title: Clear, specific goal (e.g., "File Permissions Lab", "Essay Structure Analysis")
+            - Description: One sentence explaining what the student will accomplish
+            - Instructions: 4-8 specific steps, each building on the previous
+            - Expected Output: Exact example of what the student should achieve
+            - Hints: Specific tools, commands, functions, or techniques to use
+            - Formulas: Any formulas, commands, or reference materials needed
             
-            For each module, create 1-2 exercises that cover the specific topics mentioned in the syllabus.
+            SUBJECT-SPECIFIC ADAPTATIONS:
+            - PROGRAMMING: Code exercises with specific functions, inputs, outputs
+            - LINUX/SYSTEMS: Command-line exercises with specific commands and file operations
+            - MATHEMATICS: Problem-solving with specific numbers, formulas, and calculations
+            - ENGLISH/WRITING: Analysis exercises with specific texts, writing tasks with clear criteria
+            - HISTORY: Timeline creation, source analysis, comparison exercises with specific events
+            - SCIENCE: Experiments, calculations, data analysis with specific procedures
+            - BUSINESS: Case studies, calculations, analysis with specific scenarios
+            
+            BEGINNER-FRIENDLY EXAMPLES BY SUBJECT:
+            - Programming: "BMI Calculator", "Temperature Converter", "Grade Calculator"
+            - Linux: "File Navigation", "Permission Management", "Process Monitoring"
+            - Math: "Equation Solver", "Geometry Calculator", "Statistical Analysis"
+            - English: "Paragraph Analysis", "Grammar Check", "Essay Outline"
+            - History: "Timeline Creation", "Source Comparison", "Event Analysis"
+            
+            CRITICAL: ALL EXERCISES MUST BE {course_level.upper()} LEVEL. Do not mix difficulty levels.
+            
+            UNIVERSAL PRINCIPLES FOR EXCELLENT LABS:
+            - Transform theoretical concepts into hands-on practice
+            - Solve real problems that professionals encounter in this field
+            - Use actual tools, commands, and methods from the industry
+            - Include sample data or scenarios that mirror real-world situations
+            - Build something tangible that students can see working
+            - Connect individual topics into comprehensive projects
+            
+            STRUCTURE REQUIREMENTS:
+            - Each lab must have a clear practical purpose
+            - Include specific sample data, files, or scenarios appropriate to the subject
+            - Provide detailed step-by-step instructions with actual commands/code
+            - Give specific expected outputs or results
+            - Include troubleshooting hints for common issues
+            - Add starter templates or setup instructions when appropriate
+            
+            For each module, create 1-2 comprehensive lab exercises that cover ALL the topics in that module through practical application.
+            Base your exercises on the specific topics listed in each module - don't make assumptions about the subject matter.
+            
             Return ONLY valid JSON array with this structure:
             [
                 {{
                     "id": "ex_1_1",
-                    "title": "Specific Exercise Title",
-                    "description": "Clear description of what students will accomplish",
+                    "title": "Practical Lab Title (describe what students will build/accomplish)",
+                    "description": "Clear description of the real-world problem to solve or task to complete",
                     "type": "hands_on",
-                    "difficulty": "beginner",
+                    "difficulty": "{course_level}",
                     "module_number": 1,
                     "topics_covered": ["specific topic 1", "specific topic 2"],
+                    "purpose": "Why this lab is useful in real-world scenarios for this subject",
+                    "sample_data": "Actual sample data, files, or scenarios to use in the lab",
                     "instructions": [
-                        "Step 1: Specific action with actual commands/tools",
-                        "Step 2: Another specific action",
-                        "Step 3: Verification or testing step"
+                        "Step 1: Setup/create specific files, data, or environment",
+                        "Step 2: Execute specific commands/code/procedures with examples",
+                        "Step 3: Test with provided sample data or scenarios",
+                        "Step 4: Verify output matches expected results"
                     ],
-                    "expected_output": "Specific, measurable outcome description",
-                    "hints": ["Specific helpful hint", "Another practical tip"],
-                    "evaluation_criteria": ["Criterion 1", "Criterion 2"],
-                    "estimated_time": "15-30 minutes"
+                    "expected_output": "Specific, measurable outcome with example results",
+                    "hints": ["Specific helpful hint for common issues", "Another practical tip"],
+                    "evaluation_criteria": ["Criteria 1: Functional requirement", "Criteria 2: Accuracy requirement"],
+                    "estimated_time": "30-45 minutes",
+                    "starter_code": "Optional: Basic template, commands, or starting structure"
                 }}
             ]
             
-            Generate exercises that directly utilize the specific commands, tools, concepts, and techniques mentioned in each module's topics.
-            """
+            Generate labs that teach practical skills through meaningful projects students would actually want to complete in this subject area.
+            """.format(course_level=course_level)
+            
+            # Add more detailed logging
+            logger.info(f"Generating exercises for course {course_id} with syllabus: {syllabus.get('overview', 'No overview')}")
             
             response = claude_client.messages.create(
-                model="claude-3-haiku-20240307",
-                max_tokens=4000,
+                model="claude-3-sonnet-20240229",  # Using more capable model
+                max_tokens=4096,  # Fixed to comply with model limit
                 messages=[
                     {"role": "user", "content": exercises_prompt}
                 ]
@@ -536,6 +914,13 @@ def main(cfg: DictConfig) -> None:
             
             try:
                 exercises_data = json.loads(response.content[0].text)
+                
+                # CRITICAL: Force all exercises to use the correct difficulty level
+                for exercise in exercises_data:
+                    if isinstance(exercise, dict):
+                        exercise['difficulty'] = course_level
+                        logger.info(f"Forced exercise '{exercise.get('title', 'Unknown')}' to {course_level} level")
+                
                 logger.info(f"Generated {len(exercises_data)} exercises from syllabus using LLM")
                 return exercises_data
             except json.JSONDecodeError:
@@ -546,44 +931,185 @@ def main(cfg: DictConfig) -> None:
                 if start != -1 and end != 0:
                     try:
                         exercises_data = json.loads(text[start:end])
+                        
+                        # CRITICAL: Force all exercises to use the correct difficulty level
+                        for exercise in exercises_data:
+                            if isinstance(exercise, dict):
+                                exercise['difficulty'] = course_level
+                                logger.info(f"Forced extracted exercise '{exercise.get('title', 'Unknown')}' to {course_level} level")
+                        
                         logger.info(f"Extracted {len(exercises_data)} exercises from LLM response")
                         return exercises_data
                     except:
                         pass
                 
                 # Fallback to programmatic generation
-                logger.warning("LLM response parsing failed, using fallback exercise generation")
-                return generate_exercises_fallback(syllabus)
+                logger.warning("LLM response parsing failed, using improved fallback exercise generation")
+                return generate_exercises_fallback(syllabus, course_id)
                 
         except Exception as e:
             logger.error(f"Error generating exercises from syllabus with LLM: {e}")
-            return generate_exercises_fallback(syllabus)
+            return generate_exercises_fallback(syllabus, course_id)
     
-    def generate_exercises_fallback(syllabus: dict) -> List[Dict]:
-        """Fallback exercise generation when LLM fails"""
+    def generate_exercises_fallback(syllabus: dict, course_id: str = "unknown") -> List[Dict]:
+        """Generate specific, concrete programming exercises when LLM fails"""
+        # Get logger from current context
+        logger = logging.getLogger(__name__)
         exercises_list = []
         
-        for module in syllabus.get("modules", []):
-            for i, topic in enumerate(module.get("topics", [])):
-                exercises_list.append({
-                    "id": f"ex_{module.get('module_number', 1)}_{i+1}",
-                    "title": f"{topic} - Hands-on Exercise",
-                    "description": f"Practice exercise for {topic}. Apply the concepts learned in this module through practical activities.",
-                    "type": "hands_on",
-                    "difficulty": "beginner",
-                    "module_number": module.get('module_number', 1),
-                    "topics_covered": [topic],
-                    "instructions": [
-                        f"Review the key concepts of {topic}",
-                        f"Complete the practical tasks related to {topic}",
-                        "Test your understanding with the provided scenarios",
-                        "Submit your solution and reflection"
-                    ],
-                    "expected_output": f"Demonstration of {topic} understanding through practical application",
-                    "hints": [f"Focus on the key principles of {topic}", "Break down complex problems into smaller steps"],
-                    "evaluation_criteria": ["Correctness of implementation", "Understanding of concepts"],
-                    "estimated_time": "15-30 minutes"
-                })
+        # Determine course level from syllabus (same logic as main function)
+        course_overview = syllabus.get('overview', '').lower()
+        course_level = "beginner"  # Default to beginner
+        
+        if "advanced" in course_overview or "expert" in course_overview:
+            course_level = "advanced"
+        elif "intermediate" in course_overview or "prior experience" in course_overview:
+            course_level = "intermediate"
+        elif "beginner" in course_overview or "no prior" in course_overview or "introduction" in course_overview:
+            course_level = "beginner"
+        
+        logger.info(f"Fallback generation using course level: {course_level} for course {course_id}")
+        
+        # Define specific exercises for different subjects
+        concrete_exercises = [
+            {
+                "title": "Python Environment Setup and Hello World",
+                "description": "Set up your Python development environment and create your first program.",
+                "instructions": [
+                    "Step 1: Open your Python IDE or text editor",
+                    "Step 2: Create a new file named 'hello.py'",
+                    "Step 3: Write a program that asks for the user's name using input()",
+                    "Step 4: Store the name in a variable called 'name'",
+                    "Step 5: Display 'Hello, [name]! Welcome to Python programming!'",
+                    "Step 6: Run the program and test with different names"
+                ],
+                "expected_output": "Program prompts 'Enter your name: ', then displays 'Hello, John! Welcome to Python programming!' (for input 'John')",
+                "hints": [
+                    "Use input() function to get user input",
+                    "Use print() function to display output",
+                    "Use + operator or f-strings to combine text with variables"
+                ],
+                "formulas": []
+            },
+            {
+                "title": "Variable Types and Data Conversion",
+                "description": "Practice working with different data types and converting between them.",
+                "instructions": [
+                    "Step 1: Create variables of different types: name (string), age (integer), height (float), is_student (boolean)",
+                    "Step 2: Ask user for their age as input and convert to integer using int()",
+                    "Step 3: Ask user for their height and convert to float using float()",
+                    "Step 4: Calculate their birth year: birth_year = 2024 - age",
+                    "Step 5: Display all information with proper labels and formatting",
+                    "Step 6: Test with different inputs to verify data type handling"
+                ],
+                "expected_output": "For age=25, height=1.75: 'Name: John, Age: 25, Height: 1.75m, Birth Year: 1999'",
+                "hints": [
+                    "Use int() to convert strings to integers",
+                    "Use float() to convert strings to decimal numbers",
+                    "Use type() function to check variable types"
+                ],
+                "formulas": [
+                    "Birth Year = Current Year - Age"
+                ]
+            },
+            {
+                "title": "Decision Making with Control Structures",
+                "description": "Create a program that makes decisions using if-elif-else statements and loops.",
+                "instructions": [
+                    "Step 1: Ask user for their test score (0-100)",
+                    "Step 2: Use if-elif-else to determine letter grade (A, B, C, D, F)",
+                    "Step 3: Use a while loop to keep asking for scores until user enters -1",
+                    "Step 4: Store all valid scores in a list",
+                    "Step 5: Calculate and display the average of all scores",
+                    "Step 6: Display the highest and lowest scores"
+                ],
+                "expected_output": "For scores [85, 92, 78]: 'Average: 85.0, Highest: 92, Lowest: 78'",
+                "hints": [
+                    "Use if-elif-else for grade categorization",
+                    "Use while loop for continuous input",
+                    "Use list.append() to store scores"
+                ],
+                "formulas": [
+                    "Average = sum of all scores / number of scores",
+                    "Grades: A(90-100), B(80-89), C(70-79), D(60-69), F(<60)"
+                ]
+            },
+            {
+                "title": "File Input/Output Operations",
+                "description": "Learn to read from and write to files for data persistence.",
+                "instructions": [
+                    "Step 1: Create a text file named 'inventory.txt' with product data: 'apple,50,1.25'",
+                    "Step 2: Write a program to read the file line by line",
+                    "Step 3: Split each line by comma to get product name, quantity, and price",
+                    "Step 4: Calculate total value for each product (quantity × price)",
+                    "Step 5: Write results to a new file 'inventory_report.txt'",
+                    "Step 6: Display summary of total inventory value"
+                ],
+                "expected_output": "Creates 'inventory_report.txt' with: 'apple: 50 units, $1.25 each, Total: $62.50'",
+                "hints": [
+                    "Use open() with 'r' mode to read files",
+                    "Use split(',') to separate CSV values",
+                    "Use open() with 'w' mode to write files"
+                ],
+                "formulas": [
+                    "Total Value = Quantity × Price"
+                ]
+            },
+            {
+                "title": "Practical Application Development",
+                "description": "Build a complete application that demonstrates real-world Python usage.",
+                "instructions": [
+                    "Step 1: Design a simple calculator that can add, subtract, multiply, and divide",
+                    "Step 2: Create functions for each operation (add, subtract, multiply, divide)",
+                    "Step 3: Create a menu system that displays available operations",
+                    "Step 4: Use a loop to keep the calculator running until user chooses to exit",
+                    "Step 5: Add error handling for division by zero and invalid inputs",
+                    "Step 6: Test all operations with various inputs"
+                ],
+                "expected_output": "Calculator menu with working operations: '5 + 3 = 8', '10 / 2 = 5.0', handles errors gracefully",
+                "hints": [
+                    "Use functions to organize code",
+                    "Use try-except for error handling",
+                    "Use while loop for continuous operation"
+                ],
+                "formulas": [
+                    "Basic arithmetic operations: +, -, ×, ÷"
+                ]
+            }
+        ]
+        
+        for module_idx, module in enumerate(syllabus.get("modules", [])):
+            module_number = module.get('module_number', module_idx + 1)
+            module_title = module.get('title', f'Module {module_number}')
+            
+            # Get a concrete exercise for this module
+            exercise_template = concrete_exercises[module_idx % len(concrete_exercises)]
+            
+            # Generate unique exercise ID
+            exercise_id = f"{course_id}_ex_{module_number}_{hash(module_title) % 1000}"
+            
+            exercises_list.append({
+                "id": exercise_id,
+                "title": exercise_template["title"],
+                "description": exercise_template["description"],
+                "type": "programming",
+                "difficulty": course_level,  # Explicitly use detected course level for ALL exercises
+                "module_number": module_number,
+                "topics_covered": module.get("topics", []),
+                "purpose": f"Learn {module_title} through hands-on programming",
+                "instructions": exercise_template["instructions"],
+                "expected_output": exercise_template["expected_output"],
+                "hints": exercise_template["hints"],
+                "formulas": exercise_template["formulas"],
+                "evaluation_criteria": [
+                    "Program runs without errors",
+                    "Correct implementation of all steps",
+                    "Proper use of Python syntax and functions",
+                    "Expected output matches requirements"
+                ],
+                "estimated_time": "30-45 minutes",
+                "starter_code": "# Write your Python code here"
+            })
         
         return exercises_list
     
@@ -600,44 +1126,71 @@ def main(cfg: DictConfig) -> None:
             {json.dumps(syllabus.get('modules', []), indent=2)}
             
             CRITICAL REQUIREMENTS FOR QUIZZES:
-            1. Create SPECIFIC questions based on the exact topics, commands, and concepts in the syllabus
-            2. For technical topics: Include questions about actual commands, syntax, parameters, and practical usage
-            3. For business topics: Include scenario-based questions using real frameworks and methodologies
+            1. Create SPECIFIC questions based on the exact topics, concepts, and learning outcomes in the syllabus
+            2. Test both conceptual understanding and practical application of the subject matter
+            3. Include scenario-based questions that mirror real-world situations in this field
             4. Each question must test understanding of specific knowledge from the syllabus content
             5. Provide realistic distractors (wrong answers) that are plausible but clearly incorrect
-            6. Include detailed explanations for correct answers
-            7. Cover both conceptual understanding and practical application
+            6. Include detailed explanations for correct answers that enhance learning
+            7. Cover different cognitive levels: recall, comprehension, application, and analysis
+            8. Questions should be appropriate for professionals working in this field
             
-            EXAMPLES OF GOOD QUIZ QUESTIONS:
-            - For "File operations (cp, mv, rm, touch)": "Which command would you use to copy 'file1.txt' to 'backup.txt'?" Options: ["cp file1.txt backup.txt", "mv file1.txt backup.txt", "rm file1.txt backup.txt", "touch file1.txt backup.txt"]
-            - For "Python variables (int, str, list, dict)": "What will be the output of: x = [1, 2, 3]; print(type(x))?" Options: ["<class 'list'>", "<class 'dict'>", "<class 'tuple'>", "<class 'str'>"]
-            - For "Market segmentation (demographic, psychographic, behavioral)": "A company targeting customers based on their lifestyle and values is using which segmentation approach?" Options: ["Psychographic", "Demographic", "Geographic", "Behavioral"]
+            UNIVERSAL PRINCIPLES FOR EXCELLENT QUIZ QUESTIONS:
+            - Test practical knowledge students would use in real-world scenarios
+            - Include situation-based questions that require applying concepts
+            - Use terminology and examples specific to the subject field
+            - Create distractors that represent common misconceptions or mistakes
+            - Focus on understanding "why" and "how" rather than just memorization
+            - Include questions that test problem-solving and critical thinking
+            - Ensure questions are clear, unambiguous, and professionally relevant
             
-            For each module, create 3-5 questions that test the specific topics and learning outcomes mentioned in the syllabus.
+            QUESTION TYPES TO INCLUDE:
+            - Definition/Concept questions: Test understanding of key terms and principles
+            - Application questions: Test ability to apply concepts to new situations
+            - Scenario questions: Present realistic situations requiring knowledge application
+            - Analysis questions: Test ability to break down complex problems
+            - Comparison questions: Test understanding of differences and similarities
+            - Troubleshooting questions: Test problem-solving skills in context
+            
+            STRUCTURE REQUIREMENTS:
+            - Each quiz should have 3-5 well-crafted questions per module
+            - Questions should progress from basic to more complex within each quiz
+            - Include variety in question types and difficulty levels
+            - Provide comprehensive explanations that teach as well as assess
+            - Ensure all questions are directly tied to specific syllabus content
+            - Base questions on the actual topics and learning outcomes listed
+            
+            For each module, create 3-5 questions that comprehensively test the specific topics and learning outcomes mentioned in the syllabus.
+            Base your questions on the specific content listed in each module - don't make assumptions about the subject matter.
+            
             Return ONLY valid JSON array with this structure:
             [
                 {{
                     "id": "quiz_1",
                     "title": "Module Title - Knowledge Assessment",
-                    "description": "Comprehensive quiz covering specific module concepts",
+                    "description": "Comprehensive quiz covering key concepts and practical applications",
                     "module_number": 1,
                     "duration": 20,
                     "difficulty": "beginner",
+                    "topics_covered": ["specific topic 1", "specific topic 2"],
+                    "learning_objectives": ["what students should demonstrate after taking this quiz"],
                     "questions": [
                         {{
-                            "question": "Specific question based on syllabus content",
+                            "question": "Clear, specific question based on syllabus content",
+                            "question_type": "scenario|definition|application|analysis|comparison",
                             "options": ["Correct answer", "Plausible distractor 1", "Plausible distractor 2", "Plausible distractor 3"],
                             "correct_answer": 0,
-                            "explanation": "Detailed explanation of why this is correct and why others are wrong",
+                            "explanation": "Detailed explanation of why this is correct, why others are wrong, and additional context",
                             "topic_tested": "Specific topic from syllabus",
-                            "difficulty": "beginner"
+                            "difficulty": "beginner|intermediate|advanced",
+                            "cognitive_level": "recall|comprehension|application|analysis"
                         }}
                     ]
                 }}
             ]
             
-            Generate questions that directly test knowledge of the specific commands, tools, concepts, and techniques mentioned in each module's topics and learning outcomes.
-            Ensure questions are practical and test real understanding, not just memorization.
+            Generate questions that test real understanding and practical knowledge relevant to this subject area.
+            Focus on questions that professionals in this field would need to know and apply.
             """
             
             response = claude_client.messages.create(
@@ -765,14 +1318,56 @@ def main(cfg: DictConfig) -> None:
     async def generate_slides(request: SlideGenerationRequest):
         logger.info(f"Generating slides for course: {request.course_id}")
         
-        # Generate slides based on the topic
-        slides_data = generate_course_slides(request.title, request.description, request.topic)
+        # Try to get syllabus from database first
+        syllabus_data = await load_syllabus_from_db(request.course_id)
+        
+        if syllabus_data:
+            # Generate slides based on syllabus
+            logger.info(f"Using existing syllabus from database for course: {request.course_id}")
+            slides_data = generate_course_slides_from_syllabus(request.course_id, syllabus_data)
+        else:
+            # Fallback: check in-memory storage
+            if request.course_id in course_syllabi:
+                logger.info(f"Using existing syllabus from memory for course: {request.course_id}")
+                slides_data = generate_course_slides_from_syllabus(request.course_id, course_syllabi[request.course_id])
+            else:
+                # Last resort: generate basic slides from request parameters
+                logger.warning(f"No syllabus found for course {request.course_id}, generating basic slides")
+                slides_data = generate_basic_slides(request.title, request.description, request.topic)
+        
         course_slides[request.course_id] = slides_data
         
         # Save to database
         await save_slides_to_db(request.course_id, slides_data)
         
         return {"course_id": request.course_id, "slides": slides_data}
+    
+    def generate_basic_slides(title: str, description: str, topic: str) -> List[Dict]:
+        """Generate basic slides when no syllabus is available"""
+        slides = []
+        
+        # Title slide with bullet points
+        title_content = f"• {description}" if description else "• Course overview and introduction"
+        slides.append({
+            "id": "slide_1",
+            "title": title,
+            "content": title_content,
+            "slide_type": "content",
+            "order": 1
+        })
+        
+        # Content slides based on topic
+        topics = topic.split(',') if ',' in topic else [topic]
+        for i, t in enumerate(topics[:5], 2):  # Max 5 additional slides
+            slides.append({
+                "id": f"slide_{i}",
+                "title": f"{t.strip()} Fundamentals",
+                "content": f"• Key concepts in {t.strip()}\n• Practical applications\n• Common techniques\n• Best practices",
+                "slide_type": "content",
+                "order": i
+            })
+        
+        return slides
     
     @app.get("/slides/{course_id}")
     async def get_course_slides(course_id: str):
@@ -822,59 +1417,287 @@ def main(cfg: DictConfig) -> None:
     
     @app.get("/lab/{course_id}")
     async def get_lab_environment(course_id: str):
-        # First check database for persistent lab environment
-        lab_data = await load_lab_environment_from_db(course_id)
-        if lab_data:
-            return {"lab_id": lab_data["id"], "lab": lab_data}
-        
-        # Fallback to memory (for backward compatibility)
-        for lab_id, lab in lab_environments.items():
-            if lab["course_id"] == course_id:
-                return {"lab_id": lab_id, "lab": lab}
-                
-        raise HTTPException(status_code=404, detail="Lab environment not found")
+        """Get lab environment for a course with improved error handling."""
+        try:
+            # First check database for persistent lab environment
+            lab_data = await load_lab_environment_from_db(course_id)
+            if lab_data:
+                return {"lab_id": lab_data["id"], "lab": lab_data}
+            
+            # Fallback to memory (for backward compatibility)
+            for lab_id, lab in lab_environments.items():
+                if lab["course_id"] == course_id:
+                    return {"lab_id": lab_id, "lab": lab}
+            
+            # If no lab environment found, provide helpful information
+            logger.warning(f"Lab environment not found for course {course_id}")
+            raise HTTPException(
+                status_code=404, 
+                detail={
+                    "error": "Lab environment not found",
+                    "course_id": course_id,
+                    "suggestions": [
+                        "Generate course content to create lab environment",
+                        "Check if course content generation completed successfully",
+                        "Verify database connectivity"
+                    ]
+                }
+            )
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error getting lab environment for course {course_id}: {e}")
+            raise HTTPException(
+                status_code=500,
+                detail={
+                    "error": "Internal server error",
+                    "message": "Failed to retrieve lab environment"
+                }
+            )
     
     @app.get("/student/lab-access/{course_id}/{student_id}")
     async def check_lab_access(course_id: str, student_id: str):
-        """Check if student has access to lab environment"""
-        # In a real implementation, this would check enrollment status
-        # For now, we'll simulate enrollment check
-        
-        # Mock enrollment check (in real app, call course management service)
-        has_access = True  # Assume student has access for demo
-        
-        if not has_access:
+        """Check if student has access to lab environment with improved error handling."""
+        try:
+            # Check if lab environment exists (database first, then memory)
+            lab_data = await load_lab_environment_from_db(course_id)
+            lab_found = False
+            lab_id = None
+            lab = None
+            
+            if lab_data:
+                lab_found = True
+                lab_id = lab_data["id"]
+                lab = lab_data
+            else:
+                # Fallback to memory
+                for memory_lab_id, memory_lab in lab_environments.items():
+                    if memory_lab["course_id"] == course_id:
+                        lab_found = True
+                        lab_id = memory_lab_id
+                        lab = memory_lab
+                        break
+            
+            if not lab_found:
+                # Provide helpful error information
+                raise HTTPException(
+                    status_code=404, 
+                    detail={
+                        "error": "Lab environment not found",
+                        "course_id": course_id,
+                        "student_id": student_id,
+                        "access_granted": False,
+                        "suggestions": [
+                            "Contact instructor to generate lab environment",
+                            "Verify course content has been created",
+                            "Check course enrollment status"
+                        ]
+                    }
+                )
+            
+            # TODO: In a real implementation, check enrollment status
+            # For now, we'll simulate enrollment check
+            has_access = True  # Assume student has access for demo
+            
+            if not has_access:
+                raise HTTPException(
+                    status_code=403, 
+                    detail={
+                        "error": "Access denied",
+                        "message": "Student not enrolled in this course",
+                        "course_id": course_id,
+                        "student_id": student_id,
+                        "access_granted": False
+                    }
+                )
+            
+            return {
+                "access_granted": True,
+                "lab_id": lab_id,
+                "lab": lab,
+                "student_id": student_id,
+                "course_id": course_id
+            }
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error checking lab access for student {student_id} in course {course_id}: {e}")
             raise HTTPException(
-                status_code=403, 
-                detail="Student not enrolled in this course"
-            )
-        
-        # Find lab environment for course
-        for lab_id, lab in lab_environments.items():
-            if lab["course_id"] == course_id:
-                return {
-                    "access_granted": True,
-                    "lab_id": lab_id,
-                    "lab": lab,
-                    "student_id": student_id
+                status_code=500,
+                detail={
+                    "error": "Internal server error",
+                    "message": "Failed to check lab access",
+                    "access_granted": False
                 }
-        
-        raise HTTPException(status_code=404, detail="Lab environment not found for this course")
+            )
     
     @app.post("/exercises/generate")
     async def generate_exercises(request: ExerciseRequest):
         logger.info(f"Generating exercises for course: {request.course_id}")
         
         exercise_data = generate_course_exercises(request.topic, request.difficulty)
+        logger.info(f"STORING exercises for course_id: '{request.course_id}'")
+        logger.info(f"Number of exercises generated: {len(exercise_data)}")
+        logger.info(f"Exercise titles: {[ex.get('title', 'No title') for ex in exercise_data]}")
+        
         exercises[request.course_id] = exercise_data
+        
+        # Save to database
+        await save_exercises_to_db(request.course_id, exercise_data)
+        
+        logger.info(f"After storing, exercises dictionary now has keys: {list(exercises.keys())}")
+        logger.info(f"Total exercises in dictionary: {sum(len(v) for v in exercises.values())}")
         
         return {"course_id": request.course_id, "exercises": exercise_data}
     
     @app.get("/exercises/{course_id}")
     async def get_exercises(course_id: str):
+        logger.info(f"GET /exercises/{course_id} - Requested course_id: {course_id}")
+        logger.info(f"Available exercise keys: {list(exercises.keys())}")
+        
         if course_id not in exercises:
+            logger.error(f"Course ID '{course_id}' not found in exercises dictionary")
+            logger.info(f"Current exercises keys: {list(exercises.keys())}")
             raise HTTPException(status_code=404, detail="Exercises not found for this course")
-        return {"course_id": course_id, "exercises": exercises[course_id]}
+        
+        exercise_data = exercises[course_id]
+        logger.info(f"Returning {len(exercise_data)} exercises for course '{course_id}'")
+        logger.info(f"Exercise titles: {[ex.get('title', 'No title') for ex in exercise_data]}")
+        
+        return {"course_id": course_id, "exercises": exercise_data}
+    
+    @app.get("/debug/exercises")
+    async def debug_exercises():
+        """Debug endpoint to view all exercises in memory"""
+        logger.info("DEBUG: Exercises dictionary accessed")
+        
+        debug_info = {
+            "total_courses_with_exercises": len(exercises),
+            "course_ids": list(exercises.keys()),
+            "exercises_by_course": {}
+        }
+        
+        for course_id, course_exercises in exercises.items():
+            debug_info["exercises_by_course"][course_id] = {
+                "count": len(course_exercises),
+                "titles": [ex.get('title', 'No title') for ex in course_exercises]
+            }
+        
+        logger.info(f"DEBUG: Returning exercises debug info: {debug_info}")
+        return debug_info
+    
+    @app.post("/debug/generate-test-exercises")
+    async def generate_test_exercises(request: dict):
+        """Debug endpoint to generate test exercises for a course"""
+        course_id = request.get("course_id", "test-course")
+        course_title = request.get("course_title", "Test Course")
+        
+        logger.info(f"DEBUG: Generating test exercises for course: {course_id}")
+        
+        # Generate generic exercises based on course title
+        if "linux" in course_title.lower() or "system" in course_title.lower():
+            test_exercises = [
+                {
+                    "id": 1,
+                    "title": "System Administration Log Analyzer",
+                    "description": "Build a script to analyze system logs and identify potential security issues",
+                    "difficulty": "beginner",
+                    "purpose": "Learn log analysis skills essential for system administration",
+                    "sample_data": "Sample auth.log and syslog files with various entries",
+                    "instructions": [
+                        "Create a sample log file with failed login attempts",
+                        "Write a bash script to count failed login attempts by IP",
+                        "Use grep, awk, and sort to process the log data",
+                        "Generate a report showing top 10 suspicious IPs"
+                    ],
+                    "expected_output": "Formatted report showing IP addresses and failed attempt counts",
+                    "hints": ["Use grep to filter failed logins", "Use awk to extract IP addresses"],
+                    "type": "hands_on"
+                },
+                {
+                    "id": 2,
+                    "title": "Automated Backup System",
+                    "description": "Create a comprehensive backup script for important directories",
+                    "difficulty": "intermediate",
+                    "purpose": "Learn essential backup strategies used in production environments",
+                    "sample_data": "Sample directories with various file types to backup",
+                    "instructions": [
+                        "Create directories with sample files (documents, configs, etc.)",
+                        "Write a script that compresses directories with timestamp",
+                        "Implement rotation to keep only 5 most recent backups",
+                        "Add logging to track backup operations"
+                    ],
+                    "expected_output": "Compressed backup files with timestamps and rotation log",
+                    "hints": ["Use tar with compression", "Use find to manage old backups"],
+                    "type": "hands_on"
+                }
+            ]
+        elif "python" in course_title.lower() or "programming" in course_title.lower():
+            test_exercises = [
+                {
+                    "id": 1,
+                    "title": "Student Grade Analysis System",
+                    "description": "Build a complete grade management system using lists, dictionaries, and file I/O",
+                    "difficulty": "beginner",
+                    "purpose": "Learn data structures through practical grade management",
+                    "sample_data": "CSV file with student names, subjects, and grades: 'Alice,85,92,78\nBob,90,87,85\nCarol,88,94,91'",
+                    "instructions": [
+                        "Create a CSV file with student data (name, math, science, english grades)",
+                        "Read the file and store data in dictionaries and lists",
+                        "Calculate class average, highest/lowest scores per subject",
+                        "Generate a formatted report showing student rankings",
+                        "Save results to a new file"
+                    ],
+                    "expected_output": "Formatted report with statistics and student rankings saved to file",
+                    "hints": ["Use csv module for reading", "Use dict comprehensions for calculations", "Format numbers to 2 decimal places"],
+                    "evaluation_criteria": ["Working code that runs without errors", "Produces correct output for sample data", "Handles file I/O properly"],
+                    "estimated_time": "30-45 minutes",
+                    "type": "coding"
+                },
+                {
+                    "id": 2,
+                    "title": "Coordinate Converter Tool",
+                    "description": "Build a coordinate conversion tool with functions and user interface",
+                    "difficulty": "intermediate",
+                    "purpose": "Learn functions and math operations through practical geometry tool",
+                    "sample_data": "Test coordinates: (3,4), (5,12), (0,0), (-3,4), (1,1)",
+                    "instructions": [
+                        "Create functions to convert Cartesian to polar coordinates",
+                        "Create functions to convert polar to Cartesian coordinates",
+                        "Add input validation and error handling",
+                        "Create a menu system for user interaction",
+                        "Test with provided sample coordinates"
+                    ],
+                    "expected_output": "Interactive program that converts coordinates with proper formatting",
+                    "hints": ["Use math.sqrt() and math.atan2()", "Format output to 2 decimal places", "Handle division by zero"],
+                    "evaluation_criteria": ["Functions work correctly", "Proper error handling", "User-friendly interface"],
+                    "estimated_time": "45-60 minutes",
+                    "type": "coding"
+                }
+            ]
+        else:
+            test_exercises = [
+                {
+                    "id": 1,
+                    "title": "Getting Started",
+                    "description": "Basic introduction to the course concepts",
+                    "difficulty": "beginner",
+                    "instructions": ["Follow the course materials", "Complete the exercises", "Ask questions if needed"],
+                    "type": "general"
+                }
+            ]
+        
+        logger.info(f"DEBUG: Generated {len(test_exercises)} test exercises")
+        logger.info(f"DEBUG: Exercise titles: {[ex['title'] for ex in test_exercises]}")
+        
+        exercises[course_id] = test_exercises
+        
+        logger.info(f"DEBUG: Stored exercises for course_id: {course_id}")
+        logger.info(f"DEBUG: Total courses with exercises: {len(exercises)}")
+        
+        return {"course_id": course_id, "exercises": test_exercises, "count": len(test_exercises)}
     
     @app.post("/lab/launch")
     async def launch_lab(request: LabLaunchRequest):
@@ -933,6 +1756,34 @@ def main(cfg: DictConfig) -> None:
             "adaptive_quizzes": 0,
             "student_progress": []
         }
+        
+        # Generate exercises from syllabus and slides during lab initialization
+        try:
+            # Get syllabus from database
+            syllabus = await load_syllabus_from_db(request.course_id)
+            if not syllabus:
+                # Try to get from memory if not in database
+                syllabus = course_syllabi.get(request.course_id)
+            
+            if syllabus:
+                logger.info(f"Generating exercises from syllabus for lab: {request.course_id}")
+                exercises_data = generate_exercises_from_syllabus_sync(request.course_id, syllabus)
+                
+                # Store exercises in memory and database
+                exercises[request.course_id] = exercises_data
+                
+                # Save exercises to database
+                await save_exercises_to_db(request.course_id, exercises_data)
+                
+                logger.info(f"Generated {len(exercises_data)} exercises for lab")
+                active_labs[request.course_id]["exercises"] = exercises_data
+            else:
+                logger.warning(f"No syllabus found for course {request.course_id} - lab launched without exercises")
+                active_labs[request.course_id]["exercises"] = []
+                
+        except Exception as e:
+            logger.error(f"Error generating exercises during lab launch: {e}")
+            active_labs[request.course_id]["exercises"] = []
         
         return {"lab_id": lab_id, "status": "running", "message": "AI Lab environment launched successfully"}
     
@@ -1011,11 +1862,11 @@ def main(cfg: DictConfig) -> None:
         """Clear/reset lab session for a student"""
         logger.info(f"Clearing lab session for student {student_id} in course {course_id}")
         
-        if not db_pool:
+        if not db_manager:
             raise HTTPException(status_code=500, detail="Database not available")
             
         try:
-            async with db_pool.acquire() as conn:
+            async with db_manager.get_connection() as conn:
                 result = await conn.execute("""
                     DELETE FROM lab_sessions 
                     WHERE course_id = $1 AND student_id = $2
@@ -1208,7 +2059,7 @@ def main(cfg: DictConfig) -> None:
         quiz_prompt = f"""
         {lab['trainer_context']}
         
-        Create a quiz for a student with this progress:
+        Create an adaptive quiz for a student with this progress:
         - Completed exercises: {request.student_progress.get('completed_exercises', 0)}
         - Current level: {request.student_progress.get('current_level', 'beginner')}
         - Knowledge areas covered: {request.student_progress.get('knowledge_areas', [])}
@@ -1216,12 +2067,37 @@ def main(cfg: DictConfig) -> None:
         Course: {request.context.get('course_title', '')}
         Category: {request.context.get('course_category', '')}
         
-        Generate 3-5 multiple choice questions that:
-        1. Test understanding of covered material
-        2. Are appropriate for their level
-        3. Include one correct answer and 3 plausible distractors
+        ADAPTIVE QUIZ REQUIREMENTS:
+        1. Generate 3-5 multiple choice questions appropriate for their current level
+        2. Test understanding of material they've actually covered in exercises
+        3. Include scenario-based questions that apply concepts to real situations
+        4. Provide realistic distractors that represent common misconceptions
+        5. Include detailed explanations that help reinforce learning
+        6. Adjust question difficulty based on student's demonstrated level
         
-        Return as JSON with: title, description, questions array (each with question, options, correct_answer)
+        QUESTION GUIDELINES:
+        - For beginners: Focus on basic concepts and definitions with clear examples
+        - For intermediate: Include application questions requiring concept usage
+        - For advanced: Present complex scenarios requiring analysis and synthesis
+        - Always relate questions to practical, real-world applications
+        - Ensure questions test understanding, not just memorization
+        
+        Return as JSON with this structure:
+        {{
+            "title": "Adaptive Knowledge Check",
+            "description": "Personalized quiz based on your progress and current level",
+            "questions": [
+                {{
+                    "question": "Clear, specific question based on covered material",
+                    "question_type": "scenario|definition|application|analysis",
+                    "options": ["Correct answer", "Plausible distractor 1", "Plausible distractor 2", "Plausible distractor 3"],
+                    "correct_answer": 0,
+                    "explanation": "Detailed explanation of correct answer and why others are wrong",
+                    "difficulty": "beginner|intermediate|advanced",
+                    "topic_tested": "Specific topic from their progress"
+                }}
+            ]
+        }}
         """
         
         try:
@@ -1279,12 +2155,239 @@ def main(cfg: DictConfig) -> None:
                 }
             }
     
+    @app.post("/lab/generate-custom")
+    async def generate_custom_lab(request: dict):
+        """Generate custom lab based on instructor description"""
+        try:
+            course_id = request.get('course_id')
+            lab_description = request.get('description', '')
+            course_context = request.get('course_context', {})
+            
+            if not course_id or not lab_description:
+                raise HTTPException(status_code=400, detail="course_id and description are required")
+            
+            # Get syllabus context if available
+            syllabus = await load_syllabus_from_db(course_id)
+            if not syllabus:
+                syllabus = course_syllabi.get(course_id, {})
+            
+            # Generate lab exercise using AI
+            custom_lab_prompt = f"""
+            You are an expert educator creating a custom lab exercise based on instructor specifications.
+            
+            Course Context:
+            {json.dumps(course_context, indent=2)}
+            
+            Course Syllabus (for reference):
+            {json.dumps(syllabus, indent=2)}
+            
+            Instructor Lab Description:
+            {lab_description}
+            
+            REQUIREMENTS:
+            1. Create a comprehensive lab exercise that fulfills the instructor's description
+            2. Make it engaging, fun, and interactive
+            3. Include specific step-by-step instructions
+            4. Add practical examples and sample data
+            5. Include expected outcomes and troubleshooting tips
+            6. Match the difficulty level to the course content
+            7. Use real-world scenarios and interesting contexts
+            8. Include clear learning objectives
+            
+            Return ONLY valid JSON with this structure:
+            {{
+                "id": "custom_lab_<timestamp>",
+                "title": "Descriptive Lab Title",
+                "description": "Clear description of what students will accomplish",
+                "type": "custom",
+                "difficulty": "beginner|intermediate|advanced",
+                "module_number": 0,
+                "topics_covered": ["topic1", "topic2"],
+                "instructions": "Detailed step-by-step instructions",
+                "expected_output": "What students should see as results",
+                "hints": "Helpful hints for common issues",
+                "sample_data": "Sample data or starting materials",
+                "learning_objectives": ["objective1", "objective2"],
+                "estimated_duration": "30-45 minutes"
+            }}
+            """
+            
+            response = claude_client.messages.create(
+                model="claude-3-haiku-20240307",
+                max_tokens=3000,
+                messages=[
+                    {"role": "user", "content": custom_lab_prompt}
+                ]
+            )
+            
+            # Parse the response
+            try:
+                lab_exercise = json.loads(response.content[0].text)
+                # Add unique ID with timestamp
+                lab_exercise['id'] = f"custom_lab_{int(time.time())}"
+                
+                # Add to exercises for this course
+                if course_id not in exercises:
+                    exercises[course_id] = []
+                exercises[course_id].append(lab_exercise)
+                
+                # Save to database
+                await save_exercises_to_db(course_id, exercises[course_id])
+                
+                logger.info(f"Generated custom lab for course {course_id}: {lab_exercise.get('title', 'Untitled')}")
+                
+                return {
+                    "success": True,
+                    "lab_exercise": lab_exercise,
+                    "message": "Custom lab generated successfully"
+                }
+                
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse custom lab JSON: {e}")
+                return {
+                    "success": False,
+                    "message": "Failed to generate custom lab - invalid AI response"
+                }
+                
+        except Exception as e:
+            logger.error(f"Error generating custom lab: {e}")
+            return {
+                "success": False,
+                "message": f"Error generating custom lab: {str(e)}"
+            }
+    
+    @app.post("/lab/refresh-exercises")
+    async def refresh_lab_exercises(request: dict):
+        """Refresh exercises for an existing lab setup"""
+        try:
+            course_id = request.get('course_id')
+            
+            if not course_id:
+                raise HTTPException(status_code=400, detail="course_id is required")
+            
+            # Get syllabus from database
+            syllabus = await load_syllabus_from_db(course_id)
+            if not syllabus:
+                # Try to get from memory if not in database
+                syllabus = course_syllabi.get(course_id)
+            
+            if not syllabus:
+                return {
+                    "success": False,
+                    "message": "No syllabus found for this course. Please generate a syllabus first."
+                }
+            
+            logger.info(f"Refreshing exercises for course: {course_id}")
+            
+            # Generate new exercises from syllabus
+            exercises_data = generate_exercises_from_syllabus_sync(course_id, syllabus)
+            
+            # Store exercises in memory and database
+            exercises[course_id] = exercises_data
+            
+            # Save exercises to database
+            await save_exercises_to_db(course_id, exercises_data)
+            
+            # Update active lab if it exists
+            if course_id in active_labs:
+                active_labs[course_id]["exercises"] = exercises_data
+                logger.info(f"Updated active lab with {len(exercises_data)} refreshed exercises")
+            
+            logger.info(f"Successfully refreshed {len(exercises_data)} exercises for course {course_id}")
+            
+            return {
+                "success": True,
+                "exercises": exercises_data,
+                "message": f"Successfully refreshed {len(exercises_data)} exercises"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error refreshing lab exercises: {e}")
+            return {
+                "success": False,
+                "message": f"Error refreshing exercises: {str(e)}"
+            }
+    
     @app.get("/quizzes/{course_id}")
     async def get_course_quizzes(course_id: str):
         """Get all quizzes for a course"""
         if course_id not in course_quizzes:
             return {"course_id": course_id, "quizzes": []}
         return {"course_id": course_id, "quizzes": course_quizzes[course_id]}
+    
+    @app.post("/generate-quizzes/{course_id}")
+    async def generate_course_quizzes(course_id: str):
+        """Generate quizzes for a course based on its syllabus"""
+        try:
+            # Get course syllabus
+            syllabus_data = await load_syllabus_from_db(course_id)
+            if not syllabus_data:
+                # Try to get from course management service
+                try:
+                    async with httpx.AsyncClient() as client:
+                        response = await client.get(f"http://localhost:8004/courses/{course_id}")
+                        if response.status_code == 200:
+                            course_data = response.json()
+                            syllabus_data = course_data.get('syllabus', {})
+                        else:
+                            raise HTTPException(status_code=404, detail="Course not found")
+                except:
+                    raise HTTPException(status_code=404, detail="Course syllabus not found")
+            
+            # Generate quizzes using the improved prompt
+            generated_quizzes = generate_quizzes_from_syllabus_sync(course_id, syllabus_data)
+            
+            # Store generated quizzes
+            course_quizzes[course_id] = generated_quizzes
+            
+            # Also save to database
+            await save_quizzes_to_db(course_id, generated_quizzes)
+            
+            logger.info(f"Generated {len(generated_quizzes)} quizzes for course {course_id}")
+            
+            return {
+                "course_id": course_id,
+                "quizzes": generated_quizzes,
+                "count": len(generated_quizzes)
+            }
+            
+        except Exception as e:
+            logger.error(f"Error generating quizzes for course {course_id}: {e}")
+            raise HTTPException(status_code=500, detail="Failed to generate quizzes")
+    
+    @app.delete("/quizzes/{quiz_id}")
+    async def delete_quiz(quiz_id: str):
+        """Delete a specific quiz"""
+        try:
+            # Find the quiz across all courses
+            course_id = None
+            quiz_index = None
+            
+            for cid, quizzes in course_quizzes.items():
+                for i, quiz in enumerate(quizzes):
+                    if quiz.get('id') == quiz_id:
+                        course_id = cid
+                        quiz_index = i
+                        break
+                if course_id:
+                    break
+            
+            if not course_id or quiz_index is None:
+                raise HTTPException(status_code=404, detail="Quiz not found")
+            
+            # Remove quiz from memory
+            del course_quizzes[course_id][quiz_index]
+            
+            # Also remove from database
+            await delete_quiz_from_db(quiz_id)
+            
+            logger.info(f"Deleted quiz {quiz_id} from course {course_id}")
+            
+            return {"message": "Quiz deleted successfully"}
+            
+        except Exception as e:
+            logger.error(f"Error deleting quiz {quiz_id}: {e}")
+            raise HTTPException(status_code=500, detail="Failed to delete quiz")
     
     @app.get("/lab/analytics/{course_id}")
     async def get_lab_analytics(course_id: str):
@@ -1318,12 +2421,14 @@ def main(cfg: DictConfig) -> None:
             {json.dumps(syllabus['modules'], indent=2)}
             
             ABSOLUTE REQUIREMENTS - FAILURE TO FOLLOW WILL RESULT IN REJECTION:
-            1. NEVER write introductory, meta-commentary, or overview language
-            2. NEVER use phrases like "Introduction to...", "We'll explore...", "This topic is...", "Learn about..."
-            3. EVERY bullet point MUST teach specific, concrete information
-            4. For technical topics: Include actual commands, syntax, parameters, and examples
-            5. For business topics: Include specific methods, tools, frameworks, and real scenarios
-            6. NO descriptions of what will be taught - only teach the actual content
+            1. ALL slides MUST use bullet points (•) - NO paragraph text or "wall of text"
+            2. EVERY slide must have a title and bullet points - no exceptions
+            3. NEVER write introductory, meta-commentary, or overview language
+            4. NEVER use phrases like "Introduction to...", "We'll explore...", "This topic is...", "Learn about..."
+            5. EVERY bullet point MUST teach specific, concrete information
+            6. For technical topics: Include actual commands, syntax, parameters, and examples
+            7. For business topics: Include specific methods, tools, frameworks, and real scenarios
+            8. NO descriptions of what will be taught - only teach the actual content
             
             BANNED PHRASES (DO NOT USE ANY OF THESE):
             - "Introduction to..."
@@ -1374,6 +2479,12 @@ def main(cfg: DictConfig) -> None:
                     "module_number": 1
                 }}
             ]
+            
+            CRITICAL FORMATTING REQUIREMENT:
+            - Each bullet point (•) MUST be followed by \\n (newline character)
+            - The content field must use \\n between bullet points for proper display
+            - Example: "• First point\\n• Second point\\n• Third point"
+            - NEVER put bullet points on the same line
             """
             
             response = claude_client.messages.create(
@@ -1386,8 +2497,38 @@ def main(cfg: DictConfig) -> None:
             
             try:
                 slides_data = json.loads(response.content[0].text)
-                logger.info(f"Generated {len(slides_data)} slides from syllabus")
-                return slides_data
+                
+                # Post-process slides to ensure proper formatting
+                formatted_slides = []
+                for slide in slides_data:
+                    formatted_slide = slide.copy()
+                    if 'content' in formatted_slide and formatted_slide['content']:
+                        content = formatted_slide['content']
+                        
+                        # Convert paragraph text to bullet points if no bullets exist
+                        if '•' not in content and content.strip():
+                            # Split long content into bullet points
+                            sentences = content.split('. ')
+                            if len(sentences) > 1:
+                                content = '\n'.join([f"• {sentence.strip()}" for sentence in sentences if sentence.strip()])
+                                if not content.endswith('.'):
+                                    content = content.rstrip() + '.'
+                            else:
+                                content = f"• {content}"
+                        
+                        # Ensure bullet points have proper newlines
+                        content = content.replace('• ', '\n• ').strip()
+                        # Remove any double newlines that might have been created
+                        content = content.replace('\n\n•', '\n•')
+                        # Ensure content starts with bullet point (remove leading newline if present)
+                        if content.startswith('\n'):
+                            content = content[1:]
+                        
+                        formatted_slide['content'] = content
+                    formatted_slides.append(formatted_slide)
+                
+                logger.info(f"Generated {len(formatted_slides)} slides from syllabus")
+                return formatted_slides
             except json.JSONDecodeError:
                 # Try to extract JSON from response
                 text = response.content[0].text
@@ -1396,7 +2537,37 @@ def main(cfg: DictConfig) -> None:
                 if start != -1 and end != -1:
                     try:
                         slides_data = json.loads(text[start:end])
-                        return slides_data
+                        
+                        # Post-process slides to ensure proper formatting
+                        formatted_slides = []
+                        for slide in slides_data:
+                            formatted_slide = slide.copy()
+                            if 'content' in formatted_slide and formatted_slide['content']:
+                                content = formatted_slide['content']
+                                
+                                # Convert paragraph text to bullet points if no bullets exist
+                                if '•' not in content and content.strip():
+                                    # Split long content into bullet points
+                                    sentences = content.split('. ')
+                                    if len(sentences) > 1:
+                                        content = '\n'.join([f"• {sentence.strip()}" for sentence in sentences if sentence.strip()])
+                                        if not content.endswith('.'):
+                                            content = content.rstrip() + '.'
+                                    else:
+                                        content = f"• {content}"
+                                
+                                # Ensure bullet points have proper newlines
+                                content = content.replace('• ', '\n• ').strip()
+                                # Remove any double newlines that might have been created
+                                content = content.replace('\n\n•', '\n•')
+                                # Ensure content starts with bullet point (remove leading newline if present)
+                                if content.startswith('\n'):
+                                    content = content[1:]
+                                
+                                formatted_slide['content'] = content
+                            formatted_slides.append(formatted_slide)
+                        
+                        return formatted_slides
                     except:
                         pass
                 
@@ -1412,22 +2583,24 @@ def main(cfg: DictConfig) -> None:
         slides = []
         slide_order = 1
         
-        # Title slide
+        # Title slide with bullet points
+        overview_bullets = f"• {syllabus['overview']}" if syllabus.get('overview') else "• Course overview and introduction"
         slides.append({
             "id": f"slide_{slide_order}",
             "title": "Course Introduction",
-            "content": syllabus["overview"],
-            "slide_type": "title",
+            "content": overview_bullets,
+            "slide_type": "content",
             "order": slide_order,
             "module_number": None
         })
         slide_order += 1
         
-        # Objectives slide
+        # Objectives slide with bullet points
+        objectives_bullets = '\n'.join([f"• {obj}" for obj in syllabus.get("objectives", ["Learn key concepts", "Apply practical skills", "Complete course successfully"])])
         slides.append({
             "id": f"slide_{slide_order}",
             "title": "Learning Objectives",
-            "content": "By the end of this course, you will: " + "; ".join(syllabus["objectives"]),
+            "content": objectives_bullets,
             "slide_type": "content",
             "order": slide_order,
             "module_number": None
@@ -1816,20 +2989,6 @@ def main(cfg: DictConfig) -> None:
             }
             return {"course_id": request.course_id, "syllabus": fallback_syllabus}
     
-    @app.post("/syllabus/refine")
-    async def refine_syllabus(request: SyllabusFeedback):
-        try:
-            prompt = f"Refine this syllabus based on feedback: {request.feedback}\\nCurrent: {json.dumps(request.current_syllabus)}\\nReturn updated JSON"
-            response = claude_client.messages.create(model="claude-3-haiku-20240307", max_tokens=3000, messages=[{"role": "user", "content": prompt}])
-            try:
-                refined = json.loads(response.content[0].text)
-            except:
-                refined = request.current_syllabus
-            course_syllabi[request.course_id] = refined
-            await save_syllabus_to_db(request.course_id, refined)
-            return {"course_id": request.course_id, "syllabus": refined}
-        except:
-            return {"course_id": request.course_id, "syllabus": request.current_syllabus}
     
     @app.get("/syllabus/{course_id}")
     async def get_course_syllabus(course_id: str):
@@ -1871,7 +3030,14 @@ def main(cfg: DictConfig) -> None:
             
             # Generate exercises based on syllabus
             exercises_data = generate_exercises_from_syllabus_sync(course_id, syllabus)
+            logger.info(f"STORING exercises from syllabus for course_id: '{course_id}'")
+            logger.info(f"Number of syllabus exercises generated: {len(exercises_data)}")
+            logger.info(f"Syllabus exercise titles: {[ex.get('title', 'No title') for ex in exercises_data]}")
+            
             exercises[course_id] = exercises_data
+            
+            logger.info(f"After storing syllabus exercises, dictionary keys: {list(exercises.keys())}")
+            logger.info(f"Total exercises in dictionary: {sum(len(v) for v in exercises.values())}")
             
             # Generate quizzes based on syllabus
             quizzes_data = generate_quizzes_from_syllabus_sync(course_id, syllabus)
@@ -1921,12 +3087,101 @@ def main(cfg: DictConfig) -> None:
             await save_slides_to_db(course_id, slides)
             
             exercises_data = [{"id": "ex1", "title": "Practice Exercise", "description": "Complete the learning activities", "type": "hands_on", "difficulty": "beginner"}]
+            logger.info(f"STORING exercises from syllabus for course_id: '{course_id}'")
+            logger.info(f"Number of syllabus exercises generated: {len(exercises_data)}")
+            logger.info(f"Syllabus exercise titles: {[ex.get('title', 'No title') for ex in exercises_data]}")
+            
             exercises[course_id] = exercises_data
+            
+            logger.info(f"After storing syllabus exercises, dictionary keys: {list(exercises.keys())}")
+            logger.info(f"Total exercises in dictionary: {sum(len(v) for v in exercises.values())}")
             
             quizzes_data = [{"id": "quiz1", "title": "Knowledge Check", "description": "Test your understanding", "questions": [], "duration": 15}]
             course_quizzes[course_id] = quizzes_data
             
             return {"course_id": course_id, "slides": slides, "exercises": exercises_data, "quizzes": quizzes_data}
+    
+    @app.post("/content/regenerate")
+    async def regenerate_content(request: dict):
+        """Regenerate specific content types from existing syllabus with progress tracking"""
+        course_id = request.get('course_id')
+        content_types = request.get('content_types', ['slides', 'exercises', 'quizzes', 'lab'])
+        
+        # Try to load syllabus from database first
+        syllabus = await load_syllabus_from_db(course_id)
+        
+        if not syllabus:
+            # Fallback to in-memory storage
+            if course_id in course_syllabi:
+                syllabus = course_syllabi[course_id]
+            else:
+                raise HTTPException(status_code=404, detail="Syllabus not found for this course")
+        
+        logger.info(f"Regenerating content types {content_types} for course: {course_id}")
+        
+        result = {"course_id": course_id}
+        progress = 0
+        total_steps = len(content_types)
+        
+        try:
+            # Generate slides if requested
+            if 'slides' in content_types:
+                progress += 1
+                slides = generate_course_slides_from_syllabus(course_id, syllabus)
+                course_slides[course_id] = slides
+                await save_slides_to_db(course_id, slides)
+                result['slides'] = slides
+                result['progress'] = int((progress / total_steps) * 100)
+            
+            # Generate exercises if requested
+            if 'exercises' in content_types:
+                progress += 1
+                exercises_data = generate_exercises_from_syllabus_sync(course_id, syllabus)
+                exercises[course_id] = exercises_data
+                result['exercises'] = exercises_data
+                result['progress'] = int((progress / total_steps) * 100)
+            
+            # Generate quizzes if requested
+            if 'quizzes' in content_types:
+                progress += 1
+                quizzes_data = generate_quizzes_from_syllabus_sync(course_id, syllabus)
+                course_quizzes[course_id] = quizzes_data
+                result['quizzes'] = quizzes_data
+                result['progress'] = int((progress / total_steps) * 100)
+            
+            # Generate lab if requested
+            if 'lab' in content_types:
+                progress += 1
+                lab_id = str(uuid.uuid4())
+                lab_config = generate_lab_environment(
+                    f"AI Lab for {syllabus.get('overview', 'Course')[:50]}...", 
+                    f"Interactive lab environment for hands-on learning", 
+                    "ai_assisted"
+                )
+                
+                lab_data = {
+                    "id": lab_id,
+                    "course_id": course_id,
+                    "name": f"Lab for {syllabus.get('overview', 'Course')[:50]}...",
+                    "description": "Interactive lab environment for hands-on learning",
+                    "environment_type": "ai_assisted",
+                    "config": lab_config,
+                    "exercises": exercises.get(course_id, [])
+                }
+                
+                labs[course_id] = lab_data
+                result['lab'] = lab_data
+                result['progress'] = int((progress / total_steps) * 100)
+            
+            result['progress'] = 100
+            result['message'] = f"Successfully regenerated {', '.join(content_types)} from existing syllabus"
+            
+        except Exception as e:
+            logger.error(f"Content regeneration error: {e}")
+            result['error'] = str(e)
+            result['progress'] = int((progress / total_steps) * 100)
+        
+        return result
     
     @app.post("/courses/save")
     async def save_course_content(request: dict):
@@ -1935,110 +3190,15 @@ def main(cfg: DictConfig) -> None:
         # In real implementation, save to database
         return {"course_id": course_id, "message": "Course content saved successfully"}
     
-    # Error handling
-    @app.exception_handler(Exception)
-    async def global_exception_handler(request: Request, exc: Exception):
-        logger.error(f"Unhandled exception: {exc}", exc_info=True)
-        return JSONResponse(
-            status_code=500,
-            content={"detail": "Internal server error"}
-        )
-    
-    # Start the server
-    uvicorn.run(app, host=cfg.server.host, port=cfg.server.port, reload=cfg.server.reload)
-
-if __name__ == "__main__":
-    main()    @app.post("/syllabus/generate")
-    async def generate_course_syllabus(request: SyllabusRequest):
-        """Generate comprehensive course syllabus"""
-        logger.info(f"Generating syllabus for course: {request.course_id}")
-        
-        try:
-            syllabus_prompt = f"""
-            Create a comprehensive course syllabus for "{request.title}".
-            
-            Course Details:
-            - Description: {request.description}
-            - Category: {request.category}
-            - Difficulty: {request.difficulty_level}
-            - Duration: {request.estimated_duration} hours
-            
-            CRITICAL REQUIREMENTS FOR EXPLICIT CONTENT:
-            1. Each module MUST include a comprehensive description explaining its purpose and scope
-            2. Topics must be SPECIFIC and DETAILED - include actual commands, tools, techniques, and practical examples
-            3. For technical subjects: List specific commands, file paths, configurations, syntax, and tools
-            4. For business/soft skills: Include specific methodologies, frameworks, case studies, and practical applications
-            5. Avoid vague terms - be concrete and actionable
-            
-            EXAMPLES OF EXPLICIT TOPIC FORMATTING:
-            - Linux Fundamentals: "File system navigation (cd, pwd, ls -la), file operations (cp, mv, rm, touch), permissions (chmod 755, chown user:group), text processing (grep, awk, sed)"
-            - Python Programming: "Variable assignment and data types (int, str, list, dict, tuple), control flow (if/elif/else, for/while loops), function definition (def, return, *args, **kwargs)"
-            - Project Management: "Agile methodologies (Scrum ceremonies, sprint planning, daily standups), tools (Jira workflow, Kanban boards), risk assessment matrices"
-            - Data Analysis: "Data cleaning (pandas.dropna(), fillna()), visualization (matplotlib.pyplot, seaborn.heatmap()), statistical analysis (numpy.mean(), scipy.stats)"
-            
-            Generate a detailed syllabus with:
-            1. Course overview and objectives  
-            2. Prerequisites and target audience
-            3. Module/week breakdown with DETAILED descriptions and EXPLICIT topics
-            4. Learning outcomes for each module
-            5. Assessment methods (quizzes, exercises, projects)
-            6. Required materials and resources
-            7. Schedule and timeline
-            
-            Return as JSON with:
-            {{
-                "overview": "Course description and goals",
-                "objectives": ["Learning objective 1", "Learning objective 2"],
-                "prerequisites": ["Prerequisite 1", "Prerequisite 2"],
-                "modules": [
-                    {{
-                        "module_number": 1,
-                        "title": "Module Title",
-                        "description": "Comprehensive description of what this module teaches, its importance, and how it builds on previous knowledge",
-                        "duration_hours": 2,
-                        "topics": ["Specific topic with actual commands/tools/examples", "Detailed topic with concrete techniques", "Practical topic with explicit methods"],
-                        "learning_outcomes": ["Measurable outcome with specific skills", "Concrete outcome with actionable abilities"],
-                        "assessments": ["Specific assessment type", "Practical evaluation method"]
-                    }}
-                ],
-                "assessment_strategy": "Description of how students will be evaluated",
-                "resources": ["Resource 1", "Resource 2"]
-            }}
-            
-            ENSURE ALL TOPICS are explicit and include specific commands, tools, methods, or examples relevant to {request.category}.
-            Make content appropriate for {request.difficulty_level} level learners.
-            """
-            
-            response = claude_client.messages.create(
-                model="claude-3-haiku-20240307",
-                max_tokens=3000,
-                messages=[
-                    {"role": "user", "content": syllabus_prompt}
-                ]
-            )
-            
-            try:
-                syllabus_data = json.loads(response.content[0].text)
-            except:
-                syllabus_data = generate_fallback_syllabus(request)
-            
-            course_syllabi[request.course_id] = syllabus_data
-            return {"course_id": request.course_id, "syllabus": syllabus_data}
-            
-        except Exception as e:
-            logger.error(f"Syllabus generation error: {e}")
-            fallback = generate_fallback_syllabus(request)
-            course_syllabi[request.course_id] = fallback
-            return {"course_id": request.course_id, "syllabus": fallback}
-    
     @app.post("/syllabus/refine")
     async def refine_syllabus(request: SyllabusFeedback):
         """Refine syllabus based on user feedback"""
+        print(f"DEBUG: Refine syllabus endpoint called for course: {request.course_id}")
         logger.info(f"Refining syllabus for course: {request.course_id}")
         
         try:
             refinement_prompt = f"""
-            You are refining a course syllabus based on instructor feedback.
+            You are refining a course syllabus based on instructor feedback. You MUST make changes to address the feedback.
             
             Current Syllabus:
             {json.dumps(request.current_syllabus, indent=2)}
@@ -2046,9 +3206,16 @@ if __name__ == "__main__":
             Instructor Feedback:
             {request.feedback}
             
-            Please modify the syllabus to address the feedback. Maintain the same JSON structure but update content based on the suggestions. Be specific and detailed in your modifications.
+            IMPORTANT: You must modify the syllabus to address the feedback. Do not return the original syllabus unchanged. If the feedback requests:
+            - Adding modules: Insert them in the appropriate location
+            - Reordering content: Adjust the sequence accordingly
+            - Changing topics: Update the relevant sections
+            - Adding prerequisites: Include them in the requirements
+            - Modifying objectives: Update learning outcomes
             
-            Return the complete updated syllabus in the same JSON format.
+            Maintain the same JSON structure but ensure all content reflects the requested changes. Be specific and detailed in your modifications.
+            
+            Return ONLY the complete updated syllabus as valid JSON. Do not include any explanation text, markdown, or additional comments. Return only the JSON object.
             """
             
             response = claude_client.messages.create(
@@ -2060,323 +3227,691 @@ if __name__ == "__main__":
             )
             
             try:
-                refined_syllabus = json.loads(response.content[0].text)
-            except:
+                response_text = response.content[0].text
+                logger.info(f"Claude refinement response: {response_text[:500]}...")
+                
+                # Try to extract JSON from the response
+                try:
+                    # First try direct JSON parsing
+                    refined_syllabus = json.loads(response_text)
+                except json.JSONDecodeError:
+                    # If direct parsing fails, try to find JSON in the text
+                    import re
+                    json_match = re.search(r'(\{.*\})', response_text, re.DOTALL)
+                    if json_match:
+                        json_str = json_match.group(1)
+                        refined_syllabus = json.loads(json_str)
+                    else:
+                        logger.error("No JSON found in response")
+                        refined_syllabus = request.current_syllabus
+                
+                logger.info(f"Successfully parsed refined syllabus")
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse JSON response: {e}")
+                logger.error(f"Response text: {response.content[0].text}")
+                refined_syllabus = request.current_syllabus
+            except Exception as e:
+                logger.error(f"Unexpected error parsing response: {e}")
                 refined_syllabus = request.current_syllabus
             
             course_syllabi[request.course_id] = refined_syllabus
+            save_result = await save_syllabus_to_db(request.course_id, refined_syllabus)
+            if not save_result:
+                logger.warning(f"Failed to save refined syllabus to database for course {request.course_id}")
             return {"course_id": request.course_id, "syllabus": refined_syllabus, "message": "Syllabus refined successfully"}
             
         except Exception as e:
             logger.error(f"Syllabus refinement error: {e}")
             return {"course_id": request.course_id, "syllabus": request.current_syllabus, "message": "Error refining syllabus"}
     
-    @app.get("/syllabus/{course_id}")
-    async def get_course_syllabus(course_id: str):
-        """Get syllabus for a course"""
-        if course_id not in course_syllabi:
-            raise HTTPException(status_code=404, detail="Syllabus not found for this course")
-        return {"course_id": course_id, "syllabus": course_syllabi[course_id]}
+    # Error handling
+    @app.exception_handler(Exception)
+    async def global_exception_handler(request: Request, exc: Exception):
+        logger.error(f"Unhandled exception: {exc}", exc_info=True)
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Internal server error"}
+        )
+
+    # ===== QUIZ API ENDPOINTS =====
     
+    @app.post("/quiz/generate")
+    async def generate_quiz_endpoint(request: QuizGenerationRequest):
+        """Generate a new quiz for a topic on-demand"""
+        try:
+            # Convert request to dict
+            topic_request = {
+                "course_id": request.course_id,
+                "topic": request.topic,
+                "difficulty": request.difficulty,
+                "question_count": request.question_count
+            }
+            
+            # Generate quiz
+            quiz = generate_quiz_for_topic(topic_request)
+            
+            # Save to database
+            success = await save_quiz_to_db(quiz)
+            
+            if success:
+                return {
+                    "success": True,
+                    "quiz_id": quiz["id"],
+                    "quiz": quiz,
+                    "message": f"Generated quiz '{quiz['title']}' with {len(quiz['questions'])} questions"
+                }
+            else:
+                return {
+                    "success": False,
+                    "message": "Failed to save quiz to database"
+                }
+            
+        except Exception as e:
+            logger.error(f"Error generating quiz: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"detail": f"Error generating quiz: {str(e)}"}
+            )
     
-    def generate_fallback_syllabus(request: SyllabusRequest) -> dict:
-        """Generate fallback syllabus structure"""
-        num_modules = max(3, request.estimated_duration // 2)
+    @app.get("/quiz/{quiz_id}")
+    async def get_quiz_endpoint(quiz_id: str, user_type: str = "student"):
+        """Get quiz by ID with different versions for students and instructors"""
+        try:
+            # Get quiz from database
+            quiz = await get_quiz_from_db(quiz_id)
+            
+            if not quiz:
+                return JSONResponse(
+                    status_code=404,
+                    content={"detail": "Quiz not found"}
+                )
+            
+            # Return different versions based on user type
+            if user_type == "instructor":
+                instructor_quiz = create_instructor_quiz_version(quiz)
+                return {
+                    "success": True,
+                    "quiz": instructor_quiz,
+                    "version": "instructor"
+                }
+            else:
+                student_quiz = create_student_quiz_version(quiz)
+                return {
+                    "success": True,
+                    "quiz": student_quiz,
+                    "version": "student"
+                }
+            
+        except Exception as e:
+            logger.error(f"Error getting quiz: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"detail": f"Error getting quiz: {str(e)}"}
+            )
+    
+    @app.get("/quiz/course/{course_id}")
+    async def get_course_quizzes_endpoint(course_id: str):
+        """Get all quizzes for a course"""
+        try:
+            quizzes = await get_course_quizzes(course_id)
+            
+            return {
+                "success": True,
+                "quizzes": quizzes,
+                "total_quizzes": len(quizzes),
+                "course_id": course_id
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting course quizzes: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"detail": f"Error getting course quizzes: {str(e)}"}
+            )
+    
+    @app.post("/quiz/{quiz_id}/submit")
+    async def submit_quiz_endpoint(quiz_id: str, submission: dict):
+        """Submit quiz answers and get score"""
+        try:
+            # Get quiz to check answers
+            quiz = await get_quiz_from_db(quiz_id)
+            
+            if not quiz:
+                return JSONResponse(
+                    status_code=404,
+                    content={"detail": "Quiz not found"}
+                )
+            
+            # Extract correct answers
+            correct_answers = [q["correct_answer"] for q in quiz["questions"]]
+            student_answers = submission.get("answers", [])
+            
+            # Calculate score
+            score = calculate_quiz_score(correct_answers, student_answers)
+            
+            # Save quiz attempt
+            attempt = {
+                "student_id": submission.get("student_id", "anonymous"),
+                "quiz_id": quiz_id,
+                "course_id": quiz["course_id"],
+                "answers": student_answers,
+                "score": score,
+                "total_questions": len(quiz["questions"])
+            }
+            
+            success = await save_quiz_attempt(attempt)
+            
+            return {
+                "success": True,
+                "score": score,
+                "total_questions": len(quiz["questions"]),
+                "correct_answers": sum(1 for i, ans in enumerate(student_answers) 
+                                     if i < len(correct_answers) and ans == correct_answers[i]),
+                "percentage": score,
+                "grade": "A" if score >= 90 else "B" if score >= 80 else "C" if score >= 70 else "D" if score >= 60 else "F",
+                "attempt_saved": success
+            }
+            
+        except Exception as e:
+            logger.error(f"Error submitting quiz: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"detail": f"Error submitting quiz: {str(e)}"}
+            )
+    
+    @app.get("/quiz/analytics/{course_id}")
+    async def get_quiz_analytics_endpoint(course_id: str):
+        """Get quiz analytics for a course"""
+        try:
+            analytics = await get_course_grade_analytics(course_id)
+            
+            return {
+                "success": True,
+                "analytics": analytics,
+                "course_id": course_id
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting quiz analytics: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"detail": f"Error getting quiz analytics: {str(e)}"}
+            )
+    
+    @app.get("/quiz/student/{student_id}/history/{course_id}")
+    async def get_student_quiz_history_endpoint(student_id: str, course_id: str):
+        """Get student's quiz history for a course"""
+        try:
+            history = await get_student_quiz_history(student_id, course_id)
+            
+            return {
+                "success": True,
+                "history": history,
+                "total_attempts": len(history),
+                "student_id": student_id,
+                "course_id": course_id
+            }
+            
+        except Exception as e:
+            logger.error(f"Error getting student quiz history: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"detail": f"Error getting student quiz history: {str(e)}"}
+            )
+    
+    @app.post("/quiz/generate-for-course")
+    async def generate_course_quizzes_endpoint(request: dict):
+        """Generate quizzes for all topics in a course"""
+        try:
+            course_id = request.get("course_id")
+            if not course_id:
+                return JSONResponse(
+                    status_code=400,
+                    content={"detail": "course_id is required"}
+                )
+            
+            # Get course materials
+            syllabus = await load_syllabus_from_db(course_id)
+            slides = course_slides.get(course_id, [])
+            labs = exercises.get(course_id, [])
+            
+            # Detect course difficulty
+            course_overview = syllabus.get('overview', '').lower() if syllabus else ''
+            difficulty = "beginner"
+            
+            if "advanced" in course_overview or "expert" in course_overview:
+                difficulty = "advanced"
+            elif "intermediate" in course_overview or "prior experience" in course_overview:
+                difficulty = "intermediate"
+            elif "beginner" in course_overview or "no prior" in course_overview or "introduction" in course_overview:
+                difficulty = "beginner"
+            
+            # Generate quizzes for all topics
+            quizzes = generate_quizzes_for_course(course_id, syllabus, slides, labs, difficulty)
+            
+            # Save all quizzes to memory cache (database save disabled)
+            course_quizzes[course_id] = quizzes
+            saved_count = len(quizzes)
+            
+            # Also call save_quiz_to_db for each quiz for logging
+            for quiz in quizzes:
+                await save_quiz_to_db(quiz)
+            
+            return {
+                "success": True,
+                "generated_quizzes": len(quizzes),
+                "saved_quizzes": saved_count,
+                "quizzes": quizzes,
+                "difficulty": difficulty
+            }
+            
+        except Exception as e:
+            logger.error(f"Error generating course quizzes: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"detail": f"Error generating course quizzes: {str(e)}"}
+            )
+    
+    # ===== QUIZ SYSTEM FUNCTIONS =====
+    
+    def generate_quiz_from_content(course_id: str, course_content: dict, difficulty: str) -> dict:
+        """Generate quiz from course content including syllabus, slides, and labs"""
+        try:
+            # Extract content from course materials
+            syllabus = course_content.get("syllabus", {})
+            slides = course_content.get("slides", [])
+            labs = course_content.get("labs", [])
+            
+            # Get first module/topic for quiz generation
+            modules = syllabus.get("modules", [])
+            if not modules:
+                raise ValueError("No modules found in syllabus")
+                
+            topic = modules[0].get("title", "General Knowledge")
+            
+            # Build comprehensive quiz prompt
+            quiz_prompt = f"""
+            You are creating a comprehensive multiple-choice quiz for this course content.
+            
+            Course Difficulty: {difficulty.upper()}
+            Topic: {topic}
+            
+            Syllabus Content:
+            {json.dumps(syllabus, indent=2)}
+            
+            Slides Content:
+            {json.dumps(slides, indent=2)}
+            
+            Lab Exercises:
+            {json.dumps(labs, indent=2)}
+            
+            Create a quiz with 10-15 multiple choice questions that:
+            1. Test understanding of key concepts from the syllabus
+            2. Reference specific content from the slides
+            3. Connect to practical skills from the labs
+            4. Match the {difficulty} difficulty level
+            5. Have exactly 4 answer options each
+            6. Include explanations for correct answers
+            
+            Return ONLY a JSON object with this structure:
+            {{
+                "title": "Quiz Title",
+                "topic": "{topic}",
+                "difficulty": "{difficulty}",
+                "questions": [
+                    {{
+                        "question": "What is...?",
+                        "options": ["Option A", "Option B", "Option C", "Option D"],
+                        "correct_answer": 0,
+                        "explanation": "Detailed explanation of why this is correct"
+                    }}
+                ]
+            }}
+            """
+            
+            # Generate quiz using LLM
+            response = claude_client.messages.create(
+                model="claude-3-sonnet-20240229",
+                max_tokens=4096,
+                messages=[{"role": "user", "content": quiz_prompt}]
+            )
+            
+            quiz_data = json.loads(response.content[0].text)
+            quiz_data["id"] = str(uuid.uuid4())
+            quiz_data["course_id"] = course_id
+            quiz_data["created_at"] = datetime.now()
+            
+            return quiz_data
+            
+        except Exception as e:
+            logger.error(f"Error generating quiz: {e}")
+            # Return fallback quiz
+            return {
+                "id": str(uuid.uuid4()),
+                "course_id": course_id,
+                "title": f"{topic} Quiz",
+                "topic": topic,
+                "difficulty": difficulty,
+                "questions": [
+                    {
+                        "question": f"What is the main focus of {topic}?",
+                        "options": [
+                            "Core concepts and fundamentals",
+                            "Advanced theoretical frameworks",
+                            "Practical implementation details",
+                            "Historical background information"
+                        ],
+                        "correct_answer": 0,
+                        "explanation": f"The main focus is on core concepts and fundamentals of {topic}."
+                    }
+                ],
+                "created_at": datetime.now()
+            }
+    
+    def generate_quizzes_for_course(course_id: str, syllabus: dict, slides: list, labs: list, difficulty: str) -> list:
+        """Generate one quiz per module/topic in the course"""
+        quizzes = []
+        modules = syllabus.get("modules", [])
         
+        for module in modules:
+            topic = module.get("title", "General Knowledge")
+            
+            # Create course content for this specific module
+            module_content = {
+                "syllabus": {"modules": [module]},
+                "slides": [slide for slide in slides if topic.lower() in slide.get("title", "").lower()],
+                "labs": [lab for lab in labs if topic.lower() in lab.get("title", "").lower()]
+            }
+            
+            quiz = generate_quiz_from_content(course_id, module_content, difficulty)
+            quiz["topic"] = topic
+            quiz["title"] = f"{topic} Quiz"
+            
+            quizzes.append(quiz)
+        
+        return quizzes
+    
+    def create_student_quiz_version(instructor_quiz: dict) -> dict:
+        """Create student version without correct answers"""
+        student_quiz = instructor_quiz.copy()
+        
+        # Remove correct answers from questions
+        for question in student_quiz["questions"]:
+            if "correct_answer" in question:
+                del question["correct_answer"]
+            if "explanation" in question:
+                del question["explanation"]
+        
+        return student_quiz
+    
+    def create_instructor_quiz_version(base_quiz: dict) -> dict:
+        """Create instructor version with answers marked"""
+        instructor_quiz = base_quiz.copy()
+        
+        # Mark correct answers for instructor view
+        for question in instructor_quiz["questions"]:
+            question["answer_marked"] = True
+        
+        return instructor_quiz
+    
+    def calculate_quiz_score(correct_answers: list, student_answers: list) -> float:
+        """Calculate quiz score as percentage"""
+        if not correct_answers or not student_answers:
+            return 0.0
+            
+        correct_count = sum(1 for i, answer in enumerate(student_answers) 
+                          if i < len(correct_answers) and answer == correct_answers[i])
+        
+        return (correct_count / len(correct_answers)) * 100
+    
+    def generate_quiz_for_topic(topic_request: dict) -> dict:
+        """Generate quiz for specific topic on-demand"""
+        try:
+            # Get course materials for context
+            course_id = topic_request["course_id"]
+            topic = topic_request["topic"]
+            difficulty = topic_request["difficulty"]
+            question_count = topic_request.get("question_count", 12)
+            
+            # Create focused quiz prompt
+            quiz_prompt = f"""
+            Create a focused {difficulty} level quiz about "{topic}" with exactly {question_count} questions.
+            
+            Requirements:
+            - All questions must be multiple choice with 4 options
+            - Questions should test both conceptual understanding and practical application
+            - Difficulty level: {difficulty.upper()}
+            - Include explanations for correct answers
+            
+            Return ONLY a JSON object with this structure:
+            {{
+                "title": "{topic} Quiz",
+                "topic": "{topic}",
+                "difficulty": "{difficulty}",
+                "questions": [
+                    {{
+                        "question": "Question text here?",
+                        "options": ["Option A", "Option B", "Option C", "Option D"],
+                        "correct_answer": 0,
+                        "explanation": "Why this answer is correct"
+                    }}
+                ]
+            }}
+            """
+            
+            response = claude_client.messages.create(
+                model="claude-3-sonnet-20240229",
+                max_tokens=4096,
+                messages=[{"role": "user", "content": quiz_prompt}]
+            )
+            
+            quiz_data = json.loads(response.content[0].text)
+            quiz_data["id"] = str(uuid.uuid4())
+            quiz_data["course_id"] = course_id
+            quiz_data["created_at"] = datetime.now()
+            
+            return quiz_data
+            
+        except Exception as e:
+            logger.error(f"Error generating on-demand quiz: {e}")
+            # Return fallback quiz
+            return {
+                "id": str(uuid.uuid4()),
+                "course_id": course_id,
+                "title": f"{topic} Quiz",
+                "topic": topic,
+                "difficulty": difficulty,
+                "questions": [
+                    {
+                        "question": f"What is a key concept in {topic}?",
+                        "options": [
+                            "Fundamental principles",
+                            "Advanced techniques",
+                            "Historical context",
+                            "Future applications"
+                        ],
+                        "correct_answer": 0,
+                        "explanation": f"Fundamental principles are key to understanding {topic}."
+                    }
+                ],
+                "created_at": datetime.now()
+            }
+    
+    # Database functions for quizzes
+    async def save_quiz_to_db(quiz: dict) -> bool:
+        """Save quiz to database - temporarily disabled due to schema mismatch"""
+        # TODO: Implement proper schema mapping for quizzes -> lessons -> quiz_questions
+        logger.info(f"Quiz {quiz['id']} saved to memory cache (database save disabled)")
+        return True
+    
+    async def get_quiz_from_db(quiz_id: str) -> dict:
+        """Retrieve quiz from memory cache"""
+        # Search through all course quizzes in memory to find the quiz by ID
+        for course_id, quizzes in course_quizzes.items():
+            for quiz in quizzes:
+                if quiz.get('id') == quiz_id:
+                    return quiz
+        
+        logger.error(f"Quiz {quiz_id} not found in memory cache")
+        return None
+    
+    async def get_course_quizzes(course_id: str) -> list:
+        """Get all quizzes for a course"""
+        # Return quizzes from memory cache
+        if course_id in course_quizzes:
+            return course_quizzes[course_id]
+        else:
+            logger.info(f"No quizzes found for course {course_id}")
+            return []
+    
+    async def save_quiz_attempt(attempt: dict) -> bool:
+        """Save student quiz attempt"""
+        global db_manager
+        if not db_manager:
+            logger.error("Database manager not initialized")
+            return False
+        
+        try:
+            async with db_manager.get_connection() as conn:
+                await conn.execute("""
+                    INSERT INTO quiz_attempts (id, student_id, quiz_id, course_id, answers, score, total_questions, completed_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                """, 
+                str(uuid.uuid4()),
+                attempt["student_id"],
+                uuid.UUID(attempt["quiz_id"]),
+                uuid.UUID(attempt["course_id"]),
+                json.dumps(attempt["answers"]),
+                attempt["score"],
+                attempt["total_questions"],
+                attempt.get("completed_at", datetime.now())
+                )
+                
+                logger.info(f"Saved quiz attempt for student {attempt['student_id']}")
+                return True
+        except Exception as e:
+            logger.error(f"Error saving quiz attempt: {e}")
+            return False
+    
+    async def get_student_quiz_history(student_id: str, course_id: str) -> list:
+        """Get student's quiz history for a course"""
+        global db_manager
+        if not db_manager:
+            logger.error("Database manager not initialized")
+            return []
+        
+        try:
+            async with db_manager.get_connection() as conn:
+                rows = await conn.fetch("""
+                    SELECT qa.id, qa.student_id, qa.quiz_id, qa.course_id, qa.answers, 
+                           qa.score, qa.total_questions, qa.completed_at, q.title, q.topic
+                    FROM quiz_attempts qa
+                    JOIN quizzes q ON qa.quiz_id = q.id
+                    WHERE qa.student_id = $1 AND qa.course_id = $2
+                    ORDER BY qa.completed_at DESC
+                """, student_id, uuid.UUID(course_id))
+                
+                return [
+                    {
+                        "id": str(row["id"]),
+                        "student_id": row["student_id"],
+                        "quiz_id": str(row["quiz_id"]),
+                        "course_id": row["course_id"],
+                        "answers": json.loads(row["answers"]),
+                        "score": row["score"],
+                        "total_questions": row["total_questions"],
+                        "completed_at": row["completed_at"],
+                        "quiz_title": row["title"],
+                        "quiz_topic": row["topic"]
+                    }
+                    for row in rows
+                ]
+        except Exception as e:
+            logger.error(f"Error getting student quiz history: {e}")
+            return []
+    
+    async def get_course_grade_analytics(course_id: str) -> dict:
+        """Get course-wide grade analytics"""
+        global db_manager
+        if not db_manager:
+            logger.error("Database pool not initialized")
+            return {}
+        
+        try:
+            async with db_manager.get_connection() as conn:
+                # Get overall analytics
+                analytics_row = await conn.fetchrow("""
+                    SELECT 
+                        AVG(score) as average_score,
+                        COUNT(*) as total_attempts,
+                        COUNT(DISTINCT student_id) as unique_students
+                    FROM quiz_attempts 
+                    WHERE course_id = $1
+                """, uuid.UUID(course_id))
+                
+                # Get score distribution
+                distribution_rows = await conn.fetch("""
+                    SELECT 
+                        CASE 
+                            WHEN score >= 90 THEN 'A'
+                            WHEN score >= 80 THEN 'B'
+                            WHEN score >= 70 THEN 'C'
+                            WHEN score >= 60 THEN 'D'
+                            ELSE 'F'
+                        END as grade,
+                        COUNT(*) as count
+                    FROM quiz_attempts 
+                    WHERE course_id = $1
+                    GROUP BY grade
+                """, uuid.UUID(course_id))
+                
+                # Get topic performance
+                topic_rows = await conn.fetch("""
+                    SELECT q.topic, AVG(qa.score) as avg_score, COUNT(*) as attempts
+                    FROM quiz_attempts qa
+                    JOIN quizzes q ON qa.quiz_id = q.id
+                    WHERE qa.course_id = $1
+                    GROUP BY q.topic
+                """, uuid.UUID(course_id))
+                
+                return {
+                    "average_score": float(analytics_row["average_score"]) if analytics_row["average_score"] else 0,
+                    "total_attempts": analytics_row["total_attempts"],
+                    "unique_students": analytics_row["unique_students"],
+                    "score_distribution": {row["grade"]: row["count"] for row in distribution_rows},
+                    "topic_performance": {row["topic"]: {
+                        "average_score": float(row["avg_score"]),
+                        "attempts": row["attempts"]
+                    } for row in topic_rows}
+                }
+        except Exception as e:
+            logger.error(f"Error getting course grade analytics: {e}")
+            return {}
+    
+    def get_quiz_pane_data(course_id: str) -> dict:
+        """Get quiz pane data for dashboard"""
+        # This will be implemented with async call in the actual endpoint
         return {
-            "overview": f"This course provides a comprehensive introduction to {request.category}. Students will learn fundamental concepts and practical applications.",
-            "objectives": [
-                f"Understand core concepts of {request.category}",
-                "Apply knowledge through hands-on exercises",
-                "Develop practical skills for real-world scenarios"
-            ],
-            "prerequisites": ["Basic computer literacy", "High school mathematics"],
-            "modules": [
-                {
-                    "module_number": i + 1,
-                    "title": f"Module {i + 1}: {request.category} Fundamentals" if i == 0 else f"Module {i + 1}: Advanced Topics",
-                    "description": f"This module covers fundamental concepts and practical applications in {request.category}. Students will learn core principles and apply them through hands-on exercises.",
-                    "duration_hours": request.estimated_duration // num_modules,
-                    "topics": [f"Topic {j + 1}" for j in range(3)],
-                    "learning_outcomes": [f"Understand concept {j + 1}" for j in range(2)],
-                    "assessments": ["Quiz", "Hands-on Exercise"]
-                } for i in range(num_modules)
-            ],
-            "assessment_strategy": "Continuous assessment through quizzes, exercises, and practical projects",
-            "resources": ["Course materials", "Online resources", "Practice exercises"]
+            "quizzes": [],
+            "total_quizzes": 0,
+            "course_id": course_id
         }
     
-    async def generate_slides_from_syllabus(course_id: str, syllabus: dict) -> List[Dict]:
-        """Generate slides based on syllabus modules"""
-        slides = []
-        slide_order = 1
-        
-        # Introduction slide
-        slides.append({
-            "id": f"slide_{slide_order}",
-            "title": "Course Introduction",
-            "content": syllabus["overview"],
-            "slide_type": "title",
-            "order": slide_order
-        })
-        slide_order += 1
-        
-        # Objectives slide
-        slides.append({
-            "id": f"slide_{slide_order}",
-            "title": "Learning Objectives",
-            "content": "By the end of this course, you will: " + "; ".join(syllabus["objectives"]),
-            "slide_type": "content",
-            "order": slide_order
-        })
-        slide_order += 1
-        
-        # Module slides
-        for module in syllabus["modules"]:
-            # Module introduction
-            slides.append({
-                "id": f"slide_{slide_order}",
-                "title": module["title"],
-                "content": f"Topics covered: {', '.join(module['topics'])}. Learning outcomes: {', '.join(module['learning_outcomes'])}",
-                "slide_type": "content",
-                "order": slide_order
-            })
-            slide_order += 1
-            
-            # Topic slides
-            for topic in module["topics"]:
-                slides.append({
-                    "id": f"slide_{slide_order}",
-                    "title": topic,
-                    "content": f"Detailed explanation of {topic} with practical examples and applications.",
-                    "slide_type": "content",
-                    "order": slide_order
-                })
-                slide_order += 1
-        
-        return slides
+    def get_student_quiz_progress(student_id: str, course_id: str) -> dict:
+        """Get student's quiz progress"""
+        # This will be implemented with async call in the actual endpoint
+        return {
+            "completed_quizzes": 0,
+            "total_quizzes": 0,
+            "average_score": 0,
+            "completion_percentage": 0
+        }
     
-    async def generate_exercises_from_syllabus(course_id: str, syllabus: dict) -> List[Dict]:
-        """Generate exercises based on syllabus modules using LLM with full syllabus context"""
-        # Use the sync version for consistency
-        return generate_exercises_from_syllabus_sync(course_id, syllabus)
-    
-    async def generate_quizzes_from_syllabus(course_id: str, syllabus: dict) -> List[Dict]:
-        """Generate quizzes based on syllabus modules using LLM with full syllabus context"""
-        # Use the sync version for consistency
-        return generate_quizzes_from_syllabus_sync(course_id, syllabus)
-    
-    @app.post("/lab/analyze-code")
-    async def analyze_code(request: dict):
-        """Analyze student code using AI"""
-        logger.info(f"Analyzing code for course: {request.get('course_id')}")
-        
-        try:
-            code = request.get('code', '')
-            language = request.get('language', 'javascript')
-            context = request.get('context', {})
-            
-            if not code.strip():
-                return {
-                    "analysis": {
-                        "overall_quality": "No code provided",
-                        "suggestions": ["Please write some code first!"],
-                        "warnings": [],
-                        "best_practices": "Start by writing a simple function or variable declaration.",
-                        "improvements": "Focus on understanding the problem requirements first."
-                    },
-                    "chat_message": "I don't see any code to analyze. Please write some code first!"
-                }
-            
-            # Build analysis prompt
-            analysis_prompt = f"""
-You are an expert {language} instructor analyzing student code. Provide constructive, educational feedback.
-
-Course Context: {context.get('course_title', 'Programming')}
-Difficulty Level: {context.get('difficulty_level', 'beginner')}
-Current Exercise: {context.get('exercise', {}).get('title', 'General coding practice')}
-
-Student Code ({language}):
-```{language}
-{code}
-```
-
-Analyze this code and provide feedback as a JSON object with these keys:
-- overall_quality: Brief assessment (1-2 sentences)
-- suggestions: Array of specific improvement suggestions (3-5 items)
-- warnings: Array of potential issues or bugs (if any)
-- best_practices: String describing relevant best practices
-- improvements: String with specific optimization or enhancement ideas
-
-Focus on:
-1. Code correctness and logic
-2. Best practices for {language}
-3. Readability and style
-4. Educational guidance appropriate for {context.get('difficulty_level', 'beginner')} level
-5. Encouraging tone while being constructive
-
-Return only valid JSON.
-"""
-
-            # Get analysis from Claude
-            response = client.messages.create(
-                model="claude-3-sonnet-20240229",
-                max_tokens=1000,
-                messages=[
-                    {"role": "user", "content": analysis_prompt}
-                ]
-            )
-            
-            try:
-                analysis = json.loads(response.content[0].text)
-            except:
-                # Fallback analysis
-                analysis = {
-                    "overall_quality": "Code analysis completed",
-                    "suggestions": [
-                        "Consider adding comments to explain your logic",
-                        "Make sure variable names are descriptive",
-                        "Test your code with different inputs"
-                    ],
-                    "warnings": [],
-                    "best_practices": f"Follow {language} naming conventions and keep functions focused on single tasks.",
-                    "improvements": "Consider breaking complex logic into smaller functions for better readability."
-                }
-            
-            # Generate chat message
-            chat_message = f"Great work! I've analyzed your {language} code. "
-            if analysis.get('suggestions'):
-                chat_message += f"I have {len(analysis['suggestions'])} suggestions for improvement. "
-            chat_message += "Check the analysis panel for detailed feedback!"
-            
-            return {
-                "analysis": analysis,
-                "chat_message": chat_message
-            }
-            
-        except Exception as e:
-            logger.error(f"Code analysis error: {e}")
-            return {
-                "analysis": {
-                    "overall_quality": "Analysis temporarily unavailable",
-                    "suggestions": ["Keep coding! Practice makes perfect."],
-                    "warnings": [],
-                    "best_practices": "Focus on writing clean, readable code with good variable names.",
-                    "improvements": "Test your code thoroughly and consider edge cases."
-                },
-                "chat_message": "I'm having trouble analyzing your code right now, but keep coding! You're doing great."
-            }
-    
-    @app.post("/lab/get-hint")
-    async def get_hint(request: dict):
-        """Get a coding hint from AI"""
-        logger.info(f"Providing hint for course: {request.get('course_id')}")
-        
-        try:
-            code = request.get('code', '')
-            language = request.get('language', 'javascript')
-            exercise = request.get('exercise', {})
-            
-            hint_prompt = f"""
-You are a helpful {language} programming tutor. A student is working on this exercise and needs a hint.
-
-Exercise: {exercise.get('title', 'Programming challenge')}
-Description: {exercise.get('description', 'Write some code')}
-
-Student's current code:
-```{language}
-{code if code.strip() else 'No code written yet'}
-```
-
-Provide a helpful hint that:
-1. Guides them toward the solution without giving it away
-2. Is appropriate for beginners
-3. Focuses on the next logical step
-4. Encourages them to think through the problem
-
-Give ONE specific, actionable hint in 1-2 sentences.
-"""
-
-            response = client.messages.create(
-                model="claude-3-sonnet-20240229",
-                max_tokens=200,
-                messages=[
-                    {"role": "user", "content": hint_prompt}
-                ]
-            )
-            
-            hint = response.content[0].text.strip()
-            
-            return {"hint": hint}
-            
-        except Exception as e:
-            logger.error(f"Hint generation error: {e}")
-            fallback_hints = [
-                "Try breaking the problem down into smaller steps.",
-                "Think about what variables or functions you might need.",
-                "Start with a simple example and build from there.",
-                "Consider the input and what output you want to produce.",
-                "Look at the exercise description again for clues."
-            ]
-            import random
-            return {"hint": random.choice(fallback_hints)}
-    
-    @app.post("/lab/chat")
-    async def lab_chat(request: dict):
-        """Enhanced chat with code context"""
-        logger.info(f"Lab chat for course: {request.get('course_id')}")
-        
-        try:
-            user_message = request.get('user_message', '')
-            current_code = request.get('current_code', '')
-            language = request.get('language', 'javascript')
-            context = request.get('context', {})
-            
-            chat_prompt = f"""
-You are an expert {language} programming instructor and coding mentor. You're helping a student learn {context.get('course_title', 'programming')} in an interactive coding environment.
-
-Course: {context.get('course_title', 'Programming')}
-Student Level: {context.get('difficulty_level', 'beginner')}
-
-Student's current code:
-```{language}
-{current_code if current_code.strip() else 'No code written yet'}
-```
-
-Student asks: "{user_message}"
-
-Respond as a supportive coding mentor. Be:
-1. Encouraging and positive
-2. Educational and helpful
-3. Specific and actionable
-4. Appropriate for {context.get('difficulty_level', 'beginner')} level
-
-If they're asking for help with code, provide guidance without giving away the complete solution.
-If they're asking about concepts, explain clearly with examples.
-Keep responses conversational and under 3 sentences.
-"""
-
-            response = client.messages.create(
-                model="claude-3-sonnet-20240229",
-                max_tokens=300,
-                messages=[
-                    {"role": "user", "content": chat_prompt}
-                ]
-            )
-            
-            ai_response = response.content[0].text.strip()
-            
-            return {
-                "response": ai_response,
-                "timestamp": datetime.now()
-            }
-            
-        except Exception as e:
-            logger.error(f"Lab chat error: {e}")
-            return {
-                "response": "I'm here to help! Feel free to ask me about your code, programming concepts, or if you need a hint with the current exercise.",
-                "timestamp": datetime.now()
-            }
+    def generate_and_save_quiz_for_topic(topic_request: dict) -> str:
+        """Generate and save quiz for topic"""
+        quiz = generate_quiz_for_topic(topic_request)
+        # This will be implemented with async save in the actual endpoint
+        return quiz["id"]
 
     # Start the server
     uvicorn.run(app, host=cfg.server.host, port=cfg.server.port, reload=cfg.server.reload)

@@ -1,545 +1,464 @@
 """
-Content Management Service - FastAPI Application
-Handles file upload, processing, AI integration, and multi-format export
+Content Management Service - FastAPI Application (Refactored)
+
+This module provides the main FastAPI application for the content management service,
+following SOLID principles with proper dependency injection and modular architecture.
 """
 
 import os
-import uuid
 import asyncio
-import json
-import mimetypes
-from datetime import datetime
 from typing import List, Optional, Dict, Any
-from pathlib import Path
+from datetime import datetime
+from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, BackgroundTasks, Depends
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, File, UploadFile, Form
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+import asyncpg
 import uvicorn
-import aiofiles
 
-# Import processing modules
-from file_processors import SyllabusProcessor, SlidesProcessor, ExportProcessor
-from ai_integration import AIContentGenerator
-from storage_manager import StorageManager
-from models import ContentType, ProcessingStatus, ExportFormat
-
-# Initialize FastAPI app
-app = FastAPI(
-    title="Content Management Service",
-    description="Handles file upload, processing, and export for Course Creator Platform",
-    version="1.0.0"
+from models.common import (
+    APIResponse, ErrorResponse, SuccessResponse, ContentType, 
+    ExportFormat, ProcessingStatus, create_api_response, 
+    create_error_response, create_success_response
 )
-
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:8080", "http://127.0.0.1:8080"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+from models.content import (
+    SyllabusCreate, SyllabusUpdate, SyllabusResponse,
+    SlideCreate, SlideUpdate, SlideResponse,
+    QuizCreate, QuizUpdate, QuizResponse,
+    ExerciseCreate, ExerciseUpdate, ExerciseResponse,
+    LabEnvironmentCreate, LabEnvironmentUpdate, LabEnvironmentResponse,
+    ContentGenerationRequest, CustomGenerationRequest
 )
+from repositories.content_repository import ContentRepository
+from services.content_service import ContentService
 
-# Initialize processors and managers
-storage_manager = StorageManager()
-syllabus_processor = SyllabusProcessor()
-slides_processor = SlidesProcessor()
-export_processor = ExportProcessor()
-ai_generator = AIContentGenerator()
 
-# Request models
-class ContentGenerationRequest(BaseModel):
-    generate_slides: bool = True
-    generate_exercises: bool = True
-    generate_quizzes: bool = True
-    generate_labs: bool = True
-
-class CustomGenerationRequest(BaseModel):
-    prompt: str
-    content_type: str
-
-class ExportRequest(BaseModel):
-    course_id: str
-    format: str
-
-# Response models
-class UploadResponse(BaseModel):
-    success: bool
-    message: str
-    file_id: str
-    processing_id: Optional[str] = None
-
-class ProcessingStatusResponse(BaseModel):
-    status: str  # pending, processing, completed, failed
-    progress: int
-    message: str
-    result: Optional[Dict[str, Any]] = None
-
-# Global processing status storage
-processing_status = {}
-
-# Health check
-@app.get("/health")
-async def health_check():
-    return {
-        "status": "healthy",
-        "service": "content-management",
-        "timestamp": datetime.utcnow()
-    }
-
-# ===================================
-# FILE UPLOAD ENDPOINTS
-# ===================================
-
-@app.post("/api/content/upload", response_model=UploadResponse)
-async def upload_content(
-    background_tasks: BackgroundTasks,
-    file: UploadFile = File(...),
-    type: str = Form(...),
-    process_with_ai: bool = Form(False)
-):
-    """Upload and process content files"""
-    try:
-        # Validate file type
-        if not validate_file_type(file.filename, type):
-            raise HTTPException(status_code=400, detail="Invalid file type for content type")
-        
-        # Generate unique file ID
-        file_id = str(uuid.uuid4())
-        
-        # Save file to storage
-        file_path = await storage_manager.save_file(file, file_id, type)
-        
-        # Initialize response
-        response = UploadResponse(
-            success=True,
-            message="File uploaded successfully",
-            file_id=file_id
+class ContentManagementApp:
+    """Main application class for content management service"""
+    
+    def __init__(self):
+        self.app = FastAPI(
+            title="Content Management Service",
+            description="Handles content creation, management, and processing for Course Creator Platform",
+            version="2.0.0",
+            lifespan=self.lifespan
         )
         
-        # Process with AI if requested
-        if process_with_ai and type == "syllabus":
-            processing_id = str(uuid.uuid4())
-            response.processing_id = processing_id
-            response.message = "File uploaded successfully. AI processing started."
-            
-            # Start background processing
-            background_tasks.add_task(
-                process_syllabus_with_ai,
-                file_path,
-                file_id,
-                processing_id
+        # Configure CORS
+        self.app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["http://localhost:8080", "http://127.0.0.1:8080"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+        
+        # Application state
+        self.db_pool = None
+        self.content_repository = None
+        self.content_service = None
+        
+        # Register routes
+        self._register_routes()
+    
+    @asynccontextmanager
+    async def lifespan(self, app: FastAPI):
+        """Application lifespan management"""
+        # Startup
+        await self._startup()
+        yield
+        # Shutdown
+        await self._shutdown()
+    
+    async def _startup(self):
+        """Initialize application dependencies"""
+        # Initialize database connection
+        database_url = os.getenv(
+            "DATABASE_URL",
+            "postgresql://course_user:c0urs3:atao12e@localhost:5433/course_creator"
+        )
+        
+        self.db_pool = await asyncpg.create_pool(database_url)
+        
+        # Initialize repositories and services
+        self.content_repository = ContentRepository(self.db_pool)
+        self.content_service = ContentService(self.content_repository)
+        
+        print("✅ Content Management Service started successfully")
+    
+    async def _shutdown(self):
+        """Cleanup application resources"""
+        if self.db_pool:
+            await self.db_pool.close()
+        print("✅ Content Management Service shutdown complete")
+    
+    def _register_routes(self):
+        """Register all application routes"""
+        
+        # Health check
+        @self.app.get("/health")
+        async def health_check():
+            """Health check endpoint"""
+            return create_success_response(
+                message="Content Management Service is healthy",
+                data={
+                    "service": "content-management",
+                    "version": "2.0.0",
+                    "timestamp": datetime.utcnow().isoformat()
+                }
             )
         
-        return response
+        # Syllabus endpoints
+        @self.app.post("/api/v1/syllabi", response_model=SyllabusResponse)
+        async def create_syllabus(
+            syllabus_data: SyllabusCreate,
+            current_user: str = Depends(self._get_current_user)
+        ):
+            """Create a new syllabus"""
+            try:
+                syllabus = await self.content_service.create_syllabus(syllabus_data, current_user)
+                return syllabus
+            except HTTPException:
+                raise
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
         
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
-
-@app.post("/api/content/upload/multiple")
-async def upload_multiple_files(
-    files: List[UploadFile] = File(...),
-    type: str = Form(...)
-):
-    """Upload multiple files (for materials)"""
-    try:
-        uploaded_files = []
+        @self.app.get("/api/v1/syllabi/{syllabus_id}", response_model=SyllabusResponse)
+        async def get_syllabus(syllabus_id: str):
+            """Get syllabus by ID"""
+            syllabus = await self.content_service.get_syllabus(syllabus_id)
+            if not syllabus:
+                raise HTTPException(status_code=404, detail="Syllabus not found")
+            return syllabus
         
-        for file in files:
-            if not validate_file_type(file.filename, type):
-                continue  # Skip invalid files
-            
-            file_id = str(uuid.uuid4())
-            file_path = await storage_manager.save_file(file, file_id, type)
-            
-            uploaded_files.append({
-                "file_id": file_id,
-                "filename": file.filename,
-                "path": str(file_path)
-            })
+        @self.app.put("/api/v1/syllabi/{syllabus_id}", response_model=SyllabusResponse)
+        async def update_syllabus(
+            syllabus_id: str,
+            updates: SyllabusUpdate,
+            current_user: str = Depends(self._get_current_user)
+        ):
+            """Update syllabus"""
+            syllabus = await self.content_service.update_syllabus(syllabus_id, updates)
+            if not syllabus:
+                raise HTTPException(status_code=404, detail="Syllabus not found")
+            return syllabus
         
-        return {
-            "success": True,
-            "message": f"Uploaded {len(uploaded_files)} files successfully",
-            "files": uploaded_files
-        }
+        @self.app.delete("/api/v1/syllabi/{syllabus_id}")
+        async def delete_syllabus(
+            syllabus_id: str,
+            current_user: str = Depends(self._get_current_user)
+        ):
+            """Delete syllabus"""
+            success = await self.content_service.delete_syllabus(syllabus_id)
+            if not success:
+                raise HTTPException(status_code=404, detail="Syllabus not found")
+            return create_success_response("Syllabus deleted successfully")
         
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
-
-# ===================================
-# AI PROCESSING ENDPOINTS
-# ===================================
-
-@app.post("/api/content/generate/from-syllabus")
-async def generate_from_syllabus(
-    request: ContentGenerationRequest,
-    background_tasks: BackgroundTasks
-):
-    """Generate course content from uploaded syllabus"""
-    try:
-        processing_id = str(uuid.uuid4())
+        @self.app.get("/api/v1/syllabi", response_model=List[SyllabusResponse])
+        async def list_syllabi(
+            course_id: Optional[str] = None,
+            limit: int = 50,
+            offset: int = 0
+        ):
+            """List syllabi"""
+            return await self.content_service.list_syllabi(course_id, limit, offset)
         
-        # Initialize processing status
-        processing_status[processing_id] = {
-            "status": "pending",
-            "progress": 0,
-            "message": "Starting content generation from syllabus"
-        }
+        # Slide endpoints
+        @self.app.post("/api/v1/slides", response_model=SlideResponse)
+        async def create_slide(
+            slide_data: SlideCreate,
+            current_user: str = Depends(self._get_current_user)
+        ):
+            """Create a new slide"""
+            try:
+                slide = await self.content_service.create_slide(slide_data, current_user)
+                return slide
+            except HTTPException:
+                raise
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
         
-        # Start background processing
-        background_tasks.add_task(
-            generate_content_from_syllabus,
-            processing_id,
-            request
-        )
+        @self.app.get("/api/v1/slides/{slide_id}", response_model=SlideResponse)
+        async def get_slide(slide_id: str):
+            """Get slide by ID"""
+            slide = await self.content_service.get_slide(slide_id)
+            if not slide:
+                raise HTTPException(status_code=404, detail="Slide not found")
+            return slide
         
-        return {
-            "success": True,
-            "message": "Content generation started",
-            "processing_id": processing_id
-        }
+        @self.app.put("/api/v1/slides/{slide_id}", response_model=SlideResponse)
+        async def update_slide(
+            slide_id: str,
+            updates: SlideUpdate,
+            current_user: str = Depends(self._get_current_user)
+        ):
+            """Update slide"""
+            slide = await self.content_service.update_slide(slide_id, updates)
+            if not slide:
+                raise HTTPException(status_code=404, detail="Slide not found")
+            return slide
         
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
-
-@app.post("/api/content/generate/custom")
-async def generate_custom_content(
-    request: CustomGenerationRequest,
-    background_tasks: BackgroundTasks
-):
-    """Generate custom content based on prompt"""
-    try:
-        processing_id = str(uuid.uuid4())
+        @self.app.delete("/api/v1/slides/{slide_id}")
+        async def delete_slide(
+            slide_id: str,
+            current_user: str = Depends(self._get_current_user)
+        ):
+            """Delete slide"""
+            success = await self.content_service.delete_slide(slide_id)
+            if not success:
+                raise HTTPException(status_code=404, detail="Slide not found")
+            return create_success_response("Slide deleted successfully")
         
-        # Initialize processing status
-        processing_status[processing_id] = {
-            "status": "pending",
-            "progress": 0,
-            "message": f"Starting custom {request.content_type} generation"
-        }
+        @self.app.get("/api/v1/slides", response_model=List[SlideResponse])
+        async def list_slides(
+            course_id: Optional[str] = None,
+            limit: int = 50,
+            offset: int = 0
+        ):
+            """List slides"""
+            return await self.content_service.list_slides(course_id, limit, offset)
         
-        # Start background processing
-        background_tasks.add_task(
-            generate_custom_content_task,
-            processing_id,
-            request
-        )
+        # Quiz endpoints
+        @self.app.post("/api/v1/quizzes", response_model=QuizResponse)
+        async def create_quiz(
+            quiz_data: QuizCreate,
+            current_user: str = Depends(self._get_current_user)
+        ):
+            """Create a new quiz"""
+            try:
+                quiz = await self.content_service.create_quiz(quiz_data, current_user)
+                return quiz
+            except HTTPException:
+                raise
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
         
-        return {
-            "success": True,
-            "message": "Custom content generation started",
-            "processing_id": processing_id
-        }
+        @self.app.get("/api/v1/quizzes/{quiz_id}", response_model=QuizResponse)
+        async def get_quiz(quiz_id: str):
+            """Get quiz by ID"""
+            quiz = await self.content_service.get_quiz(quiz_id)
+            if not quiz:
+                raise HTTPException(status_code=404, detail="Quiz not found")
+            return quiz
         
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Generation failed: {str(e)}")
-
-@app.get("/api/content/processing/{processing_id}", response_model=ProcessingStatusResponse)
-async def get_processing_status(processing_id: str):
-    """Get the status of a processing task"""
-    if processing_id not in processing_status:
-        raise HTTPException(status_code=404, detail="Processing ID not found")
+        @self.app.put("/api/v1/quizzes/{quiz_id}", response_model=QuizResponse)
+        async def update_quiz(
+            quiz_id: str,
+            updates: QuizUpdate,
+            current_user: str = Depends(self._get_current_user)
+        ):
+            """Update quiz"""
+            quiz = await self.content_service.update_quiz(quiz_id, updates)
+            if not quiz:
+                raise HTTPException(status_code=404, detail="Quiz not found")
+            return quiz
+        
+        @self.app.delete("/api/v1/quizzes/{quiz_id}")
+        async def delete_quiz(
+            quiz_id: str,
+            current_user: str = Depends(self._get_current_user)
+        ):
+            """Delete quiz"""
+            success = await self.content_service.delete_quiz(quiz_id)
+            if not success:
+                raise HTTPException(status_code=404, detail="Quiz not found")
+            return create_success_response("Quiz deleted successfully")
+        
+        @self.app.get("/api/v1/quizzes", response_model=List[QuizResponse])
+        async def list_quizzes(
+            course_id: Optional[str] = None,
+            limit: int = 50,
+            offset: int = 0
+        ):
+            """List quizzes"""
+            return await self.content_service.list_quizzes(course_id, limit, offset)
+        
+        # Exercise endpoints
+        @self.app.post("/api/v1/exercises", response_model=ExerciseResponse)
+        async def create_exercise(
+            exercise_data: ExerciseCreate,
+            current_user: str = Depends(self._get_current_user)
+        ):
+            """Create a new exercise"""
+            try:
+                exercise = await self.content_service.create_exercise(exercise_data, current_user)
+                return exercise
+            except HTTPException:
+                raise
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+        
+        @self.app.get("/api/v1/exercises/{exercise_id}", response_model=ExerciseResponse)
+        async def get_exercise(exercise_id: str):
+            """Get exercise by ID"""
+            exercise = await self.content_service.get_exercise(exercise_id)
+            if not exercise:
+                raise HTTPException(status_code=404, detail="Exercise not found")
+            return exercise
+        
+        @self.app.put("/api/v1/exercises/{exercise_id}", response_model=ExerciseResponse)
+        async def update_exercise(
+            exercise_id: str,
+            updates: ExerciseUpdate,
+            current_user: str = Depends(self._get_current_user)
+        ):
+            """Update exercise"""
+            exercise = await self.content_service.update_exercise(exercise_id, updates)
+            if not exercise:
+                raise HTTPException(status_code=404, detail="Exercise not found")
+            return exercise
+        
+        @self.app.delete("/api/v1/exercises/{exercise_id}")
+        async def delete_exercise(
+            exercise_id: str,
+            current_user: str = Depends(self._get_current_user)
+        ):
+            """Delete exercise"""
+            success = await self.content_service.delete_exercise(exercise_id)
+            if not success:
+                raise HTTPException(status_code=404, detail="Exercise not found")
+            return create_success_response("Exercise deleted successfully")
+        
+        @self.app.get("/api/v1/exercises", response_model=List[ExerciseResponse])
+        async def list_exercises(
+            course_id: Optional[str] = None,
+            limit: int = 50,
+            offset: int = 0
+        ):
+            """List exercises"""
+            return await self.content_service.list_exercises(course_id, limit, offset)
+        
+        # Lab Environment endpoints
+        @self.app.post("/api/v1/labs", response_model=LabEnvironmentResponse)
+        async def create_lab_environment(
+            lab_data: LabEnvironmentCreate,
+            current_user: str = Depends(self._get_current_user)
+        ):
+            """Create a new lab environment"""
+            try:
+                lab = await self.content_service.create_lab_environment(lab_data, current_user)
+                return lab
+            except HTTPException:
+                raise
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=str(e))
+        
+        @self.app.get("/api/v1/labs/{lab_id}", response_model=LabEnvironmentResponse)
+        async def get_lab_environment(lab_id: str):
+            """Get lab environment by ID"""
+            lab = await self.content_service.get_lab_environment(lab_id)
+            if not lab:
+                raise HTTPException(status_code=404, detail="Lab environment not found")
+            return lab
+        
+        @self.app.put("/api/v1/labs/{lab_id}", response_model=LabEnvironmentResponse)
+        async def update_lab_environment(
+            lab_id: str,
+            updates: LabEnvironmentUpdate,
+            current_user: str = Depends(self._get_current_user)
+        ):
+            """Update lab environment"""
+            lab = await self.content_service.update_lab_environment(lab_id, updates)
+            if not lab:
+                raise HTTPException(status_code=404, detail="Lab environment not found")
+            return lab
+        
+        @self.app.delete("/api/v1/labs/{lab_id}")
+        async def delete_lab_environment(
+            lab_id: str,
+            current_user: str = Depends(self._get_current_user)
+        ):
+            """Delete lab environment"""
+            success = await self.content_service.delete_lab_environment(lab_id)
+            if not success:
+                raise HTTPException(status_code=404, detail="Lab environment not found")
+            return create_success_response("Lab environment deleted successfully")
+        
+        @self.app.get("/api/v1/labs", response_model=List[LabEnvironmentResponse])
+        async def list_lab_environments(
+            course_id: Optional[str] = None,
+            limit: int = 50,
+            offset: int = 0
+        ):
+            """List lab environments"""
+            return await self.content_service.list_lab_environments(course_id, limit, offset)
+        
+        # Search and statistics endpoints
+        @self.app.get("/api/v1/search")
+        async def search_content(
+            query: str,
+            content_types: Optional[List[ContentType]] = None
+        ):
+            """Search content"""
+            return await self.content_service.search_content(query, content_types)
+        
+        @self.app.get("/api/v1/statistics")
+        async def get_statistics():
+            """Get content statistics"""
+            return await self.content_service.get_content_statistics()
+        
+        @self.app.get("/api/v1/courses/{course_id}/content")
+        async def get_course_content(course_id: str):
+            """Get all content for a course"""
+            return await self.content_service.get_course_content(course_id)
+        
+        @self.app.delete("/api/v1/courses/{course_id}/content")
+        async def delete_course_content(
+            course_id: str,
+            current_user: str = Depends(self._get_current_user)
+        ):
+            """Delete all content for a course"""
+            deleted_counts = await self.content_service.delete_course_content(course_id)
+            return create_success_response(
+                "Course content deleted successfully",
+                data=deleted_counts
+            )
+        
+        # File upload endpoints (simplified for now)
+        @self.app.post("/api/v1/upload")
+        async def upload_file(
+            file: UploadFile = File(...),
+            content_type: str = Form(...),
+            current_user: str = Depends(self._get_current_user)
+        ):
+            """Upload a file"""
+            # This is a simplified implementation
+            # In a real system, this would integrate with file storage service
+            return create_success_response(
+                "File uploaded successfully",
+                data={"filename": file.filename, "content_type": content_type}
+            )
+        
+        # Error handlers
+        @self.app.exception_handler(HTTPException)
+        async def http_exception_handler(request, exc):
+            """Handle HTTP exceptions"""
+            return create_error_response(
+                message=exc.detail,
+                error_code=f"HTTP_{exc.status_code}"
+            )
+        
+        @self.app.exception_handler(Exception)
+        async def general_exception_handler(request, exc):
+            """Handle general exceptions"""
+            return create_error_response(
+                message="Internal server error",
+                error_code="INTERNAL_SERVER_ERROR",
+                details={"error": str(exc)}
+            )
     
-    status_data = processing_status[processing_id]
-    return ProcessingStatusResponse(**status_data)
+    async def _get_current_user(self) -> str:
+        """Get current user from request (simplified)"""
+        # In a real implementation, this would validate JWT token
+        # and return user information
+        return "current_user_id"
 
-# ===================================
-# EXPORT ENDPOINTS
-# ===================================
 
-@app.post("/api/content/export/slides")
-async def export_slides(request: ExportRequest):
-    """Export course slides in specified format"""
-    try:
-        # Get course content
-        course_data = await get_course_data(request.course_id)
-        if not course_data:
-            raise HTTPException(status_code=404, detail="Course not found")
-        
-        # Generate export file
-        export_file = await export_processor.export_slides(
-            course_data,
-            ExportFormat(request.format)
-        )
-        
-        # Return file
-        return FileResponse(
-            export_file,
-            media_type=get_media_type(request.format),
-            filename=f"slides_{request.course_id}.{get_file_extension(request.format)}"
-        )
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
+# Create application instance
+app_instance = ContentManagementApp()
+app = app_instance.app
 
-@app.post("/api/content/export/exercises")
-async def export_exercises(request: ExportRequest):
-    """Export course exercises in specified format"""
-    try:
-        course_data = await get_course_data(request.course_id)
-        if not course_data:
-            raise HTTPException(status_code=404, detail="Course not found")
-        
-        export_file = await export_processor.export_exercises(
-            course_data,
-            ExportFormat(request.format)
-        )
-        
-        return FileResponse(
-            export_file,
-            media_type=get_media_type(request.format),
-            filename=f"exercises_{request.course_id}.{get_file_extension(request.format)}"
-        )
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
-
-@app.post("/api/content/export/quizzes")
-async def export_quizzes(request: ExportRequest):
-    """Export course quizzes in specified format"""
-    try:
-        course_data = await get_course_data(request.course_id)
-        if not course_data:
-            raise HTTPException(status_code=404, detail="Course not found")
-        
-        export_file = await export_processor.export_quizzes(
-            course_data,
-            ExportFormat(request.format)
-        )
-        
-        return FileResponse(
-            export_file,
-            media_type=get_media_type(request.format),
-            filename=f"quizzes_{request.course_id}.{get_file_extension(request.format)}"
-        )
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
-
-@app.post("/api/content/export/complete")
-async def export_complete_course(request: ExportRequest):
-    """Export complete course package"""
-    try:
-        course_data = await get_course_data(request.course_id)
-        if not course_data:
-            raise HTTPException(status_code=404, detail="Course not found")
-        
-        export_file = await export_processor.export_complete_course(
-            course_data,
-            ExportFormat(request.format)
-        )
-        
-        return FileResponse(
-            export_file,
-            media_type=get_media_type(request.format),
-            filename=f"course_complete_{request.course_id}.{get_file_extension(request.format)}"
-        )
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
-
-# ===================================
-# HELPER FUNCTIONS
-# ===================================
-
-def validate_file_type(filename: str, content_type: str) -> bool:
-    """Validate file type based on content type"""
-    if not filename:
-        return False
-    
-    file_ext = Path(filename).suffix.lower()
-    
-    allowed_types = {
-        "syllabus": [".pdf", ".doc", ".docx", ".txt"],
-        "slides": [".ppt", ".pptx", ".pdf", ".json"],
-        "materials": [".pdf", ".doc", ".docx", ".zip", ".jpg", ".png", ".mp4", ".mp3"]
-    }
-    
-    return file_ext in allowed_types.get(content_type, [])
-
-def get_media_type(format: str) -> str:
-    """Get media type for export format"""
-    media_types = {
-        "powerpoint": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-        "json": "application/json",
-        "pdf": "application/pdf",
-        "zip": "application/zip",
-        "excel": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "scorm": "application/zip"
-    }
-    return media_types.get(format, "application/octet-stream")
-
-def get_file_extension(format: str) -> str:
-    """Get file extension for export format"""
-    extensions = {
-        "powerpoint": "pptx",
-        "json": "json",
-        "pdf": "pdf",
-        "zip": "zip",
-        "excel": "xlsx",
-        "scorm": "zip"
-    }
-    return extensions.get(format, "zip")
-
-async def get_course_data(course_id: str) -> Optional[Dict[str, Any]]:
-    """Retrieve course data from database"""
-    # This would typically query the database
-    # For now, return mock data
-    return {
-        "id": course_id,
-        "title": "Sample Course",
-        "slides": [],
-        "exercises": [],
-        "quizzes": [],
-        "modules": []
-    }
-
-# ===================================
-# BACKGROUND TASKS
-# ===================================
-
-async def process_syllabus_with_ai(file_path: str, file_id: str, processing_id: str):
-    """Background task to process syllabus with AI"""
-    try:
-        # Update status
-        processing_status[processing_id] = {
-            "status": "processing",
-            "progress": 10,
-            "message": "Extracting content from syllabus"
-        }
-        
-        # Extract text from syllabus
-        syllabus_content = await syllabus_processor.extract_text(file_path)
-        
-        processing_status[processing_id]["progress"] = 30
-        processing_status[processing_id]["message"] = "Analyzing syllabus structure"
-        
-        # Analyze syllabus structure
-        syllabus_analysis = await syllabus_processor.analyze_structure(syllabus_content)
-        
-        processing_status[processing_id]["progress"] = 50
-        processing_status[processing_id]["message"] = "Generating course outline"
-        
-        # Generate course outline
-        course_outline = await ai_generator.generate_course_outline(syllabus_analysis)
-        
-        processing_status[processing_id]["progress"] = 100
-        processing_status[processing_id] = {
-            "status": "completed",
-            "progress": 100,
-            "message": "Syllabus processing completed",
-            "result": {
-                "syllabus_analysis": syllabus_analysis,
-                "course_outline": course_outline
-            }
-        }
-        
-    except Exception as e:
-        processing_status[processing_id] = {
-            "status": "failed",
-            "progress": 0,
-            "message": f"Processing failed: {str(e)}"
-        }
-
-async def generate_content_from_syllabus(processing_id: str, request: ContentGenerationRequest):
-    """Background task to generate content from syllabus"""
-    try:
-        processing_status[processing_id]["status"] = "processing"
-        processing_status[processing_id]["progress"] = 10
-        
-        # Get the latest syllabus analysis
-        syllabus_data = await get_latest_syllabus_analysis()
-        
-        if not syllabus_data:
-            raise Exception("No syllabus found. Please upload a syllabus first.")
-        
-        results = {}
-        total_tasks = sum([request.generate_slides, request.generate_exercises, 
-                          request.generate_quizzes, request.generate_labs])
-        completed_tasks = 0
-        
-        if request.generate_slides:
-            processing_status[processing_id]["message"] = "Generating slides"
-            results["slides"] = await ai_generator.generate_slides(syllabus_data)
-            completed_tasks += 1
-            processing_status[processing_id]["progress"] = int((completed_tasks / total_tasks) * 80)
-        
-        if request.generate_exercises:
-            processing_status[processing_id]["message"] = "Generating exercises"
-            results["exercises"] = await ai_generator.generate_exercises(syllabus_data)
-            completed_tasks += 1
-            processing_status[processing_id]["progress"] = int((completed_tasks / total_tasks) * 80)
-        
-        if request.generate_quizzes:
-            processing_status[processing_id]["message"] = "Generating quizzes"
-            results["quizzes"] = await ai_generator.generate_quizzes(syllabus_data)
-            completed_tasks += 1
-            processing_status[processing_id]["progress"] = int((completed_tasks / total_tasks) * 80)
-        
-        if request.generate_labs:
-            processing_status[processing_id]["message"] = "Generating lab environment"
-            results["labs"] = await ai_generator.generate_lab_environment(syllabus_data)
-            completed_tasks += 1
-            processing_status[processing_id]["progress"] = int((completed_tasks / total_tasks) * 80)
-        
-        processing_status[processing_id] = {
-            "status": "completed",
-            "progress": 100,
-            "message": "Content generation completed",
-            "result": results
-        }
-        
-    except Exception as e:
-        processing_status[processing_id] = {
-            "status": "failed",
-            "progress": 0,
-            "message": f"Generation failed: {str(e)}"
-        }
-
-async def generate_custom_content_task(processing_id: str, request: CustomGenerationRequest):
-    """Background task to generate custom content"""
-    try:
-        processing_status[processing_id]["status"] = "processing"
-        processing_status[processing_id]["progress"] = 20
-        processing_status[processing_id]["message"] = f"Generating {request.content_type}"
-        
-        # Generate content based on type
-        if request.content_type == "slides":
-            result = await ai_generator.generate_custom_slides(request.prompt)
-        elif request.content_type == "exercises":
-            result = await ai_generator.generate_custom_exercises(request.prompt)
-        elif request.content_type == "quizzes":
-            result = await ai_generator.generate_custom_quizzes(request.prompt)
-        elif request.content_type == "lab":
-            result = await ai_generator.generate_custom_lab(request.prompt)
-        else:
-            result = await ai_generator.generate_mixed_content(request.prompt)
-        
-        processing_status[processing_id] = {
-            "status": "completed",
-            "progress": 100,
-            "message": f"Custom {request.content_type} generation completed",
-            "result": result
-        }
-        
-    except Exception as e:
-        processing_status[processing_id] = {
-            "status": "failed",
-            "progress": 0,
-            "message": f"Generation failed: {str(e)}"
-        }
-
-async def get_latest_syllabus_analysis():
-    """Get the most recent syllabus analysis"""
-    # This would typically query the database for the latest syllabus
-    # For now, return mock data
-    return {
-        "topics": ["Introduction", "Basic Concepts", "Advanced Topics"],
-        "learning_objectives": ["Understand basics", "Apply concepts", "Master skills"],
-        "assessment_methods": ["Quizzes", "Projects", "Final Exam"]
-    }
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8005)
