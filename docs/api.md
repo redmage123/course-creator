@@ -2,11 +2,25 @@
 
 ## Overview
 
-The Course Creator Platform provides a comprehensive RESTful API for managing courses, users, and content. The API is built using FastAPI and follows REST conventions.
+The Course Creator Platform provides a comprehensive RESTful API for managing courses, users, and content. The API is built using FastAPI and follows REST conventions with a microservices architecture.
+
+## Microservices Architecture
+
+The platform consists of 5 core backend services:
+
+1. **User Management Service** (Port 8000) - Authentication, user profiles, RBAC
+2. **Course Generator Service** (Port 8001) - AI-powered content generation
+3. **Content Storage Service** (Port 8003) - File storage and versioning
+4. **Course Management Service** (Port 8004) - Course CRUD operations
+5. **Content Management Service** (Port 8005) - Upload/download and multi-format export
 
 ## Base URLs
 
-- **Development**: `http://localhost:8001`
+- **User Management**: `http://localhost:8000`
+- **Course Generator**: `http://localhost:8001`
+- **Content Storage**: `http://localhost:8003`
+- **Course Management**: `http://localhost:8004`
+- **Content Management**: `http://localhost:8005`
 - **Production**: `https://your-domain.com/api`
 
 ## Authentication
@@ -20,11 +34,11 @@ Authorization: Bearer <your-jwt-token>
 ### Getting a Token
 
 ```http
-POST /api/auth/login
+POST http://localhost:8000/auth/login
 Content-Type: application/json
 
 {
-  "email": "user@example.com",
+  "username": "user@example.com",
   "password": "your-password"
 }
 ```
@@ -34,11 +48,11 @@ Response:
 {
   "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
   "token_type": "bearer",
-  "expires_in": 3600,
   "user": {
     "id": "user-id",
-    "email": "user@example.com",
-    "role": "instructor"
+    "username": "user@example.com",
+    "role": "instructor",
+    "full_name": "John Doe"
   }
 }
 ```
@@ -47,34 +61,38 @@ Response:
 
 ### Health Check
 
-Check if the API is running and healthy.
+Check if services are running and healthy.
 
 ```http
-GET /health
+GET http://localhost:8000/health
+GET http://localhost:8001/health
+GET http://localhost:8003/health
+GET http://localhost:8004/health
+GET http://localhost:8005/health
 ```
 
 Response:
 ```json
 {
   "status": "healthy",
-  "message": "Course Creator Platform is running",
+  "service": "user-management",
   "version": "1.0.0",
-  "timestamp": "2025-07-12T10:30:00Z"
+  "timestamp": "2025-07-16T10:30:00Z"
 }
 ```
 
-## Authentication Endpoints
+## User Management Service (Port 8000)
 
 ### Register User
 
 Create a new user account.
 
 ```http
-POST /api/auth/register
+POST http://localhost:8000/auth/register
 Content-Type: application/json
 
 {
-  "email": "user@example.com",
+  "username": "user@example.com",
   "password": "secure-password",
   "full_name": "John Doe",
   "role": "student"
@@ -84,14 +102,13 @@ Content-Type: application/json
 Response:
 ```json
 {
-  "success": true,
   "message": "User registered successfully",
   "user": {
     "id": "user-123",
-    "email": "user@example.com",
+    "username": "user@example.com",
     "full_name": "John Doe",
     "role": "student",
-    "created_at": "2025-07-12T10:30:00Z"
+    "created_at": "2025-07-16T10:30:00Z"
   }
 }
 ```
@@ -101,11 +118,11 @@ Response:
 Authenticate user and get access token.
 
 ```http
-POST /api/auth/login
+POST http://localhost:8000/auth/login
 Content-Type: application/json
 
 {
-  "email": "user@example.com",
+  "username": "user@example.com",
   "password": "secure-password"
 }
 ```
@@ -115,7 +132,7 @@ Content-Type: application/json
 Get the current authenticated user's information.
 
 ```http
-GET /api/auth/me
+GET http://localhost:8000/auth/profile
 Authorization: Bearer <token>
 ```
 
@@ -123,113 +140,192 @@ Response:
 ```json
 {
   "id": "user-123",
-  "email": "user@example.com",
+  "username": "user@example.com",
   "full_name": "John Doe",
   "role": "student",
-  "created_at": "2025-07-12T10:30:00Z",
-  "last_login": "2025-07-12T10:30:00Z"
+  "created_at": "2025-07-16T10:30:00Z"
 }
 ```
 
-### Logout
+### User Management
 
-Invalidate the current token.
-
-```http
-POST /api/auth/logout
-Authorization: Bearer <token>
-```
-
-## User Management Endpoints
-
-### List Users
-
-Get a list of all users (admin only).
+List and manage users (admin only).
 
 ```http
-GET /api/users?page=1&limit=10&role=student
+GET http://localhost:8000/users
 Authorization: Bearer <admin-token>
 ```
 
 Response:
 ```json
 {
-  "success": true,
-  "data": [
+  "users": [
     {
       "id": "user-123",
-      "email": "student@example.com",
+      "username": "student@example.com",
       "full_name": "Jane Student",
       "role": "student",
-      "created_at": "2025-07-12T10:30:00Z",
-      "is_active": true
+      "created_at": "2025-07-16T10:30:00Z"
     }
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 10,
-    "total": 50,
-    "pages": 5
+  ]
+}
+```
+
+## Course Generator Service (Port 8001)
+
+### Generate Syllabus
+
+Generate a course syllabus using AI.
+
+```http
+POST http://localhost:8001/generate/syllabus
+Authorization: Bearer <instructor-token>
+Content-Type: application/json
+
+{
+  "course_title": "Introduction to Python Programming",
+  "course_description": "A comprehensive course covering Python fundamentals",
+  "target_audience": "beginner",
+  "duration_hours": 40
+}
+```
+
+Response:
+```json
+{
+  "syllabus": {
+    "course_id": "course-123",
+    "title": "Introduction to Python Programming",
+    "overview": "This course provides a comprehensive introduction to Python programming...",
+    "modules": [
+      {
+        "module_number": 1,
+        "title": "Python Basics",
+        "topics": ["Variables", "Data Types", "Control Flow"],
+        "duration_hours": 8
+      }
+    ]
   }
 }
 ```
 
-### Get User
+### Generate Slides
 
-Get a specific user by ID.
-
-```http
-GET /api/users/{user_id}
-Authorization: Bearer <token>
-```
-
-### Update User
-
-Update user information.
+Generate presentation slides from syllabus.
 
 ```http
-PUT /api/users/{user_id}
-Authorization: Bearer <token>
+POST http://localhost:8001/generate/slides
+Authorization: Bearer <instructor-token>
 Content-Type: application/json
 
 {
-  "full_name": "Updated Name",
-  "email": "new-email@example.com"
+  "course_id": "course-123",
+  "syllabus_content": "...",
+  "slide_count": 20
 }
 ```
 
-### Delete User
+### Generate Exercises
 
-Delete a user account (admin only).
+Generate interactive exercises for a course.
 
 ```http
-DELETE /api/users/{user_id}
-Authorization: Bearer <admin-token>
+POST http://localhost:8001/exercises/generate
+Authorization: Bearer <instructor-token>
+Content-Type: application/json
+
+{
+  "course_id": "course-123",
+  "difficulty": "beginner",
+  "exercise_count": 10
+}
 ```
 
-## Course Management Endpoints
+Response:
+```json
+{
+  "exercises": [
+    {
+      "id": "exercise-456",
+      "title": "Variable Assignment Exercise",
+      "description": "Practice creating and using variables",
+      "type": "interactive_lab",
+      "difficulty": "beginner",
+      "starter_code": "# Your code here",
+      "solution": "name = 'Alice'",
+      "validation": "assert name == 'Alice'"
+    }
+  ]
+}
+```
+
+### Generate Quiz
+
+Generate quizzes for a course.
+
+```http
+POST http://localhost:8001/quiz/generate-for-course
+Authorization: Bearer <instructor-token>
+Content-Type: application/json
+
+{
+  "course_id": "course-123",
+  "question_count": 15,
+  "difficulty": "intermediate"
+}
+```
+
+Response:
+```json
+{
+  "quiz": {
+    "id": "quiz-789",
+    "title": "Python Basics Quiz",
+    "questions": [
+      {
+        "question": "What is a variable in Python?",
+        "options": ["A storage location", "A function", "A loop", "A condition"],
+        "correct_answer": "A storage location",
+        "type": "multiple_choice"
+      }
+    ]
+  }
+}
+```
+
+### Get Course Exercises
+
+Retrieve exercises for a specific course.
+
+```http
+GET http://localhost:8001/exercises/{course_id}
+Authorization: Bearer <token>
+```
+
+### Get Course Quizzes
+
+Retrieve quizzes for a specific course.
+
+```http
+GET http://localhost:8001/quiz/course/{course_id}
+Authorization: Bearer <token>
+```
+
+## Course Management Service (Port 8004)
 
 ### List Courses
 
 Get a list of all courses.
 
 ```http
-GET /api/courses?page=1&limit=10&category=programming&difficulty=beginner
+GET http://localhost:8004/courses
+Authorization: Bearer <token>
 ```
-
-Query Parameters:
-- `page` (optional): Page number (default: 1)
-- `limit` (optional): Items per page (default: 10)
-- `category` (optional): Filter by category
-- `difficulty` (optional): Filter by difficulty (beginner, intermediate, advanced)
-- `instructor_id` (optional): Filter by instructor
-- `published` (optional): Filter by published status
 
 Response:
 ```json
 {
-  "success": true,
-  "data": [
+  "courses": [
     {
       "id": "course-123",
       "title": "Introduction to Python",
@@ -237,25 +333,11 @@ Response:
       "category": "programming",
       "difficulty_level": "beginner",
       "estimated_duration": 40,
-      "price": 99.99,
-      "instructor": {
-        "id": "instructor-456",
-        "name": "Dr. Jane Smith"
-      },
-      "thumbnail_url": "https://example.com/thumb.jpg",
-      "is_published": true,
-      "created_at": "2025-07-12T10:30:00Z",
-      "updated_at": "2025-07-12T10:30:00Z",
-      "enrollment_count": 150,
-      "rating": 4.8
+      "instructor_id": "instructor-456",
+      "created_at": "2025-07-16T10:30:00Z",
+      "updated_at": "2025-07-16T10:30:00Z"
     }
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 10,
-    "total": 25,
-    "pages": 3
-  }
+  ]
 }
 ```
 
@@ -264,45 +346,22 @@ Response:
 Get detailed information about a specific course.
 
 ```http
-GET /api/courses/{course_id}
+GET http://localhost:8004/courses/{course_id}
+Authorization: Bearer <token>
 ```
 
 Response:
 ```json
 {
-  "success": true,
-  "data": {
-    "id": "course-123",
-    "title": "Introduction to Python",
-    "description": "Learn Python programming from scratch",
-    "content": {
-      "modules": [
-        {
-          "id": "module-1",
-          "title": "Getting Started",
-          "lessons": [
-            {
-              "id": "lesson-1",
-              "title": "Installing Python",
-              "content": "...",
-              "duration": 15
-            }
-          ]
-        }
-      ]
-    },
-    "lab_environment": {
-      "id": "lab-123",
-      "name": "Python Basics Lab",
-      "exercises": [
-        {
-          "id": "exercise-1",
-          "title": "Hello World",
-          "instructions": "Write your first Python program"
-        }
-      ]
-    }
-  }
+  "id": "course-123",
+  "title": "Introduction to Python",
+  "description": "Learn Python programming from scratch",
+  "category": "programming",
+  "difficulty_level": "beginner",
+  "estimated_duration": 40,
+  "instructor_id": "instructor-456",
+  "created_at": "2025-07-16T10:30:00Z",
+  "updated_at": "2025-07-16T10:30:00Z"
 }
 ```
 
@@ -311,7 +370,7 @@ Response:
 Create a new course (instructor only).
 
 ```http
-POST /api/courses
+POST http://localhost:8004/courses
 Authorization: Bearer <instructor-token>
 Content-Type: application/json
 
@@ -320,11 +379,7 @@ Content-Type: application/json
   "description": "Master advanced JavaScript concepts",
   "category": "programming",
   "difficulty_level": "intermediate",
-  "estimated_duration": 60,
-  "price": 149.99,
-  "content": {
-    "modules": [...]
-  }
+  "estimated_duration": 60
 }
 ```
 
@@ -333,14 +388,14 @@ Content-Type: application/json
 Update an existing course.
 
 ```http
-PUT /api/courses/{course_id}
+PUT http://localhost:8004/courses/{course_id}
 Authorization: Bearer <instructor-token>
 Content-Type: application/json
 
 {
   "title": "Updated Course Title",
   "description": "Updated description",
-  "price": 199.99
+  "estimated_duration": 50
 }
 ```
 
@@ -349,312 +404,189 @@ Content-Type: application/json
 Delete a course (instructor or admin only).
 
 ```http
-DELETE /api/courses/{course_id}
+DELETE http://localhost:8004/courses/{course_id}
 Authorization: Bearer <token>
 ```
 
-### Publish Course
+## Content Storage Service (Port 8003)
 
-Publish a course to make it available to students.
+### Upload File
 
-```http
-POST /api/courses/{course_id}/publish
-Authorization: Bearer <instructor-token>
-```
-
-### Unpublish Course
-
-Unpublish a course.
+Upload files for content storage.
 
 ```http
-POST /api/courses/{course_id}/unpublish
-Authorization: Bearer <instructor-token>
-```
+POST http://localhost:8003/upload
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
 
-## Enrollment Endpoints
-
-### Enroll in Course
-
-Enroll a student in a course.
-
-```http
-POST /api/enrollments
-Authorization: Bearer <student-token>
-Content-Type: application/json
-
-{
-  "course_id": "course-123"
-}
+file: <file-data>
 ```
 
 Response:
 ```json
 {
-  "success": true,
-  "message": "Successfully enrolled in course",
-  "enrollment": {
-    "id": "enrollment-456",
-    "student_id": "student-123",
-    "course_id": "course-123",
-    "enrolled_at": "2025-07-12T10:30:00Z",
-    "status": "active",
-    "progress": 0
-  }
+  "file_id": "file-123",
+  "filename": "document.pdf",
+  "size": 1024768,
+  "content_type": "application/pdf",
+  "upload_timestamp": "2025-07-16T10:30:00Z",
+  "url": "/files/file-123"
 }
 ```
 
-### Get Enrollments
+### Download File
 
-Get enrollments for a user or course.
+Download or retrieve an uploaded file.
 
 ```http
-GET /api/enrollments?student_id=student-123&course_id=course-123
+GET http://localhost:8003/download/{file_id}
 Authorization: Bearer <token>
 ```
 
-### Update Enrollment Progress
+### Delete File
 
-Update student progress in a course.
-
-```http
-PUT /api/enrollments/{enrollment_id}/progress
-Authorization: Bearer <student-token>
-Content-Type: application/json
-
-{
-  "lesson_id": "lesson-123",
-  "completed": true,
-  "score": 95
-}
-```
-
-### Unenroll from Course
-
-Remove a student from a course.
+Delete a file from storage.
 
 ```http
-DELETE /api/enrollments/{enrollment_id}
+DELETE http://localhost:8003/files/{file_id}
 Authorization: Bearer <token>
 ```
 
-## Content Generation Endpoints
+## Content Management Service (Port 8005)
 
-### Generate Course Content
+### Upload Content
 
-Generate course content using AI.
-
-```http
-POST /api/generate/course
-Authorization: Bearer <instructor-token>
-Content-Type: application/json
-
-{
-  "title": "Machine Learning Basics",
-  "topics": ["supervised learning", "neural networks", "data preprocessing"],
-  "difficulty": "beginner",
-  "duration": 30
-}
-```
-
-Response:
-```json
-{
-  "success": true,
-  "message": "Course content generated successfully",
-  "course_id": "course-789",
-  "content": {
-    "modules": [...],
-    "exercises": [...],
-    "lab_environment": {...}
-  }
-}
-```
-
-### Generate Module
-
-Generate content for a specific module.
+Upload and process content files with AI integration.
 
 ```http
-POST /api/generate/module
-Authorization: Bearer <instructor-token>
-Content-Type: application/json
-
-{
-  "course_id": "course-123",
-  "title": "Advanced Concepts",
-  "topics": ["decorators", "generators", "context managers"]
-}
-```
-
-### Generate Exercise
-
-Generate a coding exercise.
-
-```http
-POST /api/generate/exercise
-Authorization: Bearer <instructor-token>
-Content-Type: application/json
-
-{
-  "course_id": "course-123",
-  "module_id": "module-456",
-  "topic": "list comprehensions",
-  "difficulty": "intermediate"
-}
-```
-
-## Lab Environment Endpoints
-
-### Get Lab Environment
-
-Get lab environment details for a course.
-
-```http
-GET /api/labs/{course_id}
-Authorization: Bearer <token>
-```
-
-### Create Lab Session
-
-Create a new lab session for a student.
-
-```http
-POST /api/labs/{course_id}/sessions
-Authorization: Bearer <student-token>
-```
-
-Response:
-```json
-{
-  "success": true,
-  "session": {
-    "id": "session-789",
-    "student_id": "student-123",
-    "course_id": "course-123",
-    "lab_url": "http://lab.example.com/session-789",
-    "expires_at": "2025-07-12T14:30:00Z"
-  }
-}
-```
-
-### Submit Exercise
-
-Submit a completed exercise.
-
-```http
-POST /api/labs/exercises/{exercise_id}/submit
-Authorization: Bearer <student-token>
-Content-Type: application/json
-
-{
-  "code": "print('Hello, World!')",
-  "session_id": "session-789"
-}
-```
-
-## File Upload Endpoints
-
-### Upload Course Material
-
-Upload files for a course.
-
-```http
-POST /api/courses/{course_id}/upload
+POST http://localhost:8005/upload
 Authorization: Bearer <instructor-token>
 Content-Type: multipart/form-data
 
 file: <file-data>
-type: "video" | "document" | "image"
-```
-
-### Get File
-
-Download or view an uploaded file.
-
-```http
-GET /api/files/{file_id}
-Authorization: Bearer <token>
-```
-
-## Analytics Endpoints
-
-### Course Analytics
-
-Get analytics for a course (instructor only).
-
-```http
-GET /api/analytics/courses/{course_id}
-Authorization: Bearer <instructor-token>
+course_id: course-123
 ```
 
 Response:
 ```json
 {
-  "success": true,
-  "data": {
-    "total_enrollments": 150,
-    "active_students": 120,
-    "completion_rate": 75.5,
-    "average_rating": 4.8,
-    "revenue": 14985.00,
-    "engagement_metrics": {
-      "avg_session_duration": 45,
-      "modules_completed": 1200,
-      "exercises_completed": 850
+  "file_id": "file-456",
+  "filename": "course_material.pdf",
+  "processed": true,
+  "extracted_content": {
+    "text": "Course content extracted from PDF...",
+    "structure": {
+      "chapters": ["Introduction", "Advanced Topics"],
+      "topics": ["Variables", "Functions", "Classes"]
     }
   }
 }
 ```
 
-### Student Progress
+### Export Content
 
-Get detailed progress for a student.
+Export course content in multiple formats.
 
 ```http
-GET /api/analytics/students/{student_id}/progress
+GET http://localhost:8005/export/{format}?course_id=course-123
+Authorization: Bearer <instructor-token>
+```
+
+Supported formats:
+- `powerpoint` - Export as PowerPoint presentation
+- `pdf` - Export as PDF document
+- `json` - Export as JSON data
+- `excel` - Export as Excel spreadsheet
+- `zip` - Export as ZIP archive
+- `scorm` - Export as SCORM package
+
+### List Files
+
+List all uploaded files for a course.
+
+```http
+GET http://localhost:8005/files?course_id=course-123
 Authorization: Bearer <token>
 ```
 
-## WebSocket Endpoints
+Response:
+```json
+{
+  "files": [
+    {
+      "id": "file-123",
+      "filename": "lecture_notes.pdf",
+      "size": 2048576,
+      "upload_date": "2025-07-16T10:30:00Z",
+      "processed": true
+    }
+  ]
+}
+```
 
-### Real-time Lab Session
+## Interactive Documentation
 
-Connect to a lab session for real-time updates.
+### Swagger UI
 
-```javascript
-const ws = new WebSocket('ws://localhost:8001/ws/lab/{session_id}?token={jwt_token}');
+Each service provides interactive API documentation:
 
-// Listen for messages
-ws.onmessage = (event) => {
-  const data = JSON.parse(event.data);
-  console.log('Lab update:', data);
-};
+- **User Management**: `http://localhost:8000/docs`
+- **Course Generator**: `http://localhost:8001/docs`
+- **Content Storage**: `http://localhost:8003/docs`
+- **Course Management**: `http://localhost:8004/docs`
+- **Content Management**: `http://localhost:8005/docs`
 
-// Send commands
-ws.send(JSON.stringify({
-  type: 'execute',
-  command: 'python hello.py'
-}));
+### Example API Workflow
+
+Here's a typical workflow for creating a complete course:
+
+```bash
+# 1. Login to get authentication token
+curl -X POST http://localhost:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "instructor@example.com", "password": "password"}'
+
+# 2. Create a new course
+curl -X POST http://localhost:8004/courses \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Python Basics", "description": "Learn Python programming"}'
+
+# 3. Generate syllabus using AI
+curl -X POST http://localhost:8001/generate/syllabus \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"course_title": "Python Basics", "target_audience": "beginner"}'
+
+# 4. Generate exercises
+curl -X POST http://localhost:8001/exercises/generate \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"course_id": "course-123", "difficulty": "beginner"}'
+
+# 5. Upload course materials
+curl -X POST http://localhost:8005/upload \
+  -H "Authorization: Bearer <token>" \
+  -F "file=@course_material.pdf" \
+  -F "course_id=course-123"
+
+# 6. Export content in multiple formats
+curl -X GET "http://localhost:8005/export/powerpoint?course_id=course-123" \
+  -H "Authorization: Bearer <token>" \
+  -o course_slides.pptx
 ```
 
 ## Error Handling
 
 ### Error Response Format
 
-All errors follow a consistent format:
+All services follow a consistent error format:
 
 ```json
 {
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Invalid input data",
-    "details": {
-      "field": "email",
-      "reason": "Invalid email format"
-    }
-  },
-  "timestamp": "2025-07-12T10:30:00Z"
+  "detail": "Authentication required",
+  "error_code": "AUTHENTICATION_REQUIRED",
+  "timestamp": "2025-07-16T10:30:00Z"
 }
 ```
 
@@ -667,9 +599,7 @@ All errors follow a consistent format:
 - `401` - Unauthorized
 - `403` - Forbidden
 - `404` - Not Found
-- `409` - Conflict
 - `422` - Validation Error
-- `429` - Rate Limited
 - `500` - Internal Server Error
 
 ### Common Error Codes
@@ -679,109 +609,67 @@ All errors follow a consistent format:
 - `INVALID_TOKEN` - Token is invalid or expired
 - `INSUFFICIENT_PERMISSIONS` - User lacks required permissions
 - `RESOURCE_NOT_FOUND` - Requested resource doesn't exist
-- `RESOURCE_CONFLICT` - Resource already exists
-- `RATE_LIMITED` - Too many requests
 - `INTERNAL_ERROR` - Server error
 
-## Rate Limiting
+## Service Health and Monitoring
 
-API endpoints are rate limited to prevent abuse:
+### Health Check All Services
 
-- **Authentication**: 5 requests per minute
-- **Course Creation**: 10 requests per hour
-- **General API**: 100 requests per minute
-- **File Upload**: 20 requests per hour
+Use the app-control.sh script to check all services:
 
-Rate limit headers are included in responses:
-
-```http
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 95
-X-RateLimit-Reset: 1625745600
+```bash
+./app-control.sh status
 ```
 
-## Pagination
+### Service Dependencies
 
-List endpoints support pagination:
+Services must be started in dependency order:
+1. User Management (8000)
+2. Course Generator (8001)
+3. Course Management (8004)
+4. Content Storage (8003)
+5. Content Management (8005)
 
-```http
-GET /api/courses?page=2&limit=20
+### MCP Integration
+
+The platform includes a unified MCP server for monitoring:
+
+```bash
+# Start MCP server
+./mcp-control.sh start
+
+# Check MCP status
+./mcp-control.sh status
 ```
 
-Response includes pagination metadata:
+## Testing the API
 
-```json
-{
-  "data": [...],
-  "pagination": {
-    "page": 2,
-    "limit": 20,
-    "total": 150,
-    "pages": 8,
-    "has_next": true,
-    "has_prev": true
-  }
-}
+### Using curl
+
+```bash
+# Test authentication
+curl -X POST http://localhost:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "test@example.com", "password": "password"}'
+
+# Test course creation
+curl -X POST http://localhost:8004/courses \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Test Course", "description": "Test description"}'
 ```
 
-## API Versioning
+### Using the Frontend
 
-The API uses URL versioning:
+Access the web interface at:
+- **Instructor Dashboard**: `http://localhost:8080/instructor-dashboard.html`
+- **Student Dashboard**: `http://localhost:8080/student-dashboard.html`
+- **Lab Environment**: `http://localhost:8080/lab.html`
 
-- Current version: `v1`
-- Base URL: `/api/v1/`
-- Deprecated versions remain available for 6 months
+## Platform Status
 
-## SDKs and Libraries
+**Current Version**: 1.0.0  
+**Last Updated**: 2025-07-16  
+**Status**: Active Development
 
-### JavaScript/TypeScript
-
-```javascript
-import { CourseCreatorAPI } from '@course-creator/api-client';
-
-const api = new CourseCreatorAPI({
-  baseURL: 'http://localhost:8001',
-  apiKey: 'your-api-key'
-});
-
-// Get courses
-const courses = await api.courses.list({ category: 'programming' });
-
-// Create course
-const newCourse = await api.courses.create({
-  title: 'New Course',
-  description: 'Course description'
-});
-```
-
-### Python
-
-```python
-from course_creator_client import CourseCreatorClient
-
-client = CourseCreatorClient(
-    base_url='http://localhost:8001',
-    api_key='your-api-key'
-)
-
-# Get courses
-courses = client.courses.list(category='programming')
-
-# Create course
-new_course = client.courses.create(
-    title='New Course',
-    description='Course description'
-)
-```
-
-## Interactive API Documentation
-
-Visit the interactive API documentation at:
-- **Swagger UI**: `http://localhost:8001/docs`
-- **ReDoc**: `http://localhost:8001/redoc`
-
-These interfaces allow you to:
-- Browse all endpoints
-- Try API calls directly
-- View request/response schemas
-- Download OpenAPI specifications
+For detailed implementation information, see [CLAUDE.md](../CLAUDE.md) and [Architecture Documentation](./architecture.md).

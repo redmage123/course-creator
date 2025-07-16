@@ -6,41 +6,47 @@ The Course Creator Platform is built using a modern microservices architecture t
 
 ## High-Level Architecture
 
+The Course Creator Platform uses a microservices architecture with 5 core backend services:
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        Load Balancer / API Gateway              │
-│                        (Nginx / AWS ALB)                        │
+│                        Load Balancer / Nginx                    │
+│                         (Port 80/443)                           │
 └─────────────────┬───────────────────────────────────────────────┘
                   │
 ┌─────────────────┴───────────────────────────────────────────────┐
 │                       Frontend Layer                            │
+│                        (Port 8080)                              │
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐              │
-│  │   Admin     │ │ Instructor  │ │   Student   │              │
-│  │ Dashboard   │ │ Dashboard   │ │ Dashboard   │              │
+│  │ Instructor  │ │   Student   │ │     Lab     │              │
+│  │ Dashboard   │ │ Dashboard   │ │ Environment │              │
 │  └─────────────┘ └─────────────┘ └─────────────┘              │
 │                                                                │
-│  ┌─────────────────────────────────────────────────────────┐  │
-│  │              Lab Environment                             │  │
-│  │        (Interactive Coding Interface)                   │  │
-│  └─────────────────────────────────────────────────────────┘  │
+│  Frontend: HTML5/CSS3/JavaScript ES6 + Bootstrap 5            │
+│  Lab: xterm.js + WebSocket for real-time interaction          │
 └─────────────────┬───────────────────────────────────────────────┘
                   │
 ┌─────────────────┴───────────────────────────────────────────────┐
 │                    Backend Services                             │
 │                                                                │
 │ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐│
-│ │    User     │ │   Course    │ │   Course    │ │   Content   ││
-│ │ Management  │ │ Management  │ │ Generator   │ │  Storage    ││
-│ │   Service   │ │   Service   │ │   Service   │ │   Service   ││
+│ │    User     │ │   Course    │ │   Content   │ │   Course    ││
+│ │ Management  │ │ Generator   │ │  Storage    │ │ Management  ││
+│ │  (8000)     │ │   (8001)    │ │   (8003)    │ │   (8004)    ││
 │ └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘│
+│                                                                │
+│              ┌─────────────────────────────────┐              │
+│              │      Content Management         │              │
+│              │         (8005)                  │              │
+│              └─────────────────────────────────┘              │
 └─────────────────┬───────────────────────────────────────────────┘
                   │
 ┌─────────────────┴───────────────────────────────────────────────┐
 │                     Data Layer                                 │
 │                                                                │
 │ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐│
-│ │ PostgreSQL  │ │    Redis    │ │ File Storage│ │ Monitoring  ││
-│ │  Database   │ │   Cache     │ │    (S3)     │ │   Stack     ││
+│ │ PostgreSQL  │ │    Redis    │ │ File Storage│ │ MCP Server  ││
+│ │  Database   │ │   Cache     │ │ (Local FS)  │ │(Monitoring) ││
 │ └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘│
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -49,415 +55,485 @@ The Course Creator Platform is built using a modern microservices architecture t
 
 ### Frontend Layer
 
-#### 1. Admin Dashboard (`admin.html`)
-- **Purpose**: Platform administration and monitoring
-- **Features**: 
-  - User management (create, view, deactivate users)
-  - System analytics and metrics
-  - Content moderation
-  - Platform configuration
-- **Technology**: HTML5, CSS3, JavaScript, Bootstrap 5
-- **Authentication**: Admin-only access with JWT tokens
+The frontend is built with modern web technologies and serves on port 8080:
 
-#### 2. Instructor Dashboard (`instructor-dashboard.html`)
+#### 1. Instructor Dashboard (`instructor-dashboard.html`)
 - **Purpose**: Course creation and management interface
 - **Features**:
-  - Course creation and editing
-  - Student enrollment management
-  - Content generation with AI
-  - Progress tracking and analytics
-  - Lab environment configuration
-- **Technology**: HTML5, CSS3, JavaScript, Bootstrap 5
-- **Communication**: REST API calls to backend services
+  - Tabbed interface for course content management
+  - AI-powered syllabus generation
+  - Slide generation from course content
+  - Exercise and quiz creation
+  - File upload with drag-and-drop interface
+  - Multi-format content export (PowerPoint, PDF, Excel, SCORM)
+  - Interactive lab environment configuration
+- **Technology**: HTML5, CSS3, JavaScript ES6 modules, Bootstrap 5
+- **Key Files**:
+  - `js/main-modular.js` - Main application entry point
+  - `js/modules/` - Modular components (auth, navigation, notifications)
+  - `js/config.js` - Configuration management
 
-#### 3. Student Dashboard (`student-dashboard.html`)
+#### 2. Student Dashboard (`student-dashboard.html`)
 - **Purpose**: Student learning interface
 - **Features**:
-  - Course browsing and enrollment
-  - Progress tracking
-  - Assignment submission
-  - Grade viewing
-- **Technology**: HTML5, CSS3, JavaScript, Bootstrap 5
+  - Course enrollment and access
+  - Progress tracking and analytics
+  - Quiz taking with immediate feedback
+  - Lab environment access
+  - Interactive learning materials
+- **Technology**: HTML5, CSS3, JavaScript ES6 modules, Bootstrap 5
 - **Real-time Features**: WebSocket connections for live updates
 
-#### 4. Lab Environment (`lab.html`)
-- **Purpose**: Interactive coding environment
+#### 3. Lab Environment (`lab.html`)
+- **Purpose**: Interactive coding environment with AI assistance
 - **Features**:
-  - Browser-based terminal (Xterm.js)
+  - Browser-based terminal (xterm.js)
   - Code editor with syntax highlighting
-  - File management
-  - Exercise execution and testing
+  - File management system
+  - Exercise execution and validation
+  - AI-powered code assistance
+  - Real-time collaboration features
 - **Technology**: 
-  - Xterm.js for terminal emulation
-  - Monaco Editor for code editing
+  - xterm.js for terminal emulation
+  - Marked.js for markdown rendering
   - WebSocket for real-time communication
-- **Security**: Sandboxed execution environment
+- **Security**: Sandboxed execution environment with resource limits
 
 ### Backend Services
 
-#### 1. User Management Service
-**Port**: 8001
+The platform uses a microservices architecture with 5 core services that follow SOLID principles and Test-Driven Development (TDD):
+
+#### 1. User Management Service (Port 8000)
 **Responsibilities**:
 - User authentication and authorization
 - JWT token management
 - User profile management
 - Role-based access control (RBAC)
-- Session management
 
 **Technology Stack**:
-- FastAPI framework
-- SQLAlchemy ORM
+- FastAPI framework with asyncio
+- asyncpg for PostgreSQL connectivity
 - JWT for authentication
 - Bcrypt for password hashing
-- Redis for session storage
+- Repository pattern for data access
 
-**Database Schema**:
-```sql
-users (
-  id UUID PRIMARY KEY,
-  email VARCHAR UNIQUE,
-  password_hash VARCHAR,
-  full_name VARCHAR,
-  role VARCHAR CHECK (role IN ('admin', 'instructor', 'student')),
-  is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMP,
-  updated_at TIMESTAMP,
-  last_login TIMESTAMP
-)
+**Key Endpoints**:
+- `POST /auth/login` - User authentication
+- `POST /auth/register` - User registration
+- `GET /auth/profile` - Get user profile
+- `GET /users` - List users (admin only)
 
-user_sessions (
-  id UUID PRIMARY KEY,
-  user_id UUID REFERENCES users(id),
-  token_hash VARCHAR,
-  expires_at TIMESTAMP,
-  created_at TIMESTAMP
-)
-```
+#### 2. Course Generator Service (Port 8001)
+**Responsibilities**:
+- AI-powered content generation using Anthropic Claude
+- Course structure and syllabus creation
+- Exercise and quiz generation
+- Slide generation from content
+- Interactive lab environment setup
 
-#### 2. Course Management Service
-**Port**: 8002
+**Technology Stack**:
+- FastAPI framework with asyncio
+- Anthropic Claude API integration
+- OpenAI API (fallback)
+- Hydra configuration management
+- Background task processing
+
+**Key Endpoints**:
+- `POST /generate/syllabus` - Generate course syllabus
+- `POST /generate/slides` - Generate presentation slides
+- `POST /exercises/generate` - Generate interactive exercises
+- `POST /quiz/generate-for-course` - Generate quizzes
+- `GET /exercises/{course_id}` - Get course exercises
+- `GET /quiz/course/{course_id}` - Get course quizzes
+
+**Key Components**:
+- `services/quiz_service.py` - Quiz generation and management
+- `services/exercise_generation_service.py` - Exercise creation (TDD implementation)
+- `ai_integration.py` - AI service integration
+
+#### 3. Content Storage Service (Port 8003)
+**Responsibilities**:
+- File upload and storage management
+- Content versioning
+- File metadata management
+- Storage optimization
+
+**Technology Stack**:
+- FastAPI framework
+- Local filesystem storage
+- File processing utilities
+- Metadata management
+
+**Key Endpoints**:
+- `POST /upload` - Upload files
+- `GET /download/{file_id}` - Download files
+- `DELETE /files/{file_id}` - Delete files
+
+#### 4. Course Management Service (Port 8004)
 **Responsibilities**:
 - Course CRUD operations
-- Enrollment management
-- Progress tracking
+- Course metadata management
 - Course publishing workflow
-- Content versioning
+- Enrollment management
 
 **Technology Stack**:
 - FastAPI framework
-- SQLAlchemy ORM
-- PostgreSQL database
-- Redis for caching
+- asyncpg for PostgreSQL
+- Repository pattern
+- Service layer architecture
 
-**Database Schema**:
-```sql
-courses (
-  id UUID PRIMARY KEY,
-  title VARCHAR NOT NULL,
-  description TEXT,
-  instructor_id UUID REFERENCES users(id),
-  category VARCHAR,
-  difficulty_level VARCHAR CHECK (difficulty_level IN ('beginner', 'intermediate', 'advanced')),
-  estimated_duration INTEGER,
-  price DECIMAL(10,2),
-  is_published BOOLEAN DEFAULT false,
-  created_at TIMESTAMP,
-  updated_at TIMESTAMP
-)
+**Key Endpoints**:
+- `GET /courses` - List courses
+- `POST /courses` - Create course
+- `GET /courses/{course_id}` - Get course details
+- `PUT /courses/{course_id}` - Update course
+- `DELETE /courses/{course_id}` - Delete course
 
-enrollments (
-  id UUID PRIMARY KEY,
-  student_id UUID REFERENCES users(id),
-  course_id UUID REFERENCES courses(id),
-  enrolled_at TIMESTAMP,
-  status VARCHAR DEFAULT 'active',
-  progress DECIMAL(5,2) DEFAULT 0,
-  UNIQUE(student_id, course_id)
-)
-
-course_modules (
-  id UUID PRIMARY KEY,
-  course_id UUID REFERENCES courses(id),
-  title VARCHAR NOT NULL,
-  description TEXT,
-  order_index INTEGER,
-  content JSONB
-)
-
-course_lessons (
-  id UUID PRIMARY KEY,
-  module_id UUID REFERENCES course_modules(id),
-  title VARCHAR NOT NULL,
-  content TEXT,
-  duration INTEGER,
-  order_index INTEGER
-)
-```
-
-#### 3. Course Generator Service
-**Port**: 8003
+#### 5. Content Management Service (Port 8005)
 **Responsibilities**:
-- AI-powered content generation
-- Course structure creation
-- Exercise and quiz generation
-- Lab environment setup
-- Content optimization
+- File upload/download with AI integration
+- Multi-format content export (PowerPoint, PDF, Excel, SCORM, ZIP)
+- Content processing and extraction
+- File metadata and storage management
 
 **Technology Stack**:
 - FastAPI framework
-- Anthropic Claude API
-- OpenAI GPT API
-- Celery for background tasks
-- Redis for task queue
+- File processing pipeline
+- AI integration for content generation
+- Multi-format export capabilities
 
-**AI Integration**:
-- **Content Generation**: Uses LLMs to create course modules, lessons, and exercises
-- **Exercise Creation**: Generates coding challenges and quizzes
-- **Lab Setup**: Creates appropriate development environments
-- **Personalization**: Adapts content based on difficulty level and learning objectives
+**Key Endpoints**:
+- `POST /upload` - Upload and process content files
+- `GET /export/{format}` - Export content in various formats
+- `GET /files` - List uploaded files
 
-#### 4. Content Storage Service
-**Port**: 8004
-**Responsibilities**:
-- File upload and management
-- Video processing
-- Image optimization
-- CDN integration
-- Backup and versioning
+**Export Formats**:
+- PowerPoint (.pptx)
+- PDF documents
+- Excel spreadsheets
+- SCORM packages
+- ZIP archives
+- JSON data
 
-**Technology Stack**:
-- FastAPI framework
-- AWS S3 or MinIO for file storage
-- FFmpeg for video processing
-- PIL for image processing
+**Key Components**:
+- `file_processors.py` - File processing pipeline
+- `ai_integration.py` - AI content generation
+- `storage_manager.py` - File storage management
 
 ### Data Layer
 
 #### PostgreSQL Database
-**Purpose**: Primary data storage
-**Components**:
-- User data
-- Course information
-- Enrollment records
-- Progress tracking
-- Analytics data
-
+**Purpose**: Primary data storage for all services
 **Configuration**:
+- Database: `course_creator`
+- Port: 5433 (non-standard to avoid conflicts)
+- Connection pooling with asyncpg
 - ACID compliance for data integrity
-- Connection pooling for performance
-- Read replicas for scalability
-- Automated backups
+- Automated migrations via `setup-database.py`
+
+**Core Tables**:
+- `users` - User accounts with role-based access
+- `courses` - Course metadata and content
+- `enrollments` - Student-course relationships
+- `slides` - Generated slide content
+- `lab_sessions` - Interactive lab environment data
+- `quizzes` - Quiz data with questions and answers
+- `quiz_questions` - Individual quiz questions
+- `exercises` - Generated coding exercises
 
 #### Redis Cache
 **Purpose**: Session management and caching
-**Components**:
-- User sessions
+**Configuration**:
+- Port: 6379
+- Session storage for JWT tokens
 - API response caching
-- Real-time data
-- Task queues
+- Real-time data for lab environments
 
 #### File Storage
-**Purpose**: Media and document storage
-**Components**:
-- Course videos
-- Documents and PDFs
-- Images and thumbnails
-- Lab environment files
+**Purpose**: Content and media storage
+**Implementation**:
+- Local filesystem storage (`services/content-management/storage/`)
+- File metadata tracking
+- Content versioning
+- Multi-format support (PDF, DOCX, PPTX, JSON)
+
+#### MCP Server
+**Purpose**: Model Context Protocol integration for monitoring
+**Features**:
+- Real-time service health monitoring
+- Platform overview and statistics
+- Log access and analysis
+- Content management status
 
 ## Communication Patterns
 
+### Service Dependencies
+Services must be started in dependency order for proper operation:
+
+1. **User Management** (8000) → Authentication foundation
+2. **Course Generator** (8001) → AI-powered content generation
+3. **Course Management** (8004) → Course CRUD operations
+4. **Content Storage** (8003) → File storage and retrieval
+5. **Content Management** (8005) → Advanced content processing
+
 ### Synchronous Communication
 - **REST APIs**: Primary communication method between frontend and backend
-- **HTTP/HTTPS**: Secure communication protocol
-- **JSON**: Data exchange format
+- **HTTP/HTTPS**: Secure communication protocol with JWT authentication
+- **JSON**: Data exchange format across all services
+- **FastAPI**: All services use FastAPI for consistent API structure
 
-### Asynchronous Communication
-- **WebSockets**: Real-time features in lab environment
-- **Message Queues**: Background task processing
-- **Event-driven**: Service-to-service communication
+### Service-to-Service Communication
+- **Direct HTTP calls**: Services communicate via HTTP APIs
+- **Health checks**: Each service exposes `/health` endpoint
+- **Configuration**: Hydra configuration management across services
+- **Error handling**: Consistent error responses across services
 
-### API Gateway Pattern
-- **Nginx**: Load balancing and reverse proxy
-- **Rate Limiting**: Prevent API abuse
-- **SSL Termination**: Secure connections
-- **Request Routing**: Route to appropriate services
+### Frontend-Backend Communication
+- **AJAX/Fetch**: Modern JavaScript async requests
+- **WebSocket**: Real-time features in lab environment
+- **File uploads**: Multipart form data for content uploads
+- **Authentication**: JWT tokens in Authorization headers
+
+### Platform Control
+- **app-control.sh**: Unified service management script
+- **Health monitoring**: Automated health checks and dependency management
+- **Service discovery**: Services discover each other through configuration
+- **Graceful shutdown**: Proper service lifecycle management
 
 ## Security Architecture
 
-### Authentication & Authorization
+### Authentication & Authorization Flow
 ```
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
-│   Client    │───▶│ API Gateway │───▶│   Service   │
-│             │    │             │    │             │
-│ JWT Token   │    │ Validates   │    │ Checks      │
-│ in Header   │    │ Token       │    │ Permissions │
+│   Client    │───▶│    User     │───▶│   Service   │
+│             │    │ Management  │    │             │
+│ JWT Token   │    │ Service     │    │ Validates   │
+│ in Header   │    │ (8000)      │    │ Token       │
 └─────────────┘    └─────────────┘    └─────────────┘
 ```
 
+### JWT Token Management
+- **Authentication**: User Management Service handles login/logout
+- **Token Generation**: JWT tokens with expiration
+- **Token Validation**: Each service validates tokens independently
+- **Role-based Access**: Admin, Instructor, Student roles with different permissions
+
 ### Security Layers
-1. **Network Security**: HTTPS, VPN, Firewalls
-2. **Application Security**: JWT tokens, RBAC, Input validation
-3. **Data Security**: Encryption at rest, SQL injection prevention
-4. **Infrastructure Security**: Container security, secrets management
+1. **Network Security**: HTTPS enforcement, secure headers
+2. **Application Security**: JWT tokens, RBAC, input validation
+3. **Data Security**: SQL injection prevention, secure database connections
+4. **File Security**: File type validation, size limits, content scanning
 
 ### Lab Environment Security
-- **Sandboxing**: Isolated execution environments
-- **Resource Limits**: CPU, memory, and disk quotas
-- **Network Isolation**: Restricted network access
-- **File System Security**: Read-only system files
+- **Sandboxing**: Isolated execution environments for student code
+- **Resource Limits**: CPU, memory, and disk quotas per session
+- **Network Isolation**: Restricted network access from lab environments
+- **File System Security**: Controlled file access and permissions
+- **Code Validation**: Input sanitization and code execution limits
 
-## Scalability Considerations
+## Development Standards
 
-### Horizontal Scaling
-- **Stateless Services**: Enable multiple instances
-- **Load Balancing**: Distribute traffic across instances
-- **Database Sharding**: Partition data across databases
-- **CDN**: Distribute static content globally
+### SOLID Principles
+The platform follows SOLID principles for maintainable code:
 
-### Vertical Scaling
-- **Resource Optimization**: CPU and memory tuning
-- **Database Optimization**: Query optimization, indexing
-- **Caching Strategies**: Multiple cache layers
+1. **Single Responsibility Principle (SRP)**: Each service has one reason to change
+2. **Open/Closed Principle (OCP)**: Services are open for extension, closed for modification
+3. **Liskov Substitution Principle (LSP)**: Interfaces can be substituted without breaking functionality
+4. **Interface Segregation Principle (ISP)**: Many client-specific interfaces over general-purpose ones
+5. **Dependency Inversion Principle (DIP)**: Services depend on abstractions, not concretions
 
-### Auto-scaling
-- **Kubernetes**: Container orchestration with auto-scaling
-- **Metrics-based**: Scale based on CPU, memory, request rate
-- **Predictive Scaling**: ML-based traffic prediction
+### Test-Driven Development (TDD)
+All new code follows TDD methodology:
+
+1. **Red**: Write failing tests that define desired functionality
+2. **Green**: Write minimal code to make tests pass
+3. **Refactor**: Clean up code while keeping tests passing
+
+**Test Structure**:
+- `tests/unit/` - Component-level tests
+- `tests/integration/` - Service interaction tests
+- `tests/e2e/` - Full workflow tests using Playwright
+- Minimum 80% code coverage requirement
+
+### CI/CD Pipeline
+Comprehensive pipeline with multiple stages:
+
+1. **Build** - Install dependencies and build application
+2. **Test** - Run unit, integration, and e2e tests
+3. **Quality** - Code quality checks (linting, formatting, security)
+4. **Deploy** - Deploy to staging environment
+5. **Verify** - Run smoke tests and health checks
+6. **Promote** - Merge to main and deploy to production
+
+### Code Quality Standards
+- **Python**: Black formatting, isort imports, flake8 linting
+- **JavaScript**: ESLint, npm test suite
+- **Documentation**: Comprehensive API documentation with Swagger/OpenAPI
+- **Security**: Automated security scanning and vulnerability checks
 
 ## Monitoring and Observability
 
-### Metrics Collection
-- **Prometheus**: Time-series metrics
-- **Custom Metrics**: Business KPIs
-- **Infrastructure Metrics**: System health
+### Service Health Monitoring
+- **Health Endpoints**: Each service exposes `/health` endpoint
+- **app-control.sh**: Unified health checking across all services
+- **Dependency Management**: Services start in correct order with health validation
+- **Service Status**: Real-time service availability monitoring
+
+### MCP Integration
+- **Unified MCP Server**: Model Context Protocol for Claude Desktop integration
+- **Real-time Monitoring**: Service health, platform statistics, and log analysis
+- **mcp-control.sh**: MCP server lifecycle management
+- **Platform Overview**: Comprehensive system status and metrics
 
 ### Logging
-- **Centralized Logging**: ELK Stack (Elasticsearch, Logstash, Kibana)
-- **Structured Logging**: JSON format
-- **Log Aggregation**: Service logs collection
+- **Service Logs**: Individual service logs in `services/*/outputs/`
+- **Centralized Logs**: Platform-wide log aggregation in `logs/` directory
+- **Structured Logging**: Consistent log format across services
+- **Log Rotation**: Automated log management and cleanup
 
-### Tracing
-- **Jaeger**: Distributed tracing
-- **Request Tracking**: End-to-end request flow
-- **Performance Analysis**: Bottleneck identification
-
-### Alerting
-- **Grafana**: Visualization and alerting
-- **PagerDuty**: Incident management
-- **Slack Integration**: Team notifications
+### Development Monitoring
+- **pytest**: Comprehensive test suite with coverage reporting
+- **Code Coverage**: Minimum 80% coverage requirement
+- **Test Categorization**: Unit, integration, e2e test markers
+- **Continuous Testing**: Automated test execution in CI/CD pipeline
 
 ## Deployment Architecture
 
-### Container Strategy
+### Local Development Environment
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      Kubernetes Cluster                     │
+│                    Local Development                        │
 │                                                             │
 │ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────┐ │
 │ │  Frontend   │ │    User     │ │   Course    │ │ Content │ │
-│ │    Pod      │ │ Management  │ │ Management  │ │ Storage │ │
-│ │             │ │     Pod     │ │     Pod     │ │   Pod   │ │
+│ │   (8080)    │ │ Management  │ │ Generator   │ │ Storage │ │
+│ │             │ │   (8000)    │ │   (8001)    │ │ (8003)  │ │
 │ └─────────────┘ └─────────────┘ └─────────────┘ └─────────┘ │
 │                                                             │
 │ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐            │
-│ │ PostgreSQL  │ │    Redis    │ │   Nginx     │            │
-│ │     Pod     │ │     Pod     │ │     Pod     │            │
+│ │   Course    │ │   Content   │ │ PostgreSQL  │            │
+│ │ Management  │ │ Management  │ │   (5433)    │            │
+│ │   (8004)    │ │   (8005)    │ │             │            │
 │ └─────────────┘ └─────────────┘ └─────────────┘            │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### Environment Strategy
-- **Development**: Local Docker Compose
-- **Staging**: Kubernetes cluster (smaller scale)
-- **Production**: Multi-region Kubernetes deployment
+### Service Management
+- **app-control.sh**: Unified service lifecycle management
+- **Dependency Order**: Services start in correct order with health checks
+- **Process Management**: Background service execution with proper shutdown
+- **Development Setup**: Local Python virtual environment with all dependencies
+
+### Deployment Strategy
+- **Development**: Local services with `app-control.sh`
+- **Frontend**: Static file serving with Python HTTP server or npm
+- **Database**: Local PostgreSQL instance with automated migrations
+- **Configuration**: Environment-specific configuration with `.cc_env` files
 
 ### CI/CD Pipeline
 ```
 ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
 │   Source    │───▶│    Build    │───▶│    Test     │───▶│   Deploy    │
 │   Control   │    │             │    │             │    │             │
-│   (Git)     │    │ Docker      │    │ Unit Tests  │    │ Kubernetes  │
-│             │    │ Images      │    │ Integration │    │ Rolling     │
-│             │    │             │    │ E2E Tests   │    │ Update      │
+│   (Git)     │    │ Dependencies│    │ Unit Tests  │    │ Service     │
+│             │    │ Install     │    │ Integration │    │ Restart     │
+│             │    │             │    │ E2E Tests   │    │             │
 └─────────────┘    └─────────────┘    └─────────────┘    └─────────────┘
 ```
+
+### GitHub Actions Integration
+- **CI/CD Pipeline**: `.github/workflows/ci.yml`
+- **Automated Testing**: Full test suite execution
+- **Code Quality**: Linting, formatting, and security checks
+- **Deployment**: Automated deployment to staging/production environments
 
 ## Data Flow Patterns
 
 ### Course Creation Flow
 ```
-Instructor → Frontend → Course Management Service → Database
+Instructor → Frontend (8080) → Course Management Service (8004) → Database
                     ↓
-              Course Generator Service → AI APIs
+              Course Generator Service (8001) → Anthropic Claude API
                     ↓
-              Content Storage Service → File Storage
+              Content Management Service (8005) → File Storage
+```
+
+### AI-Powered Content Generation Flow
+```
+Instructor Request → Course Generator Service (8001) → Anthropic Claude API
+                                                  ↓
+                    Syllabus/Slides/Quiz Generation → Database
+                                                  ↓
+                    Content Storage Service (8003) → File Storage
+                                                  ↓
+                    Frontend Update → Real-time Display
 ```
 
 ### Student Learning Flow
 ```
-Student → Frontend → Course Management Service → Database
+Student → Frontend (8080) → Course Management Service (8004) → Database
               ↓
-        Lab Environment → WebSocket → Real-time Updates
+        Lab Environment → xterm.js → WebSocket → Real-time Updates
               ↓
-        Progress Tracking → Analytics Service
+        Quiz System → Course Generator Service (8001) → Progress Tracking
 ```
 
-### Content Generation Flow
+### File Upload and Processing Flow
 ```
-Instructor Request → Course Generator Service → AI APIs
+Instructor → Frontend (8080) → Content Management Service (8005)
                                           ↓
-                    Background Task Queue → Redis
+                    File Processing Pipeline → AI Content Generation
                                           ↓
-                    Generated Content → Database + File Storage
+                    Multi-format Export → PowerPoint/PDF/Excel/SCORM
                                           ↓
-                    Notification → WebSocket → Frontend
+                    File Storage → Local Filesystem
 ```
 
-## Performance Optimization
+## Platform Management
 
-### Database Optimization
-- **Indexing Strategy**: Optimized queries
-- **Connection Pooling**: Efficient database connections
-- **Query Optimization**: Analyze and optimize slow queries
-- **Read Replicas**: Distribute read operations
+### Service Lifecycle Management
+- **app-control.sh**: Unified service control with dependency management
+- **Health Monitoring**: Continuous service health verification
+- **Graceful Shutdown**: Proper service termination handling
+- **Auto-restart**: Failed service recovery mechanisms
 
-### Caching Strategy
-- **API Caching**: Cache frequently accessed data
-- **CDN**: Static content delivery
-- **Database Query Caching**: Reduce database load
-- **Session Caching**: Fast user session retrieval
+### Configuration Management
+- **Hydra Configuration**: Centralized configuration management
+- **Environment Variables**: `.cc_env` file for sensitive configuration
+- **Service Configuration**: Individual service configuration files
+- **Database Configuration**: Automated database setup and migrations
 
-### Frontend Optimization
-- **Code Splitting**: Load only necessary code
-- **Lazy Loading**: Load components on demand
-- **Bundle Optimization**: Minimize JavaScript bundle size
-- **Image Optimization**: Compress and optimize images
+### Development Workflow
+- **Local Development**: Complete platform runs locally with `app-control.sh`
+- **Database Setup**: Automated with `setup-database.py`
+- **Frontend Development**: Live reload and development server
+- **Testing**: Comprehensive test suite with TDD methodology
 
-## Disaster Recovery
+## Current Status and Roadmap
 
-### Backup Strategy
-- **Database Backups**: Daily automated backups
-- **File Storage Backups**: Replicated across regions
-- **Configuration Backups**: Infrastructure as Code
-
-### Recovery Procedures
-- **RTO (Recovery Time Objective)**: < 4 hours
-- **RPO (Recovery Point Objective)**: < 1 hour
-- **Automated Failover**: Database and service redundancy
-- **Cross-region Replication**: Geographic distribution
-
-## Future Architecture Considerations
+### Current Implementation (v1.0.0)
+- ✅ Complete microservices architecture
+- ✅ AI-powered content generation with Anthropic Claude
+- ✅ Interactive lab environments with xterm.js
+- ✅ Comprehensive quiz system with TDD implementation
+- ✅ Multi-format content export (PowerPoint, PDF, Excel, SCORM)
+- ✅ User management with JWT authentication
+- ✅ File upload/download with content processing
+- ✅ MCP integration for monitoring
+- ✅ CI/CD pipeline with GitHub Actions
 
 ### Planned Enhancements
+- **Real-time Collaboration**: Live coding sessions between students and instructors
+- **Advanced Analytics**: Machine learning-powered insights and recommendations
+- **Mobile Support**: Responsive design and mobile app development
+- **Video Content**: Video processing and streaming capabilities
+- **Payment Integration**: Course monetization and payment processing
+
+### Technical Roadmap
+- **Service Mesh**: Advanced service communication and observability
+- **Container Orchestration**: Kubernetes deployment for production scaling
 - **Event Sourcing**: Audit trail and replay capabilities
-- **CQRS**: Command Query Responsibility Segregation
-- **GraphQL**: Flexible API queries
-- **Service Mesh**: Advanced service communication
+- **GraphQL**: Flexible API queries and real-time subscriptions
+- **Edge Computing**: Content delivery optimization
 
-### Scalability Roadmap
-- **Multi-tenant Architecture**: Support multiple organizations
-- **Edge Computing**: Reduce latency with edge nodes
-- **ML Pipeline**: Advanced analytics and recommendations
-- **Real-time Collaboration**: Live coding sessions
-
-This architecture provides a solid foundation for the Course Creator Platform while maintaining flexibility for future growth and enhancements.
+This architecture provides a comprehensive foundation for the Course Creator Platform, supporting current functionality while maintaining flexibility for future enhancements and scaling requirements.
