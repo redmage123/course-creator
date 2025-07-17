@@ -568,7 +568,7 @@ async function loadLabEnvironments() {
     try {
         // Get lab environments for all enrolled courses
         const labPromises = enrolledCourses.map(enrollment => 
-            fetch(`http://localhost:8001/student/lab-access/${enrollment.course_id}/${currentUser.id}`)
+            fetch(`http://176.9.99.103:8001/student/lab-access/${enrollment.course_id}/${currentUser.id}`)
                 .then(response => response.ok ? response.json() : null)
                 .catch(() => null)
         );
@@ -633,8 +633,8 @@ async function viewCourseDetails(courseId) {
     try {
         // Get course details
         const courseResponse = await fetch(`http://localhost:8004/courses/${courseId}`);
-        const slidesResponse = await fetch(`http://localhost:8001/slides/${courseId}`);
-        const exercisesResponse = await fetch(`http://localhost:8001/exercises/${courseId}`);
+        const slidesResponse = await fetch(`http://176.9.99.103:8001/slides/${courseId}`);
+        const exercisesResponse = await fetch(`http://176.9.99.103:8001/exercises/${courseId}`);
         
         const course = courseResponse.ok ? await courseResponse.json() : null;
         const slides = slidesResponse.ok ? await slidesResponse.json() : null;
@@ -709,7 +709,7 @@ function displayCourseModal(course, slides, exercises) {
 // eslint-disable-next-line no-unused-vars
 async function accessLabEnvironment(courseId) {
     try {
-        const response = await fetch(`http://localhost:8001/student/lab-access/${courseId}/${currentUser.id}`);
+        const response = await fetch(`http://176.9.99.103:8001/student/lab-access/${courseId}/${currentUser.id}`);
         
         if (response.ok) {
             const labAccess = await response.json();
@@ -814,7 +814,7 @@ function displayLabModal(lab, courseId) {
 
 async function loadLabExercises(courseId) {
     try {
-        const response = await fetch(`http://localhost:8001/exercises/${courseId}`);
+        const response = await fetch(`http://176.9.99.103:8001/exercises/${courseId}`);
         if (response.ok) {
             const exercises = await response.json();
             displayLabExercises(exercises.exercises);
@@ -865,7 +865,7 @@ async function askAI(courseId) {
     if (!question) return;
     
     try {
-        const response = await fetch('http://localhost:8001/ai-assistant/help', {
+        const response = await fetch('http://176.9.99.103:8001/ai-assistant/help', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

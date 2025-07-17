@@ -1237,12 +1237,16 @@ def main(cfg: DictConfig) -> None:
                 "description": f"Quiz covering the key concepts from {module.get('title', 'this module')}",
                 "module_number": module.get('module_number', 1),
                 "questions": [],
-                "duration": 15 + (len(module.get('topics', [])) * 3),  # 15 min base + 3 min per topic
+                "duration": 30,  # 30 minutes for 10 questions
                 "difficulty": "beginner"
             }
             
-            # Generate questions based on learning outcomes
-            for i, outcome in enumerate(module.get("learning_outcomes", [])):
+            # Generate questions based on learning outcomes - ensure at least 10 questions
+            learning_outcomes = module.get("learning_outcomes", [])
+            topics = module.get("topics", [])
+            
+            # Create questions from learning outcomes
+            for i, outcome in enumerate(learning_outcomes):
                 quiz["questions"].append({
                     "question": f"Which of the following best describes the key concept related to {outcome}?",
                     "options": [
@@ -1254,6 +1258,41 @@ def main(cfg: DictConfig) -> None:
                     "correct_answer": 0,
                     "explanation": f"This question tests understanding of {outcome} as covered in the module.",
                     "topic_tested": outcome,
+                    "difficulty": "beginner"
+                })
+            
+            # Add questions from topics if needed to reach 10 questions
+            for i, topic in enumerate(topics):
+                if len(quiz["questions"]) >= 10:
+                    break
+                quiz["questions"].append({
+                    "question": f"What is the main focus of {topic}?",
+                    "options": [
+                        f"Understanding {topic} fundamentals",
+                        f"Advanced {topic} applications",
+                        f"Historical background of {topic}",
+                        f"Unrelated concepts"
+                    ],
+                    "correct_answer": 0,
+                    "explanation": f"This question tests knowledge of {topic} as covered in the module.",
+                    "topic_tested": topic,
+                    "difficulty": "beginner"
+                })
+            
+            # Fill remaining questions to reach minimum 10
+            while len(quiz["questions"]) < 10:
+                question_num = len(quiz["questions"]) + 1
+                quiz["questions"].append({
+                    "question": f"Question {question_num} about {module.get('title', 'this module')}?",
+                    "options": [
+                        "Option A - Correct answer",
+                        "Option B - Incorrect",
+                        "Option C - Incorrect", 
+                        "Option D - Incorrect"
+                    ],
+                    "correct_answer": 0,
+                    "explanation": f"This is a generated question for {module.get('title', 'this module')}.",
+                    "topic_tested": module.get('title', 'Module'),
                     "difficulty": "beginner"
                 })
             
@@ -3369,6 +3408,41 @@ def main(cfg: DictConfig) -> None:
                 content={"detail": f"Error getting course quizzes: {str(e)}"}
             )
     
+    @app.get("/quiz/{quiz_id}")
+    async def get_quiz_by_id_endpoint(quiz_id: str, user_type: str = "student"):
+        """Get a specific quiz by ID"""
+        try:
+            # Search for quiz across all courses
+            for course_id, quizzes in course_quizzes.items():
+                for quiz in quizzes:
+                    if quiz.get("id") == quiz_id:
+                        if user_type == "instructor":
+                            # Return instructor version with answers
+                            return {
+                                "success": True,
+                                "quiz": quiz,
+                                "version": "instructor"
+                            }
+                        else:
+                            # Return student version without answers
+                            student_quiz = create_student_quiz_version(quiz)
+                            return {
+                                "success": True,
+                                "quiz": student_quiz,
+                                "version": "student"
+                            }
+            
+            return JSONResponse(
+                status_code=404,
+                content={"detail": f"Quiz {quiz_id} not found"}
+            )
+        except Exception as e:
+            logger.error(f"Error getting quiz: {e}")
+            return JSONResponse(
+                status_code=500,
+                content={"detail": f"Error getting quiz: {str(e)}"}
+            )
+    
     @app.post("/quiz/{quiz_id}/submit")
     async def submit_quiz_endpoint(quiz_id: str, submission: dict):
         """Submit quiz answers and get score"""
@@ -3545,7 +3619,7 @@ def main(cfg: DictConfig) -> None:
             Lab Exercises:
             {json.dumps(labs, indent=2)}
             
-            Create a quiz with 10-15 multiple choice questions that:
+            Create a quiz with EXACTLY 10 multiple choice questions that:
             1. Test understanding of key concepts from the syllabus
             2. Reference specific content from the slides
             3. Connect to practical skills from the labs
@@ -3585,26 +3659,45 @@ def main(cfg: DictConfig) -> None:
             
         except Exception as e:
             logger.error(f"Error generating quiz: {e}")
-            # Return fallback quiz
+            # Return fallback quiz with minimum 10 questions
+            fallback_questions = [
+                {
+                    "question": f"What is the main focus of {topic}?",
+                    "options": [
+                        "Core concepts and fundamentals",
+                        "Advanced theoretical frameworks",
+                        "Practical implementation details",
+                        "Historical background information"
+                    ],
+                    "correct_answer": 0,
+                    "explanation": f"The main focus is on core concepts and fundamentals of {topic}."
+                }
+            ]
+            
+            # Fill remaining questions to reach minimum 10
+            while len(fallback_questions) < 10:
+                question_num = len(fallback_questions) + 1
+                fallback_questions.append({
+                    "question": f"Question {question_num} about {topic}?",
+                    "options": [
+                        "Option A - Correct answer",
+                        "Option B - Incorrect",
+                        "Option C - Incorrect", 
+                        "Option D - Incorrect"
+                    ],
+                    "correct_answer": 0,
+                    "explanation": f"This is a generated question for {topic}.",
+                    "topic_tested": topic,
+                    "difficulty": difficulty
+                })
+            
             return {
                 "id": str(uuid.uuid4()),
                 "course_id": course_id,
                 "title": f"{topic} Quiz",
                 "topic": topic,
                 "difficulty": difficulty,
-                "questions": [
-                    {
-                        "question": f"What is the main focus of {topic}?",
-                        "options": [
-                            "Core concepts and fundamentals",
-                            "Advanced theoretical frameworks",
-                            "Practical implementation details",
-                            "Historical background information"
-                        ],
-                        "correct_answer": 0,
-                        "explanation": f"The main focus is on core concepts and fundamentals of {topic}."
-                    }
-                ],
+                "questions": fallback_questions,
                 "created_at": datetime.now()
             }
     
@@ -3739,26 +3832,240 @@ def main(cfg: DictConfig) -> None:
     
     # Database functions for quizzes
     async def save_quiz_to_db(quiz: dict) -> bool:
-        """Save quiz to database - temporarily disabled due to schema mismatch"""
-        # TODO: Implement proper schema mapping for quizzes -> lessons -> quiz_questions
-        logger.info(f"Quiz {quiz['id']} saved to memory cache (database save disabled)")
-        return True
+        """Save quiz to database using the actual schema (quizzes -> lessons -> courses)"""
+        global db_manager
+        if not db_manager:
+            logger.error("Database manager not initialized")
+            return False
+            
+        try:
+            async with db_manager.get_connection() as conn:
+                # First, find or create a lesson for this quiz
+                course_id = quiz.get('course_id')
+                if not course_id:
+                    logger.error("No course_id provided for quiz")
+                    return False
+                
+                # Check if there's already a lesson for this course and quiz topic
+                lesson_title = f"Quiz: {quiz.get('title', 'Untitled Quiz')}"
+                lesson_id = None
+                
+                # Look for existing lesson
+                existing_lesson = await conn.fetchrow("""
+                    SELECT id FROM lessons 
+                    WHERE course_id = $1 AND title = $2
+                    LIMIT 1
+                """, course_id, lesson_title)
+                
+                if existing_lesson:
+                    lesson_id = existing_lesson['id']
+                else:
+                    # Create new lesson for this quiz
+                    lesson_id = str(uuid.uuid4())
+                    await conn.execute("""
+                        INSERT INTO lessons (id, course_id, title, description, lesson_order, lesson_type, is_published, created_at, updated_at)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                    """, 
+                    lesson_id,
+                    course_id,
+                    lesson_title,
+                    f"Quiz lesson for: {quiz.get('title', '')}",
+                    999,  # Put quizzes at the end
+                    'quiz',
+                    True,
+                    datetime.now(),
+                    datetime.now()
+                    )
+                    logger.info(f"Created lesson {lesson_id} for quiz {quiz['id']}")
+                
+                # Now insert the quiz with the lesson_id
+                await conn.execute("""
+                    INSERT INTO quizzes (id, lesson_id, title, description, time_limit_minutes, passing_score, max_attempts, is_active, created_at, updated_at)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                    ON CONFLICT (id) DO UPDATE SET
+                        title = EXCLUDED.title,
+                        description = EXCLUDED.description,
+                        time_limit_minutes = EXCLUDED.time_limit_minutes,
+                        passing_score = EXCLUDED.passing_score,
+                        max_attempts = EXCLUDED.max_attempts,
+                        is_active = EXCLUDED.is_active,
+                        updated_at = EXCLUDED.updated_at
+                """, 
+                quiz['id'],
+                lesson_id,
+                quiz['title'],
+                quiz.get('description', quiz.get('topic', '')),
+                quiz.get('duration', 30),
+                quiz.get('passing_score', 70),
+                quiz.get('max_attempts', 3),
+                True,
+                datetime.now(),
+                datetime.now()
+                )
+                
+                # Insert quiz questions
+                if quiz.get('questions'):
+                    # First, clear existing questions
+                    await conn.execute("DELETE FROM quiz_questions WHERE quiz_id = $1", quiz['id'])
+                    
+                    # Insert new questions
+                    for i, question in enumerate(quiz['questions']):
+                        await conn.execute("""
+                            INSERT INTO quiz_questions (id, quiz_id, question_text, question_type, correct_answer, points, order_index, options, explanation)
+                            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                        """,
+                        str(uuid.uuid4()),
+                        quiz['id'],
+                        question.get('question', ''),
+                        'multiple_choice',
+                        json.dumps(question.get('correct_answer', 0)),
+                        question.get('points', 1),
+                        i + 1,
+                        json.dumps(question.get('options', [])),
+                        question.get('explanation', '')
+                        )
+                
+                logger.info(f"Quiz {quiz['id']} saved to database successfully with lesson {lesson_id}")
+                return True
+                
+        except Exception as e:
+            logger.error(f"Error saving quiz to database: {e}")
+            return False
     
     async def get_quiz_from_db(quiz_id: str) -> dict:
-        """Retrieve quiz from memory cache"""
-        # Search through all course quizzes in memory to find the quiz by ID
-        for course_id, quizzes in course_quizzes.items():
-            for quiz in quizzes:
-                if quiz.get('id') == quiz_id:
+        """Retrieve quiz from database using actual schema"""
+        global db_manager
+        if not db_manager:
+            logger.error("Database manager not initialized")
+            return None
+            
+        try:
+            async with db_manager.get_connection() as conn:
+                # Get quiz with course_id via lessons table
+                row = await conn.fetchrow("""
+                    SELECT q.id, l.course_id, q.title, q.description, q.time_limit_minutes, 
+                           q.passing_score, q.max_attempts, q.is_active, q.created_at, q.updated_at
+                    FROM quizzes q
+                    JOIN lessons l ON q.lesson_id = l.id
+                    WHERE q.id = $1
+                """, quiz_id)
+                
+                if row:
+                    # Get quiz questions
+                    questions = await conn.fetch("""
+                        SELECT question_text, question_type, correct_answer, points, order_index, options, explanation
+                        FROM quiz_questions
+                        WHERE quiz_id = $1
+                        ORDER BY order_index
+                    """, quiz_id)
+                    
+                    # Convert questions to expected format
+                    quiz_questions = []
+                    for q in questions:
+                        quiz_questions.append({
+                            'question': q['question_text'],
+                            'type': q['question_type'],
+                            'correct_answer': json.loads(q['correct_answer']) if q['correct_answer'] else 0,
+                            'points': q['points'],
+                            'order': q['order_index'],
+                            'options': json.loads(q['options']) if q['options'] else [],
+                            'explanation': q['explanation'] if q['explanation'] else ''
+                        })
+                    
+                    quiz = {
+                        'id': str(row['id']),
+                        'course_id': str(row['course_id']),
+                        'title': row['title'],
+                        'description': row['description'],
+                        'duration': row['time_limit_minutes'],
+                        'passing_score': float(row['passing_score']) if row['passing_score'] else 70.0,
+                        'max_attempts': row['max_attempts'],
+                        'is_active': row['is_active'],
+                        'questions': quiz_questions,
+                        'created_at': row['created_at'],
+                        'updated_at': row['updated_at']
+                    }
+                    logger.info(f"Quiz {quiz_id} retrieved from database")
                     return quiz
-        
-        logger.error(f"Quiz {quiz_id} not found in memory cache")
-        return None
+                else:
+                    logger.warning(f"Quiz {quiz_id} not found in database")
+                    return None
+                    
+        except Exception as e:
+            logger.error(f"Error retrieving quiz from database: {e}")
+            # Fallback to memory cache
+            for course_id, quizzes in course_quizzes.items():
+                for quiz in quizzes:
+                    if quiz.get('id') == quiz_id:
+                        return quiz
+            return None
     
     async def get_course_quizzes(course_id: str) -> list:
-        """Get all quizzes for a course"""
-        # Return quizzes from memory cache
+        """Get all quizzes for a course using actual schema"""
+        global db_manager
+        
+        # First try to get from database
+        if db_manager:
+            try:
+                async with db_manager.get_connection() as conn:
+                    # Get quizzes via lessons table
+                    rows = await conn.fetch("""
+                        SELECT q.id, l.course_id, q.title, q.description, q.time_limit_minutes, 
+                               q.passing_score, q.max_attempts, q.is_active, q.created_at, q.updated_at
+                        FROM quizzes q
+                        JOIN lessons l ON q.lesson_id = l.id
+                        WHERE l.course_id = $1
+                        ORDER BY q.created_at DESC
+                    """, course_id)
+                    
+                    quizzes = []
+                    for row in rows:
+                        # Get questions for this quiz
+                        questions = await conn.fetch("""
+                            SELECT question_text, question_type, correct_answer, points, order_index, options, explanation
+                            FROM quiz_questions
+                            WHERE quiz_id = $1
+                            ORDER BY order_index
+                        """, row['id'])
+                        
+                        # Convert questions to expected format
+                        quiz_questions = []
+                        for q in questions:
+                            quiz_questions.append({
+                                'question': q['question_text'],
+                                'type': q['question_type'],
+                                'correct_answer': json.loads(q['correct_answer']) if q['correct_answer'] else 0,
+                                'points': q['points'],
+                                'order': q['order_index'],
+                                'options': json.loads(q['options']) if q['options'] else [],
+                                'explanation': q['explanation'] if q['explanation'] else ''
+                            })
+                        
+                        quiz = {
+                            'id': str(row['id']),
+                            'course_id': str(row['course_id']),
+                            'title': row['title'],
+                            'description': row['description'],
+                            'duration': row['time_limit_minutes'],
+                            'passing_score': float(row['passing_score']) if row['passing_score'] else 70.0,
+                            'max_attempts': row['max_attempts'],
+                            'is_active': row['is_active'],
+                            'questions': quiz_questions,
+                            'created_at': row['created_at'],
+                            'updated_at': row['updated_at']
+                        }
+                        quizzes.append(quiz)
+                    
+                    if quizzes:
+                        logger.info(f"Retrieved {len(quizzes)} quizzes from database for course {course_id}")
+                        return quizzes
+                        
+            except Exception as e:
+                logger.error(f"Error retrieving quizzes from database: {e}")
+        
+        # Fallback to memory cache
         if course_id in course_quizzes:
+            logger.info(f"Retrieved {len(course_quizzes[course_id])} quizzes from memory cache for course {course_id}")
             return course_quizzes[course_id]
         else:
             logger.info(f"No quizzes found for course {course_id}")

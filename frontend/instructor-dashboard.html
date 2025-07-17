@@ -2917,6 +2917,12 @@
                 return;
             }
             
+            // Open quiz in preview mode instead of showing details
+            if (quiz.id) {
+                window.open(`quiz.html?quizId=${quiz.id}&userType=instructor`, '_blank');
+                return;
+            }
+            
             // Create detailed quiz view modal
             const modal = document.createElement('div');
             modal.className = 'modal-overlay';
