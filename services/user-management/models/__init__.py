@@ -8,6 +8,7 @@ from .user import User, UserCreate, UserUpdate, UserBase, AdminUserCreate
 from .auth import Token, LoginRequest, PasswordResetRequest
 from .session import UserSession, SessionInfo
 from .role import Role, RoleBase, RoleCreate
+from .course_instance import CourseInstance, CourseInstanceCreate, Enrollment
 
 __all__ = [
     "User",
@@ -22,5 +23,8 @@ __all__ = [
     "SessionInfo",
     "Role",
     "RoleBase",
-    "RoleCreate"
+    "RoleCreate",
+    "CourseInstance",
+    "CourseInstanceCreate",
+    "Enrollment"
 ]

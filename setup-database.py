@@ -82,6 +82,7 @@ async def create_tables_from_schema():
             category VARCHAR(100),
             difficulty_level VARCHAR(50) DEFAULT 'beginner',
             estimated_duration INTEGER,
+            duration_unit VARCHAR(20) DEFAULT 'weeks',
             price DECIMAL(10,2) DEFAULT 0.00,
             is_published BOOLEAN DEFAULT false,
             thumbnail_url TEXT,

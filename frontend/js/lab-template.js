@@ -154,6 +154,13 @@ async function initializeLab() {
     courseId = urlParams.get('courseId') || window.currentCourseId || 'default';
     courseTitle = urlParams.get('course') || window.currentCourseName || 'Programming Course';
     
+    // Get language from URL parameter and set it
+    const urlLanguage = urlParams.get('language');
+    if (urlLanguage) {
+        currentLanguage = urlLanguage;
+        console.log('Language set from URL parameter:', currentLanguage);
+    }
+    
     console.log('Initialized courseId:', courseId);
     console.log('Initialized courseTitle:', courseTitle);
     console.log('CONFIG available:', typeof CONFIG);
@@ -169,6 +176,13 @@ async function initializeLab() {
     
     await loadExercises();
     updateLayout();
+    
+    // Set the language dropdown to match the current language
+    const languageSelect = document.getElementById('languageSelect');
+    if (languageSelect && currentLanguage) {
+        languageSelect.value = currentLanguage;
+        console.log('Language dropdown set to:', currentLanguage);
+    }
     
     const welcomeMessage = isLabSandboxed 
         ? `Welcome to your secure lab environment! Session ID: ${sessionId || 'Unknown'}\nYou are in a sandboxed terminal with restricted access for security.`
@@ -258,7 +272,7 @@ async function loadExercises() {
         }
     } catch (error) {
         console.error('Error loading exercises:', error);
-        exercises = await loadFallbackExercises();
+        exercises = [];
     }
     
     console.log('Final exercises count:', exercises.length);
@@ -281,21 +295,17 @@ async function generateExercisesOnDemand() {
         
         if (syllabusResponse.ok) {
             const syllabusData = await syllabusResponse.json();
-            console.log('Found syllabus for course, generating exercises...');
+            console.log('Found syllabus for course, generating exercises from syllabus...');
             
-            // Generate exercises using the topic from course title
-            const generateRequest = {
-                course_id: courseId,
-                topic: courseTitle || 'Programming',
-                difficulty: 'beginner'
-            };
-            
-            const generateResponse = await fetch(`${CONFIG.API_URLS.COURSE_GENERATOR}/exercises/generate`, {
+            // Use the lab refresh endpoint to generate exercises from syllabus
+            const generateResponse = await fetch(`${CONFIG.ENDPOINTS.REFRESH_LAB_EXERCISES}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(generateRequest)
+                body: JSON.stringify({
+                    course_id: courseId
+                })
             });
             
             if (generateResponse.ok) {
@@ -304,40 +314,19 @@ async function generateExercisesOnDemand() {
                 console.log(`Generated ${exercises.length} exercises for course ${courseId}`);
                 console.log('Generated exercise titles:', exercises.map(ex => ex.title));
             } else {
-                console.log('Failed to generate exercises, using fallback');
-                exercises = await loadFallbackExercises();
+                console.log('Failed to generate exercises from syllabus');
+                exercises = [];
             }
         } else {
-            console.log('No syllabus found for course, generating exercises from course title...');
+            console.log('No syllabus found for course, cannot generate exercises without syllabus');
             
-            // Generate exercises using the topic from course title
-            const generateRequest = {
-                course_id: courseId,
-                topic: courseTitle || 'Programming',
-                difficulty: 'beginner'
-            };
-            
-            const generateResponse = await fetch(`${CONFIG.API_URLS.COURSE_GENERATOR}/exercises/generate`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(generateRequest)
-            });
-            
-            if (generateResponse.ok) {
-                const result = await generateResponse.json();
-                exercises = result.exercises || [];
-                console.log(`Generated ${exercises.length} exercises for course ${courseId}`);
-                console.log('Generated exercise titles:', exercises.map(ex => ex.title));
-            } else {
-                console.log('Failed to generate exercises, using fallback');
-                exercises = await loadFallbackExercises();
-            }
+            // Cannot generate proper exercises without syllabus
+            console.log('Skipping exercise generation - syllabus required for proper exercise generation');
+            exercises = [];
         }
     } catch (error) {
         console.error('Error generating exercises on-demand:', error);
-        exercises = await loadFallbackExercises();
+        exercises = [];
     }
 }
 
@@ -759,15 +748,17 @@ function askAIForHelp(exerciseId) {
     
     // Simulate AI response with context
     setTimeout(() => {
-        const aiResponse = `I'd be happy to help you with "${exercise.title}"! This is a ${exercise.difficulty} level exercise. Let me provide some guidance:
+        let aiResponse = `I'd be happy to help you with **${exercise.title}**! This is a *${exercise.difficulty}* level exercise.
+
+Let me provide some guidance:
 
 ${exercise.hints && exercise.hints.length > 0 ? 
     `Here are some hints to get you started:
-• ${exercise.hints.join('\n• ')}` : 
-    'Feel free to ask specific questions about the requirements or share your code if you need help debugging.'
-}
+• ${exercise.hints.join('\n• ')}
 
-What specific part would you like help with?`;
+` : 
+    'Feel free to ask specific questions about the requirements or share your code if you need help debugging.\n\n'
+}What specific part would you like help with?`;
         
         addMessage(aiResponse, 'assistant');
     }, 1000);
@@ -837,8 +828,20 @@ function changeLanguage() {
                 editor.value = '<!DOCTYPE html>\n<html>\n<head>\n    <title>My Page</title>\n</head>\n<body>\n    <h1>Hello, World!</h1>\n</body>\n</html>';
             } else if (currentLanguage === 'css') {
                 editor.value = '/* CSS Styles */\nbody {\n    font-family: Arial, sans-serif;\n    background-color: #f0f0f0;\n}\n\nh1 {\n    color: #333;\n}';
-            } else {
+            } else if (currentLanguage === 'java') {
+                editor.value = '// Java code\npublic class HelloWorld {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}';
+            } else if (currentLanguage === 'cpp') {
+                editor.value = '// C++ code\n#include <iostream>\n\nint main() {\n    std::cout << "Hello, World!" << std::endl;\n    return 0;\n}';
+            } else if (currentLanguage === 'c') {
+                editor.value = '// C code\n#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}';
+            } else if (currentLanguage === 'go') {
+                editor.value = '// Go code\npackage main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("Hello, World!")\n}';
+            } else if (currentLanguage === 'rust') {
+                editor.value = '// Rust code\nfn main() {\n    println!("Hello, World!");\n}';
+            } else if (currentLanguage === 'javascript') {
                 editor.value = '// JavaScript code\nconsole.log("Hello, World!");';
+            } else {
+                editor.value = '// Code\nconsole.log("Hello, World!");';
             }
         }
     }
@@ -954,8 +957,20 @@ function clearCode() {
                 editor.value = '# Write your Python code here...\nprint("Hello, World!")';
             } else if (currentLanguage === 'shell') {
                 editor.value = '#!/bin/bash\n# Write your bash script here...\necho "Hello, World!"';
-            } else {
+            } else if (currentLanguage === 'java') {
+                editor.value = '// Write your Java code here...\npublic class HelloWorld {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}';
+            } else if (currentLanguage === 'cpp') {
+                editor.value = '// Write your C++ code here...\n#include <iostream>\n\nint main() {\n    std::cout << "Hello, World!" << std::endl;\n    return 0;\n}';
+            } else if (currentLanguage === 'c') {
+                editor.value = '// Write your C code here...\n#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}';
+            } else if (currentLanguage === 'go') {
+                editor.value = '// Write your Go code here...\npackage main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("Hello, World!")\n}';
+            } else if (currentLanguage === 'rust') {
+                editor.value = '// Write your Rust code here...\nfn main() {\n    println!("Hello, World!");\n}';
+            } else if (currentLanguage === 'javascript') {
                 editor.value = '// Write your JavaScript code here...\nconsole.log("Hello, World!");';
+            } else {
+                editor.value = '// Write your code here...\nconsole.log("Hello, World!");';
             }
         }
     }
@@ -966,18 +981,66 @@ function clearCode() {
 window.clearCode = clearCode;
 
 // Chat functionality
-function addMessage(message, type) {
+function addMessage(message, type, extraClass = '') {
     const chatContainer = document.getElementById('chatContainer');
     if (!chatContainer) return;
     
     const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${type}-message`;
-    messageDiv.textContent = message;
+    messageDiv.className = `message ${type}-message ${extraClass}`;
+    
+    // Format the message content for better readability
+    if (type === 'assistant') {
+        messageDiv.innerHTML = formatAssistantMessage(message);
+    } else {
+        messageDiv.textContent = message;
+    }
+    
     chatContainer.appendChild(messageDiv);
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
-function sendMessage() {
+// Format assistant messages for better readability in narrow panel
+function formatAssistantMessage(message) {
+    // Clean up the message and normalize whitespace
+    let formatted = message.trim();
+    
+    // Handle code blocks (backticks)
+    formatted = formatted.replace(/```([\s\S]*?)```/g, '<pre class="code-block">$1</pre>');
+    formatted = formatted.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
+    
+    // Handle numbered lists
+    formatted = formatted.replace(/^(\d+\.\s)/gm, '<span class="list-number">$1</span>');
+    
+    // Handle bullet points
+    formatted = formatted.replace(/^[•·*-]\s/gm, '<span class="bullet-point">• </span>');
+    
+    // Handle bold text (markdown style)
+    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    // Handle emphasis/italics
+    formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    
+    // Handle line breaks and paragraphs
+    formatted = formatted.replace(/\n\n/g, '</p><p>');
+    formatted = formatted.replace(/\n/g, '<br>');
+    
+    // Wrap in paragraph tags if not already wrapped
+    if (!formatted.includes('<p>') && !formatted.includes('<pre>')) {
+        formatted = '<p>' + formatted + '</p>';
+    }
+    
+    // Handle special sections with better formatting
+    formatted = formatted.replace(/Here are some hints:/g, '<div class="hint-section"><strong>💡 Hints:</strong></div>');
+    formatted = formatted.replace(/Instructions:/g, '<div class="instruction-section"><strong>📋 Instructions:</strong></div>');
+    formatted = formatted.replace(/Steps:/g, '<div class="steps-section"><strong>🔄 Steps:</strong></div>');
+    formatted = formatted.replace(/Solution:/g, '<div class="solution-section"><strong>✅ Solution:</strong></div>');
+    formatted = formatted.replace(/Error:/g, '<div class="error-section"><strong>❌ Error:</strong></div>');
+    
+    return formatted;
+}
+
+async function sendMessage() {
+    console.log('🤖 sendMessage called with version 2025071701'); // Debug marker
     const input = document.getElementById('chatInput');
     const message = input.value.trim();
     
@@ -985,51 +1048,93 @@ function sendMessage() {
         addMessage(message, 'user');
         input.value = '';
         
-        // Generate contextual AI response based on current exercise
-        setTimeout(() => {
+        // Show loading indicator
+        addMessage('...', 'assistant', 'loading');
+        
+        try {
+            // Prepare request data with debugging
+            const requestData = {
+                course_id: window.currentCourseId || '6460e0c5-f819-4b2e-be50-cf835903b9b4', // Fallback to known working course ID
+                student_id: window.currentStudentId || 'frontend-user-' + Date.now(),
+                user_message: message,
+                context: {
+                    course_title: window.currentCourseTitle || 'Introduction to Python',
+                    student_progress: window.currentExerciseContext || {},
+                    current_exercise: window.currentExerciseContext?.title || null
+                }
+            };
+            
+            // Debug logging
+            console.log('AI Chat Request Data:', requestData);
+            console.log('LAB_CHAT URL:', CONFIG.ENDPOINTS.LAB_CHAT);
+            
+            // Call the real AI chat API with exercise context
+            const response = await fetch(CONFIG.ENDPOINTS.LAB_CHAT, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData)
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('AI Chat Response:', data);
+                
+                // Remove loading message
+                const chatContainer = document.getElementById('chatContainer');
+                const loadingMsg = chatContainer.querySelector('.loading');
+                if (loadingMsg) {
+                    loadingMsg.remove();
+                }
+                
+                // Add the real AI response
+                addMessage(data.response, 'assistant');
+                
+                // If AI suggested an exercise, handle it
+                if (data.exercise && data.exercise.title !== 'Suggested Exercise') {
+                    // Could add exercise suggestions to UI here
+                }
+            } else {
+                const errorText = await response.text();
+                console.error('AI Chat API Error:', response.status, errorText);
+                throw new Error(`Failed to get AI response: ${response.status} - ${errorText}`);
+            }
+        } catch (error) {
+            console.error('Error calling AI chat:', error);
+            console.error('Full error details:', {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            });
+            
+            // Remove loading message
+            const chatContainer = document.getElementById('chatContainer');
+            const loadingMsg = chatContainer.querySelector('.loading');
+            if (loadingMsg) {
+                loadingMsg.remove();
+            }
+            
+            // Fallback response
             let aiResponse = '';
             
             if (window.currentExerciseContext) {
                 const exercise = window.currentExerciseContext;
-                aiResponse = `I'm here to help with your current lab: "${exercise.title}" (${exercise.difficulty} level). `;
-                
-                // Provide contextual response based on the message
-                if (message.toLowerCase().includes('help') || message.toLowerCase().includes('stuck')) {
-                    aiResponse += `Here are some hints for this ${exercise.difficulty} level exercise:\n\n`;
-                    
-                    if (exercise.hints && exercise.hints.length > 0) {
-                        aiResponse += exercise.hints.map(hint => `• ${hint}`).join('\n');
-                    } else {
-                        aiResponse += `• Break down the problem into smaller steps\n• Review the exercise instructions carefully\n• Test your code incrementally`;
-                    }
-                } else if (message.toLowerCase().includes('code') || message.toLowerCase().includes('error')) {
-                    aiResponse += `I can help you with your code! Since this is a ${exercise.difficulty} level exercise, `;
-                    
-                    if (exercise.difficulty === 'beginner') {
-                        aiResponse += 'let me provide detailed guidance. Please share your code and I\'ll help you step by step.';
-                    } else if (exercise.difficulty === 'intermediate') {
-                        aiResponse += 'I can provide targeted guidance. Share your code and describe what you\'re trying to achieve.';
-                    } else {
-                        aiResponse += 'I can help you debug. Share your code and the error message you\'re seeing.';
-                    }
-                } else if (message.toLowerCase().includes('what') || message.toLowerCase().includes('how')) {
-                    aiResponse += `For this ${exercise.difficulty} level exercise, `;
-                    
-                    if (exercise.instructions && exercise.instructions.length > 0) {
-                        aiResponse += 'here are the key steps:\n\n';
-                        aiResponse += exercise.instructions.slice(0, 3).map(instruction => `• ${instruction}`).join('\n');
-                    } else {
-                        aiResponse += 'focus on the learning objectives and try to apply the concepts step by step.';
-                    }
-                } else {
-                    aiResponse += `I'm ready to help with any questions about this ${exercise.difficulty} level exercise. You can ask me about the requirements, get coding help, or request hints!`;
-                }
+                aiResponse = `I'm here to help with your current lab: **${exercise.title}** (*${exercise.difficulty}* level).
+
+I'm ready to help with any questions about this exercise. You can ask me about:
+• Requirements and instructions
+• Coding help and debugging
+• Hints and guidance
+• Solutions and explanations
+
+What would you like help with?`;
             } else {
                 aiResponse = 'I can help you with that! Can you share your code so I can provide specific feedback?';
             }
             
             addMessage(aiResponse, 'assistant');
-        }, 1000);
+        }
     }
 }
 

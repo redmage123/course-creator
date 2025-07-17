@@ -20,6 +20,7 @@ import asyncio
 import asyncpg
 import httpx
 import os
+import re
 from contextlib import asynccontextmanager
 
 # Import services
@@ -75,6 +76,7 @@ class ExerciseRequest(BaseModel):
 
 class LabLaunchRequest(BaseModel):
     course_id: str
+    student_id: str
     course_title: str
     course_description: str
     course_category: str
@@ -267,6 +269,128 @@ async def save_exercises_to_db(course_id: str, exercises_data: List[Dict]) -> bo
         logger.error(f"Traceback: {traceback.format_exc()}")
         return False
 
+def parse_exercise_references(user_message: str) -> List[str]:
+    """Parse user message to extract exercise references like 'lab 1', 'exercise 2', etc."""
+    import re
+    references = []
+    
+    # Common patterns for exercise references
+    patterns = [
+        r'lab\s+(\d+)',
+        r'exercise\s+(\d+)', 
+        r'lab\s+(\w+)',
+        r'exercise\s+(\w+)',
+        r'question\s+(\d+)',
+        r'problem\s+(\d+)',
+        r'task\s+(\d+)',
+        r'step\s+(\d+)'
+    ]
+    
+    user_message_lower = user_message.lower()
+    for pattern in patterns:
+        matches = re.findall(pattern, user_message_lower)
+        for match in matches:
+            references.append(match)
+    
+    return references
+
+async def get_course_difficulty(course_id: str) -> str:
+    """Get course difficulty level from syllabus data"""
+    try:
+        # Try to get syllabus from database first
+        syllabus = await load_syllabus_from_db(course_id)
+        if not syllabus:
+            # Fallback to memory
+            syllabus = course_syllabi.get(course_id, {})
+        
+        if syllabus:
+            # Check if level field exists
+            level = syllabus.get('level', '').lower()
+            if level in ['beginner', 'intermediate', 'advanced']:
+                return level
+            
+            # Fallback to overview analysis (same logic as exercise generation)
+            overview = syllabus.get('overview', '').lower()
+            if ("introduction" in overview or "comprehensive introduction" in overview or 
+                "beginner" in overview or "fundamental" in overview or 
+                "start their journey" in overview or "foundation" in overview):
+                return "beginner"
+            elif ("advanced course" in overview or "expert level" in overview):
+                return "advanced"
+            elif "intermediate" in overview or "prior experience" in overview:
+                return "intermediate"
+        
+        # Default fallback
+        return "beginner"
+        
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Error getting course difficulty: {e}")
+        return "beginner"
+
+async def get_exercise_context(course_id: str, exercise_references: List[str] = None) -> str:
+    """Get detailed exercise context for AI assistant"""
+    try:
+        # Load all exercises for the course
+        exercises = await load_exercises_from_db(course_id)
+        if not exercises:
+            # Fallback to memory
+            exercises = exercises_cache.get(course_id, [])
+        
+        if not exercises:
+            return "No exercises available for this course."
+        
+        context_parts = []
+        
+        # If specific exercises referenced, focus on those
+        if exercise_references:
+            context_parts.append("**Referenced Exercises:**")
+            for ref in exercise_references:
+                # Try to match exercise by number or title
+                matching_exercises = []
+                for i, exercise in enumerate(exercises):
+                    # Match by index (lab 1 = first exercise)
+                    if ref.isdigit() and int(ref) == i + 1:
+                        matching_exercises.append((i + 1, exercise))
+                    # Match by title words
+                    elif not ref.isdigit() and ref.lower() in exercise.get('title', '').lower():
+                        matching_exercises.append((i + 1, exercise))
+                
+                for idx, exercise in matching_exercises:
+                    context_parts.append(f"\n**Exercise {idx}: {exercise.get('title', 'Untitled')}**")
+                    context_parts.append(f"Description: {exercise.get('description', 'No description')}")
+                    
+                    # Include instructions if available
+                    if 'instructions' in exercise:
+                        context_parts.append(f"Instructions: {exercise['instructions']}")
+                    
+                    # Include starter code if available
+                    if 'starter_code' in exercise:
+                        context_parts.append(f"Starter Code:\n```\n{exercise['starter_code']}\n```")
+                    
+                    # Include learning objectives
+                    if 'learning_objectives' in exercise:
+                        objectives = exercise['learning_objectives']
+                        if isinstance(objectives, list):
+                            context_parts.append(f"Learning Objectives: {', '.join(objectives)}")
+                        else:
+                            context_parts.append(f"Learning Objectives: {objectives}")
+                    
+                    context_parts.append("---")
+        
+        # Always include exercise overview
+        context_parts.append(f"\n**All Course Exercises ({len(exercises)} total):**")
+        for i, exercise in enumerate(exercises):
+            title = exercise.get('title', 'Untitled')
+            difficulty = exercise.get('difficulty', 'unknown')
+            context_parts.append(f"{i + 1}. {title} (Difficulty: {difficulty})")
+        
+        return "\n".join(context_parts)
+        
+    except Exception as e:
+        logger.error(f"Error getting exercise context: {e}")
+        return "Error loading exercise context."
+
 async def load_exercises_from_db(course_id: str) -> List[Dict]:
     """Load exercises from database"""
     logger = logging.getLogger(__name__)
@@ -331,6 +455,9 @@ def main(cfg: DictConfig) -> None:
         db_manager = DatabaseManager(database_url)
         await db_manager.connect()
         
+        # Make sure the global db_manager is accessible to other functions
+        globals()['db_manager'] = db_manager
+        
         # Initialize services after database is ready
         nonlocal ai_service, syllabus_service, lab_environment_service, exercise_generation_service
         ai_service = AIService(claude_client)
@@ -391,18 +518,20 @@ def main(cfg: DictConfig) -> None:
     course_slides = {}
     lab_environments = {}
     exercises = {}
+    exercises_cache = exercises  # Alias for exercise context functions
     active_labs = {}
     student_progress = {}
     course_quizzes = {}
     lab_analytics = {}
     course_syllabi = {}
     
-    # Global database manager
+    # Global database manager (initialized in lifespan function)
     db_manager = None
     
     # Database functions for syllabi
     async def save_syllabus_to_db(course_id: str, syllabus_data: dict):
         """Save syllabus to database"""
+        global db_manager
         if not db_manager:
             logger.error("Database manager not initialized")
             return False
@@ -737,34 +866,54 @@ def main(cfg: DictConfig) -> None:
         # Get logger from current context
         logger = logging.getLogger(__name__)
         try:
-            # Determine course level from syllabus
-            course_overview = syllabus.get('overview', '').lower()
-            course_level = "beginner"  # Default to beginner
+            # Determine course level from syllabus - check level field first, then overview
+            course_level = syllabus.get('level', '').lower()  # Check level field first
+            if not course_level:
+                # Fallback to overview field analysis - prioritize beginner indicators
+                course_overview = syllabus.get('overview', '').lower()
+                course_level = "beginner"  # Default to beginner
+                
+                # Check for beginner indicators first (higher priority)
+                if ("introduction" in course_overview or "comprehensive introduction" in course_overview or 
+                    "beginner" in course_overview or "no prior" in course_overview or 
+                    "fundamental" in course_overview or "basic" in course_overview or
+                    "start their journey" in course_overview or "foundation" in course_overview):
+                    course_level = "beginner"
+                # Only consider advanced if explicitly stated as an advanced course
+                elif ("advanced course" in course_overview or "expert level" in course_overview or
+                      "prerequisite" in course_overview):
+                    course_level = "advanced"
+                elif "intermediate" in course_overview or "prior experience" in course_overview:
+                    course_level = "intermediate"
             
-            if "advanced" in course_overview or "expert" in course_overview:
-                course_level = "advanced"
-            elif "intermediate" in course_overview or "prior experience" in course_overview:
-                course_level = "intermediate"
-            elif "beginner" in course_overview or "no prior" in course_overview or "introduction" in course_overview:
+            # Ensure course_level is one of the expected values
+            if course_level not in ["beginner", "intermediate", "advanced"]:
                 course_level = "beginner"
             
             logger.info(f"Detected course level: {course_level} for course {course_id}")
             
+            # Debug the syllabus structure
+            logger.info(f"Syllabus structure: {syllabus}")
+            logger.info(f"Syllabus keys: {list(syllabus.keys()) if isinstance(syllabus, dict) else 'Not a dict'}")
+            
             # Build comprehensive prompt using syllabus structure
-            exercises_prompt = f"""
+            # Serialize modules separately to avoid f-string issues
+            modules_json = json.dumps(syllabus.get('modules', []), indent=2, ensure_ascii=False)
+            
+            exercises_prompt = """
             You are an expert educator creating SPECIFIC, CONCRETE lab exercises for this course syllabus.
             
-            Course Overview: {syllabus.get('overview', '')}
+            Course Overview: """ + syllabus.get('overview', '') + """
             
             🚨 CRITICAL COURSE LEVEL REQUIREMENT 🚨
-            Course Level: {course_level.upper()}
+            Course Level: """ + course_level.upper() + """
             
-            MANDATORY: ALL EXERCISES MUST BE {course_level.upper()} LEVEL ONLY!
-            DO NOT create exercises above {course_level.upper()} difficulty!
-            Each exercise "difficulty" field MUST be "{course_level}"!
+            MANDATORY: ALL EXERCISES MUST BE """ + course_level.upper() + """ LEVEL ONLY!
+            DO NOT create exercises above """ + course_level.upper() + """ difficulty!
+            Each exercise "difficulty" field MUST be """ + course_level + """!
             
             Full Syllabus Modules:
-            {json.dumps(syllabus.get('modules', []), indent=2)}
+            """ + modules_json + """
             
             🎯 EXAMPLES OF PERFECT LAB EXERCISES FOR DIFFERENT SUBJECTS:
             
@@ -819,13 +968,15 @@ def main(cfg: DictConfig) -> None:
             }}
             
             CRITICAL REQUIREMENTS FOR EXERCISES:
-            1. Create ONE SPECIFIC exercise per major topic/module
-            2. Each exercise MUST have a clear, concrete goal with measurable outcome
-            3. Provide EXACT step-by-step instructions that are actionable
-            4. Include CLEAR expected inputs and outputs with examples
-            5. Supply any formulas, commands, or concepts needed
-            6. Use realistic, practical problems appropriate for the subject
-            7. Each step should be a specific task, not vague instructions
+            1. Create ONE SPECIFIC exercise per major topic within each module
+            2. For each module, generate exercises that cover ALL topics listed in that module
+            3. Each exercise MUST have a clear, concrete goal with measurable outcome
+            4. Provide EXACT step-by-step instructions that are actionable
+            5. Include CLEAR expected inputs and outputs with examples
+            6. Supply any formulas, commands, or concepts needed
+            7. Use realistic, practical problems appropriate for the subject
+            8. Each step should be a specific task, not vague instructions
+            9. MANDATORY: If a module has multiple topics, create separate exercises for each topic
             
             EXERCISE STRUCTURE REQUIREMENTS:
             - Title: Clear, specific goal (e.g., "File Permissions Lab", "Essay Structure Analysis")
@@ -851,7 +1002,7 @@ def main(cfg: DictConfig) -> None:
             - English: "Paragraph Analysis", "Grammar Check", "Essay Outline"
             - History: "Timeline Creation", "Source Comparison", "Event Analysis"
             
-            CRITICAL: ALL EXERCISES MUST BE {course_level.upper()} LEVEL. Do not mix difficulty levels.
+            CRITICAL: ALL EXERCISES MUST BE """ + course_level.upper() + """ LEVEL. Do not mix difficulty levels.
             
             UNIVERSAL PRINCIPLES FOR EXCELLENT LABS:
             - Transform theoretical concepts into hands-on practice
@@ -869,37 +1020,42 @@ def main(cfg: DictConfig) -> None:
             - Include troubleshooting hints for common issues
             - Add starter templates or setup instructions when appropriate
             
-            For each module, create 1-2 comprehensive lab exercises that cover ALL the topics in that module through practical application.
+            For each module, create ONE separate exercise for EACH topic listed in that module.
+            If a module has 3 topics, generate 3 separate exercises.
             Base your exercises on the specific topics listed in each module - don't make assumptions about the subject matter.
+            Each exercise should focus on one specific topic to ensure comprehensive coverage.
             
-            Return ONLY valid JSON array with this structure:
+            Return ONLY a valid JSON array. Do not include any explanatory text, markdown formatting, or code blocks.
+            The response must be a single JSON array starting with [ and ending with ].
+            
+            Example format:
             [
                 {{
                     "id": "ex_1_1",
-                    "title": "Practical Lab Title (describe what students will build/accomplish)",
-                    "description": "Clear description of the real-world problem to solve or task to complete",
+                    "title": "Practical Lab Title",
+                    "description": "Clear description of the task",
                     "type": "hands_on",
-                    "difficulty": "{course_level}",
+                    "difficulty": """ + course_level + """,
                     "module_number": 1,
-                    "topics_covered": ["specific topic 1", "specific topic 2"],
-                    "purpose": "Why this lab is useful in real-world scenarios for this subject",
-                    "sample_data": "Actual sample data, files, or scenarios to use in the lab",
+                    "topics_covered": ["topic 1", "topic 2"],
+                    "purpose": "Why this lab is useful",
+                    "sample_data": "Sample data to use",
                     "instructions": [
-                        "Step 1: Setup/create specific files, data, or environment",
-                        "Step 2: Execute specific commands/code/procedures with examples",
-                        "Step 3: Test with provided sample data or scenarios",
-                        "Step 4: Verify output matches expected results"
+                        "Step 1: Setup",
+                        "Step 2: Execute",
+                        "Step 3: Test",
+                        "Step 4: Verify"
                     ],
-                    "expected_output": "Specific, measurable outcome with example results",
-                    "hints": ["Specific helpful hint for common issues", "Another practical tip"],
-                    "evaluation_criteria": ["Criteria 1: Functional requirement", "Criteria 2: Accuracy requirement"],
+                    "expected_output": "Expected outcome",
+                    "hints": ["Hint 1", "Hint 2"],
+                    "evaluation_criteria": ["Criteria 1", "Criteria 2"],
                     "estimated_time": "30-45 minutes",
-                    "starter_code": "Optional: Basic template, commands, or starting structure"
+                    "starter_code": "Optional starter code"
                 }}
             ]
             
             Generate labs that teach practical skills through meaningful projects students would actually want to complete in this subject area.
-            """.format(course_level=course_level)
+            """
             
             # Add more detailed logging
             logger.info(f"Generating exercises for course {course_id} with syllabus: {syllabus.get('overview', 'No overview')}")
@@ -913,7 +1069,58 @@ def main(cfg: DictConfig) -> None:
             )
             
             try:
-                exercises_data = json.loads(response.content[0].text)
+                raw_response = response.content[0].text
+                logger.info(f"Raw AI response length: {len(raw_response)}")
+                logger.info(f"Raw AI response preview: {raw_response[:200]}...")
+                
+                # Clean the response first
+                cleaned_response = raw_response.strip()
+                
+                # Try direct JSON parsing first
+                try:
+                    exercises_data = json.loads(cleaned_response)
+                except json.JSONDecodeError:
+                    # If direct parsing fails, try to extract JSON
+                    logger.info("Direct JSON parsing failed, attempting to extract JSON from response...")
+                    
+                    # Look for JSON array markers
+                    start = cleaned_response.find('[')
+                    end = cleaned_response.rfind(']') + 1
+                    
+                    if start != -1 and end != 0:
+                        extracted_json = cleaned_response[start:end]
+                        logger.info(f"Extracted JSON length: {len(extracted_json)}")
+                        logger.info(f"Extracted JSON preview: {extracted_json[:500]}...")
+                        
+                        # Clean up common JSON issues
+                        extracted_json = extracted_json.replace('\n', ' ').replace('\t', ' ')
+                        # Remove any markdown code block markers
+                        extracted_json = extracted_json.replace('```json', '').replace('```', '')
+                        # Remove leading/trailing whitespace and fix common formatting issues
+                        extracted_json = extracted_json.strip()
+                        # Handle cases where JSON has unescaped quotes or control characters
+                        # Remove invalid control characters that might cause parsing issues
+                        extracted_json = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', extracted_json)
+                        # Fix common issues with trailing commas
+                        extracted_json = re.sub(r',\s*}', '}', extracted_json)
+                        extracted_json = re.sub(r',\s*]', ']', extracted_json)
+                        
+                        try:
+                            exercises_data = json.loads(extracted_json)
+                        except json.JSONDecodeError as inner_e:
+                            logger.error(f"JSON extraction failed: {inner_e}")
+                            logger.error(f"Error position: line {inner_e.lineno}, column {inner_e.colno}")
+                            logger.error(f"Problematic JSON: {extracted_json[:1000]}...")
+                            logger.error(f"Raw response for debugging: {raw_response[:2000]}...")
+                            return []
+                    else:
+                        logger.error("Could not find JSON array markers in response")
+                        return []
+                
+                # Validate the parsed data
+                if not isinstance(exercises_data, list):
+                    logger.error(f"Expected JSON array, got {type(exercises_data)}")
+                    return []
                 
                 # CRITICAL: Force all exercises to use the correct difficulty level
                 for exercise in exercises_data:
@@ -923,195 +1130,20 @@ def main(cfg: DictConfig) -> None:
                 
                 logger.info(f"Generated {len(exercises_data)} exercises from syllabus using LLM")
                 return exercises_data
-            except json.JSONDecodeError:
-                # Try to extract JSON from response
-                text = response.content[0].text
-                start = text.find('[')
-                end = text.rfind(']') + 1
-                if start != -1 and end != 0:
-                    try:
-                        exercises_data = json.loads(text[start:end])
-                        
-                        # CRITICAL: Force all exercises to use the correct difficulty level
-                        for exercise in exercises_data:
-                            if isinstance(exercise, dict):
-                                exercise['difficulty'] = course_level
-                                logger.info(f"Forced extracted exercise '{exercise.get('title', 'Unknown')}' to {course_level} level")
-                        
-                        logger.info(f"Extracted {len(exercises_data)} exercises from LLM response")
-                        return exercises_data
-                    except:
-                        pass
                 
-                # Fallback to programmatic generation
-                logger.warning("LLM response parsing failed, using improved fallback exercise generation")
-                return generate_exercises_fallback(syllabus, course_id)
+            except json.JSONDecodeError as e:
+                logger.error(f"JSON parsing error: {e}")
+                logger.error(f"Failed to parse AI response: {raw_response[:1000]}...")
+                return []
                 
         except Exception as e:
             logger.error(f"Error generating exercises from syllabus with LLM: {e}")
-            return generate_exercises_fallback(syllabus, course_id)
+            logger.error(f"Exception type: {type(e).__name__}")
+            logger.error(f"Exception details: {str(e)}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            return []
     
-    def generate_exercises_fallback(syllabus: dict, course_id: str = "unknown") -> List[Dict]:
-        """Generate specific, concrete programming exercises when LLM fails"""
-        # Get logger from current context
-        logger = logging.getLogger(__name__)
-        exercises_list = []
-        
-        # Determine course level from syllabus (same logic as main function)
-        course_overview = syllabus.get('overview', '').lower()
-        course_level = "beginner"  # Default to beginner
-        
-        if "advanced" in course_overview or "expert" in course_overview:
-            course_level = "advanced"
-        elif "intermediate" in course_overview or "prior experience" in course_overview:
-            course_level = "intermediate"
-        elif "beginner" in course_overview or "no prior" in course_overview or "introduction" in course_overview:
-            course_level = "beginner"
-        
-        logger.info(f"Fallback generation using course level: {course_level} for course {course_id}")
-        
-        # Define specific exercises for different subjects
-        concrete_exercises = [
-            {
-                "title": "Python Environment Setup and Hello World",
-                "description": "Set up your Python development environment and create your first program.",
-                "instructions": [
-                    "Step 1: Open your Python IDE or text editor",
-                    "Step 2: Create a new file named 'hello.py'",
-                    "Step 3: Write a program that asks for the user's name using input()",
-                    "Step 4: Store the name in a variable called 'name'",
-                    "Step 5: Display 'Hello, [name]! Welcome to Python programming!'",
-                    "Step 6: Run the program and test with different names"
-                ],
-                "expected_output": "Program prompts 'Enter your name: ', then displays 'Hello, John! Welcome to Python programming!' (for input 'John')",
-                "hints": [
-                    "Use input() function to get user input",
-                    "Use print() function to display output",
-                    "Use + operator or f-strings to combine text with variables"
-                ],
-                "formulas": []
-            },
-            {
-                "title": "Variable Types and Data Conversion",
-                "description": "Practice working with different data types and converting between them.",
-                "instructions": [
-                    "Step 1: Create variables of different types: name (string), age (integer), height (float), is_student (boolean)",
-                    "Step 2: Ask user for their age as input and convert to integer using int()",
-                    "Step 3: Ask user for their height and convert to float using float()",
-                    "Step 4: Calculate their birth year: birth_year = 2024 - age",
-                    "Step 5: Display all information with proper labels and formatting",
-                    "Step 6: Test with different inputs to verify data type handling"
-                ],
-                "expected_output": "For age=25, height=1.75: 'Name: John, Age: 25, Height: 1.75m, Birth Year: 1999'",
-                "hints": [
-                    "Use int() to convert strings to integers",
-                    "Use float() to convert strings to decimal numbers",
-                    "Use type() function to check variable types"
-                ],
-                "formulas": [
-                    "Birth Year = Current Year - Age"
-                ]
-            },
-            {
-                "title": "Decision Making with Control Structures",
-                "description": "Create a program that makes decisions using if-elif-else statements and loops.",
-                "instructions": [
-                    "Step 1: Ask user for their test score (0-100)",
-                    "Step 2: Use if-elif-else to determine letter grade (A, B, C, D, F)",
-                    "Step 3: Use a while loop to keep asking for scores until user enters -1",
-                    "Step 4: Store all valid scores in a list",
-                    "Step 5: Calculate and display the average of all scores",
-                    "Step 6: Display the highest and lowest scores"
-                ],
-                "expected_output": "For scores [85, 92, 78]: 'Average: 85.0, Highest: 92, Lowest: 78'",
-                "hints": [
-                    "Use if-elif-else for grade categorization",
-                    "Use while loop for continuous input",
-                    "Use list.append() to store scores"
-                ],
-                "formulas": [
-                    "Average = sum of all scores / number of scores",
-                    "Grades: A(90-100), B(80-89), C(70-79), D(60-69), F(<60)"
-                ]
-            },
-            {
-                "title": "File Input/Output Operations",
-                "description": "Learn to read from and write to files for data persistence.",
-                "instructions": [
-                    "Step 1: Create a text file named 'inventory.txt' with product data: 'apple,50,1.25'",
-                    "Step 2: Write a program to read the file line by line",
-                    "Step 3: Split each line by comma to get product name, quantity, and price",
-                    "Step 4: Calculate total value for each product (quantity × price)",
-                    "Step 5: Write results to a new file 'inventory_report.txt'",
-                    "Step 6: Display summary of total inventory value"
-                ],
-                "expected_output": "Creates 'inventory_report.txt' with: 'apple: 50 units, $1.25 each, Total: $62.50'",
-                "hints": [
-                    "Use open() with 'r' mode to read files",
-                    "Use split(',') to separate CSV values",
-                    "Use open() with 'w' mode to write files"
-                ],
-                "formulas": [
-                    "Total Value = Quantity × Price"
-                ]
-            },
-            {
-                "title": "Practical Application Development",
-                "description": "Build a complete application that demonstrates real-world Python usage.",
-                "instructions": [
-                    "Step 1: Design a simple calculator that can add, subtract, multiply, and divide",
-                    "Step 2: Create functions for each operation (add, subtract, multiply, divide)",
-                    "Step 3: Create a menu system that displays available operations",
-                    "Step 4: Use a loop to keep the calculator running until user chooses to exit",
-                    "Step 5: Add error handling for division by zero and invalid inputs",
-                    "Step 6: Test all operations with various inputs"
-                ],
-                "expected_output": "Calculator menu with working operations: '5 + 3 = 8', '10 / 2 = 5.0', handles errors gracefully",
-                "hints": [
-                    "Use functions to organize code",
-                    "Use try-except for error handling",
-                    "Use while loop for continuous operation"
-                ],
-                "formulas": [
-                    "Basic arithmetic operations: +, -, ×, ÷"
-                ]
-            }
-        ]
-        
-        for module_idx, module in enumerate(syllabus.get("modules", [])):
-            module_number = module.get('module_number', module_idx + 1)
-            module_title = module.get('title', f'Module {module_number}')
-            
-            # Get a concrete exercise for this module
-            exercise_template = concrete_exercises[module_idx % len(concrete_exercises)]
-            
-            # Generate unique exercise ID
-            exercise_id = f"{course_id}_ex_{module_number}_{hash(module_title) % 1000}"
-            
-            exercises_list.append({
-                "id": exercise_id,
-                "title": exercise_template["title"],
-                "description": exercise_template["description"],
-                "type": "programming",
-                "difficulty": course_level,  # Explicitly use detected course level for ALL exercises
-                "module_number": module_number,
-                "topics_covered": module.get("topics", []),
-                "purpose": f"Learn {module_title} through hands-on programming",
-                "instructions": exercise_template["instructions"],
-                "expected_output": exercise_template["expected_output"],
-                "hints": exercise_template["hints"],
-                "formulas": exercise_template["formulas"],
-                "evaluation_criteria": [
-                    "Program runs without errors",
-                    "Correct implementation of all steps",
-                    "Proper use of Python syntax and functions",
-                    "Expected output matches requirements"
-                ],
-                "estimated_time": "30-45 minutes",
-                "starter_code": "# Write your Python code here"
-            })
-        
-        return exercises_list
     
     def generate_quizzes_from_syllabus_sync(course_id: str, syllabus: dict) -> List[Dict]:
         """Generate quizzes based on syllabus modules using LLM with full syllabus context"""
@@ -1442,6 +1474,30 @@ def main(cfg: DictConfig) -> None:
         lab_id = str(uuid.uuid4())
         lab_config = generate_lab_environment(request.name, request.description, request.environment_type)
         
+        # Automatically generate exercises when creating lab
+        exercises_data = []
+        try:
+            # Get syllabus from database
+            syllabus = await load_syllabus_from_db(request.course_id)
+            if not syllabus:
+                # Try to get from memory if not in database
+                syllabus = course_syllabi.get(request.course_id)
+            
+            if syllabus:
+                logger.info(f"Generating exercises for new lab environment: {request.course_id}")
+                exercises_data = generate_exercises_from_syllabus_sync(request.course_id, syllabus)
+                
+                # Store exercises in memory and database
+                exercises[request.course_id] = exercises_data
+                await save_exercises_to_db(request.course_id, exercises_data)
+                
+                logger.info(f"Generated {len(exercises_data)} exercises for lab environment")
+            else:
+                logger.warning(f"No syllabus found for course {request.course_id}, lab created without exercises")
+        except Exception as e:
+            logger.error(f"Error generating exercises for lab: {e}")
+            # Continue with lab creation even if exercise generation fails
+        
         lab_environments[lab_id] = {
             "id": lab_id,
             "course_id": request.course_id,
@@ -1449,7 +1505,7 @@ def main(cfg: DictConfig) -> None:
             "description": request.description,
             "environment_type": request.environment_type,
             "config": lab_config,
-            "exercises": []
+            "exercises": exercises_data
         }
         
         return {"lab_id": lab_id, "lab": lab_environments[lab_id]}
@@ -1755,7 +1811,6 @@ def main(cfg: DictConfig) -> None:
         - Title: {request.course_title}
         - Description: {request.course_description}
         - Category: {request.course_category}
-        - Difficulty: {request.difficulty_level}
         
         Your role is to:
         1. Provide expert guidance and instruction
@@ -1778,7 +1833,7 @@ def main(cfg: DictConfig) -> None:
                 "title": request.course_title,
                 "description": request.course_description,
                 "category": request.course_category,
-                "difficulty": request.difficulty_level
+                "difficulty": await get_course_difficulty(request.course_id)
             }
         }
         
@@ -1931,10 +1986,21 @@ def main(cfg: DictConfig) -> None:
         # Update analytics
         lab_analytics[request.course_id]["ai_interactions"] += 1
         
+        # Parse exercise references from user message
+        exercise_references = parse_exercise_references(request.user_message)
+        
+        # Get exercise context based on user message
+        exercise_context = await get_exercise_context(request.course_id, exercise_references)
+        
+        # Log exercise context for debugging
+        if exercise_references:
+            logger.info(f"Found exercise references: {exercise_references} for message: '{request.user_message}'")
+        logger.debug(f"Exercise context length: {len(exercise_context)} characters")
+        
         # Build conversation messages for Claude
         messages = []
         
-        # Add system context as first message
+        # Enhanced system context with exercise information
         system_message = f"""
         {lab['trainer_context']}
         
@@ -1943,7 +2009,20 @@ def main(cfg: DictConfig) -> None:
         - Student Progress: {request.context.get('student_progress', {})}
         - Current Exercise: {session_data.get('current_exercise', 'None')}
         
-        You are the expert trainer for this course. Use the conversation history to maintain context and provide personalized, educational guidance.
+        Exercise Context:
+        {exercise_context}
+        
+        Instructions for AI Assistant:
+        1. You are an expert trainer for this course with full access to all exercises and course materials
+        2. When students ask about specific labs or exercises (e.g., "lab 1", "exercise 2"), refer to the Exercise Context above
+        3. Provide helpful hints without giving away the complete solution
+        4. Focus on guiding students to discover the answer themselves
+        5. Reference specific exercise instructions, learning objectives, and starter code when relevant
+        6. If a student is stuck, break down the problem into smaller steps
+        7. Always maintain an encouraging and educational tone
+        8. Use the conversation history to provide personalized guidance
+        
+        You have access to all course exercises and can help with any questions about labs, exercises, or course content.
         """
         
         # Add conversation history
@@ -1961,10 +2040,10 @@ def main(cfg: DictConfig) -> None:
         })
         
         try:
-            # Call Claude API with conversation history
+            # Call Claude API with conversation history and enhanced context
             response = claude_client.messages.create(
                 model="claude-3-haiku-20240307",
-                max_tokens=500,
+                max_tokens=1000,  # Increased for detailed exercise help
                 system=system_message,
                 messages=messages
             )

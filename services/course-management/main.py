@@ -28,6 +28,7 @@ class Course(BaseModel):
     category: Optional[str] = None
     difficulty_level: str = "beginner"
     estimated_duration: Optional[int] = None
+    duration_unit: Optional[str] = "weeks"
     price: float = 0.00
     is_published: bool = False
     thumbnail_url: Optional[str] = None
@@ -199,7 +200,7 @@ def main(cfg: DictConfig) -> None:
             async with db_manager.get_connection() as conn:
                 rows = await conn.fetch("""
                     SELECT id, title, description, instructor_id, category, 
-                           difficulty_level, estimated_duration, price, is_published,
+                           difficulty_level, estimated_duration, duration_unit, price, is_published,
                            thumbnail_url, created_at, updated_at
                     FROM courses
                     WHERE instructor_id = $1
@@ -216,6 +217,7 @@ def main(cfg: DictConfig) -> None:
                         category=row['category'],
                         difficulty_level=row['difficulty_level'],
                         estimated_duration=row['estimated_duration'],
+                        duration_unit=row['duration_unit'],
                         price=float(row['price']),
                         is_published=row['is_published'],
                         thumbnail_url=row['thumbnail_url'],
@@ -241,12 +243,12 @@ def main(cfg: DictConfig) -> None:
             async with db_manager.get_connection() as conn:
                 await conn.execute("""
                     INSERT INTO courses (id, title, description, instructor_id, category,
-                                       difficulty_level, estimated_duration, price, is_published,
+                                       difficulty_level, estimated_duration, duration_unit, price, is_published,
                                        thumbnail_url, created_at, updated_at)
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
                 """, course_id, course.title, course.description, course.instructor_id,
                     course.category, course.difficulty_level, course.estimated_duration,
-                    course.price, course.is_published, course.thumbnail_url, now, now)
+                    course.duration_unit, course.price, course.is_published, course.thumbnail_url, now, now)
                 
                 course.id = course_id
                 course.created_at = now
@@ -266,7 +268,7 @@ def main(cfg: DictConfig) -> None:
             async with db_manager.get_connection() as conn:
                 row = await conn.fetchrow("""
                     SELECT id, title, description, instructor_id, category, 
-                           difficulty_level, estimated_duration, price, is_published,
+                           difficulty_level, estimated_duration, duration_unit, price, is_published,
                            thumbnail_url, created_at, updated_at
                     FROM courses WHERE id = $1
                 """, uuid.UUID(course_id))
@@ -282,6 +284,7 @@ def main(cfg: DictConfig) -> None:
                     category=row['category'],
                     difficulty_level=row['difficulty_level'],
                     estimated_duration=row['estimated_duration'],
+                    duration_unit=row['duration_unit'],
                     price=float(row['price']),
                     is_published=row['is_published'],
                     thumbnail_url=row['thumbnail_url'],
@@ -307,13 +310,13 @@ def main(cfg: DictConfig) -> None:
                 result = await conn.execute("""
                     UPDATE courses SET 
                         title = $2, description = $3, instructor_id = $4, category = $5,
-                        difficulty_level = $6, estimated_duration = $7, price = $8,
-                        is_published = $9, thumbnail_url = $10, updated_at = $11
+                        difficulty_level = $6, estimated_duration = $7, duration_unit = $8, price = $9,
+                        is_published = $10, thumbnail_url = $11, updated_at = $12
                     WHERE id = $1
                 """, uuid.UUID(course_id), updated_course.title, updated_course.description,
                     updated_course.instructor_id, updated_course.category,
                     updated_course.difficulty_level, updated_course.estimated_duration,
-                    updated_course.price, updated_course.is_published,
+                    updated_course.duration_unit, updated_course.price, updated_course.is_published,
                     updated_course.thumbnail_url, now)
                 
                 if result == "UPDATE 0":

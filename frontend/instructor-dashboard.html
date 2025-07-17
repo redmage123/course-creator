@@ -6,6 +6,41 @@
     <title>Instructor Dashboard - Course Creator</title>
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .duration-input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            width: 100%;
+        }
+        .duration-input-group input[type="number"] {
+            flex: 0 0 120px;
+            min-width: 120px;
+            max-width: 120px;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            overflow: hidden;
+            -webkit-appearance: none;
+            -moz-appearance: textfield;
+        }
+        .duration-input-group input[type="number"]::-webkit-outer-spin-button,
+        .duration-input-group input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .duration-input-group select {
+            flex: 0 0 100px;
+            min-width: 100px;
+            max-width: 100px;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            background-color: white;
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -331,8 +366,15 @@
                                     </div>
                                 </div>
                                 <div class="form-group">
-                                    <label for="courseDuration">Estimated Duration (hours)</label>
-                                    <input type="number" id="courseDuration" name="estimated_duration" min="1" max="500">
+                                    <label for="courseDuration">Estimated Duration</label>
+                                    <div class="duration-input-group">
+                                        <input type="number" id="courseDuration" name="estimated_duration" min="1" max="500" placeholder="Enter duration">
+                                        <select id="courseDurationUnit" name="duration_unit">
+                                            <option value="hours">Hours</option>
+                                            <option value="days">Days</option>
+                                            <option value="weeks">Weeks</option>
+                                        </select>
+                                    </div>
                                 </div>
                                 <div class="form-actions">
                                     <button type="submit" class="btn btn-primary">
@@ -340,6 +382,9 @@
                                     </button>
                                     <button type="button" class="btn btn-secondary" onclick="resetForm()">
                                         <i class="fas fa-undo"></i> Reset
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary" onclick="showSection('courses')">
+                                        <i class="fas fa-times"></i> Cancel
                                     </button>
                                 </div>
                             </form>
@@ -959,6 +1004,61 @@
             
             console.log('User found:', currentUser);
             
+            // Add course form submission handler
+            const courseForm = document.getElementById('courseForm');
+            if (courseForm) {
+                courseForm.addEventListener('submit', async function(e) {
+                    e.preventDefault(); // Prevent default form submission
+                    console.log('Course form submitted');
+                    
+                    // Get form data
+                    const formData = new FormData(courseForm);
+                    const courseData = {
+                        title: formData.get('title'),
+                        description: formData.get('description'),
+                        category: formData.get('category'),
+                        difficulty_level: formData.get('difficulty_level'),
+                        estimated_duration: parseInt(formData.get('estimated_duration')),
+                        duration_unit: formData.get('duration_unit'),
+                        instructor_id: currentUser.id || 'current_user_id'
+                    };
+                    
+                    console.log('Course data:', courseData);
+                    
+                    try {
+                        const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+                        const response = await fetch(CONFIG.ENDPOINTS.COURSES, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify(courseData)
+                        });
+                        
+                        if (response.ok) {
+                            const result = await response.json();
+                            console.log('Course created successfully:', result);
+                            showNotification('Course created successfully!', 'success');
+                            
+                            // Reset form
+                            courseForm.reset();
+                            
+                            // Reload courses and show courses section
+                            await loadUserCourses();
+                            showSection('courses');
+                        } else {
+                            const error = await response.json();
+                            console.error('Error creating course:', error);
+                            showNotification(error.detail || 'Failed to create course', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Error creating course:', error);
+                        showNotification('Failed to create course: ' + error.message, 'error');
+                    }
+                });
+            }
+            
             // Load courses using the old approach that works
             await loadUserCourses();
             
@@ -1038,13 +1138,19 @@
             console.log('Updating courses display with', userCourses.length, 'courses');
             console.log('User courses:', userCourses);
             
+            // Update sidebar course count
+            const courseCount = document.getElementById('courseCount');
+            if (courseCount) {
+                courseCount.textContent = userCourses.length;
+            }
+            
             // Update courses list if it exists
             const coursesList = document.getElementById('courses-list');
             console.log('Courses list element:', coursesList);
             
             if (coursesList) {
                 const coursesHTML = userCourses.map(course => `
-                    <div class="course-card enhanced">
+                    <div class="course-card enhanced clickable" onclick="viewCourseDetails('${course.id}')" style="cursor: pointer;">
                         <div class="course-header">
                             <h3>${course.title}</h3>
                             <div class="course-status ${course.is_published ? 'published' : 'draft'}">
@@ -1056,17 +1162,11 @@
                             <div class="course-meta">
                                 <span class="course-category"><i class="fas fa-tag"></i> ${course.category}</span>
                                 <span class="course-level"><i class="fas fa-signal"></i> ${course.difficulty_level}</span>
-                                <span class="course-duration"><i class="fas fa-clock"></i> ${course.estimated_duration} weeks</span>
+                                <span class="course-duration"><i class="fas fa-clock"></i> ${course.estimated_duration} ${course.duration_unit || 'weeks'}</span>
                             </div>
                         </div>
                         <div class="course-actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
-                            <button class="btn btn-primary" onclick="showSection('content')">
-                                <i class="fas fa-edit"></i> Edit Content
-                            </button>
-                            <button class="btn btn-secondary" onclick="viewCourseDetails('${course.id}')">
-                                <i class="fas fa-eye"></i> View
-                            </button>
-                            <button class="btn btn-danger" onclick="confirmDeleteCourse('${course.id}')">
+                            <button class="btn btn-danger" onclick="event.stopPropagation(); confirmDeleteCourse('${course.id}')">
                                 <i class="fas fa-trash"></i> Delete
                             </button>
                         </div>
@@ -1313,6 +1413,9 @@
                             <p>${course.description || 'Course content and materials'}</p>
                         </div>
                         <div class="header-actions">
+                            <button class="btn btn-primary" onclick="showCourseEditModal('${course.id}')">
+                                <i class="fas fa-edit"></i> Edit Course
+                            </button>
                             <button class="btn btn-secondary" onclick="showSection('courses')">
                                 <i class="fas fa-arrow-left"></i> Back to Courses
                             </button>
@@ -1470,6 +1573,141 @@
             showSection('content');
         }
         
+        // Show course edit modal
+        function showCourseEditModal(courseId) {
+            const course = userCourses.find(c => c.id === courseId);
+            if (!course) {
+                showNotification('Course not found', 'error');
+                return;
+            }
+            
+            // Create course edit modal
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content medium">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-edit"></i> Edit Course Metadata</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editCourseForm">
+                            <div class="form-group">
+                                <label for="editCourseTitle">Course Title:</label>
+                                <input type="text" id="editCourseTitle" name="title" required value="${course.title || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label for="editCourseDescription">Description:</label>
+                                <textarea id="editCourseDescription" name="description" rows="3" placeholder="Enter course description...">${course.description || ''}</textarea>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="editCourseCategory">Category:</label>
+                                    <select id="editCourseCategory" name="category">
+                                        <option value="programming" ${course.category === 'programming' ? 'selected' : ''}>Programming</option>
+                                        <option value="data-science" ${course.category === 'data-science' ? 'selected' : ''}>Data Science</option>
+                                        <option value="web-development" ${course.category === 'web-development' ? 'selected' : ''}>Web Development</option>
+                                        <option value="machine-learning" ${course.category === 'machine-learning' ? 'selected' : ''}>Machine Learning</option>
+                                        <option value="cybersecurity" ${course.category === 'cybersecurity' ? 'selected' : ''}>Cybersecurity</option>
+                                        <option value="cloud-computing" ${course.category === 'cloud-computing' ? 'selected' : ''}>Cloud Computing</option>
+                                        <option value="other" ${course.category === 'other' ? 'selected' : ''}>Other</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="editCourseDifficulty">Difficulty Level:</label>
+                                    <select id="editCourseDifficulty" name="difficulty_level">
+                                        <option value="beginner" ${course.difficulty_level === 'beginner' ? 'selected' : ''}>Beginner</option>
+                                        <option value="intermediate" ${course.difficulty_level === 'intermediate' ? 'selected' : ''}>Intermediate</option>
+                                        <option value="advanced" ${course.difficulty_level === 'advanced' ? 'selected' : ''}>Advanced</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="editCourseDuration">Duration:</label>
+                                    <div class="duration-input-group">
+                                        <input type="number" id="editCourseDuration" name="estimated_duration" min="1" max="500" value="${course.estimated_duration || 1}">
+                                        <select id="editCourseDurationUnit" name="duration_unit">
+                                            <option value="hours" ${course.duration_unit === 'hours' ? 'selected' : ''}>Hours</option>
+                                            <option value="days" ${course.duration_unit === 'days' ? 'selected' : ''}>Days</option>
+                                            <option value="weeks" ${course.duration_unit === 'weeks' || !course.duration_unit ? 'selected' : ''}>Weeks</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="editCoursePublished">Publication Status:</label>
+                                    <select id="editCoursePublished" name="is_published">
+                                        <option value="false" ${!course.is_published ? 'selected' : ''}>Draft</option>
+                                        <option value="true" ${course.is_published ? 'selected' : ''}>Published</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                        <button class="btn btn-primary" onclick="updateCourseMetadata('${courseId}')">Save Changes</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+        
+        // Update course metadata
+        async function updateCourseMetadata(courseId) {
+            const form = document.getElementById('editCourseForm');
+            if (!form) return;
+            
+            const formData = new FormData(form);
+            const courseData = {
+                title: formData.get('title'),
+                description: formData.get('description'),
+                category: formData.get('category'),
+                difficulty_level: formData.get('difficulty_level'),
+                estimated_duration: parseInt(formData.get('estimated_duration')),
+                duration_unit: formData.get('duration_unit'),
+                is_published: formData.get('is_published') === 'true'
+            };
+            
+            try {
+                const response = await fetch(`${CONFIG.ENDPOINTS.COURSES}/${courseId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(courseData)
+                });
+                
+                if (response.ok) {
+                    showNotification('Course updated successfully', 'success');
+                    
+                    // Update local course data
+                    const courseIndex = userCourses.findIndex(c => c.id === courseId);
+                    if (courseIndex !== -1) {
+                        userCourses[courseIndex] = { ...userCourses[courseIndex], ...courseData };
+                    }
+                    
+                    // Update display
+                    updateCoursesDisplay();
+                    
+                    // Close modal
+                    document.querySelector('.modal-overlay').remove();
+                    
+                    // Refresh course content view if currently viewing this course
+                    if (window.currentCourse && window.currentCourse.id === courseId) {
+                        showCourseContentView(userCourses[courseIndex]);
+                    }
+                } else {
+                    throw new Error('Failed to update course');
+                }
+            } catch (error) {
+                console.error('Error updating course:', error);
+                showNotification('Error updating course: ' + error.message, 'error');
+            }
+        }
+        
         
         // Confirm delete course
         function confirmDeleteCourse(courseId) {
@@ -1618,6 +1856,12 @@
                 if (sectionName === 'courses') {
                     console.log('Courses section activated, updating courses display...');
                     updateCoursesDisplay();
+                }
+                
+                // If showing students section, populate course dropdown
+                if (sectionName === 'students') {
+                    console.log('Students section activated, populating course dropdown...');
+                    populateStudentCourseDropdown();
                 }
             } else {
                 console.error('Target section not found:', sectionName + '-section');
@@ -2211,7 +2455,7 @@
             slides.forEach((slide, index) => {
                 slideshowWindow.document.write('<div class="slide ' + (index === 0 ? 'active' : '') + '">');
                 slideshowWindow.document.write('<h1>' + escapeHtml(slide.title || 'Slide ' + (index + 1)) + '</h1>');
-                slideshowWindow.document.write('<div class="slide-content">' + escapeHtml(slide.content || 'No content available') + '</div>');
+                slideshowWindow.document.write('<div class="slide-content">' + (slide.content || 'No content available').replace(/\n/g, '<br>') + '</div>');
                 slideshowWindow.document.write('</div>');
             });
             
@@ -2966,6 +3210,8 @@
         window.userCourses = userCourses;
         window.viewCourseDetails = viewCourseDetails;
         window.showCourseContentView = showCourseContentView;
+        window.showCourseEditModal = showCourseEditModal;
+        window.updateCourseMetadata = updateCourseMetadata;
         window.confirmDeleteCourse = confirmDeleteCourse;
         window.deleteCourse = deleteCourse;
         window.updateCoursesDisplay = updateCoursesDisplay;
@@ -3028,6 +3274,41 @@
             document.querySelectorAll('form').forEach(form => form.reset());
         };
         
+        window.populateStudentCourseDropdown = async function() {
+            console.log('Populating student course dropdown...');
+            const dropdown = document.getElementById('selectedCourse');
+            
+            try {
+                // Clear existing options except the placeholder
+                dropdown.innerHTML = '<option value="">Select a course...</option>';
+                
+                // Use the same courses data that's already loaded
+                if (window.userCourses && window.userCourses.length > 0) {
+                    window.userCourses.forEach(course => {
+                        const option = document.createElement('option');
+                        option.value = course.id;
+                        option.textContent = course.title;
+                        dropdown.appendChild(option);
+                    });
+                    console.log(`Populated dropdown with ${window.userCourses.length} courses`);
+                } else {
+                    // If no courses are loaded, try to load them
+                    await loadUserCourses();
+                    if (window.userCourses && window.userCourses.length > 0) {
+                        window.userCourses.forEach(course => {
+                            const option = document.createElement('option');
+                            option.value = course.id;
+                            option.textContent = course.title;
+                            dropdown.appendChild(option);
+                        });
+                        console.log(`Populated dropdown with ${window.userCourses.length} courses after loading`);
+                    }
+                }
+            } catch (error) {
+                console.error('Error populating student course dropdown:', error);
+            }
+        };
+
         window.loadCourseStudents = function() {
             console.log('loadCourseStudents called');
             // Implement student loading logic

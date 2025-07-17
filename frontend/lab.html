@@ -298,7 +298,9 @@
         .assistant-message { 
             background: #1a4d1a; 
             color: #ccffcc; 
-            border-left: 3px solid #00ff00; 
+            border-left: 3px solid #00ff00;
+            line-height: 1.5;
+            word-wrap: break-word;
         }
         
         .user-message { 
@@ -336,6 +338,101 @@
         }
         
         .chat-send-btn:hover { background: #005a9e; }
+        
+        /* Enhanced formatting for assistant messages */
+        .assistant-message p {
+            margin: 0 0 10px 0;
+            line-height: 1.6;
+        }
+        
+        .assistant-message p:last-child {
+            margin-bottom: 0;
+        }
+        
+        .assistant-message .code-block {
+            background: #0d2818;
+            border: 1px solid #00ff00;
+            border-radius: 4px;
+            padding: 8px;
+            margin: 8px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .assistant-message .inline-code {
+            background: #0d2818;
+            border: 1px solid #00ff00;
+            border-radius: 2px;
+            padding: 1px 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: #a0ffa0;
+        }
+        
+        .assistant-message .list-number {
+            color: #90ff90;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        
+        .assistant-message .bullet-point {
+            color: #90ff90;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        
+        .assistant-message .hint-section,
+        .assistant-message .instruction-section,
+        .assistant-message .steps-section,
+        .assistant-message .solution-section,
+        .assistant-message .error-section {
+            margin: 10px 0 5px 0;
+            padding: 5px 8px;
+            border-radius: 3px;
+            font-size: 13px;
+        }
+        
+        .assistant-message .hint-section {
+            background: #1a3d1a;
+            border-left: 3px solid #ffff00;
+        }
+        
+        .assistant-message .instruction-section {
+            background: #1a2d3d;
+            border-left: 3px solid #00aaff;
+        }
+        
+        .assistant-message .steps-section {
+            background: #2d1a3d;
+            border-left: 3px solid #ff00aa;
+        }
+        
+        .assistant-message .solution-section {
+            background: #1a3d2d;
+            border-left: 3px solid #00ffaa;
+        }
+        
+        .assistant-message .error-section {
+            background: #3d1a1a;
+            border-left: 3px solid #ff0000;
+        }
+        
+        .assistant-message strong {
+            color: #ffffff;
+            font-weight: 600;
+        }
+        
+        .assistant-message em {
+            color: #e0ffe0;
+            font-style: italic;
+        }
+        
+        .assistant-message br {
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body>
@@ -366,6 +463,11 @@
                     <select id="languageSelect" onchange="changeLanguage()">
                         <option value="javascript">JavaScript</option>
                         <option value="python">Python</option>
+                        <option value="java">Java</option>
+                        <option value="cpp">C++</option>
+                        <option value="c">C</option>
+                        <option value="go">Go</option>
+                        <option value="rust">Rust</option>
                         <option value="html">HTML</option>
                         <option value="css">CSS</option>
                         <option value="shell">Shell</option>
@@ -410,7 +512,7 @@
     </div>
     
     <!-- Load lab template first to ensure functions are available -->
-    <script src="js/lab-template.js"></script>
+    <script src="js/lab-template.js?v=2025071702"></script>
     
     <!-- Then load configuration and initialize -->
     <script type="module">
@@ -434,10 +536,9 @@
         // Get course info from URL parameters
         const urlParams = new URLSearchParams(window.location.search);
         const courseName = urlParams.get('course') || 'Programming Course';
-        const courseId = urlParams.get('courseId') || 'default';
         
         // Make course info available globally
-        window.currentCourseId = courseId;
+        window.currentCourseId = urlParams.get('courseId') || 'default';
         window.currentCourseName = courseName;
         
         // Update title

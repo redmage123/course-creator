@@ -436,13 +436,43 @@ function launchSandboxedLab(labAccess, courseId) {
     labUrl.searchParams.set('sandboxed', 'true');
     labUrl.searchParams.set('sessionId', labAccess.session_id || generateSessionId());
     
+    // Get course language from localStorage or default to JavaScript
+    const courseLanguage = localStorage.getItem(`course_${courseId}_language`) || 'javascript';
+    labUrl.searchParams.set('language', courseLanguage);
+    
     labWindow.location.href = labUrl;
     
     // Store lab session info for tracking
     storeLabSession(courseId, labAccess.session_id || generateSessionId());
 }
 
-function launchStandardLab(courseId) {
+async function launchStandardLab(courseId) {
+    // First, try to launch the lab to ensure exercises are generated
+    try {
+        const launchResponse = await fetch(CONFIG.ENDPOINTS.LAB_LAUNCH, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                course_id: courseId,
+                course_title: `Course ${courseId}`,
+                course_description: 'Course description',
+                course_category: 'Programming',
+                difficulty_level: 'beginner'
+            })
+        });
+        
+        if (launchResponse.ok) {
+            console.log('Lab launched successfully, exercises should be generated');
+        } else {
+            console.log('Lab launch failed, but proceeding with lab environment');
+        }
+    } catch (error) {
+        console.error('Error launching lab:', error);
+        // Continue with lab environment even if launch fails
+    }
+    
     // Fallback to existing lab environment
     const labWindow = window.open('', '_blank', 'width=1400,height=900,resizable=yes,scrollbars=yes');
     
@@ -457,6 +487,10 @@ function launchStandardLab(courseId) {
         labUrl.searchParams.set('course', `Course ${courseId}`);
     }
     labUrl.searchParams.set('studentId', currentUser.id);
+    
+    // Get course language from localStorage or default to JavaScript
+    const courseLanguage = localStorage.getItem(`course_${courseId}_language`) || 'javascript';
+    labUrl.searchParams.set('language', courseLanguage);
     
     labWindow.location.href = labUrl;
 }

@@ -158,7 +158,7 @@ class ExerciseGenerationService:
                     'title': f'{module_title} - Interactive Lab',
                     'description': f'Hands-on interactive lab for {module_title}. Apply concepts through practical exercises with real-time feedback.',
                     'type': exercise_type,
-                    'difficulty': self._get_progressive_difficulty(module_number),
+                    'difficulty': syllabus.get('level', 'beginner'),
                     'module_number': module_number,
                     'topics_covered': topics,
                     'estimated_time': f"{self.exercise_types[exercise_type]['duration_range'][0]}-{self.exercise_types[exercise_type]['duration_range'][1]} minutes",

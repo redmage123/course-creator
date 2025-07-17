@@ -17,7 +17,6 @@ from .generators import (
 )
 from .fallback import (
     FallbackSlideGenerator,
-    FallbackExerciseGenerator,
     FallbackQuizGenerator,
     FallbackSyllabusGenerator
 )
@@ -31,7 +30,6 @@ __all__ = [
     "SyllabusGenerator",
     "ChatGenerator",
     "FallbackSlideGenerator",
-    "FallbackExerciseGenerator",
     "FallbackQuizGenerator",
     "FallbackSyllabusGenerator"
 ]

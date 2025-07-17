@@ -348,11 +348,20 @@ class PromptTemplates:
         
         focus_text = f"Focus specifically on: {topic}" if topic else "Cover all course topics"
         
+        # Map course level to exercise difficulty
+        difficulty_mapping = {
+            'beginner': 'easy',
+            'intermediate': 'medium', 
+            'advanced': 'hard'
+        }
+        exercise_difficulty = difficulty_mapping.get(level.lower(), 'easy')
+        
         return f"""
         Generate practical exercises for the following course:
         
         **Course:** {title}
         **Level:** {level}
+        **Target Exercise Difficulty:** {exercise_difficulty}
         {focus_text}
         
         **Course Modules:**
@@ -365,6 +374,7 @@ class PromptTemplates:
         4. Provide starter code or templates
         5. Include comprehensive solutions
         6. Ensure appropriate difficulty progression
+        7. **IMPORTANT: All exercises must match the course level ({level}) and be at {exercise_difficulty} difficulty**
         
         **Response Format:**
         Return the exercises as a JSON object with this structure:
@@ -378,7 +388,7 @@ class PromptTemplates:
                     "title": "Exercise Title",
                     "description": "Exercise description and objectives",
                     "module_number": module_number,
-                    "difficulty": "easy|medium|hard",
+                    "difficulty": "{exercise_difficulty}",
                     "starter_code": "Starting code or template",
                     "solution": "Complete solution with explanation",
                     "instructions": "Step-by-step instructions"

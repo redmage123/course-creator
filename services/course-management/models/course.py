@@ -26,13 +26,21 @@ class CourseStatus(str, Enum):
     ARCHIVED = "archived"
 
 
+class DurationUnit(str, Enum):
+    """Duration unit enumeration."""
+    HOURS = "hours"
+    DAYS = "days"
+    WEEKS = "weeks"
+
+
 class CourseBase(BaseModel):
     """Base course model with common fields."""
     title: str = Field(..., min_length=1, max_length=200)
     description: str = Field(..., min_length=1, max_length=1000)
     category: Optional[str] = Field(None, max_length=100)
     difficulty_level: DifficultyLevel = DifficultyLevel.BEGINNER
-    estimated_duration: Optional[int] = Field(None, ge=0)  # in minutes
+    estimated_duration: Optional[int] = Field(None, ge=1)  # duration number
+    duration_unit: DurationUnit = DurationUnit.WEEKS  # duration unit
     price: float = Field(0.0, ge=0)
     thumbnail_url: Optional[str] = None
     
@@ -60,7 +68,8 @@ class CourseUpdate(BaseModel):
     description: Optional[str] = Field(None, min_length=1, max_length=1000)
     category: Optional[str] = Field(None, max_length=100)
     difficulty_level: Optional[DifficultyLevel] = None
-    estimated_duration: Optional[int] = Field(None, ge=0)
+    estimated_duration: Optional[int] = Field(None, ge=1)
+    duration_unit: Optional[DurationUnit] = None
     price: Optional[float] = Field(None, ge=0)
     is_published: Optional[bool] = None
     thumbnail_url: Optional[str] = None
