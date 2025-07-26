@@ -1,0 +1,275 @@
+{
+  "name": "Course Creator Custom Rules",
+  "description": "Custom rules specific to Course Creator Platform development patterns",
+  "version": "1.0.0",
+  "rules": [
+    {
+      "key": "course-creator-001",
+      "name": "FastAPI Dependency Injection Pattern",
+      "description": "Ensure FastAPI endpoints use proper dependency injection for database sessions",
+      "severity": "MAJOR",
+      "type": "CODE_SMELL",
+      "language": "python",
+      "pattern": "^@app\\.(get|post|put|delete|patch)\\([^)]*\\)\\s*\\n\\s*def\\s+\\w+\\([^)]*\\):",
+      "message": "FastAPI endpoints should use dependency injection for database sessions (db: Session = Depends(get_db))",
+      "tags": ["fastapi", "database", "architecture"]
+    },
+    {
+      "key": "course-creator-002", 
+      "name": "Pydantic Model Validation",
+      "description": "Ensure Pydantic models have proper validation and documentation",
+      "severity": "MINOR",
+      "type": "CODE_SMELL",
+      "language": "python",
+      "pattern": "class\\s+\\w+\\(BaseModel\\):",
+      "message": "Pydantic models should include field validation and docstrings",
+      "tags": ["pydantic", "validation", "documentation"]
+    },
+    {
+      "key": "course-creator-003",
+      "name": "Service Layer Pattern",
+      "description": "Business logic should be in service layer, not directly in endpoints",
+      "severity": "MAJOR", 
+      "type": "CODE_SMELL",
+      "language": "python",
+      "pattern": "@app\\.(get|post|put|delete|patch)\\([^)]*\\)\\s*\\n\\s*def\\s+\\w+\\([^)]*\\):[^}]*db\\.query\\(",
+      "message": "Database queries should be in service layer, not in endpoint handlers",
+      "tags": ["architecture", "separation-of-concerns", "service-layer"]
+    },
+    {
+      "key": "course-creator-004",
+      "name": "Authentication Required",
+      "description": "Protected endpoints must include authentication dependency",
+      "severity": "CRITICAL",
+      "type": "VULNERABILITY", 
+      "language": "python",
+      "pattern": "@app\\.(post|put|delete|patch)\\([^)]*\\)\\s*\\n\\s*def\\s+\\w+\\([^)]*\\):",
+      "message": "Mutating endpoints should include authentication (current_user: User = Depends(get_current_user))",
+      "tags": ["security", "authentication", "authorization"]
+    },
+    {
+      "key": "course-creator-005",
+      "name": "Error Handling Pattern",
+      "description": "Endpoints should use proper error handling with HTTPException",
+      "severity": "MAJOR",
+      "type": "BUG",
+      "language": "python", 
+      "pattern": "@app\\.(get|post|put|delete|patch)\\([^)]*\\)\\s*\\n\\s*def\\s+\\w+\\([^)]*\\):[^}]*(?!.*HTTPException)",
+      "message": "Endpoints should include proper error handling with HTTPException",
+      "tags": ["error-handling", "fastapi", "robustness"]
+    },
+    {
+      "key": "course-creator-006",
+      "name": "AI API Key Security",
+      "description": "AI API keys should never be hardcoded",
+      "severity": "BLOCKER",
+      "type": "VULNERABILITY",
+      "language": "python",
+      "pattern": "(anthropic_api_key|openai_api_key)\\s*=\\s*[\"'][^\"']+[\"']",
+      "message": "AI API keys must be loaded from environment variables or secure configuration",
+      "tags": ["security", "api-keys", "secrets"]
+    },
+    {
+      "key": "course-creator-007",
+      "name": "Database Migration Pattern",
+      "description": "Database migrations should follow Alembic patterns",
+      "severity": "MAJOR",
+      "type": "CODE_SMELL",
+      "language": "python",
+      "pattern": "def\\s+upgrade\\(\\):|def\\s+downgrade\\(\\):",
+      "message": "Database migrations should include both upgrade and downgrade functions",
+      "tags": ["database", "migrations", "alembic"]
+    },
+    {
+      "key": "course-creator-008",
+      "name": "Lab Container Security",
+      "description": "Lab container operations must include security validations",
+      "severity": "CRITICAL",
+      "type": "VULNERABILITY",
+      "language": "python",
+      "pattern": "docker\\.(run|exec|create)",
+      "message": "Docker operations in lab containers must include security validations and resource limits",
+      "tags": ["security", "docker", "lab-containers"]
+    },
+    {
+      "key": "course-creator-009",
+      "name": "Async/Await Pattern",
+      "description": "FastAPI endpoints should use async/await for I/O operations",
+      "severity": "MINOR",
+      "type": "CODE_SMELL",
+      "language": "python",
+      "pattern": "@app\\.(get|post|put|delete|patch)\\([^)]*\\)\\s*\\n\\s*def\\s+\\w+\\(",
+      "message": "FastAPI endpoints performing I/O should use async/await pattern",
+      "tags": ["performance", "async", "fastapi"]
+    },
+    {
+      "key": "course-creator-010",
+      "name": "Configuration Management",
+      "description": "Configuration should use Hydra configuration system",
+      "severity": "MAJOR",
+      "type": "CODE_SMELL",
+      "language": "python",
+      "pattern": "os\\.environ\\.get\\(",
+      "message": "Use Hydra configuration system instead of direct os.environ access",
+      "tags": ["configuration", "hydra", "architecture"]
+    },
+    {
+      "key": "course-creator-js-001", 
+      "name": "ES6 Module Pattern",
+      "description": "Use ES6 module imports instead of script tags",
+      "severity": "MAJOR",
+      "type": "CODE_SMELL",
+      "language": "js",
+      "pattern": "<script\\s+src=",
+      "message": "Use ES6 module imports instead of script tags for better modularity",
+      "tags": ["es6", "modules", "architecture"]
+    },
+    {
+      "key": "course-creator-js-002",
+      "name": "API Configuration",
+      "description": "API endpoints should use centralized configuration",
+      "severity": "MINOR", 
+      "type": "CODE_SMELL",
+      "language": "js",
+      "pattern": "fetch\\([\"']http://localhost:\\d+",
+      "message": "Use CONFIG.ENDPOINTS instead of hardcoded URLs",
+      "tags": ["configuration", "api", "maintainability"]
+    },
+    {
+      "key": "course-creator-js-003",
+      "name": "Error Handling Pattern",
+      "description": "API calls should include comprehensive error handling",
+      "severity": "MAJOR",
+      "type": "BUG",
+      "language": "js", 
+      "pattern": "fetch\\([^}]*\\)\\.then\\(",
+      "message": "API calls should include .catch() error handling",
+      "tags": ["error-handling", "robustness", "api"]
+    },
+    {
+      "key": "course-creator-js-004",
+      "name": "XSS Prevention",
+      "description": "Dynamic HTML content should be sanitized",
+      "severity": "CRITICAL",
+      "type": "VULNERABILITY",
+      "language": "js",
+      "pattern": "\\.innerHTML\\s*=\\s*[^;]*\\+",
+      "message": "Dynamic HTML content must be sanitized to prevent XSS attacks",
+      "tags": ["security", "xss", "sanitization"]
+    },
+    {
+      "key": "course-creator-js-005",
+      "name": "File Upload Security",
+      "description": "File uploads should validate file types and sizes",
+      "severity": "CRITICAL",
+      "type": "VULNERABILITY",
+      "language": "js",
+      "pattern": "new FormData\\(\\)|input\\[type=[\"']file[\"']\\]",
+      "message": "File uploads must validate file types, sizes, and include security checks",
+      "tags": ["security", "file-upload", "validation"]
+    },
+    {
+      "key": "course-creator-js-006",
+      "name": "Lab Terminal Security",
+      "description": "Terminal commands should be validated and sanitized",
+      "severity": "BLOCKER",
+      "type": "VULNERABILITY",
+      "language": "js",
+      "pattern": "terminal\\.write\\(|websocket\\.send\\(",
+      "message": "Terminal commands and WebSocket messages must be validated and sanitized",
+      "tags": ["security", "terminal", "websocket", "lab-containers"]
+    },
+    {
+      "key": "course-creator-js-007",
+      "name": "Authentication State Management", 
+      "description": "Authentication state should be managed consistently",
+      "severity": "MAJOR",
+      "type": "CODE_SMELL",
+      "language": "js",
+      "pattern": "localStorage\\.getItem\\([\"']token[\"']\\)",
+      "message": "Use centralized authentication module for token management",
+      "tags": ["authentication", "state-management", "security"]
+    },
+    {
+      "key": "course-creator-js-008",
+      "name": "Event Listener Cleanup",
+      "description": "Event listeners should be properly cleaned up",
+      "severity": "MINOR",
+      "type": "CODE_SMELL", 
+      "language": "js",
+      "pattern": "addEventListener\\(",
+      "message": "Event listeners should be cleaned up with removeEventListener to prevent memory leaks",
+      "tags": ["memory-management", "events", "cleanup"]
+    },
+    {
+      "key": "course-creator-js-009",
+      "name": "Async/Await Pattern",
+      "description": "Use async/await instead of Promise chains where appropriate",
+      "severity": "MINOR",
+      "type": "CODE_SMELL",
+      "language": "js",
+      "pattern": "\\.then\\([^}]*\\)\\.then\\(",
+      "message": "Consider using async/await for better readability instead of Promise chains",
+      "tags": ["async", "readability", "modern-js"]
+    },
+    {
+      "key": "course-creator-js-010",
+      "name": "Multi-IDE Security",
+      "description": "Multi-IDE features should include security restrictions",
+      "severity": "CRITICAL",
+      "type": "VULNERABILITY",
+      "language": "js",
+      "pattern": "docker\\.|container\\.|ide\\.|terminal\\.",
+      "message": "Multi-IDE operations must include security validations and resource limits",
+      "tags": ["security", "multi-ide", "containers", "resource-limits"]
+    }
+  ],
+  
+  "profiles": [
+    {
+      "name": "Course Creator Security Profile",
+      "description": "Security-focused rules for Course Creator Platform",
+      "rules": [
+        "course-creator-004",
+        "course-creator-006", 
+        "course-creator-008",
+        "course-creator-js-004",
+        "course-creator-js-005",
+        "course-creator-js-006",
+        "course-creator-js-010"
+      ]
+    },
+    {
+      "name": "Course Creator Architecture Profile", 
+      "description": "Architecture and design pattern rules for Course Creator Platform",
+      "rules": [
+        "course-creator-001",
+        "course-creator-003",
+        "course-creator-009",
+        "course-creator-010",
+        "course-creator-js-001",
+        "course-creator-js-007"
+      ]
+    }
+  ],
+  
+  "metadata": {
+    "author": "Course Creator Platform Team",
+    "created": "2024-01-26",
+    "version": "1.0.0",
+    "description": "Custom SonarQube rules tailored for Course Creator Platform development patterns, security requirements, and architectural standards.",
+    "tags": [
+      "fastapi",
+      "pydantic", 
+      "docker",
+      "security",
+      "architecture", 
+      "lab-containers",
+      "multi-ide",
+      "authentication",
+      "api-security",
+      "xss-prevention",
+      "file-upload-security"
+    ]
+  }
+}

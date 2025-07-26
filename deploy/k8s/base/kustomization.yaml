@@ -1,0 +1,103 @@
+# Kustomization for Course Creator Platform Base Configuration
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Metadata
+metadata:
+  name: course-creator-base
+
+# Resources to include
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - secrets.yaml
+  - user-management.yaml
+  - course-generator.yaml
+  - content-storage.yaml
+  - course-management.yaml
+  - content-management.yaml
+  - analytics.yaml
+  - lab-containers.yaml
+  - frontend.yaml
+  - ingress.yaml
+  - network-policies.yaml
+  - rbac.yaml
+
+# Common labels applied to all resources
+commonLabels:
+  app.kubernetes.io/name: course-creator
+  app.kubernetes.io/version: "2.1.0"
+  app.kubernetes.io/component: platform
+  app.kubernetes.io/part-of: course-creator-platform
+
+# Common annotations
+commonAnnotations:
+  platform: course-creator
+  deployment.kubernetes.io/managed-by: jenkins
+  documentation: https://github.com/your-org/course-creator
+
+# Image transformations
+images:
+  - name: course-creator-user-management
+    newTag: latest
+  - name: course-creator-course-generator  
+    newTag: latest
+  - name: course-creator-content-storage
+    newTag: latest
+  - name: course-creator-course-management
+    newTag: latest
+  - name: course-creator-content-management
+    newTag: latest
+  - name: course-creator-analytics
+    newTag: latest
+  - name: course-creator-lab-containers
+    newTag: latest
+  - name: course-creator-frontend
+    newTag: latest
+  - name: course-creator-multi-ide-base
+    newTag: latest
+  - name: course-creator-python-lab-multi-ide
+    newTag: latest
+
+# Patches to apply
+patchesStrategicMerge:
+  - patches/resource-limits.yaml
+  - patches/security-context.yaml
+
+# Configurations
+configMapGenerator:
+  - name: course-creator-config
+    envs:
+      - config.env
+  - name: multi-ide-config
+    files:
+      - ide-config.json=configs/ide-config.json
+
+secretGenerator:
+  - name: course-creator-secrets
+    envs:
+      - secrets.env
+    options:
+      disableNameSuffixHash: true
+
+# Replicas (can be overridden by overlays)
+replicas:
+  - name: user-management
+    count: 1
+  - name: course-generator
+    count: 1
+  - name: content-storage
+    count: 1
+  - name: course-management
+    count: 1
+  - name: content-management
+    count: 1
+  - name: analytics
+    count: 1
+  - name: lab-containers
+    count: 1
+  - name: frontend
+    count: 1
+
+# Namespace
+namespace: course-creator

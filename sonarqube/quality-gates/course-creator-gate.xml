@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Course Creator Platform - SonarQube Quality Gate Configuration
+This gate defines the quality criteria that must be met for code to pass
+-->
+<qualityGate>
+  <name>Course Creator Quality Gate</name>
+  <isDefault>false</isDefault>
+  <conditions>
+    
+    <!-- Code Coverage Requirements -->
+    <condition>
+      <metricKey>new_coverage</metricKey>
+      <operator>LT</operator>
+      <warningThreshold>80</warningThreshold>
+      <errorThreshold>75</errorThreshold>
+    </condition>
+    
+    <condition>
+      <metricKey>coverage</metricKey>
+      <operator>LT</operator>
+      <warningThreshold>80</warningThreshold>
+      <errorThreshold>70</errorThreshold>
+    </condition>
+    
+    <!-- Security Requirements -->
+    <condition>
+      <metricKey>new_security_hotspots_reviewed</metricKey>
+      <operator>LT</operator>
+      <errorThreshold>100</errorThreshold>
+    </condition>
+    
+    <condition>
+      <metricKey>security_hotspots_reviewed</metricKey>
+      <operator>LT</operator>
+      <warningThreshold>100</warningThreshold>
+      <errorThreshold>95</errorThreshold>
+    </condition>
+    
+    <condition>
+      <metricKey>new_vulnerabilities</metricKey>
+      <operator>GT</operator>
+      <errorThreshold>0</errorThreshold>
+    </condition>
+    
+    <condition>
+      <metricKey>vulnerabilities</metricKey>
+      <operator>GT</operator>
+      <warningThreshold>5</warningThreshold>
+      <errorThreshold>10</errorThreshold>
+    </condition>
+    
+    <!-- Bug Requirements -->
+    <condition>
+      <metricKey>new_bugs</metricKey>
+      <operator>GT</operator>
+      <errorThreshold>0</errorThreshold>
+    </condition>
+    
+    <condition>
+      <metricKey>bugs</metricKey>
+      <operator>GT</operator>
+      <warningThreshold>10</warningThreshold>
+      <errorThreshold>20</errorThreshold>
+    </condition>
+    
+    <!-- Code Quality Requirements -->
+    <condition>
+      <metricKey>new_code_smells</metricKey>
+      <operator>GT</operator>
+      <warningThreshold>5</warningThreshold>
+      <errorThreshold>10</errorThreshold>
+    </condition>
+    
+    <condition>
+      <metricKey>code_smells</metricKey>
+      <operator>GT</operator>
+      <warningThreshold>50</warningThreshold>
+      <errorThreshold>100</errorThreshold>
+    </condition>
+    
+    <!-- Technical Debt Requirements -->
+    <condition>
+      <metricKey>new_technical_debt</metricKey>
+      <operator>GT</operator>
+      <warningThreshold>8h</warningThreshold>
+      <errorThreshold>16h</errorThreshold>
+    </condition>
+    
+    <condition>
+      <metricKey>sqale_debt_ratio</metricKey>
+      <operator>GT</operator>
+      <warningThreshold>5</warningThreshold>
+      <errorThreshold>10</errorThreshold>
+    </condition>
+    
+    <!-- Maintainability Requirements -->
+    <condition>
+      <metricKey>new_maintainability_rating</metricKey>
+      <operator>GT</operator>
+      <errorThreshold>1</errorThreshold>
+    </condition>
+    
+    <condition>
+      <metricKey>sqale_rating</metricKey>
+      <operator>GT</operator>
+      <warningThreshold>2</warningThreshold>
+      <errorThreshold>3</errorThreshold>
+    </condition>
+    
+    <!-- Reliability Requirements -->
+    <condition>
+      <metricKey>new_reliability_rating</metricKey>
+      <operator>GT</operator>
+      <errorThreshold>1</errorThreshold>
+    </condition>
+    
+    <condition>
+      <metricKey>reliability_rating</metricKey>
+      <operator>GT</operator>
+      <warningThreshold>2</warningThreshold>
+      <errorThreshold>3</errorThreshold>
+    </condition>
+    
+    <!-- Security Ratings -->
+    <condition>
+      <metricKey>new_security_rating</metricKey>
+      <operator>GT</operator>
+      <errorThreshold>1</errorThreshold>
+    </condition>
+    
+    <condition>
+      <metricKey>security_rating</metricKey>
+      <operator>GT</operator>
+      <warningThreshold>2</warningThreshold>
+      <errorThreshold>3</errorThreshold>
+    </condition>
+    
+    <!-- Duplication Requirements -->
+    <condition>
+      <metricKey>new_duplicated_lines_density</metricKey>
+      <operator>GT</operator>
+      <warningThreshold>3</warningThreshold>
+      <errorThreshold>5</errorThreshold>
+    </condition>
+    
+    <condition>
+      <metricKey>duplicated_lines_density</metricKey>
+      <operator>GT</operator>
+      <warningThreshold>5</warningThreshold>
+      <errorThreshold>10</errorThreshold>
+    </condition>
+    
+    <!-- Complexity Requirements -->
+    <condition>
+      <metricKey>complexity</metricKey>
+      <operator>GT</operator>
+      <warningThreshold>500</warningThreshold>
+      <errorThreshold>1000</errorThreshold>
+    </condition>
+    
+    <condition>
+      <metricKey>cognitive_complexity</metricKey>
+      <operator>GT</operator>
+      <warningThreshold>300</warningThreshold>
+      <errorThreshold>500</errorThreshold>
+    </condition>
+    
+    <!-- Test Requirements -->
+    <condition>
+      <metricKey>test_success_density</metricKey>
+      <operator>LT</operator>
+      <warningThreshold>95</warningThreshold>
+      <errorThreshold>90</errorThreshold>
+    </condition>
+    
+    <condition>
+      <metricKey>skipped_tests</metricKey>
+      <operator>GT</operator>
+      <warningThreshold>5</warningThreshold>
+      <errorThreshold>10</errorThreshold>
+    </condition>
+    
+    <!-- Documentation Requirements -->
+    <condition>
+      <metricKey>comment_lines_density</metricKey>
+      <operator>LT</operator>
+      <warningThreshold>15</warningThreshold>
+      <errorThreshold>10</errorThreshold>
+    </condition>
+    
+    <!-- Lines of Code Limits -->
+    <condition>
+      <metricKey>new_lines</metricKey>
+      <operator>GT</operator>
+      <warningThreshold>1000</warningThreshold>
+      <errorThreshold>2000</errorThreshold>
+    </condition>
+    
+  </conditions>
+  
+  <!-- Gate Metadata -->
+  <description>
+    Quality gate for Course Creator Platform ensuring high code quality,
+    security, and maintainability standards across all services.
+    
+    Requirements:
+    - Minimum 75% code coverage for new code
+    - Zero new vulnerabilities or bugs
+    - All security hotspots must be reviewed
+    - Technical debt ratio below 10%
+    - No more than 5% code duplication
+    - Cognitive complexity below 500
+    - Test success rate above 90%
+  </description>
+  
+  <!-- Associated Projects -->
+  <projects>
+    <project>course-creator</project>
+    <project>course-creator-services</project>
+    <project>course-creator-frontend</project>
+  </projects>
+  
+</qualityGate>

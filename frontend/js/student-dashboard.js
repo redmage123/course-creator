@@ -1,4 +1,6 @@
 // Student Dashboard JavaScript
+import { authManager } from './modules/auth.js';
+import { labLifecycleManager } from './modules/lab-lifecycle.js';
 
 let enrolledCourses = [];
 let labEnvironments = [];
@@ -1031,3 +1033,119 @@ document.addEventListener('click', function(e) {
         showTab(tabName);
     }
 });
+
+// Authentication functions
+async function logout() {
+    try {
+        console.log('Logging out student...');
+        
+        // Use the auth manager to handle logout (which will clean up labs)
+        await authManager.logout();
+        
+        // Redirect to login page
+        window.location.href = 'index.html';
+        
+    } catch (error) {
+        console.error('Error during logout:', error);
+        // Force redirect even if logout fails
+        window.location.href = 'index.html';
+    }
+}
+
+// Lab access functions
+async function openLabEnvironment(courseId) {
+    try {
+        console.log('Opening lab environment for course:', courseId);
+        
+        // Show loading notification
+        showNotification('Preparing lab environment...', 'info');
+        
+        // Get lab access URL
+        const labUrl = await labLifecycleManager.accessLab(courseId);
+        
+        if (labUrl) {
+            // Open lab in new window/tab
+            const labWindow = window.open(labUrl, `lab-${courseId}`, 'width=1200,height=800,scrollbars=yes,resizable=yes');
+            
+            if (labWindow) {
+                showNotification('Lab environment opened in new window', 'success');
+            } else {
+                showNotification('Please allow popups to open the lab environment', 'warning');
+            }
+        } else {
+            throw new Error('Lab environment is not ready');
+        }
+        
+    } catch (error) {
+        console.error('Error opening lab environment:', error);
+        showNotification('Error opening lab environment: ' + error.message, 'error');
+        
+        // Try to initialize lab if it doesn't exist
+        try {
+            await labLifecycleManager.getOrCreateStudentLab(courseId);
+            showNotification('Lab environment is being created. Please try again in a few moments.', 'info');
+        } catch (initError) {
+            console.error('Error initializing lab:', initError);
+        }
+    }
+}
+
+function getLabStatus(courseId) {
+    return labLifecycleManager.getLabStatus(courseId);
+}
+
+function isLabReady(courseId) {
+    return labLifecycleManager.isLabReady(courseId);
+}
+
+// Update lab status indicators in the UI
+function updateLabStatusIndicators() {
+    enrolledCourses.forEach(course => {
+        const status = getLabStatus(course.id);
+        const labButton = document.querySelector(`[onclick="openLabEnvironment('${course.id}')"]`);
+        
+        if (labButton) {
+            // Update button based on lab status
+            const statusClasses = {
+                'running': 'btn-success',
+                'paused': 'btn-warning', 
+                'building': 'btn-info',
+                'stopped': 'btn-secondary',
+                'error': 'btn-danger',
+                'not_created': 'btn-primary'
+            };
+            
+            // Remove all status classes
+            Object.values(statusClasses).forEach(cls => labButton.classList.remove(cls));
+            
+            // Add current status class
+            labButton.classList.add(statusClasses[status] || 'btn-primary');
+            
+            // Update button text and tooltip
+            const statusTexts = {
+                'running': 'Open Lab',
+                'paused': 'Resume Lab',
+                'building': 'Building...',
+                'stopped': 'Start Lab',
+                'error': 'Lab Error',
+                'not_created': 'Create Lab'
+            };
+            
+            const buttonText = labButton.querySelector('.button-text');
+            if (buttonText) {
+                buttonText.textContent = statusTexts[status] || 'Lab Environment';
+            }
+            
+            labButton.title = `Lab Status: ${status}`;
+        }
+    });
+}
+
+// Periodically update lab status indicators
+setInterval(updateLabStatusIndicators, 30000); // Update every 30 seconds
+
+// Make functions globally available
+window.logout = logout;
+window.openLabEnvironment = openLabEnvironment;
+window.getLabStatus = getLabStatus;
+window.isLabReady = isLabReady;

@@ -1,0 +1,450 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Course Creator Platform - Python Quality Profile for SonarQube
+This profile defines comprehensive Python code quality rules
+-->
+<profile>
+  <name>Course Creator Python Profile</name>
+  <language>py</language>
+  <rules>
+    <!-- Code Smells -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S1192</key>
+      <priority>INFO</priority>
+      <parameters>
+        <parameter>
+          <key>threshold</key>
+          <value>3</value>
+        </parameter>
+      </parameters>
+    </rule>
+    
+    <!-- Duplicated string literals -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S1481</key>
+      <priority>MINOR</priority>
+    </rule>
+    
+    <!-- Unused local variables -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S1172</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Unused method parameters -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S1135</key>
+      <priority>INFO</priority>
+    </rule>
+    
+    <!-- TODO comments -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S1066</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Collapsible if statements -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S108</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Empty blocks -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S125</key>
+      <priority>MINOR</priority>
+    </rule>
+    
+    <!-- Commented code -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S1541</key>
+      <priority>MAJOR</priority>
+      <parameters>
+        <parameter>
+          <key>max</key>
+          <value>20</value>
+        </parameter>
+      </parameters>
+    </rule>
+    
+    <!-- Cognitive complexity -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S3776</key>
+      <priority>CRITICAL</priority>
+      <parameters>
+        <parameter>
+          <key>threshold</key>
+          <value>15</value>
+        </parameter>
+      </parameters>
+    </rule>
+    
+    <!-- Cognitive complexity of functions -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S1067</key>
+      <priority>MAJOR</priority>
+      <parameters>
+        <parameter>
+          <key>max</key>
+          <value>5</value>
+        </parameter>
+      </parameters>
+    </rule>
+    
+    <!-- Expression complexity -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S1142</key>
+      <priority>MAJOR</priority>
+      <parameters>
+        <parameter>
+          <key>max</key>
+          <value>30</value>
+        </parameter>
+      </parameters>
+    </rule>
+    
+    <!-- Too many return statements -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S1244</key>
+      <priority>MAJOR</priority>
+      <parameters>
+        <parameter>
+          <key>max</key>
+          <value>100</value>
+        </parameter>
+      </parameters>
+    </rule>
+    
+    <!-- Lines of code per function -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S138</key>
+      <priority>MAJOR</priority>
+      <parameters>
+        <parameter>
+          <key>max</key>
+          <value>150</value>
+        </parameter>
+      </parameters>
+    </rule>
+    
+    <!-- Lines of code per file -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S104</key>
+      <priority>MINOR</priority>
+      <parameters>
+        <parameter>
+          <key>maximum</key>
+          <value>1000</value>
+        </parameter>
+      </parameters>
+    </rule>
+    
+    <!-- Maximum line length -->
+    
+    <!-- Security Hotspots -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S2245</key>
+      <priority>BLOCKER</priority>
+    </rule>
+    
+    <!-- Using pseudorandom number generators -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S4507</key>
+      <priority>CRITICAL</priority>
+    </rule>
+    
+    <!-- Delivering code in production with debug features activated -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S4502</key>
+      <priority>BLOCKER</priority>
+    </rule>
+    
+    <!-- CSRF protection -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S2092</key>
+      <priority>CRITICAL</priority>
+    </rule>
+    
+    <!-- Cookie security -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S5122</key>
+      <priority>MINOR</priority>
+    </rule>
+    
+    <!-- Hard-coded credentials -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S2068</key>
+      <priority>BLOCKER</priority>
+    </rule>
+    
+    <!-- Hard-coded passwords -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S106</key>
+      <priority>BLOCKER</priority>
+    </rule>
+    
+    <!-- Hard-coded IP addresses -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S1313</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- SQL injection -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S3649</key>
+      <priority>BLOCKER</priority>
+    </rule>
+    
+    <!-- Command injection -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S4721</key>
+      <priority>BLOCKER</priority>
+    </rule>
+    
+    <!-- Path injection -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S2083</key>
+      <priority>BLOCKER</priority>
+    </rule>
+    
+    <!-- XML external entity processing -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S2755</key>
+      <priority>BLOCKER</priority>
+    </rule>
+    
+    <!-- Weak cryptography -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S4426</key>
+      <priority>CRITICAL</priority>
+    </rule>
+    
+    <!-- Insecure hash -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S4790</key>
+      <priority>CRITICAL</priority>
+    </rule>
+    
+    <!-- Bugs -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S1764</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Identical expressions -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S1862</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Related "if/elif" statements with identical conditions -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S1871</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Related "if/elif" statements with identical bodies -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S1656</key>
+      <priority>CRITICAL</priority>
+    </rule>
+    
+    <!-- Variables should not be self-assigned -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S2273</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- "==" and "!=" should not be used when "is" and "is not" are intended -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S5796</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- "assert" should not be used in production code -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S5632</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Exception types should not be used for multiple except blocks -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S1751</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Jump statements should not occur in "finally" blocks -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S1143</key>
+      <priority>BLOCKER</priority>
+    </rule>
+    
+    <!-- Loops should not be infinite -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S2189</key>
+      <priority>BLOCKER</priority>
+    </rule>
+    
+    <!-- Non-empty statements should change control flow -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S1854</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Dead stores should be removed -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S1116</key>
+      <priority>MINOR</priority>
+    </rule>
+    
+    <!-- Empty statements should be removed -->
+    
+    <!-- FastAPI specific rules -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S5659</key>
+      <priority>CRITICAL</priority>
+    </rule>
+    
+    <!-- JWT tokens should be verified -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S5527</key>
+      <priority>BLOCKER</priority>
+    </rule>
+    
+    <!-- Server certificates should be verified during SSL/TLS connections -->
+    
+    <!-- SQLAlchemy specific -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S3457</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Printf-style format strings should not lead to unexpected behavior -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S5247</key>
+      <priority>BLOCKER</priority>
+    </rule>
+    
+    <!-- "str.format" should not be used with invalid indices -->
+    
+    <!-- Pydantic model validation -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S1120</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Function calls should not pass extra keyword arguments -->
+    
+    <!-- Code conventions for Course Creator -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S100</key>
+      <priority>MINOR</priority>
+    </rule>
+    
+    <!-- Function and method names should comply with a naming convention -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S101</key>
+      <priority>MINOR</priority>
+    </rule>
+    
+    <!-- Class names should comply with a naming convention -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S117</key>
+      <priority>MINOR</priority>
+    </rule>
+    
+    <!-- Local variable names should comply with a naming convention -->
+    
+    <!-- Test-specific rules -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S2699</key>
+      <priority>CRITICAL</priority>
+    </rule>
+    
+    <!-- Tests should include assertions -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S5915</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Assertions should not be given a tuple as the first argument -->
+    
+    <!-- Documentation rules -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S1124</key>
+      <priority>INFO</priority>
+    </rule>
+    
+    <!-- Modifiers should be declared in the correct order -->
+    
+    <!-- Performance rules -->
+    <rule>
+      <repositoryKey>python</repositoryKey>
+      <key>S6281</key>
+      <priority>MINOR</priority>
+    </rule>
+    
+    <!-- Union types should be simplified when possible -->
+    
+    <!-- Type hints -->
+    <rule>
+      <repositoryKey>python</repertoryKey>
+      <key>S5886</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Type hints should be used -->
+    
+  </rules>
+</profile>

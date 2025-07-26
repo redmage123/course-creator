@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Course Creator Platform Control Script
-# Manages microservices without Docker
+# Manages microservices with and without Docker
 
 set -e
 
@@ -22,11 +22,16 @@ SERVICES=(
     "content-storage:8003"
     "course-management:8004"
     "content-management:8005"
+    "analytics:8007"
 )
 
 FRONTEND_PORT=3000
 PID_DIR="$SCRIPT_DIR/.pids"
 LOG_DIR="$SCRIPT_DIR/logs"
+
+# Docker configuration
+COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
+DOCKER_PROJECT_NAME="course-creator"
 
 # Database configuration
 DB_NAME="course_creator"
@@ -60,6 +65,33 @@ log_warning() {
 
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
+}
+
+check_docker() {
+    if ! command -v docker &> /dev/null; then
+        log_error "Docker is not installed or not in PATH"
+        return 1
+    fi
+    
+    if ! docker info > /dev/null 2>&1; then
+        log_error "Docker daemon is not running or not accessible"
+        return 1
+    fi
+    
+    if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
+        log_error "Docker Compose is not installed"
+        return 1
+    fi
+    
+    return 0
+}
+
+get_compose_cmd() {
+    if command -v docker-compose &> /dev/null; then
+        echo "docker-compose"
+    else
+        echo "docker compose"
+    fi
 }
 
 setup_postgres_path() {
@@ -204,6 +236,181 @@ setup_database() {
     fi
     
     log_success "Database setup completed"
+}
+
+# Docker-specific functions
+start_docker() {
+    log_info "Starting Course Creator Platform with Docker..."
+    
+    if ! check_docker; then
+        log_error "Docker environment not ready"
+        return 1
+    fi
+    
+    local compose_cmd=$(get_compose_cmd)
+    
+    # Create .env file for Docker Compose if it doesn't exist
+    if [ ! -f "$SCRIPT_DIR/.env" ]; then
+        log_info "Creating .env file for Docker Compose..."
+        cat > "$SCRIPT_DIR/.env" << EOF
+# Course Creator Platform Environment Variables
+ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+OPENAI_API_KEY=${OPENAI_API_KEY:-}
+JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-secret-key-change-in-production}
+POSTGRES_PASSWORD=postgres_password
+DB_PASSWORD=postgres_password
+ENVIRONMENT=docker
+EOF
+        log_success ".env file created"
+    fi
+    
+    # Build and start services
+    log_info "Building and starting Docker services..."
+    $compose_cmd -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" build
+    $compose_cmd -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" up -d
+    
+    # Wait for services to be healthy
+    log_info "Waiting for services to be healthy..."
+    sleep 10
+    
+    # Show status
+    docker_status
+    
+    echo
+    log_success "Platform started successfully with Docker!"
+    echo
+    echo "🌐 Access URLs:"
+    echo "  Frontend: http://localhost:3000"
+    echo "  User Management: http://localhost:8000"
+    echo "  Course Generator: http://localhost:8001"
+    echo "  Content Storage: http://localhost:8003"
+    echo "  Course Management: http://localhost:8004"
+    echo "  Content Management: http://localhost:8005"
+    echo "  Lab Manager: http://localhost:8006"
+    echo "  Analytics: http://localhost:8007"
+    echo
+    echo "🗄️  Database:"
+    echo "  PostgreSQL: localhost:5433"
+    echo "  Redis: localhost:6379"
+    echo
+    echo "📋 Management:"
+    echo "  Status: $0 docker-status"
+    echo "  Logs: $0 docker-logs [service-name]"
+    echo "  Stop: $0 docker-stop"
+}
+
+stop_docker() {
+    log_info "Stopping Course Creator Platform Docker services..."
+    
+    if ! check_docker; then
+        log_error "Docker environment not ready"
+        return 1
+    fi
+    
+    local compose_cmd=$(get_compose_cmd)
+    
+    $compose_cmd -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" down
+    
+    log_success "Docker services stopped"
+}
+
+restart_docker() {
+    log_info "Restarting Course Creator Platform with Docker..."
+    stop_docker
+    sleep 2
+    start_docker
+}
+
+docker_status() {
+    if ! check_docker; then
+        log_error "Docker environment not ready"
+        return 1
+    fi
+    
+    local compose_cmd=$(get_compose_cmd)
+    
+    echo "📊 Course Creator Platform Docker Status"
+    echo "========================================"
+    
+    $compose_cmd -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" ps
+}
+
+docker_logs() {
+    local service_name="$1"
+    
+    if ! check_docker; then
+        log_error "Docker environment not ready"
+        return 1
+    fi
+    
+    local compose_cmd=$(get_compose_cmd)
+    
+    if [ -z "$service_name" ]; then
+        echo "📋 Available Docker services:"
+        $compose_cmd -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" ps --services
+        echo
+        echo "Usage: $0 docker-logs <service-name>"
+        echo "       $0 docker-logs --follow <service-name>"
+        return
+    fi
+    
+    if [ "$service_name" = "--follow" ] && [ -n "$2" ]; then
+        $compose_cmd -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" logs -f "$2"
+    else
+        $compose_cmd -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" logs --tail=50 "$service_name"
+    fi
+}
+
+docker_build() {
+    log_info "Building Docker images..."
+    
+    if ! check_docker; then
+        log_error "Docker environment not ready"
+        return 1
+    fi
+    
+    local compose_cmd=$(get_compose_cmd)
+    
+    $compose_cmd -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" build --no-cache
+    
+    log_success "Docker images built successfully"
+}
+
+docker_pull() {
+    log_info "Pulling Docker base images..."
+    
+    if ! check_docker; then
+        log_error "Docker environment not ready"
+        return 1
+    fi
+    
+    local compose_cmd=$(get_compose_cmd)
+    
+    $compose_cmd -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" pull
+    
+    log_success "Docker images pulled successfully"
+}
+
+docker_clean() {
+    log_info "Cleaning up Docker resources..."
+    
+    if ! check_docker; then
+        log_error "Docker environment not ready"
+        return 1
+    fi
+    
+    local compose_cmd=$(get_compose_cmd)
+    
+    # Stop and remove containers, networks, volumes
+    $compose_cmd -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" down -v --remove-orphans
+    
+    # Remove unused images
+    docker image prune -f
+    
+    # Remove unused volumes
+    docker volume prune -f
+    
+    log_success "Docker cleanup completed"
 }
 
 stop_database() {
@@ -700,12 +907,38 @@ case "${1:-}" in
     stop-db)
         stop_database
         ;;
+    # Docker commands
+    docker-start)
+        start_docker
+        ;;
+    docker-stop)
+        stop_docker
+        ;;
+    docker-restart)
+        restart_docker
+        ;;
+    docker-status)
+        docker_status
+        ;;
+    docker-logs)
+        docker_logs "$2" "$3"
+        ;;
+    docker-build)
+        docker_build
+        ;;
+    docker-pull)
+        docker_pull
+        ;;
+    docker-clean)
+        docker_clean
+        ;;
     *)
         echo "Course Creator Platform Control Script"
         echo
-        echo "Usage: $0 {start|stop|restart|status|logs|clean|install-deps|init-db|start-db|stop-db} [service-name]"
+        echo "Usage: $0 {start|stop|restart|status|logs|clean|install-deps|init-db|start-db|stop-db}"
+        echo "       $0 {docker-start|docker-stop|docker-restart|docker-status|docker-logs|docker-build|docker-pull|docker-clean}"
         echo
-        echo "Commands:"
+        echo "Native Commands (without Docker):"
         echo "  start [service]  Start database, all services and frontend (or specific service)"
         echo "  stop [service]   Stop all services, frontend and database (or specific service)"
         echo "  restart [service] Restart entire platform including database (or specific service)"
@@ -714,7 +947,17 @@ case "${1:-}" in
         echo "  clean            Stop services and clean up logs/pids"
         echo "  install-deps     Install Python dependencies for all services"
         echo
-        echo "Database Commands:"
+        echo "Docker Commands (containerized deployment):"
+        echo "  docker-start     Start platform using Docker Compose"
+        echo "  docker-stop      Stop all Docker containers"
+        echo "  docker-restart   Restart platform using Docker Compose"
+        echo "  docker-status    Show status of Docker containers"
+        echo "  docker-logs [service] Show Docker logs for a service"
+        echo "  docker-build     Build Docker images from scratch"
+        echo "  docker-pull      Pull latest base Docker images"
+        echo "  docker-clean     Clean up Docker resources (containers, volumes, images)"
+        echo
+        echo "Database Commands (native only):"
         echo "  init-db          Initialize PostgreSQL database cluster"
         echo "  start-db         Start only the PostgreSQL database"
         echo "  stop-db          Stop only the PostgreSQL database"

@@ -6,18 +6,26 @@ A comprehensive web-based platform for creating, managing, and delivering intera
 
 ### For Instructors
 - **AI-Powered Course Generation**: Generate complete courses with syllabus, slides, exercises, and quizzes
-- **Interactive Lab Environments**: Create browser-based coding environments with xterm.js
-- **Comprehensive Quiz System**: Generate and manage quizzes with automatic grading
-- **Content Management**: Upload and manage course materials (PDF, DOCX, PPTX, JSON)
-- **Student Progress Tracking**: Monitor student performance and engagement
-- **Multi-Format Export**: Export content to PowerPoint, PDF, Excel, SCORM formats
+- **Individual Lab Container Management**: Create and manage isolated Docker containers for each student
+- **Dynamic Image Building**: Build custom lab environments on-demand with specific packages and configurations
+- **Real-time Lab Monitoring**: Monitor all student lab sessions with pause/resume/stop controls
+- **Template-Based Content Generation**: Upload custom templates for AI to generate structured content
+- **Comprehensive Quiz System**: Generate and manage quizzes with automatic grading and analytics
+- **Enhanced Content Management**: Drag-and-drop interface for uploading course materials (PDF, DOCX, PPTX, JSON)
+- **Comprehensive Student Analytics**: Real-time tracking of student progress, lab usage, quiz performance, and engagement metrics with interactive dashboards
+- **Multi-Format Export**: Export content to PowerPoint, PDF, Excel, SCORM, ZIP formats
+- **Instructor Lab Environment**: Create personal lab environments for course development and testing
 
 ### For Students
-- **Interactive Learning**: Access courses with integrated coding environments
-- **Real-time Lab Sessions**: Code directly in browser terminals with AI assistance
-- **Quiz System**: Take quizzes with immediate feedback and explanations
-- **Progress Tracking**: Monitor learning progress and achievements
-- **Secure Environment**: Sandboxed lab environments for safe experimentation
+- **Multi-IDE Lab Environment**: Choose from VSCode Server, JupyterLab, IntelliJ IDEA, or Terminal
+- **Seamless IDE Switching**: Switch between development environments without losing work
+- **Persistent Lab Containers**: Individual Docker containers that maintain state across sessions and IDE switches
+- **Automatic Lab Lifecycle**: Labs auto-start on login, pause on logout, resume on return
+- **Real-time Coding Environment**: Full-featured development environments with syntax highlighting, IntelliSense, and debugging
+- **AI-Powered Assistance**: Get help and explanations while working in lab environments
+- **Interactive Quiz System**: Take quizzes with immediate feedback, explanations, and progress tracking
+- **Seamless Authentication**: Integrated login/logout with automatic lab session management
+- **Secure Isolation**: Each student gets their own completely isolated environment
 
 ### For Administrators
 - **User Management**: Manage instructor and student accounts with RBAC
@@ -26,30 +34,40 @@ A comprehensive web-based platform for creating, managing, and delivering intera
 
 ## 🏗️ Architecture
 
-The platform follows a microservices architecture with 5 core backend services:
+The platform follows a microservices architecture with 7 core backend services:
 
 ```
 course-creator/
 ├── frontend/                    # Static HTML/CSS/JavaScript frontend
-│   ├── instructor-dashboard.html # Main instructor interface
-│   ├── student-dashboard.html   # Student learning interface
-│   ├── lab.html                 # Interactive coding environment
-│   └── js/modules/             # Modular ES6 components
+│   ├── instructor-dashboard.html # Enhanced instructor interface with lab management
+│   ├── student-dashboard.html   # Student learning interface with lab integration
+│   ├── lab-multi-ide.html       # Multi-IDE lab environment with VSCode, Jupyter, IntelliJ
+│   ├── lab.html                 # Legacy terminal-only lab environment
+│   └── js/modules/             # Modular ES6 components (auth, lab-lifecycle, etc.)
 ├── services/                   # Backend microservices
 │   ├── user-management/        # Authentication & user profiles (Port 8000)
 │   ├── course-generator/       # AI content generation (Port 8001)
 │   ├── content-storage/        # File storage & versioning (Port 8003)
 │   ├── course-management/      # Course CRUD operations (Port 8004)
-│   └── content-management/     # Upload/download & export (Port 8005)
+│   ├── content-management/     # Upload/download & export (Port 8005)
+│   └── analytics/              # Student analytics & progress tracking (Port 8007)
+├── lab-containers/             # Individual student lab container service (Port 8006)
+│   ├── main.py                 # FastAPI lab manager with Docker and multi-IDE integration
+│   ├── Dockerfile              # Lab manager container
+│   ├── lab-images/             # Multi-IDE Docker images
+│   │   ├── multi-ide-base/     # Base multi-IDE image with VSCode, Jupyter, IntelliJ
+│   │   └── python-lab-multi-ide/ # Python-specific multi-IDE environment
+│   └── templates/              # Lab environment templates
 ├── config/                     # Hydra configuration files
 ├── data/migrations/           # Database migrations
-├── tests/                     # Comprehensive test suite
+├── tests/                     # Comprehensive test suite (unit, integration, e2e, frontend)
+├── docker-compose.yml         # Full platform orchestration
 └── docs/                      # Documentation
 ```
 
 ### Service Dependencies
 Services start in dependency order with health checks:
-User Management → Course Generator → Course Management → Content Storage → Content Management
+User Management → Course Generator → Course Management → Content Storage → Content Management → Lab Container Manager → Analytics Service
 
 ## 🛠️ Technology Stack
 
@@ -73,56 +91,72 @@ User Management → Course Generator → Course Management → Content Storage �
 - **Mock data**: Available for development when AI services unavailable
 
 ### Infrastructure
-- **Docker** - Containerization
-- **Nginx** - Reverse proxy
-- **Prometheus/Grafana** - Monitoring
-- **GitHub Actions** - CI/CD with comprehensive pipeline
+- **Docker & Docker Compose** - Full containerization with per-student lab containers
+- **Docker-in-Docker (DinD)** - Dynamic container creation for student labs
+- **Persistent Storage** - Student work preserved across sessions
+- **Nginx** - Reverse proxy and load balancing
+- **Prometheus/Grafana** - Monitoring and observability
+- **GitHub Actions** - CI/CD with comprehensive pipeline including security scanning
 
 ## 🚀 Quick Start
 
+**Get running in under 10 minutes!**
+
 ### Prerequisites
-- Python 3.10+
-- PostgreSQL 12+
-- Redis 6+
-- Node.js 16+ (for frontend testing)
+- Docker & Docker Compose
+- Git
+- [Anthropic Claude API Key](https://console.anthropic.com/)
 
-### Local Development
+### Installation
+```bash
+# 1. Clone and configure
+git clone https://github.com/your-org/course-creator.git
+cd course-creator
+cp .env.example .env
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd course-creator
-   ```
+# 2. Add your API key to .env file
+# ANTHROPIC_API_KEY=your_key_here
 
-2. **Set up environment**
-   ```bash
-   # Create virtual environment
-   python -m venv .venv
-   source .venv/bin/activate
+# 3. Deploy everything with Docker
+./app-control.sh docker-start
+
+# 4. Create admin user
+python create-admin.py
+```
+
+### Access Your Platform
+- **🏠 Platform Home**: http://localhost:3000
+- **👨‍🏫 Instructor Dashboard**: http://localhost:3000/instructor-dashboard.html
+- **👨‍🎓 Student Dashboard**: http://localhost:3000/student-dashboard.html
+- **🔧 Admin Panel**: http://localhost:3000/admin.html
+- **💻 Interactive Labs**: http://localhost:3000/lab.html
+
+## 📚 Documentation
+
+- **⚡ Quick Start**: [`QUICKSTART.md`](QUICKSTART.md) - Get running in 10 minutes
+- **📖 Complete Runbook**: [`docs/RUNBOOK.md`](docs/RUNBOOK.md) - Detailed installation & deployment
+- **👥 User Guide**: [`docs/USER-GUIDE.md`](docs/USER-GUIDE.md) - How to use the platform
+- **🔧 CI/CD Pipeline**: [`docs/ci-cd-pipeline.md`](docs/ci-cd-pipeline.md) - Jenkins & SonarQube setup
+- **⚙️ Technical Details**: [`CLAUDE.md`](CLAUDE.md) - Developer guidance
+
+## 🛠️ Advanced Installation
+
+### Development Setup (Native Python)
+```bash
+# Clone and setup virtual environment
+git clone https://github.com/your-org/course-creator.git
+cd course-creator
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+
+# Setup database and create admin
+python setup-database.py
+python create-admin.py
+
+# Start services natively
+./app-control.sh start
    
-   # Install dependencies
-   pip install -r requirements.txt
-   ```
-
-3. **Configure environment variables**
-   ```bash
-   # Copy and edit environment configuration
-   cp .cc_env.example .cc_env
-   # Edit .cc_env with your database credentials and API keys
-   ```
-
-4. **Set up the database**
-   ```bash
-   # Setup database and run migrations
-   python setup-database.py
-   
-   # Create admin user
-   python create-admin.py
-   ```
-
-5. **Start all services**
-   ```bash
-   # Start entire platform with dependency management
+   # Or using app-control.sh for development
    ./app-control.sh start
    
    # Check service status
@@ -143,9 +177,12 @@ User Management → Course Generator → Course Management → Content Storage �
 
 7. **Access the application**
    - Frontend: http://localhost:8080
-   - Instructor Dashboard: http://localhost:8080/instructor-dashboard.html
-   - Student Dashboard: http://localhost:8080/student-dashboard.html
+   - Instructor Dashboard: http://localhost:8080/instructor-dashboard.html (with lab container management)
+   - Student Dashboard: http://localhost:8080/student-dashboard.html (with automatic lab lifecycle)
+   - Multi-IDE Lab Environment: http://localhost:8080/lab-multi-ide.html (VSCode, Jupyter, IntelliJ)
+   - Legacy Lab Environment: http://localhost:8080/lab.html (terminal-only)
    - API Documentation: http://localhost:8001/docs
+   - Lab Manager API: http://localhost:8006/docs
 
 ### Using app-control.sh
 
@@ -193,17 +230,44 @@ The platform includes a comprehensive control script:
 4. **Export Content**
    - Export to multiple formats: PowerPoint, PDF, Excel, SCORM, ZIP
 
-### Managing Lab Environments
+### Managing Multi-IDE Lab Container Environments
 
-1. **Create Interactive Labs**
-   - Generate exercises from course content
-   - Configure terminal environments
-   - Set up AI assistance for students
+1. **Create Multi-IDE Student Labs**
+   - Each student gets their own isolated Docker container with multiple IDE options
+   - Dynamic image building with VSCode Server, JupyterLab, IntelliJ IDEA, and Terminal
+   - Template-based lab creation for consistent multi-IDE environments
+   - Instructor can create personal lab environments with full IDE access for testing
 
-2. **Monitor Student Progress**
-   - Track lab session activity
-   - View student code and progress
-   - Provide real-time assistance
+2. **Multi-IDE Environment Features**
+   - **VSCode Server**: Full web-based development environment with extensions, IntelliSense, and debugging
+   - **JupyterLab**: Interactive notebook environment for data science with matplotlib, pandas, numpy
+   - **IntelliJ IDEA**: Professional IDE via JetBrains Projector (optional, resource-intensive)
+   - **Terminal**: Traditional command-line interface with xterm.js
+   - **Real-time IDE Status**: Live health monitoring and availability indicators
+   - **Seamless Switching**: Change IDEs without losing work or session state
+
+3. **Comprehensive Lab Management**
+   - Real-time monitoring of all student lab containers with IDE usage tracking
+   - View which IDEs students are using and performance metrics
+   - Pause, resume, and stop individual or bulk lab sessions
+   - View detailed lab status, resource usage, and IDE health logs
+   - Enhanced resource allocation for multi-IDE support (2GB memory, 150% CPU)
+   - Automatic cleanup of expired lab sessions
+
+4. **Student Lab Experience**
+   - Automatic lab initialization on login with preferred IDE selection
+   - Persistent storage - work saved across sessions and IDE switches
+   - IDE selection interface with real-time status indicators
+   - Seamless pause/resume on browser tab changes
+   - Automatic cleanup on logout with work preservation
+
+5. **Advanced Multi-IDE Features**
+   - Dynamic port allocation for each IDE service (8080-8083)
+   - Resource limits and concurrent lab management with multi-IDE scaling
+   - Health monitoring and automatic recovery for each IDE service
+   - Performance analytics and IDE usage tracking
+   - Custom Dockerfile support for specialized multi-IDE environments
+   - IDE-specific configuration and extension management
 
 ### Quiz System
 
@@ -306,6 +370,11 @@ python -m pytest -m unit          # Unit tests only
 python -m pytest -m integration   # Integration tests only
 python -m pytest -m e2e          # End-to-end tests only
 
+# Lab container system tests (comprehensive)
+python run_lab_tests.py          # All lab container tests with reports
+python run_lab_tests.py --suite frontend  # Frontend lab integration tests
+python run_lab_tests.py --suite e2e       # E2E lab system tests
+
 # Run tests with coverage (80% minimum required)
 python -m pytest --cov=services --cov-report=html
 
@@ -313,6 +382,9 @@ python -m pytest --cov=services --cov-report=html
 npm test                          # Jest unit tests
 npm run test:e2e                 # Playwright E2E tests
 npm run test:all                 # All frontend tests
+
+# Docker-based testing (requires Docker)
+docker-compose -f docker-compose.test.yml up --build
 ```
 
 ### Code Quality
@@ -373,6 +445,36 @@ GET /export/{format}
 GET /files
 ```
 
+**Lab Container Manager (Port 8006)**
+```http
+# Core Lab Management
+POST /labs                    # Create new lab container (with multi-IDE support)
+POST /labs/student            # Get or create student lab
+GET  /labs                    # List all lab containers
+GET  /labs/{lab_id}          # Get lab details
+POST /labs/{lab_id}/pause    # Pause lab container
+POST /labs/{lab_id}/resume   # Resume lab container
+DELETE /labs/{lab_id}        # Stop and remove lab
+GET  /labs/instructor/{course_id} # Get instructor lab overview
+GET  /health                 # Lab service health check
+
+# Multi-IDE Management
+GET  /labs/{lab_id}/ides     # Get available IDEs for lab
+POST /labs/{lab_id}/ide/switch # Switch preferred IDE
+GET  /labs/{lab_id}/ide/status # Get IDE health status
+```
+
+**Analytics Service (Port 8007)**
+```http
+POST /activities/track       # Track student activities
+POST /lab-usage/track       # Track lab usage metrics
+POST /quiz-performance/track # Track quiz performance
+POST /progress/update       # Update student progress
+GET  /analytics/student/{id} # Get student analytics
+GET  /analytics/course/{id}  # Get course analytics
+GET  /health                # Analytics service health check
+```
+
 For complete API documentation, visit the `/docs` endpoint on each service.
 
 ## 🚀 Deployment
@@ -414,13 +516,21 @@ git push origin feature/new-functionality
 ### Production Deployment
 
 ```bash
-# Using app-control.sh
-./app-control.sh start
+# Using Docker Compose (recommended)
+docker-compose up -d
 
 # Check all services are healthy
-./app-control.sh status
+docker-compose ps
 
 # Monitor logs
+docker-compose logs -f
+
+# Scale lab manager service if needed
+docker-compose up -d --scale lab-manager=3
+
+# Alternative: Using app-control.sh
+./app-control.sh start
+./app-control.sh status
 ./app-control.sh logs
 ```
 
@@ -437,10 +547,13 @@ git push origin feature/new-functionality
 - Secure file storage with access controls
 
 ### Infrastructure Security
-- HTTPS enforcement
-- Security headers
+- HTTPS enforcement with SSL/TLS termination
+- Security headers and CORS configuration
 - Input validation and sanitization
-- SQL injection prevention
+- SQL injection prevention with parameterized queries
+- Container isolation with Docker security best practices
+- Resource limits and sandboxing for student lab containers
+- Secure file upload with type validation and scanning
 
 ## 📊 Monitoring
 
@@ -540,32 +653,44 @@ done
 ## 🎯 Current Status
 
 **✅ Completed Features:**
-- Core microservices architecture
-- AI-powered content generation
-- Interactive lab environments
-- Comprehensive quiz system
-- File upload/download with multi-format export
-- User management with RBAC
-- Database persistence with PostgreSQL
-- Comprehensive test suite with TDD
-- CI/CD pipeline with GitHub Actions
+- Core microservices architecture with 7 services
+- AI-powered content generation with template support
+- **Multi-IDE Lab Containers** - VSCode Server, JupyterLab, IntelliJ IDEA, and Terminal support
+- **Individual Docker Lab Containers** - Per-student isolated environments with multi-IDE capabilities
+- **Seamless IDE Switching** - Change development environments without losing work
+- **Dynamic Image Building** - Custom lab environments with multi-IDE support built on-demand
+- **Automatic Lab Lifecycle Management** - Login/logout integration with persistence across IDE switches
+- **Comprehensive Instructor Lab Controls** - Real-time monitoring, management, and IDE usage analytics
+- **Enhanced Resource Management** - Dynamic allocation for multi-IDE environments (2GB/150% CPU)
+- Interactive quiz system with analytics
+- Enhanced content management with drag-and-drop upload
+- Multi-format export (PowerPoint, PDF, Excel, SCORM, ZIP)
+- User management with RBAC and secure authentication
+- Database persistence with PostgreSQL (single shared database)
+- Full Docker Compose orchestration
+- Comprehensive test suite (Unit, Integration, E2E, Frontend) with 22+ passing tests
+- CI/CD pipeline with security scanning and automated deployment
 - MCP integration for Claude Desktop
 
 **🔄 In Progress:**
-- Enhanced analytics dashboard
 - Mobile responsiveness improvements
-- Advanced AI features
+- Advanced AI features and prompt engineering
+- Performance optimization for high-concurrency lab usage
 
 **📋 Planned:**
-- Real-time collaboration features
-- Video content support
-- Payment integration
-- Mobile application
+- Real-time collaboration within lab containers
+- Video content support and screen sharing
+- Advanced analytics dashboard with detailed lab usage and IDE preferences metrics
+- Kubernetes deployment for enterprise scaling
+- Payment integration for course marketplace
+- Additional IDE integrations (Eclipse, Vim/Neovim, Emacs)
 
 ---
 
-**Project Status**: Active Development  
-**Version**: 1.0.0  
-**Last Updated**: 2025-07-16
+**Project Status**: Production Ready with Multi-IDE Lab Container System  
+**Version**: 2.1.0  
+**Last Updated**: 2025-07-26  
+**New in v2.1**: Multi-IDE support (VSCode, Jupyter, IntelliJ), seamless IDE switching, enhanced resource management  
+**Previous v2.0**: Individual Docker lab containers, automatic lifecycle management, instructor controls, comprehensive testing
 
 For detailed development information, see [CLAUDE.md](CLAUDE.md) for comprehensive setup and development instructions.

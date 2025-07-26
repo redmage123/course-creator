@@ -28,6 +28,7 @@ from services.exercise_generation_service import ExerciseGenerationService
 from services.lab_environment_service import LabEnvironmentService
 from services.syllabus_service import SyllabusService
 from services.ai_service import AIService
+from analytics_client import course_analytics_client
 
 # Models
 class CourseTemplate(BaseModel):
@@ -2460,6 +2461,26 @@ def main(cfg: DictConfig) -> None:
             
             # Also save to database
             await save_quizzes_to_db(course_id, generated_quizzes)
+            
+            # Track quiz generation analytics
+            asyncio.create_task(
+                course_analytics_client.track_quiz_generation(
+                    course_id,
+                    "instructor-generated",  # We don't have instructor_id in this context
+                    len(generated_quizzes),
+                    "beginner"  # Default difficulty
+                )
+            )
+            
+            # Track content generation
+            asyncio.create_task(
+                course_analytics_client.track_course_content_generation(
+                    course_id,
+                    "instructor-generated",
+                    "quiz",
+                    len(generated_quizzes)
+                )
+            )
             
             logger.info(f"Generated {len(generated_quizzes)} quizzes for course {course_id}")
             

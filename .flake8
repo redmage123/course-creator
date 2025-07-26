@@ -1,0 +1,148 @@
+# Flake8 Configuration for Course Creator Platform
+# This file configures Python linting rules for the entire codebase
+
+[flake8]
+# Maximum line length to match Black formatter
+max-line-length = 88
+
+# Maximum cyclomatic complexity
+max-complexity = 10
+
+# List of error codes to ignore
+ignore = 
+    # E203: whitespace before ':' (conflicts with Black)
+    E203,
+    # W503: line break before binary operator (conflicts with Black)
+    W503,
+    # E501: line too long (handled by Black)
+    E501,
+    # F401: imported but unused (handled by autoflake in pre-commit)
+    F401,
+    # E731: do not assign a lambda expression, use a def (sometimes useful)
+    E731
+
+# List of error codes to select (only these will be reported)
+select = 
+    # E: pycodestyle errors
+    E,
+    # F: pyflakes errors  
+    F,
+    # W: pycodestyle warnings
+    W,
+    # C: mccabe complexity
+    C
+
+# Directories and files to exclude from linting
+exclude = 
+    # Version control
+    .git,
+    __pycache__,
+    # Virtual environments
+    .venv,
+    venv,
+    env,
+    # Build directories
+    build,
+    dist,
+    *.egg-info,
+    # Test and migration directories
+    migrations,
+    # Node modules
+    node_modules,
+    # Coverage reports
+    htmlcov,
+    .coverage,
+    # IDE files
+    .vscode,
+    .idea,
+    # OS files
+    .DS_Store,
+    Thumbs.db,
+    # Specific files
+    setup.py,
+    manage.py
+
+# File patterns to include
+filename = 
+    *.py
+
+# Show source code for each error
+show-source = True
+
+# Show pep8 naming errors
+show-pep8 = True
+
+# Count the number of occurrences of each error/warning code
+count = True
+
+# Print total number of errors
+statistics = True
+
+# Specify the format for error messages
+format = %(path)s:%(row)d:%(col)d: %(code)s %(text)s
+
+# Per-file ignores (for specific files that need exceptions)
+per-file-ignores =
+    # Allow star imports in __init__.py files
+    __init__.py:F401,F403,
+    # Allow unused imports in test files
+    test_*.py:F401,F811,
+    # Allow unused variables in test fixtures
+    conftest.py:F401,F811,
+    # Allow long lines in migration files
+    migrations/*.py:E501,
+    # Allow star imports and unused imports in settings files
+    */settings/*.py:F401,F403,F405,
+    # Allow unused imports in main.py files (FastAPI dependencies)
+    main.py:F401,
+    # Allow long lines in generated files
+    *_pb2.py:E501,
+    # Configuration files can have unused imports
+    config.py:F401
+
+# Import order checking (requires flake8-import-order plugin)
+import-order-style = google
+application-import-names = services,lab_containers,tests
+
+# Docstring checking (requires flake8-docstrings plugin)
+docstring-convention = google
+
+# Type annotation checking (requires flake8-annotations plugin)
+suppress-none-returning = True
+
+# Plugin-specific configurations
+
+# flake8-bugbear
+extend-ignore = 
+    # B008: Do not perform function calls in argument defaults (useful for FastAPI)
+    B008,
+    # B904: Within an except clause, raise exceptions with raise ... from err
+    B904
+
+# flake8-bandit (security)
+# S101: Use of assert detected (useful in tests)
+# S311: Standard pseudo-random generators are not suitable for security/cryptographic purposes (sometimes OK)
+# S603: subprocess call - check for execution of untrusted input (handled case-by-case)
+# S607: Starting a process with a partial executable path (handled case-by-case)
+extend-ignore = S101,S311,S603,S607
+
+# Maximum line length for specific file types
+max-line-length-type-mapping = 
+    *.py:88,
+    *.pyi:88
+
+# Enable specific warnings
+enable-extensions = 
+    # pycodestyle extensions
+    E,
+    # pyflakes extensions  
+    F,
+    # mccabe extensions
+    C90
+
+# Treat these as errors (fail the build)
+stop-the-build-if-there-are-errors = True
+
+# Output format for CI/CD integration
+output-file = flake8-report.txt
+tee = True

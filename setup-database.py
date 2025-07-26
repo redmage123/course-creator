@@ -320,6 +320,71 @@ async def create_tables_from_schema():
     finally:
         await engine.dispose()
 
+async def run_migrations():
+    """Run database migrations from data/migrations/ directory"""
+    engine = create_async_engine(APP_URL, echo=False)
+    migrations_dir = Path(__file__).parent / "data" / "migrations"
+    
+    if not migrations_dir.exists():
+        print("📋 No migrations directory found, skipping migrations")
+        return
+    
+    try:
+        async with engine.begin() as conn:
+            # Create migrations tracking table
+            await conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS migration_history (
+                    id SERIAL PRIMARY KEY,
+                    migration_name VARCHAR(255) NOT NULL UNIQUE,
+                    executed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                )
+            """))
+            
+            # Get executed migrations
+            result = await conn.execute(text("SELECT migration_name FROM migration_history"))
+            executed_migrations = {row[0] for row in result.fetchall()}
+            
+            # Find migration files
+            migration_files = sorted([f for f in migrations_dir.glob("*.sql") if f.is_file()])
+            
+            for migration_file in migration_files:
+                migration_name = migration_file.name
+                
+                if migration_name in executed_migrations:
+                    print(f"⏭️  Skipping already executed migration: {migration_name}")
+                    continue
+                
+                print(f"🔄 Executing migration: {migration_name}")
+                
+                # Read and execute migration
+                with open(migration_file, 'r') as f:
+                    migration_sql = f.read()
+                
+                # Split by statements and execute individually
+                statements = [stmt.strip() for stmt in migration_sql.split(';') if stmt.strip()]
+                
+                for stmt in statements:
+                    if stmt and not stmt.startswith('--'):
+                        try:
+                            await conn.execute(text(stmt))
+                        except Exception as e:
+                            if "already exists" not in str(e).lower():
+                                print(f"⚠️  Warning in migration {migration_name}: {e}")
+                
+                # Record migration as executed
+                await conn.execute(text("""
+                    INSERT INTO migration_history (migration_name) 
+                    VALUES (:name) ON CONFLICT (migration_name) DO NOTHING
+                """), {"name": migration_name})
+                
+                print(f"✅ Completed migration: {migration_name}")
+                
+    except Exception as e:
+        print(f"❌ Migration failed: {e}")
+        raise
+    finally:
+        await engine.dispose()
+
 async def verify_tables():
     """Verify that tables were created successfully"""
     engine = create_async_engine(APP_URL, echo=False)
@@ -346,6 +411,13 @@ async def verify_tables():
             print(f"📊 Database verification:")
             print(f"   • Total tables: {count}")
             print(f"   • Tables created: {', '.join(tables)}")
+            
+            # Check for analytics tables specifically
+            analytics_tables = ['student_activities', 'lab_usage_metrics', 'quiz_performance', 'student_progress', 'learning_analytics']
+            found_analytics_tables = [t for t in tables if t in analytics_tables]
+            
+            if found_analytics_tables:
+                print(f"   • Analytics tables: {', '.join(found_analytics_tables)}")
             
             # Test a simple insert/select
             await conn.execute(text("""
@@ -425,6 +497,7 @@ async def main():
     try:
         await create_database()
         await create_tables()
+        await run_migrations()  # Run migrations after creating base tables
         await verify_tables()
         print("🎉 Database setup completed successfully!")
     except Exception as e:

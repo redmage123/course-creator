@@ -6,6 +6,7 @@
 import { CONFIG } from '../config.js';
 import { showNotification } from './notifications.js';
 import { ActivityTracker } from './activity-tracker.js';
+import { labLifecycleManager } from './lab-lifecycle.js';
 
 class AuthManager {
     constructor() {
@@ -100,8 +101,19 @@ class AuthManager {
                     this.currentUser = profile;
                     localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
                 } else {
-                    this.currentUser = { email: credentials.username };
+                    this.currentUser = { email: credentials.username, id: credentials.username };
                     localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+                }
+                
+                // Initialize lab lifecycle manager for students
+                if (this.currentUser.role === 'student') {
+                    try {
+                        await labLifecycleManager.initialize(this.currentUser);
+                        console.log('Lab lifecycle manager initialized for student');
+                    } catch (error) {
+                        console.error('Error initializing lab lifecycle manager:', error);
+                        // Don't fail login if lab manager fails
+                    }
                 }
                 
                 return { success: true, user: this.currentUser };
@@ -216,6 +228,14 @@ class AuthManager {
         
         // Stop activity tracking
         this.activityTracker.stop();
+        
+        // Clean up lab lifecycle manager
+        try {
+            await labLifecycleManager.cleanup();
+            console.log('Lab lifecycle manager cleaned up');
+        } catch (error) {
+            console.error('Error cleaning up lab lifecycle manager:', error);
+        }
         
         // Clear client-side data
         this.authToken = null;

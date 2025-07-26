@@ -134,3 +134,20 @@ simple_main.py
 # Test and validation files
 test-*.py
 validate-*.py
+
+# Test artifacts and reports
+test_report*.json
+analytics_test_report.json
+*_TEST_REPORT.md
+htmlcov/
+.coverage
+.pytest_cache/
+.tox/
+
+# Browser automation
+chromedriver
+geckodriver
+selenium-server-standalone-*.jar
+
+# Memory files
+memory/
