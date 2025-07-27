@@ -9,11 +9,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Set work directory
 WORKDIR /app
 
-# Install system dependencies for Docker management
+# Install system dependencies including Docker CLI
 RUN apt-get update && apt-get install -y \
     curl \
-    docker.io \
     build-essential \
+    docker.io \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies

@@ -16,7 +16,7 @@ class CourseBase(BaseModel):
     title: constr(min_length=1, max_length=255)
     description: str
     duration_hours: float = Field(gt=0)
-    level: str = Field(regex='^(beginner|intermediate|advanced)$')
+    level: str = Field(pattern='^(beginner|intermediate|advanced)$')
     price: float = Field(ge=0)
     is_published: bool = False
 
@@ -27,7 +27,7 @@ class CourseUpdate(BaseModel):
     title: Optional[constr(min_length=1, max_length=255)]
     description: Optional[str]
     duration_hours: Optional[float] = Field(gt=0)
-    level: Optional[str] = Field(regex='^(beginner|intermediate|advanced)$')
+    level: Optional[str] = Field(pattern='^(beginner|intermediate|advanced)$')
     price: Optional[float] = Field(ge=0)
     is_published: Optional[bool]
 
@@ -76,14 +76,14 @@ class CourseLessonResponse(CourseLessonBase, UUIDModel, TimestampedModel):
 class EnrollmentBase(BaseModel):
     user_id: UUID
     course_id: UUID
-    status: str = Field(regex='^(active|completed|cancelled)$')
+    status: str = Field(pattern='^(active|completed|cancelled)$')
     enrolled_at: datetime = Field(default_factory=datetime.utcnow)
 
 class EnrollmentCreate(EnrollmentBase):
     pass
 
 class EnrollmentUpdate(BaseModel):
-    status: Optional[str] = Field(regex='^(active|completed|cancelled)$')
+    status: Optional[str] = Field(pattern='^(active|completed|cancelled)$')
 
 class EnrollmentResponse(EnrollmentBase, UUIDModel, TimestampedModel):
     pass
@@ -92,7 +92,7 @@ class EnrollmentResponse(EnrollmentBase, UUIDModel, TimestampedModel):
 class ProgressBase(BaseModel):
     enrollment_id: UUID
     lesson_id: UUID
-    status: str = Field(regex='^(not_started|in_progress|completed)$')
+    status: str = Field(pattern='^(not_started|in_progress|completed)$')
     completion_date: Optional[datetime]
     time_spent_minutes: int = Field(ge=0)
 
@@ -100,7 +100,7 @@ class ProgressCreate(ProgressBase):
     pass
 
 class ProgressUpdate(BaseModel):
-    status: Optional[str] = Field(regex='^(not_started|in_progress|completed)$')
+    status: Optional[str] = Field(pattern='^(not_started|in_progress|completed)$')
     completion_date: Optional[datetime]
     time_spent_minutes: Optional[int] = Field(ge=0)
 

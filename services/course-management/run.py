@@ -3,14 +3,7 @@
 Startup script for course-management service
 """
 
-import uvicorn
-from config import config
+from main import main
 
 if __name__ == "__main__":
-    uvicorn.run(
-        "main:app",
-        host=config.service.host,
-        port=config.service.port,
-        reload=config.service.debug,
-        log_level=config.service.log_level.lower()
-    )
+    main()

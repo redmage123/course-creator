@@ -1,6 +1,13 @@
 // Student Dashboard JavaScript
 import { authManager } from './modules/auth.js';
 import { labLifecycleManager } from './modules/lab-lifecycle.js';
+import StudentFileManager from './modules/student-file-manager.js';
+
+// Import feedback manager
+let feedbackManager = null;
+import('./modules/feedback-manager.js').then(module => {
+    feedbackManager = window.feedbackManager;
+});
 
 let enrolledCourses = [];
 let labEnvironments = [];
@@ -267,6 +274,9 @@ function displayCurrentCourses() {
                 <button class="btn btn-secondary" onclick="openLabEnvironment('${enrollment.course_id}')">
                     <i class="fas fa-flask"></i> Lab
                 </button>
+                <button class="btn btn-outline feedback-btn" onclick="openCourseFeedbackForm('${enrollment.course_id}', 'Course ${enrollment.course_id}')">
+                    <i class="fas fa-comment"></i> Feedback
+                </button>
             </div>
         </div>
     `).join('');
@@ -340,6 +350,9 @@ function displayStudentCourses() {
                 </button>
                 <button class="btn btn-success" onclick="openLabEnvironment('${enrollment.course_id}')">
                     <i class="fas fa-flask"></i> Access Lab
+                </button>
+                <button class="btn btn-secondary feedback-btn" onclick="openCourseFeedbackForm('${enrollment.course_id}', 'Course ${enrollment.course_id}')">
+                    <i class="fas fa-comment"></i> Give Feedback
                 </button>
             </div>
         </div>
@@ -593,6 +606,9 @@ function displayFilteredCourses(courses) {
                 </button>
                 <button class="btn btn-success" onclick="openLabEnvironment('${enrollment.course_id}')">
                     <i class="fas fa-flask"></i> Access Lab
+                </button>
+                <button class="btn btn-secondary feedback-btn" onclick="openCourseFeedbackForm('${enrollment.course_id}', 'Course ${enrollment.course_id}')">
+                    <i class="fas fa-comment"></i> Give Feedback
                 </button>
             </div>
         </div>
@@ -1144,8 +1160,326 @@ function updateLabStatusIndicators() {
 // Periodically update lab status indicators
 setInterval(updateLabStatusIndicators, 30000); // Update every 30 seconds
 
+// Lab File Management Functions
+let currentLabFileManager = null;
+
+async function refreshLabFiles() {
+    const labId = getCurrentLabId();
+    if (!labId) {
+        showLabFileError('No active lab session found');
+        return;
+    }
+    
+    showLabFileLoading();
+    
+    try {
+        const response = await fetch(`http://localhost:8006/labs/${labId}/files`);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        displayLabFiles(data.files || []);
+        
+    } catch (error) {
+        console.error('Error loading lab files:', error);
+        showLabFileError('Failed to load files: ' + error.message);
+    }
+}
+
+function displayLabFiles(files) {
+    const contentEl = document.getElementById('labFilesContent');
+    
+    if (files.length === 0) {
+        contentEl.innerHTML = `
+            <div class="no-lab-message">
+                <i class="fas fa-folder-open"></i>
+                <p>No files found in your workspace</p>
+                <p>Create some files in your lab environment and refresh to see them here</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const filesHTML = files.map(file => `
+        <div class="lab-file-item">
+            <div class="lab-file-info">
+                <i class="fas fa-file${getFileIcon(file.name)}"></i>
+                <div class="lab-file-details">
+                    <div class="lab-file-name">${escapeHtml(file.name)}</div>
+                    <div class="lab-file-metadata">
+                        ${formatFileSize(file.size)} • Modified: ${formatDate(file.modified)}
+                    </div>
+                </div>
+            </div>
+            <button class="lab-file-download" onclick="downloadLabFile('${escapeHtml(file.name)}')" title="Download ${escapeHtml(file.name)}">
+                <i class="fas fa-download"></i>
+            </button>
+        </div>
+    `).join('');
+    
+    contentEl.innerHTML = filesHTML;
+}
+
+async function downloadLabFile(filename) {
+    const labId = getCurrentLabId();
+    if (!labId || !filename) {
+        showLabFileError('Missing lab ID or filename');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`http://localhost:8006/labs/${labId}/download/${encodeURIComponent(filename)}`);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
+        console.log(`Downloaded: ${filename}`);
+        
+    } catch (error) {
+        console.error('Error downloading file:', error);
+        showLabFileError('Failed to download file: ' + error.message);
+    }
+}
+
+async function downloadAllFiles() {
+    const labId = getCurrentLabId();
+    if (!labId) {
+        showLabFileError('No active lab session found');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`http://localhost:8006/labs/${labId}/download-workspace`);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `workspace-${labId}-${new Date().toISOString().split('T')[0]}.zip`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
+        console.log('Workspace downloaded successfully!');
+        
+    } catch (error) {
+        console.error('Error downloading workspace:', error);
+        showLabFileError('Failed to download workspace: ' + error.message);
+    }
+}
+
+function getCurrentLabId() {
+    // Try to get from URL parameters or local storage
+    const urlParams = new URLSearchParams(window.location.search);
+    let labId = urlParams.get('lab_id');
+    
+    if (!labId) {
+        labId = localStorage.getItem('currentLabId');
+    }
+    
+    // Try to extract from existing lab status
+    if (!labId && currentUser) {
+        const labStatus = getLabStatus(currentUser.id);
+        if (labStatus && labStatus !== 'not_created') {
+            // Try to construct lab ID based on user and course
+            labId = `lab-${currentUser.id}-course1-${Date.now()}`.substring(0, 50);
+        }
+    }
+    
+    return labId;
+}
+
+function showLabFileLoading() {
+    const contentEl = document.getElementById('labFilesContent');
+    contentEl.innerHTML = `
+        <div class="lab-files-loading">
+            <div class="spinner"></div>
+            <p>Loading files...</p>
+        </div>
+    `;
+}
+
+function showLabFileError(message) {
+    const contentEl = document.getElementById('labFilesContent');
+    contentEl.innerHTML = `
+        <div class="no-lab-message">
+            <i class="fas fa-exclamation-triangle" style="color: #dc2626;"></i>
+            <p style="color: #dc2626;">${message}</p>
+            <button class="btn btn-primary" onclick="refreshLabFiles()">
+                <i class="fas fa-retry"></i> Retry
+            </button>
+        </div>
+    `;
+}
+
+function getFileIcon(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    const iconMap = {
+        'py': '-code', 'js': '-code', 'html': '-code', 'css': '-code', 'json': '-code',
+        'md': '-alt', 'txt': '-alt', 'pdf': '-pdf', 'zip': '-archive',
+        'jpg': '-image', 'jpeg': '-image', 'png': '-image', 'gif': '-image'
+    };
+    return iconMap[ext] || '';
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function formatDate(dateString) {
+    if (!dateString) return 'Unknown';
+    const date = new Date(dateString);
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Feedback form functions
+function openCourseFeedbackForm(courseId, courseName) {
+    if (!feedbackManager) {
+        showNotification('Feedback system is still loading. Please try again.', 'warning');
+        return;
+    }
+    
+    // Create modal overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'feedback-overlay';
+    overlay.id = 'feedbackOverlay';
+    
+    // Create modal content
+    const modal = document.createElement('div');
+    modal.className = 'feedback-modal';
+    modal.innerHTML = feedbackManager.createCourseFeedbackForm(courseId, courseName);
+    
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    
+    // Add event listener for form submission
+    const form = document.getElementById('courseFeedbackForm');
+    if (form) {
+        form.addEventListener('submit', feedbackManager.handleCourseFeedbackSubmit.bind(feedbackManager));
+    }
+    
+    // Close on overlay click
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+            closeFeedbackForm();
+        }
+    });
+}
+
+function closeFeedbackForm() {
+    const overlay = document.getElementById('feedbackOverlay');
+    if (overlay) {
+        overlay.remove();
+    }
+}
+
+function openStudentFeedbackView(studentId, courseId) {
+    if (!feedbackManager) {
+        showNotification('Feedback system is still loading. Please try again.', 'warning');
+        return;
+    }
+    
+    // This would show feedback received from instructors
+    feedbackManager.getStudentFeedback(studentId, courseId)
+        .then(feedback => {
+            // Display feedback in a modal or dedicated section
+            showStudentFeedbackModal(feedback);
+        })
+        .catch(error => {
+            console.error('Error loading student feedback:', error);
+            showNotification('Error loading feedback: ' + error.message, 'error');
+        });
+}
+
+function showStudentFeedbackModal(feedback) {
+    // Create modal to display instructor feedback to student
+    const overlay = document.createElement('div');
+    overlay.className = 'feedback-overlay';
+    overlay.id = 'studentFeedbackOverlay';
+    
+    const modal = document.createElement('div');
+    modal.className = 'feedback-modal';
+    modal.innerHTML = `
+        <div class="feedback-form-container">
+            <div class="feedback-form-header">
+                <h3>Instructor Feedback</h3>
+                <button class="close-btn" onclick="closeStudentFeedbackView()">×</button>
+            </div>
+            <div class="feedback-content">
+                ${feedback.length > 0 ? feedback.map(fb => `
+                    <div class="feedback-item">
+                        <div class="feedback-meta">
+                            <strong>From:</strong> ${fb.instructor_name || 'Instructor'}<br>
+                            <strong>Date:</strong> ${new Date(fb.created_at).toLocaleDateString()}
+                        </div>
+                        <div class="feedback-ratings">
+                            ${fb.overall_performance ? `<p><strong>Overall Performance:</strong> ${fb.overall_performance}/5 stars</p>` : ''}
+                            ${fb.participation ? `<p><strong>Participation:</strong> ${fb.participation}/5 stars</p>` : ''}
+                            ${fb.lab_performance ? `<p><strong>Lab Performance:</strong> ${fb.lab_performance}/5 stars</p>` : ''}
+                        </div>
+                        <div class="feedback-text">
+                            ${fb.strengths ? `<p><strong>Strengths:</strong> ${fb.strengths}</p>` : ''}
+                            ${fb.areas_for_improvement ? `<p><strong>Areas for Improvement:</strong> ${fb.areas_for_improvement}</p>` : ''}
+                            ${fb.specific_recommendations ? `<p><strong>Recommendations:</strong> ${fb.specific_recommendations}</p>` : ''}
+                        </div>
+                    </div>
+                `).join('') : '<p>No feedback available yet.</p>'}
+            </div>
+        </div>
+    `;
+    
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    
+    // Close on overlay click
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+            closeStudentFeedbackView();
+        }
+    });
+}
+
+function closeStudentFeedbackView() {
+    const overlay = document.getElementById('studentFeedbackOverlay');
+    if (overlay) {
+        overlay.remove();
+    }
+}
+
 // Make functions globally available
 window.logout = logout;
 window.openLabEnvironment = openLabEnvironment;
 window.getLabStatus = getLabStatus;
 window.isLabReady = isLabReady;
+window.refreshLabFiles = refreshLabFiles;
+window.downloadLabFile = downloadLabFile;
+window.downloadAllFiles = downloadAllFiles;
+window.openCourseFeedbackForm = openCourseFeedbackForm;
+window.closeFeedbackForm = closeFeedbackForm;
+window.openStudentFeedbackView = openStudentFeedbackView;
+window.closeStudentFeedbackView = closeStudentFeedbackView;

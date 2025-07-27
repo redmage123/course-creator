@@ -337,6 +337,148 @@
             50% { opacity: 0.5; }
         }
         
+        /* File Management Styles */
+        .file-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .control-btn {
+            background: #3e3e42;
+            color: #cccccc;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .control-btn:hover {
+            background: #4e4e52;
+            color: #ffffff;
+        }
+        
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .files-panel {
+            grid-column: 3;
+            grid-row: 2;
+        }
+        
+        .files-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            font-size: 0.9em;
+        }
+        
+        .file-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #3e3e42;
+        }
+        
+        .file-list-header h6 {
+            margin: 0;
+            color: #ffffff;
+            font-size: 0.9em;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #2d2d30;
+        }
+        
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .file-info i {
+            color: #007acc;
+            font-size: 1.1em;
+            width: 16px;
+            text-align: center;
+        }
+        
+        .file-details {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .file-name {
+            font-weight: 500;
+            color: #ffffff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .file-metadata {
+            font-size: 0.75em;
+            color: #888888;
+            margin-top: 2px;
+        }
+        
+        .download-file-btn {
+            background: transparent;
+            color: #007acc;
+            border: 1px solid #007acc;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.2s;
+        }
+        
+        .download-file-btn:hover {
+            background: #007acc;
+            color: #ffffff;
+        }
+        
+        .no-files-message {
+            text-align: center;
+            color: #888888;
+            padding: 40px 20px;
+        }
+        
+        .no-files-message i {
+            font-size: 3em;
+            margin-bottom: 15px;
+            display: block;
+            color: #555555;
+        }
+        
+        .no-files-message p {
+            margin: 5px 0;
+        }
+        
+        .file-manager-notification {
+            max-width: 350px;
+            margin-bottom: 10px;
+        }
+        
         /* Responsive design */
         @media (max-width: 1024px) {
             .main-layout {
@@ -405,6 +547,14 @@
                 <button class="toggle-btn" id="exerciseToggle">Exercises</button>
                 <button class="toggle-btn" id="helpToggle">Help</button>
                 <button class="toggle-btn" id="outputToggle">Output</button>
+                <button class="toggle-btn" id="filesToggle">My Files</button>
+            </div>
+            
+            <!-- File Management Controls -->
+            <div class="file-controls">
+                <button id="downloadWorkspaceBtn" class="control-btn" title="Download All Files as ZIP">
+                    <i class="fas fa-download"></i>
+                </button>
             </div>
         </div>
     </div>
@@ -538,6 +688,26 @@
                 Ready for your first exercise!
             </div>
         </div>
+
+        <!-- Files Panel -->
+        <div class="panel files-panel panel-hidden" id="filesPanel">
+            <div class="panel-header">
+                My Files
+                <button class="fullscreen-btn" onclick="toggleFullscreen('files')">⛶</button>
+            </div>
+            <div class="files-content" id="filesContent">
+                <div class="file-loading" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Loading files...</p>
+                </div>
+                <div id="studentFileList">
+                    <div class="no-files-message">
+                        <i class="fas fa-folder-open"></i>
+                        <p>Click "Refresh" to load your files</p>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -587,6 +757,15 @@
                 
                 document.getElementById('outputToggle').addEventListener('click', () => {
                     this.togglePanel('output');
+                });
+                
+                document.getElementById('filesToggle').addEventListener('click', () => {
+                    this.togglePanel('files');
+                });
+                
+                // File management controls
+                document.getElementById('downloadWorkspaceBtn').addEventListener('click', () => {
+                    this.downloadWorkspace();
                 });
                 
                 // Exercise selection  
@@ -734,6 +913,11 @@
                 if (panel.classList.contains('panel-hidden')) {
                     panel.classList.remove('panel-hidden');
                     toggle.classList.remove('inactive');
+                    
+                    // Auto-load files when files panel is shown
+                    if (panelType === 'files') {
+                        this.loadFileList();
+                    }
                 } else {
                     panel.classList.add('panel-hidden');
                     toggle.classList.add('inactive');
@@ -747,13 +931,17 @@
                 const exerciseHidden = document.getElementById('exercisePanel').classList.contains('panel-hidden');
                 const helpHidden = document.getElementById('helpPanel').classList.contains('panel-hidden');
                 const outputHidden = document.getElementById('outputPanel').classList.contains('panel-hidden');
+                const filesHidden = document.getElementById('filesPanel').classList.contains('panel-hidden');
+                
+                // Count visible right panels (help/output/files)
+                const rightPanels = [helpHidden, outputHidden, filesHidden].filter(hidden => !hidden).length;
                 
                 let gridCols = '';
-                if (!exerciseHidden && !helpHidden && !outputHidden) {
+                if (!exerciseHidden && rightPanels > 0) {
                     gridCols = '300px 1fr 300px';
-                } else if (!exerciseHidden && (helpHidden || outputHidden)) {
+                } else if (!exerciseHidden && rightPanels === 0) {
                     gridCols = '300px 1fr';
-                } else if (exerciseHidden && (!helpHidden || !outputHidden)) {
+                } else if (exerciseHidden && rightPanels > 0) {
                     gridCols = '1fr 300px';
                 } else {
                     gridCols = '1fr';
@@ -834,6 +1022,197 @@
                 setInterval(() => {
                     this.checkIDEStatus();
                 }, 30000);
+            }
+            
+            // File Management Methods
+            async loadFileList() {
+                const labId = this.getLabId();
+                if (!labId) {
+                    this.showFileError('Lab ID not found');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch(`http://localhost:8006/labs/${labId}/files`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    this.displayFileList(data.files || []);
+                    
+                } catch (error) {
+                    console.error('Error loading files:', error);
+                    this.showFileError('Failed to load files: ' + error.message);
+                }
+            }
+            
+            displayFileList(files) {
+                const fileListContainer = document.getElementById('studentFileList');
+                
+                if (files.length === 0) {
+                    fileListContainer.innerHTML = `
+                        <div class="no-files-message">
+                            <i class="fas fa-folder-open"></i>
+                            <p>No files found in your workspace</p>
+                            <p class="text-muted">Create some files in your lab environment and refresh to see them here</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const fileListHTML = files.map(file => `
+                    <div class="file-item">
+                        <div class="file-info">
+                            <i class="fas fa-file${this.getFileIcon(file.name)}"></i>
+                            <div class="file-details">
+                                <div class="file-name">${this.escapeHtml(file.name)}</div>
+                                <div class="file-metadata">
+                                    ${this.formatFileSize(file.size)} • Modified: ${this.formatDate(file.modified)}
+                                </div>
+                            </div>
+                        </div>
+                        <button class="download-file-btn" onclick="window.multiIDELab.downloadFile('${this.escapeHtml(file.name)}')" title="Download ${this.escapeHtml(file.name)}">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
+                `).join('');
+                
+                fileListContainer.innerHTML = `
+                    <div class="file-list-header">
+                        <h6>Your Files (${files.length})</h6>
+                        <button onclick="window.multiIDELab.loadFileList()" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                    <div class="file-list-content">
+                        ${fileListHTML}
+                    </div>
+                `;
+            }
+            
+            async downloadFile(filename) {
+                const labId = this.getLabId();
+                if (!labId || !filename) {
+                    this.showFileError('Missing lab ID or filename');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch(`http://localhost:8006/labs/${labId}/download/${encodeURIComponent(filename)}`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url);
+                    
+                    this.logOutput(`Downloaded: ${filename}`);
+                    
+                } catch (error) {
+                    console.error('Error downloading file:', error);
+                    this.showFileError('Failed to download file: ' + error.message);
+                }
+            }
+            
+            async downloadWorkspace() {
+                const labId = this.getLabId();
+                if (!labId) {
+                    this.showFileError('Lab ID not found');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch(`http://localhost:8006/labs/${labId}/download-workspace`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `workspace-${labId}-${new Date().toISOString().split('T')[0]}.zip`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url);
+                    
+                    this.logOutput('Workspace downloaded successfully!');
+                    
+                } catch (error) {
+                    console.error('Error downloading workspace:', error);
+                    this.showFileError('Failed to download workspace: ' + error.message);
+                }
+            }
+            
+            getLabId() {
+                // Try to extract lab ID from URL or other sources
+                const urlParams = new URLSearchParams(window.location.search);
+                let labId = urlParams.get('lab_id');
+                
+                if (!labId && window.location.hash) {
+                    const match = window.location.hash.match(/lab_id=([^&]+)/);
+                    if (match) labId = match[1];
+                }
+                
+                // Fallback: try to get from global variable
+                if (!labId && window.currentLabId) {
+                    labId = window.currentLabId;
+                }
+                
+                return labId;
+            }
+            
+            getFileIcon(filename) {
+                const ext = filename.split('.').pop().toLowerCase();
+                const iconMap = {
+                    'py': '-code', 'js': '-code', 'html': '-code', 'css': '-code', 'json': '-code',
+                    'md': '-alt', 'txt': '-alt', 'pdf': '-pdf', 'zip': '-archive',
+                    'jpg': '-image', 'jpeg': '-image', 'png': '-image', 'gif': '-image'
+                };
+                return iconMap[ext] || '';
+            }
+            
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 B';
+                const k = 1024;
+                const sizes = ['B', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+            }
+            
+            formatDate(dateString) {
+                if (!dateString) return 'Unknown';
+                const date = new Date(dateString);
+                return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            }
+            
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+            
+            showFileError(message) {
+                const fileListContainer = document.getElementById('studentFileList');
+                fileListContainer.innerHTML = `
+                    <div class="no-files-message">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p style="color: #dc3545;">${message}</p>
+                        <button onclick="window.multiIDELab.loadFileList()" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-retry"></i> Retry
+                        </button>
+                    </div>
+                `;
+                this.logOutput('File error: ' + message);
             }
         }
         

@@ -445,14 +445,8 @@ def main(cfg: DictConfig) -> None:
         """FastAPI lifespan event handler"""
         global db_manager
         
-        # Startup
-        db_password = os.getenv('DB_PASSWORD', '')
-        
-        # Use the correct database configuration on port 5433
-        if db_password:
-            database_url = f"postgresql://course_user:{db_password}@localhost:5433/course_creator"
-        else:
-            raise ValueError("DB_PASSWORD environment variable is required")
+        # Startup - Use Hydra database configuration
+        database_url = cfg.database.url
         db_manager = DatabaseManager(database_url)
         await db_manager.connect()
         

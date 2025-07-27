@@ -21,7 +21,7 @@ cors:
     - "http://${oc.env:HOST_IP,176.9.99.103}:8004"
 
 database:
-  url: postgresql+asyncpg://course_user:${DB_PASSWORD}@localhost:5433/course_creator
+  url: postgresql://${oc.env:DB_USER,postgres}:${oc.env:DB_PASSWORD,postgres_password}@${oc.env:DB_HOST,postgres}:${oc.env:DB_PORT,5432}/${oc.env:DB_NAME,course_creator}
 
 jwt:
   secret_key: ${oc.env:JWT_SECRET_KEY,"your-secret-key-here-change-in-production"}

@@ -15,6 +15,8 @@ A comprehensive web-based platform for creating, managing, and delivering intera
 - **Comprehensive Student Analytics**: Real-time tracking of student progress, lab usage, quiz performance, and engagement metrics with interactive dashboards
 - **Multi-Format Export**: Export content to PowerPoint, PDF, Excel, SCORM, ZIP formats
 - **Instructor Lab Environment**: Create personal lab environments for course development and testing
+- **Bi-Directional Feedback System**: Provide detailed student assessments, receive course feedback, and manage feedback analytics
+- **Student Assessment Dashboard**: Track student progress with structured evaluation forms and personalized recommendations
 
 ### For Students
 - **Multi-IDE Lab Environment**: Choose from VSCode Server, JupyterLab, IntelliJ IDEA, or Terminal
@@ -26,6 +28,8 @@ A comprehensive web-based platform for creating, managing, and delivering intera
 - **Interactive Quiz System**: Take quizzes with immediate feedback, explanations, and progress tracking
 - **Seamless Authentication**: Integrated login/logout with automatic lab session management
 - **Secure Isolation**: Each student gets their own completely isolated environment
+- **Course Feedback System**: Provide structured feedback on courses, instructors, and content quality with star ratings and detailed comments
+- **Personal Feedback History**: View all received instructor feedback and track personal progress assessments
 
 ### For Administrators
 - **User Management**: Manage instructor and student accounts with RBAC
@@ -34,7 +38,7 @@ A comprehensive web-based platform for creating, managing, and delivering intera
 
 ## 🏗️ Architecture
 
-The platform follows a microservices architecture with 7 core backend services:
+The platform follows a microservices architecture with 7 core backend services (including comprehensive feedback system):
 
 ```
 course-creator/
@@ -48,9 +52,9 @@ course-creator/
 │   ├── user-management/        # Authentication & user profiles (Port 8000)
 │   ├── course-generator/       # AI content generation (Port 8001)
 │   ├── content-storage/        # File storage & versioning (Port 8003)
-│   ├── course-management/      # Course CRUD operations (Port 8004)
+│   ├── course-management/      # Course CRUD operations + Bi-directional Feedback System (Port 8004)
 │   ├── content-management/     # Upload/download & export (Port 8005)
-│   └── analytics/              # Student analytics & progress tracking (Port 8007)
+│   └── analytics/              # Student analytics, progress tracking & PDF reports (Port 8007)
 ├── lab-containers/             # Individual student lab container service (Port 8006)
 │   ├── main.py                 # FastAPI lab manager with Docker and multi-IDE integration
 │   ├── Dockerfile              # Lab manager container
@@ -375,6 +379,10 @@ python run_lab_tests.py          # All lab container tests with reports
 python run_lab_tests.py --suite frontend  # Frontend lab integration tests
 python run_lab_tests.py --suite e2e       # E2E lab system tests
 
+# Feedback system tests (comprehensive)
+python test_feedback_final.py    # Complete feedback system validation (6/6 tests at 100%)
+python test_feedback_system.py   # Extended feedback component tests (7/7 tests)
+
 # Run tests with coverage (80% minimum required)
 python -m pytest --cov=services --cov-report=html
 
@@ -424,11 +432,19 @@ GET /quiz/course/{course_id}
 
 **Course Management (Port 8004)**
 ```http
+# Course CRUD
 GET /courses
 POST /courses
 GET /courses/{course_id}
 PUT /courses/{course_id}
 DELETE /courses/{course_id}
+
+# Bi-directional Feedback System
+POST /feedback/course                    # Submit course feedback (student → course)
+GET  /feedback/course/{course_id}        # Get course feedback summary
+POST /feedback/student                   # Submit student assessment (instructor → student)
+GET  /feedback/student/{user_id}         # Get student feedback history
+GET  /feedback/analytics/{course_id}     # Course feedback analytics
 ```
 
 **Content Storage (Port 8003)**
@@ -605,19 +621,43 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Common Issues:**
 
-1. **Services won't start**
+1. **Services won't start** (Updated for v2.1)
    ```bash
-   # Check service status
-   ./app-control.sh status
+   # Check service status (Docker deployment)
+   docker ps --format "table {{.Names}}\t{{.Status}}"
    
    # Check logs
-   ./app-control.sh logs <service>
+   docker logs <service-name> --tail 20
    
-   # Restart services
+   # Check specific service health
+   curl -s http://localhost:8000/health  # User Management
+   curl -s http://localhost:8004/health  # Course Management (with feedback)
+   curl -s http://localhost:3000/health  # Frontend
+   
+   # Restart services (Docker)
+   docker compose restart
+   
+   # For native deployment
+   ./app-control.sh status
+   ./app-control.sh logs <service>
    ./app-control.sh restart
    ```
 
-2. **Database connection errors**
+2. **Pydantic version compatibility** (Resolved in v2.1)
+   ```bash
+   # If you encounter 'regex' is removed error
+   # This has been fixed across all services
+   # All Field(regex=...) updated to Field(pattern=...)
+   ```
+
+3. **Frontend health check fails** (Resolved in v2.1)
+   ```bash
+   # Health check now uses correct IPv4 address
+   # Updated from localhost to 127.0.0.1 in docker-compose.yml
+   # All services now report healthy status
+   ```
+
+4. **Database connection errors**
    ```bash
    # Check PostgreSQL status
    sudo systemctl status postgresql
@@ -629,7 +669,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
    source .cc_env && echo $DB_PASSWORD
    ```
 
-3. **AI services not working**
+5. **AI services not working**
    ```bash
    # Check API keys in .cc_env
    grep ANTHROPIC_API_KEY .cc_env
@@ -655,6 +695,7 @@ done
 **✅ Completed Features:**
 - Core microservices architecture with 7 services
 - AI-powered content generation with template support
+- **Complete Bi-Directional Feedback System** - Students rate courses, instructors assess students with comprehensive analytics
 - **Multi-IDE Lab Containers** - VSCode Server, JupyterLab, IntelliJ IDEA, and Terminal support
 - **Individual Docker Lab Containers** - Per-student isolated environments with multi-IDE capabilities
 - **Seamless IDE Switching** - Change development environments without losing work
@@ -668,9 +709,10 @@ done
 - User management with RBAC and secure authentication
 - Database persistence with PostgreSQL (single shared database)
 - Full Docker Compose orchestration
-- Comprehensive test suite (Unit, Integration, E2E, Frontend) with 22+ passing tests
+- Comprehensive test suite (Unit, Integration, E2E, Frontend, Feedback) with 30+ passing tests at 100%
 - CI/CD pipeline with security scanning and automated deployment
 - MCP integration for Claude Desktop
+- Student file download capabilities with individual and bulk ZIP exports
 
 **🔄 In Progress:**
 - Mobile responsiveness improvements
@@ -689,8 +731,8 @@ done
 
 **Project Status**: Production Ready with Multi-IDE Lab Container System  
 **Version**: 2.1.0  
-**Last Updated**: 2025-07-26  
-**New in v2.1**: Multi-IDE support (VSCode, Jupyter, IntelliJ), seamless IDE switching, enhanced resource management  
+**Last Updated**: 2025-07-27  
+**New in v2.1**: Complete bi-directional feedback system, multi-IDE support (VSCode, Jupyter, IntelliJ), seamless IDE switching, enhanced resource management  
 **Previous v2.0**: Individual Docker lab containers, automatic lifecycle management, instructor controls, comprehensive testing
 
 For detailed development information, see [CLAUDE.md](CLAUDE.md) for comprehensive setup and development instructions.

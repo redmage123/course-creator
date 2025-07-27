@@ -16,8 +16,10 @@ from pydantic import BaseModel, Field
 import json
 import os
 from pathlib import Path
+import hydra
+from omegaconf import DictConfig, OmegaConf
 
-# Configure logging
+# Configure logging - will be updated from Hydra config
 structlog.configure(
     processors=[
         structlog.stdlib.filter_by_level,
@@ -39,6 +41,9 @@ structlog.configure(
 logger = structlog.get_logger()
 security = HTTPBearer()
 
+# Global configuration
+cfg: DictConfig = None
+
 # Initialize FastAPI app
 app = FastAPI(
     title="Student Analytics Service",
@@ -46,10 +51,10 @@ app = FastAPI(
     version="2.0.0"
 )
 
-# CORS middleware
+# CORS middleware - will be configured from Hydra config
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Will be updated from config
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -158,17 +163,13 @@ async def init_db():
     """Initialize database connection pool"""
     global db_pool
     
-    # Use shared database configuration - same as other services
-    db_config = {
-        'host': os.getenv('DB_HOST', 'localhost'),
-        'port': int(os.getenv('DB_PORT', 5432)),
-        'database': os.getenv('DB_NAME', 'course_creator'),
-        'user': os.getenv('DB_USER', 'postgres'),
-        'password': os.getenv('DB_PASSWORD', 'postgres_password')
-    }
-    
+    # Use Hydra configuration for database connection
     try:
-        db_pool = await asyncpg.create_pool(**db_config, min_size=5, max_size=20)
+        db_pool = await asyncpg.create_pool(
+            cfg.database.url,
+            min_size=5,
+            max_size=20
+        )
         logger.info("Analytics service connected to shared course creator database")
         
         # Check if analytics tables exist (they should be created via migrations)
@@ -204,6 +205,15 @@ async def check_analytics_tables():
 @app.on_event("startup")
 async def startup():
     await init_db()
+    
+    # Initialize PDF routes after database is connected
+    try:
+        import pdf_endpoints
+        pdf_endpoints.initialize_pdf_routes(app, db_pool, get_current_user)
+        await pdf_endpoints.initialize_pdf_generator()
+        logger.info("PDF endpoints and generator initialized successfully")
+    except Exception as e:
+        logger.error(f"Error initializing PDF functionality: {e}")
 
 # Shutdown event
 @app.on_event("shutdown")
@@ -241,6 +251,36 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         "email": "instructor@example.com"
     }
 
-if __name__ == "__main__":
+@hydra.main(version_base=None, config_path="conf", config_name="config")
+def main(config: DictConfig) -> None:
+    """Main function with Hydra configuration"""
+    global cfg
+    cfg = config
+    
+    # Update CORS origins from config
+    if hasattr(cfg, 'cors') and hasattr(cfg.cors, 'origins'):
+        # Update CORS middleware with configured origins
+        for middleware in app.user_middleware:
+            if middleware.cls == CORSMiddleware:
+                middleware.options['allow_origins'] = cfg.cors.origins
+                break
+    
+    logger.info(f"Starting {cfg.service.name} service on {cfg.service.host}:{cfg.service.port}")
+    
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8007)
+    uvicorn.run(
+        app, 
+        host=cfg.service.host, 
+        port=cfg.service.port,
+        log_level=cfg.logging.level.lower() if hasattr(cfg, 'logging') else "info"
+    )
+
+# Import analytics endpoints
+try:
+    import analytics_endpoints
+    logger.info("Analytics endpoints loaded successfully")
+except ImportError as e:
+    logger.warning(f"Could not import analytics endpoints: {e}")
+
+if __name__ == "__main__":
+    main()

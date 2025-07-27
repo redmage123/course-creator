@@ -16,7 +16,11 @@ cors:
     - "http://localhost:8004"
 
 database:
-  url: postgresql://course_user:c0urs3:atao12e@localhost:5433/course_creator
+  host: ${oc.env:DB_HOST,postgres}
+  port: ${oc.env:DB_PORT,5432}
+  name: ${oc.env:DB_NAME,course_creator}
+  username: ${oc.env:DB_USER,postgres}
+  password: ${oc.env:DB_PASSWORD,postgres_password}
 
 storage:
   type: local

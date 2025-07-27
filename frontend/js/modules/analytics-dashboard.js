@@ -62,6 +62,14 @@ class AnalyticsDashboard {
             });
         }
 
+        // PDF Report button
+        const pdfReportBtn = document.getElementById('downloadPDFReportBtn');
+        if (pdfReportBtn) {
+            pdfReportBtn.addEventListener('click', () => {
+                this.downloadPDFReport();
+            });
+        }
+
         // Refresh button
         const refreshBtn = document.getElementById('refreshAnalyticsBtn');
         if (refreshBtn) {
@@ -662,6 +670,189 @@ class AnalyticsDashboard {
             setTimeout(() => {
                 successEl.style.display = 'none';
             }, 3000);
+        }
+    }
+
+    async downloadPDFReport() {
+        try {
+            if (!this.currentCourse) {
+                this.showError('Please select a course first');
+                return;
+            }
+
+            this.showLoading('Generating PDF report...');
+
+            // Get date range from UI
+            const timeRange = this.getSelectedTimeRange();
+            
+            // Preview the report data first
+            await this.previewReportData();
+
+            // Construct PDF download URL
+            const params = new URLSearchParams();
+            if (timeRange.startDate) {
+                params.append('start_date', timeRange.startDate);
+            }
+            if (timeRange.endDate) {
+                params.append('end_date', timeRange.endDate);
+            }
+
+            const url = `${this.analyticsAPI}/analytics/reports/course/${this.currentCourse}/pdf?${params}`;
+
+            // Create download link
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `analytics_report_${this.currentCourse}_${new Date().toISOString().split('T')[0]}.pdf`;
+            
+            // Add authorization header by using fetch and blob
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            
+            link.href = downloadUrl;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Clean up
+            window.URL.revokeObjectURL(downloadUrl);
+
+            this.hideLoading();
+            this.showSuccess('PDF report downloaded successfully!');
+
+        } catch (error) {
+            console.error('Error downloading PDF report:', error);
+            this.showError('Failed to download PDF report: ' + error.message);
+            this.hideLoading();
+        }
+    }
+
+    async previewReportData() {
+        try {
+            const timeRange = this.getSelectedTimeRange();
+            const params = new URLSearchParams();
+            if (timeRange.startDate) {
+                params.append('start_date', timeRange.startDate);
+            }
+            if (timeRange.endDate) {
+                params.append('end_date', timeRange.endDate);
+            }
+
+            const response = await fetch(`${this.analyticsAPI}/analytics/reports/preview/${this.currentCourse}?${params}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const previewData = await response.json();
+            
+            // Show preview modal or notification
+            this.showReportPreview(previewData);
+            
+            return previewData;
+
+        } catch (error) {
+            console.error('Error previewing report data:', error);
+            // Continue with download even if preview fails
+            return null;
+        }
+    }
+
+    showReportPreview(previewData) {
+        const message = `
+            Report Preview:
+            • Course: ${previewData.course_info?.title || 'Unknown'}
+            • Date Range: ${previewData.date_range?.start_date?.split('T')[0]} to ${previewData.date_range?.end_date?.split('T')[0]}
+            • Students: ${previewData.key_metrics?.total_students || 0}
+            • Estimated Pages: ${previewData.estimated_pages || 'Unknown'}
+        `;
+        
+        console.log('PDF Report Preview:', previewData);
+        
+        // Could show a modal here in the future
+        this.showSuccess('Report preview loaded - generating PDF...');
+    }
+
+    getSelectedTimeRange() {
+        const timeRangeSelect = document.getElementById('analyticsTimeRange');
+        const selectedRange = timeRangeSelect ? timeRangeSelect.value : '30';
+        
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - parseInt(selectedRange));
+        
+        return {
+            startDate: startDate.toISOString().split('T')[0],
+            endDate: endDate.toISOString().split('T')[0]
+        };
+    }
+
+    async downloadStudentPDFReport(studentId) {
+        try {
+            if (!studentId) {
+                this.showError('Student ID is required');
+                return;
+            }
+
+            this.showLoading('Generating student PDF report...');
+
+            const timeRange = this.getSelectedTimeRange();
+            const params = new URLSearchParams();
+            if (this.currentCourse) {
+                params.append('course_id', this.currentCourse);
+            }
+            if (timeRange.startDate) {
+                params.append('start_date', timeRange.startDate);
+            }
+            if (timeRange.endDate) {
+                params.append('end_date', timeRange.endDate);
+            }
+
+            const url = `${this.analyticsAPI}/analytics/reports/student/${studentId}/pdf?${params}`;
+
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = `student_report_${studentId}_${new Date().toISOString().split('T')[0]}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            window.URL.revokeObjectURL(downloadUrl);
+
+            this.hideLoading();
+            this.showSuccess('Student PDF report downloaded successfully!');
+
+        } catch (error) {
+            console.error('Error downloading student PDF report:', error);
+            this.showError('Failed to download student PDF report: ' + error.message);
+            this.hideLoading();
         }
     }
 }

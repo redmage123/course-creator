@@ -2,8 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Version**: 2.0.0 - Enhanced with Individual Lab Container System  
-**Last Updated**: 2025-07-26
+**Version**: 2.1.0 - Complete Feedback System with Multi-IDE Labs  
+**Last Updated**: 2025-07-27
 
 ## Development Commands
 
@@ -130,10 +130,10 @@ The platform uses a microservices architecture with 7 core backend services:
 1. **User Management Service** (Port 8000) - Authentication, user profiles, RBAC
 2. **Course Generator Service** (Port 8001) - AI-powered content generation using Anthropic/OpenAI
 3. **Content Storage Service** (Port 8003) - File storage, content versioning
-4. **Course Management Service** (Port 8004) - CRUD operations for courses, enrollment
+4. **Course Management Service** (Port 8004) - CRUD operations for courses, enrollment, **bi-directional feedback system**
 5. **Content Management Service** (Port 8005) - File upload/download, multi-format export
-6. **Lab Container Manager Service** (Port 8006) - Individual student Docker container management
-7. **Analytics Service** (Port 8007) - Student analytics, progress tracking, learning insights
+6. **Lab Container Manager Service** (Port 8006) - Individual student Docker container management with multi-IDE support
+7. **Analytics Service** (Port 8007) - Student analytics, progress tracking, learning insights, PDF report generation
 
 ### Service Dependencies
 Services must be started in dependency order:
@@ -203,6 +203,82 @@ The platform includes comprehensive content upload/download functionality with p
 - `services/content-management/models.py` - Pydantic models and validation
 - `frontend/instructor-dashboard.html` - Enhanced tabbed interface with pane-based content management
 - `frontend/js/instructor-dashboard.js` - File upload/download functionality with lab container integration
+
+## Comprehensive Feedback System (v2.1)
+
+The platform includes a complete bi-directional feedback system enabling rich communication between students and instructors:
+
+### Bi-Directional Feedback Architecture
+- **Course Feedback** - Students provide structured feedback on courses, instructors, content quality, and learning outcomes
+- **Student Assessment Feedback** - Instructors provide detailed feedback on individual student progress, performance, and development
+- **Real-time Analytics** - Comprehensive feedback analytics with rating aggregation and trend analysis
+- **Multi-format Responses** - Support for star ratings, text feedback, categorical assessments, and structured forms
+
+### Student Course Feedback Features
+- **Star Rating System** - 1-5 star ratings for overall course, instructor, content quality, and difficulty assessment
+- **Structured Categories** - Predefined feedback areas including content relevance, instructor effectiveness, pace, and resources
+- **Open-ended Responses** - Free-form text feedback for detailed comments and suggestions
+- **Anonymous Options** - Students can choose to provide anonymous feedback to encourage honest responses
+- **Real-time Submission** - Instant feedback submission with confirmation and thank-you messages
+
+### Instructor Student Feedback Features
+- **Comprehensive Assessment Forms** - Detailed evaluation templates covering academic performance, participation, and soft skills
+- **Progress Tracking** - Assessment of student improvement trends with 1-5 scale ratings
+- **Personalized Recommendations** - Specific, actionable feedback for student development
+- **Achievement Recognition** - Highlighting notable accomplishments and milestones
+- **Intervention Alerts** - Structured feedback for students needing additional support
+- **Privacy Controls** - Instructors can control whether feedback is shared with students immediately
+
+### Feedback Management Dashboard
+- **Instructor Analytics View** - Aggregated feedback statistics, rating trends, and response analysis
+- **Student Feedback History** - Complete record of all feedback received with filtering and search capabilities
+- **Bulk Operations** - Mass feedback operations for class-wide assessments and notifications
+- **Export Capabilities** - PDF and Excel export of feedback data for institutional reporting
+- **Response Management** - Tools for instructors to respond to student feedback and concerns
+
+### Database Schema & API Endpoints
+```sql
+-- Core feedback tables
+course_feedback          -- Student ratings and comments on courses
+student_feedback         -- Instructor assessments of students  
+feedback_responses       -- Responses and follow-up communications
+feedback_analytics       -- Aggregated statistics and trend data
+```
+
+### Feedback System API Endpoints
+```http
+# Course Feedback (Student → Course)
+POST /feedback/course                    # Submit course feedback
+GET  /feedback/course/{course_id}        # Get course feedback summary
+GET  /feedback/course/student/{user_id}  # Get student's feedback history
+
+# Student Feedback (Instructor → Student)  
+POST /feedback/student                   # Submit student assessment
+GET  /feedback/student/{user_id}         # Get student feedback history
+PUT  /feedback/student/{feedback_id}     # Update feedback visibility
+
+# Analytics & Management
+GET  /feedback/analytics/{course_id}     # Course feedback analytics
+GET  /feedback/summary/instructor/{id}   # Instructor feedback dashboard
+POST /feedback/bulk                      # Bulk feedback operations
+```
+
+### Key Feedback System Files
+- `services/course-management/main.py` - Feedback API endpoints with full CRUD operations
+- `data/migrations/008_add_feedback_system.sql` - Complete database schema for feedback system
+- `frontend/js/modules/feedback-manager.js` - Comprehensive JavaScript feedback management module
+- `frontend/css/main.css` - Complete CSS styling for feedback forms and UI components
+- `frontend/js/student-dashboard.js` - Student feedback submission integration
+- `frontend/js/modules/instructor-dashboard.js` - Instructor feedback management and analytics
+- `test_feedback_final.py` - Comprehensive test suite with 100% pass rate
+
+### Frontend Integration Features
+- **Dynamic Form Generation** - JavaScript-generated feedback forms with validation and user experience optimization
+- **Real-time Star Ratings** - Interactive star rating components with hover effects and animations
+- **Modal Overlay System** - Clean, accessible modal dialogs for feedback submission and viewing
+- **Responsive Design** - Mobile-friendly feedback interfaces with touch-optimized controls
+- **Progress Indicators** - Visual feedback on submission status and form completion
+- **Error Handling** - Comprehensive client-side validation with helpful error messages
 
 ## Lab Container Management System (v2.1 - Multi-IDE Edition)
 
@@ -284,15 +360,23 @@ Database migrations are in `data/migrations/` and run via `setup-database.py`.
 ## Testing Strategy
 
 ### Test Organization
-- `tests/unit/` - Component-level tests including lab container unit tests
-- `tests/integration/` - Service interaction tests with lab lifecycle integration
-- `tests/frontend/` - JavaScript module testing with browser simulation
-- `tests/e2e/` - Full workflow tests including complete lab container lifecycles
+- `tests/unit/` - Component-level tests including lab container and feedback system unit tests
+- `tests/integration/` - Service interaction tests with lab lifecycle and feedback integration
+- `tests/frontend/` - JavaScript module testing with browser simulation for all components
+- `tests/e2e/` - Full workflow tests including complete lab container and feedback system lifecycles
 - `tests/security/` - Authentication and authorization tests
 - `tests/performance/` - Load testing
 
-### Lab Container Testing (v2.0)
-- **Unit Tests** - `tests/unit/lab_container/test_lab_manager_service.py` - Core lab manager functionality
+### Feedback System Testing (v2.1)
+- **Comprehensive Test Suite** - `test_feedback_final.py` - Complete feedback system validation (6/6 tests passing at 100%)
+- **Component Tests** - Individual testing of feedback manager, CSS styles, dashboard integration
+- **Database Schema Tests** - Validation of feedback system database tables and migrations
+- **API Endpoint Tests** - Complete testing of all feedback REST API endpoints
+- **Frontend Integration Tests** - JavaScript module testing for student and instructor feedback workflows
+- **Extended Test Suite** - `test_feedback_system.py` - Detailed component-by-component validation (7/7 tests passing)
+
+### Lab Container Testing (v2.1 - Multi-IDE Edition)
+- **Unit Tests** - `tests/unit/lab_container/test_lab_manager_service.py` - Core lab manager functionality with multi-IDE support
 - **Integration Tests** - `tests/integration/test_lab_lifecycle_integration.py` - Lab lifecycle with auth integration
 - **Frontend Tests** - `tests/frontend/test_lab_integration_frontend.py` - JavaScript lab functionality (14 tests passing)
 - **E2E Tests** - `tests/e2e/test_lab_system_e2e.py` - Complete user workflows (8/9 tests passing)
@@ -329,6 +413,60 @@ The platform integrates with AI services for automated content creation:
 - File type validation and size limits
 - Content scanning and sanitization
 - Secure file storage with access controls
+
+## Common Issues and Troubleshooting
+
+### Service Startup Issues (Resolved v2.1)
+Recent fixes have resolved common startup problems:
+
+#### Pydantic Version Compatibility
+- **Issue**: Services failing with `'regex' is removed. use 'pattern' instead` error
+- **Resolution**: Updated all Pydantic Field definitions from `regex=` to `pattern=` across all services
+- **Affected Services**: Course Management, User Management, Content Storage
+- **Status**: ✅ Resolved
+
+#### Docker Health Check Failures
+- **Issue**: Frontend service showing as unhealthy despite working correctly
+- **Root Cause**: Health check using `localhost` resolving to IPv6 `[::1]` while nginx listening on IPv4
+- **Resolution**: Updated health check in docker-compose.yml to use `127.0.0.1:3000/health`
+- **Status**: ✅ Resolved
+
+#### Container Rebuild Issues
+- **Issue**: Code changes not reflected in running containers
+- **Resolution**: Use `docker build --no-cache` and ensure proper container recreation
+- **Best Practice**: Always stop and remove containers before recreating with new images
+
+### Current Platform Status (v2.1)
+All services verified healthy and operational:
+- ✅ Frontend (port 3000) - Nginx with proper health checks
+- ✅ User Management (port 8000) - Authentication and RBAC
+- ✅ Course Generator (port 8001) - AI content generation
+- ✅ Content Storage (port 8003) - File management
+- ✅ Course Management (port 8004) - Course CRUD + Feedback System
+- ✅ Content Management (port 8005) - Upload/export functionality
+- ✅ Lab Manager (port 8006) - Multi-IDE container management
+- ✅ Analytics (port 8007) - Analytics + PDF generation
+- ✅ PostgreSQL (port 5433) - Database
+- ✅ Redis (port 6379) - Caching and sessions
+
+### Diagnostic Commands
+```bash
+# Check all service health
+docker ps --format "table {{.Names}}\t{{.Status}}"
+
+# View service logs
+docker logs [service-name] --tail 20
+
+# Test individual service health endpoints
+curl -s http://localhost:8000/health  # User Management
+curl -s http://localhost:8001/health  # Course Generator
+curl -s http://localhost:3000/health  # Frontend
+# ... etc for all services
+
+# Run comprehensive tests
+python test_feedback_final.py        # Feedback system
+python tests/run_all_tests.py        # All test suites
+```
 
 ## Development Standards
 

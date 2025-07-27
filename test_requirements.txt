@@ -13,9 +13,12 @@ requests>=2.31.0
 httpx>=0.24.0
 responses>=0.23.0
 
-# Database testing
+# Database testing (REAL database connections, no mocking!)
 pytest-postgresql>=5.0.0
 asyncpg>=0.28.0
+psycopg2-binary>=2.9.7  # For real PostgreSQL connections
+docker>=6.1.0           # For Docker integration testing
+redis>=4.6.0            # For real Redis connections
 
 # Security testing
 bandit>=1.7.5
@@ -61,9 +64,10 @@ httpretty>=1.1.4
 # Database migration testing
 alembic>=1.11.0
 
-# Configuration testing
+# Configuration testing (to catch config bugs!)
 pydantic>=2.0.0
 omegaconf>=2.3.0
+PyYAML>=6.0.1           # For YAML config validation
 
 # Logging and monitoring
 structlog>=23.1.0

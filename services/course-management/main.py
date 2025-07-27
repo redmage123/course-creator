@@ -56,6 +56,96 @@ class StudentRegistrationRequest(BaseModel):
     course_id: str
     student_emails: List[str]
 
+# Feedback Models
+class CourseFeedback(BaseModel):
+    feedback_id: Optional[str] = None
+    student_id: str
+    course_id: str
+    instructor_id: str
+    overall_rating: int = Field(..., ge=1, le=5)
+    content_quality: Optional[int] = Field(None, ge=1, le=5)
+    instructor_effectiveness: Optional[int] = Field(None, ge=1, le=5)
+    difficulty_appropriateness: Optional[int] = Field(None, ge=1, le=5)
+    lab_quality: Optional[int] = Field(None, ge=1, le=5)
+    positive_aspects: Optional[str] = None
+    areas_for_improvement: Optional[str] = None
+    additional_comments: Optional[str] = None
+    would_recommend: Optional[bool] = None
+    is_anonymous: bool = False
+    submission_date: Optional[datetime] = None
+    last_updated: Optional[datetime] = None
+    status: str = "active"
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+class StudentFeedback(BaseModel):
+    feedback_id: Optional[str] = None
+    instructor_id: str
+    student_id: str
+    course_id: str
+    overall_performance: Optional[int] = Field(None, ge=1, le=5)
+    participation: Optional[int] = Field(None, ge=1, le=5)
+    lab_performance: Optional[int] = Field(None, ge=1, le=5)
+    quiz_performance: Optional[int] = Field(None, ge=1, le=5)
+    improvement_trend: Optional[int] = Field(None, ge=1, le=5)
+    strengths: Optional[str] = None
+    areas_for_improvement: Optional[str] = None
+    specific_recommendations: Optional[str] = None
+    notable_achievements: Optional[str] = None
+    concerns: Optional[str] = None
+    progress_assessment: Optional[str] = Field(None, pattern="^(excellent|good|satisfactory|needs_improvement|poor)$")
+    expected_outcome: Optional[str] = Field(None, pattern="^(exceeds_expectations|meets_expectations|below_expectations|at_risk)$")
+    feedback_type: str = Field("regular", pattern="^(regular|midterm|final|intervention)$")
+    is_shared_with_student: bool = False
+    submission_date: Optional[datetime] = None
+    last_updated: Optional[datetime] = None
+    status: str = "active"
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+class FeedbackResponse(BaseModel):
+    response_id: Optional[str] = None
+    course_feedback_id: str
+    instructor_id: str
+    response_text: str
+    action_items: Optional[str] = None
+    acknowledgment_type: str = Field("standard", pattern="^(standard|detailed|action_plan)$")
+    response_date: Optional[datetime] = None
+    is_public: bool = False
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+class CourseFeedbackRequest(BaseModel):
+    course_id: str
+    overall_rating: int = Field(..., ge=1, le=5)
+    content_quality: Optional[int] = Field(None, ge=1, le=5)
+    instructor_effectiveness: Optional[int] = Field(None, ge=1, le=5)
+    difficulty_appropriateness: Optional[int] = Field(None, ge=1, le=5)
+    lab_quality: Optional[int] = Field(None, ge=1, le=5)
+    positive_aspects: Optional[str] = None
+    areas_for_improvement: Optional[str] = None
+    additional_comments: Optional[str] = None
+    would_recommend: Optional[bool] = None
+    is_anonymous: bool = False
+
+class StudentFeedbackRequest(BaseModel):
+    student_id: str
+    course_id: str
+    overall_performance: Optional[int] = Field(None, ge=1, le=5)
+    participation: Optional[int] = Field(None, ge=1, le=5)
+    lab_performance: Optional[int] = Field(None, ge=1, le=5)
+    quiz_performance: Optional[int] = Field(None, ge=1, le=5)
+    improvement_trend: Optional[int] = Field(None, ge=1, le=5)
+    strengths: Optional[str] = None
+    areas_for_improvement: Optional[str] = None
+    specific_recommendations: Optional[str] = None
+    notable_achievements: Optional[str] = None
+    concerns: Optional[str] = None
+    progress_assessment: Optional[str] = Field(None, pattern="^(excellent|good|satisfactory|needs_improvement|poor)$")
+    expected_outcome: Optional[str] = Field(None, pattern="^(exceeds_expectations|meets_expectations|below_expectations|at_risk)$")
+    feedback_type: str = Field("regular", pattern="^(regular|midterm|final|intervention)$")
+    is_shared_with_student: bool = False
+
 class DatabaseManager:
     def __init__(self, database_url: str):
         self.database_url = database_url
@@ -87,22 +177,19 @@ class DatabaseManager:
             raise HTTPException(status_code=500, detail="Database not connected")
         return self.pool.acquire()
 
-# Global database manager
+# Global database manager and config
 db_manager = None
+current_config = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI lifespan event handler"""
-    global db_manager
+    global db_manager, current_config
     
-    # Startup
-    db_password = os.getenv('DB_PASSWORD', '')
+    # Startup - Use Hydra configuration for database connection
+    database_url = current_config.database.url
+    logging.info(f"Connecting to database: {database_url.split('@')[1]}")  # Log without password
     
-    # Use the correct database configuration on port 5433
-    if db_password:
-        database_url = f"postgresql://course_user:{db_password}@localhost:5433/course_creator"
-    else:
-        raise ValueError("DB_PASSWORD environment variable is required")
     db_manager = DatabaseManager(database_url)
     await db_manager.connect()
     
@@ -113,6 +200,9 @@ async def lifespan(app: FastAPI):
 
 @hydra.main(config_path="conf", config_name="config", version_base=None)
 def main(cfg: DictConfig) -> None:
+    global current_config
+    current_config = cfg
+    
     # Logging setup
     logging.basicConfig(
         level=cfg.log.level,
@@ -597,6 +687,480 @@ def main(cfg: DictConfig) -> None:
         except Exception as e:
             logger.error(f"Error retrieving student courses: {e}")
             raise HTTPException(status_code=500, detail="Failed to retrieve student courses")
+    
+    # Feedback System Endpoints
+    
+    @app.post("/feedback/course", response_model=CourseFeedback)
+    async def submit_course_feedback(
+        feedback_request: CourseFeedbackRequest,
+        current_user: dict = Depends(get_current_user)
+    ):
+        """Students submit feedback about a course"""
+        try:
+            student_id = current_user["user_id"]
+            feedback_id = str(uuid.uuid4())
+            now = datetime.now()
+            
+            # Get instructor ID for the course
+            async with db_manager.get_connection() as conn:
+                course_row = await conn.fetchrow("""
+                    SELECT instructor_id FROM courses WHERE id = $1
+                """, uuid.UUID(feedback_request.course_id))
+                
+                if not course_row:
+                    raise HTTPException(status_code=404, detail="Course not found")
+                
+                instructor_id = str(course_row['instructor_id'])
+                
+                # Check if student is enrolled in the course
+                enrollment_row = await conn.fetchrow("""
+                    SELECT id FROM enrollments 
+                    WHERE student_id = $1 AND course_id = $2
+                """, uuid.UUID(student_id), uuid.UUID(feedback_request.course_id))
+                
+                if not enrollment_row:
+                    raise HTTPException(status_code=403, detail="You must be enrolled in this course to provide feedback")
+                
+                # Insert or update feedback (upsert)
+                await conn.execute("""
+                    INSERT INTO course_feedback (
+                        feedback_id, student_id, course_id, instructor_id,
+                        overall_rating, content_quality, instructor_effectiveness,
+                        difficulty_appropriateness, lab_quality, positive_aspects,
+                        areas_for_improvement, additional_comments, would_recommend,
+                        is_anonymous, submission_date, last_updated, status,
+                        created_at, updated_at
+                    )
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+                    ON CONFLICT (student_id, course_id) 
+                    DO UPDATE SET
+                        overall_rating = EXCLUDED.overall_rating,
+                        content_quality = EXCLUDED.content_quality,
+                        instructor_effectiveness = EXCLUDED.instructor_effectiveness,
+                        difficulty_appropriateness = EXCLUDED.difficulty_appropriateness,
+                        lab_quality = EXCLUDED.lab_quality,
+                        positive_aspects = EXCLUDED.positive_aspects,
+                        areas_for_improvement = EXCLUDED.areas_for_improvement,
+                        additional_comments = EXCLUDED.additional_comments,
+                        would_recommend = EXCLUDED.would_recommend,
+                        is_anonymous = EXCLUDED.is_anonymous,
+                        last_updated = EXCLUDED.last_updated,
+                        updated_at = EXCLUDED.updated_at
+                """, feedback_id, uuid.UUID(student_id), uuid.UUID(feedback_request.course_id), 
+                    uuid.UUID(instructor_id), feedback_request.overall_rating,
+                    feedback_request.content_quality, feedback_request.instructor_effectiveness,
+                    feedback_request.difficulty_appropriateness, feedback_request.lab_quality,
+                    feedback_request.positive_aspects, feedback_request.areas_for_improvement,
+                    feedback_request.additional_comments, feedback_request.would_recommend,
+                    feedback_request.is_anonymous, now, now, "active", now, now)
+                
+                feedback = CourseFeedback(
+                    feedback_id=feedback_id,
+                    student_id=student_id,
+                    course_id=feedback_request.course_id,
+                    instructor_id=instructor_id,
+                    overall_rating=feedback_request.overall_rating,
+                    content_quality=feedback_request.content_quality,
+                    instructor_effectiveness=feedback_request.instructor_effectiveness,
+                    difficulty_appropriateness=feedback_request.difficulty_appropriateness,
+                    lab_quality=feedback_request.lab_quality,
+                    positive_aspects=feedback_request.positive_aspects,
+                    areas_for_improvement=feedback_request.areas_for_improvement,
+                    additional_comments=feedback_request.additional_comments,
+                    would_recommend=feedback_request.would_recommend,
+                    is_anonymous=feedback_request.is_anonymous,
+                    submission_date=now,
+                    last_updated=now,
+                    status="active",
+                    created_at=now,
+                    updated_at=now
+                )
+                
+                logger.info(f"Course feedback submitted by student {student_id} for course {feedback_request.course_id}")
+                return feedback
+                
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error submitting course feedback: {e}")
+            raise HTTPException(status_code=500, detail="Failed to submit course feedback")
+    
+    @app.get("/feedback/course/{course_id}")
+    async def get_course_feedback(
+        course_id: str,
+        current_user: dict = Depends(get_current_user)
+    ):
+        """Get all feedback for a course (instructors only)"""
+        try:
+            user_id = current_user["user_id"]
+            
+            async with db_manager.get_connection() as conn:
+                # Verify user is instructor for this course
+                course_row = await conn.fetchrow("""
+                    SELECT instructor_id FROM courses WHERE id = $1
+                """, uuid.UUID(course_id))
+                
+                if not course_row or str(course_row['instructor_id']) != user_id:
+                    raise HTTPException(status_code=403, detail="You can only view feedback for your own courses")
+                
+                # Get all feedback for the course
+                feedback_rows = await conn.fetch("""
+                    SELECT cf.*, u.full_name as student_name, u.email as student_email
+                    FROM course_feedback cf
+                    LEFT JOIN users u ON cf.student_id = u.id
+                    WHERE cf.course_id = $1 AND cf.status = 'active'
+                    ORDER BY cf.submission_date DESC
+                """, uuid.UUID(course_id))
+                
+                feedback_list = []
+                for row in feedback_rows:
+                    feedback = CourseFeedback(
+                        feedback_id=str(row['feedback_id']),
+                        student_id=str(row['student_id']) if not row['is_anonymous'] else "anonymous",
+                        course_id=str(row['course_id']),
+                        instructor_id=str(row['instructor_id']),
+                        overall_rating=row['overall_rating'],
+                        content_quality=row['content_quality'],
+                        instructor_effectiveness=row['instructor_effectiveness'],
+                        difficulty_appropriateness=row['difficulty_appropriateness'],
+                        lab_quality=row['lab_quality'],
+                        positive_aspects=row['positive_aspects'],
+                        areas_for_improvement=row['areas_for_improvement'],
+                        additional_comments=row['additional_comments'],
+                        would_recommend=row['would_recommend'],
+                        is_anonymous=row['is_anonymous'],
+                        submission_date=row['submission_date'],
+                        last_updated=row['last_updated'],
+                        status=row['status'],
+                        created_at=row['created_at'],
+                        updated_at=row['updated_at']
+                    )
+                    feedback_list.append(feedback)
+                
+                # Get summary statistics
+                summary_row = await conn.fetchrow("""
+                    SELECT 
+                        COUNT(*) as total_feedback,
+                        AVG(overall_rating) as avg_overall_rating,
+                        AVG(content_quality) as avg_content_quality,
+                        AVG(instructor_effectiveness) as avg_instructor_effectiveness,
+                        AVG(difficulty_appropriateness) as avg_difficulty_rating,
+                        AVG(lab_quality) as avg_lab_quality,
+                        ROUND(
+                            (COUNT(CASE WHEN would_recommend = true THEN 1 END) * 100.0) / 
+                            NULLIF(COUNT(CASE WHEN would_recommend IS NOT NULL THEN 1 END), 0), 
+                            2
+                        ) as recommendation_rate
+                    FROM course_feedback
+                    WHERE course_id = $1 AND status = 'active'
+                """, uuid.UUID(course_id))
+                
+                return {
+                    "course_id": course_id,
+                    "feedback": feedback_list,
+                    "summary": {
+                        "total_feedback": summary_row['total_feedback'],
+                        "avg_overall_rating": float(summary_row['avg_overall_rating']) if summary_row['avg_overall_rating'] else 0,
+                        "avg_content_quality": float(summary_row['avg_content_quality']) if summary_row['avg_content_quality'] else 0,
+                        "avg_instructor_effectiveness": float(summary_row['avg_instructor_effectiveness']) if summary_row['avg_instructor_effectiveness'] else 0,
+                        "avg_difficulty_rating": float(summary_row['avg_difficulty_rating']) if summary_row['avg_difficulty_rating'] else 0,
+                        "avg_lab_quality": float(summary_row['avg_lab_quality']) if summary_row['avg_lab_quality'] else 0,
+                        "recommendation_rate": float(summary_row['recommendation_rate']) if summary_row['recommendation_rate'] else 0
+                    }
+                }
+                
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error retrieving course feedback: {e}")
+            raise HTTPException(status_code=500, detail="Failed to retrieve course feedback")
+    
+    @app.post("/feedback/student", response_model=StudentFeedback)
+    async def submit_student_feedback(
+        feedback_request: StudentFeedbackRequest,
+        current_user: dict = Depends(get_current_user)
+    ):
+        """Instructors submit feedback about individual students"""
+        try:
+            instructor_id = current_user["user_id"]
+            feedback_id = str(uuid.uuid4())
+            now = datetime.now()
+            
+            async with db_manager.get_connection() as conn:
+                # Verify instructor teaches this course
+                course_row = await conn.fetchrow("""
+                    SELECT instructor_id FROM courses WHERE id = $1
+                """, uuid.UUID(feedback_request.course_id))
+                
+                if not course_row or str(course_row['instructor_id']) != instructor_id:
+                    raise HTTPException(status_code=403, detail="You can only provide feedback for students in your own courses")
+                
+                # Verify student is enrolled in the course
+                enrollment_row = await conn.fetchrow("""
+                    SELECT id FROM enrollments 
+                    WHERE student_id = $1 AND course_id = $2
+                """, uuid.UUID(feedback_request.student_id), uuid.UUID(feedback_request.course_id))
+                
+                if not enrollment_row:
+                    raise HTTPException(status_code=404, detail="Student is not enrolled in this course")
+                
+                # Insert student feedback
+                await conn.execute("""
+                    INSERT INTO student_feedback (
+                        feedback_id, instructor_id, student_id, course_id,
+                        overall_performance, participation, lab_performance,
+                        quiz_performance, improvement_trend, strengths,
+                        areas_for_improvement, specific_recommendations,
+                        notable_achievements, concerns, progress_assessment,
+                        expected_outcome, feedback_type, is_shared_with_student,
+                        submission_date, last_updated, status, created_at, updated_at
+                    )
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
+                """, feedback_id, uuid.UUID(instructor_id), uuid.UUID(feedback_request.student_id),
+                    uuid.UUID(feedback_request.course_id), feedback_request.overall_performance,
+                    feedback_request.participation, feedback_request.lab_performance,
+                    feedback_request.quiz_performance, feedback_request.improvement_trend,
+                    feedback_request.strengths, feedback_request.areas_for_improvement,
+                    feedback_request.specific_recommendations, feedback_request.notable_achievements,
+                    feedback_request.concerns, feedback_request.progress_assessment,
+                    feedback_request.expected_outcome, feedback_request.feedback_type,
+                    feedback_request.is_shared_with_student, now, now, "active", now, now)
+                
+                feedback = StudentFeedback(
+                    feedback_id=feedback_id,
+                    instructor_id=instructor_id,
+                    student_id=feedback_request.student_id,
+                    course_id=feedback_request.course_id,
+                    overall_performance=feedback_request.overall_performance,
+                    participation=feedback_request.participation,
+                    lab_performance=feedback_request.lab_performance,
+                    quiz_performance=feedback_request.quiz_performance,
+                    improvement_trend=feedback_request.improvement_trend,
+                    strengths=feedback_request.strengths,
+                    areas_for_improvement=feedback_request.areas_for_improvement,
+                    specific_recommendations=feedback_request.specific_recommendations,
+                    notable_achievements=feedback_request.notable_achievements,
+                    concerns=feedback_request.concerns,
+                    progress_assessment=feedback_request.progress_assessment,
+                    expected_outcome=feedback_request.expected_outcome,
+                    feedback_type=feedback_request.feedback_type,
+                    is_shared_with_student=feedback_request.is_shared_with_student,
+                    submission_date=now,
+                    last_updated=now,
+                    status="active",
+                    created_at=now,
+                    updated_at=now
+                )
+                
+                logger.info(f"Student feedback submitted by instructor {instructor_id} for student {feedback_request.student_id}")
+                return feedback
+                
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error submitting student feedback: {e}")
+            raise HTTPException(status_code=500, detail="Failed to submit student feedback")
+    
+    @app.get("/feedback/student/{student_id}/course/{course_id}")
+    async def get_student_feedback(
+        student_id: str,
+        course_id: str,
+        current_user: dict = Depends(get_current_user)
+    ):
+        """Get all feedback for a specific student in a course"""
+        try:
+            user_id = current_user["user_id"]
+            
+            async with db_manager.get_connection() as conn:
+                # Verify access permissions (instructor for the course OR the student themselves)
+                course_row = await conn.fetchrow("""
+                    SELECT instructor_id FROM courses WHERE id = $1
+                """, uuid.UUID(course_id))
+                
+                if not course_row:
+                    raise HTTPException(status_code=404, detail="Course not found")
+                
+                is_instructor = str(course_row['instructor_id']) == user_id
+                is_student = student_id == user_id
+                
+                if not (is_instructor or is_student):
+                    raise HTTPException(status_code=403, detail="You can only view feedback for your own courses or your own feedback")
+                
+                # Get feedback, filtering by sharing preferences if student is viewing
+                if is_student:
+                    feedback_query = """
+                        SELECT sf.*, u.full_name as instructor_name
+                        FROM student_feedback sf
+                        LEFT JOIN users u ON sf.instructor_id = u.id
+                        WHERE sf.student_id = $1 AND sf.course_id = $2 
+                        AND sf.status = 'active' AND sf.is_shared_with_student = true
+                        ORDER BY sf.submission_date DESC
+                    """
+                else:
+                    feedback_query = """
+                        SELECT sf.*, u.full_name as instructor_name
+                        FROM student_feedback sf
+                        LEFT JOIN users u ON sf.instructor_id = u.id
+                        WHERE sf.student_id = $1 AND sf.course_id = $2 AND sf.status = 'active'
+                        ORDER BY sf.submission_date DESC
+                    """
+                
+                feedback_rows = await conn.fetch(feedback_query, uuid.UUID(student_id), uuid.UUID(course_id))
+                
+                feedback_list = []
+                for row in feedback_rows:
+                    feedback = StudentFeedback(
+                        feedback_id=str(row['feedback_id']),
+                        instructor_id=str(row['instructor_id']),
+                        student_id=str(row['student_id']),
+                        course_id=str(row['course_id']),
+                        overall_performance=row['overall_performance'],
+                        participation=row['participation'],
+                        lab_performance=row['lab_performance'],
+                        quiz_performance=row['quiz_performance'],
+                        improvement_trend=row['improvement_trend'],
+                        strengths=row['strengths'],
+                        areas_for_improvement=row['areas_for_improvement'],
+                        specific_recommendations=row['specific_recommendations'],
+                        notable_achievements=row['notable_achievements'],
+                        concerns=row['concerns'],
+                        progress_assessment=row['progress_assessment'],
+                        expected_outcome=row['expected_outcome'],
+                        feedback_type=row['feedback_type'],
+                        is_shared_with_student=row['is_shared_with_student'],
+                        submission_date=row['submission_date'],
+                        last_updated=row['last_updated'],
+                        status=row['status'],
+                        created_at=row['created_at'],
+                        updated_at=row['updated_at']
+                    )
+                    feedback_list.append(feedback)
+                
+                return {
+                    "student_id": student_id,
+                    "course_id": course_id,
+                    "feedback": feedback_list
+                }
+                
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error retrieving student feedback: {e}")
+            raise HTTPException(status_code=500, detail="Failed to retrieve student feedback")
+    
+    @app.get("/feedback/course/{course_id}/students")
+    async def get_all_students_feedback(
+        course_id: str,
+        current_user: dict = Depends(get_current_user)
+    ):
+        """Get feedback for all students in a course (instructors only)"""
+        try:
+            instructor_id = current_user["user_id"]
+            
+            async with db_manager.get_connection() as conn:
+                # Verify instructor teaches this course
+                course_row = await conn.fetchrow("""
+                    SELECT instructor_id FROM courses WHERE id = $1
+                """, uuid.UUID(course_id))
+                
+                if not course_row or str(course_row['instructor_id']) != instructor_id:
+                    raise HTTPException(status_code=403, detail="You can only view feedback for your own courses")
+                
+                # Get all student feedback for the course
+                feedback_rows = await conn.fetch("""
+                    SELECT sf.*, u.full_name as student_name, u.email as student_email
+                    FROM student_feedback sf
+                    LEFT JOIN users u ON sf.student_id = u.id
+                    WHERE sf.course_id = $1 AND sf.status = 'active'
+                    ORDER BY u.full_name, sf.submission_date DESC
+                """, uuid.UUID(course_id))
+                
+                # Group feedback by student
+                students_feedback = {}
+                for row in feedback_rows:
+                    student_id = str(row['student_id'])
+                    if student_id not in students_feedback:
+                        students_feedback[student_id] = {
+                            "student_id": student_id,
+                            "student_name": row['student_name'],
+                            "student_email": row['student_email'],
+                            "feedback": []
+                        }
+                    
+                    feedback = StudentFeedback(
+                        feedback_id=str(row['feedback_id']),
+                        instructor_id=str(row['instructor_id']),
+                        student_id=str(row['student_id']),
+                        course_id=str(row['course_id']),
+                        overall_performance=row['overall_performance'],
+                        participation=row['participation'],
+                        lab_performance=row['lab_performance'],
+                        quiz_performance=row['quiz_performance'],
+                        improvement_trend=row['improvement_trend'],
+                        strengths=row['strengths'],
+                        areas_for_improvement=row['areas_for_improvement'],
+                        specific_recommendations=row['specific_recommendations'],
+                        notable_achievements=row['notable_achievements'],
+                        concerns=row['concerns'],
+                        progress_assessment=row['progress_assessment'],
+                        expected_outcome=row['expected_outcome'],
+                        feedback_type=row['feedback_type'],
+                        is_shared_with_student=row['is_shared_with_student'],
+                        submission_date=row['submission_date'],
+                        last_updated=row['last_updated'],
+                        status=row['status'],
+                        created_at=row['created_at'],
+                        updated_at=row['updated_at']
+                    )
+                    students_feedback[student_id]["feedback"].append(feedback)
+                
+                return {
+                    "course_id": course_id,
+                    "students": list(students_feedback.values())
+                }
+                
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error retrieving students feedback: {e}")
+            raise HTTPException(status_code=500, detail="Failed to retrieve students feedback")
+    
+    @app.put("/feedback/student/{feedback_id}/share")
+    async def toggle_feedback_sharing(
+        feedback_id: str,
+        share: bool,
+        current_user: dict = Depends(get_current_user)
+    ):
+        """Toggle whether student feedback is shared with the student"""
+        try:
+            instructor_id = current_user["user_id"]
+            
+            async with db_manager.get_connection() as conn:
+                # Verify instructor owns this feedback
+                feedback_row = await conn.fetchrow("""
+                    SELECT instructor_id FROM student_feedback WHERE feedback_id = $1
+                """, uuid.UUID(feedback_id))
+                
+                if not feedback_row or str(feedback_row['instructor_id']) != instructor_id:
+                    raise HTTPException(status_code=403, detail="You can only modify your own feedback")
+                
+                # Update sharing status
+                result = await conn.execute("""
+                    UPDATE student_feedback 
+                    SET is_shared_with_student = $2, updated_at = $3
+                    WHERE feedback_id = $1
+                """, uuid.UUID(feedback_id), share, datetime.now())
+                
+                if result == "UPDATE 0":
+                    raise HTTPException(status_code=404, detail="Feedback not found")
+                
+                return {"message": f"Feedback sharing {'enabled' if share else 'disabled'} successfully"}
+                
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error toggling feedback sharing: {e}")
+            raise HTTPException(status_code=500, detail="Failed to update feedback sharing")
     
     # Error handling
     @app.exception_handler(HTTPException)

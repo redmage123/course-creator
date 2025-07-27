@@ -1,0 +1,108 @@
+version: '3.8'
+
+# Test environment that matches production configuration
+# This ensures test environment has same config as production
+
+services:
+  # Test Database - same configuration as production
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: course-creator-test-db
+    environment:
+      POSTGRES_DB: course_creator_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: test_password
+    ports:
+      - "5434:5432"  # Different port to avoid conflicts
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - test_postgres_data:/var/lib/postgresql/data
+    command: >
+      postgres -c log_statement=all
+               -c log_destination=stderr
+               -c logging_collector=off
+
+  # Test Redis
+  redis-test:
+    image: redis:7-alpine
+    container_name: course-creator-test-redis
+    ports:
+      - "6380:6379"
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Analytics Service for Integration Testing
+  analytics-test:
+    build:
+      context: ./services/analytics
+      dockerfile: Dockerfile
+    container_name: course-creator-analytics-test
+    environment:
+      - DATABASE_URL=postgresql://course_user:test_password@postgres-test:5432/course_creator_test
+      - DB_HOST=postgres-test
+      - DB_PORT=5432
+      - DB_USER=course_user
+      - DB_PASSWORD=test_password
+      - DB_NAME=course_creator_test
+      - REDIS_URL=redis://redis-test:6379
+      - ENVIRONMENT=test
+      - DEBUG=true
+    ports:
+      - "8008:8007"  # Different port to avoid conflicts
+    networks:
+      - test-network
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8007/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # User Management Service for Integration Testing
+  user-management-test:
+    build:
+      context: ./services/user-management
+      dockerfile: Dockerfile
+    container_name: course-creator-user-management-test
+    environment:
+      - DATABASE_URL=postgresql://course_user:test_password@postgres-test:5432/course_creator_test
+      - DB_HOST=postgres-test
+      - DB_PORT=5432
+      - DB_USER=course_user
+      - DB_PASSWORD=test_password
+      - DB_NAME=course_creator_test
+      - REDIS_URL=redis://redis-test:6379
+      - JWT_SECRET_KEY=test-jwt-secret-key-for-testing-only
+      - ENVIRONMENT=test
+    ports:
+      - "8001:8000"
+    networks:
+      - test-network
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+
+networks:
+  test-network:
+    driver: bridge
+
+volumes:
+  test_postgres_data:
+    driver: local

@@ -37,13 +37,21 @@ services:
 
   # Core Microservices
   user-management:
+    image: course-creator-user-management:latest
     build:
       context: ./services/user-management
       dockerfile: Dockerfile
+      cache_from:
+        - course-creator-user-management:latest
     environment:
       - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET_KEY=your-secret-key-change-in-production
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres_password
+      - DB_NAME=course_creator
       - ENVIRONMENT=docker
     ports:
       - "8000:8000"
@@ -55,20 +63,28 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
+      test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8000/health'); exit(0 if r.status_code == 200 else 1)"]
       interval: 30s
       timeout: 10s
       retries: 3
     restart: unless-stopped
 
   course-generator:
+    image: course-creator-course-generator:latest
     build:
       context: ./services/course-generator
       dockerfile: Dockerfile
+      cache_from:
+        - course-creator-course-generator:latest
     environment:
       - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
       - REDIS_URL=redis://redis:6379
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres_password
+      - DB_NAME=course_creator
       - ENVIRONMENT=docker
     ports:
       - "8001:8001"
@@ -80,16 +96,19 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8001/health')"]
+      test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8001/health'); exit(0 if r.status_code == 200 else 1)"]
       interval: 30s
       timeout: 10s
       retries: 3
     restart: unless-stopped
 
   content-storage:
+    image: course-creator-content-storage:latest
     build:
       context: ./services/content-storage
       dockerfile: Dockerfile
+      cache_from:
+        - course-creator-content-storage:latest
     environment:
       - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
       - REDIS_URL=redis://redis:6379
@@ -107,22 +126,30 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8003/health')"]
+      test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8003/health'); exit(0 if r.status_code == 200 else 1)"]
       interval: 30s
       timeout: 10s
       retries: 3
     restart: unless-stopped
 
   course-management:
+    image: course-creator-course-management:latest
     build:
       context: ./services/course-management
       dockerfile: Dockerfile
+      cache_from:
+        - course-creator-course-management:latest
     environment:
       - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
       - REDIS_URL=redis://redis:6379
       - USER_SERVICE_URL=http://user-management:8000
       - COURSE_GENERATOR_URL=http://course-generator:8001
       - CONTENT_STORAGE_URL=http://content-storage:8003
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres_password
+      - DB_NAME=course_creator
       - ENVIRONMENT=docker
     ports:
       - "8004:8004"
@@ -136,21 +163,31 @@ services:
       user-management:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8004/health')"]
+      test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8004/health'); exit(0 if r.status_code == 200 else 1)"]
       interval: 30s
       timeout: 10s
       retries: 3
     restart: unless-stopped
 
   content-management:
+    image: course-creator-content-management:latest
     build:
       context: ./services/content-management
       dockerfile: Dockerfile
+      cache_from:
+        - course-creator-content-management:latest
     environment:
       - USER_SERVICE_URL=http://user-management:8000
       - COURSE_GENERATOR_URL=http://course-generator:8001
       - CONTENT_STORAGE_URL=http://content-storage:8003
       - COURSE_MANAGEMENT_URL=http://course-management:8004
+      - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
+      - REDIS_URL=redis://redis:6379
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres_password
+      - DB_NAME=course_creator
       - ENVIRONMENT=docker
     ports:
       - "8005:8005"
@@ -166,7 +203,7 @@ services:
       course-generator:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8005/health')"]
+      test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8005/health'); exit(0 if r.status_code == 200 else 1)"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -174,15 +211,23 @@ services:
 
   # Analytics Service
   analytics:
+    image: course-creator-analytics:latest
     build:
       context: ./services/analytics
       dockerfile: Dockerfile
+      cache_from:
+        - course-creator-analytics:latest
     environment:
       - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
       - REDIS_URL=redis://redis:6379
       - USER_SERVICE_URL=http://user-management:8000
       - COURSE_SERVICE_URL=http://course-management:8004
       - LAB_SERVICE_URL=http://lab-manager:8006
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres_password
+      - DB_NAME=course_creator
       - ENVIRONMENT=docker
     ports:
       - "8007:8007"
@@ -196,7 +241,7 @@ services:
       user-management:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8007/health')"]
+      test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8007/health'); exit(0 if r.status_code == 200 else 1)"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -204,9 +249,12 @@ services:
 
   # Frontend Service
   frontend:
+    image: course-creator-frontend:latest
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      cache_from:
+        - course-creator-frontend:latest
     ports:
       - "3000:3000"
     networks:
@@ -217,7 +265,7 @@ services:
       - content-management
       - analytics
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -225,24 +273,39 @@ services:
 
   # Lab Container Management Service
   lab-manager:
+    image: course-creator-lab-manager:latest
     build:
       context: ./lab-containers
       dockerfile: Dockerfile
+      cache_from:
+        - course-creator-lab-manager:latest
     environment:
-      - DOCKER_HOST=unix:///var/run/docker.sock
       - LAB_IMAGE_REGISTRY=course-creator/labs
       - MAX_CONCURRENT_LABS=10
       - LAB_SESSION_TIMEOUT=3600
+      - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
+      - REDIS_URL=redis://redis:6379
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres_password
+      - DB_NAME=course_creator
+      - ENVIRONMENT=docker
+      - LAB_STORAGE_PATH=/home/bbrelin/course-creator/lab-storage
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - lab_storage:/app/lab-storage
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./lab-storage:/home/bbrelin/course-creator/lab-storage
     ports:
       - "8006:8006"
     networks:
       - course-creator-network
     depends_on:
       - course-management
-    privileged: true  # Required for Docker-in-Docker
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8006/health'); exit(0 if r.status_code == 200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     restart: unless-stopped
 
 volumes:

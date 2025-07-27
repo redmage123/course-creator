@@ -8,12 +8,24 @@ import { CONFIG } from '../config.js';
 import { showNotification } from './notifications.js';
 import UIComponents from './ui-components.js';
 
+// Import feedback manager dynamically
+let feedbackManager = null;
+if (typeof window !== 'undefined') {
+    import('./feedback-manager.js').then(module => {
+        feedbackManager = window.feedbackManager;
+    });
+}
+
 export class InstructorDashboard {
     constructor() {
         this.courses = [];
         this.students = [];
         this.currentCourse = null;
         this.activeTab = 'courses';
+        this.feedbackData = {
+            courseFeedback: [],
+            studentFeedback: []
+        };
         
         this.init();
     }
@@ -60,6 +72,8 @@ export class InstructorDashboard {
                 this.showAddStudentModal();
             } else if (e.target.classList.contains('remove-student-btn')) {
                 this.removeStudent(e.target.dataset.studentId);
+            } else if (e.target.classList.contains('feedback-student-btn')) {
+                this.showStudentFeedbackModal(e.target.dataset.studentId, e.target.dataset.courseId);
             }
         });
     }
@@ -145,6 +159,9 @@ export class InstructorDashboard {
                     <button class="tab-button ${this.activeTab === 'content' ? 'active' : ''}" data-tab="content">
                         <i class="fas fa-file-alt"></i> Content
                     </button>
+                    <button class="tab-button ${this.activeTab === 'feedback' ? 'active' : ''}" data-tab="feedback">
+                        <i class="fas fa-comments"></i> Feedback
+                    </button>
                 </div>
                 
                 <div class="dashboard-content">
@@ -167,6 +184,8 @@ export class InstructorDashboard {
                 return this.renderAnalyticsTab();
             case 'content':
                 return this.renderContentTab();
+            case 'feedback':
+                return this.renderFeedbackTab();
             default:
                 return this.renderCoursesTab();
         }
@@ -307,6 +326,9 @@ export class InstructorDashboard {
                 </td>
                 <td>${UIComponents.formatDate(student.enrolled_at)}</td>
                 <td>
+                    <button class="btn btn-sm btn-primary feedback-student-btn" data-student-id="${student.id}" data-course-id="${student.course_id}" title="Provide Feedback">
+                        <i class="fas fa-comment"></i>
+                    </button>
                     <button class="btn btn-sm btn-danger remove-student-btn" data-student-id="${student.id}">
                         <i class="fas fa-user-times"></i>
                     </button>
@@ -458,10 +480,148 @@ export class InstructorDashboard {
     }
 
     /**
+     * Render feedback tab
+     */
+    renderFeedbackTab() {
+        return `
+            <div class="tab-content">
+                <div class="content-header">
+                    <h2>Feedback Management</h2>
+                    <div class="feedback-actions">
+                        <button class="btn btn-primary" onclick="instructorDashboard.loadCourseFeedback()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <button class="btn btn-secondary" onclick="instructorDashboard.exportFeedbackReport()">
+                            <i class="fas fa-download"></i> Export Report
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="feedback-tabs">
+                    <div class="feedback-tab-buttons">
+                        <button class="tab-btn active" data-feedback-tab="course-feedback">
+                            <i class="fas fa-star"></i> Course Feedback
+                        </button>
+                        <button class="tab-btn" data-feedback-tab="student-feedback">
+                            <i class="fas fa-user-graduate"></i> Student Feedback
+                        </button>
+                    </div>
+                    
+                    <div class="feedback-tab-content">
+                        <div id="course-feedback-tab" class="feedback-tab-pane active">
+                            ${this.renderCourseFeedbackSection()}
+                        </div>
+                        <div id="student-feedback-tab" class="feedback-tab-pane">
+                            ${this.renderStudentFeedbackSection()}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render course feedback section
+     */
+    renderCourseFeedbackSection() {
+        return `
+            <div class="course-feedback-section">
+                <div class="section-header">
+                    <h3>Course Feedback from Students</h3>
+                    <p>View and analyze feedback received from students about your courses</p>
+                </div>
+                
+                <div class="feedback-filters">
+                    <select id="courseFeedbackFilter" onchange="instructorDashboard.filterCourseFeedback()">
+                        <option value="all">All Courses</option>
+                        ${this.courses.map(course => `<option value="${course.id}">${course.title}</option>`).join('')}
+                    </select>
+                    <select id="ratingFilter" onchange="instructorDashboard.filterCourseFeedback()">
+                        <option value="all">All Ratings</option>
+                        <option value="5">5 Stars</option>
+                        <option value="4">4 Stars</option>
+                        <option value="3">3 Stars</option>
+                        <option value="2">2 Stars</option>
+                        <option value="1">1 Star</option>
+                    </select>
+                </div>
+                
+                <div id="courseFeedbackList" class="feedback-list">
+                    <div class="feedback-loading">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading course feedback...</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render student feedback section
+     */
+    renderStudentFeedbackSection() {
+        return `
+            <div class="student-feedback-section">
+                <div class="section-header">
+                    <h3>Student Assessment Feedback</h3>
+                    <p>Manage feedback you've provided to students</p>
+                </div>
+                
+                <div class="feedback-actions">
+                    <button class="btn btn-primary" onclick="instructorDashboard.showBulkFeedbackModal()">
+                        <i class="fas fa-users"></i> Bulk Feedback
+                    </button>
+                </div>
+                
+                <div class="student-feedback-grid">
+                    ${this.students.map(student => `
+                        <div class="student-feedback-card">
+                            <div class="student-info">
+                                <div class="student-avatar">
+                                    ${UIComponents.createAvatar(student, 'medium').outerHTML}
+                                </div>
+                                <div class="student-details">
+                                    <h4>${student.full_name}</h4>
+                                    <p>${student.course_title || 'Multiple Courses'}</p>
+                                    <span class="progress-indicator">${student.progress || 0}% Complete</span>
+                                </div>
+                            </div>
+                            <div class="feedback-status">
+                                <div class="last-feedback">
+                                    <span>Last Feedback: ${student.last_feedback_date || 'Never'}</span>
+                                </div>
+                                <div class="feedback-actions">
+                                    <button class="btn btn-sm btn-primary" onclick="instructorDashboard.showStudentFeedbackModal('${student.id}', '${student.course_id}')">
+                                        <i class="fas fa-comment"></i> Give Feedback
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" onclick="instructorDashboard.viewStudentFeedbackHistory('${student.id}')">
+                                        <i class="fas fa-history"></i> History
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                ${this.students.length === 0 ? `
+                    <div class="empty-state">
+                        <i class="fas fa-user-graduate fa-3x"></i>
+                        <h3>No students found</h3>
+                        <p>Students will appear here once they're enrolled in your courses</p>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    /**
      * Switch tab
      */
     switchTab(tabName) {
         this.activeTab = tabName;
+        if (tabName === 'feedback') {
+            this.loadFeedbackData();
+        }
         this.renderDashboard();
     }
 
@@ -681,11 +841,221 @@ export class InstructorDashboard {
             }
         );
     }
+
+    /**
+     * Load feedback data
+     */
+    async loadFeedbackData() {
+        if (!feedbackManager) {
+            showNotification('Feedback system is loading...', 'info');
+            return;
+        }
+        
+        try {
+            // Load course feedback for all courses
+            const courseFeedbackPromises = this.courses.map(course => 
+                feedbackManager.getCourseFeedback(course.id)
+                    .then(feedback => ({ courseId: course.id, courseName: course.title, feedback }))
+                    .catch(error => ({ courseId: course.id, courseName: course.title, feedback: [], error }))
+            );
+            
+            const courseFeedbackResults = await Promise.all(courseFeedbackPromises);
+            this.feedbackData.courseFeedback = courseFeedbackResults;
+            
+            // Load student feedback
+            const studentFeedbackPromises = this.students.map(student => 
+                feedbackManager.getStudentFeedback(student.id, student.course_id)
+                    .then(feedback => ({ studentId: student.id, studentName: student.full_name, feedback }))
+                    .catch(error => ({ studentId: student.id, studentName: student.full_name, feedback: [], error }))
+            );
+            
+            const studentFeedbackResults = await Promise.all(studentFeedbackPromises);
+            this.feedbackData.studentFeedback = studentFeedbackResults;
+            
+            // Update the feedback display
+            this.updateCourseFeedbackDisplay();
+            
+        } catch (error) {
+            console.error('Error loading feedback data:', error);
+            showNotification('Error loading feedback data', 'error');
+        }
+    }
+
+    /**
+     * Update course feedback display
+     */
+    updateCourseFeedbackDisplay() {
+        const container = document.getElementById('courseFeedbackList');
+        if (!container) return;
+        
+        const allFeedback = this.feedbackData.courseFeedback.flatMap(courseData => 
+            courseData.feedback.map(fb => ({ ...fb, courseName: courseData.courseName }))
+        );
+        
+        if (allFeedback.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-comment-slash fa-3x"></i>
+                    <h3>No course feedback yet</h3>
+                    <p>Student feedback will appear here once submitted</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = allFeedback.map(feedback => `
+            <div class="feedback-item">
+                <div class="feedback-header">
+                    <div class="course-info">
+                        <h4>${feedback.courseName}</h4>
+                        <div class="rating">
+                            ${this.renderStarRating(feedback.overall_rating)}
+                            <span class="rating-value">${feedback.overall_rating}/5</span>
+                        </div>
+                    </div>
+                    <div class="feedback-meta">
+                        <span class="feedback-date">${new Date(feedback.created_at).toLocaleDateString()}</span>
+                        ${feedback.is_anonymous ? '<span class="anonymous-badge">Anonymous</span>' : '<span class="student-name">' + (feedback.student_name || 'Student') + '</span>'}
+                    </div>
+                </div>
+                <div class="feedback-content">
+                    ${feedback.positive_aspects ? `<p><strong>Likes:</strong> ${feedback.positive_aspects}</p>` : ''}
+                    ${feedback.areas_for_improvement ? `<p><strong>Improvements:</strong> ${feedback.areas_for_improvement}</p>` : ''}
+                    ${feedback.additional_comments ? `<p><strong>Comments:</strong> ${feedback.additional_comments}</p>` : ''}
+                </div>
+                <div class="feedback-ratings">
+                    ${feedback.content_quality ? `<span class="rating-pill">Content: ${feedback.content_quality}/5</span>` : ''}
+                    ${feedback.instructor_effectiveness ? `<span class="rating-pill">Teaching: ${feedback.instructor_effectiveness}/5</span>` : ''}
+                    ${feedback.difficulty_appropriateness ? `<span class="rating-pill">Difficulty: ${feedback.difficulty_appropriateness}/5</span>` : ''}
+                    ${feedback.lab_quality ? `<span class="rating-pill">Labs: ${feedback.lab_quality}/5</span>` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    /**
+     * Render star rating display
+     */
+    renderStarRating(rating) {
+        const stars = [];
+        for (let i = 1; i <= 5; i++) {
+            stars.push(`<i class="fas fa-star ${i <= rating ? 'active' : ''}"></i>`);
+        }
+        return stars.join('');
+    }
+
+    /**
+     * Show student feedback modal
+     */
+    showStudentFeedbackModal(studentId, courseId) {
+        if (!feedbackManager) {
+            showNotification('Feedback system is still loading. Please try again.', 'warning');
+            return;
+        }
+        
+        const student = this.students.find(s => s.id === studentId);
+        const course = this.courses.find(c => c.id === courseId);
+        
+        if (!student || !course) {
+            showNotification('Student or course not found', 'error');
+            return;
+        }
+        
+        // Create modal overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'feedback-overlay';
+        overlay.id = 'studentFeedbackOverlay';
+        
+        // Create modal content
+        const modal = document.createElement('div');
+        modal.className = 'feedback-modal large';
+        modal.innerHTML = feedbackManager.createStudentFeedbackForm(
+            studentId, 
+            student.full_name, 
+            courseId, 
+            course.title
+        );
+        
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        
+        // Add event listener for form submission
+        const form = document.getElementById('studentFeedbackForm');
+        if (form) {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                feedbackManager.handleStudentFeedbackSubmit(e)
+                    .then(() => {
+                        overlay.remove();
+                        this.loadFeedbackData(); // Refresh feedback data
+                    })
+                    .catch(error => {
+                        console.error('Error submitting feedback:', error);
+                    });
+            });
+        }
+        
+        // Close on overlay click
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) {
+                overlay.remove();
+            }
+        });
+    }
+
+    /**
+     * Filter course feedback
+     */
+    filterCourseFeedback() {
+        const courseFilter = document.getElementById('courseFeedbackFilter')?.value;
+        const ratingFilter = document.getElementById('ratingFilter')?.value;
+        
+        // Implementation for filtering feedback
+        // This would filter the displayed feedback based on selected criteria
+        console.log('Filtering feedback by course:', courseFilter, 'rating:', ratingFilter);
+    }
+
+    /**
+     * Load course feedback
+     */
+    async loadCourseFeedback() {
+        await this.loadFeedbackData();
+        showNotification('Feedback data refreshed', 'success');
+    }
+
+    /**
+     * Export feedback report
+     */
+    exportFeedbackReport() {
+        // Implementation for exporting feedback report
+        showNotification('Export functionality coming soon', 'info');
+    }
+
+    /**
+     * Show bulk feedback modal
+     */
+    showBulkFeedbackModal() {
+        showNotification('Bulk feedback functionality coming soon', 'info');
+    }
+
+    /**
+     * View student feedback history
+     */
+    viewStudentFeedbackHistory(studentId) {
+        const student = this.students.find(s => s.id === studentId);
+        if (!student) return;
+        
+        showNotification(`Viewing feedback history for ${student.full_name}`, 'info');
+    }
 }
+
+// Create global instance
+let instructorDashboard = null;
 
 // Initialize if on instructor dashboard page
 if (window.location.pathname.includes('instructor-dashboard.html')) {
-    new InstructorDashboard();
+    instructorDashboard = new InstructorDashboard();
+    window.instructorDashboard = instructorDashboard;
 }
 
 export default InstructorDashboard;

@@ -353,24 +353,83 @@ pipeline {
                     }
                 }
 
-                stage('Integration Tests') {
+                stage('Configuration Validation Tests') {
                     steps {
                         sh '''
-                            echo "🔗 Running integration tests..."
+                            echo "🔧 Running configuration validation tests..."
+                            source .venv/bin/activate
+                            
+                            # Run configuration tests to catch config bugs
+                            python -m pytest tests/config/ \\
+                                -v \\
+                                --junit-xml=config-test-results.xml \\
+                                --html=config-test-report.html \\
+                                --self-contained-html
+                        '''
+                    }
+                    post {
+                        always {
+                            junit 'config-test-results.xml'
+                            publishHTML([
+                                allowMissing: false,
+                                alwaysLinkToLastBuild: true,
+                                keepAll: true,
+                                reportDir: '.',
+                                reportFiles: 'config-test-report.html',
+                                reportName: 'Configuration Test Report'
+                            ])
+                        }
+                    }
+                }
+
+                stage('Real Integration Tests') {
+                    steps {
+                        sh '''
+                            echo "🔗 Running REAL integration tests (no mocks)..."
+                            source .venv/bin/activate
+                            
+                            # Setup test environment with real database
+                            python tests/setup_test_environment.py
+                            
+                            # Run real integration tests
+                            python -m pytest tests/integration/ \\
+                                -m real_db \\
+                                -v \\
+                                --junit-xml=real-integration-test-results.xml \\
+                                --html=real-integration-test-report.html \\
+                                --self-contained-html
+                        '''
+                    }
+                    post {
+                        always {
+                            sh 'python tests/setup_test_environment.py --cleanup || true'
+                            junit 'real-integration-test-results.xml'
+                            publishHTML([
+                                allowMissing: false,
+                                alwaysLinkToLastBuild: true,
+                                keepAll: true,
+                                reportDir: '.',
+                                reportFiles: 'real-integration-test-report.html',
+                                reportName: 'Real Integration Test Report'
+                            ])
+                        }
+                    }
+                }
+
+                stage('Legacy Integration Tests') {
+                    steps {
+                        sh '''
+                            echo "🔗 Running legacy integration tests..."
                             source .venv/bin/activate
                             
                             # Start test services
-                            docker-compose -f docker-compose.test.yml up -d postgres redis
-                            sleep 10
+                            docker-compose -f docker-compose.test.yml up -d postgres-test redis-test
+                            sleep 15
                             
-                            # Setup test database
-                            export DATABASE_URL="postgresql://test_user:test_pass@localhost:5432/course_creator_test"
-                            export REDIS_URL="redis://localhost:6379/1"
-                            python setup-database.py --test
-                            
-                            # Run integration tests
+                            # Run legacy integration tests (with mocks)
                             python -m pytest tests/integration/ \\
                                 -v \\
+                                --ignore=tests/integration/test_analytics_real_integration.py \\
                                 --junit-xml=integration-test-results.xml \\
                                 --html=integration-test-report.html \\
                                 --self-contained-html
@@ -423,6 +482,35 @@ pipeline {
                                 reportDir: 'frontend/coverage/lcov-report',
                                 reportFiles: 'index.html',
                                 reportName: 'Frontend Coverage Report'
+                            ])
+                        }
+                    }
+                }
+
+                stage('Service Startup Smoke Tests') {
+                    steps {
+                        sh '''
+                            echo "💨 Running service startup smoke tests..."
+                            source .venv/bin/activate
+                            
+                            # Test that all services can actually start
+                            python -m pytest tests/smoke/ \\
+                                -v \\
+                                --junit-xml=smoke-test-results.xml \\
+                                --html=smoke-test-report.html \\
+                                --self-contained-html
+                        '''
+                    }
+                    post {
+                        always {
+                            junit 'smoke-test-results.xml'
+                            publishHTML([
+                                allowMissing: false,
+                                alwaysLinkToLastBuild: true,
+                                keepAll: true,
+                                reportDir: '.',
+                                reportFiles: 'smoke-test-report.html',
+                                reportName: 'Smoke Test Report'
                             ])
                         }
                     }

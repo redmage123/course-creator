@@ -9,7 +9,6 @@ Manages individual Docker containers for student lab environments with:
 """
 
 import asyncio
-import docker
 import json
 import os
 import shutil
@@ -21,9 +20,13 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 from uuid import uuid4
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, Query
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, Query, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import Response, StreamingResponse, FileResponse
 from pydantic import BaseModel
+import httpx
+import zipfile
+import io
 import structlog
 import psutil
 from analytics_client import analytics_client
@@ -52,18 +55,122 @@ security = HTTPBearer()
 
 app = FastAPI(title="Enhanced Lab Container Manager", version="2.0.0")
 
-# Docker client
-docker_client = docker.from_env()
+# Docker client - Initialize later to handle Docker-in-Docker properly
+docker_client = None
 
 # Configuration from environment
 MAX_CONCURRENT_LABS = int(os.getenv('MAX_CONCURRENT_LABS', '50'))
 LAB_SESSION_TIMEOUT = int(os.getenv('LAB_SESSION_TIMEOUT', '3600'))  # 1 hour
-LAB_STORAGE_PATH = os.getenv('LAB_STORAGE_PATH', '/app/lab-storage')
+LAB_STORAGE_PATH = os.getenv('LAB_STORAGE_PATH', '/home/bbrelin/course-creator/lab-storage')
 LAB_IMAGE_REGISTRY = os.getenv('LAB_IMAGE_REGISTRY', 'course-creator/labs')
 
 # In-memory storage for active lab sessions
 active_labs: Dict[str, Dict] = {}  # lab_id -> lab_info
 user_labs: Dict[str, str] = {}     # user_id -> lab_id mapping
+
+def get_docker_client():
+    """Initialize Docker client to connect to host Docker daemon"""
+    global docker_client
+    if docker_client is None:
+        try:
+            # Use subprocess to call docker CLI directly instead of Python API
+            # This avoids the Docker-in-Docker API issues
+            import subprocess
+            result = subprocess.run(['docker', 'version'], capture_output=True, text=True)
+            if result.returncode == 0:
+                logger.info("Docker CLI available - using subprocess for Docker operations")
+                # Set a flag to use CLI instead of API
+                docker_client = "CLI_MODE"
+            else:
+                raise RuntimeError("Docker CLI not available")
+        except Exception as e:
+            logger.error("Failed to connect to Docker daemon", error=str(e))
+            raise RuntimeError(f"Cannot connect to Docker daemon: {e}")
+    
+    return docker_client
+
+def docker_run_container(image, name, ports, environment, volumes, network, memory_limit, cpu_limit):
+    """Run a Docker container using CLI"""
+    import subprocess
+    
+    cmd = [
+        'docker', 'run', '-d',
+        '--name', name,
+        '--network', network,
+        '--memory', memory_limit,
+        '--cpus', str(cpu_limit/100000),  # Convert to CPU cores
+        '--restart', 'unless-stopped'
+    ]
+    
+    # Add port mappings
+    for container_port, host_port in ports.items():
+        cmd.extend(['-p', f'{host_port}:{container_port}'])
+    
+    # Add environment variables
+    for key, value in environment.items():
+        cmd.extend(['-e', f'{key}={value}'])
+    
+    # Add volume mounts
+    for host_path, mount in volumes.items():
+        cmd.extend(['-v', f'{host_path}:{mount["bind"]}'])
+    
+    # Add security constraints (but allow sudo for file operations)
+    cmd.extend(['--cap-drop', 'ALL'])
+    cmd.extend(['--cap-add', 'CHOWN'])
+    cmd.extend(['--cap-add', 'DAC_OVERRIDE']) 
+    cmd.extend(['--cap-add', 'FOWNER'])
+    cmd.extend(['--cap-add', 'SETGID'])
+    cmd.extend(['--cap-add', 'SETUID'])
+    # Note: Removed no-new-privileges to allow sudo for workspace permissions
+    
+    cmd.append(image)
+    
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode == 0:
+        container_id = result.stdout.strip()
+        logger.info("Container created successfully", container_id=container_id)
+        return container_id
+    else:
+        logger.error("Failed to create container", error=result.stderr)
+        raise RuntimeError(f"Failed to create container: {result.stderr}")
+
+def docker_stop_container(container_id):
+    """Stop and remove a Docker container using CLI"""
+    import subprocess
+    
+    # Stop container
+    subprocess.run(['docker', 'stop', container_id], capture_output=True)
+    # Remove container
+    result = subprocess.run(['docker', 'rm', container_id], capture_output=True, text=True)
+    
+    if result.returncode == 0:
+        logger.info("Container stopped and removed", container_id=container_id)
+    else:
+        logger.warning("Failed to remove container", container_id=container_id, error=result.stderr)
+
+def docker_list_containers(name_filter=None):
+    """List Docker containers using CLI"""
+    import subprocess
+    
+    cmd = ['docker', 'ps', '-a', '--format', '{{.ID}}\t{{.Names}}\t{{.Status}}']
+    if name_filter:
+        cmd.extend(['--filter', f'name={name_filter}'])
+    
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode == 0:
+        containers = []
+        for line in result.stdout.strip().split('\n'):
+            if line:
+                parts = line.split('\t')
+                containers.append({
+                    'id': parts[0],
+                    'name': parts[1],
+                    'status': parts[2]
+                })
+        return containers
+    else:
+        logger.error("Failed to list containers", error=result.stderr)
+        return []
 
 
 class LabCreateRequest(BaseModel):
@@ -109,6 +216,20 @@ class LabSession(BaseModel):
     multi_ide_enabled: bool = False
     available_ides: Dict[str, IDEInfo] = {}
 
+
+class AIAssistantRequest(BaseModel):
+    lab_id: str
+    ide_type: str  # 'vscode', 'jupyter', 'terminal'
+    action: str  # 'read_file', 'write_file', 'execute_code', 'get_workspace', 'terminal_command'
+    payload: Dict  # Action-specific data
+    ai_session_id: str  # Track AI session for logging
+
+class AIAssistantResponse(BaseModel):
+    success: bool
+    data: Optional[Dict] = None
+    error: Optional[str] = None
+    ide_type: str
+    action: str
 
 class LabListResponse(BaseModel):
     labs: List[LabSession]
@@ -156,17 +277,29 @@ class DynamicImageBuilder:
             logger.info("Building lab image", image_tag=image_tag, lab_type=lab_type)
             
             try:
-                image, build_logs = docker_client.images.build(
-                    path=str(build_path),
-                    tag=image_tag,
-                    rm=True,
-                    forcerm=True
-                )
+                # Build image using Docker CLI
+                import subprocess
+                build_cmd = [
+                    'docker', 'build',
+                    '--tag', image_tag,
+                    '--rm',
+                    '--force-rm',
+                    str(build_path)
+                ]
                 
-                logger.info("Lab image built successfully", image_tag=image_tag)
-                return image_tag
+                result = subprocess.run(build_cmd, capture_output=True, text=True, timeout=300)
                 
-            except docker.errors.BuildError as e:
+                if result.returncode == 0:
+                    logger.info("Lab image built successfully", image_tag=image_tag)
+                    return image_tag
+                else:
+                    logger.error("Failed to build lab image", error=result.stderr, image_tag=image_tag)
+                    raise HTTPException(status_code=500, detail=f"Failed to build lab image: {result.stderr}")
+                
+            except subprocess.TimeoutExpired as e:
+                logger.error("Docker build timeout", error=str(e), image_tag=image_tag)
+                raise HTTPException(status_code=500, detail=f"Docker build timeout: {str(e)}")
+            except Exception as e:
                 logger.error("Failed to build lab image", error=str(e), image_tag=image_tag)
                 raise HTTPException(status_code=500, detail=f"Failed to build lab image: {str(e)}")
     
@@ -365,10 +498,12 @@ async def root():
 async def health_check():
     """Health check endpoint"""
     try:
-        docker_client.ping()
+        # Test Docker CLI connectivity
+        docker_status = get_docker_client()  # This returns "CLI_MODE" if successful
+        
         return {
             "status": "healthy",
-            "docker_status": "connected",
+            "docker_status": "connected" if docker_status == "CLI_MODE" else "unknown",
             "active_labs": len(active_labs),
             "max_concurrent": MAX_CONCURRENT_LABS,
             "system_resources": {
@@ -692,9 +827,11 @@ async def get_lab_ide_status(lab_id: str):
         return {"status": "container_not_started", "ides": {}}
     
     try:
-        # Check if container is running
-        container = docker_client.containers.get(container_id)
-        if container.status != 'running':
+        # Check if container is running using CLI
+        import subprocess
+        result = subprocess.run(['docker', 'inspect', '--format={{.State.Status}}', container_id],
+                              capture_output=True, text=True)
+        if result.returncode != 0 or result.stdout.strip() != 'running':
             return {"status": "container_stopped", "ides": {}}
         
         # Check IDE health by testing ports
@@ -718,9 +855,9 @@ async def get_lab_ide_status(lab_id: str):
             "ides": ide_status
         }
         
-    except docker.errors.NotFound:
-        return {"status": "container_not_found", "ides": {}}
     except Exception as e:
+        if "No such container" in str(e):
+            return {"status": "container_not_found", "ides": {}}
         logger.error("Error checking IDE status", lab_id=lab_id, error=str(e))
         return {"status": "error", "message": str(e), "ides": {}}
 
@@ -831,6 +968,10 @@ async def _build_and_start_lab(lab_id: str, request: LabCreateRequest):
     except Exception as e:
         # Update status to error
         active_labs[lab_id]['status'] = 'error'
+        import traceback
+        # Print to stdout so it shows in Docker logs
+        print(f"TRACEBACK for lab {lab_id}:")
+        print(traceback.format_exc())
         logger.error("Failed to build and start lab", lab_id=lab_id, error=str(e))
 
 
@@ -860,10 +1001,9 @@ async def _start_lab_container(lab_id: str, image_tag: str, request: LabCreateRe
     if request.enable_multi_ide and request.lab_type == 'python':
         image_tag = image_tag.replace('python-lab', 'python-lab-multi-ide')
     
-    # Create container with persistent storage and multi-IDE support
-    container = docker_client.containers.run(
-        image=image_tag,
-        detach=True,
+    # Create container with persistent storage and multi-IDE support using CLI
+    container_id = docker_run_container(
+        image=f"multi-ide-python:latest",  # Use the new multi-IDE image
         name=f"lab-{lab_id}",
         ports=port_mappings,
         environment={
@@ -876,16 +1016,11 @@ async def _start_lab_container(lab_id: str, image_tag: str, request: LabCreateRe
             'MULTI_IDE_ENABLED': str(request.enable_multi_ide).lower()
         },
         volumes={
-            storage_path: {'bind': '/home/labuser/workspace', 'mode': 'rw'}
+            storage_path: {'bind': '/home/labuser/workspace'}
         },
-        # Security constraints (increased memory for multi-IDE)
-        mem_limit='2g' if request.enable_multi_ide else '1g',
-        cpu_quota=150000 if request.enable_multi_ide else 100000,  # 150% of one CPU for multi-IDE
-        network_mode='bridge',
-        cap_drop=['ALL'],
-        cap_add=['CHOWN', 'DAC_OVERRIDE', 'FOWNER', 'SETGID', 'SETUID'],
-        security_opt=['no-new-privileges:true'],
-        restart_policy={'Name': 'unless-stopped'}
+        network='course-creator_course-creator-network',
+        memory_limit='2g' if request.enable_multi_ide else '1g',
+        cpu_limit=150000 if request.enable_multi_ide else 100000
     )
     
     # Build available IDEs information
@@ -901,11 +1036,11 @@ async def _start_lab_container(lab_id: str, image_tag: str, request: LabCreateRe
         available_ides[ide_name] = ide_info.dict()
     
     logger.info("Lab container started", 
-               container_id=container.id, lab_id=lab_id, port=base_port, 
+               container_id=container_id, lab_id=lab_id, port=base_port, 
                ide_ports=ide_ports)
     
     return {
-        'container_id': container.id,
+        'container_id': container_id,
         'port': base_port,
         'ide_ports': ide_ports,
         'available_ides': available_ides
@@ -920,11 +1055,14 @@ async def _pause_lab_container(lab_id: str):
         return
     
     try:
-        container = docker_client.containers.get(lab_data['container_id'])
-        container.pause()
-        logger.info("Container paused", container_id=lab_data['container_id'])
-    except docker.errors.NotFound:
-        logger.warning("Container not found during pause", container_id=lab_data['container_id'])
+        import subprocess
+        result = subprocess.run(['docker', 'pause', lab_data['container_id']], 
+                              capture_output=True, text=True)
+        if result.returncode == 0:
+            logger.info("Container paused", container_id=lab_data['container_id'])
+        else:
+            logger.warning("Failed to pause container", 
+                          container_id=lab_data['container_id'], error=result.stderr)
     except Exception as e:
         logger.error("Error pausing container", container_id=lab_data['container_id'], error=str(e))
 
@@ -937,11 +1075,14 @@ async def _resume_lab_container(lab_id: str):
         return
     
     try:
-        container = docker_client.containers.get(lab_data['container_id'])
-        container.unpause()
-        logger.info("Container resumed", container_id=lab_data['container_id'])
-    except docker.errors.NotFound:
-        logger.warning("Container not found during resume", container_id=lab_data['container_id'])
+        import subprocess
+        result = subprocess.run(['docker', 'unpause', lab_data['container_id']], 
+                              capture_output=True, text=True)
+        if result.returncode == 0:
+            logger.info("Container resumed", container_id=lab_data['container_id'])
+        else:
+            logger.warning("Failed to resume container", 
+                          container_id=lab_data['container_id'], error=result.stderr)
     except Exception as e:
         logger.error("Error resuming container", container_id=lab_data['container_id'], error=str(e))
 
@@ -950,12 +1091,7 @@ async def _cleanup_lab_container(container_id: str):
     """Stop and remove a lab container"""
     
     try:
-        container = docker_client.containers.get(container_id)
-        container.stop(timeout=10)
-        container.remove()
-        logger.info("Container cleaned up", container_id=container_id)
-    except docker.errors.NotFound:
-        logger.warning("Container not found during cleanup", container_id=container_id)
+        docker_stop_container(container_id)
     except Exception as e:
         logger.error("Error during container cleanup", container_id=container_id, error=str(e))
 
@@ -1060,6 +1196,635 @@ async def _schedule_cleanup(lab_id: str, timeout_seconds: int):
             except Exception as e:
                 logger.error("Failed to cleanup expired lab", lab_id=lab_id, error=str(e))
 
+# ==================== AI ASSISTANT HELPER FUNCTIONS ====================
+
+async def _handle_ai_ide_request(request: AIAssistantRequest, ide_port: int, lab_data: Dict) -> Dict:
+    """Handle AI assistant requests for different IDE types and actions"""
+    
+    result = {"success": False, "data": None, "error": None}
+    
+    try:
+        if request.ide_type == "vscode":
+            result = await _handle_vscode_ai_request(request, ide_port, lab_data)
+        elif request.ide_type == "jupyter":
+            result = await _handle_jupyter_ai_request(request, ide_port, lab_data)
+        elif request.ide_type == "terminal":
+            result = await _handle_terminal_ai_request(request, ide_port, lab_data)
+        else:
+            result["error"] = f"Unsupported IDE type: {request.ide_type}"
+            
+    except Exception as e:
+        result["error"] = str(e)
+        logger.error("AI IDE request error", 
+                    ide_type=request.ide_type, 
+                    action=request.action, 
+                    error=str(e))
+    
+    return result
+
+async def _handle_vscode_ai_request(request: AIAssistantRequest, ide_port: int, lab_data: Dict) -> Dict:
+    """Handle AI requests for VSCode Server"""
+    
+    action = request.action
+    payload = request.payload
+    
+    # VSCode Server API interactions
+    base_url = f"http://localhost:{ide_port}"
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            if action == "read_file":
+                file_path = payload.get("file_path")
+                if not file_path:
+                    return {"success": False, "error": "file_path required"}
+                
+                # Use container exec to read file from workspace
+                container_name = f"lab-{request.lab_id}"
+                result = await _exec_container_command(
+                    container_name,
+                    ["cat", f"/home/labuser/workspace/{file_path}"]
+                )
+                
+                return {
+                    "success": result["success"],
+                    "data": {"content": result.get("output", ""), "file_path": file_path},
+                    "error": result.get("error")
+                }
+                
+            elif action == "write_file":
+                file_path = payload.get("file_path")
+                content = payload.get("content", "")
+                
+                if not file_path:
+                    return {"success": False, "error": "file_path required"}
+                
+                # Use container exec to write file
+                container_name = f"lab-{request.lab_id}"
+                
+                # Create file with content
+                import tempfile
+                import base64
+                encoded_content = base64.b64encode(content.encode()).decode()
+                
+                result = await _exec_container_command(
+                    container_name,
+                    ["sh", "-c", f"echo '{encoded_content}' | base64 -d > /home/labuser/workspace/{file_path} && chown labuser:labuser /home/labuser/workspace/{file_path}"]
+                )
+                
+                return {
+                    "success": result["success"],
+                    "data": {"file_path": file_path, "bytes_written": len(content)},
+                    "error": result.get("error")
+                }
+                
+            elif action == "get_workspace":
+                # List workspace files
+                container_name = f"lab-{request.lab_id}"
+                result = await _exec_container_command(
+                    container_name,
+                    ["find", "/home/labuser/workspace", "-type", "f", "-name", "*.py", "-o", "-name", "*.js", "-o", "-name", "*.html", "-o", "-name", "*.css", "-o", "-name", "*.json", "-o", "-name", "*.md", "-o", "-name", "*.txt"]
+                )
+                
+                if result["success"]:
+                    files = [f.replace("/home/labuser/workspace/", "") for f in result["output"].strip().split("\n") if f.strip()]
+                    return {"success": True, "data": {"files": files}}
+                else:
+                    return {"success": False, "error": result.get("error")}
+                    
+            else:
+                return {"success": False, "error": f"Unsupported VSCode action: {action}"}
+                
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+async def _handle_jupyter_ai_request(request: AIAssistantRequest, ide_port: int, lab_data: Dict) -> Dict:
+    """Handle AI requests for Jupyter/JupyterLab"""
+    
+    action = request.action
+    payload = request.payload
+    
+    base_url = f"http://localhost:{ide_port}"
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            if action == "execute_code":
+                code = payload.get("code", "")
+                
+                # For now, execute code directly in container
+                container_name = f"lab-{request.lab_id}"
+                
+                # Create temporary Python script and execute
+                import base64
+                encoded_code = base64.b64encode(code.encode()).decode()
+                
+                result = await _exec_container_command(
+                    container_name,
+                    ["sh", "-c", f"cd /home/labuser/workspace && echo '{encoded_code}' | base64 -d | python3"]
+                )
+                
+                return {
+                    "success": result["success"],
+                    "data": {
+                        "output": result.get("output", ""),
+                        "execution_count": 1
+                    },
+                    "error": result.get("error")
+                }
+                
+            elif action == "read_file":
+                file_path = payload.get("file_path")
+                container_name = f"lab-{request.lab_id}"
+                
+                result = await _exec_container_command(
+                    container_name,
+                    ["cat", f"/home/labuser/workspace/{file_path}"]
+                )
+                
+                return {
+                    "success": result["success"],
+                    "data": {"content": result.get("output", ""), "file_path": file_path},
+                    "error": result.get("error")
+                }
+                
+            elif action == "get_workspace":
+                container_name = f"lab-{request.lab_id}"
+                result = await _exec_container_command(
+                    container_name,
+                    ["find", "/home/labuser/workspace", "-name", "*.ipynb", "-o", "-name", "*.py"]
+                )
+                
+                if result["success"]:
+                    files = [f.replace("/home/labuser/workspace/", "") for f in result["output"].strip().split("\n") if f.strip()]
+                    return {"success": True, "data": {"notebooks": files}}
+                else:
+                    return {"success": False, "error": result.get("error")}
+                    
+            else:
+                return {"success": False, "error": f"Unsupported Jupyter action: {action}"}
+                
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+async def _handle_terminal_ai_request(request: AIAssistantRequest, ide_port: int, lab_data: Dict) -> Dict:
+    """Handle AI requests for terminal/shell commands"""
+    
+    action = request.action
+    payload = request.payload
+    
+    try:
+        if action == "terminal_command":
+            command = payload.get("command", "")
+            
+            if not command:
+                return {"success": False, "error": "command required"}
+            
+            container_name = f"lab-{request.lab_id}"
+            
+            # Execute command in container
+            result = await _exec_container_command(
+                container_name,
+                ["sh", "-c", f"cd /home/labuser/workspace && {command}"]
+            )
+            
+            return {
+                "success": result["success"],
+                "data": {
+                    "output": result.get("output", ""),
+                    "command": command
+                },
+                "error": result.get("error")
+            }
+            
+        elif action == "get_workspace":
+            container_name = f"lab-{request.lab_id}"
+            result = await _exec_container_command(
+                container_name,
+                ["ls", "-la", "/home/labuser/workspace"]
+            )
+            
+            return {
+                "success": result["success"],
+                "data": {"listing": result.get("output", "")},
+                "error": result.get("error")
+            }
+            
+        else:
+            return {"success": False, "error": f"Unsupported terminal action: {action}"}
+            
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+async def _exec_container_command(container_name: str, command: List[str]) -> Dict:
+    """Execute command in container using Docker CLI"""
+    
+    try:
+        import subprocess
+        
+        docker_cmd = ["docker", "exec", container_name] + command
+        
+        result = subprocess.run(
+            docker_cmd,
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        
+        return {
+            "success": result.returncode == 0,
+            "output": result.stdout,
+            "error": result.stderr if result.returncode != 0 else None
+        }
+        
+    except subprocess.TimeoutExpired:
+        return {"success": False, "error": "Command timeout"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+async def _get_workspace_structure(lab_data: Dict) -> Dict:
+    """Get the file structure of the lab workspace"""
+    
+    container_name = f"lab-{lab_data['lab_id']}"
+    
+    try:
+        # Get directory tree
+        result = await _exec_container_command(
+            container_name,
+            ["find", "/home/labuser/workspace", "-type", "f", "-o", "-type", "d"]
+        )
+        
+        if result["success"]:
+            paths = result["output"].strip().split("\n")
+            
+            # Build file tree structure
+            files = []
+            directories = []
+            
+            for path in paths:
+                if path.strip():
+                    relative_path = path.replace("/home/labuser/workspace/", "").replace("/home/labuser/workspace", "")
+                    if relative_path:  # Skip empty root
+                        if path.endswith("/") or "." not in relative_path.split("/")[-1]:
+                            directories.append(relative_path)
+                        else:
+                            files.append(relative_path)
+            
+            return {
+                "files": sorted(files),
+                "directories": sorted(directories),
+                "workspace_path": "/home/labuser/workspace"
+            }
+        else:
+            return {"error": result.get("error", "Failed to get workspace structure")}
+            
+    except Exception as e:
+        return {"error": str(e)}
+
+# ==================== AI ASSISTANT PROXY ENDPOINTS ====================
+
+@app.post("/ai-assistant/proxy", response_model=AIAssistantResponse)
+async def ai_assistant_proxy(request: AIAssistantRequest):
+    """Proxy AI assistant requests to student lab environments"""
+    
+    if request.lab_id not in active_labs:
+        raise HTTPException(status_code=404, detail="Lab session not found")
+    
+    lab_data = active_labs[request.lab_id]
+    
+    if lab_data['status'] != 'running':
+        raise HTTPException(status_code=400, detail=f"Lab is not running (status: {lab_data['status']})")
+    
+    # Get the appropriate IDE port
+    if request.ide_type not in lab_data['ide_ports']:
+        raise HTTPException(status_code=400, detail=f"IDE type '{request.ide_type}' not available in this lab")
+    
+    ide_port = lab_data['ide_ports'][request.ide_type]
+    
+    try:
+        # Route request based on IDE type and action
+        result = await _handle_ai_ide_request(request, ide_port, lab_data)
+        
+        # Log AI assistant activity
+        asyncio.create_task(
+            analytics_client.track_lab_activity(
+                lab_data['user_id'],
+                lab_data['course_id'],
+                "ai_assistant_action",
+                {
+                    "lab_id": request.lab_id,
+                    "ide_type": request.ide_type,
+                    "action": request.action,
+                    "ai_session_id": request.ai_session_id,
+                    "success": result.get('success', False)
+                },
+                request.lab_id
+            )
+        )
+        
+        return AIAssistantResponse(
+            success=result.get('success', False),
+            data=result.get('data'),
+            error=result.get('error'),
+            ide_type=request.ide_type,
+            action=request.action
+        )
+        
+    except Exception as e:
+        logger.error("AI assistant proxy error", 
+                    lab_id=request.lab_id, 
+                    ide_type=request.ide_type, 
+                    action=request.action, 
+                    error=str(e))
+        return AIAssistantResponse(
+            success=False,
+            error=str(e),
+            ide_type=request.ide_type,
+            action=request.action
+        )
+
+@app.get("/ai-assistant/labs/{lab_id}/workspace")
+async def get_lab_workspace_info(lab_id: str):
+    """Get workspace information for AI assistant"""
+    
+    if lab_id not in active_labs:
+        raise HTTPException(status_code=404, detail="Lab session not found")
+    
+    lab_data = active_labs[lab_id]
+    
+    if lab_data['status'] != 'running':
+        raise HTTPException(status_code=400, detail=f"Lab is not running (status: {lab_data['status']})")
+    
+    try:
+        # Get workspace file structure
+        workspace_info = await _get_workspace_structure(lab_data)
+        
+        return {
+            "lab_id": lab_id,
+            "user_id": lab_data['user_id'],
+            "course_id": lab_data['course_id'],
+            "workspace_path": "/home/labuser/workspace",
+            "available_ides": list(lab_data['ide_ports'].keys()),
+            "ide_ports": lab_data['ide_ports'],
+            "workspace_structure": workspace_info,
+            "status": lab_data['status']
+        }
+        
+    except Exception as e:
+        logger.error("Failed to get workspace info", lab_id=lab_id, error=str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to get workspace info: {str(e)}")
+
+@app.post("/ai-assistant/labs/{lab_id}/tunnel/{ide_type}")
+async def create_ai_tunnel(lab_id: str, ide_type: str, request: Request):
+    """Create a direct tunnel for AI assistant to IDE"""
+    
+    if lab_id not in active_labs:
+        raise HTTPException(status_code=404, detail="Lab session not found")
+    
+    lab_data = active_labs[lab_id]
+    
+    if lab_data['status'] != 'running':
+        raise HTTPException(status_code=400, detail=f"Lab is not running (status: {lab_data['status']})")
+    
+    if ide_type not in lab_data['ide_ports']:
+        raise HTTPException(status_code=400, detail=f"IDE type '{ide_type}' not available")
+    
+    ide_port = lab_data['ide_ports'][ide_type]
+    
+    try:
+        # Forward the request to the appropriate IDE
+        async with httpx.AsyncClient() as client:
+            url = f"http://localhost:{ide_port}{request.url.path.replace(f'/ai-assistant/labs/{lab_id}/tunnel/{ide_type}', '')}"
+            
+            # Forward query parameters
+            if request.url.query:
+                url += f"?{request.url.query}"
+            
+            # Get request body if present
+            body = await request.body()
+            
+            # Forward headers (excluding host)
+            headers = dict(request.headers)
+            headers.pop('host', None)
+            
+            # Make the proxied request
+            response = await client.request(
+                method=request.method,
+                url=url,
+                headers=headers,
+                content=body,
+                timeout=30.0
+            )
+            
+            # Return the response
+            return Response(
+                content=response.content,
+                status_code=response.status_code,
+                headers=dict(response.headers)
+            )
+            
+    except Exception as e:
+        logger.error("AI tunnel error", lab_id=lab_id, ide_type=ide_type, error=str(e))
+        raise HTTPException(status_code=500, detail=f"Tunnel error: {str(e)}")
+
+# ==================== STUDENT FILE DOWNLOAD ENDPOINTS ====================
+
+@app.get("/labs/{lab_id}/files")
+async def list_workspace_files(lab_id: str):
+    """List all files in student workspace for download"""
+    
+    if lab_id not in active_labs:
+        raise HTTPException(status_code=404, detail="Lab session not found")
+    
+    lab_data = active_labs[lab_id]
+    
+    if lab_data['status'] != 'running':
+        raise HTTPException(status_code=400, detail=f"Lab is not running (status: {lab_data['status']})")
+    
+    try:
+        container_name = f"lab-{lab_id}"
+        
+        # Get all files recursively
+        result = await _exec_container_command(
+            container_name,
+            ["find", "/home/labuser/workspace", "-type", "f", "-exec", "ls", "-la", "{}", ";"]
+        )
+        
+        if not result["success"]:
+            raise HTTPException(status_code=500, detail="Failed to list workspace files")
+        
+        # Parse the file list
+        files = []
+        for line in result["output"].strip().split('\n'):
+            if line and '/home/labuser/workspace/' in line:
+                parts = line.split()
+                if len(parts) >= 9:
+                    file_path = ' '.join(parts[8:])  # Full path
+                    relative_path = file_path.replace('/home/labuser/workspace/', '')
+                    if relative_path and relative_path != '/home/labuser/workspace':
+                        size = parts[4]
+                        modified = ' '.join(parts[5:8])
+                        files.append({
+                            "name": relative_path,
+                            "size": size,
+                            "modified": modified,
+                            "download_url": f"/labs/{lab_id}/download/{relative_path}"
+                        })
+        
+        return {
+            "lab_id": lab_id,
+            "files": files,
+            "total_files": len(files)
+        }
+        
+    except Exception as e:
+        logger.error("Failed to list workspace files", lab_id=lab_id, error=str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to list files: {str(e)}")
+
+@app.get("/labs/{lab_id}/download/{file_path:path}")
+async def download_file(lab_id: str, file_path: str):
+    """Download individual file from student workspace"""
+    
+    if lab_id not in active_labs:
+        raise HTTPException(status_code=404, detail="Lab session not found")
+    
+    lab_data = active_labs[lab_id]
+    
+    if lab_data['status'] != 'running':
+        raise HTTPException(status_code=400, detail=f"Lab is not running (status: {lab_data['status']})")
+    
+    # Security check - prevent path traversal
+    if '..' in file_path or file_path.startswith('/'):
+        raise HTTPException(status_code=400, detail="Invalid file path")
+    
+    try:
+        container_name = f"lab-{lab_id}"
+        
+        # Check if file exists and get content
+        result = await _exec_container_command(
+            container_name,
+            ["cat", f"/home/labuser/workspace/{file_path}"]
+        )
+        
+        if not result["success"]:
+            if "No such file" in result.get("error", ""):
+                raise HTTPException(status_code=404, detail="File not found")
+            else:
+                raise HTTPException(status_code=500, detail="Failed to read file")
+        
+        # Get file info for proper headers
+        stat_result = await _exec_container_command(
+            container_name,
+            ["stat", "-c", "%s", f"/home/labuser/workspace/{file_path}"]
+        )
+        
+        file_size = stat_result["output"].strip() if stat_result["success"] else str(len(result["output"]))
+        
+        # Determine content type based on file extension
+        content_type = "text/plain"
+        if file_path.endswith('.py'):
+            content_type = "text/x-python"
+        elif file_path.endswith('.js'):
+            content_type = "application/javascript"
+        elif file_path.endswith('.html'):
+            content_type = "text/html"
+        elif file_path.endswith('.css'):
+            content_type = "text/css"
+        elif file_path.endswith('.json'):
+            content_type = "application/json"
+        elif file_path.endswith('.md'):
+            content_type = "text/markdown"
+        
+        # Create response with proper headers
+        headers = {
+            "Content-Disposition": f"attachment; filename=\"{Path(file_path).name}\"",
+            "Content-Length": file_size,
+            "Content-Type": content_type
+        }
+        
+        return Response(
+            content=result["output"],
+            headers=headers,
+            media_type=content_type
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Failed to download file", lab_id=lab_id, file_path=file_path, error=str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to download file: {str(e)}")
+
+@app.get("/labs/{lab_id}/download-workspace")
+async def download_workspace_zip(lab_id: str):
+    """Download entire workspace as ZIP file"""
+    
+    if lab_id not in active_labs:
+        raise HTTPException(status_code=404, detail="Lab session not found")
+    
+    lab_data = active_labs[lab_id]
+    
+    if lab_data['status'] != 'running':
+        raise HTTPException(status_code=400, detail=f"Lab is not running (status: {lab_data['status']})")
+    
+    try:
+        container_name = f"lab-{lab_id}"
+        
+        # Get all files in workspace
+        result = await _exec_container_command(
+            container_name,
+            ["find", "/home/labuser/workspace", "-type", "f", "-not", "-path", "*/.*"]
+        )
+        
+        if not result["success"]:
+            raise HTTPException(status_code=500, detail="Failed to list workspace files")
+        
+        file_paths = [f.strip() for f in result["output"].strip().split('\n') if f.strip()]
+        
+        if not file_paths:
+            raise HTTPException(status_code=404, detail="No files found in workspace")
+        
+        # Create ZIP file in memory
+        zip_buffer = io.BytesIO()
+        
+        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+            for file_path in file_paths:
+                if file_path == '/home/labuser/workspace':
+                    continue
+                    
+                # Get file content
+                file_result = await _exec_container_command(
+                    container_name,
+                    ["cat", file_path]
+                )
+                
+                if file_result["success"]:
+                    # Get relative path for ZIP
+                    relative_path = file_path.replace('/home/labuser/workspace/', '')
+                    if relative_path:
+                        zip_file.writestr(relative_path, file_result["output"])
+        
+        zip_buffer.seek(0)
+        
+        # Generate filename with timestamp
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"workspace_{lab_data['user_id']}_{timestamp}.zip"
+        
+        headers = {
+            "Content-Disposition": f"attachment; filename=\"{filename}\"",
+            "Content-Type": "application/zip"
+        }
+        
+        return StreamingResponse(
+            io.BytesIO(zip_buffer.read()),
+            headers=headers,
+            media_type="application/zip"
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Failed to create workspace ZIP", lab_id=lab_id, error=str(e))
+        raise HTTPException(status_code=500, detail=f"Failed to create ZIP file: {str(e)}")
+
 
 @app.on_event("startup")
 async def startup_event():
@@ -1069,15 +1834,9 @@ async def startup_event():
     # Ensure storage directory exists
     Path(LAB_STORAGE_PATH).mkdir(parents=True, exist_ok=True)
     
-    # Clean up any existing lab containers on startup
-    try:
-        containers = docker_client.containers.list(filters={'name': 'lab-'})
-        for container in containers:
-            container.stop(timeout=5)
-            container.remove()
-        logger.info(f"Cleaned up {len(containers)} existing lab containers")
-    except Exception as e:
-        logger.warning("Error during startup cleanup", error=str(e))
+    # Skip Docker cleanup during startup to avoid connection issues
+    # Docker cleanup will happen when first lab is created
+    logger.info("Startup complete - Docker cleanup deferred until first API call")
 
 
 @app.on_event("shutdown")
