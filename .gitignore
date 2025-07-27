@@ -151,3 +151,29 @@ selenium-server-standalone-*.jar
 
 # Memory files
 memory/
+
+# Large archives and downloads
+*.tar.gz
+*.zip
+*.dmg
+*.pkg
+*.msi
+ideaIC-*.tar.gz
+*.iso
+
+# JetBrains IDEs archives
+ideaIC-*
+IntelliJ-*
+
+# Test coverage reports
+coverage/
+test_reports/
+test-reports/
+
+# Node.js lock files
+package-lock.json
+
+# Docker volumes and data
+postgres_data/
+redis_data/
+lab-storage/
