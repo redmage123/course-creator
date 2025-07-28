@@ -197,13 +197,18 @@ class App {
             const button = document.getElementById(buttonId);
             
             if (input && button) {
+                const icon = button.querySelector('i');
                 if (input.type === 'password') {
                     input.type = 'text';
-                    button.textContent = '🙈';
+                    if (icon) {
+                        icon.className = 'fas fa-eye-slash';
+                    }
                     button.title = 'Hide password';
                 } else {
                     input.type = 'password';
-                    button.textContent = '👁️';
+                    if (icon) {
+                        icon.className = 'fas fa-eye';
+                    }
                     button.title = 'Show password';
                 }
             }

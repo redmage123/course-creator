@@ -10,8 +10,8 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy import text
 
 # Use course_user for application operations
-APP_URL = "postgresql+asyncpg://course_user@localhost:5432/course_creator"
-ADMIN_URL = "postgresql+asyncpg://course_user@localhost:5432/postgres"
+APP_URL = "postgresql+asyncpg://course_user@localhost:5433/course_creator"
+ADMIN_URL = "postgresql+asyncpg://course_user@localhost:5433/postgres"
 
 async def create_database():
     """Create the main database if it doesn't exist"""

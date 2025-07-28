@@ -33,3 +33,13 @@ service:
   port: 8004
   debug: false
   log_level: INFO
+
+email:
+  from_address: ${oc.env:EMAIL_FROM_ADDRESS,"noreply@courseplatform.com"}
+  smtp:
+    server: ${oc.env:SMTP_SERVER,"localhost"}
+    port: ${oc.env:SMTP_PORT,587}
+    user: ${oc.env:SMTP_USER,null}
+    password: ${oc.env:SMTP_PASSWORD,null}
+    use_tls: ${oc.env:SMTP_USE_TLS,true}
+  use_mock: ${oc.env:USE_MOCK_EMAIL,false}

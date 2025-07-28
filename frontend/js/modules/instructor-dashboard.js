@@ -45,6 +45,77 @@ export class InstructorDashboard {
     }
 
     /**
+     * Quiz Management Methods
+     */
+    async showQuizManagement(courseId) {
+        try {
+            // Get course instances for the course
+            const instancesResponse = await fetch(`${CONFIG.BASE_URL}/courses/${courseId}/instances`, {
+                headers: {
+                    'Authorization': `Bearer ${Auth.getToken()}`
+                }
+            });
+            
+            if (!instancesResponse.ok) {
+                throw new Error('Failed to load course instances');
+            }
+            
+            const instancesData = await instancesResponse.json();
+            const instances = instancesData.instances || [];
+            
+            // Create quiz management modal
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content extra-large">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-cog"></i> Quiz Management</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="quiz-management-container">
+                            ${instances.length === 0 ? `
+                                <div class="empty-state">
+                                    <i class="fas fa-calendar-times fa-3x"></i>
+                                    <h4>No Course Instances</h4>
+                                    <p>Create course instances to manage quiz publications</p>
+                                    <button class="btn btn-primary" onclick="this.closest('.modal-overlay').remove(); showInstantiate('${courseId}');">
+                                        Create Instance
+                                    </button>
+                                </div>
+                            ` : `
+                                <div class="instance-tabs">
+                                    ${instances.map((instance, index) => `
+                                        <button class="tab-btn ${index === 0 ? 'active' : ''}" 
+                                                onclick="showInstanceQuizManagement('${instance.id}', this)">
+                                            ${instance.instance_name}
+                                            <span class="instance-dates">${new Date(instance.start_date).toLocaleDateString()}</span>
+                                        </button>
+                                    `).join('')}
+                                </div>
+                                <div class="instance-quiz-content" id="instance-quiz-content">
+                                    <!-- Content will be loaded dynamically -->
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Load first instance quiz management if instances exist
+            if (instances.length > 0) {
+                window.showInstanceQuizManagement(instances[0].id, modal.querySelector('.tab-btn'));
+            }
+            
+        } catch (error) {
+            console.error('Error showing quiz management:', error);
+            showNotification('Error loading quiz management', 'error');
+        }
+    }
+
+    /**
      * Setup event listeners
      */
     setupEventListeners() {
@@ -1046,6 +1117,437 @@ export class InstructorDashboard {
         if (!student) return;
         
         showNotification(`Viewing feedback history for ${student.full_name}`, 'info');
+    }
+
+    // ============================================================================
+    // COURSE PUBLISHING FUNCTIONALITY
+    // ============================================================================
+
+    /**
+     * Load published courses
+     */
+    async loadPublishedCourses() {
+        try {
+            const response = await fetch(`${CONFIG.ENDPOINTS.COURSE_SERVICE}/courses/published`, {
+                headers: {
+                    'Authorization': `Bearer ${Auth.getToken()}`
+                }
+            });
+
+            if (!response.ok) throw new Error('Failed to load published courses');
+            
+            const publishedCourses = await response.json();
+            this.renderPublishedCourses(publishedCourses);
+        } catch (error) {
+            console.error('Error loading published courses:', error);
+            showNotification('Error loading published courses', 'error');
+        }
+    }
+
+    /**
+     * Render published courses
+     */
+    renderPublishedCourses(courses) {
+        const container = document.getElementById('publishedCoursesContainer');
+        if (!container) return;
+
+        if (courses.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-book-open"></i>
+                    <h3>No Published Courses</h3>
+                    <p>You haven't published any courses yet. Publish a course to see it here.</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = courses.map(course => `
+            <div class="course-card">
+                <div class="course-header">
+                    <h3>${course.title}</h3>
+                    <div class="course-badges">
+                        <span class="badge ${course.visibility}">${course.visibility}</span>
+                        <span class="badge ${course.status}">${course.status}</span>
+                    </div>
+                </div>
+                <div class="course-meta">
+                    <p><i class="fas fa-calendar"></i> Published: ${new Date(course.published_at).toLocaleDateString()}</p>
+                    <p><i class="fas fa-users"></i> Instances: ${course.instance_count || 0}</p>
+                </div>
+                <div class="course-actions">
+                    <button class="btn btn-primary" onclick="instructorDashboard.viewInstances('${course.id}')">
+                        <i class="fas fa-calendar-alt"></i> View Instances
+                    </button>
+                    <button class="btn btn-secondary" onclick="instructorDashboard.createInstance('${course.id}')">
+                        <i class="fas fa-plus"></i> New Instance
+                    </button>
+                    <button class="btn btn-outline" onclick="instructorDashboard.unpublishCourse('${course.id}')">
+                        <i class="fas fa-archive"></i> Unpublish
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    /**
+     * Load course instances
+     */
+    async loadCourseInstances() {
+        try {
+            const response = await fetch(`${CONFIG.ENDPOINTS.COURSE_SERVICE}/course-instances`, {
+                headers: {
+                    'Authorization': `Bearer ${Auth.getToken()}`
+                }
+            });
+
+            if (!response.ok) throw new Error('Failed to load course instances');
+            
+            const instances = await response.json();
+            this.renderCourseInstances(instances);
+        } catch (error) {
+            console.error('Error loading course instances:', error);
+            showNotification('Error loading course instances', 'error');
+        }
+    }
+
+    /**
+     * Render course instances
+     */
+    renderCourseInstances(instances) {
+        const container = document.getElementById('courseInstancesContainer');
+        if (!container) return;
+
+        if (instances.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-calendar-plus"></i>
+                    <h3>No Course Instances</h3>
+                    <p>Create your first course instance to start enrolling students.</p>
+                    <button class="btn btn-primary" onclick="instructorDashboard.showCreateInstanceModal()">
+                        <i class="fas fa-plus"></i> Create Instance
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = instances.map(instance => `
+            <div class="instance-card">
+                <div class="instance-header">
+                    <h3>${instance.instance_name}</h3>
+                    <span class="badge ${instance.status}">${instance.status}</span>
+                </div>
+                <div class="instance-details">
+                    <p><strong>Course:</strong> ${instance.course_title}</p>
+                    <p><strong>Duration:</strong> ${new Date(instance.start_datetime).toLocaleDateString()} - ${new Date(instance.end_datetime).toLocaleDateString()}</p>
+                    <p><strong>Timezone:</strong> ${instance.timezone}</p>
+                    <p><strong>Students:</strong> ${instance.enrolled_count}/${instance.max_students}</p>
+                </div>
+                <div class="instance-actions">
+                    <button class="btn btn-primary" onclick="instructorDashboard.viewEnrollments('${instance.id}')">
+                        <i class="fas fa-users"></i> View Students
+                    </button>
+                    <button class="btn btn-secondary" onclick="instructorDashboard.showEnrollStudentModal('${instance.id}')">
+                        <i class="fas fa-user-plus"></i> Enroll Student
+                    </button>
+                    ${instance.status === 'scheduled' ? `
+                        <button class="btn btn-outline" onclick="instructorDashboard.cancelInstance('${instance.id}')">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    ` : ''}
+                    ${instance.status === 'active' || instance.status === 'scheduled' ? `
+                        <button class="btn btn-warning" onclick="instructorDashboard.completeCourseInstance('${instance.id}', '${instance.instance_name}')" title="Complete course and disable student access">
+                            <i class="fas fa-check-circle"></i> Complete Course
+                        </button>
+                    ` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    /**
+     * Show create instance modal
+     */
+    async showCreateInstanceModal() {
+        // Load published courses for the dropdown
+        try {
+            const response = await fetch(`${CONFIG.ENDPOINTS.COURSE_SERVICE}/courses/published`, {
+                headers: {
+                    'Authorization': `Bearer ${Auth.getToken()}`
+                }
+            });
+
+            if (!response.ok) throw new Error('Failed to load published courses');
+            
+            const publishedCourses = await response.json();
+            
+            // Populate course dropdown
+            const courseSelect = document.getElementById('instanceCourse');
+            courseSelect.innerHTML = '<option value="">Select a published course...</option>' +
+                publishedCourses.map(course => 
+                    `<option value="${course.id}">${course.title}</option>`
+                ).join('');
+
+            // Set default timezone to user's local timezone
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const timezoneSelect = document.getElementById('timezone');
+            if (timezoneSelect.querySelector(`option[value="${timezone}"]`)) {
+                timezoneSelect.value = timezone;
+            }
+
+            // Show modal
+            document.getElementById('createInstanceModal').style.display = 'block';
+        } catch (error) {
+            console.error('Error loading published courses:', error);
+            showNotification('Error loading published courses', 'error');
+        }
+    }
+
+    /**
+     * Submit create instance form
+     */
+    async submitCreateInstance() {
+        const form = document.getElementById('createInstanceForm');
+        const formData = new FormData(form);
+
+        // Combine date and time
+        const startDate = formData.get('start_date');
+        const startTime = formData.get('start_time');
+        const endDate = formData.get('end_date');
+        const endTime = formData.get('end_time');
+
+        const instanceData = {
+            course_id: formData.get('course_id'),
+            instance_name: formData.get('instance_name'),
+            start_datetime: `${startDate}T${startTime}`,
+            end_datetime: `${endDate}T${endTime}`,
+            timezone: formData.get('timezone'),
+            max_students: parseInt(formData.get('max_students')),
+            description: formData.get('description') || null
+        };
+
+        try {
+            const response = await fetch(`${CONFIG.ENDPOINTS.COURSE_SERVICE}/course-instances`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${Auth.getToken()}`
+                },
+                body: JSON.stringify(instanceData)
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Failed to create instance');
+            }
+
+            const result = await response.json();
+            showNotification('Course instance created successfully!', 'success');
+            
+            // Close modal and refresh data
+            this.closeModal('createInstanceModal');
+            this.loadCourseInstances();
+            
+            // Reset form
+            form.reset();
+        } catch (error) {
+            console.error('Error creating instance:', error);
+            showNotification(error.message, 'error');
+        }
+    }
+
+    /**
+     * Show enroll student modal
+     */
+    showEnrollStudentModal(instanceId) {
+        document.getElementById('enrollInstanceId').value = instanceId;
+        document.getElementById('enrollStudentModal').style.display = 'block';
+    }
+
+    /**
+     * Submit enroll student form
+     */
+    async submitEnrollStudent() {
+        const form = document.getElementById('enrollStudentForm');
+        const formData = new FormData(form);
+
+        const enrollmentData = {
+            student_email: formData.get('student_email'),
+            student_name: formData.get('student_name'),
+            send_welcome_email: formData.get('send_welcome_email') === 'on'
+        };
+
+        const instanceId = formData.get('instance_id');
+
+        try {
+            const response = await fetch(`${CONFIG.ENDPOINTS.COURSE_SERVICE}/course-instances/${instanceId}/enroll`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${Auth.getToken()}`
+                },
+                body: JSON.stringify(enrollmentData)
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Failed to enroll student');
+            }
+
+            const result = await response.json();
+            showNotification('Student enrolled successfully!', 'success');
+            
+            if (result.welcome_email_sent) {
+                showNotification('Welcome email sent to student', 'info');
+            }
+            
+            // Close modal and refresh data
+            this.closeModal('enrollStudentModal');
+            this.loadCourseInstances();
+            
+            // Reset form
+            form.reset();
+        } catch (error) {
+            console.error('Error enrolling student:', error);
+            showNotification(error.message, 'error');
+        }
+    }
+
+    /**
+     * View course instances for a specific course
+     */
+    viewInstances(courseId) {
+        // Switch to course instances tab and filter by course
+        this.switchTab('course-instances');
+        // TODO: Implement filtering by course ID
+        showNotification('Filtering instances by course', 'info');
+    }
+
+    /**
+     * Create new instance for a specific course
+     */
+    createInstance(courseId) {
+        this.showCreateInstanceModal();
+        // Pre-select the course
+        setTimeout(() => {
+            document.getElementById('instanceCourse').value = courseId;
+        }, 100);
+    }
+
+    /**
+     * Unpublish a course
+     */
+    async unpublishCourse(courseId) {
+        if (!confirm('Are you sure you want to unpublish this course? Students will no longer be able to access it.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${CONFIG.ENDPOINTS.COURSE_SERVICE}/courses/${courseId}/unpublish`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${Auth.getToken()}`
+                }
+            });
+
+            if (!response.ok) throw new Error('Failed to unpublish course');
+            
+            showNotification('Course unpublished successfully', 'success');
+            this.loadPublishedCourses();
+        } catch (error) {
+            console.error('Error unpublishing course:', error);
+            showNotification('Error unpublishing course', 'error');
+        }
+    }
+
+    /**
+     * Cancel a course instance
+     */
+    async cancelInstance(instanceId) {
+        if (!confirm('Are you sure you want to cancel this instance? Enrolled students will be notified.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${CONFIG.ENDPOINTS.COURSE_SERVICE}/course-instances/${instanceId}/cancel`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${Auth.getToken()}`
+                }
+            });
+
+            if (!response.ok) throw new Error('Failed to cancel instance');
+            
+            showNotification('Instance cancelled successfully', 'success');
+            this.loadCourseInstances();
+        } catch (error) {
+            console.error('Error cancelling instance:', error);
+            showNotification('Error cancelling instance', 'error');
+        }
+    }
+
+    /**
+     * View enrollments for an instance
+     */
+    viewEnrollments(instanceId) {
+        // TODO: Implement enrollment viewing modal
+        showNotification('Enrollment viewing functionality coming soon', 'info');
+    }
+
+    /**
+     * Complete a course instance and disable student access
+     */
+    async completeCourseInstance(instanceId, instanceName) {
+        const confirmed = confirm(
+            `Are you sure you want to complete the course instance "${instanceName}"?\n\n` +
+            `This action will:\n` +
+            `• Mark the course as completed\n` +
+            `• Disable all student login URLs\n` +
+            `• Prevent further student access\n\n` +
+            `This action cannot be undone.`
+        );
+
+        if (!confirmed) return;
+
+        try {
+            const response = await fetch(`${CONFIG.ENDPOINTS.COURSE_SERVICE}/course-instances/${instanceId}/complete`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${Auth.getToken()}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Failed to complete course instance');
+            }
+            
+            const result = await response.json();
+            
+            showNotification(
+                `Course instance "${instanceName}" completed successfully. Student access has been disabled.`, 
+                'success'
+            );
+            
+            // Reload course instances to reflect the status change
+            this.loadCourseInstances();
+            
+        } catch (error) {
+            console.error('Error completing course instance:', error);
+            showNotification(`Error completing course instance: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * Close modal
+     */
+    closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'none';
+        }
     }
 }
 

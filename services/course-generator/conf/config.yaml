@@ -25,6 +25,18 @@ redis:
   port: ${oc.env:REDIS_PORT,6379}
   db: ${oc.env:REDIS_DB,0}
 
+# CORS configuration
+cors:
+  origins:
+    - "http://localhost:3000"
+    - "http://localhost:8000"
+    - "http://localhost:8001"
+    - "http://localhost:8004"
+    - "http://176.9.99.103:3000"
+    - "http://176.9.99.103:8000"
+    - "http://176.9.99.103:8001"
+    - "http://176.9.99.103:8004"
+
 # Logging configuration
 log:
   level: INFO

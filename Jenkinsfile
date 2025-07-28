@@ -15,6 +15,18 @@
 pipeline {
     agent any
 
+    // Pipeline triggers
+    triggers {
+        // GitHub webhook trigger
+        githubPush()
+        
+        // Poll SCM as fallback (every 5 minutes)
+        pollSCM('H/5 * * * *')
+        
+        // Periodic build for main branch (daily at 2 AM)
+        cron(env.BRANCH_NAME == 'main' ? 'H 2 * * *' : '')
+    }
+
     // Environment variables
     environment {
         // Application versions

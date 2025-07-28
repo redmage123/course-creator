@@ -309,36 +309,67 @@ export class NavigationManager {
 
         main.innerHTML = `
             <section>
-                <h2>Register</h2>
+                <h2>Instructor Registration</h2>
+                <p>Create your instructor account to start building and managing courses.</p>
                 <form id="register-form">
-                    <div class="form-group">
-                        <label for="register-email">Email:</label>
-                        <input type="email" id="register-email" name="email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="register-name">Full Name:</label>
-                        <input type="text" id="register-name" name="full_name" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="register-username">Username:</label>
-                        <input type="text" id="register-username" name="username" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="register-password">Password:</label>
-                        <div class="password-input-container">
-                            <input type="password" id="register-password" name="password" required>
+                    <div class="form-row">
+                        <div class="form-group half-width">
+                            <label for="register-first-name">First Name: <span class="required">*</span></label>
+                            <input type="text" id="register-first-name" name="first_name" required 
+                                   placeholder="Enter your first name">
+                        </div>
+                        <div class="form-group half-width">
+                            <label for="register-last-name">Last Name: <span class="required">*</span></label>
+                            <input type="text" id="register-last-name" name="last_name" required 
+                                   placeholder="Enter your last name">
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="register-password-confirm">Confirm Password:</label>
+                        <label for="register-email">Email Address: <span class="required">*</span></label>
+                        <input type="email" id="register-email" name="email" required 
+                               placeholder="Enter your email address">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-organization">Organization:</label>
+                        <input type="text" id="register-organization" name="organization" 
+                               placeholder="Enter your organization or institution (optional)">
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Password: <span class="required">*</span></label>
                         <div class="password-input-container">
-                            <input type="password" id="register-password-confirm" name="password_confirm" required>
+                            <input type="password" id="register-password" name="password" required 
+                                   placeholder="Create a secure password">
+                            <button type="button" class="password-toggle" 
+                                    onclick="togglePasswordVisibility('register-password', 'password-toggle-1')" 
+                                    id="password-toggle-1" 
+                                    title="Show password">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="password-requirements">
+                            <small>Password must be at least 8 characters long</small>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password-confirm">Confirm Password: <span class="required">*</span></label>
+                        <div class="password-input-container">
+                            <input type="password" id="register-password-confirm" name="password_confirm" required 
+                                   placeholder="Confirm your password">
+                            <button type="button" class="password-toggle" 
+                                    onclick="togglePasswordVisibility('register-password-confirm', 'password-toggle-2')" 
+                                    id="password-toggle-2" 
+                                    title="Show password">
+                                <i class="fas fa-eye"></i>
+                            </button>
                         </div>
                     </div>
                     <div id="password-match-indicator"></div>
                     <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">Register</button>
+                        <button type="submit" class="btn btn-primary">Create Instructor Account</button>
                         <button type="button" onclick="window.location.hash='#home'" class="btn btn-secondary">Cancel</button>
+                    </div>
+                    <div class="form-footer">
+                        <p><span class="required">*</span> Required fields</p>
                     </div>
                 </form>
             </section>
@@ -399,11 +430,19 @@ export class NavigationManager {
                 return;
             }
             
+            // Combine first and last name for full_name
+            const firstName = formData.get('first_name');
+            const lastName = formData.get('last_name');
+            const fullName = `${firstName} ${lastName}`.trim();
+            
             const userData = {
                 email: formData.get('email'),
-                full_name: formData.get('full_name'),
-                username: formData.get('username'),
-                password: password
+                full_name: fullName,
+                first_name: firstName,
+                last_name: lastName,
+                username: formData.get('email'), // Use email as username
+                password: password,
+                organization: formData.get('organization') || null
             };
 
             const result = await Auth.register(userData);

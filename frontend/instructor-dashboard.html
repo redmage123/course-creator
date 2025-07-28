@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Instructor Dashboard - Course Creator</title>
     <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/course-publishing.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         .duration-input-group {
@@ -565,6 +566,20 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a href="#" class="nav-link" onclick="showSection('published-courses')" data-section="published-courses">
+                            <i class="fas fa-globe"></i>
+                            <span>Published Courses</span>
+                            <span class="nav-badge" id="publishedCourseCount">0</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" onclick="showSection('course-instances')" data-section="course-instances">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>Course Instances</span>
+                            <span class="nav-badge" id="instanceCount">0</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a href="#" class="nav-link" onclick="showSection('students')" data-section="students">
                             <i class="fas fa-users"></i>
                             <span>Students</span>
@@ -1012,6 +1027,59 @@
                             <div class="loading-indicator">
                                 <i class="fas fa-spinner fa-spin"></i> Loading students...
                             </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Published Courses Section -->
+                <section id="published-courses-section" class="content-section">
+                    <div class="section-header">
+                        <h2>Published Courses</h2>
+                        <p>Browse and manage published courses available for instantiation</p>
+                        <div class="header-actions">
+                            <select id="courseVisibilityFilter" onchange="filterPublishedCourses()">
+                                <option value="all">All Courses</option>
+                                <option value="public">Public Courses</option>
+                                <option value="private">My Private Courses</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="publishedCoursesContainer" class="courses-grid">
+                        <div class="loading-indicator">
+                            <i class="fas fa-spinner fa-spin"></i> Loading published courses...
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Course Instances Section -->
+                <section id="course-instances-section" class="content-section">
+                    <div class="section-header">
+                        <h2>Course Instances</h2>
+                        <p>Manage scheduled course sessions and student enrollment</p>
+                        <div class="header-actions">
+                            <button class="btn btn-primary" onclick="showCreateInstanceModal()">
+                                <i class="fas fa-plus"></i> Create New Instance
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="instances-filters">
+                        <select id="instanceStatusFilter" onchange="filterInstances()">
+                            <option value="all">All Instances</option>
+                            <option value="scheduled">Scheduled</option>
+                            <option value="active">Active</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                        <div class="search-box">
+                            <input type="text" id="instanceSearch" placeholder="Search instances..." onkeyup="searchInstances()">
+                            <i class="fas fa-search"></i>
+                        </div>
+                    </div>
+
+                    <div id="courseInstancesContainer" class="instances-grid">
+                        <div class="loading-indicator">
+                            <i class="fas fa-spinner fa-spin"></i> Loading course instances...
                         </div>
                     </div>
                 </section>
@@ -2189,6 +2257,22 @@
                 if (sectionName === 'students') {
                     console.log('Students section activated, populating course dropdown...');
                     populateStudentCourseDropdown();
+                }
+                
+                // If showing published courses section, load published courses
+                if (sectionName === 'published-courses') {
+                    console.log('Published courses section activated, loading published courses...');
+                    if (window.instructorDashboard) {
+                        window.instructorDashboard.loadPublishedCourses();
+                    }
+                }
+                
+                // If showing course instances section, load course instances
+                if (sectionName === 'course-instances') {
+                    console.log('Course instances section activated, loading course instances...');
+                    if (window.instructorDashboard) {
+                        window.instructorDashboard.loadCourseInstances();
+                    }
                 }
                 
                 // Debug content section specifically
@@ -3955,6 +4039,413 @@
         window.openQuizForStudents = function(quizId) {
             window.open(`quiz.html?quizId=${quizId}&userType=student`, '_blank');
         };
+
+        // Quiz Management Functions for Publishing/Unpublishing
+        window.editQuizzes = function(courseId) {
+            console.log('Opening quiz publication management for course:', courseId);
+            showQuizPublicationManagement(courseId);
+        };
+
+        window.showQuizPublicationManagement = async function(courseId) {
+            try {
+                // Get course instances for the course
+                const instancesResponse = await fetch(`${CONFIG.BASE_URL}/courses/${courseId}/instances`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    }
+                });
+                
+                if (!instancesResponse.ok) {
+                    throw new Error('Failed to load course instances');
+                }
+                
+                const instancesData = await instancesResponse.json();
+                const instances = instancesData.instances || [];
+                
+                // Create quiz management modal
+                const modal = document.createElement('div');
+                modal.className = 'modal-overlay quiz-management-modal';
+                modal.innerHTML = `
+                    <div class="modal-content extra-large">
+                        <div class="modal-header">
+                            <h3><i class="fas fa-cogs"></i> Quiz Publication Management</h3>
+                            <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="quiz-management-container">
+                                ${instances.length === 0 ? `
+                                    <div class="empty-state">
+                                        <i class="fas fa-calendar-times fa-3x"></i>
+                                        <h4>No Course Instances</h4>
+                                        <p>Create course instances to manage quiz publications</p>
+                                        <button class="btn btn-primary" onclick="this.closest('.modal-overlay').remove(); showInstantiate('${courseId}');">
+                                            <i class="fas fa-plus"></i> Create Instance
+                                        </button>
+                                    </div>
+                                ` : `
+                                    <div class="instance-tabs">
+                                        ${instances.map((instance, index) => `
+                                            <button class="tab-btn ${index === 0 ? 'active' : ''}" 
+                                                    onclick="showInstanceQuizManagement('${instance.id}', this)">
+                                                <div class="tab-content">
+                                                    <div class="instance-name">${instance.instance_name}</div>
+                                                    <div class="instance-dates">${new Date(instance.start_date).toLocaleDateString()} - ${new Date(instance.end_date).toLocaleDateString()}</div>
+                                                    <div class="instance-status ${instance.status}">${instance.status}</div>
+                                                </div>
+                                            </button>
+                                        `).join('')}
+                                    </div>
+                                    <div class="instance-quiz-content" id="instance-quiz-content">
+                                        <div class="loading-spinner">
+                                            <i class="fas fa-spinner fa-spin"></i> Loading quiz publications...
+                                        </div>
+                                    </div>
+                                `}
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
+                            <button class="btn btn-primary" onclick="refreshQuizPublications()">
+                                <i class="fas fa-sync"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+                // Load first instance quiz management if instances exist
+                if (instances.length > 0) {
+                    showInstanceQuizManagement(instances[0].id, modal.querySelector('.tab-btn'));
+                }
+                
+            } catch (error) {
+                console.error('Error showing quiz management:', error);
+                showNotification('Error loading quiz management', 'error');
+            }
+        };
+
+        window.showInstanceQuizManagement = async function(instanceId, tabElement) {
+            try {
+                // Update active tab
+                document.querySelectorAll('.quiz-management-modal .tab-btn').forEach(btn => btn.classList.remove('active'));
+                tabElement.classList.add('active');
+                
+                const contentDiv = document.getElementById('instance-quiz-content');
+                contentDiv.innerHTML = '<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+                
+                // Fetch quiz publications for this instance
+                const response = await fetch(`${CONFIG.BASE_URL}/course-instances/${instanceId}/quiz-publications`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load quiz publications');
+                }
+                
+                const data = await response.json();
+                const publications = data.quiz_publications || [];
+                
+                if (publications.length === 0) {
+                    contentDiv.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-question-circle fa-3x"></i>
+                            <h4>No Quizzes Available</h4>
+                            <p>Generate quizzes for this course to enable publication management</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Render quiz publications table
+                contentDiv.innerHTML = `
+                    <div class="quiz-publications-header">
+                        <h4>Quiz Publications for Instance</h4>
+                        <div class="header-actions">
+                            <button class="btn btn-sm btn-success" onclick="publishAllQuizzes('${instanceId}')">
+                                <i class="fas fa-globe"></i> Publish All
+                            </button>
+                            <button class="btn btn-sm btn-warning" onclick="unpublishAllQuizzes('${instanceId}')">
+                                <i class="fas fa-eye-slash"></i> Unpublish All
+                            </button>
+                        </div>
+                    </div>
+                    <div class="quiz-publications-table">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Quiz</th>
+                                    <th>Questions</th>
+                                    <th>Status</th>
+                                    <th>Settings</th>
+                                    <th>Student Activity</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${publications.map(pub => `
+                                    <tr class="quiz-publication-row" data-quiz-id="${pub.quiz_id}">
+                                        <td>
+                                            <div class="quiz-info">
+                                                <div class="quiz-title">${pub.quiz_title}</div>
+                                                <div class="quiz-meta">
+                                                    <span class="topic">${pub.topic}</span>
+                                                    <span class="difficulty ${pub.difficulty}">${pub.difficulty}</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="question-count">
+                                                <i class="fas fa-question"></i> ${pub.question_count}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="publication-status">
+                                                <div class="status-indicator ${pub.is_published ? 'published' : 'unpublished'}">
+                                                    <i class="fas ${pub.is_published ? 'fa-globe' : 'fa-eye-slash'}"></i>
+                                                    ${pub.is_published ? 'Published' : 'Unpublished'}
+                                                </div>
+                                                ${pub.is_published && pub.published_at ? `
+                                                    <div class="status-date">Since ${new Date(pub.published_at).toLocaleDateString()}</div>
+                                                ` : ''}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="quiz-settings">
+                                                ${pub.time_limit_minutes ? `
+                                                    <div class="setting">
+                                                        <i class="fas fa-clock"></i> ${pub.time_limit_minutes} min
+                                                    </div>
+                                                ` : ''}
+                                                <div class="setting">
+                                                    <i class="fas fa-redo"></i> ${pub.max_attempts || 3} attempts
+                                                </div>
+                                                ${pub.available_from || pub.available_until ? `
+                                                    <div class="setting">
+                                                        <i class="fas fa-calendar"></i> Scheduled
+                                                    </div>
+                                                ` : ''}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="student-activity">
+                                                <div class="activity-stat">
+                                                    <i class="fas fa-users"></i> ${pub.unique_students} students
+                                                </div>
+                                                <div class="activity-stat">
+                                                    <i class="fas fa-pen"></i> ${pub.total_attempts} attempts
+                                                </div>
+                                                ${pub.avg_score > 0 ? `
+                                                    <div class="activity-stat">
+                                                        <i class="fas fa-chart-line"></i> ${Math.round(pub.avg_score)}% avg
+                                                    </div>
+                                                ` : ''}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="quiz-actions">
+                                                <button class="btn btn-sm ${pub.is_published ? 'btn-warning' : 'btn-success'}" 
+                                                        onclick="toggleQuizPublication('${instanceId}', '${pub.quiz_id}', ${!pub.is_published})">
+                                                    <i class="fas ${pub.is_published ? 'fa-eye-slash' : 'fa-globe'}"></i>
+                                                    ${pub.is_published ? 'Unpublish' : 'Publish'}
+                                                </button>
+                                                <button class="btn btn-sm btn-secondary" 
+                                                        onclick="configureQuizSettings('${instanceId}', '${pub.quiz_id}', ${JSON.stringify(pub).replace(/"/g, '&quot;')})">
+                                                    <i class="fas fa-cog"></i> Configure
+                                                </button>
+                                                ${pub.total_attempts > 0 ? `
+                                                    <button class="btn btn-sm btn-info" 
+                                                            onclick="viewQuizAnalytics('${instanceId}', '${pub.quiz_id}')">
+                                                        <i class="fas fa-chart-bar"></i> Analytics
+                                                    </button>
+                                                ` : ''}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Error loading instance quiz management:', error);
+                document.getElementById('instance-quiz-content').innerHTML = `
+                    <div class="error-state">
+                        <i class="fas fa-exclamation-triangle fa-3x"></i>
+                        <h4>Error Loading Quiz Publications</h4>
+                        <p>${error.message}</p>
+                        <button class="btn btn-primary" onclick="showInstanceQuizManagement('${instanceId}', document.querySelector('.tab-btn.active'))">
+                            <i class="fas fa-retry"></i> Retry
+                        </button>
+                    </div>
+                `;
+            }
+        };
+
+        window.toggleQuizPublication = async function(instanceId, quizId, shouldPublish) {
+            try {
+                const action = shouldPublish ? 'Publishing' : 'Unpublishing';
+                const notification = showProgressNotification(`${action} quiz...`, 'info');
+                
+                const response = await fetch(`${CONFIG.BASE_URL}/quizzes/publish`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    },
+                    body: JSON.stringify({
+                        quiz_id: quizId,
+                        course_instance_id: instanceId,
+                        is_published: shouldPublish,
+                        max_attempts: 3 // Default value
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to ${shouldPublish ? 'publish' : 'unpublish'} quiz`);
+                }
+                
+                const result = await response.json();
+                notification.update(`Quiz ${shouldPublish ? 'published' : 'unpublished'} successfully!`, 'success');
+                
+                // Refresh the current instance display
+                setTimeout(() => {
+                    notification.close();
+                    const activeTab = document.querySelector('.quiz-management-modal .tab-btn.active');
+                    if (activeTab) {
+                        showInstanceQuizManagement(instanceId, activeTab);
+                    }
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error toggling quiz publication:', error);
+                showNotification(`Error ${shouldPublish ? 'publishing' : 'unpublishing'} quiz: ${error.message}`, 'error');
+            }
+        };
+
+        window.configureQuizSettings = function(instanceId, quizId, publicationData) {
+            const pub = typeof publicationData === 'string' ? JSON.parse(publicationData) : publicationData;
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay quiz-settings-modal';
+            modal.innerHTML = `
+                <div class="modal-content medium">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-cog"></i> Configure Quiz Settings</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="quiz-settings-form">
+                            <div class="form-group">
+                                <label>Quiz Title</label>
+                                <input type="text" value="${pub.quiz_title}" readonly class="form-control">
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="time-limit">Time Limit (minutes)</label>
+                                    <input type="number" id="time-limit" class="form-control" 
+                                           value="${pub.time_limit_minutes || ''}" min="1" max="480">
+                                    <small class="form-text">Leave empty for no time limit</small>
+                                </div>
+                                <div class="form-group">  
+                                    <label for="max-attempts">Maximum Attempts</label>
+                                    <input type="number" id="max-attempts" class="form-control" 
+                                           value="${pub.max_attempts || 3}" min="1" max="10" required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="available-from">Available From</label>
+                                    <input type="datetime-local" id="available-from" class="form-control"
+                                           value="${pub.available_from ? new Date(pub.available_from).toISOString().slice(0, 16) : ''}">
+                                </div>
+                                <div class="form-group">
+                                    <label for="available-until">Available Until</label>
+                                    <input type="datetime-local" id="available-until" class="form-control"
+                                           value="${pub.available_until ? new Date(pub.available_until).toISOString().slice(0, 16) : ''}">
+                                </div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <input type="checkbox" id="is-published" class="form-check-input" 
+                                           ${pub.is_published ? 'checked' : ''}>
+                                    <label for="is-published" class="form-check-label">Published (visible to students)</label>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                        <button class="btn btn-primary" onclick="saveQuizSettings('${instanceId}', '${quizId}')">
+                            <i class="fas fa-save"></i> Save Settings
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        };
+
+        window.saveQuizSettings = async function(instanceId, quizId) {
+            try {
+                const form = document.getElementById('quiz-settings-form');
+                const formData = new FormData(form);
+                
+                const timeLimit = document.getElementById('time-limit').value;
+                const maxAttempts = document.getElementById('max-attempts').value;
+                const availableFrom = document.getElementById('available-from').value;
+                const availableUntil = document.getElementById('available-until').value;
+                const isPublished = document.getElementById('is-published').checked;
+                
+                const settings = {
+                    quiz_id: quizId,
+                    course_instance_id: instanceId,
+                    is_published: isPublished,
+                    max_attempts: parseInt(maxAttempts) || 3,
+                    time_limit_minutes: timeLimit ? parseInt(timeLimit) : null,
+                    available_from: availableFrom ? new Date(availableFrom).toISOString() : null,
+                    available_until: availableUntil ? new Date(availableUntil).toISOString() : null
+                };
+                
+                const notification = showProgressNotification('Saving quiz settings...', 'info');
+                
+                const response = await fetch(`${CONFIG.BASE_URL}/quizzes/publish`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    },
+                    body: JSON.stringify(settings)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to save quiz settings');
+                }
+                
+                notification.update('Quiz settings saved successfully!', 'success');
+                
+                // Close the settings modal and refresh the main view
+                document.querySelector('.quiz-settings-modal').remove();
+                
+                setTimeout(() => {
+                    notification.close();
+                    const activeTab = document.querySelector('.quiz-management-modal .tab-btn.active');
+                    if (activeTab) {
+                        showInstanceQuizManagement(instanceId, activeTab);
+                    }
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error saving quiz settings:', error);
+                showNotification(`Error saving settings: ${error.message}`, 'error');
+            }
+        };
         
         window.viewQuizResults = function(quizId) {
             showNotification('Quiz results viewing will be implemented', 'info');
@@ -4698,6 +5189,47 @@
         window.submitInstructorLabCreation = submitInstructorLabCreation;
         window.exportLabReport = exportLabReport;
         
+        // Course Publishing Global Functions
+        window.submitCreateInstance = function() {
+            if (window.instructorDashboard) {
+                window.instructorDashboard.submitCreateInstance();
+            }
+        };
+        
+        window.submitEnrollStudent = function() {
+            if (window.instructorDashboard) {
+                window.instructorDashboard.submitEnrollStudent();
+            }
+        };
+        
+        window.closeModal = function(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        };
+        
+        window.showCreateInstanceModal = function() {
+            if (window.instructorDashboard) {
+                window.instructorDashboard.showCreateInstanceModal();
+            }
+        };
+        
+        window.filterPublishedCourses = function() {
+            // TODO: Implement filtering for published courses
+            console.log('Filtering published courses...');
+        };
+        
+        window.filterInstances = function() {
+            // TODO: Implement filtering for course instances
+            console.log('Filtering course instances...');
+        };
+        
+        window.searchInstances = function() {
+            // TODO: Implement search for course instances
+            console.log('Searching course instances...');
+        };
+        
         };
     </script>
 
@@ -4850,6 +5382,124 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeModal('studentDetailsModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Course Instance Modal -->
+    <div id="createInstanceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-calendar-plus"></i> Create Course Instance</h3>
+                <span class="close" onclick="closeModal('createInstanceModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="createInstanceForm">
+                    <div class="form-group">
+                        <label for="instanceCourse">Course</label>
+                        <select id="instanceCourse" name="course_id" required>
+                            <option value="">Select a published course...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="instanceName">Instance Name</label>
+                        <input type="text" id="instanceName" name="instance_name" required 
+                               placeholder="e.g., Fall 2024 Session, Morning Cohort">
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="startDate">Start Date</label>
+                            <input type="date" id="startDate" name="start_date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="startTime">Start Time</label>
+                            <input type="time" id="startTime" name="start_time" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="endDate">End Date</label>
+                            <input type="date" id="endDate" name="end_date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="endTime">End Time</label>
+                            <input type="time" id="endTime" name="end_time" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="timezone">Timezone</label>
+                            <select id="timezone" name="timezone" required>
+                                <option value="UTC">UTC (Coordinated Universal Time)</option>
+                                <option value="America/New_York">Eastern Time (ET)</option>
+                                <option value="America/Chicago">Central Time (CT)</option>
+                                <option value="America/Denver">Mountain Time (MT)</option>
+                                <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                                <option value="Europe/London">London (GMT/BST)</option>
+                                <option value="Europe/Paris">Central European Time (CET)</option>
+                                <option value="Asia/Tokyo">Japan Standard Time (JST)</option>
+                                <option value="Asia/Shanghai">China Standard Time (CST)</option>
+                                <option value="Australia/Sydney">Australian Eastern Time (AET)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="maxStudents">Maximum Students</label>
+                            <input type="number" id="maxStudents" name="max_students" min="1" max="100" value="30">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="instanceDescription">Description (Optional)</label>
+                        <textarea id="instanceDescription" name="description" rows="3" 
+                                  placeholder="Additional details about this instance..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('createInstanceModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="submitCreateInstance()">Create Instance</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Enrollment Modal -->
+    <div id="enrollStudentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-plus"></i> Enroll Student</h3>
+                <span class="close" onclick="closeModal('enrollStudentModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="enrollStudentForm">
+                    <input type="hidden" id="enrollInstanceId" name="instance_id">
+                    
+                    <div class="form-group">
+                        <label for="studentEmail">Student Email</label>
+                        <input type="email" id="studentEmail" name="student_email" required 
+                               placeholder="student@example.com">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="studentName">Student Name</label>
+                        <input type="text" id="studentName" name="student_name" required 
+                               placeholder="John Doe">
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" id="sendWelcomeEmail" name="send_welcome_email" checked>
+                            Send welcome email with login credentials
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('enrollStudentModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="submitEnrollStudent()">Enroll Student</button>
             </div>
         </div>
     </div>

@@ -1162,6 +1162,19 @@ def main(cfg: DictConfig) -> None:
             logger.error(f"Error toggling feedback sharing: {e}")
             raise HTTPException(status_code=500, detail="Failed to update feedback sharing")
     
+    # Setup course publishing routes
+    try:
+        import sys
+        import os
+        sys.path.append(os.path.dirname(__file__))
+        from course_publishing_api import setup_course_publishing_routes
+        setup_course_publishing_routes(app, db_pool, get_current_user, current_config)
+        logger.info("Course publishing routes loaded successfully")
+    except ImportError as e:
+        logger.warning(f"Could not load course publishing routes: {e}")
+    except Exception as e:
+        logger.error(f"Error setting up course publishing routes: {e}")
+
     # Error handling
     @app.exception_handler(HTTPException)
     async def http_exception_handler(request: Request, exc: HTTPException):

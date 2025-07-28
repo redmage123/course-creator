@@ -438,6 +438,16 @@ EOF
     rm slack-config.groovy
 }
 
+# Configure webhooks
+configure_webhooks() {
+    log "Configuring Git webhooks..."
+    
+    # Run webhook configuration
+    jenkins-cli groovy webhook-config.groovy
+    
+    log "Webhook configuration completed"
+}
+
 # Main setup function
 main() {
     log "Starting Jenkins setup for Course Creator Platform..."
@@ -451,6 +461,7 @@ main() {
     configure_global_tools
     configure_slack
     create_pipeline_job
+    configure_webhooks
     
     log "Jenkins setup completed successfully!"
     log "Access Jenkins at: ${JENKINS_URL}"
@@ -458,10 +469,11 @@ main() {
     
     info "Next steps:"
     info "1. Update credentials with actual values"
-    info "2. Configure webhook in GitHub repository"
+    info "2. Run ./setup-webhook.sh to configure Git webhooks"
     info "3. Update SonarQube server URL and token"
     info "4. Configure Slack webhook token"
-    info "5. Test the pipeline by triggering a build"
+    info "5. Test the pipeline by pushing to repository"
+    info "6. Monitor webhook delivery in repository settings"
 }
 
 # Execute main function

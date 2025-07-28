@@ -12,13 +12,14 @@ The Course Creator Platform uses a comprehensive CI/CD pipeline that integrates 
 2. **SonarQube** - Code quality analysis and security scanning
 3. **Docker** - Containerization and image building
 4. **Kubernetes** - Container orchestration and deployment
-5. **GitHub** - Source code repository and webhook triggers
+5. **GitHub/GitLab/Bitbucket** - Source code repository and webhook triggers
+6. **Git Webhooks** - Automatic pipeline triggering on code changes
 
 ### Pipeline Flow
 
 ```mermaid
 graph TD
-    A[Git Push] --> B[GitHub Webhook]
+    A[Git Push/PR] --> B[Git Webhook Trigger]
     B --> C[Jenkins Pipeline Trigger]
     C --> D[Source Code Checkout]
     D --> E[Environment Setup]
@@ -401,7 +402,18 @@ java -jar jenkins-cli.jar -s http://jenkins:8080 -auth user:token \
    ./sonarqube/setup-sonarqube.sh
    ```
 
-3. **Setup Kubernetes Environment**
+3. **Setup Git Webhooks**
+   ```bash
+   # Automated setup with environment variables
+   export JENKINS_URL="http://your-jenkins-server:8080"
+   export GITHUB_REPO="your-org/course-creator"  
+   export GITHUB_TOKEN="your-github-token"
+   ./jenkins/setup-webhook.sh
+   
+   # Or configure manually - see docs/WEBHOOK_SETUP.md
+   ```
+
+4. **Setup Kubernetes Environment**
    ```bash
    # Apply base configuration
    kubectl apply -k deploy/k8s/base/

@@ -24,6 +24,9 @@ import uuid
 class UserBase(BaseModel):
     email: EmailStr
     full_name: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    organization: Optional[str] = None
 
 class UserCreate(UserBase):
     password: str
@@ -48,6 +51,9 @@ class Role(BaseModel):
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     full_name: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    organization: Optional[str] = None
     is_active: Optional[bool] = None
     role: Optional[str] = None
 
@@ -87,6 +93,9 @@ def main(cfg: DictConfig) -> None:
         sqlalchemy.Column('email', sqlalchemy.String(255), unique=True, nullable=False),
         sqlalchemy.Column('username', sqlalchemy.String(100), unique=True, nullable=False),
         sqlalchemy.Column('full_name', sqlalchemy.String(255), nullable=False),
+        sqlalchemy.Column('first_name', sqlalchemy.String(100)),
+        sqlalchemy.Column('last_name', sqlalchemy.String(100)),
+        sqlalchemy.Column('organization', sqlalchemy.String(255)),
         sqlalchemy.Column('hashed_password', sqlalchemy.String(255), nullable=False),
         sqlalchemy.Column('is_active', sqlalchemy.Boolean, default=True),
         sqlalchemy.Column('is_verified', sqlalchemy.Boolean, default=False),
@@ -137,7 +146,7 @@ def main(cfg: DictConfig) -> None:
         """Create a new user session in the database"""
         session_id = str(uuid.uuid4())
         token_hash = pwd_context.hash(token)
-        expires_at = datetime.utcnow() + timedelta(minutes=cfg.jwt.token_expiry)
+        expires_at = datetime.utcnow() + timedelta(minutes=cfg.security.access_token_expire_minutes)
         
         # Clean up old sessions for this user (keep only last 3 sessions)
         await cleanup_old_sessions(user_id, max_sessions=3)
@@ -156,7 +165,7 @@ def main(cfg: DictConfig) -> None:
     async def validate_session(token: str, user_id: str):
         """Validate if session exists and is not expired based on inactivity"""
         # Calculate inactivity timeout (30 minutes of inactivity)
-        inactivity_timeout = timedelta(minutes=cfg.jwt.token_expiry)
+        inactivity_timeout = timedelta(minutes=cfg.security.access_token_expire_minutes)
         cutoff_time = datetime.utcnow() - inactivity_timeout
         
         # Query sessions that are still active based on last activity
@@ -228,7 +237,7 @@ def main(cfg: DictConfig) -> None:
     async def cleanup_expired_sessions():
         """Remove all expired sessions from database based on inactivity"""
         # Calculate inactivity timeout (30 minutes of inactivity)
-        inactivity_timeout = timedelta(minutes=cfg.jwt.token_expiry)
+        inactivity_timeout = timedelta(minutes=cfg.security.access_token_expire_minutes)
         cutoff_time = datetime.utcnow() - inactivity_timeout
         
         # Delete sessions that haven't been accessed within the timeout period
@@ -248,8 +257,8 @@ def main(cfg: DictConfig) -> None:
         try:
             payload = jwt.decode(
                 token, 
-                cfg.jwt.secret_key, 
-                algorithms=[cfg.jwt.algorithm]
+                cfg.security.jwt_secret_key, 
+                algorithms=[cfg.security.jwt_algorithm]
             )
             user_id: str = payload.get("sub")
             if user_id is None:
@@ -333,9 +342,9 @@ def main(cfg: DictConfig) -> None:
             )
 
         access_token = jwt.encode(
-            {"sub": str(user["id"]), "exp": datetime.utcnow() + timedelta(minutes=cfg.jwt.token_expiry)},
-            cfg.jwt.secret_key,
-            algorithm=cfg.jwt.algorithm
+            {"sub": str(user["id"]), "exp": datetime.utcnow() + timedelta(minutes=cfg.security.access_token_expire_minutes)},
+            cfg.security.jwt_secret_key,
+            algorithm=cfg.security.jwt_algorithm
         )
         
         # Create session in database
@@ -376,7 +385,7 @@ def main(cfg: DictConfig) -> None:
         # Get session information
         try:
             # Calculate inactivity timeout
-            inactivity_timeout = timedelta(minutes=cfg.jwt.token_expiry)
+            inactivity_timeout = timedelta(minutes=cfg.security.access_token_expire_minutes)
             cutoff_time = datetime.utcnow() - inactivity_timeout
             
             token_hash = pwd_context.hash(token)
@@ -407,7 +416,7 @@ def main(cfg: DictConfig) -> None:
     async def get_user_sessions(current_user: User = Depends(get_current_user)):
         """Get all active sessions for the current user"""
         # Calculate inactivity timeout
-        inactivity_timeout = timedelta(minutes=cfg.jwt.token_expiry)
+        inactivity_timeout = timedelta(minutes=cfg.security.access_token_expire_minutes)
         cutoff_time = datetime.utcnow() - inactivity_timeout
         
         query = user_sessions_table.select().where(
@@ -483,11 +492,23 @@ def main(cfg: DictConfig) -> None:
                 detail="Username already taken"
             )
         
+        # Create full_name from first_name + last_name if provided, otherwise use existing full_name
+        full_name = user.full_name
+        if user.first_name and user.last_name:
+            full_name = f"{user.first_name} {user.last_name}".strip()
+        elif user.first_name:
+            full_name = user.first_name
+        elif user.last_name:
+            full_name = user.last_name
+        
         # Insert new user
         insert_query = users_table.insert().values(
             email=user.email,
             username=username,
-            full_name=user.full_name or "",
+            full_name=full_name or "",
+            first_name=user.first_name,
+            last_name=user.last_name,
+            organization=user.organization,
             hashed_password=hashed_password,
             is_active=True,
             is_verified=False,
@@ -612,11 +633,23 @@ def main(cfg: DictConfig) -> None:
         hashed_password = pwd_context.hash(user.password)
         username = user.email.split('@')[0]
         
+        # Create full_name from first_name + last_name if provided, otherwise use existing full_name
+        full_name = user.full_name
+        if user.first_name and user.last_name:
+            full_name = f"{user.first_name} {user.last_name}".strip()
+        elif user.first_name:
+            full_name = user.first_name
+        elif user.last_name:
+            full_name = user.last_name
+        
         # Insert new user with specified role
         insert_query = users_table.insert().values(
             email=user.email,
             username=username,
-            full_name=user.full_name or "",
+            full_name=full_name or "",
+            first_name=user.first_name,
+            last_name=user.last_name,
+            organization=user.organization,
             hashed_password=hashed_password,
             is_active=True,
             is_verified=True,  # Admin-created users are pre-verified

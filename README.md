@@ -10,7 +10,8 @@ A comprehensive web-based platform for creating, managing, and delivering intera
 - **Dynamic Image Building**: Build custom lab environments on-demand with specific packages and configurations
 - **Real-time Lab Monitoring**: Monitor all student lab sessions with pause/resume/stop controls
 - **Template-Based Content Generation**: Upload custom templates for AI to generate structured content
-- **Comprehensive Quiz System**: Generate and manage quizzes with automatic grading and analytics
+- **Complete Quiz Management System**: Course instance-specific quiz publishing/unpublishing with real-time analytics and student access control
+- **Course Publishing Workflow**: Draft courses, publish to public/private visibility, create multiple course instances with enrollment management
 - **Enhanced Content Management**: Drag-and-drop interface for uploading course materials (PDF, DOCX, PPTX, JSON)
 - **Comprehensive Student Analytics**: Real-time tracking of student progress, lab usage, quiz performance, and engagement metrics with interactive dashboards
 - **Multi-Format Export**: Export content to PowerPoint, PDF, Excel, SCORM, ZIP formats
@@ -25,7 +26,7 @@ A comprehensive web-based platform for creating, managing, and delivering intera
 - **Automatic Lab Lifecycle**: Labs auto-start on login, pause on logout, resume on return
 - **Real-time Coding Environment**: Full-featured development environments with syntax highlighting, IntelliSense, and debugging
 - **AI-Powered Assistance**: Get help and explanations while working in lab environments
-- **Interactive Quiz System**: Take quizzes with immediate feedback, explanations, and progress tracking
+- **Interactive Quiz System**: Access published quizzes with timed sessions, attempt tracking, immediate scoring, and progress monitoring
 - **Seamless Authentication**: Integrated login/logout with automatic lab session management
 - **Secure Isolation**: Each student gets their own completely isolated environment
 - **Course Feedback System**: Provide structured feedback on courses, instructors, and content quality with star ratings and detailed comments
@@ -379,9 +380,14 @@ python run_lab_tests.py          # All lab container tests with reports
 python run_lab_tests.py --suite frontend  # Frontend lab integration tests
 python run_lab_tests.py --suite e2e       # E2E lab system tests
 
-# Feedback system tests (comprehensive)
-python test_feedback_final.py    # Complete feedback system validation (6/6 tests at 100%)
-python test_feedback_system.py   # Extended feedback component tests (7/7 tests)
+# Quiz management system tests (comprehensive)
+python tests/quiz-management/test_quiz_api_functionality.py        # API endpoint validation
+python tests/quiz-management/test_frontend_quiz_management.py      # JavaScript functionality testing
+python tests/validation/final_quiz_management_validation.py       # Complete system validation (12/12 components)
+
+# Feedback system tests (comprehensive)  
+python tests/integration/test_feedback_final.py                    # Complete feedback system validation (6/6 tests at 100%)
+python tests/integration/test_feedback_system.py                   # Extended feedback component tests (7/7 tests)
 
 # Run tests with coverage (80% minimum required)
 python -m pytest --cov=services --cov-report=html

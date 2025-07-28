@@ -2,8 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Version**: 2.1.0 - Complete Feedback System with Multi-IDE Labs  
-**Last Updated**: 2025-07-27
+**Version**: 2.2.0 - Complete Quiz Management System with Course Publishing  
+**Last Updated**: 2025-07-28
 
 ## Development Commands
 
@@ -204,6 +204,81 @@ The platform includes comprehensive content upload/download functionality with p
 - `frontend/instructor-dashboard.html` - Enhanced tabbed interface with pane-based content management
 - `frontend/js/instructor-dashboard.js` - File upload/download functionality with lab container integration
 
+## Comprehensive Quiz Management System (v2.2)
+
+The platform includes a complete quiz management system enabling instructors to publish/unpublish quizzes per course instance with full student access control and analytics integration:
+
+### Instructor Quiz Publication Management
+- **Course Instance-Specific Publishing** - Publish/unpublish quizzes for individual course instances with separate control per session
+- **Modal-Based Interface** - Professional tabbed interface with instance navigation and real-time status updates
+- **Bulk Operations** - Publish or unpublish all quizzes for a course instance with single-click batch operations
+- **Individual Quiz Controls** - Granular publish/unpublish controls with configuration options and analytics viewing
+- **Real-time Analytics** - Live display of student attempts, average scores, and participation metrics
+- **Publication Status Tracking** - Visual indicators showing published status, publication dates, and availability windows
+
+### Student Quiz Access Control
+- **Enrollment-Based Access** - Only enrolled students can access quizzes for their specific course instance
+- **Publication Visibility** - Students see only published quizzes; unpublished quizzes remain completely hidden
+- **Attempt Limitations** - Configurable maximum attempts per quiz with remaining attempt tracking
+- **Time Limits** - Optional time restrictions with automatic submission when time expires
+- **Progress Tracking** - Student dashboard shows quiz completion status and scores achieved
+
+### Quiz Attempt Storage & Analytics Integration
+- **Course Instance Tracking** - All quiz attempts stored with `course_instance_id` for precise analytics segmentation
+- **Student Performance Data** - Comprehensive storage of student answers, scores, attempt timing, and completion status
+- **Analytics Service Integration** - Quiz data fully integrated with analytics service for instructor reporting and insights
+- **Progress Monitoring** - Real-time tracking of student quiz participation and performance trends
+- **Attempt History** - Complete audit trail of all quiz attempts with detailed scoring and timing information
+
+### Database Schema & API Architecture
+```sql
+-- Core quiz management tables
+quiz_publications        -- Course instance-specific quiz publication control
+quiz_attempts           -- Student quiz attempts with course_instance_id for analytics
+student_course_enrollments -- Enrollment-based access control
+course_instances        -- Session-specific course management
+```
+
+### Quiz Management API Endpoints
+```http
+# Quiz Publication Management
+GET  /course-instances/{instance_id}/quiz-publications  # Get quiz publication status for course instance
+POST /quizzes/publish                                   # Publish/unpublish quiz for course instance
+PUT  /quiz-publications/{publication_id}               # Update quiz publication settings
+
+# Student Quiz Access
+GET  /course-instances/{instance_id}/published-quizzes  # Get student-accessible published quizzes
+POST /quiz-attempts                                     # Submit student quiz attempt with analytics data
+GET  /quiz-attempts/student/{student_id}               # Get student's quiz attempt history
+```
+
+### Frontend Implementation Features
+- **Responsive Modal Interface** - Professional tabbed modal with course instance navigation and mobile support
+- **Interactive Status Controls** - Real-time publish/unpublish buttons with loading states and confirmation dialogs
+- **Analytics Dashboard Integration** - Live display of quiz performance metrics and student participation data
+- **Professional Styling** - Comprehensive CSS with animations, hover effects, and consistent design language
+- **JavaScript Module Architecture** - Modern ES6 modules with proper error handling and notification systems
+
+### Key Quiz Management Files
+- `services/course-management/course_publishing_api.py` - Quiz publication API endpoints with analytics integration
+- `services/course-management/email_service.py` - Hydra-configured email service for notifications
+- `data/migrations/011_update_quiz_attempts_table.sql` - Database migration adding course_instance_id for analytics
+- `frontend/instructor-dashboard.html` - Integrated quiz management UI with modal interface
+- `frontend/css/main.css` - Comprehensive CSS styling for quiz management components
+- `tests/quiz-management/` - Complete test suite including API, frontend, and integration testing
+
+### Student Quiz Experience Workflow
+1. **Access** - Students log in via unique enrollment URLs and see their course dashboard
+2. **Quiz Discovery** - Published quizzes appear automatically in student quiz section (refresh required for new publications)
+3. **Quiz Taking** - Interactive quiz interface with timer, progress tracking, and question navigation
+4. **Results** - Immediate score display with pass/fail status and detailed performance feedback
+5. **Attempt Tracking** - Students can view attempt history and remaining attempts available
+
+### Configuration Management (Hydra Integration)
+- **Email Configuration** - Quiz notification emails use Hydra configuration management instead of environment variables
+- **Service Configuration** - All quiz management services properly integrated with platform configuration hierarchy
+- **Environment Support** - Development, staging, and production configuration support with proper defaults
+
 ## Comprehensive Feedback System (v2.1)
 
 The platform includes a complete bi-directional feedback system enabling rich communication between students and instructors:
@@ -366,6 +441,11 @@ Database migrations are in `data/migrations/` and run via `setup-database.py`.
 - `tests/e2e/` - Full workflow tests including complete lab container and feedback system lifecycles
 - `tests/security/` - Authentication and authorization tests
 - `tests/performance/` - Load testing
+- `tests/quiz-management/` - Comprehensive quiz management system testing
+- `tests/validation/` - System-wide validation and health checks
+- `tests/email-integration/` - Email service and Hydra configuration testing
+- `tests/file-operations/` - File management and student file system testing
+- `tests/lab-systems/` - Lab container creation and management testing
 
 ### Feedback System Testing (v2.1)
 - **Comprehensive Test Suite** - `test_feedback_final.py` - Complete feedback system validation (6/6 tests passing at 100%)
@@ -374,6 +454,14 @@ Database migrations are in `data/migrations/` and run via `setup-database.py`.
 - **API Endpoint Tests** - Complete testing of all feedback REST API endpoints
 - **Frontend Integration Tests** - JavaScript module testing for student and instructor feedback workflows
 - **Extended Test Suite** - `test_feedback_system.py` - Detailed component-by-component validation (7/7 tests passing)
+
+### Quiz Management System Testing (v2.2)
+- **API Testing** - `tests/quiz-management/test_quiz_api_functionality.py` - Complete API endpoint validation
+- **Database Testing** - `tests/quiz-management/test_comprehensive_quiz_management.py` - Full database workflow testing  
+- **Frontend Testing** - `tests/quiz-management/test_frontend_quiz_management.py` - JavaScript functionality validation
+- **Interactive Testing** - `tests/quiz-management/test_quiz_management_frontend.html` - Browser-based testing interface
+- **System Validation** - `tests/validation/final_quiz_management_validation.py` - Comprehensive system validation (12/12 components passing)
+- **Integration Coverage** - Database schema, API endpoints, frontend UI, analytics integration, and student access control
 
 ### Lab Container Testing (v2.1 - Multi-IDE Edition)
 - **Unit Tests** - `tests/unit/lab_container/test_lab_manager_service.py` - Core lab manager functionality with multi-IDE support

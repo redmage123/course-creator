@@ -32,6 +32,10 @@ cors:
     - "http://localhost:8000"
     - "http://localhost:8001"
     - "http://localhost:8004"
+    - "http://176.9.99.103:3000"
+    - "http://176.9.99.103:8000"
+    - "http://176.9.99.103:8001"
+    - "http://176.9.99.103:8004"
 
 # Logging configuration
 log:
@@ -43,3 +47,4 @@ security:
   jwt_secret_key: ${oc.env:JWT_SECRET_KEY}
   jwt_algorithm: HS256
   access_token_expire_minutes: 30
+
