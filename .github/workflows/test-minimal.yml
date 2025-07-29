@@ -82,12 +82,21 @@ jobs:
     
     - name: Run basic linting
       run: |
-        npm run lint || echo "Linting completed with warnings"
+        if npm run lint; then
+          echo "✅ ESLint passed"
+        else
+          echo "⚠️ ESLint found issues but continuing..."
+        fi
       continue-on-error: true
     
     - name: Run Jest tests (if any exist)
       run: |
-        npm run test:unit || echo "No Jest tests found or failed"
+        if npm run test:unit 2>/dev/null; then
+          echo "✅ Jest tests passed"
+        else
+          echo "⚠️ No Jest tests found or tests failed - running Python frontend tests instead"
+          npm run test:frontend || echo "Frontend tests completed"
+        fi
       continue-on-error: true
 
   # Basic Integration Test
@@ -186,14 +195,34 @@ jobs:
     
     - name: Run JavaScript linting
       run: |
-        npm run lint || echo "ESLint completed with issues"
+        if npm run lint; then
+          echo "✅ JavaScript linting passed"
+        else
+          echo "⚠️ JavaScript linting found issues but continuing..."
+        fi
       continue-on-error: true
     
     - name: Run Python formatting check
       run: |
-        black --check services/ || echo "Black formatting check completed"
-        isort --check-only services/ || echo "isort check completed" 
-        flake8 services/ || echo "flake8 check completed"
+        echo "Running Python formatting checks..."
+        if black --check services/; then
+          echo "✅ Black formatting passed"
+        else
+          echo "⚠️ Black formatting issues found"
+        fi
+        
+        if isort --check-only services/; then
+          echo "✅ isort passed"
+        else
+          echo "⚠️ isort issues found"
+        fi
+        
+        if flake8 services/; then
+          echo "✅ flake8 passed"
+        else
+          echo "⚠️ flake8 issues found"
+        fi
+        echo "Python formatting checks completed"
       continue-on-error: true
 
   # Basic E2E Tests
@@ -222,7 +251,12 @@ jobs:
     
     - name: Run E2E tests (basic)
       run: |
-        npm run test:e2e || echo "E2E tests completed"
+        if npm run test:e2e; then
+          echo "✅ E2E tests passed"
+        else
+          echo "⚠️ E2E tests failed or not available - running Python E2E tests instead"
+          python -m pytest tests/frontend/ -m e2e -v || echo "Python E2E tests completed"
+        fi
       continue-on-error: true
 
   # Test results summary
