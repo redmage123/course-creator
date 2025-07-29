@@ -1,0 +1,327 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  # Frontend Unit Tests
+  frontend-unit-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run frontend unit tests
+      run: npm run test:unit
+    
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/lcov.info
+        flags: frontend
+        name: frontend-coverage
+
+  # Backend Unit Tests
+  backend-unit-tests:
+    runs-on: ubuntu-latest
+    
+    services:
+      mongodb:
+        image: mongo:5.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongo --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-asyncio httpx fastapi uvicorn pymongo python-multipart passlib[bcrypt] python-jose[cryptography]
+    
+    - name: Run backend unit tests
+      run: |
+        cd tests
+        python -m pytest unit/backend/ -v --tb=short
+      env:
+        MONGODB_URL: mongodb://localhost:27017/test_db
+
+  # Integration Tests
+  integration-tests:
+    runs-on: ubuntu-latest
+    
+    services:
+      mongodb:
+        image: mongo:5.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongo --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-asyncio httpx fastapi uvicorn pymongo python-multipart passlib[bcrypt] python-jose[cryptography] requests
+    
+    - name: Start backend services
+      run: |
+        cd services/user-management
+        python main.py &
+        sleep 5
+        cd ../course-management
+        python main.py &
+        sleep 5
+      env:
+        MONGODB_URL: mongodb://localhost:27017/test_db
+    
+    - name: Run integration tests
+      run: |
+        cd tests
+        python -m pytest integration/ -v --tb=short
+      env:
+        MONGODB_URL: mongodb://localhost:27017/test_db
+
+  # End-to-End Tests
+  e2e-tests:
+    runs-on: ubuntu-latest
+    
+    services:
+      mongodb:
+        image: mongo:5.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongo --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        npm ci
+        python -m pip install --upgrade pip
+        pip install fastapi uvicorn pymongo python-multipart passlib[bcrypt] python-jose[cryptography]
+    
+    - name: Install Playwright
+      run: npx playwright install
+    
+    - name: Start backend services
+      run: |
+        cd services/user-management
+        python main.py &
+        sleep 5
+        cd ../course-management
+        python main.py &
+        sleep 5
+      env:
+        MONGODB_URL: mongodb://localhost:27017/test_db
+    
+    - name: Run E2E tests
+      run: npm run test:e2e
+      env:
+        MONGODB_URL: mongodb://localhost:27017/test_db
+    
+    - name: Upload E2E test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: e2e-test-results
+        path: test-reports/playwright/
+        retention-days: 30
+
+  # Linting and Code Quality
+  lint-and-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Run ESLint
+      run: npm run lint
+    
+    - name: Run ESLint with fix
+      run: npm run lint:fix
+      continue-on-error: true
+
+  # Performance Tests
+  performance-tests:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    services:
+      mongodb:
+        image: mongo:5.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongo --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install locust fastapi uvicorn pymongo python-multipart passlib[bcrypt] python-jose[cryptography]
+    
+    - name: Start backend services
+      run: |
+        cd services/user-management
+        python main.py &
+        sleep 5
+        cd ../course-management
+        python main.py &
+        sleep 5
+      env:
+        MONGODB_URL: mongodb://localhost:27017/test_db
+    
+    - name: Run performance tests
+      run: |
+        cd tests/performance
+        locust -f load_test_scenarios.py --headless --users 50 --spawn-rate 5 --run-time 60s --host http://localhost:8000
+      continue-on-error: true
+
+  # Security Tests
+  security-tests:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install security tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install bandit safety
+    
+    - name: Run Bandit security scan
+      run: bandit -r services/ -f json -o bandit-report.json
+      continue-on-error: true
+    
+    - name: Run Safety check
+      run: safety check --json --output safety-report.json
+      continue-on-error: true
+    
+    - name: Upload security reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-reports
+        path: |
+          bandit-report.json
+          safety-report.json
+        retention-days: 30
+
+  # Deploy to staging (if all tests pass)
+  deploy-staging:
+    needs: [frontend-unit-tests, backend-unit-tests, integration-tests, e2e-tests, lint-and-quality]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment..."
+        # Add your deployment commands here
+        echo "Deployment completed successfully"
+
+  # Deploy to production (if all tests pass on main)
+  deploy-production:
+    needs: [frontend-unit-tests, backend-unit-tests, integration-tests, e2e-tests, lint-and-quality, performance-tests]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Deploy to production
+      run: |
+        echo "Deploying to production environment..."
+        # Add your deployment commands here
+        echo "Production deployment completed successfully"
+
+  # Test results summary
+  test-summary:
+    needs: [frontend-unit-tests, backend-unit-tests, integration-tests, e2e-tests]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Test Summary
+      run: |
+        echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- Frontend Unit Tests: ${{ needs.frontend-unit-tests.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Backend Unit Tests: ${{ needs.backend-unit-tests.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Integration Tests: ${{ needs.integration-tests.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- E2E Tests: ${{ needs.e2e-tests.result }}" >> $GITHUB_STEP_SUMMARY

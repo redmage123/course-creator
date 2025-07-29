@@ -170,7 +170,6 @@ class PytestTestSuite(BaseTestSuite):
         args = [
             '--tb=short',
             '--disable-warnings',
-            f'--timeout={self._config.timeout}',
         ]
         
         if self._verbose:
