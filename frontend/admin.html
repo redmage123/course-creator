@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.5, maximum-scale=3.0">
     <title>Admin Dashboard - Course Creator Platform</title>
     <link rel="stylesheet" href="css/main.css">
     <style>
@@ -136,6 +136,11 @@
     </style>
 </head>
 <body>
+    <!-- Mobile sidebar toggle -->
+    <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle navigation">
+        <i class="fas fa-bars"></i>
+    </button>
+    
     <div class="admin-header">
         <h1>🛡️ Admin Dashboard</h1>
         <p>Welcome, <span id="admin-name">Administrator</span> | <a href="index.html" style="color: #fff;">Back to Main Site</a></p>
@@ -308,5 +313,15 @@
 
     <script src="js/config.js?v=20250713-5"></script>
     <script src="js/admin.js?v=20250713-5"></script>
+    
+    <!-- Sidebar toggle function for zoom/mobile support -->
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.dashboard-sidebar');
+            if (sidebar) {
+                sidebar.classList.toggle('show');
+            }
+        }
+    </script>
 </body>
 </html>

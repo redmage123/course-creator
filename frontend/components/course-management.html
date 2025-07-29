@@ -1,0 +1,52 @@
+<!-- Course Management Component -->
+<!-- Single Responsibility: Display and manage instructor's courses -->
+<section id="courses-section" class="content-section">
+    <div class="section-header">
+        <h2>My Courses</h2>
+        <div class="section-actions">
+            <button onclick="loadUserCourses()" class="btn btn-secondary">
+                <i class="fas fa-sync-alt"></i>
+                Refresh
+            </button>
+            <button onclick="showSection('create-course')" class="btn btn-primary">
+                <i class="fas fa-plus"></i>
+                New Course
+            </button>
+        </div>
+    </div>
+
+    <div class="courses-filters">
+        <div class="filter-group">
+            <label for="course-filter">Filter by:</label>
+            <select id="course-filter" onchange="filterCourses()">
+                <option value="all">All Courses</option>
+                <option value="published">Published</option>
+                <option value="draft">Draft</option>
+                <option value="archived">Archived</option>
+            </select>
+        </div>
+        
+        <div class="search-group">
+            <input type="text" id="course-search" placeholder="Search courses..." 
+                   onkeyup="searchCourses()">
+            <i class="fas fa-search"></i>
+        </div>
+    </div>
+
+    <div id="courses-list" class="courses-grid enhanced">
+        <div class="loading-state">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading your courses...</p>
+        </div>
+    </div>
+
+    <div id="courses-empty" class="empty-state" style="display: none;">
+        <i class="fas fa-book-open"></i>
+        <h3>No Courses Yet</h3>
+        <p>You haven't created any courses yet. Get started by creating your first course!</p>
+        <button onclick="showSection('create-course')" class="btn btn-primary">
+            <i class="fas fa-plus"></i>
+            Create Your First Course
+        </button>
+    </div>
+</section>

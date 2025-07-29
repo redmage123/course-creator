@@ -1,0 +1,78 @@
+<!-- Student Management Component -->
+<!-- Single Responsibility: Handle student enrollment and management -->
+<section id="students-section" class="content-section">
+    <div class="section-header">
+        <h2>Student Management</h2>
+        <p>Manage student enrollments and track their progress.</p>
+    </div>
+
+    <div class="student-management-section">
+        <div class="management-tabs">
+            <button class="tab-button active" onclick="showStudentTab('enrollment')">
+                <i class="fas fa-user-plus"></i>
+                Enrollment
+            </button>
+            <button class="tab-button" onclick="showStudentTab('enrolled')">
+                <i class="fas fa-users"></i>
+                Enrolled Students
+            </button>
+        </div>
+
+        <!-- Enrollment Tab -->
+        <div id="enrollment-tab" class="tab-content active">
+            <div class="enrollment-section">
+                <h3>Enroll Students</h3>
+                <form id="enrollmentForm" class="enrollment-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="student-email">Student Email *</label>
+                            <input type="email" id="student-email" name="email" required 
+                                   placeholder="student@example.com">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="enrollment-course">Course *</label>
+                            <select id="enrollment-course" name="courseId" required>
+                                <option value="">Select a course</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="student-first-name">First Name</label>
+                            <input type="text" id="student-first-name" name="firstName" 
+                                   placeholder="Student's first name">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="student-last-name">Last Name</label>
+                            <input type="text" id="student-last-name" name="lastName" 
+                                   placeholder="Student's last name">
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-user-plus"></i>
+                            Enroll Student
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Enrolled Students Tab -->
+        <div id="enrolled-tab" class="tab-content">
+            <div class="enrolled-students-section">
+                <h3>Enrolled Students</h3>
+                <div id="enrolled-students-list">
+                    <div class="loading-state">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading enrolled students...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

@@ -14,6 +14,26 @@ Welcome to the comprehensive documentation for the Course Creator Platform - a m
 - [Testing](#testing)
 - [Troubleshooting](#troubleshooting)
 
+## 📖 Documentation Files
+
+### Quick Reference
+- **[QUICKSTART.md](QUICKSTART.md)** - Get the platform running in 10 minutes
+- **[CLEANUP_SUMMARY.md](CLEANUP_SUMMARY.md)** - Recent cleanup and organization changes
+
+### Comprehensive Guides
+- **[USER-GUIDE.md](USER-GUIDE.md)** - Complete user documentation
+- **[RUNBOOK.md](RUNBOOK.md)** - Detailed installation and deployment
+- **[TESTING_STRATEGY.md](TESTING_STRATEGY.md)** - Testing approach and coverage
+- **[ci-cd-pipeline.md](ci-cd-pipeline.md)** - Jenkins and SonarQube CI/CD setup
+- **[WEBHOOK_SETUP.md](WEBHOOK_SETUP.md)** - Git webhook configuration for automated builds
+
+### Feature-Specific Documentation
+- **[FEEDBACK_SYSTEM_GUIDE.md](FEEDBACK_SYSTEM_GUIDE.md)** - Bi-directional feedback system
+- **[QUIZ_MANAGEMENT_GUIDE.md](QUIZ_MANAGEMENT_GUIDE.md)** - Quiz publishing and management
+- **[EMAIL_CONFIGURATION.md](EMAIL_CONFIGURATION.md)** - Email service setup with Hydra
+- **[content-management.md](content-management.md)** - File upload and content processing
+- **[mcp-unified-setup.md](mcp-unified-setup.md)** - Model Context Protocol integration
+
 ## 🏗️ Overview
 
 Course Creator is a comprehensive web platform for creating, managing, and delivering interactive programming courses with hands-on lab environments. Built with a microservices architecture using FastAPI (backend) and modern HTML/CSS/JavaScript (frontend), it provides a scalable foundation for educational content management with AI-powered content generation and individual student lab containers.

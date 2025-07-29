@@ -138,7 +138,7 @@ python create-admin.py
 
 ## 📚 Documentation
 
-- **⚡ Quick Start**: [`QUICKSTART.md`](QUICKSTART.md) - Get running in 10 minutes
+- **⚡ Quick Start**: [`docs/QUICKSTART.md`](docs/QUICKSTART.md) - Get running in 10 minutes
 - **📖 Complete Runbook**: [`docs/RUNBOOK.md`](docs/RUNBOOK.md) - Detailed installation & deployment
 - **👥 User Guide**: [`docs/USER-GUIDE.md`](docs/USER-GUIDE.md) - How to use the platform
 - **🔧 CI/CD Pipeline**: [`docs/ci-cd-pipeline.md`](docs/ci-cd-pipeline.md) - Jenkins & SonarQube setup

@@ -1,0 +1,89 @@
+<!-- Course Creation Component -->
+<!-- Single Responsibility: Handle new course creation form and submission -->
+<section id="create-course-section" class="content-section">
+    <div class="section-header">
+        <h2>Create New Course</h2>
+        <p>Design and create engaging courses for your students.</p>
+    </div>
+
+    <form id="courseForm" class="course-form">
+        <div class="form-group">
+            <label for="course-title">Course Title *</label>
+            <input type="text" id="course-title" name="title" required 
+                   placeholder="Enter course title">
+        </div>
+
+        <div class="form-group">
+            <label for="course-description">Course Description *</label>
+            <textarea id="course-description" name="description" required 
+                      placeholder="Describe what students will learn in this course" 
+                      rows="4"></textarea>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="course-category">Category *</label>
+                <select id="course-category" name="category" required>
+                    <option value="">Select Category</option>
+                    <option value="programming">Programming</option>
+                    <option value="data-science">Data Science</option>
+                    <option value="web-development">Web Development</option>
+                    <option value="machine-learning">Machine Learning</option>
+                    <option value="business">Business</option>
+                    <option value="design">Design</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="course-level">Difficulty Level *</label>
+                <select id="course-level" name="level" required>
+                    <option value="">Select Level</option>
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="course-duration">Duration</label>
+                <div class="duration-input-group">
+                    <input type="number" id="course-duration" name="duration" 
+                           min="1" max="52" placeholder="8">
+                    <select id="duration-unit" name="duration_unit">
+                        <option value="hours">Hours</option>
+                        <option value="days">Days</option>
+                        <option value="weeks" selected>Weeks</option>
+                        <option value="months">Months</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="course-price">Price ($)</label>
+                <input type="number" id="course-price" name="price" 
+                       min="0" step="0.01" placeholder="99.00">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="course-tags">Tags</label>
+            <input type="text" id="course-tags" name="tags" 
+                   placeholder="programming, javascript, web development (comma separated)">
+            <small class="form-help">Enter keywords separated by commas</small>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-plus"></i>
+                Create Course
+            </button>
+            <button type="reset" class="btn btn-secondary">
+                <i class="fas fa-undo"></i>
+                Reset Form
+            </button>
+        </div>
+    </form>
+</section>

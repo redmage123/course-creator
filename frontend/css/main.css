@@ -1,4 +1,4 @@
-/* Modern Dashboard Design System */
+/* Modern Dashboard Design System - Enhanced for Zoom/Resize Support */
 :root {
     --primary-color: #2563eb;
     --primary-hover: #1d4ed8;
@@ -27,6 +27,18 @@
     --spacing-lg: 1.5rem;
     --spacing-xl: 2rem;
     --spacing-2xl: 3rem;
+    
+    /* Responsive sizing variables */
+    --sidebar-width: clamp(200px, 20vw, 320px);
+    --content-max-width: min(100vw - var(--sidebar-width), 1400px);
+    --modal-max-width: min(90vw, 1200px);
+    --font-size-base: clamp(14px, 1rem, 18px);
+    --font-size-small: clamp(12px, 0.875rem, 16px);
+    --font-size-large: clamp(16px, 1.125rem, 20px);
+}
+
+* {
+    box-sizing: border-box;
 }
 
 body {
@@ -36,6 +48,11 @@ body {
     background-color: var(--background-color);
     color: var(--text-primary);
     line-height: 1.6;
+    font-size: var(--font-size-base);
+    /* Enable smooth scaling */
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
 
 /* Dashboard Layout */
@@ -47,7 +64,9 @@ body {
 
 /* Sidebar Styles */
 .dashboard-sidebar {
-    width: 280px;
+    width: var(--sidebar-width);
+    min-width: 200px;
+    max-width: 320px;
     background: var(--sidebar-bg);
     color: var(--sidebar-text);
     display: flex;
@@ -58,11 +77,18 @@ body {
     left: 0;
     z-index: 1000;
     box-shadow: var(--shadow-lg);
+    /* Enable smooth transitions during resize */
+    transition: width 0.3s ease;
+    /* Remove overflow from main container - let nav section handle scrolling */
+    overflow: hidden;
 }
 
 .sidebar-header {
     padding: var(--spacing-xl);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    /* Prevent header from growing too large at high zoom */
+    flex-shrink: 0;
+    min-height: 0;
 }
 
 .user-info {
@@ -100,16 +126,45 @@ body {
 .sidebar-nav {
     flex: 1;
     padding: var(--spacing-lg) 0;
+    /* Make the navigation section itself scrollable */
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* Ensure smooth scrolling */
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+/* Custom scrollbar for sidebar navigation */
+.sidebar-nav::-webkit-scrollbar {
+    width: 6px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
 }
 
 .nav-menu {
     list-style: none;
     margin: 0;
     padding: 0;
+    /* Ensure menu items don't get too compressed */
+    min-height: 0;
 }
 
 .nav-item {
     margin-bottom: var(--spacing-xs);
+    /* Ensure nav items remain clickable at high zoom */
+    flex-shrink: 0;
 }
 
 .nav-link {
@@ -187,10 +242,14 @@ body {
 /* Main Content Area */
 .dashboard-main {
     flex: 1;
-    margin-left: 280px;
+    margin-left: var(--sidebar-width);
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    padding: clamp(1rem, 2vw, 2rem);
+    max-width: var(--content-max-width);
+    /* Smooth transitions */
+    transition: margin-left 0.3s ease;
 }
 
 .main-header {
@@ -8079,6 +8138,207 @@ EOF < /dev/null
     
     .instance-tabs .tab-btn {
         min-width: auto;
+    }
+}
+
+/* Enhanced Zoom and Resize Support */
+/* General modal improvements for all modal-content classes */
+.modal {
+    /* Better modal positioning for all zoom levels */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(0.5rem, 2vw, 2rem);
+}
+
+.modal-content {
+    /* Ensure all modals scale properly with zoom */
+    transform-origin: center;
+    transition: transform 0.2s ease;
+    min-width: min(300px, 90vw);
+    max-width: min(95vw, 1200px);
+    width: auto;
+}
+
+/* Large screens and zoom out support */
+@media (min-width: 1400px) {
+    .dashboard-main {
+        max-width: calc(100vw - var(--sidebar-width));
+    }
+    
+    .modal-content {
+        max-width: 1200px;
+    }
+}
+
+/* Enhanced zoom in support - makes UI more compact */
+@media (max-width: 1200px) {
+    .dashboard-main {
+        padding: clamp(0.5rem, 1.5vw, 1.5rem);
+    }
+    
+    .modal-content {
+        max-width: 95vw;
+        margin: 2vh auto;
+    }
+    
+    /* Make cards more compact */
+    .course-card, .student-card {
+        padding: clamp(0.75rem, 2vw, 1.5rem);
+    }
+}
+
+/* Very high zoom levels or very small screens */
+@media (max-width: 480px) {
+    :root {
+        --font-size-base: 16px; /* Prevent text from being too small on mobile */
+        --spacing-xs: 0.125rem;
+        --spacing-sm: 0.25rem;
+        --spacing-md: 0.5rem;
+        --spacing-lg: 0.75rem;
+        --spacing-xl: 1rem;
+    }
+    
+    .modal-content {
+        width: 98vw;
+        max-height: 95vh;
+        margin: 1vh auto;
+        overflow-y: auto;
+    }
+    
+    .dashboard-main {
+        padding: var(--spacing-sm);
+    }
+    
+    /* Stack navigation items */
+    .nav-links {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    /* Ensure sidebar navigation is more compact at high zoom */
+    .sidebar-header {
+        padding: var(--spacing-md);
+    }
+    
+    .sidebar-nav {
+        padding: var(--spacing-sm) 0;
+    }
+    
+    .nav-item {
+        margin-bottom: var(--spacing-xs);
+    }
+}
+
+/* Special handling for landscape mobile or very wide zoom */
+@media (orientation: landscape) and (max-height: 600px) {
+    .modal-content {
+        max-height: 95vh;
+        width: min(90vw, 1000px);
+    }
+}
+
+/* Ensure text remains readable at all zoom levels */
+h1, h2, h3, h4, h5, h6 {
+    font-size: clamp(var(--font-size-base), 1em + 0.5vw, 2.5em);
+    line-height: 1.3;
+}
+
+/* Flexible grid layouts for zoom */
+.course-grid, .student-grid, .content-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+    gap: clamp(0.5rem, 2vw, 1.5rem);
+}
+
+/* Ensure buttons and interactive elements remain usable at all zoom levels */
+.btn, button, .tab-btn, .tab-button {
+    min-height: 44px; /* Touch target size */
+    font-size: var(--font-size-base);
+    padding: clamp(0.375rem, 1vw, 0.75rem) clamp(0.75rem, 2vw, 1.5rem);
+    /* Prevent button text from wrapping at high zoom */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Special handling for small buttons */
+.btn-sm, .btn.small {
+    min-height: 32px;
+    font-size: var(--font-size-small);
+    padding: clamp(0.25rem, 0.5vw, 0.5rem) clamp(0.5rem, 1vw, 1rem);
+}
+
+/* Responsive tables for zoom */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+table {
+    font-size: var(--font-size-small);
+    min-width: max(500px, 50vw);
+    width: 100%;
+}
+
+/* Ensure form elements remain usable */
+input, textarea, select {
+    font-size: max(16px, var(--font-size-base)); /* Prevent zoom on mobile */
+    min-height: 44px;
+    padding: clamp(0.5rem, 1vw, 0.75rem);
+}
+
+/* Sidebar mobile toggle improvements */
+.sidebar-toggle {
+    display: none;
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 1001;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    font-size: 18px;
+    cursor: pointer;
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
+}
+
+.sidebar-toggle:hover {
+    background: var(--primary-hover);
+    transform: scale(1.05);
+}
+
+@media (max-width: 1023px) {
+    .sidebar-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Sidebar slide-in animation */
+    .dashboard-sidebar.show {
+        transform: translateX(0);
+    }
+}
+
+/* High contrast mode support for accessibility */
+@media (prefers-contrast: high) {
+    :root {
+        --border-color: #000000;
+        --text-secondary: #000000;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
     }
 }
 

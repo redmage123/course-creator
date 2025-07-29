@@ -2,12 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.5, maximum-scale=3.0">
     <title>Student Dashboard - Course Creator</title>
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
+    <!-- Mobile sidebar toggle -->
+    <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle navigation">
+        <i class="fas fa-bars"></i>
+    </button>
+    
     <header>
         <div class="container">
             <div class="header-content">
@@ -331,5 +336,15 @@
     <script type="module" src="js/main-modular.js"></script>
     <script type="module" src="js/lab-integration.js"></script>
     <script type="module" src="js/student-dashboard.js"></script>
+    
+    <!-- Sidebar toggle function for zoom/mobile support -->
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.dashboard-sidebar');
+            if (sidebar) {
+                sidebar.classList.toggle('show');
+            }
+        }
+    </script>
 </body>
 </html>
