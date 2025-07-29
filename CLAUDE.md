@@ -738,7 +738,7 @@ Each service follows a consistent structure:
 
 ### Frontend Architecture
 The frontend uses a **modern ES6 module system** with the following structure:
-- `js/main-modular.js` - Main application entry point
+- `js/main.js` - Main application entry point
 - `js/modules/` - Modular components including:
   - `auth.js` - Enhanced authentication with lab lifecycle integration
   - `lab-lifecycle.js` - Automatic lab container lifecycle management

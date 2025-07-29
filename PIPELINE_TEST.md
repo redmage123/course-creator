@@ -18,7 +18,7 @@ This file is created to test the updated CI/CD pipeline.
 
 Pipeline should now use:
 ```bash
-python tests/main_test_runner.py --type <type> --coverage --ci
+python tests/main.py --type <type> --coverage --ci
 ```
 
 Instead of the old broken commands.

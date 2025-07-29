@@ -66,7 +66,7 @@ class TestJavaScriptCore:
         driver.get(f"{frontend_server}/index.html")
         javascript_utils.wait_for_page_load()
         
-        # Wait for main-modular.js to load
+        # Wait for main.js to load
         javascript_utils.wait_for_function("showLoginModal", timeout=15)
         
         required_functions = [
@@ -253,7 +253,7 @@ class TestModularSystemMigration:
         driver.get(f"{frontend_server}/index.html")
         javascript_utils.wait_for_page_load()
         
-        # Check that main-modular.js loaded successfully
+        # Check that main.js loaded successfully
         javascript_utils.wait_for_function("App", timeout=15)
         
         # Verify modular system components are loaded
@@ -297,5 +297,5 @@ class TestModularSystemMigration:
             
             # Check that modular system is loaded
             page_source = driver.page_source
-            assert 'main-modular.js' in page_source, f"Modular system not loaded in {page_url}"
+            assert 'main.js' in page_source, f"Modular system not loaded in {page_url}"
             assert 'type="module"' in page_source, f"ES6 module type not found in {page_url}"

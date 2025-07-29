@@ -37,7 +37,7 @@ tests/
 ├── frontend/                     # Frontend JavaScript module tests
 │   └── components/
 ├── e2e/                         # End-to-end workflow tests
-├── main_test_runner.py          # Main test execution entry point
+├── main.py          # Main test execution entry point
 ├── conftest.py                  # Pytest configuration and fixtures
 └── README.md                    # This documentation
 ```
@@ -68,70 +68,70 @@ npm install jest @testing-library/jest-dom
 
 #### Run All Tests
 ```bash
-python tests/main_test_runner.py
+python tests/main.py
 ```
 
 #### Run Specific Test Types
 ```bash
 # Unit tests only
-python tests/main_test_runner.py --type unit
+python tests/main.py --type unit
 
 # Integration tests only
-python tests/main_test_runner.py --type integration
+python tests/main.py --type integration
 
 # Frontend tests only
-python tests/main_test_runner.py --type frontend
+python tests/main.py --type frontend
 
 # End-to-end tests only
-python tests/main_test_runner.py --type e2e
+python tests/main.py --type e2e
 ```
 
 #### Run by Priority
 ```bash
 # High priority tests only
-python tests/main_test_runner.py --priority high
+python tests/main.py --priority high
 
 # Medium priority tests only
-python tests/main_test_runner.py --priority medium
+python tests/main.py --priority medium
 ```
 
 #### Run Specific Test Suites
 ```bash
 # Single suite
-python tests/main_test_runner.py --suite user_management_unit
+python tests/main.py --suite user_management_unit
 
 # Multiple suites
-python tests/main_test_runner.py --suites user_management_unit course_management_unit
+python tests/main.py --suites user_management_unit course_management_unit
 ```
 
 #### CI/CD Mode
 ```bash
 # Run in CI/CD mode with fail-fast
-python tests/main_test_runner.py --ci --fail-fast
+python tests/main.py --ci --fail-fast
 
 # Generate coverage reports
-python tests/main_test_runner.py --coverage
+python tests/main.py --coverage
 ```
 
 ### Advanced Usage
 
 #### Verbose Output
 ```bash
-python tests/main_test_runner.py --verbose
+python tests/main.py --verbose
 ```
 
 #### Parallel Execution
 ```bash
 # Use 8 parallel workers
-python tests/main_test_runner.py --parallel 8
+python tests/main.py --parallel 8
 
 # Disable parallel execution
-python tests/main_test_runner.py --no-parallel
+python tests/main.py --no-parallel
 ```
 
 #### Custom Configuration
 ```bash
-python tests/main_test_runner.py --config-file path/to/config.yaml
+python tests/main.py --config-file path/to/config.yaml
 ```
 
 ## Test Categories
@@ -150,7 +150,7 @@ Test individual domain entities and business logic in isolation.
 
 **Example**:
 ```bash
-python tests/main_test_runner.py --type unit --suite user_management_unit
+python tests/main.py --type unit --suite user_management_unit
 ```
 
 ### Integration Tests
@@ -168,7 +168,7 @@ Test interactions between services and components.
 
 **Example**:
 ```bash
-python tests/main_test_runner.py --type integration
+python tests/main.py --type integration
 ```
 
 ### Frontend Tests
@@ -188,7 +188,7 @@ Test JavaScript modules and UI components.
 
 **Example**:
 ```bash
-python tests/main_test_runner.py --type frontend
+python tests/main.py --type frontend
 ```
 
 ### End-to-End Tests
@@ -206,7 +206,7 @@ Test complete user workflows and system interactions.
 
 **Example**:
 ```bash
-python tests/main_test_runner.py --type e2e
+python tests/main.py --type e2e
 ```
 
 ## Test Framework Features
@@ -458,7 +458,7 @@ jobs:
         npm install
     
     - name: Run tests
-      run: python tests/main_test_runner.py --ci --coverage
+      run: python tests/main.py --ci --coverage
       env:
         TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/course_creator_test
         TEST_REDIS_URL: redis://localhost:6379/1
@@ -510,7 +510,7 @@ Reports are automatically generated in the `tests/reports/` directory.
 Run tests with debug information:
 
 ```bash
-python tests/main_test_runner.py --verbose --no-parallel
+python tests/main.py --verbose --no-parallel
 ```
 
 ## License

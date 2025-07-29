@@ -65,7 +65,7 @@ jobs:
     
     - name: Run backend unit tests
       run: |
-        python tests/main_test_runner.py --type unit --coverage --ci
+        python tests/main.py --type unit --coverage --ci
       env:
         DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
         REDIS_URL: ${{ env.TEST_REDIS_URL }}
@@ -104,7 +104,7 @@ jobs:
     
     - name: Run frontend tests
       run: |
-        python tests/main_test_runner.py --type frontend --coverage --ci
+        python tests/main.py --type frontend --coverage --ci
     
     - name: Upload coverage
       uses: codecov/codecov-action@v3
@@ -170,7 +170,7 @@ jobs:
     
     - name: Run integration tests
       run: |
-        python tests/main_test_runner.py --type integration --coverage --ci
+        python tests/main.py --type integration --coverage --ci
       env:
         DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
         REDIS_URL: ${{ env.TEST_REDIS_URL }}
@@ -245,7 +245,7 @@ jobs:
     
     - name: Run E2E tests
       run: |
-        python tests/main_test_runner.py --type e2e --ci
+        python tests/main.py --type e2e --ci
       env:
         DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
         REDIS_URL: ${{ env.TEST_REDIS_URL }}
@@ -281,7 +281,7 @@ jobs:
     
     - name: Run security tests
       run: |
-        python tests/main_test_runner.py --type security --ci
+        python tests/main.py --type security --ci
       continue-on-error: true
     
     - name: Run Bandit security scan
@@ -395,7 +395,7 @@ jobs:
     
     - name: Run performance tests
       run: |
-        python tests/main_test_runner.py --type performance --ci
+        python tests/main.py --type performance --ci
       continue-on-error: true
     
     - name: Stop platform

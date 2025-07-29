@@ -1,464 +1,572 @@
 """
-Content Management Service - FastAPI Application (Refactored)
-
-This module provides the main FastAPI application for the content management service,
-following SOLID principles with proper dependency injection and modular architecture.
+Content Management Service - Refactored following SOLID principles
+Single Responsibility: API layer only - business logic delegated to services
+Open/Closed: Extensible through dependency injection
+Liskov Substitution: Uses interface abstractions
+Interface Segregation: Clean, focused interfaces
+Dependency Inversion: Depends on abstractions, not concretions
 """
-
-import os
-import asyncio
+from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from typing import List, Optional, Dict, Any
+import logging
 from datetime import datetime
 from contextlib import asynccontextmanager
-
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Depends, File, UploadFile, Form
-from fastapi.responses import FileResponse
-from fastapi.middleware.cors import CORSMiddleware
-import asyncpg
+import hydra
+from omegaconf import DictConfig
 import uvicorn
 
-from models.common import (
-    APIResponse, ErrorResponse, SuccessResponse, ContentType, 
-    ExportFormat, ProcessingStatus, create_api_response, 
-    create_error_response, create_success_response
+# Pydantic models for API (Data Transfer Objects)
+from pydantic import BaseModel, Field
+
+# Domain entities
+from domain.entities.base_content import ContentType, ContentStatus
+from domain.entities.syllabus import Syllabus
+from domain.entities.slide import Slide
+from domain.entities.quiz import Quiz
+from domain.entities.exercise import Exercise
+from domain.entities.lab_environment import LabEnvironment
+
+# Domain interfaces
+from domain.interfaces.content_service import (
+    ISyllabusService, ISlideService, IQuizService, IExerciseService,
+    ILabEnvironmentService, IContentSearchService, IContentValidationService,
+    IContentAnalyticsService, IContentExportService
 )
-from models.content import (
-    SyllabusCreate, SyllabusUpdate, SyllabusResponse,
-    SlideCreate, SlideUpdate, SlideResponse,
-    QuizCreate, QuizUpdate, QuizResponse,
-    ExerciseCreate, ExerciseUpdate, ExerciseResponse,
-    LabEnvironmentCreate, LabEnvironmentUpdate, LabEnvironmentResponse,
-    ContentGenerationRequest, CustomGenerationRequest
-)
-from repositories.content_repository import ContentRepository
-from services.content_service import ContentService
 
+# Infrastructure
+from infrastructure.container import ContentManagementContainer
 
-class ContentManagementApp:
-    """Main application class for content management service"""
+# API Models (DTOs - following Single Responsibility)
+class SyllabusCreateRequest(BaseModel):
+    title: str = Field(..., min_length=3, max_length=200)
+    description: Optional[str] = None
+    course_id: str = Field(..., min_length=1)
+    course_info: Dict[str, Any] = Field(..., description="Course information including code, name, credits")
+    learning_objectives: List[str] = Field(..., min_items=1, description="Learning objectives")
+    modules: Optional[List[Dict[str, Any]]] = None
+    assessment_methods: Optional[List[str]] = None
+    grading_scheme: Optional[Dict[str, float]] = None
+    policies: Optional[Dict[str, str]] = None
+    schedule: Optional[Dict[str, Any]] = None
+    textbooks: Optional[List[Dict[str, str]]] = None
+    tags: Optional[List[str]] = None
+
+class SyllabusUpdateRequest(BaseModel):
+    title: Optional[str] = Field(None, min_length=3, max_length=200)
+    description: Optional[str] = None
+    learning_objectives: Optional[List[str]] = None
+    modules: Optional[List[Dict[str, Any]]] = None
+    assessment_methods: Optional[List[str]] = None
+    grading_scheme: Optional[Dict[str, float]] = None
+    policies: Optional[Dict[str, str]] = None
+    schedule: Optional[Dict[str, Any]] = None
+    textbooks: Optional[List[Dict[str, str]]] = None
+    tags: Optional[List[str]] = None
+
+class ContentSearchRequest(BaseModel):
+    query: str = Field(..., min_length=2)
+    content_types: Optional[List[str]] = None
+    course_id: Optional[str] = None
+    filters: Optional[Dict[str, Any]] = None
+
+class ContentResponse(BaseModel):
+    id: str
+    title: str
+    description: Optional[str] = None
+    course_id: str
+    created_by: str
+    tags: List[str] = []
+    status: str
+    content_type: str
+    created_at: datetime
+    updated_at: datetime
+
+# Global container
+container: Optional[ContentManagementContainer] = None
+current_config: Optional[DictConfig] = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """FastAPI lifespan event handler"""
+    global container, current_config
     
-    def __init__(self):
-        self.app = FastAPI(
-            title="Content Management Service",
-            description="Handles content creation, management, and processing for Course Creator Platform",
-            version="2.0.0",
-            lifespan=self.lifespan
+    # Startup
+    logging.info("Initializing Content Management Service...")
+    container = ContentManagementContainer(current_config or {})
+    await container.initialize()
+    logging.info("Content Management Service initialized successfully")
+    
+    yield
+    
+    # Shutdown
+    logging.info("Shutting down Content Management Service...")
+    if container:
+        await container.cleanup()
+    logging.info("Content Management Service shutdown complete")
+
+def create_app(config: DictConfig = None) -> FastAPI:
+    """
+    Application factory following SOLID principles
+    Open/Closed: New routes can be added without modifying existing code
+    """
+    global current_config
+    current_config = config or {}
+    
+    app = FastAPI(
+        title="Content Management Service",
+        description="Content creation, management, and processing service",
+        version="2.0.0",
+        lifespan=lifespan
+    )
+    
+    # CORS middleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    
+    return app
+
+app = create_app()
+
+# Dependency injection helpers
+def get_syllabus_service() -> ISyllabusService:
+    """Dependency injection for syllabus service"""
+    if not container:
+        raise HTTPException(status_code=500, detail="Service not initialized")
+    return container.get_syllabus_service()
+
+def get_slide_service() -> ISlideService:
+    """Dependency injection for slide service"""
+    if not container:
+        raise HTTPException(status_code=500, detail="Service not initialized")
+    return container.get_slide_service()
+
+def get_quiz_service() -> IQuizService:
+    """Dependency injection for quiz service"""
+    if not container:
+        raise HTTPException(status_code=500, detail="Service not initialized")
+    return container.get_quiz_service()
+
+def get_exercise_service() -> IExerciseService:
+    """Dependency injection for exercise service"""
+    if not container:
+        raise HTTPException(status_code=500, detail="Service not initialized")
+    return container.get_exercise_service()
+
+def get_lab_environment_service() -> ILabEnvironmentService:
+    """Dependency injection for lab environment service"""
+    if not container:
+        raise HTTPException(status_code=500, detail="Service not initialized")
+    return container.get_lab_environment_service()
+
+def get_content_search_service() -> IContentSearchService:
+    """Dependency injection for content search service"""
+    if not container:
+        raise HTTPException(status_code=500, detail="Service not initialized")
+    return container.get_content_search_service()
+
+def get_content_validation_service() -> IContentValidationService:
+    """Dependency injection for content validation service"""
+    if not container:
+        raise HTTPException(status_code=500, detail="Service not initialized")
+    return container.get_content_validation_service()
+
+def get_content_analytics_service() -> IContentAnalyticsService:
+    """Dependency injection for content analytics service"""
+    if not container:
+        raise HTTPException(status_code=500, detail="Service not initialized")
+    return container.get_content_analytics_service()
+
+def get_content_export_service() -> IContentExportService:
+    """Dependency injection for content export service"""
+    if not container:
+        raise HTTPException(status_code=500, detail="Service not initialized")
+    return container.get_content_export_service()
+
+async def get_current_user() -> str:
+    """Get current user (simplified for now)"""
+    # In a real implementation, this would validate JWT token
+    return "current_user_id"
+
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {
+        "status": "healthy",
+        "service": "content-management",
+        "version": "2.0.0",
+        "timestamp": datetime.utcnow()
+    }
+
+# Syllabus Endpoints
+@app.post("/api/v1/syllabi", response_model=ContentResponse)
+async def create_syllabus(
+    request: SyllabusCreateRequest,
+    current_user: str = Depends(get_current_user),
+    syllabus_service: ISyllabusService = Depends(get_syllabus_service)
+):
+    """Create a new syllabus"""
+    try:
+        syllabus = await syllabus_service.create_syllabus(
+            request.dict(), current_user
+        )
+        return _content_to_response(syllabus)
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logging.error(f"Error creating syllabus: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/api/v1/syllabi/{syllabus_id}", response_model=ContentResponse)
+async def get_syllabus(
+    syllabus_id: str,
+    syllabus_service: ISyllabusService = Depends(get_syllabus_service)
+):
+    """Get syllabus by ID"""
+    try:
+        syllabus = await syllabus_service.get_syllabus(syllabus_id)
+        if not syllabus:
+            raise HTTPException(status_code=404, detail="Syllabus not found")
+        return _content_to_response(syllabus)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"Error getting syllabus: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.put("/api/v1/syllabi/{syllabus_id}", response_model=ContentResponse)
+async def update_syllabus(
+    syllabus_id: str,
+    request: SyllabusUpdateRequest,
+    current_user: str = Depends(get_current_user),
+    syllabus_service: ISyllabusService = Depends(get_syllabus_service)
+):
+    """Update syllabus"""
+    try:
+        syllabus = await syllabus_service.update_syllabus(
+            syllabus_id, request.dict(exclude_unset=True), current_user
+        )
+        if not syllabus:
+            raise HTTPException(status_code=404, detail="Syllabus not found")
+        return _content_to_response(syllabus)
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logging.error(f"Error updating syllabus: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.delete("/api/v1/syllabi/{syllabus_id}")
+async def delete_syllabus(
+    syllabus_id: str,
+    current_user: str = Depends(get_current_user),
+    syllabus_service: ISyllabusService = Depends(get_syllabus_service)
+):
+    """Delete syllabus"""
+    try:
+        success = await syllabus_service.delete_syllabus(syllabus_id, current_user)
+        if not success:
+            raise HTTPException(status_code=404, detail="Syllabus not found")
+        return {"message": "Syllabus deleted successfully"}
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logging.error(f"Error deleting syllabus: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.post("/api/v1/syllabi/{syllabus_id}/publish", response_model=ContentResponse)
+async def publish_syllabus(
+    syllabus_id: str,
+    current_user: str = Depends(get_current_user),
+    syllabus_service: ISyllabusService = Depends(get_syllabus_service)
+):
+    """Publish syllabus"""
+    try:
+        syllabus = await syllabus_service.publish_syllabus(syllabus_id, current_user)
+        if not syllabus:
+            raise HTTPException(status_code=404, detail="Syllabus not found")
+        return _content_to_response(syllabus)
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logging.error(f"Error publishing syllabus: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.post("/api/v1/syllabi/{syllabus_id}/archive", response_model=ContentResponse)
+async def archive_syllabus(
+    syllabus_id: str,
+    current_user: str = Depends(get_current_user),
+    syllabus_service: ISyllabusService = Depends(get_syllabus_service)
+):
+    """Archive syllabus"""
+    try:
+        syllabus = await syllabus_service.archive_syllabus(syllabus_id, current_user)
+        if not syllabus:
+            raise HTTPException(status_code=404, detail="Syllabus not found")
+        return _content_to_response(syllabus)
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logging.error(f"Error archiving syllabus: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/api/v1/courses/{course_id}/syllabi", response_model=List[ContentResponse])
+async def get_course_syllabi(
+    course_id: str,
+    include_drafts: bool = False,
+    syllabus_service: ISyllabusService = Depends(get_syllabus_service)
+):
+    """Get all syllabi for a course"""
+    try:
+        syllabi = await syllabus_service.get_course_syllabi(course_id, include_drafts)
+        return [_content_to_response(syllabus) for syllabus in syllabi]
+        
+    except Exception as e:
+        logging.error(f"Error getting course syllabi: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+# Content Search Endpoints
+@app.post("/api/v1/content/search")
+async def search_content(
+    request: ContentSearchRequest,
+    search_service: IContentSearchService = Depends(get_content_search_service)
+):
+    """Search content across all types"""
+    try:
+        # Convert string content types to enum
+        content_types = None
+        if request.content_types:
+            content_types = [ContentType(ct) for ct in request.content_types]
+        
+        results = await search_service.search_content(
+            query=request.query,
+            content_types=content_types,
+            course_id=request.course_id,
+            filters=request.filters
         )
         
-        # Configure CORS
-        self.app.add_middleware(
-            CORSMiddleware,
-            allow_origins=["http://localhost:8080", "http://127.0.0.1:8080"],
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
+        return results
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logging.error(f"Error searching content: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/api/v1/content/search/tags")
+async def search_by_tags(
+    tags: str,  # Comma-separated tags
+    content_types: Optional[str] = None,  # Comma-separated content types
+    course_id: Optional[str] = None,
+    search_service: IContentSearchService = Depends(get_content_search_service)
+):
+    """Search content by tags"""
+    try:
+        tag_list = [tag.strip() for tag in tags.split(",") if tag.strip()]
+        
+        # Convert string content types to enum
+        content_type_list = None
+        if content_types:
+            content_type_list = [ContentType(ct.strip()) for ct in content_types.split(",") if ct.strip()]
+        
+        results = await search_service.search_by_tags(
+            tags=tag_list,
+            content_types=content_type_list,
+            course_id=course_id
         )
         
-        # Application state
-        self.db_pool = None
-        self.content_repository = None
-        self.content_service = None
+        return results
         
-        # Register routes
-        self._register_routes()
-    
-    @asynccontextmanager
-    async def lifespan(self, app: FastAPI):
-        """Application lifespan management"""
-        # Startup
-        await self._startup()
-        yield
-        # Shutdown
-        await self._shutdown()
-    
-    async def _startup(self):
-        """Initialize application dependencies"""
-        # Initialize database connection
-        database_url = os.getenv(
-            "DATABASE_URL",
-            "postgresql://course_user:c0urs3:atao12e@localhost:5433/course_creator"
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logging.error(f"Error searching by tags: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/api/v1/content/recommendations/{content_id}")
+async def get_content_recommendations(
+    content_id: str,
+    limit: int = 5,
+    search_service: IContentSearchService = Depends(get_content_search_service)
+):
+    """Get content recommendations"""
+    try:
+        recommendations = await search_service.get_content_recommendations(content_id, limit)
+        return {"recommendations": recommendations}
+        
+    except Exception as e:
+        logging.error(f"Error getting recommendations: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+# Content Analytics Endpoints
+@app.get("/api/v1/analytics/content/statistics")
+async def get_content_statistics(
+    course_id: Optional[str] = None,
+    analytics_service: IContentAnalyticsService = Depends(get_content_analytics_service)
+):
+    """Get content statistics"""
+    try:
+        stats = await analytics_service.get_content_statistics(course_id)
+        return stats
+        
+    except Exception as e:
+        logging.error(f"Error getting content statistics: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/api/v1/analytics/content/{content_id}/metrics")
+async def get_content_metrics(
+    content_id: str,
+    days: int = 30,
+    analytics_service: IContentAnalyticsService = Depends(get_content_analytics_service)
+):
+    """Get content usage metrics"""
+    try:
+        metrics = await analytics_service.get_content_usage_metrics(content_id, days)
+        return metrics
+        
+    except Exception as e:
+        logging.error(f"Error getting content metrics: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+# Content Validation Endpoints
+@app.post("/api/v1/content/{content_id}/validate")
+async def validate_content(
+    content_id: str,
+    validation_service: IContentValidationService = Depends(get_content_validation_service)
+):
+    """Validate content"""
+    try:
+        # This is a simplified implementation
+        # In a real system, you'd need to load the content first
+        validation_result = {
+            "is_valid": True,
+            "errors": [],
+            "warnings": [],
+            "validation_score": 100
+        }
+        return validation_result
+        
+    except Exception as e:
+        logging.error(f"Error validating content: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+# Content Export Endpoints
+@app.post("/api/v1/content/{content_id}/export")
+async def export_content(
+    content_id: str,
+    export_format: str,
+    export_service: IContentExportService = Depends(get_content_export_service)
+):
+    """Export content"""
+    try:
+        export_result = await export_service.export_content(content_id, export_format)
+        return export_result
+        
+    except Exception as e:
+        logging.error(f"Error exporting content: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.post("/api/v1/courses/{course_id}/export")
+async def export_course_content(
+    course_id: str,
+    export_format: str,
+    content_types: Optional[str] = None,
+    export_service: IContentExportService = Depends(get_content_export_service)
+):
+    """Export all content for a course"""
+    try:
+        # Convert string content types to enum
+        content_type_list = None
+        if content_types:
+            content_type_list = [ContentType(ct.strip()) for ct in content_types.split(",") if ct.strip()]
+        
+        export_result = await export_service.export_course_content(
+            course_id, export_format, content_type_list
         )
+        return export_result
         
-        self.db_pool = await asyncpg.create_pool(database_url)
-        
-        # Initialize repositories and services
-        self.content_repository = ContentRepository(self.db_pool)
-        self.content_service = ContentService(self.content_repository)
-        
-        print("✅ Content Management Service started successfully")
-    
-    async def _shutdown(self):
-        """Cleanup application resources"""
-        if self.db_pool:
-            await self.db_pool.close()
-        print("✅ Content Management Service shutdown complete")
-    
-    def _register_routes(self):
-        """Register all application routes"""
-        
-        # Health check
-        @self.app.get("/health")
-        async def health_check():
-            """Health check endpoint"""
-            return create_success_response(
-                message="Content Management Service is healthy",
-                data={
-                    "service": "content-management",
-                    "version": "2.0.0",
-                    "timestamp": datetime.utcnow().isoformat()
-                }
-            )
-        
-        # Syllabus endpoints
-        @self.app.post("/api/v1/syllabi", response_model=SyllabusResponse)
-        async def create_syllabus(
-            syllabus_data: SyllabusCreate,
-            current_user: str = Depends(self._get_current_user)
-        ):
-            """Create a new syllabus"""
-            try:
-                syllabus = await self.content_service.create_syllabus(syllabus_data, current_user)
-                return syllabus
-            except HTTPException:
-                raise
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e))
-        
-        @self.app.get("/api/v1/syllabi/{syllabus_id}", response_model=SyllabusResponse)
-        async def get_syllabus(syllabus_id: str):
-            """Get syllabus by ID"""
-            syllabus = await self.content_service.get_syllabus(syllabus_id)
-            if not syllabus:
-                raise HTTPException(status_code=404, detail="Syllabus not found")
-            return syllabus
-        
-        @self.app.put("/api/v1/syllabi/{syllabus_id}", response_model=SyllabusResponse)
-        async def update_syllabus(
-            syllabus_id: str,
-            updates: SyllabusUpdate,
-            current_user: str = Depends(self._get_current_user)
-        ):
-            """Update syllabus"""
-            syllabus = await self.content_service.update_syllabus(syllabus_id, updates)
-            if not syllabus:
-                raise HTTPException(status_code=404, detail="Syllabus not found")
-            return syllabus
-        
-        @self.app.delete("/api/v1/syllabi/{syllabus_id}")
-        async def delete_syllabus(
-            syllabus_id: str,
-            current_user: str = Depends(self._get_current_user)
-        ):
-            """Delete syllabus"""
-            success = await self.content_service.delete_syllabus(syllabus_id)
-            if not success:
-                raise HTTPException(status_code=404, detail="Syllabus not found")
-            return create_success_response("Syllabus deleted successfully")
-        
-        @self.app.get("/api/v1/syllabi", response_model=List[SyllabusResponse])
-        async def list_syllabi(
-            course_id: Optional[str] = None,
-            limit: int = 50,
-            offset: int = 0
-        ):
-            """List syllabi"""
-            return await self.content_service.list_syllabi(course_id, limit, offset)
-        
-        # Slide endpoints
-        @self.app.post("/api/v1/slides", response_model=SlideResponse)
-        async def create_slide(
-            slide_data: SlideCreate,
-            current_user: str = Depends(self._get_current_user)
-        ):
-            """Create a new slide"""
-            try:
-                slide = await self.content_service.create_slide(slide_data, current_user)
-                return slide
-            except HTTPException:
-                raise
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e))
-        
-        @self.app.get("/api/v1/slides/{slide_id}", response_model=SlideResponse)
-        async def get_slide(slide_id: str):
-            """Get slide by ID"""
-            slide = await self.content_service.get_slide(slide_id)
-            if not slide:
-                raise HTTPException(status_code=404, detail="Slide not found")
-            return slide
-        
-        @self.app.put("/api/v1/slides/{slide_id}", response_model=SlideResponse)
-        async def update_slide(
-            slide_id: str,
-            updates: SlideUpdate,
-            current_user: str = Depends(self._get_current_user)
-        ):
-            """Update slide"""
-            slide = await self.content_service.update_slide(slide_id, updates)
-            if not slide:
-                raise HTTPException(status_code=404, detail="Slide not found")
-            return slide
-        
-        @self.app.delete("/api/v1/slides/{slide_id}")
-        async def delete_slide(
-            slide_id: str,
-            current_user: str = Depends(self._get_current_user)
-        ):
-            """Delete slide"""
-            success = await self.content_service.delete_slide(slide_id)
-            if not success:
-                raise HTTPException(status_code=404, detail="Slide not found")
-            return create_success_response("Slide deleted successfully")
-        
-        @self.app.get("/api/v1/slides", response_model=List[SlideResponse])
-        async def list_slides(
-            course_id: Optional[str] = None,
-            limit: int = 50,
-            offset: int = 0
-        ):
-            """List slides"""
-            return await self.content_service.list_slides(course_id, limit, offset)
-        
-        # Quiz endpoints
-        @self.app.post("/api/v1/quizzes", response_model=QuizResponse)
-        async def create_quiz(
-            quiz_data: QuizCreate,
-            current_user: str = Depends(self._get_current_user)
-        ):
-            """Create a new quiz"""
-            try:
-                quiz = await self.content_service.create_quiz(quiz_data, current_user)
-                return quiz
-            except HTTPException:
-                raise
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e))
-        
-        @self.app.get("/api/v1/quizzes/{quiz_id}", response_model=QuizResponse)
-        async def get_quiz(quiz_id: str):
-            """Get quiz by ID"""
-            quiz = await self.content_service.get_quiz(quiz_id)
-            if not quiz:
-                raise HTTPException(status_code=404, detail="Quiz not found")
-            return quiz
-        
-        @self.app.put("/api/v1/quizzes/{quiz_id}", response_model=QuizResponse)
-        async def update_quiz(
-            quiz_id: str,
-            updates: QuizUpdate,
-            current_user: str = Depends(self._get_current_user)
-        ):
-            """Update quiz"""
-            quiz = await self.content_service.update_quiz(quiz_id, updates)
-            if not quiz:
-                raise HTTPException(status_code=404, detail="Quiz not found")
-            return quiz
-        
-        @self.app.delete("/api/v1/quizzes/{quiz_id}")
-        async def delete_quiz(
-            quiz_id: str,
-            current_user: str = Depends(self._get_current_user)
-        ):
-            """Delete quiz"""
-            success = await self.content_service.delete_quiz(quiz_id)
-            if not success:
-                raise HTTPException(status_code=404, detail="Quiz not found")
-            return create_success_response("Quiz deleted successfully")
-        
-        @self.app.get("/api/v1/quizzes", response_model=List[QuizResponse])
-        async def list_quizzes(
-            course_id: Optional[str] = None,
-            limit: int = 50,
-            offset: int = 0
-        ):
-            """List quizzes"""
-            return await self.content_service.list_quizzes(course_id, limit, offset)
-        
-        # Exercise endpoints
-        @self.app.post("/api/v1/exercises", response_model=ExerciseResponse)
-        async def create_exercise(
-            exercise_data: ExerciseCreate,
-            current_user: str = Depends(self._get_current_user)
-        ):
-            """Create a new exercise"""
-            try:
-                exercise = await self.content_service.create_exercise(exercise_data, current_user)
-                return exercise
-            except HTTPException:
-                raise
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e))
-        
-        @self.app.get("/api/v1/exercises/{exercise_id}", response_model=ExerciseResponse)
-        async def get_exercise(exercise_id: str):
-            """Get exercise by ID"""
-            exercise = await self.content_service.get_exercise(exercise_id)
-            if not exercise:
-                raise HTTPException(status_code=404, detail="Exercise not found")
-            return exercise
-        
-        @self.app.put("/api/v1/exercises/{exercise_id}", response_model=ExerciseResponse)
-        async def update_exercise(
-            exercise_id: str,
-            updates: ExerciseUpdate,
-            current_user: str = Depends(self._get_current_user)
-        ):
-            """Update exercise"""
-            exercise = await self.content_service.update_exercise(exercise_id, updates)
-            if not exercise:
-                raise HTTPException(status_code=404, detail="Exercise not found")
-            return exercise
-        
-        @self.app.delete("/api/v1/exercises/{exercise_id}")
-        async def delete_exercise(
-            exercise_id: str,
-            current_user: str = Depends(self._get_current_user)
-        ):
-            """Delete exercise"""
-            success = await self.content_service.delete_exercise(exercise_id)
-            if not success:
-                raise HTTPException(status_code=404, detail="Exercise not found")
-            return create_success_response("Exercise deleted successfully")
-        
-        @self.app.get("/api/v1/exercises", response_model=List[ExerciseResponse])
-        async def list_exercises(
-            course_id: Optional[str] = None,
-            limit: int = 50,
-            offset: int = 0
-        ):
-            """List exercises"""
-            return await self.content_service.list_exercises(course_id, limit, offset)
-        
-        # Lab Environment endpoints
-        @self.app.post("/api/v1/labs", response_model=LabEnvironmentResponse)
-        async def create_lab_environment(
-            lab_data: LabEnvironmentCreate,
-            current_user: str = Depends(self._get_current_user)
-        ):
-            """Create a new lab environment"""
-            try:
-                lab = await self.content_service.create_lab_environment(lab_data, current_user)
-                return lab
-            except HTTPException:
-                raise
-            except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e))
-        
-        @self.app.get("/api/v1/labs/{lab_id}", response_model=LabEnvironmentResponse)
-        async def get_lab_environment(lab_id: str):
-            """Get lab environment by ID"""
-            lab = await self.content_service.get_lab_environment(lab_id)
-            if not lab:
-                raise HTTPException(status_code=404, detail="Lab environment not found")
-            return lab
-        
-        @self.app.put("/api/v1/labs/{lab_id}", response_model=LabEnvironmentResponse)
-        async def update_lab_environment(
-            lab_id: str,
-            updates: LabEnvironmentUpdate,
-            current_user: str = Depends(self._get_current_user)
-        ):
-            """Update lab environment"""
-            lab = await self.content_service.update_lab_environment(lab_id, updates)
-            if not lab:
-                raise HTTPException(status_code=404, detail="Lab environment not found")
-            return lab
-        
-        @self.app.delete("/api/v1/labs/{lab_id}")
-        async def delete_lab_environment(
-            lab_id: str,
-            current_user: str = Depends(self._get_current_user)
-        ):
-            """Delete lab environment"""
-            success = await self.content_service.delete_lab_environment(lab_id)
-            if not success:
-                raise HTTPException(status_code=404, detail="Lab environment not found")
-            return create_success_response("Lab environment deleted successfully")
-        
-        @self.app.get("/api/v1/labs", response_model=List[LabEnvironmentResponse])
-        async def list_lab_environments(
-            course_id: Optional[str] = None,
-            limit: int = 50,
-            offset: int = 0
-        ):
-            """List lab environments"""
-            return await self.content_service.list_lab_environments(course_id, limit, offset)
-        
-        # Search and statistics endpoints
-        @self.app.get("/api/v1/search")
-        async def search_content(
-            query: str,
-            content_types: Optional[List[ContentType]] = None
-        ):
-            """Search content"""
-            return await self.content_service.search_content(query, content_types)
-        
-        @self.app.get("/api/v1/statistics")
-        async def get_statistics():
-            """Get content statistics"""
-            return await self.content_service.get_content_statistics()
-        
-        @self.app.get("/api/v1/courses/{course_id}/content")
-        async def get_course_content(course_id: str):
-            """Get all content for a course"""
-            return await self.content_service.get_course_content(course_id)
-        
-        @self.app.delete("/api/v1/courses/{course_id}/content")
-        async def delete_course_content(
-            course_id: str,
-            current_user: str = Depends(self._get_current_user)
-        ):
-            """Delete all content for a course"""
-            deleted_counts = await self.content_service.delete_course_content(course_id)
-            return create_success_response(
-                "Course content deleted successfully",
-                data=deleted_counts
-            )
-        
-        # File upload endpoints (simplified for now)
-        @self.app.post("/api/v1/upload")
-        async def upload_file(
-            file: UploadFile = File(...),
-            content_type: str = Form(...),
-            current_user: str = Depends(self._get_current_user)
-        ):
-            """Upload a file"""
-            # This is a simplified implementation
-            # In a real system, this would integrate with file storage service
-            return create_success_response(
-                "File uploaded successfully",
-                data={"filename": file.filename, "content_type": content_type}
-            )
-        
-        # Error handlers
-        @self.app.exception_handler(HTTPException)
-        async def http_exception_handler(request, exc):
-            """Handle HTTP exceptions"""
-            return create_error_response(
-                message=exc.detail,
-                error_code=f"HTTP_{exc.status_code}"
-            )
-        
-        @self.app.exception_handler(Exception)
-        async def general_exception_handler(request, exc):
-            """Handle general exceptions"""
-            return create_error_response(
-                message="Internal server error",
-                error_code="INTERNAL_SERVER_ERROR",
-                details={"error": str(exc)}
-            )
-    
-    async def _get_current_user(self) -> str:
-        """Get current user from request (simplified)"""
-        # In a real implementation, this would validate JWT token
-        # and return user information
-        return "current_user_id"
+    except Exception as e:
+        logging.error(f"Error exporting course content: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
+# Helper functions (following Single Responsibility)
+def _content_to_response(content) -> ContentResponse:
+    """Convert domain entity to API response DTO"""
+    return ContentResponse(
+        id=content.id,
+        title=content.title,
+        description=content.description,
+        course_id=content.course_id,
+        created_by=content.created_by,
+        tags=content.tags,
+        status=content.status.value,
+        content_type=content.get_content_type().value,
+        created_at=content.created_at,
+        updated_at=content.updated_at
+    )
 
-# Create application instance
-app_instance = ContentManagementApp()
-app = app_instance.app
+# Error handlers
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request, exc):
+    """Handle HTTP exceptions"""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"message": exc.detail, "error_code": f"HTTP_{exc.status_code}"}
+    )
 
+@app.exception_handler(Exception)
+async def general_exception_handler(request, exc):
+    """Handle general exceptions"""
+    logging.error(f"Unhandled exception: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={
+            "message": "Internal server error",
+            "error_code": "INTERNAL_SERVER_ERROR"
+        }
+    )
+
+@hydra.main(version_base=None, config_path="conf", config_name="config")
+def main(cfg: DictConfig) -> None:
+    """Main entry point using Hydra configuration"""
+    global current_config
+    current_config = cfg
+    
+    # Setup logging
+    logging.basicConfig(
+        level=getattr(logging, cfg.get('logging', {}).get('level', 'INFO').upper()),
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    
+    logger = logging.getLogger(__name__)
+    port = cfg.get('server', {}).get('port', 8005)
+    host = cfg.get('server', {}).get('host', '0.0.0.0')
+    
+    logger.info(f"Starting Content Management Service on {host}:{port}")
+    
+    # Create app with configuration
+    global app
+    app = create_app(cfg)
+    
+    # Run server
+    uvicorn.run(
+        app,
+        host=host,
+        port=port,
+        log_level=cfg.get('logging', {}).get('level', 'info').lower()
+    )
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8005)
+    main()

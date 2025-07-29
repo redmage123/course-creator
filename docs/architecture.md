@@ -69,7 +69,7 @@ The frontend is built with modern web technologies and serves on port 8080:
   - Interactive lab environment configuration
 - **Technology**: HTML5, CSS3, JavaScript ES6 modules, Bootstrap 5
 - **Key Files**:
-  - `js/main-modular.js` - Main application entry point
+  - `js/main.js` - Main application entry point
   - `js/modules/` - Modular components (auth, navigation, notifications)
   - `js/config.js` - Configuration management
 

@@ -72,12 +72,12 @@ def create_argument_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python main_test_runner.py                              # Run all tests
-  python main_test_runner.py --type unit                  # Run only unit tests
-  python main_test_runner.py --priority high             # Run high priority tests
-  python main_test_runner.py --suite user_management_unit # Run specific suite
-  python main_test_runner.py --coverage --verbose        # Run with coverage and verbose output
-  python main_test_runner.py --ci --fail-fast           # CI mode with fail-fast
+  python main.py                              # Run all tests
+  python main.py --type unit                  # Run only unit tests
+  python main.py --priority high             # Run high priority tests
+  python main.py --suite user_management_unit # Run specific suite
+  python main.py --coverage --verbose        # Run with coverage and verbose output
+  python main.py --ci --fail-fast           # CI mode with fail-fast
         """
     )
     
