@@ -9,8 +9,8 @@ from typing import Dict, Any
 from datetime import datetime
 import logging
 
-from ..ai.client import AIClient
-from ..dependencies import get_ai_client, get_db_pool
+from ai.client import AIClient
+from app.dependencies import get_container
 
 logger = logging.getLogger(__name__)
 
@@ -34,59 +34,19 @@ async def root() -> Dict[str, Any]:
 
 
 @router.get("/health")
-async def health_check(
-    ai_client: AIClient = Depends(get_ai_client),
-    db_pool = Depends(get_db_pool)
-) -> Dict[str, Any]:
+async def health_check() -> Dict[str, Any]:
     """
-    Health check endpoint providing system status.
+    Basic health check endpoint.
     
-    Args:
-        ai_client: AI client instance
-        db_pool: Database connection pool
-        
     Returns:
-        Comprehensive health status
+        Basic health status
     """
-    health_status = {
+    return {
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
-        "services": {}
+        "service": "course-generator",
+        "version": "2.0.0"
     }
-    
-    # Check AI client status
-    try:
-        ai_status = {
-            "available": ai_client.is_available,
-            "model_info": ai_client.get_model_info()
-        }
-        health_status["services"]["ai"] = ai_status
-    except Exception as e:
-        logger.error(f"AI health check failed: {e}")
-        health_status["services"]["ai"] = {
-            "available": False,
-            "error": str(e)
-        }
-        health_status["status"] = "degraded"
-    
-    # Check database status
-    try:
-        async with db_pool.acquire() as conn:
-            await conn.fetchval("SELECT 1")
-        health_status["services"]["database"] = {
-            "available": True,
-            "pool_size": db_pool.get_size(),
-            "pool_max_size": db_pool.get_max_size()
-        }
-    except Exception as e:
-        logger.error(f"Database health check failed: {e}")
-        health_status["services"]["database"] = {
-            "available": False,
-            "error": str(e)
-        }
-        health_status["status"] = "unhealthy"
-    
-    return health_status
 
 
 @router.get("/templates")

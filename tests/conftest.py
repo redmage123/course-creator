@@ -343,10 +343,18 @@ def setup_test_environment():
     os.environ["JWT_SECRET_KEY"] = "test_secret_key"
     os.environ["STORAGE_PATH"] = "/tmp/test_storage"
     
+    # Centralized logging test environment variables
+    os.environ["DOCKER_CONTAINER"] = "true"
+    os.environ["SERVICE_NAME"] = "test-service"
+    os.environ["LOG_LEVEL"] = "INFO"
+    
     yield
     
     # Clean up environment variables
-    test_vars = ["TESTING", "LOG_LEVEL", "DATABASE_URL", "REDIS_URL", "JWT_SECRET_KEY", "STORAGE_PATH"]
+    test_vars = [
+        "TESTING", "LOG_LEVEL", "DATABASE_URL", "REDIS_URL", 
+        "JWT_SECRET_KEY", "STORAGE_PATH", "DOCKER_CONTAINER", "SERVICE_NAME"
+    ]
     for var in test_vars:
         if var in os.environ:
             del os.environ[var]
@@ -361,6 +369,66 @@ def mock_logger():
     logger.warning = Mock()
     logger.debug = Mock()
     return logger
+
+
+@pytest.fixture
+def mock_syslog_logger():
+    """Create a mock syslog logger for centralized logging tests."""
+    logger = Mock()
+    logger.info = Mock()
+    logger.error = Mock()
+    logger.warning = Mock()
+    logger.debug = Mock()
+    logger.critical = Mock()
+    
+    # Mock syslog-specific attributes
+    logger.name = "test-service"
+    logger.level = 20  # INFO level
+    logger.handlers = [Mock()]
+    
+    return logger
+
+
+@pytest.fixture
+def mock_logging_setup():
+    """Mock the centralized logging setup."""
+    with patch('logging_setup.setup_docker_logging') as mock_setup:
+        mock_logger = Mock()
+        mock_logger.info = Mock()
+        mock_logger.error = Mock()
+        mock_logger.warning = Mock()
+        mock_logger.debug = Mock()
+        mock_logger.critical = Mock()
+        mock_setup.return_value = mock_logger
+        yield mock_setup, mock_logger
+
+
+@pytest.fixture
+def centralized_logging_config():
+    """Configuration for centralized logging tests."""
+    return {
+        "service_name": "test-service",
+        "log_level": "INFO",
+        "log_file": "/var/log/course-creator/test-service.log",
+        "syslog_format": "%(asctime)s %(hostname)s %(name)s[%(process)d]: %(levelname)s - %(filename)s:%(lineno)d - %(message)s",
+        "console_format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        "docker_container": True
+    }
+
+
+@pytest.fixture
+def mock_log_file(temp_directory):
+    """Create a mock log file for testing."""
+    import os
+    log_dir = os.path.join(temp_directory, "course-creator")
+    os.makedirs(log_dir, exist_ok=True)
+    log_file = os.path.join(log_dir, "test-service.log")
+    
+    # Create empty log file
+    with open(log_file, 'w') as f:
+        f.write("")
+    
+    return log_file
 
 
 @pytest.fixture

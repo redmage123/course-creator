@@ -35,7 +35,7 @@ export class InstructorDashboard {
      */
     init() {
         if (!Auth.isAuthenticated() || !Auth.hasRole('instructor')) {
-            window.location.href = 'index.html';
+            window.location.href = 'html/index.html';
             return;
         }
 
@@ -169,15 +169,11 @@ export class InstructorDashboard {
      */
     async loadCourses() {
         try {
-            console.log('Loading courses from:', CONFIG.ENDPOINTS.COURSES);
             const response = await Auth.authenticatedFetch(CONFIG.ENDPOINTS.COURSES);
-            console.log('Courses response status:', response.status);
             
             if (response.ok) {
                 const data = await response.json();
-                console.log('Courses data received:', data);
                 this.courses = data.courses || data || [];
-                console.log('Courses loaded:', this.courses.length);
             } else {
                 console.error('Failed to load courses:', response.status, response.statusText);
                 const errorText = await response.text();
@@ -782,7 +778,6 @@ export class InstructorDashboard {
         if (!course) return;
 
         // Implementation for editing course
-        console.log('Edit course:', course);
     }
 
     /**
@@ -1083,7 +1078,6 @@ export class InstructorDashboard {
         
         // Implementation for filtering feedback
         // This would filter the displayed feedback based on selected criteria
-        console.log('Filtering feedback by course:', courseFilter, 'rating:', ratingFilter);
     }
 
     /**

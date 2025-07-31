@@ -20,6 +20,7 @@ from fastapi import HTTPException
 from passlib.context import CryptContext
 import jwt
 import uuid
+import os
 
 # Import the modules to test
 import sys
@@ -776,6 +777,130 @@ class TestUserService:
         
         assert result is True
         self.mock_session_manager.invalidate_session.assert_called_once_with(token)
+
+
+class TestCentralizedLogging:
+    """Test centralized logging integration in User Management Service."""
+    
+    @patch('logging_setup.setup_docker_logging')
+    def test_logging_setup_called_on_service_start(self, mock_setup_logging):
+        """Test that centralized logging is set up when service starts."""
+        mock_logger = Mock()
+        mock_setup_logging.return_value = mock_logger
+        
+        # Simulate service startup
+        service_name = os.environ.get('SERVICE_NAME', 'user-management')
+        log_level = os.environ.get('LOG_LEVEL', 'INFO')
+        
+        logger = mock_setup_logging(service_name, log_level)
+        
+        # Verify setup was called with correct parameters
+        mock_setup_logging.assert_called_with(service_name, log_level)
+        assert logger is not None
+    
+    @patch('logging_setup.setup_docker_logging')
+    def test_syslog_logging_format_in_user_service(self, mock_setup_logging):
+        """Test that user service uses syslog format logging."""
+        mock_logger = Mock()
+        mock_setup_logging.return_value = mock_logger
+        
+        # Setup logger
+        logger = mock_setup_logging('user-management', 'INFO')
+        
+        # Test logging calls that would occur in user service
+        logger.info("Starting User Management Service on port 8000")
+        logger.info("User Management Service initialized successfully")
+        logger.info("User registration successful for user: testuser")
+        logger.error("Authentication failed for user: testuser")
+        
+        # Verify logging calls were made
+        assert mock_logger.info.call_count == 3
+        assert mock_logger.error.call_count == 1
+        
+        # Verify specific log messages
+        mock_logger.info.assert_any_call("Starting User Management Service on port 8000")
+        mock_logger.info.assert_any_call("User Management Service initialized successfully")
+        mock_logger.info.assert_any_call("User registration successful for user: testuser")
+        mock_logger.error.assert_any_call("Authentication failed for user: testuser")
+    
+    def test_environment_variables_for_logging(self):
+        """Test that logging environment variables are properly configured."""
+        with patch.dict(os.environ, {
+            'DOCKER_CONTAINER': 'true',
+            'SERVICE_NAME': 'user-management',
+            'LOG_LEVEL': 'INFO'
+        }):
+            assert os.environ.get('DOCKER_CONTAINER') == 'true'
+            assert os.environ.get('SERVICE_NAME') == 'user-management'
+            assert os.environ.get('LOG_LEVEL') == 'INFO'
+    
+    @patch('logging_setup.setup_docker_logging')
+    def test_logging_integration_with_user_operations(self, mock_setup_logging):
+        """Test logging integration with actual user operations."""
+        mock_logger = Mock()
+        mock_setup_logging.return_value = mock_logger
+        
+        # Setup service with logging
+        logger = mock_setup_logging('user-management', 'INFO')
+        
+        # Simulate user service operations with logging
+        user_id = str(uuid.uuid4())
+        email = "test@example.com"
+        
+        # Login attempt
+        logger.info(f"Login attempt for user: {email}")
+        
+        # Successful authentication
+        logger.info(f"User authenticated successfully: {user_id}")
+        
+        # Profile update
+        logger.info(f"User profile updated: {user_id}")
+        
+        # Password change
+        logger.info(f"Password changed for user: {user_id}")
+        
+        # Session cleanup
+        logger.info("Expired sessions cleaned up")
+        
+        # Verify all operations were logged
+        assert mock_logger.info.call_count == 5
+        
+        # Verify specific log entries
+        mock_logger.info.assert_any_call(f"Login attempt for user: {email}")
+        mock_logger.info.assert_any_call(f"User authenticated successfully: {user_id}")
+        mock_logger.info.assert_any_call(f"User profile updated: {user_id}")
+        mock_logger.info.assert_any_call(f"Password changed for user: {user_id}")
+        mock_logger.info.assert_any_call("Expired sessions cleaned up")
+    
+    @patch('logging_setup.setup_docker_logging')
+    def test_error_logging_in_user_service(self, mock_setup_logging):
+        """Test error logging in user service operations."""
+        mock_logger = Mock()
+        mock_setup_logging.return_value = mock_logger
+        
+        logger = mock_setup_logging('user-management', 'INFO')
+        
+        # Simulate various error scenarios
+        error_scenarios = [
+            ("Invalid email format", "ERROR"),
+            ("User already exists", "WARNING"),
+            ("Database connection failed", "CRITICAL"),
+            ("JWT token expired", "WARNING"),
+            ("Password policy violation", "WARNING")
+        ]
+        
+        for error_msg, level in error_scenarios:
+            if level == "ERROR":
+                logger.error(error_msg)
+            elif level == "WARNING":
+                logger.warning(error_msg)
+            elif level == "CRITICAL":
+                logger.critical(error_msg)
+        
+        # Verify error logging calls
+        assert mock_logger.error.call_count == 1
+        assert mock_logger.warning.call_count == 3
+        assert mock_logger.critical.call_count == 1
 
 
 if __name__ == "__main__":

@@ -55,10 +55,7 @@ const fileSystem = {
 
 // Panel management
 function togglePanel(panelName) {
-    console.log('togglePanel called with:', panelName);
-    console.log('Current panelStates:', panelStates);
     panelStates[panelName] = !panelStates[panelName];
-    console.log('Updated panelStates:', panelStates);
     updateLayout();
     updateToggleButtons();
 }
@@ -67,8 +64,6 @@ function togglePanel(panelName) {
 window.togglePanel = togglePanel;
 
 function updateLayout() {
-    console.log('updateLayout called');
-    console.log('Current panelStates:', panelStates);
     
     const mainLayout = document.querySelector('.main-layout');
     if (!mainLayout) {
@@ -81,7 +76,6 @@ function updateLayout() {
     
     // Get visible panels
     const visiblePanels = Object.keys(panelStates).filter(panel => panelStates[panel]);
-    console.log('Visible panels:', visiblePanels);
     
     // Update panel visibility
     const exercisePanel = document.getElementById('exercisePanel');
@@ -89,12 +83,9 @@ function updateLayout() {
     const terminalPanel = document.getElementById('terminalPanel');
     const assistantPanel = document.getElementById('assistantPanel');
     
-    console.log('Exercise panel found:', !!exercisePanel);
-    console.log('Exercise panel state:', panelStates.exercises);
     
     if (exercisePanel) {
         exercisePanel.classList.toggle('panel-hidden', !panelStates.exercises);
-        console.log('Exercise panel classes:', exercisePanel.className);
     }
     if (editorPanel) editorPanel.classList.toggle('panel-hidden', !panelStates.editor);
     if (terminalPanel) terminalPanel.classList.toggle('panel-hidden', !panelStates.terminal);
@@ -122,7 +113,6 @@ function updateLayout() {
 }
 
 function updateToggleButtons() {
-    console.log('updateToggleButtons called');
     const buttons = {
         exercises: document.getElementById('toggleExercises'),
         editor: document.getElementById('toggleEditor'),
@@ -130,21 +120,17 @@ function updateToggleButtons() {
         assistant: document.getElementById('toggleAssistant')
     };
     
-    console.log('Toggle buttons found:', Object.keys(buttons).map(key => `${key}: ${!!buttons[key]}`));
     
     Object.keys(buttons).forEach(panel => {
         const button = buttons[panel];
         if (button) {
             button.classList.toggle('inactive', !panelStates[panel]);
-            console.log(`Button ${panel} state: ${panelStates[panel]}, classes: ${button.className}`);
         }
     });
 }
 
 // Initialize the lab environment
 async function initializeLab() {
-    console.log('Initializing lab environment...');
-    console.log('Current window functions:', Object.keys(window).filter(k => typeof window[k] === 'function' && k.includes('toggle')));
     
     // Check if this is a sandboxed environment
     const urlParams = new URLSearchParams(window.location.search);
@@ -158,19 +144,13 @@ async function initializeLab() {
     const urlLanguage = urlParams.get('language');
     if (urlLanguage) {
         currentLanguage = urlLanguage;
-        console.log('Language set from URL parameter:', currentLanguage);
     }
     
-    console.log('Initialized courseId:', courseId);
-    console.log('Initialized courseTitle:', courseTitle);
-    console.log('CONFIG available:', typeof CONFIG);
-    console.log('CONFIG.ENDPOINTS available:', typeof CONFIG?.ENDPOINTS);
     
     // Initialize progress tracking
     initializeProgressTracking();
     
     if (isLabSandboxed) {
-        console.log('Lab running in sandboxed mode');
         initializeSandbox();
     }
     
@@ -181,7 +161,6 @@ async function initializeLab() {
     const languageSelect = document.getElementById('languageSelect');
     if (languageSelect && currentLanguage) {
         languageSelect.value = currentLanguage;
-        console.log('Language dropdown set to:', currentLanguage);
     }
     
     const welcomeMessage = isLabSandboxed 
@@ -189,7 +168,6 @@ async function initializeLab() {
         : 'Welcome! Toggle panels using the controls above, select exercises, or ask me anything!';
     
     addMessage(welcomeMessage, 'system');
-    console.log('Lab initialization complete');
 }
 
 function initializeProgressTracking() {
@@ -208,12 +186,10 @@ function initializeProgressTracking() {
         saveProgressToServer();
     });
     
-    console.log('Progress tracking initialized');
 }
 
 function initializeSandbox() {
     // Set up sandbox restrictions
-    console.log('Setting up sandbox restrictions...');
     
     // Restrict file system access to sandbox root
     const restrictedFS = {};
@@ -242,32 +218,23 @@ function initializeSandbox() {
         }
     });
     
-    console.log('Sandbox initialized successfully');
 }
 
 // Load course-specific exercises from API
 async function loadExercises() {
-    console.log('Loading exercises for course:', courseId);
-    console.log('Course title:', courseTitle);
-    console.log('URL params:', window.location.search);
     
     try {
         const response = await fetch(`${CONFIG.ENDPOINTS.EXERCISES(courseId)}`);
-        console.log('API response status:', response.status);
         
         if (response.ok) {
             const data = await response.json();
             exercises = data.exercises || [];
-            console.log(`Loaded ${exercises.length} exercises for course ${courseId}`);
-            console.log('Exercise titles:', exercises.map(ex => ex.title));
             
             // If no exercises found, try to generate them
             if (exercises.length === 0) {
-                console.log('No exercises found, attempting to generate...');
                 await generateExercisesOnDemand();
             }
         } else {
-            console.log('No exercises found for course, attempting to generate...');
             await generateExercisesOnDemand();
         }
     } catch (error) {
@@ -275,19 +242,14 @@ async function loadExercises() {
         exercises = [];
     }
     
-    console.log('Final exercises count:', exercises.length);
-    console.log('About to display exercises');
-    console.log('exercises array before display:', exercises);
     
     // Force display with a delay to ensure DOM is ready
     setTimeout(() => {
-        console.log('Delayed display exercises call');
         displayExercises();
     }, 100);
 }
 
 async function generateExercisesOnDemand() {
-    console.log('Generating exercises on-demand for course:', courseId);
     
     try {
         // First try to get the syllabus for this course
@@ -295,7 +257,6 @@ async function generateExercisesOnDemand() {
         
         if (syllabusResponse.ok) {
             const syllabusData = await syllabusResponse.json();
-            console.log('Found syllabus for course, generating exercises from syllabus...');
             
             // Use the lab refresh endpoint to generate exercises from syllabus
             const generateResponse = await fetch(`${CONFIG.ENDPOINTS.REFRESH_LAB_EXERCISES}`, {
@@ -311,17 +272,12 @@ async function generateExercisesOnDemand() {
             if (generateResponse.ok) {
                 const result = await generateResponse.json();
                 exercises = result.exercises || [];
-                console.log(`Generated ${exercises.length} exercises for course ${courseId}`);
-                console.log('Generated exercise titles:', exercises.map(ex => ex.title));
             } else {
-                console.log('Failed to generate exercises from syllabus');
                 exercises = [];
             }
         } else {
-            console.log('No syllabus found for course, cannot generate exercises without syllabus');
             
             // Cannot generate proper exercises without syllabus
-            console.log('Skipping exercise generation - syllabus required for proper exercise generation');
             exercises = [];
         }
     } catch (error) {
@@ -332,7 +288,6 @@ async function generateExercisesOnDemand() {
 
 // Fallback exercises if none exist for the course
 async function loadFallbackExercises() {
-    console.log('Loading fallback exercises based on course topic');
     
     // Generate course-appropriate exercises based on course title/topic
     if (courseTitle && courseTitle.toLowerCase().includes('linux')) {
@@ -387,15 +342,11 @@ async function loadFallbackExercises() {
         ];
     }
     
-    console.log('Loaded', exercises.length, 'exercises');
     displayExercises();
 }
 
 // Display exercises in the sidebar
 function displayExercises() {
-    console.log('Displaying exercises...');
-    console.log('exercises array:', exercises);
-    console.log('exercises.length:', exercises.length);
     
     const exerciseList = document.getElementById('exerciseList');
     if (!exerciseList) {
@@ -403,21 +354,18 @@ function displayExercises() {
         return;
     }
     
-    console.log('Exercise list element found:', exerciseList);
     
     // Ensure the exercises panel is visible
     const exercisePanel = document.getElementById('exercisePanel');
     if (exercisePanel) {
         exercisePanel.classList.remove('panel-hidden');
         panelStates.exercises = true;
-        console.log('Exercise panel made visible');
     } else {
         console.error('Exercise panel not found!');
     }
     
     if (exercises.length === 0) {
         exerciseList.innerHTML = '<div class="no-exercises">No exercises available. Try refreshing the exercises.</div>';
-        console.log('No exercises to display');
     } else {
         exerciseList.innerHTML = exercises.map(exercise => `
             <div class="exercise-item" onclick="selectExercise('${exercise.id}')">
@@ -432,8 +380,6 @@ function displayExercises() {
             </div>
         `).join('');
         
-        console.log('Exercises displayed in DOM, count:', exercises.length);
-        console.log('Exercise list innerHTML length:', exerciseList.innerHTML.length);
     }
     
     // Update the toggle button state
@@ -448,7 +394,6 @@ function displayExercises() {
 
 // Exercise selection
 function selectExercise(exerciseId) {
-    console.log('Selecting exercise:', exerciseId);
     
     // Track exercise selection for progress
     trackExerciseStart(exerciseId);
@@ -492,7 +437,6 @@ function selectExercise(exerciseId) {
 
 // Show lab notes modal when exercise is clicked
 function showLabNotesModal(exercise) {
-    console.log('Showing lab notes for exercise:', exercise.title);
     
     // Create modal overlay
     const modal = document.createElement('div');
@@ -681,7 +625,6 @@ function showLabNotesModal(exercise) {
 
 // Update AI assistant context without auto-sending message
 function updateAIAssistantContext(exercise) {
-    console.log('Updating AI assistant context for exercise:', exercise.title);
     
     // Store current exercise context for AI
     window.currentExerciseContext = {
@@ -968,9 +911,9 @@ function clearCode() {
             } else if (currentLanguage === 'rust') {
                 editor.value = '// Write your Rust code here...\nfn main() {\n    println!("Hello, World!");\n}';
             } else if (currentLanguage === 'javascript') {
-                editor.value = '// Write your JavaScript code here...\nconsole.log("Hello, World!");';
+                editor.value = '// JavaScript code\nconsole.log("Hello, World!");';
             } else {
-                editor.value = '// Write your code here...\nconsole.log("Hello, World!");';
+                editor.value = '// Code\nconsole.log("Hello, World!");';
             }
         }
     }
@@ -1040,7 +983,6 @@ function formatAssistantMessage(message) {
 }
 
 async function sendMessage() {
-    console.log('🤖 sendMessage called with version 2025071701'); // Debug marker
     const input = document.getElementById('chatInput');
     const message = input.value.trim();
     
@@ -1065,8 +1007,6 @@ async function sendMessage() {
             };
             
             // Debug logging
-            console.log('AI Chat Request Data:', requestData);
-            console.log('LAB_CHAT URL:', CONFIG.ENDPOINTS.LAB_CHAT);
             
             // Call the real AI chat API with exercise context
             const response = await fetch(CONFIG.ENDPOINTS.LAB_CHAT, {
@@ -1079,7 +1019,6 @@ async function sendMessage() {
 
             if (response.ok) {
                 const data = await response.json();
-                console.log('AI Chat Response:', data);
                 
                 // Remove loading message
                 const chatContainer = document.getElementById('chatContainer');
@@ -1399,7 +1338,6 @@ function logCommandExecution(command) {
     
     localStorage.setItem('commandLogs', JSON.stringify(logs));
     
-    console.log('Command logged:', logEntry);
 }
 
 function validateSandboxAccess(path) {
@@ -1446,7 +1384,6 @@ function trackExerciseCompletion(exerciseId) {
     // Update UI to show completion
     updateExerciseUI(exerciseId, true);
     
-    console.log(`Exercise ${exerciseId} completed!`);
 }
 
 function trackCodeExecution(exerciseId, code) {
@@ -1504,7 +1441,6 @@ async function loadStudentProgress() {
             const serverProgress = await response.json();
             exerciseProgress = serverProgress.exerciseProgress || {};
             totalLabTime = serverProgress.totalLabTime || 0;
-            console.log('Progress loaded from server');
         } else {
             // Fallback to localStorage
             loadProgressFromLocalStorage();
@@ -1532,7 +1468,6 @@ function loadProgressFromLocalStorage() {
             const progressData = JSON.parse(savedProgress);
             exerciseProgress = progressData.exerciseProgress || {};
             totalLabTime = progressData.totalLabTime || 0;
-            console.log('Progress loaded from localStorage');
         } catch (error) {
             console.error('Error parsing saved progress:', error);
         }
@@ -1575,7 +1510,6 @@ async function saveProgressToServer() {
         });
         
         if (response.ok) {
-            console.log('Progress saved to server');
         } else {
             console.warn('Failed to save progress to server, using localStorage fallback');
             saveProgressToLocalStorage();
@@ -1681,7 +1615,6 @@ function updateProgressDisplay() {
     });
     
     // Log progress for debugging
-    console.log('Progress updated:', summary);
 }
 
 function clearTerminal() {
@@ -1757,27 +1690,21 @@ window.updateToggleButtons = updateToggleButtons;
 
 // Test function to force exercise display
 window.forceDisplayExercises = function() {
-    console.log('Force display exercises called');
-    console.log('Current exercises:', exercises);
     displayExercises();
 };
 
 // Test function to force exercise panel visibility
 window.forceShowExercisePanel = function() {
-    console.log('Force show exercise panel called');
     const exercisePanel = document.getElementById('exercisePanel');
-    console.log('Exercise panel found:', !!exercisePanel);
     if (exercisePanel) {
         exercisePanel.classList.remove('panel-hidden');
         panelStates.exercises = true;
-        console.log('Exercise panel made visible');
         updateLayout();
     }
 };
 
 // Initialize after DOM is loaded
 function initializeLabAfterDOM() {
-    console.log('initializeLabAfterDOM called');
     
     // First, ensure all panels are properly initialized
     panelStates = {
@@ -1787,7 +1714,6 @@ function initializeLabAfterDOM() {
         assistant: true
     };
     
-    console.log('Panel states initialized:', panelStates);
     
     // Force update layout to ensure panels are visible
     updateLayout();
@@ -1806,14 +1732,10 @@ function initializeLabAfterDOM() {
 
 // Initialize after load function
 window.initializeAfterLoad = function() {
-    console.log('initializeAfterLoad called');
-    console.log('togglePanel available:', typeof window.togglePanel);
-    console.log('DOM ready state:', document.readyState);
     
     // Wait for DOM to be fully loaded
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOMContentLoaded event fired');
             initializeLabAfterDOM();
         });
     } else {

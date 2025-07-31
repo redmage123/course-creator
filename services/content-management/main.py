@@ -11,11 +11,24 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from typing import List, Optional, Dict, Any
 import logging
+import os
+import sys
 from datetime import datetime
 from contextlib import asynccontextmanager
 import hydra
 from omegaconf import DictConfig
 import uvicorn
+
+try:
+    from logging_setup import setup_docker_logging
+except ImportError:
+    # Fallback if config module not available
+    def setup_docker_logging(service_name: str, log_level: str = "INFO"):
+        logging.basicConfig(
+            level=getattr(logging, log_level.upper()),
+            format='%(asctime)s %(hostname)s %(name)s[%(process)d]: %(levelname)s - %(message)s'
+        )
+        return logging.getLogger(service_name)
 
 # Pydantic models for API (Data Transfer Objects)
 from pydantic import BaseModel, Field
@@ -220,10 +233,10 @@ async def create_syllabus(
         return _content_to_response(syllabus)
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logging.error(f"Error creating syllabus: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error creating syllabus: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.get("/api/v1/syllabi/{syllabus_id}", response_model=ContentResponse)
 async def get_syllabus(
@@ -240,8 +253,8 @@ async def get_syllabus(
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"Error getting syllabus: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error getting syllabus: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.put("/api/v1/syllabi/{syllabus_id}", response_model=ContentResponse)
 async def update_syllabus(
@@ -260,10 +273,10 @@ async def update_syllabus(
         return _content_to_response(syllabus)
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logging.error(f"Error updating syllabus: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error updating syllabus: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.delete("/api/v1/syllabi/{syllabus_id}")
 async def delete_syllabus(
@@ -279,10 +292,10 @@ async def delete_syllabus(
         return {"message": "Syllabus deleted successfully"}
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logging.error(f"Error deleting syllabus: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error deleting syllabus: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.post("/api/v1/syllabi/{syllabus_id}/publish", response_model=ContentResponse)
 async def publish_syllabus(
@@ -298,10 +311,10 @@ async def publish_syllabus(
         return _content_to_response(syllabus)
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logging.error(f"Error publishing syllabus: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error publishing syllabus: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.post("/api/v1/syllabi/{syllabus_id}/archive", response_model=ContentResponse)
 async def archive_syllabus(
@@ -317,10 +330,10 @@ async def archive_syllabus(
         return _content_to_response(syllabus)
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logging.error(f"Error archiving syllabus: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error archiving syllabus: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.get("/api/v1/courses/{course_id}/syllabi", response_model=List[ContentResponse])
 async def get_course_syllabi(
@@ -334,8 +347,8 @@ async def get_course_syllabi(
         return [_content_to_response(syllabus) for syllabus in syllabi]
         
     except Exception as e:
-        logging.error(f"Error getting course syllabi: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error getting course syllabi: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 # Content Search Endpoints
 @app.post("/api/v1/content/search")
@@ -360,10 +373,10 @@ async def search_content(
         return results
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logging.error(f"Error searching content: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error searching content: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.get("/api/v1/content/search/tags")
 async def search_by_tags(
@@ -390,10 +403,10 @@ async def search_by_tags(
         return results
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logging.error(f"Error searching by tags: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error searching by tags: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.get("/api/v1/content/recommendations/{content_id}")
 async def get_content_recommendations(
@@ -407,8 +420,8 @@ async def get_content_recommendations(
         return {"recommendations": recommendations}
         
     except Exception as e:
-        logging.error(f"Error getting recommendations: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error getting recommendations: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 # Content Analytics Endpoints
 @app.get("/api/v1/analytics/content/statistics")
@@ -422,8 +435,8 @@ async def get_content_statistics(
         return stats
         
     except Exception as e:
-        logging.error(f"Error getting content statistics: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error getting content statistics: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.get("/api/v1/analytics/content/{content_id}/metrics")
 async def get_content_metrics(
@@ -437,8 +450,8 @@ async def get_content_metrics(
         return metrics
         
     except Exception as e:
-        logging.error(f"Error getting content metrics: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error getting content metrics: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 # Content Validation Endpoints
 @app.post("/api/v1/content/{content_id}/validate")
@@ -459,8 +472,8 @@ async def validate_content(
         return validation_result
         
     except Exception as e:
-        logging.error(f"Error validating content: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error validating content: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 # Content Export Endpoints
 @app.post("/api/v1/content/{content_id}/export")
@@ -475,8 +488,8 @@ async def export_content(
         return export_result
         
     except Exception as e:
-        logging.error(f"Error exporting content: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error exporting content: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.post("/api/v1/courses/{course_id}/export")
 async def export_course_content(
@@ -498,8 +511,8 @@ async def export_course_content(
         return export_result
         
     except Exception as e:
-        logging.error(f"Error exporting course content: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error exporting course content: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 # Helper functions (following Single Responsibility)
 def _content_to_response(content) -> ContentResponse:
@@ -544,13 +557,11 @@ def main(cfg: DictConfig) -> None:
     global current_config
     current_config = cfg
     
-    # Setup logging
-    logging.basicConfig(
-        level=getattr(logging, cfg.get('logging', {}).get('level', 'INFO').upper()),
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
+    # Setup centralized logging with syslog format
+    service_name = os.environ.get('SERVICE_NAME', 'content-management')
+    log_level = os.environ.get('LOG_LEVEL', cfg.get('logging', {}).get('level', 'INFO'))
     
-    logger = logging.getLogger(__name__)
+    logger = setup_docker_logging(service_name, log_level)
     port = cfg.get('server', {}).get('port', 8005)
     host = cfg.get('server', {}).get('host', '0.0.0.0')
     
@@ -560,12 +571,13 @@ def main(cfg: DictConfig) -> None:
     global app
     app = create_app(cfg)
     
-    # Run server
+    # Run server with reduced uvicorn logging to avoid duplicates
     uvicorn.run(
         app,
         host=host,
         port=port,
-        log_level=cfg.get('logging', {}).get('level', 'info').lower()
+        log_level="warning",  # Reduce uvicorn log level since we have our own logging
+        access_log=False      # Disable uvicorn access log since we log via middleware
     )
 
 if __name__ == "__main__":

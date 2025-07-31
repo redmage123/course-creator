@@ -29,8 +29,8 @@ class UserManagementApplicationFactory:
             title="User Management Service",
             description="Authentication and user management service",
             version="2.0.0",
-            docs_url="/docs" if config.app.debug else None,
-            redoc_url="/redoc" if config.app.debug else None
+            docs_url="/docs" if getattr(config, 'service', {}).get('debug', False) else None,
+            redoc_url="/redoc" if getattr(config, 'service', {}).get('debug', False) else None
         )
         
         # Setup components following dependency injection pattern

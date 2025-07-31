@@ -1,10 +1,6 @@
 // Debug: Check what CONFIG is returning
-console.log('CONFIG object:', CONFIG);
-console.log('CONFIG.HOST:', CONFIG.HOST);
-console.log('CONFIG.API_URLS:', CONFIG.API_URLS);
 
 const API_BASE = CONFIG.API_URLS.USER_MANAGEMENT;
-console.log('API_BASE resolved to:', API_BASE);
 
 const authToken = localStorage.getItem('authToken');
 
@@ -14,10 +10,9 @@ let allUsers = [];
 // Handle authentication errors
 function handleAuthError(response) {
     if (response.status === 401 || response.status === 403) {
-        console.log('Authentication failed - redirecting to login');
         localStorage.removeItem('authToken');
         alert('Your session has expired. Please login again.');
-        window.location.href = 'index.html';
+        window.location.href = 'html/index.html';
         return true;
     }
     return false;
@@ -71,9 +66,6 @@ function showAlert(message, type = 'success') {
 // Load dashboard statistics
 async function loadDashboardStats() {
     try {
-        console.log('Loading dashboard stats...');
-        console.log('API_BASE:', API_BASE);
-        console.log('authToken:', authToken ? 'Present' : 'Missing');
         
         const response = await fetch(`${API_BASE}/admin/stats`, {
             headers: {
@@ -81,7 +73,6 @@ async function loadDashboardStats() {
             }
         });
         
-        console.log('Response status:', response.status);
         
         if (!response.ok) {
             // Check if it's an authentication error
@@ -95,7 +86,6 @@ async function loadDashboardStats() {
         }
         
         const stats = await response.json();
-        console.log('Stats received:', stats);
         
         document.getElementById('total-users').textContent = stats.total_users || 0;
         document.getElementById('active-users').textContent = stats.active_users || 0;

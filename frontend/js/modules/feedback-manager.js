@@ -49,7 +49,6 @@ class FeedbackManager {
             }
 
             const result = await response.json();
-            console.log('Course feedback submitted successfully:', result);
             return result;
         } catch (error) {
             console.error('Error submitting course feedback:', error);
@@ -86,7 +85,6 @@ class FeedbackManager {
             }
 
             const result = await response.json();
-            console.log('Student feedback submitted successfully:', result);
             return result;
         } catch (error) {
             console.error('Error submitting student feedback:', error);

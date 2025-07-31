@@ -192,7 +192,6 @@ export class ComponentLoader {
         const form = target.querySelector('#courseForm');
         if (form && window.courseManager) {
             // Form handling is managed by CourseManager
-            console.log('Course creation form initialized');
         }
     }
 

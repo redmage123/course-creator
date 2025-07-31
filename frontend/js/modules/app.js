@@ -36,7 +36,6 @@ class App {
         if (this.initialized) return;
 
         try {
-            console.log('Initializing Course Creator Platform...');
             
             // Setup global error handlers
             this.setupGlobalHandlers();
@@ -51,7 +50,6 @@ class App {
             if (this.currentPage.includes('dashboard')) {
                 this.activityTracker = new ActivityTracker();
                 this.activityTracker.start();
-                console.log('Activity tracking initialized');
             }
             
             // Setup global function exports for backward compatibility
@@ -61,7 +59,6 @@ class App {
             this.initializePage();
             
             this.initialized = true;
-            console.log('Course Creator Platform initialized successfully');
             
         } catch (error) {
             console.error('Error initializing application:', error);
@@ -181,7 +178,7 @@ class App {
             if (result.success) {
                 showNotification('Logged out successfully', 'success');
                 if (this.currentPage.includes('dashboard') || this.currentPage.includes('admin')) {
-                    window.location.href = 'index.html';
+                    window.location.href = 'html/index.html';
                 } else {
                     Navigation.updateAccountSection();
                     Navigation.updateNavigation();
@@ -261,9 +258,9 @@ class App {
             if (currentUser) {
                 // User is logged in, redirect to appropriate dashboard
                 if (currentUser.role === 'instructor') {
-                    window.location.href = 'instructor-dashboard.html';
+                    window.location.href = 'html/instructor-dashboard.html';
                 } else {
-                    window.location.href = 'student-dashboard.html';
+                    window.location.href = 'html/student-dashboard.html';
                 }
             } else {
                 // User is not logged in, show login modal
@@ -294,15 +291,10 @@ class App {
                 const logs = localStorage.getItem('errorLogs');
                 if (logs) {
                     const parsed = JSON.parse(logs);
-                    console.log('=== ERROR LOGS ===');
                     parsed.forEach((log, index) => {
-                        console.log(`${index + 1}. ${log.timestamp} [${log.page}] ${log.type}`);
-                        console.log('   Details:', log.details);
                     });
-                    console.log('=== END ERROR LOGS ===');
                     return parsed;
                 } else {
-                    console.log('No error logs found');
                     return [];
                 }
             } catch (e) {

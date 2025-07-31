@@ -109,7 +109,6 @@ class AuthManager {
                 if (this.currentUser.role === 'student') {
                     try {
                         await labLifecycleManager.initialize(this.currentUser);
-                        console.log('Lab lifecycle manager initialized for student');
                     } catch (error) {
                         console.error('Error initializing lab lifecycle manager:', error);
                         // Don't fail login if lab manager fails
@@ -217,7 +216,6 @@ class AuthManager {
                 });
                 
                 if (response.ok) {
-                    console.log('Server session invalidated successfully');
                 } else {
                     console.warn('Failed to invalidate server session, continuing with client logout');
                 }
@@ -232,7 +230,6 @@ class AuthManager {
         // Clean up lab lifecycle manager
         try {
             await labLifecycleManager.cleanup();
-            console.log('Lab lifecycle manager cleaned up');
         } catch (error) {
             console.error('Error cleaning up lab lifecycle manager:', error);
         }
@@ -291,7 +288,7 @@ class AuthManager {
         showNotification('Your session has expired. Please log in again.', 'error');
         
         // Redirect to login
-        window.location.href = 'index.html';
+        window.location.href = 'html/index.html';
     }
 
     /**
@@ -308,7 +305,7 @@ class AuthManager {
         showNotification('Your session has expired due to inactivity. Please log in again.', 'error');
         
         // Redirect to login
-        window.location.href = 'index.html';
+        window.location.href = 'html/index.html';
     }
 
     /**
@@ -334,9 +331,9 @@ class AuthManager {
         if (!userRole) return false;
         
         const pageAccess = {
-            'student': ['student-dashboard.html', 'lab.html', 'index.html'],
-            'instructor': ['instructor-dashboard.html', 'lab.html', 'index.html'],
-            'admin': ['admin.html', 'instructor-dashboard.html', 'student-dashboard.html', 'lab.html', 'index.html']
+            'student': ['html/student-dashboard.html', 'html/lab.html', 'html/index.html'],
+            'instructor': ['html/instructor-dashboard.html', 'html/lab.html', 'html/index.html'],
+            'admin': ['html/admin.html', 'html/instructor-dashboard.html', 'html/student-dashboard.html', 'html/lab.html', 'html/index.html']
         };
         
         return pageAccess[userRole]?.includes(page) || false;
@@ -350,13 +347,13 @@ class AuthManager {
         
         switch (userRole) {
             case 'admin':
-                return 'admin.html';
+                return 'html/admin.html';
             case 'instructor':
-                return 'instructor-dashboard.html';
+                return 'html/instructor-dashboard.html';
             case 'student':
-                return 'student-dashboard.html';
+                return 'html/student-dashboard.html';
             default:
-                return 'index.html';
+                return 'html/index.html';
         }
     }
 }

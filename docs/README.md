@@ -40,6 +40,7 @@ Course Creator is a comprehensive web platform for creating, managing, and deliv
 
 ### Key Features
 
+- **Enhanced RBAC System (v2.3)**: Multi-tenant organization management with granular permissions, JWT authentication, and Teams/Zoom integration
 - **AI-Powered Content Generation**: Generate complete courses with syllabus, slides, exercises, and quizzes
 - **Multi-IDE Lab Environments**: VSCode Server, JupyterLab, IntelliJ IDEA, and Terminal support
 - **Individual Student Lab Containers**: Per-student isolated Docker environments with persistent storage
@@ -48,7 +49,8 @@ Course Creator is a comprehensive web platform for creating, managing, and deliv
 - **Interactive Quiz System**: Automated quiz generation with immediate feedback
 - **Comprehensive Analytics**: Student progress tracking and usage metrics
 - **Multi-Format Export**: Export content to PowerPoint, PDF, Excel, SCORM, ZIP formats
-- **Secure Authentication**: JWT-based authentication with role-based access control
+- **Secure Authentication**: JWT-based authentication with sophisticated role-based access control
+- **Complete Test Coverage**: 102 RBAC tests with 100% success rate and comprehensive code quality enforcement
 
 ### Technology Stack
 
@@ -80,7 +82,7 @@ Course Creator is a comprehensive web platform for creating, managing, and deliv
 
 ## 🏛️ Architecture
 
-The platform follows a microservices architecture with 7 core backend services:
+The platform follows a microservices architecture with 8 core backend services including the Enhanced RBAC System:
 
 ```
 course-creator/
@@ -96,6 +98,7 @@ course-creator/
 │   ├── content-storage/        # File storage & versioning (Port 8003)
 │   ├── course-management/      # Course CRUD operations (Port 8004)
 │   ├── content-management/     # Upload/download & export (Port 8005)
+│   ├── organization-management/ # Enhanced RBAC System with multi-tenant management (Port 8008)
 │   └── analytics/              # Student analytics & progress tracking (Port 8007)
 ├── lab-containers/             # Individual student lab container service (Port 8006)
 │   ├── main.py                 # FastAPI lab manager with Docker and multi-IDE integration
@@ -114,7 +117,7 @@ course-creator/
 
 ### Service Dependencies
 Services start in dependency order with health checks:
-User Management → Course Generator → Course Management → Content Storage → Content Management → Lab Container Manager → Analytics Service
+User Management → Organization Management (RBAC) → Course Generator → Course Management → Content Storage → Content Management → Lab Container Manager → Analytics Service
 
 ### Data Flow
 
@@ -320,7 +323,7 @@ LAB_STORAGE_PATH=/app/lab-storage
 
 ### Microservices Overview
 
-The platform consists of 7 core backend services, each with its own API:
+The platform consists of 8 core backend services, each with its own API:
 
 - **User Management** (Port 8000): Authentication & user profiles
 - **Course Generator** (Port 8001): AI content generation
@@ -329,6 +332,7 @@ The platform consists of 7 core backend services, each with its own API:
 - **Content Management** (Port 8005): Upload/download & export
 - **Lab Container Manager** (Port 8006): Multi-IDE lab environments
 - **Analytics** (Port 8007): Student analytics & progress tracking
+- **Organization Management** (Port 8008): Enhanced RBAC System with multi-tenant organization management
 
 ### Authentication
 
@@ -392,6 +396,47 @@ POST /quiz-performance/track # Track quiz performance
 POST /progress/update       # Update student progress
 GET  /analytics/student/{id} # Get student analytics
 GET  /analytics/course/{id}  # Get course analytics
+```
+
+#### Organization Management Service (Port 8008) - Enhanced RBAC System
+```http
+# Organization Management
+GET    /api/v1/rbac/organizations                    # List user's accessible organizations
+POST   /api/v1/rbac/organizations                    # Create new organization (site admin only)
+GET    /api/v1/rbac/organizations/{org_id}           # Get organization details
+PUT    /api/v1/rbac/organizations/{org_id}           # Update organization
+DELETE /api/v1/rbac/organizations/{org_id}           # Delete organization (site admin only)
+
+# Organization Member Management
+GET    /api/v1/rbac/organizations/{org_id}/members   # List organization members
+POST   /api/v1/rbac/organizations/{org_id}/members   # Add organization member
+PUT    /api/v1/rbac/organizations/{org_id}/members/{member_id} # Update member role/permissions
+DELETE /api/v1/rbac/organizations/{org_id}/members/{member_id} # Remove organization member
+
+# Learning Track Management
+GET    /api/v1/organizations/{org_id}/tracks         # List organization tracks
+POST   /api/v1/organizations/{org_id}/tracks         # Create learning track
+PUT    /api/v1/organizations/{org_id}/tracks/{track_id} # Update track
+DELETE /api/v1/organizations/{org_id}/tracks/{track_id} # Delete track
+POST   /api/v1/tracks/{track_id}/enroll/{student_id} # Enroll student in track
+
+# Meeting Room Management
+GET    /api/v1/rbac/organizations/{org_id}/meeting-rooms # List organization meeting rooms
+POST   /api/v1/rbac/organizations/{org_id}/meeting-rooms # Create meeting room
+PUT    /api/v1/rbac/organizations/{org_id}/meeting-rooms/{room_id} # Update meeting room
+DELETE /api/v1/rbac/organizations/{org_id}/meeting-rooms/{room_id} # Delete meeting room
+
+# Site Administration (Site Admin Only)
+GET    /api/v1/site-admin/organizations              # List all organizations with statistics
+DELETE /api/v1/site-admin/organizations/{org_id}     # Delete organization with full cleanup
+GET    /api/v1/site-admin/users                      # List all platform users
+GET    /api/v1/site-admin/audit-log                  # View platform audit log
+PUT    /api/v1/site-admin/users/{user_id}/status     # Update user status (active/inactive)
+
+# Permission Management
+GET    /api/v1/rbac/permissions/{user_id}            # Get user permissions
+POST   /api/v1/rbac/permissions/check                # Check specific permission
+GET    /api/v1/rbac/roles                            # List available roles
 ```
 
 ### Multi-IDE Lab API
@@ -775,6 +820,6 @@ Use curl to test endpoints directly:
 
 ---
 
-**Documentation Version**: 1.0.0  
-**Last Updated**: 2025-06-30  
-**Generated**: Course Creator Platform
+**Documentation Version**: 2.3.0  
+**Last Updated**: 2025-07-31  
+**Generated**: Course Creator Platform with Enhanced RBAC System

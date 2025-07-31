@@ -6,10 +6,10 @@ Dependency Inversion: Depends on abstractions, not concretions
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
-from ...domain.interfaces.user_repository import IUserRepository
-from ...domain.interfaces.user_service import IUserService, IAuthenticationService
-from ...domain.entities.user import User, UserRole, UserStatus
-from ...domain.entities.role import Permission
+from domain.interfaces.user_repository import IUserRepository
+from domain.interfaces.user_service import IUserService, IAuthenticationService
+from domain.entities.user import User, UserRole, UserStatus
+from domain.entities.role import Permission
 
 class UserService(IUserService):
     """

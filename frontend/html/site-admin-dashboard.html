@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site Admin Dashboard - Course Creator Platform</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/components/rbac-dashboard.css">
+    <link rel="stylesheet" href="../css/components/site-admin.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <h1><i class="fas fa-shield-alt"></i> Site Administrator Dashboard</h1>
+                <div class="header-actions">
+                    <div class="user-info">
+                        <span id="currentUserName">Loading...</span>
+                        <span class="user-role site-admin">Site Administrator</span>
+                    </div>
+                    <button class="btn btn-outline" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="dashboard-nav">
+            <div class="nav-tabs">
+                <button class="nav-tab active" data-tab="overview">
+                    <i class="fas fa-chart-line"></i> Platform Overview
+                </button>
+                <button class="nav-tab" data-tab="organizations">
+                    <i class="fas fa-building"></i> Organizations
+                </button>
+                <button class="nav-tab" data-tab="users">
+                    <i class="fas fa-users"></i> Users
+                </button>
+                <button class="nav-tab" data-tab="integrations">
+                    <i class="fas fa-plug"></i> Integrations
+                </button>
+                <button class="nav-tab" data-tab="audit">
+                    <i class="fas fa-history"></i> Audit Log
+                </button>
+                <button class="nav-tab" data-tab="settings">
+                    <i class="fas fa-cog"></i> System Settings
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="dashboard-main">
+            <!-- Overview Tab -->
+            <div class="tab-content active" id="overview-tab">
+                <div class="overview-grid">
+                    <!-- Platform Statistics -->
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="totalOrganizations">0</h3>
+                            <p>Total Organizations</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="totalUsers">0</h3>
+                            <p>Total Users</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-project-diagram"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="totalProjects">0</h3>
+                            <p>Active Projects</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-road"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="totalTracks">0</h3>
+                            <p>Learning Tracks</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-video"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="totalMeetingRooms">0</h3>
+                            <p>Meeting Rooms</p>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-heartbeat"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3 id="systemHealth">100%</h3>
+                            <p>System Health</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="activity-section">
+                    <h2>Recent Platform Activity</h2>
+                    <div id="recentActivity" class="activity-feed">
+                        <div class="loading">
+                            <div class="loading-spinner"></div>
+                            <p>Loading recent activity...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <h2>Quick Administrative Actions</h2>
+                    <div class="action-grid">
+                        <button class="action-btn" onclick="refreshPlatformStats()">
+                            <i class="fas fa-sync-alt"></i>
+                            <span>Refresh Stats</span>
+                        </button>
+                        <button class="action-btn" onclick="runHealthCheck()">
+                            <i class="fas fa-stethoscope"></i>
+                            <span>Health Check</span>
+                        </button>
+                        <button class="action-btn" onclick="viewSystemLogs()">
+                            <i class="fas fa-file-alt"></i>
+                            <span>System Logs</span>
+                        </button>
+                        <button class="action-btn" onclick="exportPlatformReport()">
+                            <i class="fas fa-download"></i>
+                            <span>Export Report</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Organizations Tab -->
+            <div class="tab-content" id="organizations-tab">
+                <div class="tab-header">
+                    <h2>Platform Organizations</h2>
+                    <div class="tab-actions">
+                        <div class="filter-group">
+                            <select id="orgStatusFilter" onchange="filterOrganizations()">
+                                <option value="">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                            <input type="text" id="orgSearchFilter" placeholder="Search organizations..." onkeyup="searchOrganizations()">
+                        </div>
+                        <button class="btn btn-outline" onclick="refreshOrganizations()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <div class="organizations-grid">
+                    <div id="organizationsContainer" class="loading">
+                        <div class="loading-spinner"></div>
+                        <p>Loading organizations...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Tab -->
+            <div class="tab-content" id="users-tab">
+                <div class="tab-header">
+                    <h2>Platform Users</h2>
+                    <div class="tab-actions">
+                        <div class="filter-group">
+                            <select id="userRoleFilter" onchange="filterUsers()">
+                                <option value="">All Roles</option>
+                                <option value="site_admin">Site Admins</option>
+                                <option value="organization_admin">Organization Admins</option>
+                                <option value="instructor">Instructors</option>
+                                <option value="student">Students</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-outline" onclick="refreshUsers()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <div class="users-stats">
+                    <div class="role-stats">
+                        <div class="role-stat">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Site Admins: <strong id="siteAdminCount">0</strong></span>
+                        </div>
+                        <div class="role-stat">
+                            <i class="fas fa-crown"></i>
+                            <span>Org Admins: <strong id="orgAdminCount">0</strong></span>
+                        </div>
+                        <div class="role-stat">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                            <span>Instructors: <strong id="instructorCount">0</strong></span>
+                        </div>
+                        <div class="role-stat">
+                            <i class="fas fa-user-graduate"></i>
+                            <span>Students: <strong id="studentCount">0</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="usersContainer" class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading users...</p>
+                </div>
+            </div>
+
+            <!-- Integrations Tab -->
+            <div class="tab-content" id="integrations-tab">
+                <div class="integrations-section">
+                    <h2>Platform Integrations</h2>
+                    
+                    <div class="integration-cards">
+                        <!-- Teams Integration -->
+                        <div class="integration-card">
+                            <div class="integration-header">
+                                <div class="integration-icon teams">
+                                    <i class="fab fa-microsoft"></i>
+                                </div>
+                                <div class="integration-info">
+                                    <h3>Microsoft Teams</h3>
+                                    <p>Meeting room integration</p>
+                                </div>
+                                <div class="integration-status" id="teamsIntegrationStatus">
+                                    <i class="fas fa-circle"></i>
+                                </div>
+                            </div>
+                            <div class="integration-details">
+                                <div class="detail-item">
+                                    <span>Rooms Created:</span>
+                                    <strong id="teamsRoomsCount">0</strong>
+                                </div>
+                                <div class="detail-item">
+                                    <span>Last Test:</span>
+                                    <span id="teamsLastTest">Never</span>
+                                </div>
+                            </div>
+                            <div class="integration-actions">
+                                <button class="btn btn-sm btn-outline" onclick="testTeamsIntegration()">
+                                    Test Connection
+                                </button>
+                                <button class="btn btn-sm btn-primary" onclick="configureTeamsIntegration()">
+                                    Configure
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Zoom Integration -->
+                        <div class="integration-card">
+                            <div class="integration-header">
+                                <div class="integration-icon zoom">
+                                    <i class="fas fa-video"></i>
+                                </div>
+                                <div class="integration-info">
+                                    <h3>Zoom</h3>
+                                    <p>Meeting room integration</p>
+                                </div>
+                                <div class="integration-status" id="zoomIntegrationStatus">
+                                    <i class="fas fa-circle"></i>
+                                </div>
+                            </div>
+                            <div class="integration-details">
+                                <div class="detail-item">
+                                    <span>Rooms Created:</span>
+                                    <strong id="zoomRoomsCount">0</strong>
+                                </div>
+                                <div class="detail-item">
+                                    <span>Last Test:</span>
+                                    <span id="zoomLastTest">Never</span>
+                                </div>
+                            </div>
+                            <div class="integration-actions">
+                                <button class="btn btn-sm btn-outline" onclick="testZoomIntegration()">
+                                    Test Connection
+                                </button>
+                                <button class="btn btn-sm btn-primary" onclick="configureZoomIntegration()">
+                                    Configure
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audit Tab -->
+            <div class="tab-content" id="audit-tab">
+                <div class="tab-header">
+                    <h2>Audit Log</h2>
+                    <div class="tab-actions">
+                        <div class="filter-group">
+                            <select id="auditActionFilter" onchange="filterAuditLog()">
+                                <option value="">All Actions</option>
+                                <option value="organization_deleted">Organization Deleted</option>
+                                <option value="user_created">User Created</option>
+                                <option value="permission_granted">Permission Granted</option>
+                                <option value="integration_tested">Integration Tested</option>
+                            </select>
+                            <input type="date" id="auditDateFilter" onchange="filterAuditLog()">
+                        </div>
+                        <button class="btn btn-outline" onclick="exportAuditLog()">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                    </div>
+                </div>
+
+                <div id="auditLogContainer" class="audit-log">
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        <p>Loading audit log...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div class="tab-content" id="settings-tab">
+                <div class="settings-section">
+                    <h2>System Settings</h2>
+                    
+                    <div class="settings-grid">
+                        <!-- Platform Configuration -->
+                        <div class="settings-card">
+                            <h3>Platform Configuration</h3>
+                            <form id="platformSettingsForm">
+                                <div class="form-group">
+                                    <label for="platformName">Platform Name</label>
+                                    <input type="text" id="platformName" name="name" class="form-control" value="Course Creator Platform">
+                                </div>
+                                <div class="form-group">
+                                    <label for="maxOrganizations">Max Organizations</label>
+                                    <input type="number" id="maxOrganizations" name="max_organizations" class="form-control" value="100">
+                                </div>
+                                <div class="form-group">
+                                    <label for="maintenanceMode">Maintenance Mode</label>
+                                    <select id="maintenanceMode" name="maintenance_mode" class="form-control">
+                                        <option value="false">Disabled</option>
+                                        <option value="true">Enabled</option>
+                                    </select>
+                                </div>
+                                <button type="button" class="btn btn-primary" onclick="updatePlatformSettings()">
+                                    <i class="fas fa-save"></i> Save Settings
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Backup & Maintenance -->
+                        <div class="settings-card">
+                            <h3>Backup & Maintenance</h3>
+                            <div class="maintenance-actions">
+                                <div class="action-item">
+                                    <span>Database Backup</span>
+                                    <button class="btn btn-sm btn-outline" onclick="createDatabaseBackup()">
+                                        <i class="fas fa-database"></i> Create Backup
+                                    </button>
+                                </div>
+                                <div class="action-item">
+                                    <span>Clear System Cache</span>
+                                    <button class="btn btn-sm btn-outline" onclick="clearSystemCache()">
+                                        <i class="fas fa-broom"></i> Clear Cache
+                                    </button>
+                                </div>
+                                <div class="action-item">
+                                    <span>Optimize Database</span>
+                                    <button class="btn btn-sm btn-outline" onclick="optimizeDatabase()">
+                                        <i class="fas fa-tools"></i> Optimize
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Security Settings -->
+                        <div class="settings-card">
+                            <h3>Security Settings</h3>
+                            <div class="security-settings">
+                                <div class="setting-item">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="forceHttps" checked>
+                                        Force HTTPS
+                                    </label>
+                                </div>
+                                <div class="setting-item">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="enableMfa" checked>
+                                        Require MFA for Admins
+                                    </label>
+                                </div>
+                                <div class="setting-item">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="auditLogging" checked>
+                                        Enable Audit Logging
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Organization Deletion Modal -->
+    <div id="deleteOrgModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-exclamation-triangle"></i> Delete Organization</h3>
+                <button class="modal-close" onclick="closeModal('deleteOrgModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="warning-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>WARNING:</strong> This action will permanently delete the organization and all associated data including users, projects, tracks, and meeting rooms. This cannot be undone.
+                </div>
+                
+                <form id="deleteOrgForm">
+                    <input type="hidden" id="deleteOrgId" name="organization_id">
+                    
+                    <div class="form-group">
+                        <label for="confirmOrgName">
+                            To confirm deletion, type the organization name: <strong id="orgNameToDelete"></strong>
+                        </label>
+                        <input type="text" id="confirmOrgName" name="confirmation_name" class="form-control" required>
+                    </div>
+                    
+                    <div class="deletion-impact">
+                        <h4>This will delete:</h4>
+                        <ul id="deletionImpact">
+                            <li><span id="membersToDelete">0</span> organization members</li>
+                            <li><span id="projectsToDelete">0</span> projects</li>
+                            <li><span id="meetingRoomsToDelete">0</span> meeting rooms</li>
+                            <li>All associated user accounts and data</li>
+                        </ul>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('deleteOrgModal')">Cancel</button>
+                <button class="btn btn-danger" onclick="confirmDeleteOrganization()" id="confirmDeleteBtn" disabled>
+                    <i class="fas fa-trash"></i> Delete Organization
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notification" class="notification">
+        <div class="notification-content">
+            <i class="notification-icon"></i>
+            <span class="notification-message"></span>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner large"></div>
+        <p>Processing...</p>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/modules/auth.js"></script>
+    <script src="../js/modules/notifications.js"></script>
+    <script src="../js/site-admin-dashboard.js"></script>
+</body>
+</html>

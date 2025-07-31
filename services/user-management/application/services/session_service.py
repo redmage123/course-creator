@@ -9,9 +9,9 @@ import secrets
 import jwt
 from jose import JWTError
 
-from ...domain.interfaces.session_repository import ISessionRepository
-from ...domain.interfaces.session_service import ISessionService, ITokenService
-from ...domain.entities.session import Session, SessionStatus
+from domain.interfaces.session_repository import ISessionRepository
+from domain.interfaces.session_service import ISessionService, ITokenService
+from domain.entities.session import Session, SessionStatus
 
 class SessionService(ISessionService):
     """

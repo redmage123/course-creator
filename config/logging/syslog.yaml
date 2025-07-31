@@ -1,0 +1,59 @@
+logging:
+  version: 1
+  disable_existing_loggers: false
+
+  formatters:
+    syslog:
+      format: "%(asctime)s %(hostname)s %(name)s[%(process)d]: %(levelname)s - %(message)s"
+      datefmt: "%b %d %H:%M:%S"
+    detailed_syslog:
+      format: "%(asctime)s %(hostname)s %(name)s[%(process)d]: %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
+      datefmt: "%b %d %H:%M:%S"
+
+  handlers:
+    console:
+      class: logging.StreamHandler
+      level: INFO
+      formatter: syslog
+      stream: ext://sys.stdout
+
+    file:
+      class: logging.handlers.RotatingFileHandler
+      level: DEBUG
+      formatter: detailed_syslog
+      filename: /var/log/course-creator/$(SERVICE_NAME).log
+      maxBytes: 50485760  # 50MB
+      backupCount: 10
+      encoding: utf8
+
+    syslog:
+      class: logging.handlers.SysLogHandler
+      level: INFO
+      formatter: syslog
+      address: ['localhost', 514]
+      facility: user
+
+  loggers:
+    course_creator:
+      level: DEBUG
+      handlers: [console, file, syslog]
+      propagate: false
+
+    uvicorn:
+      level: INFO
+      handlers: [console, file, syslog]
+      propagate: false
+
+    uvicorn.access:
+      level: INFO
+      handlers: [console, file, syslog]
+      propagate: false
+
+    fastapi:
+      level: INFO
+      handlers: [console, file, syslog]
+      propagate: false
+
+  root:
+    level: INFO
+    handlers: [console, file, syslog]

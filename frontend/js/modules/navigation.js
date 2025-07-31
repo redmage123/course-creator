@@ -16,7 +16,13 @@ export class NavigationManager {
      * Get current page filename
      */
     getCurrentPage() {
-        return window.location.pathname.split('/').pop() || 'index.html';
+        const fullPath = window.location.pathname;
+        const fileName = fullPath.split('/').pop() || 'index.html';
+        // Handle new html/ directory structure
+        if (fullPath.includes('/html/')) {
+            return fileName;
+        }
+        return fileName;
     }
 
     /**

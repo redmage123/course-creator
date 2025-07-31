@@ -5,8 +5,8 @@ Single Responsibility: Handle job-related HTTP requests.
 from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import Dict, Any, Optional
 
-from ..app.dependencies import get_container, DependencyContainer
-from ..services.job_service import JobService, JobStatus
+from app.dependencies import get_container, DependencyContainer
+from services.job_service import JobService, JobStatus
 
 router = APIRouter()
 

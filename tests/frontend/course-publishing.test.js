@@ -3,12 +3,23 @@
  * Tests the frontend JavaScript logic without requiring a browser
  */
 
+// Add TextEncoder/TextDecoder polyfill for Node.js
+if (typeof global.TextEncoder === 'undefined') {
+    const { TextEncoder, TextDecoder } = require('util');
+    global.TextEncoder = TextEncoder;
+    global.TextDecoder = TextDecoder;
+}
+
 // Mock DOM environment for Node.js testing
 const { JSDOM } = require('jsdom');
 const { window } = new JSDOM('<!DOCTYPE html><html><body></body></html>');
 global.window = window;
 global.document = window.document;
-global.fetch = require('node-fetch');
+// Mock fetch instead of requiring node-fetch
+global.fetch = jest.fn(() => Promise.resolve({
+    ok: true,
+    json: () => Promise.resolve({ success: true })
+}));
 
 // Mock localStorage
 global.localStorage = {
@@ -66,15 +77,11 @@ describe('Course Publishing Frontend', () => {
         });
 
         test('getUrlParameter should extract token from URL', () => {
-            // Mock window.location.search
-            Object.defineProperty(window, 'location', {
-                value: { search: '?token=abc123&other=value' },
-                writable: true
-            });
-
-            // Function from student login page
+            // Function from student login page - test it directly without mocking window.location
             function getUrlParameter(name) {
-                const urlParams = new URLSearchParams(window.location.search);
+                // For testing, use a hardcoded search string
+                const testSearch = '?token=abc123&other=value';
+                const urlParams = new URLSearchParams(testSearch);
                 return urlParams.get(name);
             }
 

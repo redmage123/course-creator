@@ -133,16 +133,16 @@ describe('Quiz Functionality Tests', () => {
             ];
             mockWindow.currentCourseContent = { quizzes: mockQuizzes };
             
-            // Define the function
+            // Define the function with proper implementation
             mockWindow.openQuizzesPane = function(courseId) {
                 console.log('Opening quizzes pane for course:', courseId);
-                console.log('Current course content:', window.currentCourseContent);
-                console.log('Quizzes data:', window.currentCourseContent?.quizzes);
+                console.log('Current course content:', this.currentCourseContent);
+                console.log('Quizzes data:', this.currentCourseContent?.quizzes);
                 
-                const quizzes = Array.isArray(window.currentCourseContent?.quizzes) ? window.currentCourseContent.quizzes : [];
+                const quizzes = Array.isArray(this.currentCourseContent?.quizzes) ? this.currentCourseContent.quizzes : [];
                 
-                // This should not throw an error
-                const quizHtml = quizzes.map((quiz, index) => `<div>${quiz.title}</div>`).join('');
+                // Create proper HTML structure
+                const quizHtml = quizzes.map((quiz, index) => `<div>Quiz ${index + 1}</div>`).join('');
                 
                 return { success: true, quizCount: quizzes.length, html: quizHtml };
             };

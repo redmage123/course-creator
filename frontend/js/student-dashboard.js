@@ -402,35 +402,7 @@ function loadLabsData() {
     // No additional loading needed as it's static content
 }
 
-// Enhanced lab environment with sandboxing
-async function openLabEnvironment(courseId = null) {
-    try {
-        // Request access to sandboxed lab environment
-        const labAccessResponse = await fetch(`${CONFIG.ENDPOINTS.LAB_ACCESS(courseId || 'general')}`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                student_id: currentUser.id,
-                course_id: courseId
-            })
-        });
-        
-        if (labAccessResponse.ok) {
-            const labAccess = await labAccessResponse.json();
-            launchSandboxedLab(labAccess, courseId);
-        } else {
-            // Fallback to existing lab environment
-            launchStandardLab(courseId);
-        }
-    } catch (error) {
-        console.error('Error accessing lab environment:', error);
-        // Fallback to existing lab environment
-        launchStandardLab(courseId);
-    }
-}
+// Enhanced lab environment with sandboxing (implementation moved to line 1074)
 
 function launchSandboxedLab(labAccess, courseId) {
     // Create a secure, sandboxed lab environment
@@ -479,9 +451,7 @@ async function launchStandardLab(courseId) {
         });
         
         if (launchResponse.ok) {
-            console.log('Lab launched successfully, exercises should be generated');
         } else {
-            console.log('Lab launch failed, but proceeding with lab environment');
         }
     } catch (error) {
         console.error('Error launching lab:', error);
@@ -526,6 +496,8 @@ function storeLabSession(courseId, sessionId) {
     const sessions = JSON.parse(localStorage.getItem('labSessions') || '[]');
     sessions.push(labSession);
     localStorage.setItem('labSessions', JSON.stringify(sessions));
+}
+
 // Search and filter functions for student courses
 function filterStudentCourses() {
     const filter = document.getElementById('courseStatusFilter').value;
@@ -1053,7 +1025,6 @@ document.addEventListener('click', function(e) {
 // Authentication functions
 async function logout() {
     try {
-        console.log('Logging out student...');
         
         // Use the auth manager to handle logout (which will clean up labs)
         await authManager.logout();
@@ -1071,7 +1042,6 @@ async function logout() {
 // Lab access functions
 async function openLabEnvironment(courseId) {
     try {
-        console.log('Opening lab environment for course:', courseId);
         
         // Show loading notification
         showNotification('Preparing lab environment...', 'info');
@@ -1244,7 +1214,6 @@ async function downloadLabFile(filename) {
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
         
-        console.log(`Downloaded: ${filename}`);
         
     } catch (error) {
         console.error('Error downloading file:', error);
@@ -1275,7 +1244,6 @@ async function downloadAllFiles() {
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
         
-        console.log('Workspace downloaded successfully!');
         
     } catch (error) {
         console.error('Error downloading workspace:', error);

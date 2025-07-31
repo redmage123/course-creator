@@ -12,9 +12,22 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from typing import List, Optional, Dict, Any
 import logging
+import os
+import sys
 import hydra
 from omegaconf import DictConfig
 import uvicorn
+
+try:
+    from logging_setup import setup_docker_logging
+except ImportError:
+    # Fallback if config module not available
+    def setup_docker_logging(service_name: str, log_level: str = "INFO"):
+        logging.basicConfig(
+            level=getattr(logging, log_level.upper()),
+            format='%(asctime)s %(hostname)s %(name)s[%(process)d]: %(levelname)s - %(message)s'
+        )
+        return logging.getLogger(service_name)
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 
@@ -258,10 +271,10 @@ async def record_activity(
         return _activity_to_response(recorded_activity)
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logging.error(f"Error recording activity: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error recording activity: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.get("/api/v1/students/{student_id}/courses/{course_id}/engagement", response_model=EngagementScoreResponse)
 async def get_engagement_score(
@@ -300,10 +313,10 @@ async def get_engagement_score(
         )
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logging.error(f"Error getting engagement score: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error getting engagement score: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.get("/api/v1/courses/{course_id}/activity-summary")
 async def get_course_activity_summary(
@@ -322,10 +335,10 @@ async def get_course_activity_summary(
         return summary
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logging.error(f"Error getting activity summary: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error getting activity summary: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 # Lab Analytics Endpoints
 @app.post("/api/v1/lab-usage")
@@ -363,10 +376,10 @@ async def record_lab_usage(
         }
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logging.error(f"Error recording lab usage: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error recording lab usage: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.get("/api/v1/students/{student_id}/courses/{course_id}/lab-proficiency")
 async def get_lab_proficiency(
@@ -389,8 +402,8 @@ async def get_lab_proficiency(
         }
         
     except Exception as e:
-        logging.error(f"Error getting lab proficiency: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error getting lab proficiency: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 # Quiz Analytics Endpoints
 @app.post("/api/v1/quiz-performance")
@@ -430,10 +443,10 @@ async def record_quiz_performance(
         }
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logging.error(f"Error recording quiz performance: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error recording quiz performance: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 # Progress Tracking Endpoints
 @app.post("/api/v1/progress")
@@ -473,10 +486,10 @@ async def update_progress(
         }
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logging.error(f"Error updating progress: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error updating progress: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.get("/api/v1/students/{student_id}/courses/{course_id}/progress-summary")
 async def get_progress_summary(
@@ -494,8 +507,8 @@ async def get_progress_summary(
         return summary
         
     except Exception as e:
-        logging.error(f"Error getting progress summary: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error getting progress summary: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 # Learning Analytics Endpoints
 @app.post("/api/v1/students/{student_id}/courses/{course_id}/analytics", response_model=LearningAnalyticsResponse)
@@ -514,10 +527,10 @@ async def generate_student_analytics(
         return _analytics_to_response(analytics)
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logging.error(f"Error generating analytics: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error generating analytics: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.get("/api/v1/courses/{course_id}/analytics-summary", response_model=CourseAnalyticsSummaryResponse)
 async def get_course_analytics_summary(
@@ -539,8 +552,8 @@ async def get_course_analytics_summary(
         )
         
     except Exception as e:
-        logging.error(f"Error getting course analytics summary: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error getting course analytics summary: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.get("/api/v1/students/{student_id}/courses/{course_id}/performance-comparison")
 async def compare_student_performance(
@@ -558,10 +571,10 @@ async def compare_student_performance(
         return comparison
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logging.error(f"Error comparing performance: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error comparing performance: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.get("/api/v1/students/{student_id}/courses/{course_id}/prediction")
 async def predict_performance(
@@ -579,10 +592,10 @@ async def predict_performance(
         return prediction
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logging.error(f"Error predicting performance: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error predicting performance: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 # Reporting Endpoints
 @app.post("/api/v1/reports/student", response_model=ReportResponse)
@@ -610,10 +623,10 @@ async def generate_student_report(
         )
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logging.error(f"Error generating student report: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error generating student report: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.post("/api/v1/reports/course", response_model=ReportResponse)
 async def generate_course_report(
@@ -639,10 +652,10 @@ async def generate_course_report(
         )
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logging.error(f"Error generating course report: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error generating course report: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 # Risk Assessment Endpoints
 @app.get("/api/v1/students/{student_id}/courses/{course_id}/risk-assessment")
@@ -667,8 +680,8 @@ async def assess_student_risk(
         }
         
     except Exception as e:
-        logging.error(f"Error assessing risk: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error assessing risk: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 # Health check endpoint
 @app.get("/health")
@@ -718,25 +731,24 @@ def main(cfg: DictConfig) -> None:
     global current_config
     current_config = cfg
     
-    # Setup logging
-    logging.basicConfig(
-        level=getattr(logging, cfg.logging.level.upper()),
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
+    # Setup centralized logging with syslog format
+    service_name = os.environ.get('SERVICE_NAME', 'analytics')
+    log_level = os.environ.get('LOG_LEVEL', getattr(cfg, 'logging', {}).get('level', 'INFO'))
     
-    logger = logging.getLogger(__name__)
+    logger = setup_docker_logging(service_name, log_level)
     logger.info(f"Starting Analytics Service on port {cfg.server.port}")
     
     # Create app with configuration
     global app
     app = create_app(cfg)
     
-    # Run server
+    # Run server with reduced uvicorn logging to avoid duplicates
     uvicorn.run(
         app,
         host=cfg.server.host,
         port=cfg.server.port,
-        log_level=cfg.logging.level.lower()
+        log_level="warning",  # Reduce uvicorn log level since we have our own logging
+        access_log=False      # Disable uvicorn access log since we log via middleware
     )
 
 if __name__ == "__main__":

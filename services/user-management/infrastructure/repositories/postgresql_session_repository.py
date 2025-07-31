@@ -8,8 +8,8 @@ from datetime import datetime
 import asyncpg
 import json
 
-from ...domain.interfaces.session_repository import ISessionRepository
-from ...domain.entities.session import Session, SessionStatus
+from domain.interfaces.session_repository import ISessionRepository
+from domain.entities.session import Session, SessionStatus
 
 class PostgreSQLSessionRepository(ISessionRepository):
     """

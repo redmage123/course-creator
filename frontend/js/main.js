@@ -24,4 +24,3 @@ if (typeof window !== 'undefined') {
     window.UIComponents = UIComponents;
 }
 
-console.log('Course Creator Platform (Modular) loaded successfully');

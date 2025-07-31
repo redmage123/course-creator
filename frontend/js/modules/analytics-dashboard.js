@@ -21,7 +21,6 @@ class AnalyticsDashboard {
             }
             
             this.initialized = true;
-            console.log('Analytics dashboard initialized');
             
         } catch (error) {
             console.error('Error initializing analytics dashboard:', error);
@@ -538,7 +537,6 @@ class AnalyticsDashboard {
 
     async contactStudent(studentId) {
         // Implement student contact functionality
-        console.log('Contacting student:', studentId);
         // This could open a modal for sending messages, emails, etc.
     }
 
@@ -781,7 +779,6 @@ class AnalyticsDashboard {
             • Estimated Pages: ${previewData.estimated_pages || 'Unknown'}
         `;
         
-        console.log('PDF Report Preview:', previewData);
         
         // Could show a modal here in the future
         this.showSuccess('Report preview loaded - generating PDF...');

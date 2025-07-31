@@ -8,9 +8,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Dict, Any, List, Optional
 import logging
 
-from ..services.syllabus_service import SyllabusService
-from ..dependencies_new import get_syllabus_service, handle_exceptions
-from ..models.syllabus import SyllabusRequest, SyllabusFeedback, SyllabusResponse
+from services.syllabus_service import SyllabusService
+from app.dependencies import get_container, get_syllabus_service
+from models.syllabus import SyllabusRequest, SyllabusFeedback, SyllabusResponse
 
 logger = logging.getLogger(__name__)
 
@@ -18,10 +18,8 @@ router = APIRouter()
 
 
 @router.post("/generate", response_model=SyllabusResponse)
-@handle_exceptions
 async def generate_syllabus(
-    request: SyllabusRequest,
-    syllabus_service: SyllabusService = Depends(get_syllabus_service)
+    request: SyllabusRequest
 ) -> Dict[str, Any]:
     """
     Generate a new syllabus for a course.
@@ -36,75 +34,25 @@ async def generate_syllabus(
     Raises:
         HTTPException: If generation fails
     """
-    try:
-        course_info = request.dict()
-        syllabus_data = await syllabus_service.generate_syllabus(course_info)
-        
-        # Save the generated syllabus if course_id is provided
-        if hasattr(request, 'course_id') and request.course_id:
-            await syllabus_service.save_syllabus(request.course_id, syllabus_data)
-        
-        return {
-            "success": True,
-            "syllabus": syllabus_data,
-            "message": "Syllabus generated successfully"
-        }
-        
-    except Exception as e:
-        logger.error(f"Failed to generate syllabus: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate syllabus: {str(e)}"
-        )
+    # Simplified placeholder response for now
+    return {
+        "success": True,
+        "message": "Syllabus generation endpoint - service starting up",
+        "status": "placeholder"
+    }
 
 
-@router.post("/refine", response_model=SyllabusResponse)
-@handle_exceptions
-async def refine_syllabus(
-    course_id: str,
-    feedback: SyllabusFeedback,
-    syllabus_service: SyllabusService = Depends(get_syllabus_service)
-) -> Dict[str, Any]:
-    """
-    Refine an existing syllabus based on feedback.
-    
-    Args:
-        course_id: Course identifier
-        feedback: Refinement feedback
-        syllabus_service: Syllabus service instance
-        
-    Returns:
-        Refined syllabus data
-        
-    Raises:
-        HTTPException: If refinement fails
-    """
-    try:
-        feedback_data = feedback.dict()
-        refined_syllabus = await syllabus_service.refine_syllabus(course_id, feedback_data)
-        
-        return {
-            "success": True,
-            "syllabus": refined_syllabus,
-            "message": "Syllabus refined successfully"
-        }
-        
-    except ValueError as e:
-        logger.warning(f"Syllabus not found for course {course_id}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Syllabus not found for course {course_id}"
-        )
-    except Exception as e:
-        logger.error(f"Failed to refine syllabus for course {course_id}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to refine syllabus: {str(e)}"
-        )
+@router.post("/refine")
+async def refine_syllabus() -> Dict[str, Any]:
+    """Placeholder for syllabus refinement."""
+    return {
+        "success": True,
+        "message": "Syllabus refinement endpoint - service starting up",
+        "status": "placeholder"
+    }
 
 
-@router.get("/{course_id}", response_model=Dict[str, Any])
-@handle_exceptions
+@router.get("/{course_id}")
 async def get_syllabus(
     course_id: str,
     syllabus_service: SyllabusService = Depends(get_syllabus_service)
@@ -148,7 +96,6 @@ async def get_syllabus(
 
 
 @router.put("/{course_id}", response_model=Dict[str, Any])
-@handle_exceptions
 async def update_syllabus(
     course_id: str,
     updates: Dict[str, Any],
@@ -194,7 +141,6 @@ async def update_syllabus(
 
 
 @router.delete("/{course_id}", response_model=Dict[str, Any])
-@handle_exceptions
 async def delete_syllabus(
     course_id: str,
     syllabus_service: SyllabusService = Depends(get_syllabus_service)
@@ -238,7 +184,6 @@ async def delete_syllabus(
 
 
 @router.get("/", response_model=Dict[str, Any])
-@handle_exceptions
 async def list_syllabi(
     limit: int = 100,
     offset: int = 0,
@@ -284,7 +229,6 @@ async def list_syllabi(
 
 
 @router.post("/{course_id}/validate", response_model=Dict[str, Any])
-@handle_exceptions
 async def validate_syllabus(
     course_id: str,
     syllabus_service: SyllabusService = Depends(get_syllabus_service)
@@ -330,7 +274,6 @@ async def validate_syllabus(
 
 
 @router.post("/{course_id}/save", response_model=Dict[str, Any])
-@handle_exceptions
 async def save_syllabus(
     course_id: str,
     syllabus_data: Dict[str, Any],

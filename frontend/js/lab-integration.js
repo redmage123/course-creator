@@ -18,7 +18,6 @@ class LabIntegration {
     async initialize() {
         if (this.initialized) return;
 
-        console.log('Initializing Lab Integration...');
 
         try {
             // Check if user is authenticated
@@ -27,7 +26,6 @@ class LabIntegration {
             if (currentUser && currentUser.role === 'student') {
                 // Initialize lab lifecycle manager for students
                 await labLifecycleManager.initialize(currentUser);
-                console.log('Lab integration initialized for student:', currentUser.email);
                 
                 // Set up automatic enrollment detection
                 this.setupEnrollmentDetection();
@@ -75,7 +73,6 @@ class LabIntegration {
      */
     async logout() {
         try {
-            console.log('Performing enhanced logout with lab cleanup...');
             
             // Use auth manager logout (which includes lab cleanup)
             await authManager.logout();
@@ -84,12 +81,12 @@ class LabIntegration {
             localStorage.removeItem('enrolledCourses');
             
             // Redirect to login
-            window.location.href = 'index.html';
+            window.location.href = 'html/index.html';
             
         } catch (error) {
             console.error('Error during enhanced logout:', error);
             // Force redirect even if cleanup fails
-            window.location.href = 'index.html';
+            window.location.href = 'html/index.html';
         }
     }
 
@@ -98,7 +95,6 @@ class LabIntegration {
      */
     async openLabEnvironment(courseId) {
         try {
-            console.log('Opening lab environment for course:', courseId);
             
             // Check if user is authenticated
             if (!authManager.isAuthenticated()) {
@@ -200,7 +196,6 @@ class LabIntegration {
             
             localStorage.setItem('labAccess', JSON.stringify(existingAccess));
             
-            console.log('Lab access tracked:', accessData);
             
         } catch (error) {
             console.error('Error tracking lab access:', error);

@@ -4,13 +4,12 @@ Dependency injection setup following Dependency Inversion Principle.
 from fastapi import FastAPI
 from omegaconf import DictConfig
 
-from ..services.ai_service import AIService
-from ..services.syllabus_service import SyllabusService
-from ..services.exercise_generation_service import ExerciseGenerationService
-from ..services.lab_environment_service import LabEnvironmentService
-from ..services.job_service import JobService
-from ..repositories.course_repository import CourseRepository
-from ...shared.database.postgresql import PostgreSQLFactory
+from services.ai_service import AIService
+from services.syllabus_service import SyllabusService
+from services.exercise_generation_service import ExerciseGenerationService
+from services.lab_environment_service import LabEnvironmentService
+from services.job_service import JobService
+from repositories.course_repository import CourseRepository
 
 class DependencyContainer:
     """Container for managing service dependencies."""
@@ -21,19 +20,11 @@ class DependencyContainer:
         self._repositories = {}
         self._db_factory = None
     
-    def get_database_factory(self) -> PostgreSQLFactory:
-        """Get database factory instance."""
-        if not self._db_factory:
-            connection_string = self.config.database.connection_string
-            self._db_factory = PostgreSQLFactory(connection_string)
-        return self._db_factory
-    
     def get_course_repository(self) -> CourseRepository:
         """Get course repository instance."""
         if 'course_repository' not in self._repositories:
-            db_factory = self.get_database_factory()
-            connection = db_factory.create_connection()
-            self._repositories['course_repository'] = CourseRepository(connection)
+            # Simplified repository creation without database dependency for now
+            self._repositories['course_repository'] = CourseRepository()
         return self._repositories['course_repository']
     
     def get_ai_service(self) -> AIService:
@@ -86,3 +77,19 @@ def get_container() -> DependencyContainer:
     if not _container:
         raise RuntimeError("Dependencies not initialized")
     return _container
+
+def get_syllabus_service() -> SyllabusService:
+    """Get syllabus service for FastAPI dependency injection."""
+    return get_container().get_syllabus_service()
+
+def get_exercise_service() -> ExerciseGenerationService:
+    """Get exercise service for FastAPI dependency injection."""
+    return get_container().get_exercise_service()
+
+def get_lab_service() -> LabEnvironmentService:
+    """Get lab service for FastAPI dependency injection."""
+    return get_container().get_lab_service()
+
+def get_job_service() -> JobService:
+    """Get job service for FastAPI dependency injection."""
+    return get_container().get_job_service()

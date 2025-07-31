@@ -112,19 +112,14 @@ suppress-none-returning = True
 
 # Plugin-specific configurations
 
-# flake8-bugbear
-extend-ignore = 
-    # B008: Do not perform function calls in argument defaults (useful for FastAPI)
-    B008,
-    # B904: Within an except clause, raise exceptions with raise ... from err
-    B904
-
-# flake8-bandit (security)
+# Additional ignores for plugins (flake8-bugbear, flake8-bandit)
+# B008: Do not perform function calls in argument defaults (useful for FastAPI)
+# B904: Within an except clause, raise exceptions with raise ... from err
 # S101: Use of assert detected (useful in tests)
 # S311: Standard pseudo-random generators are not suitable for security/cryptographic purposes (sometimes OK)
 # S603: subprocess call - check for execution of untrusted input (handled case-by-case)
 # S607: Starting a process with a partial executable path (handled case-by-case)
-extend-ignore = S101,S311,S603,S607
+plugin-ignore = B008,B904,S101,S311,S603,S607
 
 # Maximum line length for specific file types
 max-line-length-type-mapping = 

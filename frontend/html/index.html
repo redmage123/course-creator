@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.5, maximum-scale=3.0">
+    <title>Course Creator Platform</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <h1><i class="fas fa-graduation-cap"></i> Course Creator</h1>
+                </div>
+                <nav class="nav-links">
+                    <a href="#home">Home</a>
+                    <a href="instructor-dashboard.html" id="instructor-link" style="display: none;">Instructor Dashboard</a>
+                    <a href="student-dashboard.html" id="student-link" style="display: none;">Student Dashboard</a>
+                    <a href="admin.html" id="admin-link" style="display: none;">Admin Dashboard</a>
+                </nav>
+                <div class="account-section">
+                    <div class="account-dropdown" id="accountDropdown" style="display: none;">
+                        <button class="account-trigger" onclick="toggleAccountDropdown()" type="button" style="cursor: pointer; border: none; background: none; color: inherit; font: inherit;">
+                            <div class="user-avatar" id="userAvatar">
+                                <span class="avatar-initials" id="avatarInitials">U</span>
+                            </div>
+                            <span class="user-name" id="userName">User</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="account-menu" id="accountMenu">
+                            <a href="#profile"><i class="fas fa-user"></i> Profile</a>
+                            <a href="#settings"><i class="fas fa-cog"></i> Settings</a>
+                            <a href="#help"><i class="fas fa-question-circle"></i> Help</a>
+                            <hr>
+                            <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                        </div>
+                    </div>
+                    <div class="auth-buttons" id="authButtons">
+                        <button class="btn-auth btn-login" onclick="showLoginModal()">Login</button>
+                        <button class="btn-auth btn-register" onclick="showRegisterModal()">Register</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <main id="main-content">
+        <div class="container">
+            <section id="home">
+                <h2>Welcome to Course Creator</h2>
+                <p>Create and manage online courses with AI assistance.</p>
+                <button onclick="loadCourses()">View Courses</button>
+            </section>
+        </div>
+    </main>
+    
+    <!-- Modern ES6 module system -->
+    <script type="module" src="../js/main.js"></script>
+</body>
+</html>

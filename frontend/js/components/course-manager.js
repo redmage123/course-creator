@@ -327,7 +327,6 @@ export class CourseManager {
         if (typeof window.showNotification === 'function') {
             window.showNotification(message, type);
         } else {
-            console.log(`${type.toUpperCase()}: ${message}`);
         }
     }
 

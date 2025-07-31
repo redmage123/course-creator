@@ -53,6 +53,11 @@ services:
       - DB_PASSWORD=postgres_password
       - DB_NAME=course_creator
       - ENVIRONMENT=docker
+      - DOCKER_CONTAINER=true
+      - SERVICE_NAME=user-management
+      - LOG_LEVEL=INFO
+    volumes:
+      - ./logs/course-creator:/var/log/course-creator
     ports:
       - "8000:8000"
     networks:
@@ -85,7 +90,12 @@ services:
       - DB_USER=postgres
       - DB_PASSWORD=postgres_password
       - DB_NAME=course_creator
+      - DOCKER_CONTAINER=true
+      - SERVICE_NAME=course-generator
+      - LOG_LEVEL=INFO
       - ENVIRONMENT=docker
+    volumes:
+      - ./logs/course-creator:/var/log/course-creator
     ports:
       - "8001:8001"
     networks:
@@ -113,11 +123,15 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
       - REDIS_URL=redis://redis:6379
       - ENVIRONMENT=docker
+      - DOCKER_CONTAINER=true
+      - SERVICE_NAME=content-storage
+      - LOG_LEVEL=INFO
     ports:
       - "8003:8003"
     volumes:
       - content_files:/app/content_files
       - content_storage:/app/storage
+      - ./logs/course-creator:/var/log/course-creator
     networks:
       - course-creator-network
     depends_on:
@@ -151,6 +165,9 @@ services:
       - DB_PASSWORD=postgres_password
       - DB_NAME=course_creator
       - ENVIRONMENT=docker
+      - DOCKER_CONTAINER=true
+      - SERVICE_NAME=course-management
+      - LOG_LEVEL=INFO
       # Email Service Configuration
       - USE_MOCK_EMAIL=true
       - SMTP_SERVER=${SMTP_SERVER:-localhost}
@@ -160,6 +177,8 @@ services:
       - SMTP_USE_TLS=${SMTP_USE_TLS:-true}
     ports:
       - "8004:8004"
+    volumes:
+      - ./logs/course-creator:/var/log/course-creator
     networks:
       - course-creator-network
     depends_on:
@@ -196,12 +215,16 @@ services:
       - DB_PASSWORD=postgres_password
       - DB_NAME=course_creator
       - ENVIRONMENT=docker
+      - DOCKER_CONTAINER=true
+      - SERVICE_NAME=content-management
+      - LOG_LEVEL=INFO
     ports:
       - "8005:8005"
     volumes:
       - content_uploads:/app/uploads
       - content_exports:/app/exports
       - template_storage:/app/storage
+      - ./logs/course-creator:/var/log/course-creator
     networks:
       - course-creator-network
     depends_on:
@@ -236,8 +259,13 @@ services:
       - DB_PASSWORD=postgres_password
       - DB_NAME=course_creator
       - ENVIRONMENT=docker
+      - DOCKER_CONTAINER=true
+      - SERVICE_NAME=analytics
+      - LOG_LEVEL=INFO
     ports:
       - "8007:8007"
+    volumes:
+      - ./logs/course-creator:/var/log/course-creator
     networks:
       - course-creator-network
     depends_on:
@@ -249,6 +277,49 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8007/health'); exit(0 if r.status_code == 200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Organization Management Service  
+  organization-management:
+    image: course-creator-organization-management:latest
+    build:
+      context: ./services/organization-management
+      dockerfile: Dockerfile
+      cache_from:
+        - course-creator-organization-management:latest
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
+      - REDIS_URL=redis://redis:6379
+      - USER_SERVICE_URL=http://user-management:8000
+      - COURSE_SERVICE_URL=http://course-management:8004
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres_password
+      - DB_NAME=course_creator
+      - ENVIRONMENT=docker
+      - DOCKER_CONTAINER=true
+      - SERVICE_NAME=organization-management
+      - LOG_LEVEL=INFO
+      - JWT_SECRET_KEY=your-secret-key-change-in-production
+    ports:
+      - "8008:8008"
+    volumes:
+      - ./logs/course-creator:/var/log/course-creator
+    networks:
+      - course-creator-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      user-management:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8008/health'); exit(0 if r.status_code == 200 else 1)"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -298,10 +369,14 @@ services:
       - DB_PASSWORD=postgres_password
       - DB_NAME=course_creator
       - ENVIRONMENT=docker
+      - DOCKER_CONTAINER=true
+      - SERVICE_NAME=lab-containers
+      - LOG_LEVEL=INFO
       - LAB_STORAGE_PATH=/home/bbrelin/course-creator/lab-storage
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./lab-storage:/home/bbrelin/course-creator/lab-storage
+      - ./logs/course-creator:/var/log/course-creator
     ports:
       - "8006:8006"
     networks:
@@ -310,6 +385,53 @@ services:
       - course-management
     healthcheck:
       test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8006/health'); exit(0 if r.status_code == 200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  organization-management:
+    image: course-creator-organization-management:latest
+    build:
+      context: ./services/organization-management
+      dockerfile: Dockerfile
+      cache_from:
+        - course-creator-organization-management:latest
+    environment:
+      - DATABASE_HOST=postgres
+      - DATABASE_PORT=5432
+      - DATABASE_NAME=course_creator
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=postgres_password
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=2
+      - JWT_SECRET=your-jwt-secret-change-in-production
+      - LOG_LEVEL=INFO
+      - SERVICE_NAME=organization-management
+      - ENVIRONMENT=docker
+      - DOCKER_CONTAINER=true
+      # SMTP Configuration for notifications
+      - SMTP_HOST=${SMTP_HOST:-localhost}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - FROM_EMAIL=${FROM_EMAIL:-noreply@courseportal.com}
+    ports:
+      - "8008:8008"
+    volumes:
+      - ./logs/course-creator:/var/log/course-creator
+    networks:
+      - course-creator-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      user-management:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8008/health'); exit(0 if r.status_code == 200 else 1)"]
       interval: 30s
       timeout: 10s
       retries: 3

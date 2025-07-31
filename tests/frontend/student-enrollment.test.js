@@ -331,12 +331,12 @@ describe('Student Enrollment Frontend', () => {
       };
 
       // Test invalid dates (end before start)
-      const invalidResult = window.validateInstanceDates('2025-07-20', '2025-07-15');
+      const invalidResult = window.validateInstanceDates('2025-08-20', '2025-08-15');
       expect(invalidResult.valid).toBe(false);
       expect(invalidResult.error).toBe('End date must be after start date');
 
       // Test valid dates
-      const validResult = window.validateInstanceDates('2025-07-20', '2025-08-03');
+      const validResult = window.validateInstanceDates('2025-08-20', '2025-09-03');
       expect(validResult.valid).toBe(true);
     });
   });

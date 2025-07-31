@@ -6,15 +6,16 @@ The Course Creator Platform provides a comprehensive RESTful API for managing co
 
 ## Microservices Architecture
 
-The platform consists of 7 core backend services:
+The platform consists of 8 core backend services including the Enhanced RBAC System:
 
-1. **User Management Service** (Port 8000) - Authentication, user profiles, RBAC
+1. **User Management Service** (Port 8000) - Authentication, user profiles, basic RBAC
 2. **Course Generator Service** (Port 8001) - AI-powered content generation
 3. **Content Storage Service** (Port 8003) - File storage and versioning
-4. **Course Management Service** (Port 8004) - Course CRUD operations
+4. **Course Management Service** (Port 8004) - Course CRUD operations and bi-directional feedback
 5. **Content Management Service** (Port 8005) - Upload/download and multi-format export
-6. **Lab Container Manager Service** (Port 8006) - Individual student Docker container management
+6. **Lab Container Manager Service** (Port 8006) - Individual student Docker container management with multi-IDE support
 7. **Analytics Service** (Port 8007) - Student analytics, progress tracking, and learning insights
+8. **Organization Management Service** (Port 8008) - Enhanced RBAC System with multi-tenant organization management
 
 ## Base URLs
 
@@ -25,6 +26,7 @@ The platform consists of 7 core backend services:
 - **Content Management**: `http://localhost:8005`
 - **Lab Container Manager**: `http://localhost:8006`
 - **Analytics Service**: `http://localhost:8007`
+- **Organization Management (RBAC)**: `http://localhost:8008`
 - **Production**: `https://your-domain.com/api`
 
 ## Authentication
@@ -74,6 +76,8 @@ GET http://localhost:8003/health
 GET http://localhost:8004/health
 GET http://localhost:8005/health
 GET http://localhost:8006/health
+GET http://localhost:8007/health
+GET http://localhost:8008/health
 ```
 
 Response:
@@ -786,6 +790,973 @@ Response:
 }
 ```
 
+## Organization Management Service (Port 8008) - Enhanced RBAC System
+
+The Organization Management Service provides comprehensive multi-tenant organization management with granular permissions, JWT authentication, Teams/Zoom integration, and audit logging.
+
+### Authentication & Authorization
+
+All RBAC endpoints require JWT authentication with appropriate role-based permissions:
+
+```http
+Authorization: Bearer <your-jwt-token>
+```
+
+**Role Hierarchy:**
+- **Site Admin**: Full platform access, can manage all organizations
+- **Organization Admin**: Manage specific organization, members, tracks, meeting rooms
+- **Instructor**: Access assigned projects, create content, manage students
+- **Student**: Access enrolled tracks, participate in courses
+
+### Organization Management
+
+#### List Organizations
+
+Get organizations accessible to the authenticated user.
+
+```http
+GET http://localhost:8008/api/v1/rbac/organizations
+Authorization: Bearer <token>
+```
+
+Response:
+```json
+{
+  "organizations": [
+    {
+      "id": "org-123",
+      "name": "University of Technology",
+      "slug": "uni-tech",
+      "description": "Leading technology education institution",
+      "is_active": true,
+      "member_count": 150,
+      "project_count": 25,
+      "track_count": 12,
+      "meeting_room_count": 8,
+      "created_at": "2025-07-01T10:00:00Z",
+      "updated_at": "2025-07-31T15:30:00Z"
+    }
+  ]
+}
+```
+
+#### Create Organization
+
+Create a new organization (Site Admin only).
+
+```http
+POST http://localhost:8008/api/v1/rbac/organizations
+Authorization: Bearer <site-admin-token>
+Content-Type: application/json
+
+{
+  "name": "New Educational Institute",
+  "slug": "new-edu-institute",
+  "description": "Innovative education platform",
+  "settings": {
+    "max_members": 500,
+    "allow_self_registration": false,
+    "require_email_verification": true,
+    "enable_teams_integration": true,
+    "enable_zoom_integration": false
+  }
+}
+```
+
+Response:
+```json
+{
+  "id": "org-456",
+  "name": "New Educational Institute",
+  "slug": "new-edu-institute",
+  "description": "Innovative education platform",
+  "is_active": true,
+  "settings": {
+    "max_members": 500,
+    "allow_self_registration": false,
+    "require_email_verification": true,
+    "enable_teams_integration": true,
+    "enable_zoom_integration": false
+  },
+  "created_at": "2025-07-31T16:00:00Z",
+  "updated_at": "2025-07-31T16:00:00Z"
+}
+```
+
+#### Get Organization Details
+
+Get detailed information about a specific organization.
+
+```http
+GET http://localhost:8008/api/v1/rbac/organizations/{org_id}
+Authorization: Bearer <token>
+```
+
+Response:
+```json
+{
+  "id": "org-123",
+  "name": "University of Technology",
+  "slug": "uni-tech",
+  "description": "Leading technology education institution",
+  "is_active": true,
+  "settings": {
+    "max_members": 500,
+    "allow_self_registration": false,
+    "require_email_verification": true,
+    "enable_teams_integration": true,
+    "enable_zoom_integration": true
+  },
+  "statistics": {
+    "total_members": 150,
+    "member_breakdown": {
+      "organization_admin": 3,
+      "instructor": 25,
+      "student": 122
+    },
+    "total_projects": 25,
+    "total_tracks": 12,
+    "total_meeting_rooms": 8,
+    "active_meeting_rooms": 6
+  },
+  "created_at": "2025-07-01T10:00:00Z",
+  "updated_at": "2025-07-31T15:30:00Z"
+}
+```
+
+#### Update Organization
+
+Update organization details.
+
+```http
+PUT http://localhost:8008/api/v1/rbac/organizations/{org_id}
+Authorization: Bearer <org-admin-token>
+Content-Type: application/json
+
+{
+  "name": "Updated University Name",
+  "description": "Updated description",
+  "settings": {
+    "max_members": 750,
+    "enable_zoom_integration": true
+  }
+}
+```
+
+#### Delete Organization
+
+Delete an organization with full cleanup (Site Admin only).
+
+```http
+DELETE http://localhost:8008/api/v1/rbac/organizations/{org_id}
+Authorization: Bearer <site-admin-token>
+```
+
+Response:
+```json
+{
+  "success": true,
+  "organization_name": "University of Technology",
+  "deleted_members": 150,
+  "deleted_projects": 25,
+  "deleted_tracks": 12,
+  "deleted_meeting_rooms": 8,
+  "cleanup_summary": {
+    "users_processed": 150,
+    "data_archived": true,
+    "notification_sent": true
+  }
+}
+```
+
+### Organization Member Management
+
+#### List Organization Members
+
+Get all members of an organization with filtering options.
+
+```http
+GET http://localhost:8008/api/v1/rbac/organizations/{org_id}/members?role_type=instructor&status=active
+Authorization: Bearer <org-admin-token>
+```
+
+Query Parameters:
+- `role_type` - Filter by role (organization_admin, instructor, student)
+- `status` - Filter by status (active, inactive, suspended)
+- `page` - Page number for pagination
+- `limit` - Results per page (default: 50)
+
+Response:
+```json
+{
+  "members": [
+    {
+      "membership_id": "member-789",
+      "user_id": "user-123",
+      "name": "Dr. Sarah Johnson",
+      "email": "sarah.johnson@uni-tech.edu",
+      "role_type": "instructor",
+      "status": "active",
+      "permissions": [
+        "create_courses",
+        "manage_students",
+        "access_analytics",
+        "create_meeting_rooms"
+      ],
+      "project_access": ["project-101", "project-102"],
+      "track_enrollments": [],
+      "last_login": "2025-07-31T14:30:00Z",
+      "joined_at": "2025-07-15T09:00:00Z",
+      "invited_by": "admin-456"
+    }
+  ],
+  "pagination": {
+    "current_page": 1,
+    "total_pages": 3,
+    "total_members": 150,
+    "members_per_page": 50
+  }
+}
+```
+
+#### Add Organization Member
+
+Add a new member to the organization.
+
+```http
+POST http://localhost:8008/api/v1/rbac/organizations/{org_id}/members
+Authorization: Bearer <org-admin-token>
+Content-Type: application/json
+
+{
+  "user_email": "new.instructor@uni-tech.edu",
+  "role_type": "instructor",
+  "project_ids": ["project-101", "project-103"],
+  "send_invitation_email": true,
+  "custom_message": "Welcome to our Python programming team!"
+}
+```
+
+Response:
+```json
+{
+  "membership_id": "member-890",
+  "user_id": "user-456",
+  "user_email": "new.instructor@uni-tech.edu",
+  "role_type": "instructor",
+  "status": "active",
+  "permissions": [
+    "create_courses",
+    "manage_students",
+    "access_analytics",
+    "create_meeting_rooms"
+  ],
+  "project_access": ["project-101", "project-103"],
+  "invitation_sent": true,
+  "created_at": "2025-07-31T16:15:00Z"
+}
+```
+
+#### Update Member Role
+
+Update a member's role and permissions.
+
+```http
+PUT http://localhost:8008/api/v1/rbac/organizations/{org_id}/members/{member_id}
+Authorization: Bearer <org-admin-token>
+Content-Type: application/json
+
+{
+  "role_type": "organization_admin",
+  "project_ids": ["project-101", "project-102", "project-103"],
+  "status": "active",
+  "send_notification_email": true
+}
+```
+
+Response:
+```json
+{
+  "membership_id": "member-890",
+  "user_id": "user-456",
+  "role_type": "organization_admin",
+  "status": "active",
+  "permissions": [
+    "manage_organization",
+    "manage_members",
+    "create_tracks",
+    "manage_meeting_rooms",
+    "view_analytics",
+    "assign_projects"
+  ],
+  "project_access": ["project-101", "project-102", "project-103"],
+  "updated_at": "2025-07-31T16:20:00Z"
+}
+```
+
+#### Remove Organization Member
+
+Remove a member from the organization.
+
+```http
+DELETE http://localhost:8008/api/v1/rbac/organizations/{org_id}/members/{member_id}
+Authorization: Bearer <org-admin-token>
+```
+
+Response:
+```json
+{
+  "success": true,
+  "removed_member_id": "member-890",
+  "user_email": "former.member@uni-tech.edu",
+  "cleanup_actions": [
+    "removed_project_access",
+    "cancelled_track_enrollments",
+    "archived_meeting_rooms",
+    "sent_departure_notification"
+  ]
+}
+```
+
+### Learning Track Management
+
+#### List Organization Tracks
+
+Get all learning tracks for an organization.
+
+```http
+GET http://localhost:8008/api/v1/organizations/{org_id}/tracks?status=active&difficulty_level=intermediate
+Authorization: Bearer <token>
+```
+
+Query Parameters:
+- `status` - Filter by status (active, inactive, draft)
+- `difficulty_level` - Filter by difficulty (beginner, intermediate, advanced)
+- `auto_enrollment` - Filter by auto-enrollment setting (true, false)
+
+Response:
+```json
+{
+  "tracks": [
+    {
+      "id": "track-123",
+      "name": "Full Stack Web Development",
+      "description": "Comprehensive web development track covering frontend and backend",
+      "organization_id": "org-123",
+      "project_id": "project-101",
+      "difficulty_level": "intermediate",
+      "duration_weeks": 16,
+      "target_audience": ["developers", "students", "career-changers"],
+      "prerequisites": ["basic_programming", "html_css_basics"],
+      "learning_objectives": [
+        "Master React and Node.js development",
+        "Build complete web applications",
+        "Understand database design and integration",
+        "Deploy applications to cloud platforms"
+      ],
+      "status": "active",
+      "auto_enrollment": true,
+      "enrollment_count": 45,
+      "completion_rate": 78.5,
+      "created_by": "instructor-789",
+      "created_at": "2025-06-01T10:00:00Z",
+      "updated_at": "2025-07-30T14:20:00Z"
+    }
+  ]
+}
+```
+
+#### Create Learning Track
+
+Create a new learning track with automatic enrollment capabilities.
+
+```http
+POST http://localhost:8008/api/v1/organizations/{org_id}/tracks
+Authorization: Bearer <org-admin-token>
+Content-Type: application/json
+
+{
+  "name": "Machine Learning Fundamentals",
+  "description": "Introduction to machine learning concepts and applications",
+  "project_id": "project-105",
+  "difficulty_level": "intermediate",
+  "duration_weeks": 12,
+  "target_audience": ["data_scientists", "engineers", "researchers"],
+  "prerequisites": ["python_programming", "statistics_basics"],
+  "learning_objectives": [
+    "Understand core ML algorithms",
+    "Implement ML models using Python",
+    "Evaluate model performance",
+    "Deploy ML solutions"
+  ],
+  "auto_enrollment": true,
+  "enrollment_criteria": {
+    "min_experience_months": 6,
+    "required_skills": ["python", "mathematics"],
+    "exclude_roles": ["student"]
+  }
+}
+```
+
+Response:
+```json
+{
+  "id": "track-456",
+  "name": "Machine Learning Fundamentals",
+  "description": "Introduction to machine learning concepts and applications",
+  "organization_id": "org-123",
+  "project_id": "project-105",
+  "difficulty_level": "intermediate",
+  "duration_weeks": 12,
+  "target_audience": ["data_scientists", "engineers", "researchers"],
+  "prerequisites": ["python_programming", "statistics_basics"],
+  "learning_objectives": [
+    "Understand core ML algorithms",
+    "Implement ML models using Python",
+    "Evaluate model performance",
+    "Deploy ML solutions"
+  ],
+  "status": "active",
+  "auto_enrollment": true,
+  "enrollment_criteria": {
+    "min_experience_months": 6,
+    "required_skills": ["python", "mathematics"],
+    "exclude_roles": ["student"]
+  },
+  "created_by": "admin-456",
+  "created_at": "2025-07-31T16:30:00Z",
+  "updated_at": "2025-07-31T16:30:00Z"
+}
+```
+
+#### Enroll Student in Track
+
+Enroll a student in a specific learning track.
+
+```http
+POST http://localhost:8008/api/v1/tracks/{track_id}/enroll/{student_id}
+Authorization: Bearer <instructor-token>
+Content-Type: application/json
+
+{
+  "enrollment_type": "manual",
+  "start_date": "2025-08-01T00:00:00Z",
+  "send_notification": true,
+  "custom_message": "Welcome to the Machine Learning track!"
+}
+```
+
+Response:
+```json
+{
+  "enrollment_id": "enrollment-789",
+  "student_id": "student-123",
+  "track_id": "track-456",
+  "enrollment_type": "manual",
+  "status": "enrolled",
+  "start_date": "2025-08-01T00:00:00Z",
+  "expected_completion": "2025-10-24T00:00:00Z",
+  "progress_percentage": 0.0,
+  "enrolled_by": "instructor-456",
+  "enrolled_at": "2025-07-31T16:35:00Z"
+}
+```
+
+### Meeting Room Management
+
+The Enhanced RBAC System includes integrated meeting room management with Teams and Zoom support.
+
+#### List Organization Meeting Rooms
+
+Get all meeting rooms for an organization.
+
+```http
+GET http://localhost:8008/api/v1/rbac/organizations/{org_id}/meeting-rooms?platform=teams&room_type=track_room&status=active
+Authorization: Bearer <org-admin-token>
+```
+
+Query Parameters:
+- `platform` - Filter by platform (teams, zoom)
+- `room_type` - Filter by type (organization_room, track_room, project_room)
+- `status` - Filter by status (active, inactive, maintenance)
+
+Response:
+```json
+{
+  "meeting_rooms": [
+    {
+      "id": "room-123",
+      "name": "Full Stack Development Track Room",
+      "display_name": "Full Stack Dev - Main Room",
+      "organization_id": "org-123",
+      "platform": "teams",
+      "room_type": "track_room",
+      "track_id": "track-123",
+      "project_id": null,
+      "instructor_id": "instructor-789",
+      "meeting_id": "19:meeting_abc123@thread.v2",
+      "join_url": "https://teams.microsoft.com/l/meetup-join/19%3Ameeting_abc123%40thread.v2/...",
+      "settings": {
+        "auto_recording": true,
+        "waiting_room": false,
+        "mute_on_entry": false,
+        "allow_screen_sharing": true,
+        "max_participants": 50
+      },
+      "status": "active",
+      "participant_count": 0,
+      "last_used": "2025-07-30T15:45:00Z",
+      "created_by": "admin-456",
+      "created_at": "2025-06-15T09:30:00Z",
+      "updated_at": "2025-07-30T16:00:00Z"
+    }
+  ]
+}
+```
+
+#### Create Meeting Room
+
+Create a new meeting room with Teams or Zoom integration.
+
+```http
+POST http://localhost:8008/api/v1/rbac/organizations/{org_id}/meeting-rooms
+Authorization: Bearer <org-admin-token>
+Content-Type: application/json
+
+{
+  "name": "Advanced Python Workshop Room",
+  "display_name": "Advanced Python - Workshop Space",
+  "platform": "zoom",
+  "room_type": "project_room",
+  "project_id": "project-102",
+  "instructor_id": "instructor-456",
+  "settings": {
+    "auto_recording": true,
+    "waiting_room": true,
+    "mute_on_entry": true,
+    "allow_screen_sharing": true,
+    "max_participants": 25,
+    "require_password": true
+  }
+}
+```
+
+Response:
+```json
+{
+  "id": "room-456",
+  "name": "Advanced Python Workshop Room",
+  "display_name": "Advanced Python - Workshop Space",
+  "organization_id": "org-123",
+  "platform": "zoom",
+  "room_type": "project_room",
+  "project_id": "project-102",
+  "instructor_id": "instructor-456",
+  "meeting_id": "123456789",
+  "join_url": "https://zoom.us/j/123456789?pwd=abcdef123456",
+  "meeting_password": "SecurePass123",
+  "settings": {
+    "auto_recording": true,
+    "waiting_room": true,
+    "mute_on_entry": true,
+    "allow_screen_sharing": true,
+    "max_participants": 25,
+    "require_password": true
+  },
+  "status": "active",
+  "participant_count": 0,
+  "created_by": "admin-456",
+  "created_at": "2025-07-31T16:40:00Z",
+  "updated_at": "2025-07-31T16:40:00Z"
+}
+```
+
+#### Update Meeting Room
+
+Update meeting room settings and configuration.
+
+```http
+PUT http://localhost:8008/api/v1/rbac/organizations/{org_id}/meeting-rooms/{room_id}
+Authorization: Bearer <org-admin-token>
+Content-Type: application/json
+
+{
+  "name": "Updated Workshop Room Name",
+  "instructor_id": "instructor-789",
+  "settings": {
+    "max_participants": 30,
+    "waiting_room": false
+  },
+  "status": "active"
+}
+```
+
+### Site Administration
+
+Site administrators have access to platform-wide management capabilities.
+
+#### List All Organizations
+
+Get comprehensive list of all organizations with statistics (Site Admin only).
+
+```http
+GET http://localhost:8008/api/v1/site-admin/organizations?include_inactive=true&sort_by=created_at&order=desc
+Authorization: Bearer <site-admin-token>
+```
+
+Query Parameters:
+- `include_inactive` - Include inactive organizations (default: false)
+- `sort_by` - Sort field (name, created_at, member_count, project_count)
+- `order` - Sort order (asc, desc)
+- `page` - Page number for pagination
+- `limit` - Results per page (default: 20)
+
+Response:
+```json
+{
+  "organizations": [
+    {
+      "id": "org-123",
+      "name": "University of Technology",
+      "slug": "uni-tech",
+      "is_active": true,
+      "total_members": 150,
+      "member_breakdown": {
+        "organization_admin": 3,
+        "instructor": 25,
+        "student": 122
+      },
+      "project_count": 25,
+      "track_count": 12,
+      "meeting_room_count": 8,
+      "storage_usage_mb": 2048,
+      "last_activity": "2025-07-31T15:30:00Z",
+      "created_at": "2025-07-01T10:00:00Z"
+    }
+  ],
+  "platform_statistics": {
+    "total_organizations": 15,
+    "total_users": 2500,
+    "total_projects": 180,
+    "total_tracks": 75,
+    "total_meeting_rooms": 120
+  },
+  "pagination": {
+    "current_page": 1,
+    "total_pages": 1,
+    "total_organizations": 15
+  }
+}
+```
+
+#### List All Platform Users
+
+Get comprehensive list of all platform users (Site Admin only).
+
+```http
+GET http://localhost:8008/api/v1/site-admin/users?role=instructor&status=active&organization_id=org-123
+Authorization: Bearer <site-admin-token>
+```
+
+Query Parameters:
+- `role` - Filter by role (site_admin, organization_admin, instructor, student)
+- `status` - Filter by status (active, inactive, suspended)
+- `organization_id` - Filter by organization
+- `search` - Search by name or email
+- `last_login_days` - Filter by recent login activity
+
+Response:
+```json
+{
+  "users": [
+    {
+      "id": "user-123",
+      "username": "sarah.johnson@uni-tech.edu",
+      "full_name": "Dr. Sarah Johnson",
+      "email": "sarah.johnson@uni-tech.edu",
+      "role": "instructor",
+      "is_site_admin": false,
+      "is_active": true,
+      "organization_id": "org-123",
+      "organization_name": "University of Technology",
+      "permissions": [
+        "create_courses",
+        "manage_students",
+        "access_analytics"
+      ],
+      "last_login": "2025-07-31T14:30:00Z",
+      "created_at": "2025-07-15T09:00:00Z",
+      "profile_completion": 95.5
+    }
+  ],
+  "user_statistics": {
+    "total_users": 2500,
+    "active_users": 2180,
+    "role_breakdown": {
+      "site_admin": 2,
+      "organization_admin": 45,
+      "instructor": 380,
+      "student": 2073
+    },
+    "recent_signups": 25
+  }
+}
+```
+
+#### View Platform Audit Log
+
+Access comprehensive audit log for security and compliance (Site Admin only).
+
+```http
+GET http://localhost:8008/api/v1/site-admin/audit-log?action_type=organization_created&date_from=2025-07-01&severity=high
+Authorization: Bearer <site-admin-token>
+```
+
+Query Parameters:
+- `action_type` - Filter by action (organization_created, member_added, role_changed, etc.)
+- `user_id` - Filter by user who performed action
+- `organization_id` - Filter by affected organization
+- `date_from` / `date_to` - Date range filter
+- `severity` - Filter by severity (low, medium, high, critical)
+
+Response:
+```json
+{
+  "audit_entries": [
+    {
+      "id": "audit-123",
+      "timestamp": "2025-07-31T16:45:00Z",
+      "action_type": "organization_created",
+      "severity": "medium",
+      "user_id": "admin-456",
+      "user_email": "admin@platform.com",
+      "organization_id": "org-456",
+      "target_resource": "organization",
+      "target_id": "org-456",
+      "action_details": {
+        "organization_name": "New Educational Institute",
+        "organization_slug": "new-edu-institute",
+        "initial_admin": "admin@newedu.com"
+      },
+      "ip_address": "192.168.1.100",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)...",
+      "success": true,
+      "error_message": null
+    }
+  ],
+  "audit_summary": {
+    "total_entries": 15420,
+    "filtered_entries": 25,
+    "severity_breakdown": {
+      "critical": 2,
+      "high": 8,
+      "medium": 12,
+      "low": 3
+    }
+  }
+}
+```
+
+### Permission Management
+
+#### Get User Permissions
+
+Get comprehensive permissions for a specific user.
+
+```http
+GET http://localhost:8008/api/v1/rbac/permissions/{user_id}?organization_id=org-123
+Authorization: Bearer <token>
+```
+
+Response:
+```json
+{
+  "user_id": "user-123",
+  "organization_id": "org-123",
+  "role": "instructor",
+  "permissions": {
+    "organization_permissions": [
+      "create_courses",
+      "manage_students",
+      "access_analytics",
+      "create_meeting_rooms"
+    ],
+    "project_permissions": {
+      "project-101": ["full_access", "manage_content"],
+      "project-102": ["read_only", "comment"]
+    },
+    "track_permissions": {
+      "track-123": ["instructor_access", "grade_students"]
+    },
+    "system_permissions": [
+      "access_lab_containers",
+      "view_reports"
+    ]
+  },
+  "permission_context": {
+    "organization_role": "instructor",
+    "project_count": 2,
+    "track_count": 1,
+    "effective_since": "2025-07-15T09:00:00Z"
+  }
+}
+```
+
+#### Check Specific Permission
+
+Verify if a user has a specific permission.
+
+```http
+POST http://localhost:8008/api/v1/rbac/permissions/check
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "user_id": "user-123",
+  "organization_id": "org-123",
+  "permission": "manage_meeting_rooms",
+  "resource_id": "room-456",
+  "context": {
+    "action": "update_settings",
+    "resource_type": "meeting_room"
+  }
+}
+```
+
+Response:
+```json
+{
+  "user_id": "user-123",
+  "permission": "manage_meeting_rooms",
+  "granted": true,
+  "reason": "User has instructor role with meeting room management permissions",
+  "context": {
+    "organization_id": "org-123",
+    "user_role": "instructor",
+    "resource_access": "granted"
+  },
+  "expires_at": null,
+  "checked_at": "2025-07-31T16:50:00Z"
+}
+```
+
+#### List Available Roles
+
+Get all available roles and their permissions.
+
+```http
+GET http://localhost:8008/api/v1/rbac/roles?include_system_roles=true
+Authorization: Bearer <token>
+```
+
+Response:
+```json
+{
+  "roles": [
+    {
+      "role_name": "site_admin",
+      "display_name": "Site Administrator",
+      "description": "Full platform administration access",
+      "is_system_role": true,
+      "permissions": [
+        "manage_platform",
+        "delete_organizations",
+        "manage_site_settings",
+        "view_audit_logs",
+        "manage_integrations"
+      ],
+      "restrictions": [],
+      "max_users": 5
+    },
+    {
+      "role_name": "organization_admin",
+      "display_name": "Organization Administrator",
+      "description": "Full organization management access",
+      "is_system_role": false,
+      "permissions": [
+        "manage_organization",
+        "manage_members",
+        "create_tracks",
+        "manage_meeting_rooms",
+        "view_analytics",
+        "assign_projects"
+      ],
+      "restrictions": [
+        "organization_scope_only"
+      ],
+      "max_users": null
+    },
+    {
+      "role_name": "instructor",
+      "display_name": "Instructor",
+      "description": "Course and student management access",
+      "is_system_role": false,
+      "permissions": [
+        "create_courses",
+        "manage_students",
+        "access_analytics",
+        "create_meeting_rooms"
+      ],
+      "restrictions": [
+        "assigned_projects_only"
+      ],
+      "max_users": null
+    },
+    {
+      "role_name": "student",
+      "display_name": "Student",
+      "description": "Learning and participation access",
+      "is_system_role": false,
+      "permissions": [
+        "view_courses",
+        "submit_assignments",
+        "access_labs",
+        "take_quizzes"
+      ],
+      "restrictions": [
+        "enrolled_tracks_only"
+      ],
+      "max_users": null
+    }
+  ]
+}
+```
+
+### RBAC Service Health Check
+
+Check the health and status of the Organization Management Service.
+
+```http
+GET http://localhost:8008/health
+```
+
+Response:
+```json
+{
+  "status": "healthy",
+  "service": "organization-management",
+  "version": "2.3.0",
+  "timestamp": "2025-07-31T17:00:00Z",
+  "database_status": "connected",
+  "external_integrations": {
+    "teams_api": "connected",
+    "zoom_api": "connected",
+    "email_service": "connected"
+  },
+  "system_resources": {
+    "cpu_percent": 15.2,
+    "memory_percent": 35.8,
+    "active_connections": 45
+  },
+  "feature_flags": {
+    "auto_enrollment": true,
+    "meeting_room_management": true,
+    "audit_logging": true,
+    "email_notifications": true
+  }
+}
+```
+
 ## Analytics Service (Port 8007)
 
 ### Track Student Activity
@@ -1055,6 +2026,7 @@ Each service provides interactive API documentation:
 - **Content Management**: `http://localhost:8005/docs`
 - **Lab Container Manager**: `http://localhost:8006/docs`
 - **Analytics Service**: `http://localhost:8007/docs`
+- **Organization Management (RBAC)**: `http://localhost:8008/docs`
 
 ### Example API Workflow
 
@@ -1145,11 +2117,13 @@ Use the app-control.sh script to check all services:
 
 Services must be started in dependency order:
 1. User Management (8000)
-2. Course Generator (8001)
-3. Course Management (8004)
-4. Content Storage (8003)
-5. Content Management (8005)
-6. Lab Container Manager (8006)
+2. Organization Management - RBAC (8008)
+3. Course Generator (8001)
+4. Course Management (8004)
+5. Content Storage (8003)
+6. Content Management (8005)
+7. Lab Container Manager (8006)
+8. Analytics Service (8007)
 
 ### MCP Integration
 
@@ -1189,11 +2163,30 @@ Access the web interface at:
 
 ## Platform Status
 
-**Current Version**: 2.0.0 - Enhanced with Individual Lab Container System  
-**Last Updated**: 2025-07-26  
-**Status**: Production Ready with Advanced Lab Container Management
+**Current Version**: 2.3.0 - Enhanced RBAC System with Multi-Tenant Organization Management  
+**Last Updated**: 2025-07-31  
+**Status**: Production Ready with Enhanced RBAC System and Advanced Lab Container Management
 
-### New in v2.0
+### New in v2.3 - Enhanced RBAC System
+- **Multi-Tenant Organization Management** - Comprehensive organization administration with granular permissions
+- **JWT Authentication & Authorization** - Secure role-based access control with sophisticated permission management
+- **Teams/Zoom Integration** - Automated meeting room creation and management for organizations and learning tracks
+- **Comprehensive Audit Logging** - Complete audit trail for all RBAC operations with security monitoring
+- **Automated Email Notifications** - Hydra-configured email service for member invitations and role assignments
+- **Site Administration** - Platform-wide management with organization oversight and user administration
+- **Learning Track Management** - Automatic enrollment capabilities with track-based learning paths
+- **Project-Based Access Control** - Granular permissions for project-specific resource access
+- **Complete Test Coverage** - 102 RBAC tests with 100% success rate and comprehensive code quality enforcement
+
+### Previous v2.2 - Complete Quiz Management System
+- **Course Instance-Specific Quiz Publishing** - Publish/unpublish quizzes per course instance with analytics integration
+- **Student Access Control** - Enrollment-based quiz access with attempt limitations and progress tracking
+
+### Previous v2.1 - Bi-Directional Feedback System & Multi-IDE Lab Containers
+- **Complete Bi-Directional Feedback System** - Students rate courses, instructors assess students with analytics
+- **Multi-IDE Lab Environments** - VSCode Server, JupyterLab, IntelliJ IDEA, and Terminal support with seamless switching
+
+### Previous v2.0 - Individual Lab Container System
 - **Individual Docker Lab Containers** - Per-student isolated environments
 - **Dynamic Image Building** - Custom lab environments built on-demand
 - **Automatic Lab Lifecycle Management** - Login/logout integration with persistence

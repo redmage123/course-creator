@@ -8,9 +8,9 @@ import secrets
 import string
 from passlib.context import CryptContext
 
-from ...domain.interfaces.user_repository import IUserRepository
-from ...domain.interfaces.user_service import IAuthenticationService
-from ...domain.entities.user import User
+from domain.interfaces.user_repository import IUserRepository
+from domain.interfaces.user_service import IAuthenticationService
+from domain.entities.user import User
 
 class AuthenticationService(IAuthenticationService):
     """

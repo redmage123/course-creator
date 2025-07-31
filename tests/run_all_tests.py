@@ -127,7 +127,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run comprehensive test suite")
     parser.add_argument(
         "--suite", 
-        choices=["unit", "integration", "frontend", "e2e", "security", "content", "lab", "analytics"],
+        choices=["unit", "integration", "frontend", "e2e", "security", "content", "lab", "analytics", "rbac"],
         help="Run specific test suite (default: all)"
     )
     parser.add_argument(
@@ -180,6 +180,12 @@ def main():
                 "command": "python -m pytest tests/unit/test_*.py -v --tb=short",
                 "description": "Unit Tests - Miscellaneous",
                 "timeout": 300
+            },
+            "rbac": {
+                "path": "tests/unit/rbac/",
+                "command": "python -m pytest tests/unit/rbac/ -v --tb=short",
+                "description": "Unit Tests - RBAC System",
+                "timeout": 300
             }
         },
         "integration": {
@@ -194,6 +200,12 @@ def main():
                 "command": "python -m pytest tests/integration/test_lab_lifecycle_integration.py -v --tb=short",
                 "description": "Integration Tests - Lab Lifecycle",
                 "timeout": 600
+            },
+            "rbac": {
+                "path": "tests/integration/test_rbac_api_integration.py",
+                "command": "python -m pytest tests/integration/test_rbac_api_integration.py -v --tb=short",
+                "description": "Integration Tests - RBAC API",
+                "timeout": 600
             }
         },
         "frontend": {
@@ -202,6 +214,12 @@ def main():
                 "command": "python -m pytest tests/frontend/ -v --tb=short -x",
                 "description": "Frontend Tests - JavaScript and UI Components",
                 "timeout": 600
+            },
+            "rbac": {
+                "path": "tests/frontend/test_rbac_dashboard_frontend.py",
+                "command": "python -m pytest tests/frontend/test_rbac_dashboard_frontend.py -v --tb=short",
+                "description": "Frontend Tests - RBAC Dashboard Components",
+                "timeout": 600
             }
         },
         "e2e": {
@@ -209,6 +227,12 @@ def main():
                 "path": "tests/e2e/",
                 "command": "python -m pytest tests/e2e/ -v --tb=short -s",
                 "description": "End-to-End Tests - Complete Workflows",
+                "timeout": 900
+            },
+            "rbac": {
+                "path": "tests/e2e/test_rbac_complete_workflows.py",
+                "command": "python -m pytest tests/e2e/test_rbac_complete_workflows.py -v --tb=short -s",
+                "description": "End-to-End Tests - RBAC Complete Workflows",
                 "timeout": 900
             }
         },
@@ -241,6 +265,11 @@ def main():
             "path": "tests/runners/run_analytics_tests.py", 
             "command": "python tests/runners/run_analytics_tests.py",
             "description": "Analytics System Comprehensive Tests"
+        },
+        "rbac": {
+            "path": "tests/runners/run_rbac_tests.py",
+            "command": "python tests/runners/run_rbac_tests.py",
+            "description": "Enhanced RBAC System Comprehensive Tests"
         }
     }
     

@@ -33,13 +33,20 @@ A comprehensive web-based platform for creating, managing, and delivering intera
 - **Personal Feedback History**: View all received instructor feedback and track personal progress assessments
 
 ### For Administrators
-- **User Management**: Manage instructor and student accounts with RBAC
-- **Platform Analytics**: System-wide usage and performance metrics
-- **MCP Integration**: Model Context Protocol server for enhanced AI interactions
+- **Enhanced RBAC System (v2.3)**: Comprehensive multi-tenant organization management with granular permissions, JWT authentication, and role-based access control
+- **Site Administration**: Platform-wide user management, organization oversight, system configuration, and comprehensive audit logging
+- **Organization Management**: Multi-tenant organization administration with member management, track creation, and project assignment
+- **Teams/Zoom Integration**: Automated meeting room creation and management for organizations and learning tracks with real-time status monitoring
+- **Advanced Analytics**: Platform-wide analytics, organization-specific reporting, user activity tracking, and detailed performance metrics
+- **User Management**: Manage instructor and student accounts with sophisticated role-based access control and permission management
+- **Platform Analytics**: System-wide usage and performance metrics with detailed organizational insights and trend analysis
+- **MCP Integration**: Model Context Protocol server for enhanced AI interactions and platform management
+- **Automated Email Notifications**: Hydra-configured email service for member invitations, role assignments, and system notifications
+- **Comprehensive Audit Trail**: Complete audit logging for all RBAC operations with detailed action tracking and security monitoring
 
 ## 🏗️ Architecture
 
-The platform follows a microservices architecture with 7 core backend services (including comprehensive feedback system):
+The platform follows a microservices architecture with 8 core backend services (including Enhanced RBAC System and comprehensive feedback system):
 
 ```
 course-creator/
@@ -55,6 +62,7 @@ course-creator/
 │   ├── content-storage/        # File storage & versioning (Port 8003)
 │   ├── course-management/      # Course CRUD operations + Bi-directional Feedback System (Port 8004)
 │   ├── content-management/     # Upload/download & export (Port 8005)
+│   ├── organization-management/ # Enhanced RBAC System with multi-tenant management (Port 8008)
 │   └── analytics/              # Student analytics, progress tracking & PDF reports (Port 8007)
 ├── lab-containers/             # Individual student lab container service (Port 8006)
 │   ├── main.py                 # FastAPI lab manager with Docker and multi-IDE integration
@@ -72,7 +80,7 @@ course-creator/
 
 ### Service Dependencies
 Services start in dependency order with health checks:
-User Management → Course Generator → Course Management → Content Storage → Content Management → Lab Container Manager → Analytics Service
+User Management → Organization Management (RBAC) → Course Generator → Course Management → Content Storage → Content Management → Lab Container Manager → Analytics Service
 
 ## 🛠️ Technology Stack
 
@@ -375,6 +383,15 @@ python -m pytest -m unit          # Unit tests only
 python -m pytest -m integration   # Integration tests only
 python -m pytest -m e2e          # End-to-end tests only
 
+# Enhanced RBAC System tests (comprehensive) - 102/102 tests at 100% success rate
+python tests/runners/run_rbac_tests.py                            # Complete RBAC test suite (102 tests passing)
+python tests/runners/run_rbac_tests.py --suite unit               # RBAC unit tests (48/48 passing)
+python tests/runners/run_rbac_tests.py --suite integration        # RBAC integration tests (22/22 passing)
+python tests/runners/run_rbac_tests.py --suite frontend           # RBAC frontend tests (15/15 passing)
+python tests/runners/run_rbac_tests.py --suite e2e                # RBAC E2E tests (8/8 passing)
+python tests/runners/run_rbac_tests.py --suite security           # RBAC security tests (6/6 passing)
+python tests/runners/run_rbac_tests.py --suite lint               # RBAC code quality tests (3/3 passing)
+
 # Lab container system tests (comprehensive)
 python run_lab_tests.py          # All lab container tests with reports
 python run_lab_tests.py --suite frontend  # Frontend lab integration tests
@@ -495,6 +512,47 @@ POST /progress/update       # Update student progress
 GET  /analytics/student/{id} # Get student analytics
 GET  /analytics/course/{id}  # Get course analytics
 GET  /health                # Analytics service health check
+```
+
+**Organization Management Service (Port 8008) - Enhanced RBAC System**
+```http
+# Organization Management
+GET    /api/v1/rbac/organizations                    # List user's accessible organizations
+POST   /api/v1/rbac/organizations                    # Create new organization (site admin only)
+GET    /api/v1/rbac/organizations/{org_id}           # Get organization details
+PUT    /api/v1/rbac/organizations/{org_id}           # Update organization
+DELETE /api/v1/rbac/organizations/{org_id}           # Delete organization (site admin only)
+
+# Organization Member Management
+GET    /api/v1/rbac/organizations/{org_id}/members   # List organization members
+POST   /api/v1/rbac/organizations/{org_id}/members   # Add organization member
+PUT    /api/v1/rbac/organizations/{org_id}/members/{member_id} # Update member role/permissions
+DELETE /api/v1/rbac/organizations/{org_id}/members/{member_id} # Remove organization member
+
+# Learning Track Management
+GET    /api/v1/organizations/{org_id}/tracks         # List organization tracks
+POST   /api/v1/organizations/{org_id}/tracks         # Create learning track
+PUT    /api/v1/organizations/{org_id}/tracks/{track_id} # Update track
+DELETE /api/v1/organizations/{org_id}/tracks/{track_id} # Delete track
+POST   /api/v1/tracks/{track_id}/enroll/{student_id} # Enroll student in track
+
+# Meeting Room Management
+GET    /api/v1/rbac/organizations/{org_id}/meeting-rooms # List organization meeting rooms
+POST   /api/v1/rbac/organizations/{org_id}/meeting-rooms # Create meeting room
+PUT    /api/v1/rbac/organizations/{org_id}/meeting-rooms/{room_id} # Update meeting room
+DELETE /api/v1/rbac/organizations/{org_id}/meeting-rooms/{room_id} # Delete meeting room
+
+# Site Administration (Site Admin Only)
+GET    /api/v1/site-admin/organizations              # List all organizations with statistics
+DELETE /api/v1/site-admin/organizations/{org_id}     # Delete organization with full cleanup
+GET    /api/v1/site-admin/users                      # List all platform users
+GET    /api/v1/site-admin/audit-log                  # View platform audit log
+PUT    /api/v1/site-admin/users/{user_id}/status     # Update user status (active/inactive)
+
+# Permission Management
+GET    /api/v1/rbac/permissions/{user_id}            # Get user permissions
+POST   /api/v1/rbac/permissions/check                # Check specific permission
+GET    /api/v1/rbac/roles                            # List available roles
 ```
 
 For complete API documentation, visit the `/docs` endpoint on each service.
@@ -684,23 +742,50 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
    curl -X POST http://localhost:8001/test-ai
    ```
 
+6. **RBAC/Organization Management issues** (New in v2.3)
+   ```bash
+   # Check Organization Management Service status
+   curl -s http://localhost:8008/health
+   
+   # Test RBAC authentication
+   curl -H "Authorization: Bearer your_jwt_token" http://localhost:8008/api/v1/rbac/organizations
+   
+   # Check organization service logs
+   docker logs course-creator-organization-management-1 --tail 20
+   
+   # Run RBAC test suite to validate functionality
+   python tests/runners/run_rbac_tests.py
+   
+   # Test specific RBAC components
+   python tests/runners/run_rbac_tests.py --suite unit      # Unit tests
+   python tests/runners/run_rbac_tests.py --suite security  # Security tests
+   
+   # Validate JWT token configuration
+   python -c "import jwt; print('JWT library available')"
+   ```
+
 ### Health Checks
 
 All services expose `/health` endpoints:
 
 ```bash
-# Check all services
-for port in 8000 8001 8003 8004 8005; do
+# Check all services including RBAC
+for port in 8000 8001 8003 8004 8005 8006 8007 8008; do
   curl -s http://localhost:$port/health | head -c 50
   echo " - Port $port"
 done
+
+# RBAC-specific health checks
+curl -s http://localhost:8008/health  # Organization Management Service
+curl -s http://localhost:8008/api/v1/rbac/roles  # RBAC roles endpoint
 ```
 
 ## 🎯 Current Status
 
 **✅ Completed Features:**
-- Core microservices architecture with 7 services
+- Core microservices architecture with 8 services including Enhanced RBAC System
 - AI-powered content generation with template support
+- **Enhanced RBAC System (v2.3)** - Multi-tenant organization management with granular permissions, JWT authentication, Teams/Zoom integration, and comprehensive audit logging
 - **Complete Bi-Directional Feedback System** - Students rate courses, instructors assess students with comprehensive analytics
 - **Multi-IDE Lab Containers** - VSCode Server, JupyterLab, IntelliJ IDEA, and Terminal support
 - **Individual Docker Lab Containers** - Per-student isolated environments with multi-IDE capabilities
@@ -712,13 +797,15 @@ done
 - Interactive quiz system with analytics
 - Enhanced content management with drag-and-drop upload
 - Multi-format export (PowerPoint, PDF, Excel, SCORM, ZIP)
-- User management with RBAC and secure authentication
+- User management with sophisticated RBAC and secure JWT authentication
 - Database persistence with PostgreSQL (single shared database)
-- Full Docker Compose orchestration
-- Comprehensive test suite (Unit, Integration, E2E, Frontend, Feedback) with 30+ passing tests at 100%
+- Full Docker Compose orchestration with Organization Management Service
+- **Comprehensive RBAC Test Suite** - 102 tests with 100% success rate covering unit, integration, frontend, E2E, security, and linting
+- **Complete Code Quality Infrastructure** - Python (Flake8), JavaScript (ESLint), and CSS (Stylelint) linting with automated error fixing
 - CI/CD pipeline with security scanning and automated deployment
 - MCP integration for Claude Desktop
 - Student file download capabilities with individual and bulk ZIP exports
+- **Automated Email Notifications** - Hydra-configured email service for RBAC operations
 
 **🔄 In Progress:**
 - Mobile responsiveness improvements
@@ -735,10 +822,11 @@ done
 
 ---
 
-**Project Status**: Production Ready with Multi-IDE Lab Container System  
-**Version**: 2.1.0  
-**Last Updated**: 2025-07-27  
-**New in v2.1**: Complete bi-directional feedback system, multi-IDE support (VSCode, Jupyter, IntelliJ), seamless IDE switching, enhanced resource management  
-**Previous v2.0**: Individual Docker lab containers, automatic lifecycle management, instructor controls, comprehensive testing
+**Project Status**: Production Ready with Enhanced RBAC System  
+**Version**: 2.3.0  
+**Last Updated**: 2025-07-31  
+**New in v2.3**: Enhanced RBAC System with multi-tenant organization management, granular permissions, Teams/Zoom integration, comprehensive audit logging, 102 RBAC tests with 100% success rate, complete code quality infrastructure with automated linting  
+**Previous v2.2**: Complete quiz management system with course publishing  
+**Previous v2.1**: Complete bi-directional feedback system, multi-IDE support (VSCode, Jupyter, IntelliJ), seamless IDE switching, enhanced resource management
 
 For detailed development information, see [CLAUDE.md](CLAUDE.md) for comprehensive setup and development instructions.# Test trigger Tue Jul 29 09:23:40 AM UTC 2025

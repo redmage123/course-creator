@@ -4,6 +4,8 @@ Content Storage Service - Refactored with SOLID Principles
 """
 
 import logging
+import os
+import sys
 import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
@@ -12,6 +14,17 @@ from fastapi.responses import JSONResponse
 from omegaconf import DictConfig
 import hydra
 import uvicorn
+
+try:
+    from logging_setup import setup_docker_logging
+except ImportError:
+    # Fallback if config module not available
+    def setup_docker_logging(service_name: str, log_level: str = "INFO"):
+        logging.basicConfig(
+            level=getattr(logging, log_level.upper()),
+            format='%(asctime)s %(hostname)s %(name)s[%(process)d]: %(levelname)s - %(message)s'
+        )
+        return logging.getLogger(service_name)
 
 from config.database import DatabaseManager
 from repositories.content_repository import ContentRepository
@@ -62,7 +75,7 @@ async def lifespan(app: FastAPI):
         yield
         
     except Exception as e:
-        logger.error(f"Failed to initialize service: {e}")
+        logger.error("Failed to initialize service: %s", e)
         raise
     finally:
         # Cleanup
@@ -137,7 +150,7 @@ def create_app(config: DictConfig) -> FastAPI:
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):
         logger = logging.getLogger(__name__)
-        logger.error(f"Unhandled exception: {exc}", exc_info=True)
+        logger.error("Unhandled exception: %s", exc, exc_info=True)
         return JSONResponse(
             status_code=500,
             content={"detail": "Internal server error"}
@@ -170,12 +183,11 @@ def setup_dependency_injection():
 @hydra.main(config_path="conf", config_name="config", version_base=None)
 def main(cfg: DictConfig) -> None:
     """Main entry point."""
-    # Setup logging
-    logging.basicConfig(
-        level=cfg.log.level,
-        format=cfg.log.format
-    )
-    logger = logging.getLogger(__name__)
+    # Setup centralized logging with syslog format
+    service_name = os.environ.get('SERVICE_NAME', 'content-storage')
+    log_level = os.environ.get('LOG_LEVEL', getattr(cfg, 'log', {}).get('level', 'INFO'))
+    
+    logger = setup_docker_logging(service_name, log_level)
     
     # Create FastAPI app
     app = create_app(cfg)
@@ -185,13 +197,15 @@ def main(cfg: DictConfig) -> None:
     
     logger.info("Starting Content Storage Service...")
     
-    # Run the server
+    # Run the server with reduced uvicorn logging to avoid duplicates
     uvicorn.run(
         app,
         host=cfg.server.host,
         port=cfg.server.port,
         reload=cfg.server.reload,
-        log_config=None  # Use our logging configuration
+        log_level="warning",  # Reduce uvicorn log level since we have our own logging
+        access_log=False,     # Disable uvicorn access log since we log via middleware
+        log_config=None       # Use our logging configuration
     )
 
 

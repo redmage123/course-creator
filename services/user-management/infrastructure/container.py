@@ -8,20 +8,20 @@ from typing import Optional
 from omegaconf import DictConfig
 
 # Domain interfaces
-from ..domain.interfaces.user_repository import IUserRepository
-from ..domain.interfaces.session_repository import ISessionRepository
-from ..domain.interfaces.role_repository import IRoleRepository
-from ..domain.interfaces.user_service import IUserService, IAuthenticationService
-from ..domain.interfaces.session_service import ISessionService, ITokenService
+from domain.interfaces.user_repository import IUserRepository
+from domain.interfaces.session_repository import ISessionRepository
+from domain.interfaces.role_repository import IRoleRepository
+from domain.interfaces.user_service import IUserService, IAuthenticationService
+from domain.interfaces.session_service import ISessionService, ITokenService
 
 # Application services
-from ..application.services.user_service import UserService
-from ..application.services.authentication_service import AuthenticationService
-from ..application.services.session_service import SessionService, TokenService
+from application.services.user_service import UserService
+from application.services.authentication_service import AuthenticationService
+from application.services.session_service import SessionService, TokenService
 
 # Infrastructure implementations
-from .repositories.postgresql_user_repository import PostgreSQLUserRepository
-from .repositories.postgresql_session_repository import PostgreSQLSessionRepository
+from infrastructure.repositories.postgresql_user_repository import PostgreSQLUserRepository
+from infrastructure.repositories.postgresql_session_repository import PostgreSQLSessionRepository
 
 class UserManagementContainer:
     """

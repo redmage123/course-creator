@@ -13,9 +13,22 @@ from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordBearer
 from typing import List, Optional
 import logging
+import os
+import sys
 import hydra
 from omegaconf import DictConfig
 import uvicorn
+
+try:
+    from logging_setup import setup_docker_logging
+except ImportError:
+    # Fallback if config module not available
+    def setup_docker_logging(service_name: str, log_level: str = "INFO"):
+        logging.basicConfig(
+            level=getattr(logging, log_level.upper()),
+            format='%(asctime)s %(hostname)s %(name)s[%(process)d]: %(levelname)s - %(message)s'
+        )
+        return logging.getLogger(service_name)
 from contextlib import asynccontextmanager
 from datetime import datetime
 
@@ -194,10 +207,10 @@ async def create_course(
         return _course_to_response(created_course)
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logging.error(f"Error creating course: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error creating course: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.get("/courses/{course_id}", response_model=CourseResponse)
 async def get_course(
@@ -215,8 +228,8 @@ async def get_course(
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"Error getting course: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error getting course: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.get("/courses", response_model=List[CourseResponse])
 async def get_instructor_courses(
@@ -229,8 +242,8 @@ async def get_instructor_courses(
         return [_course_to_response(course) for course in courses]
         
     except Exception as e:
-        logging.error(f"Error getting instructor courses: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error getting instructor courses: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.put("/courses/{course_id}", response_model=CourseResponse)
 async def update_course(
@@ -270,10 +283,10 @@ async def update_course(
     except HTTPException:
         raise
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logging.error(f"Error updating course: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error updating course: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.post("/courses/{course_id}/publish", response_model=CourseResponse)
 async def publish_course(
@@ -287,10 +300,10 @@ async def publish_course(
         return _course_to_response(published_course)
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logging.error(f"Error publishing course: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error publishing course: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.post("/courses/{course_id}/unpublish", response_model=CourseResponse)
 async def unpublish_course(
@@ -304,10 +317,10 @@ async def unpublish_course(
         return _course_to_response(unpublished_course)
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logging.error(f"Error unpublishing course: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error unpublishing course: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.delete("/courses/{course_id}")
 async def delete_course(
@@ -324,10 +337,10 @@ async def delete_course(
             raise HTTPException(status_code=400, detail="Failed to delete course")
             
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logging.error(f"Error deleting course: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error deleting course: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 # Enrollment Endpoints
 @app.post("/enrollments")
@@ -346,10 +359,10 @@ async def enroll_student(
         return {"message": "Student enrolled successfully", "enrollment_id": enrollment.id}
         
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logging.error(f"Error enrolling student: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error enrolling student: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 # Health check endpoint
 @app.get("/health")
@@ -383,25 +396,24 @@ def main(cfg: DictConfig) -> None:
     global current_config
     current_config = cfg
     
-    # Setup logging
-    logging.basicConfig(
-        level=getattr(logging, cfg.logging.level.upper()),
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
+    # Setup centralized logging with syslog format
+    service_name = os.environ.get('SERVICE_NAME', 'course-management')
+    log_level = os.environ.get('LOG_LEVEL', getattr(cfg, 'logging', {}).get('level', 'INFO'))
     
-    logger = logging.getLogger(__name__)
+    logger = setup_docker_logging(service_name, log_level)
     logger.info(f"Starting Course Management Service on port {cfg.server.port}")
     
     # Create app with configuration
     global app
     app = create_app(cfg)
     
-    # Run server
+    # Run server with reduced uvicorn logging to avoid duplicates
     uvicorn.run(
         app,
         host=cfg.server.host,
         port=cfg.server.port,
-        log_level=cfg.logging.level.lower()
+        log_level="warning",  # Reduce uvicorn log level since we have our own logging
+        access_log=False      # Disable uvicorn access log since we log via middleware
     )
 
 if __name__ == "__main__":

@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organization Administration - Course Creator</title>
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/components.css">
+    <style>
+        .org-admin-container {
+            display: flex;
+            min-height: 100vh;
+            background-color: var(--background-color);
+        }
+
+        .sidebar {
+            width: 280px;
+            background: var(--card-background);
+            border-right: 1px solid var(--border-color);
+            padding: 2rem 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+        }
+
+        .org-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+
+        .org-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--card-background);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            display: block;
+        }
+
+        .tab-nav {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tab-btn {
+            padding: 1rem 1.5rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            border-bottom-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card-background);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .data-table th {
+            background: var(--primary-color);
+            color: white;
+            font-weight: 600;
+        }
+
+        .data-table tr:hover {
+            background: var(--hover-color);
+        }
+
+        .action-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 0.25rem;
+            font-size: 0.875rem;
+        }
+
+        .btn-edit {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .btn-delete {
+            background: var(--error-color);
+            color: white;
+        }
+
+        .btn-add {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: var(--card-background);
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            position: relative;
+        }
+
+        .close {
+            position: absolute;
+            right: 1rem;
+            top: 1rem;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .role-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .role-org-admin {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .role-instructor {
+            background: var(--info-color);
+            color: white;
+        }
+
+        .role-student {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .status-active {
+            color: var(--success-color);
+            font-weight: 600;
+        }
+
+        .status-inactive {
+            color: var(--error-color);
+            font-weight: 600;
+        }
+
+        .project-card {
+            background: var(--card-background);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .project-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .project-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-draft {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .status-active {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .status-completed {
+            background: var(--info-color);
+            color: white;
+        }
+
+        .target-roles {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .role-tag {
+            background: var(--secondary-color);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 1rem;
+            }
+
+            .org-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="org-admin-container">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div style="padding: 0 1.5rem;">
+                <h2 style="margin: 0 0 2rem 0; color: var(--primary-color);">Organization Admin</h2>
+                
+                <div class="org-info" style="margin-bottom: 2rem; padding: 1rem; background: var(--hover-color); border-radius: 8px;">
+                    <h4 id="orgName" style="margin: 0 0 0.5rem 0;">Loading...</h4>
+                    <p id="orgDomain" style="margin: 0; color: var(--text-muted); font-size: 0.875rem;"></p>
+                </div>
+
+                <ul style="list-style: none; padding: 0; margin: 0;">
+                    <li style="margin-bottom: 0.5rem;">
+                        <a href="#overview" class="nav-link active" data-tab="overview">
+                            📊 Overview
+                        </a>
+                    </li>
+                    <li style="margin-bottom: 0.5rem;">
+                        <a href="#projects" class="nav-link" data-tab="projects">
+                            🎯 Projects
+                        </a>
+                    </li>
+                    <li style="margin-bottom: 0.5rem;">
+                        <a href="#instructors" class="nav-link" data-tab="instructors">
+                            👨‍🏫 Instructors
+                        </a>
+                    </li>
+                    <li style="margin-bottom: 0.5rem;">
+                        <a href="#members" class="nav-link" data-tab="members">
+                            👥 Members
+                        </a>
+                    </li>
+                    <li style="margin-bottom: 0.5rem;">
+                        <a href="#settings" class="nav-link" data-tab="settings">
+                            ⚙️ Settings
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Organization Header -->
+            <div class="org-header">
+                <h1 id="orgTitle">Organization Dashboard</h1>
+                <p id="orgDescription">Manage your organization's training programs and team members</p>
+            </div>
+
+            <!-- Overview Tab -->
+            <div id="overview" class="tab-content active">
+                <div class="org-stats">
+                    <div class="stat-card">
+                        <span class="stat-number" id="totalProjects">0</span>
+                        <span>Active Projects</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="totalInstructors">0</span>
+                        <span>Instructors</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="totalMembers">0</span>
+                        <span>Total Members</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" id="totalCourses">0</span>
+                        <span>Courses</span>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                    <div>
+                        <h3>Recent Projects</h3>
+                        <div id="recentProjects">
+                            <!-- Recent projects will be loaded here -->
+                        </div>
+                    </div>
+                    <div>
+                        <h3>Recent Activity</h3>
+                        <div id="recentActivity">
+                            <!-- Recent activity will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Projects Tab -->
+            <div id="projects" class="tab-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2>Training Projects</h2>
+                    <button class="btn btn-primary" onclick="showCreateProjectModal()">
+                        ➕ Create Project
+                    </button>
+                </div>
+
+                <div id="projectsList">
+                    <!-- Projects will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Instructors Tab -->
+            <div id="instructors" class="tab-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2>Instructors</h2>
+                    <button class="btn btn-primary" onclick="showAddInstructorModal()">
+                        ➕ Add Instructor
+                    </button>
+                </div>
+
+                <table class="data-table" id="instructorsTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Joined</th>
+                            <th>Last Login</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Instructor data will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Members Tab -->
+            <div id="members" class="tab-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2>Organization Members</h2>
+                    <button class="btn btn-primary" onclick="showAddMemberModal()">
+                        ➕ Add Member
+                    </button>
+                </div>
+
+                <table class="data-table" id="membersTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Projects</th>
+                            <th>Joined</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Member data will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settings" class="tab-content">
+                <h2>Organization Settings</h2>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                    <div>
+                        <h3>General Settings</h3>
+                        <form id="orgSettingsForm">
+                            <div class="form-group">
+                                <label for="orgNameSetting">Organization Name</label>
+                                <input type="text" id="orgNameSetting" name="name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="orgDescriptionSetting">Description</label>
+                                <textarea id="orgDescriptionSetting" name="description"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="orgDomainSetting">Email Domain</label>
+                                <input type="text" id="orgDomainSetting" name="domain" placeholder="company.com">
+                            </div>
+                            <div class="form-group">
+                                <label for="orgLogoSetting">Logo URL</label>
+                                <input type="url" id="orgLogoSetting" name="logo_url">
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Settings</button>
+                        </form>
+                    </div>
+                    <div>
+                        <h3>Preferences</h3>
+                        <form id="orgPreferencesForm">
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="autoAssignByDomain" name="auto_assign_by_domain">
+                                    Auto-assign users by email domain
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="enableProjectTemplates" name="enable_project_templates">
+                                    Enable project templates
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="enableCustomBranding" name="enable_custom_branding">
+                                    Enable custom branding
+                                </label>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Save Preferences</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Instructor Modal -->
+    <div id="addInstructorModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('addInstructorModal')">&times;</span>
+            <h2>Add New Instructor</h2>
+            <form id="addInstructorForm">
+                <div class="form-group">
+                    <label for="instructorEmail">Email Address *</label>
+                    <input type="email" id="instructorEmail" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="instructorFirstName">First Name *</label>
+                    <input type="text" id="instructorFirstName" name="first_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="instructorLastName">Last Name *</label>
+                    <input type="text" id="instructorLastName" name="last_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="instructorRole">Role</label>
+                    <select id="instructorRole" name="role">
+                        <option value="instructor">Instructor</option>
+                        <option value="project_manager">Project Manager</option>
+                        <option value="org_admin">Organization Admin</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="sendWelcomeEmail" name="send_welcome_email" checked>
+                        Send welcome email
+                    </label>
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addInstructorModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Instructor</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Project Modal -->
+    <div id="createProjectModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('createProjectModal')">&times;</span>
+            <h2>Create New Project</h2>
+            <form id="createProjectForm">
+                <div class="form-group">
+                    <label for="projectName">Project Name *</label>
+                    <input type="text" id="projectName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="projectSlug">URL Slug *</label>
+                    <input type="text" id="projectSlug" name="slug" required pattern="^[a-z0-9-]+$">
+                    <small>Only lowercase letters, numbers, and hyphens allowed</small>
+                </div>
+                <div class="form-group">
+                    <label for="projectDescription">Description</label>
+                    <textarea id="projectDescription" name="description"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="projectTargetRoles">Target Roles (one per line)</label>
+                    <textarea id="projectTargetRoles" name="target_roles" placeholder="Application Developer&#10;Business Analyst&#10;Operations Engineer"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="projectDuration">Duration (weeks)</label>
+                    <input type="number" id="projectDuration" name="duration_weeks" min="1" max="52">
+                </div>
+                <div class="form-group">
+                    <label for="projectMaxParticipants">Maximum Participants</label>
+                    <input type="number" id="projectMaxParticipants" name="max_participants" min="1">
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label for="projectStartDate">Start Date</label>
+                        <input type="date" id="projectStartDate" name="start_date">
+                    </div>
+                    <div class="form-group">
+                        <label for="projectEndDate">End Date</label>
+                        <input type="date" id="projectEndDate" name="end_date">
+                    </div>
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('createProjectModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Member Modal -->
+    <div id="addMemberModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('addMemberModal')">&times;</span>
+            <h2>Add Organization Member</h2>
+            <form id="addMemberForm">
+                <div class="form-group">
+                    <label for="memberEmail">Email Address *</label>
+                    <input type="email" id="memberEmail" name="user_email" required>
+                </div>
+                <div class="form-group">
+                    <label for="memberRole">Role</label>
+                    <select id="memberRole" name="role">
+                        <option value="student">Student</option>
+                        <option value="instructor">Instructor</option>
+                        <option value="project_manager">Project Manager</option>
+                        <option value="org_admin">Organization Admin</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('addMemberModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Member</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/config.js"></script>
+    <script src="../js/modules/auth.js"></script>
+    <script src="../js/modules/notifications.js"></script>
+    <script src="../js/org-admin-dashboard.js"></script>
+</body>
+</html>

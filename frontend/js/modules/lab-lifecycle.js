@@ -25,7 +25,6 @@ class LabLifecycleManager {
         }
 
         this.currentUser = user;
-        console.log('Initializing Lab Lifecycle Manager for user:', user);
 
         try {
             // Load enrolled courses for the user
@@ -41,7 +40,6 @@ class LabLifecycleManager {
             this.setupWindowUnloadHandler();
             
             this.isInitialized = true;
-            console.log('Lab Lifecycle Manager initialized successfully');
             
         } catch (error) {
             console.error('Error initializing Lab Lifecycle Manager:', error);
@@ -68,7 +66,6 @@ class LabLifecycleManager {
                 this.enrolledCourses = JSON.parse(storedCourses);
             }
             
-            console.log('Loaded enrolled courses:', this.enrolledCourses);
             
         } catch (error) {
             console.error('Error loading enrolled courses:', error);
@@ -81,11 +78,9 @@ class LabLifecycleManager {
      */
     async initializeUserLabs() {
         if (!this.currentUser || this.enrolledCourses.length === 0) {
-            console.log('No enrolled courses found, skipping lab initialization');
             return;
         }
 
-        console.log('Initializing labs for enrolled courses...');
 
         for (const course of this.enrolledCourses) {
             try {
@@ -106,7 +101,6 @@ class LabLifecycleManager {
                 course_id: courseId
             };
 
-            console.log('Getting or creating student lab:', requestData);
 
             const response = await fetch(`${this.labApiBase}/labs/student`, {
                 method: 'POST',
@@ -121,7 +115,6 @@ class LabLifecycleManager {
                 const labData = await response.json();
                 this.activeLabs[courseId] = labData;
                 
-                console.log(`Lab initialized for course ${courseId}:`, labData);
                 
                 // Show notification if lab is ready
                 if (labData.status === 'running') {
@@ -190,7 +183,6 @@ class LabLifecycleManager {
      * Pause all active labs (called on logout or window unload)
      */
     async pauseAllLabs() {
-        console.log('Pausing all active labs...');
 
         const pausePromises = Object.entries(this.activeLabs).map(async ([courseId, labData]) => {
             if (labData.status === 'running') {
@@ -203,7 +195,6 @@ class LabLifecycleManager {
                     });
 
                     if (response.ok) {
-                        console.log(`Lab paused for course ${courseId}`);
                         this.activeLabs[courseId].status = 'paused';
                     } else {
                         console.error(`Failed to pause lab for course ${courseId}`);
@@ -215,14 +206,12 @@ class LabLifecycleManager {
         });
 
         await Promise.allSettled(pausePromises);
-        console.log('All labs paused');
     }
 
     /**
      * Resume all paused labs (called on login)
      */
     async resumeAllLabs() {
-        console.log('Resuming all paused labs...');
 
         const resumePromises = Object.entries(this.activeLabs).map(async ([courseId, labData]) => {
             if (labData.status === 'paused') {
@@ -235,7 +224,6 @@ class LabLifecycleManager {
                     });
 
                     if (response.ok) {
-                        console.log(`Lab resumed for course ${courseId}`);
                         this.activeLabs[courseId].status = 'running';
                     } else {
                         console.error(`Failed to resume lab for course ${courseId}`);
@@ -247,7 +235,6 @@ class LabLifecycleManager {
         });
 
         await Promise.allSettled(resumePromises);
-        console.log('All labs resumed');
     }
 
     /**
@@ -286,7 +273,6 @@ class LabLifecycleManager {
             await this.performLabHealthCheck();
         }, 5 * 60 * 1000);
 
-        console.log('Lab health checks started');
     }
 
     /**
@@ -296,7 +282,6 @@ class LabLifecycleManager {
         if (this.labCheckInterval) {
             clearInterval(this.labCheckInterval);
             this.labCheckInterval = null;
-            console.log('Lab health checks stopped');
         }
     }
 
@@ -304,7 +289,6 @@ class LabLifecycleManager {
      * Perform health check on all active labs
      */
     async performLabHealthCheck() {
-        console.log('Performing lab health check...');
 
         for (const [courseId, labData] of Object.entries(this.activeLabs)) {
             try {
@@ -379,7 +363,6 @@ class LabLifecycleManager {
      * Clean up resources and pause all labs
      */
     async cleanup() {
-        console.log('Cleaning up Lab Lifecycle Manager...');
         
         this.stopLabHealthChecks();
         await this.pauseAllLabs();
@@ -389,7 +372,6 @@ class LabLifecycleManager {
         this.currentUser = null;
         this.isInitialized = false;
         
-        console.log('Lab Lifecycle Manager cleaned up');
     }
 
     /**

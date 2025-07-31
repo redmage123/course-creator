@@ -54,7 +54,6 @@ export class ActivityTracker {
         // Start monitoring
         this.activityCheckInterval = setInterval(this.checkActivity, this.ACTIVITY_CHECK_INTERVAL);
         
-        console.log('Activity tracking started');
     }
 
     /**
@@ -82,7 +81,6 @@ export class ActivityTracker {
             existingWarning.remove();
         }
         
-        console.log('Activity tracking stopped');
     }
 
     /**
@@ -220,7 +218,7 @@ export class ActivityTracker {
         
         // Redirect to login
         setTimeout(() => {
-            window.location.href = 'index.html';
+            window.location.href = 'html/index.html';
         }, 2000);
     }
 

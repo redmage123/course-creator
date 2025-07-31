@@ -8,8 +8,8 @@ from datetime import datetime, timedelta
 import asyncpg
 import json
 
-from ...domain.interfaces.user_repository import IUserRepository
-from ...domain.entities.user import User, UserRole, UserStatus
+from domain.interfaces.user_repository import IUserRepository
+from domain.entities.user import User, UserRole, UserStatus
 
 class PostgreSQLUserRepository(IUserRepository):
     """

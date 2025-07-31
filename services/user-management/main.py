@@ -13,9 +13,22 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from typing import List, Optional, Dict, Any
 import logging
+import os
+import sys
 import hydra
 from omegaconf import DictConfig
 import uvicorn
+
+try:
+    from logging_setup import setup_docker_logging
+except ImportError:
+    # Fallback if config module not available
+    def setup_docker_logging(service_name: str, log_level: str = "INFO"):
+        logging.basicConfig(
+            level=getattr(logging, log_level.upper()),
+            format='%(asctime)s %(hostname)s %(name)s[%(process)d]: %(levelname)s - %(message)s'
+        )
+        return logging.getLogger(service_name)
 from contextlib import asynccontextmanager
 from datetime import datetime
 
@@ -156,6 +169,17 @@ def create_app(config: DictConfig) -> FastAPI:
         allow_headers=["*"],
     )
     
+    # Health check endpoint
+    @app.get("/health")
+    async def health_check():
+        """Health check endpoint"""
+        return {
+            "status": "healthy",
+            "service": "user-management",
+            "version": "2.0.0",
+            "timestamp": datetime.utcnow()
+        }
+    
     return app
 
 app = create_app(current_config or {})
@@ -217,8 +241,8 @@ async def register(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logging.error(f"Error registering user: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error registering user: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.post("/auth/login", response_model=TokenResponse)
 async def login(
@@ -246,8 +270,8 @@ async def login(
     except HTTPException:
         raise
     except Exception as e:
-        logging.error(f"Error during login: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error during login: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.post("/auth/logout")
 async def logout(
@@ -260,7 +284,7 @@ async def logout(
         return {"message": "Successfully logged out"}
         
     except Exception as e:
-        logging.error(f"Error during logout: {e}")
+        logging.error("Error during logout: %s", e)
         # Don't return error - logout should always succeed
         return {"message": "Logged out"}
 
@@ -286,8 +310,8 @@ async def change_password(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logging.error(f"Error changing password: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error changing password: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.post("/auth/password/reset")
 async def reset_password(
@@ -307,8 +331,8 @@ async def reset_password(
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        logging.error(f"Error resetting password: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error resetting password: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 # User Management Endpoints
 @app.get("/users/me", response_model=UserResponse)
@@ -331,8 +355,8 @@ async def update_profile(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logging.error(f"Error updating profile: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error updating profile: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.get("/users/search")
 async def search_users(
@@ -349,8 +373,8 @@ async def search_users(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logging.error(f"Error searching users: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error searching users: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 # Session Management Endpoints
 @app.get("/sessions/me", response_model=List[SessionResponse])
@@ -364,8 +388,8 @@ async def get_my_sessions(
         return [_session_to_response(session) for session in sessions]
         
     except Exception as e:
-        logging.error(f"Error getting sessions: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error getting sessions: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.delete("/sessions/all")
 async def revoke_all_sessions(
@@ -378,8 +402,8 @@ async def revoke_all_sessions(
         return {"message": f"Revoked {count} sessions"}
         
     except Exception as e:
-        logging.error(f"Error revoking sessions: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error revoking sessions: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 # Admin Endpoints (require admin role)
 @app.get("/admin/users", response_model=List[UserResponse])
@@ -399,8 +423,8 @@ async def get_all_users(
         return [_user_to_response(user) for user in users]
         
     except Exception as e:
-        logging.error(f"Error getting users: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error getting users: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.get("/admin/statistics")
 async def get_user_statistics(
@@ -416,19 +440,9 @@ async def get_user_statistics(
         return stats
         
     except Exception as e:
-        logging.error(f"Error getting statistics: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logging.error("Error getting statistics: %s", e)
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
-# Health check endpoint
-@app.get("/health")
-async def health_check():
-    """Health check endpoint"""
-    return {
-        "status": "healthy",
-        "service": "user-management",
-        "version": "2.0.0",
-        "timestamp": datetime.utcnow()
-    }
 
 # Helper functions (following Single Responsibility)
 def _user_to_response(user: User) -> UserResponse:
@@ -475,25 +489,24 @@ def main(cfg: DictConfig) -> None:
     global current_config
     current_config = cfg
     
-    # Setup logging
-    logging.basicConfig(
-        level=getattr(logging, cfg.logging.level.upper()),
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
+    # Setup centralized logging with syslog format
+    service_name = os.environ.get('SERVICE_NAME', 'user-management')
+    log_level = os.environ.get('LOG_LEVEL', getattr(cfg, 'log', {}).get('level', 'INFO'))
     
-    logger = logging.getLogger(__name__)
+    logger = setup_docker_logging(service_name, log_level)
     logger.info(f"Starting User Management Service on port {cfg.server.port}")
     
     # Create app with configuration
     global app
     app = create_app(cfg)
     
-    # Run server
+    # Run server with reduced uvicorn logging to avoid duplicates
     uvicorn.run(
         app,
         host=cfg.server.host,
         port=cfg.server.port,
-        log_level=cfg.logging.level.lower()
+        log_level="warning",  # Reduce uvicorn log level since we have our own logging
+        access_log=False      # Disable uvicorn access log since we log via middleware
     )
 
 if __name__ == "__main__":

@@ -37,7 +37,6 @@ async function initializeLab(options = {}) {
             labController.loadState(labOptions.sessionId);
         }
 
-        console.log('Lab environment initialized successfully');
         return labController;
 
     } catch (error) {

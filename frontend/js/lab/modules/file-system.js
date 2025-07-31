@@ -17,7 +17,6 @@ export class VirtualFileSystem {
                 'examples': {
                     'hello.sh': '#!/bin/bash\necho "Hello from the lab!"',
                     'test.py': 'print("Python in the lab!")',
-                    'example.js': 'console.log("JavaScript in the lab!");',
                     'hello.c': '#include <stdio.h>\nint main() {\n    printf("C programming in the lab!\\n");\n    return 0;\n}'
                 },
                 'workspace': {
