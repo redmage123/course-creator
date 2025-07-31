@@ -7,6 +7,7 @@ import { Auth } from './auth.js';
 import { Navigation } from './navigation.js';
 import { showNotification } from './notifications.js';
 import UIComponents from './ui-components.js';
+import { ActivityTracker } from './activity-tracker.js';
 
 class App {
     constructor() {
@@ -45,6 +46,13 @@ class App {
             
             // Initialize navigation
             Navigation.init();
+            
+            // Initialize activity tracking for dashboard pages
+            if (this.currentPage.includes('dashboard')) {
+                this.activityTracker = new ActivityTracker();
+                this.activityTracker.start();
+                console.log('Activity tracking initialized');
+            }
             
             // Setup global function exports for backward compatibility
             this.setupGlobalExports();
