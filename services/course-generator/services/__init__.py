@@ -7,10 +7,10 @@ repositories and AI components.
 """
 
 # Only import services that don't have relative imports
-from .quiz_service import QuizService
-from .exercise_generation_service import ExerciseGenerationService
-from .lab_environment_service import LabEnvironmentService
-from .ai_service import AIService
+from services.quiz_service import QuizService
+from services.exercise_generation_service import ExerciseGenerationService
+from services.lab_environment_service import LabEnvironmentService
+from services.ai_service import AIService
 
 __all__ = [
     "QuizService",

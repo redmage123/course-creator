@@ -1,19 +1,108 @@
 """
-Course Service Implementation
-Single Responsibility: Implement course management business logic
-Dependency Inversion: Depends on repository abstraction, not concrete implementation
+Course Service Implementation - Comprehensive Educational Content Management
+
+This module implements the course service layer, orchestrating complex business workflows
+for course lifecycle management within the educational platform. It serves as the primary
+business logic coordinator between the API layer and the domain/infrastructure layers.
+
+ARCHITECTURAL RESPONSIBILITIES:
+The CourseService encapsulates all course-related business operations, enforcing domain
+rules, coordinating with external services, and maintaining data consistency across the
+educational platform's course management workflows.
+
+BUSINESS WORKFLOW ORCHESTRATION:
+1. Course Creation: Validation, ID generation, and initial state setup
+2. Publication Lifecycle: Draft → Published → Archived state management
+3. Content Validation: Educational standards and quality assurance
+4. Instructor Authorization: Ownership verification and permission enforcement
+5. Search and Discovery: Content filtering and categorization support
+6. Analytics Integration: Performance metrics and statistical reporting
+
+DOMAIN RULE ENFORCEMENT:
+- Course Quality Standards: Minimum content requirements for publication
+- Instructor Ownership: Secure course access and modification controls
+- Educational Taxonomy: Proper categorization and difficulty classification
+- Enrollment Constraints: Active enrollment validation before course deletion
+- Publication Requirements: Comprehensive readiness validation
+
+INTEGRATION PATTERNS:
+- Repository Pattern: Clean separation between business logic and data persistence
+- Domain Events: Course lifecycle events for analytics and notification systems
+- Service Composition: Coordination with enrollment and feedback services
+- External APIs: Integration with content management and user services
+
+EDUCATIONAL PLATFORM FEATURES:
+- Course Duplication: Efficient course template and variant management
+- Statistical Reporting: Enrollment metrics and performance analytics
+- Search Functionality: Advanced filtering and content discovery
+- Quality Assurance: Educational standards validation and enforcement
+- Lifecycle Management: Complete course state and transition control
+
+PERFORMANCE OPTIMIZATION:
+- Lazy Loading: Efficient data access patterns for course-related entities
+- Caching Strategy: Optimized retrieval for frequently accessed course data
+- Batch Operations: Efficient processing for bulk course management
+- Async Operations: Non-blocking I/O for database and external service interactions
+
+BUSINESS INTELLIGENCE:
+- Course Analytics: Enrollment trends, completion rates, and revenue tracking
+- Instructor Insights: Teaching effectiveness and content performance metrics
+- Platform Metrics: Usage patterns and educational outcome analysis
+- Quality Metrics: Content effectiveness and student satisfaction correlation
+
+ERROR HANDLING AND RESILIENCE:
+- Validation Errors: Comprehensive input validation with educational context
+- Authorization Failures: Secure error handling for access control violations
+- Data Consistency: Transaction management for multi-step operations
+- External Dependencies: Graceful degradation for service unavailability
 """
 import uuid
 from datetime import datetime
 from typing import List, Optional
-from ...domain.entities.course import Course, CourseStatistics, DifficultyLevel, DurationUnit
-from ...domain.interfaces.course_repository import ICourseRepository
-from ...domain.interfaces.course_service import ICourseService
-from ...domain.interfaces.enrollment_repository import IEnrollmentRepository
+from domain.entities.course import Course, CourseStatistics, DifficultyLevel, DurationUnit
+from domain.interfaces.course_repository import ICourseRepository
+from domain.interfaces.course_service import ICourseService
+from domain.interfaces.enrollment_repository import IEnrollmentRepository
 
 class CourseService(ICourseService):
     """
-    Course service implementation with business logic
+    Comprehensive course management service implementing educational business workflows.
+    
+    This service coordinates all course-related operations, from initial creation through
+    publication, enrollment management, and eventual archival. It enforces educational
+    standards, maintains data integrity, and provides rich analytics integration.
+    
+    DESIGN PRINCIPLES:
+    - Single Responsibility: Focused exclusively on course management business logic
+    - Dependency Inversion: Depends on repository abstractions for data persistence
+    - Open/Closed: Extensible through composition and interface implementation
+    - Interface Segregation: Clean contract definition via ICourseService interface
+    
+    BUSINESS CAPABILITIES:
+    1. Course Lifecycle Management: Complete CRUD operations with state transitions
+    2. Quality Assurance: Educational standards validation and publication requirements
+    3. Instructor Authorization: Secure ownership verification and permission enforcement
+    4. Discovery Services: Advanced search, filtering, and categorization support
+    5. Analytics Integration: Performance metrics and statistical reporting
+    6. Content Management: Duplication, templating, and variant management
+    
+    EDUCATIONAL WORKFLOWS:
+    - Creation Process: Metadata validation → ID generation → Persistence → Event publishing
+    - Publication Workflow: Readiness validation → State transition → Visibility control
+    - Modification Process: Ownership verification → Business rule validation → Update persistence
+    - Deletion Process: Dependency validation → Authorization check → Soft/hard deletion
+    
+    INTEGRATION COORDINATION:
+    - Enrollment Service: Validates active enrollments before course modifications
+    - Analytics Service: Provides course performance and statistical data
+    - Content Service: Coordinates with slides, quizzes, and lab materials
+    - User Service: Verifies instructor credentials and authorization
+    
+    PERFORMANCE FEATURES:
+    - Async Operations: Non-blocking I/O for all database and external service calls
+    - Efficient Querying: Optimized data access patterns with pagination support
+    - Caching Integration: Repository-level caching for frequently accessed courses
+    - Batch Processing: Optimized handling of bulk course operations
     """
     
     def __init__(self, course_repository: ICourseRepository, enrollment_repository: IEnrollmentRepository):

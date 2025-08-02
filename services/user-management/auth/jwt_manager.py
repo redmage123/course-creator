@@ -10,7 +10,7 @@ from typing import Optional, Dict, Any
 from jose import JWTError, jwt
 from omegaconf import DictConfig
 
-from ..models.auth import TokenPayload
+from models.auth import TokenPayload
 
 
 class JWTManager:

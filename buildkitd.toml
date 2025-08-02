@@ -1,0 +1,47 @@
+# BuildKit daemon configuration for optimized builds
+# Place this in ~/.config/buildkit/buildkitd.toml or use with --config flag
+
+# Enable debug logging for troubleshooting
+debug = false
+
+# Build history retention
+[build-history]
+  max-entries = 100
+  max-age = "24h"
+
+# Registry mirror configuration (uncomment and configure if using private registry)
+# [registry."docker.io"]
+#   mirrors = ["your-mirror-registry.com"]
+
+# Worker configuration
+[worker.oci]
+  enabled = true
+  
+  # Increase parallelism for faster builds
+  max-parallelism = 4
+  
+  # Enable snapshotter features
+  snapshotter = "auto"
+  
+  # Garbage collection settings
+  gc = true
+  gckeepstorage = "10GB"
+  
+  # Network mode
+  networkmode = "host"
+
+# Enable experimental features
+[experimental]
+  # Enable multi-platform builds
+  platforms = ["linux/amd64", "linux/arm64"]
+
+# Cache configuration
+[buildCache]
+  # Enable inline cache
+  inline = true
+  
+  # Local cache directory
+  local = "/tmp/buildkit-cache"
+  
+  # Max cache size
+  maxSize = "5GB"

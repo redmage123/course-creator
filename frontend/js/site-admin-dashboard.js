@@ -13,6 +13,77 @@ class SiteAdminDashboard {
         this.init();
     }
 
+    /**
+     * Validate current session for site admin dashboard
+     */
+    validateSession() {
+        const currentUser = this.getCurrentUser();
+        const authToken = localStorage.getItem('authToken');
+        const sessionStart = localStorage.getItem('sessionStart');
+        const lastActivity = localStorage.getItem('lastActivity');
+        
+        // Validate complete session state
+        if (!currentUser || !authToken || !sessionStart || !lastActivity) {
+            console.log('Session invalid: Missing session data');
+            this.redirectToHome();
+            return false;
+        }
+        
+        // Check session timeout (8 hours from start)
+        const now = Date.now();
+        const sessionAge = now - parseInt(sessionStart);
+        const timeSinceActivity = now - parseInt(lastActivity);
+        const SESSION_TIMEOUT = 8 * 60 * 60 * 1000; // 8 hours
+        const INACTIVITY_TIMEOUT = 2 * 60 * 60 * 1000; // 2 hours
+        
+        if (sessionAge > SESSION_TIMEOUT || timeSinceActivity > INACTIVITY_TIMEOUT) {
+            console.log('Session expired: Redirecting to home page');
+            this.clearExpiredSession();
+            return false;
+        }
+        
+        // Check if user has site_admin role
+        if (currentUser.role !== 'site_admin' && currentUser.role !== 'admin') {
+            console.log('Invalid role for site admin dashboard:', currentUser.role);
+            this.redirectToHome();
+            return false;
+        }
+        
+        return true;
+    }
+
+    /**
+     * Get current user from localStorage
+     */
+    getCurrentUser() {
+        try {
+            const userStr = localStorage.getItem('currentUser');
+            return userStr ? JSON.parse(userStr) : null;
+        } catch (error) {
+            console.error('Error getting current user:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Clear expired session data and redirect
+     */
+    clearExpiredSession() {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('sessionStart');
+        localStorage.removeItem('lastActivity');
+        this.redirectToHome();
+    }
+
+    /**
+     * Redirect to home page
+     */
+    redirectToHome() {
+        window.location.href = window.location.pathname.includes('/html/') ? '../index.html' : 'index.html';
+    }
+
     async init() {
         try {
             // Initialize authentication
@@ -34,6 +105,27 @@ class SiteAdminDashboard {
     }
 
     async loadCurrentUser() {
+        """
+        COMPREHENSIVE SESSION VALIDATION ON PAGE LOAD - SITE ADMIN DASHBOARD
+        
+        BUSINESS REQUIREMENT:
+        When a site admin refreshes the dashboard page after session expiry,
+        they should be redirected to the home page with proper validation.
+        
+        TECHNICAL IMPLEMENTATION:
+        1. Check if user data exists in localStorage
+        2. Validate session timestamps against timeout thresholds  
+        3. Check if authentication token is present and valid
+        4. Verify user has correct role (site_admin)
+        5. Redirect to home page if any validation fails
+        6. Prevent dashboard initialization for expired sessions
+        """
+        
+        // Validate session before making API calls
+        if (!this.validateSession()) {
+            return; // Validation function handles redirect
+        }
+        
         try {
             const response = await fetch('/api/v1/auth/me', {
                 headers: {
@@ -43,6 +135,10 @@ class SiteAdminDashboard {
             });
 
             if (!response.ok) {
+                if (response.status === 401) {
+                    this.clearExpiredSession();
+                    return;
+                }
                 throw new Error('Failed to load user info');
             }
 

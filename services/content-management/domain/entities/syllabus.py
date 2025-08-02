@@ -5,7 +5,7 @@ Single Responsibility: Syllabus-specific business logic and validation
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 
-from .base_content import BaseContent, ContentType
+from domain.entities.base_content import BaseContent, ContentType
 
 
 class SyllabusModule:

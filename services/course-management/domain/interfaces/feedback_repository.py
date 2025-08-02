@@ -5,7 +5,7 @@ Dependency Inversion: Abstract interface for data persistence
 """
 from abc import ABC, abstractmethod
 from typing import List, Optional, Dict, Any
-from ..entities.feedback import CourseFeedback, StudentFeedback, FeedbackResponse, FeedbackStatus
+from domain.entities.feedback import CourseFeedback, StudentFeedback, FeedbackResponse, FeedbackStatus
 
 class ICourseFeedbackRepository(ABC):
     """Interface for course feedback data access operations"""

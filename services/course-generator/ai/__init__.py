@@ -6,16 +6,16 @@ It handles communication with AI services, prompt management, and content genera
 with proper fallback mechanisms.
 """
 
-from .client import AIClient
-from .prompts import PromptTemplates
-from .generators import (
+from ai.client import AIClient
+from ai.prompts import PromptTemplates
+from ai.generators import (
     SlideGenerator,
     ExerciseGenerator,
     QuizGenerator,
     SyllabusGenerator,
     ChatGenerator
 )
-from .fallback import (
+from ai.fallback import (
     FallbackSlideGenerator,
     FallbackQuizGenerator,
     FallbackSyllabusGenerator

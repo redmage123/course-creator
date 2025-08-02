@@ -5,7 +5,7 @@ Interface Segregation: Focused interface for enrollment operations only
 """
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from ..entities.enrollment import Enrollment, EnrollmentRequest, BulkEnrollmentRequest
+from domain.entities.enrollment import Enrollment, EnrollmentRequest, BulkEnrollmentRequest
 
 class IEnrollmentService(ABC):
     """Interface for enrollment management operations"""

@@ -5,9 +5,9 @@ Interface Segregation: Focused interfaces for different generation types
 """
 from abc import ABC, abstractmethod
 from typing import List, Optional, Dict, Any
-from ..entities.course_content import Syllabus, Slide, Exercise, LabEnvironment, GenerationJob
-from ..entities.quiz import Quiz, QuizQuestion, QuizGenerationRequest
-from ..entities.student_interaction import StudentProgress, ChatInteraction, LabSession
+from entities.course_content import Syllabus, Slide, Exercise, LabEnvironment, GenerationJob
+from entities.quiz import Quiz, QuizQuestion, QuizGenerationRequest
+from entities.student_interaction import StudentProgress, ChatInteraction, LabSession
 
 class ISyllabusGenerationService(ABC):
     """Interface for syllabus generation operations"""

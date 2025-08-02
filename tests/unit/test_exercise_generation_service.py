@@ -4,11 +4,12 @@ Tests for replacing default exercises with AI-generated labs.
 """
 import sys
 import os
-sys.path.insert(0, '/home/bbrelin/course-creator/services/course-generator')
-
 import pytest
 from unittest.mock import Mock, AsyncMock, patch
 import json
+
+# Add course-generator to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../services/course-generator'))
 
 class TestExerciseGenerationService:
     """Test suite for ExerciseGenerationService implementation."""
@@ -28,7 +29,7 @@ class TestExerciseGenerationService:
         
     def test_exercise_generation_service_init(self):
         """Test ExerciseGenerationService initialization."""
-        from services.exercise_generation_service import ExerciseGenerationService
+        from application.services.exercise_generation_service import ExerciseGenerationService
         
         service = ExerciseGenerationService(
             db=self.mock_db,
@@ -45,7 +46,7 @@ class TestExerciseGenerationService:
     @pytest.mark.asyncio
     async def test_generate_ai_powered_exercises(self):
         """Test generating AI-powered exercises from syllabus."""
-        from services.exercise_generation_service import ExerciseGenerationService
+        from application.services.exercise_generation_service import ExerciseGenerationService
         
         # Mock syllabus data
         mock_syllabus = {
@@ -150,7 +151,7 @@ class TestExerciseGenerationService:
     @pytest.mark.asyncio
     async def test_generate_interactive_lab_environment(self):
         """Test generating interactive lab environment for exercises."""
-        from services.exercise_generation_service import ExerciseGenerationService
+        from application.services.exercise_generation_service import ExerciseGenerationService
         
         exercise_data = {
             'title': 'Python Variables Lab',
@@ -203,7 +204,7 @@ class TestExerciseGenerationService:
     @pytest.mark.asyncio
     async def test_validate_exercise_quality(self):
         """Test exercise quality validation."""
-        from services.exercise_generation_service import ExerciseGenerationService
+        from application.services.exercise_generation_service import ExerciseGenerationService
         
         service = ExerciseGenerationService(
             db=self.mock_db,
@@ -248,7 +249,7 @@ class TestExerciseGenerationService:
     @pytest.mark.asyncio
     async def test_fallback_to_enhanced_exercises(self):
         """Test fallback to enhanced exercises when AI fails."""
-        from services.exercise_generation_service import ExerciseGenerationService
+        from application.services.exercise_generation_service import ExerciseGenerationService
         
         # Mock syllabus data
         mock_syllabus = {
@@ -283,7 +284,7 @@ class TestExerciseGenerationService:
     @pytest.mark.asyncio
     async def test_exercise_personalization(self):
         """Test exercise personalization based on course context."""
-        from services.exercise_generation_service import ExerciseGenerationService
+        from application.services.exercise_generation_service import ExerciseGenerationService
         
         # Mock course context
         course_context = {
@@ -324,7 +325,7 @@ class TestExerciseGenerationService:
     @pytest.mark.asyncio
     async def test_exercise_progressive_difficulty(self):
         """Test progressive difficulty in exercise generation."""
-        from services.exercise_generation_service import ExerciseGenerationService
+        from application.services.exercise_generation_service import ExerciseGenerationService
         
         mock_syllabus = {
             'modules': [

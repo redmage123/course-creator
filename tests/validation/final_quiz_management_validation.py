@@ -106,7 +106,7 @@ async def validate_complete_quiz_management_system():
         
         # Check frontend files
         frontend_files = [
-            'frontend/instructor-dashboard.html',
+            'frontend/html/instructor-dashboard.html',
             'frontend/css/main.css',
             'frontend/js/config.js'
         ]
@@ -120,7 +120,7 @@ async def validate_complete_quiz_management_system():
         
         # Check instructor dashboard integration
         try:
-            with open('frontend/instructor-dashboard.html', 'r') as f:
+            with open('frontend/html/instructor-dashboard.html', 'r') as f:
                 dashboard_content = f.read()
             
             if 'showQuizPublicationManagement' in dashboard_content:

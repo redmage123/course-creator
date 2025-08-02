@@ -5,11 +5,11 @@ Pydantic models for progress tracking and reporting.
 """
 
 from pydantic import BaseModel, Field, validator
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
 
-from .common import TimestampMixin
+from models.common import TimestampMixin
 
 
 class ProgressType(str, Enum):
@@ -174,7 +174,7 @@ class ProgressSearchRequest(BaseModel):
 
 class ProgressBatchUpdate(BaseModel):
     """Batch progress update model."""
-    updates: List[Dict[str, any]] = Field(..., min_items=1, max_items=100)
+    updates: List[Dict[str, Any]] = Field(..., min_items=1, max_items=100)
     
     @validator('updates')
     def validate_updates(cls, v):

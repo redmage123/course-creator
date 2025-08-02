@@ -8,16 +8,16 @@ from datetime import datetime
 import asyncpg
 import json
 
-from ...domain.interfaces.content_repository import (
+from domain.interfaces.content_repository import (
     ISyllabusRepository, ISlideRepository, IQuizRepository,
     IExerciseRepository, ILabEnvironmentRepository, IContentSearchRepository
 )
-from ...domain.entities.base_content import ContentType, ContentStatus
-from ...domain.entities.syllabus import Syllabus, SyllabusModule, GradingScheme
-from ...domain.entities.slide import Slide, SlideContent, SlideAnimation, SlideType, SlideLayout
-from ...domain.entities.quiz import Quiz, QuizQuestion, QuizSettings, QuestionType, DifficultyLevel
-from ...domain.entities.exercise import Exercise, ExerciseStep, GradingRubric, ExerciseType
-from ...domain.entities.lab_environment import LabEnvironment, LabTool, Dataset, SetupScript, ResourceRequirement, EnvironmentType
+from domain.entities.base_content import ContentType, ContentStatus
+from domain.entities.syllabus import Syllabus, SyllabusModule, GradingScheme
+from domain.entities.slide import Slide, SlideContent, SlideAnimation, SlideType, SlideLayout
+from domain.entities.quiz import Quiz, QuizQuestion, QuizSettings, QuestionType, DifficultyLevel
+from domain.entities.exercise import Exercise, ExerciseStep, GradingRubric, ExerciseType
+from domain.entities.lab_environment import LabEnvironment, LabTool, Dataset, SetupScript, ResourceRequirement, EnvironmentType
 
 
 class PostgreSQLSyllabusRepository(ISyllabusRepository):

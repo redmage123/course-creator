@@ -20,7 +20,7 @@ from omegaconf import DictConfig
 import uvicorn
 from datetime import datetime, date
 from contextlib import asynccontextmanager
-import jwt
+import jwt  # PyJWT package
 from enum import Enum
 from uuid import UUID
 
@@ -32,6 +32,14 @@ from auth.jwt_auth import JWTAuthenticator
 
 # Import API route modules
 from api import rbac_endpoints, site_admin_endpoints, track_endpoints
+
+# Custom exceptions
+from exceptions import (
+    OrganizationManagementException, OrganizationException, ProjectException,
+    MembershipException, AuthenticationException, AuthorizationException,
+    ValidationException, OrganizationNotFoundException, ProjectNotFoundException,
+    DatabaseException, InstructorManagementException, DuplicateResourceException
+)
 
 # Pydantic models for API (Data Transfer Objects)
 from pydantic import BaseModel, Field, EmailStr, validator
@@ -200,6 +208,15 @@ async def lifespan(app: FastAPI):
 
     # Startup
     logging.info("Initializing Organization Management Service...")
+    
+    # Initialize caching infrastructure for RBAC performance optimization
+    sys.path.append('/home/bbrelin/course-creator')
+    from shared.cache import initialize_cache_manager
+    
+    redis_url = current_config.get("redis", {}).get("url", "redis://redis:6379")
+    await initialize_cache_manager(redis_url)
+    logging.info("Cache manager initialized for RBAC permission checking optimization")
+    
     # Initialize your dependency injection container here
     # container = OrganizationContainer(current_config)
     # await container.initialize()
@@ -234,11 +251,55 @@ def create_app(config: DictConfig = None) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    
+    # Exception type to HTTP status code mapping (Open/Closed Principle)
+    EXCEPTION_STATUS_MAPPING = {
+        ValidationException: 400,
+        AuthenticationException: 401,
+        AuthorizationException: 403,
+        OrganizationNotFoundException: 404,
+        ProjectNotFoundException: 404,
+        DuplicateResourceException: 409,
+        OrganizationException: 422,
+        ProjectException: 422,
+        MembershipException: 422,
+        InstructorManagementException: 422,
+        DatabaseException: 500,
+    }
+    
+    # Custom exception handler
+    @app.exception_handler(OrganizationManagementException)
+    async def organization_management_exception_handler(request, exc: OrganizationManagementException):
+        """Handle custom organization management exceptions."""
+        # Use mapping to determine status code (extensible design)
+        status_code = next(
+            (code for exc_type, code in EXCEPTION_STATUS_MAPPING.items() if isinstance(exc, exc_type)),
+            500  # Default status code
+        )
+            
+        response_data = exc.to_dict()
+        response_data["path"] = str(request.url)
+        
+        return JSONResponse(
+            status_code=status_code,
+            content=response_data
+        )
 
     # Include API routers
     app.include_router(rbac_endpoints.router)
     app.include_router(site_admin_endpoints.router)
     app.include_router(track_endpoints.router)
+
+    # Health check endpoint
+    @app.get("/health")
+    async def health_check():
+        """Health check endpoint"""
+        return {
+            "status": "healthy",
+            "service": "organization-management",
+            "version": "1.0.0",
+            "timestamp": datetime.utcnow()
+        }
 
     return app
 
@@ -258,31 +319,25 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             "organization_id": "456e7890-e89b-12d3-a456-426614174000"
         }
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials"
-        ) from e
+        raise AuthenticationException(
+            message="Invalid authentication credentials",
+            auth_method="jwt_bearer",
+            original_exception=e
+        )
 
 
 async def require_org_admin(current_user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
     """Require organization admin role"""
     if current_user["role"] not in ["super_admin", "org_admin"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Organization admin access required"
+        raise AuthorizationException(
+            message="Organization admin access required",
+            user_id=current_user.get("id"),
+            user_role=current_user.get("role"),
+            required_role="org_admin",
+            action="organization_management"
         )
     return current_user
 
-# Health check endpoint
-@app.get("/health")
-async def health_check():
-    """Health check endpoint"""
-    return {
-        "status": "healthy",
-        "service": "organization-management",
-        "version": "1.0.0",
-        "timestamp": datetime.utcnow()
-    }
 
 # Organization Management Endpoints
 @app.post("/api/v1/organizations", response_model=OrganizationResponse)
@@ -317,10 +372,20 @@ async def create_organization(
             updated_at=organization.updated_at
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
+        raise ValidationException(
+            message="Invalid organization data provided",
+            validation_errors={"organization_data": str(e)},
+            original_exception=e
+        )
+    except OrganizationManagementException:
+        # Re-raise custom exceptions (they will be handled by the global handler)
+        raise
     except Exception as e:
-        logging.error("Error creating organization: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise OrganizationException(
+            message="Failed to create organization",
+            operation="create_organization",
+            original_exception=e
+        )
 
 @app.get("/api/v1/organizations", response_model=List[OrganizationResponse])
 async def list_organizations(
@@ -332,9 +397,15 @@ async def list_organizations(
     try:
         # Implementation would filter based on user permissions
         return []
+    except OrganizationManagementException:
+        # Re-raise custom exceptions (they will be handled by the global handler)
+        raise
     except Exception as e:
-        logging.error("Error listing organizations: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise OrganizationException(
+            message="Failed to list organizations",
+            operation="list_organizations",
+            original_exception=e
+        )
 
 @app.get("/api/v1/organizations/{org_id}", response_model=OrganizationResponse)
 async def get_organization(
@@ -344,12 +415,20 @@ async def get_organization(
     """Get organization details"""
     try:
         # Implementation would check user access to organization
-        raise HTTPException(status_code=404, detail="Organization not found")
-    except HTTPException:
+        raise OrganizationNotFoundException(
+            message="Organization not found",
+            organization_id=str(org_id)
+        )
+    except OrganizationManagementException:
+        # Re-raise custom exceptions (they will be handled by the global handler)
         raise
     except Exception as e:
-        logging.error("Error getting organization: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise OrganizationException(
+            message="Failed to retrieve organization details",
+            organization_id=str(org_id),
+            operation="get_organization",
+            original_exception=e
+        )
 
 @app.put("/api/v1/organizations/{org_id}", response_model=OrganizationResponse)
 async def update_organization(
@@ -360,12 +439,20 @@ async def update_organization(
     """Update organization"""
     try:
         # Implementation here
-        raise HTTPException(status_code=404, detail="Organization not found")
-    except HTTPException:
+        raise OrganizationNotFoundException(
+            message="Organization not found",
+            organization_id=str(org_id)
+        )
+    except OrganizationManagementException:
+        # Re-raise custom exceptions (they will be handled by the global handler)
         raise
     except Exception as e:
-        logging.error("Error updating organization: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise OrganizationException(
+            message="Failed to update organization",
+            organization_id=str(org_id),
+            operation="update_organization",
+            original_exception=e
+        )
 
 # Project Management Endpoints
 @app.post("/api/v1/organizations/{org_id}/projects", response_model=ProjectResponse)
@@ -395,9 +482,17 @@ async def create_project(
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
         )
+    except OrganizationManagementException:
+        # Re-raise custom exceptions (they will be handled by the global handler)
+        raise
     except Exception as e:
-        logging.error("Error creating project: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ProjectException(
+            message="Failed to create project",
+            organization_id=str(org_id),
+            project_slug=request.slug,
+            operation="create_project",
+            original_exception=e
+        )
 
 @app.get("/api/v1/organizations/{org_id}/projects", response_model=List[ProjectResponse])
 async def list_projects(
@@ -411,9 +506,16 @@ async def list_projects(
     try:
         # Implementation would filter projects by organization and user access
         return []
+    except OrganizationManagementException:
+        # Re-raise custom exceptions (they will be handled by the global handler)
+        raise
     except Exception as e:
-        logging.error("Error listing projects: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise ProjectException(
+            message="Failed to list projects",
+            organization_id=str(org_id),
+            operation="list_projects",
+            original_exception=e
+        )
 
 # Organization Member Management
 @app.post("/api/v1/organizations/{org_id}/members")
@@ -426,9 +528,18 @@ async def add_organization_member(
     try:
         # Implementation would add user to organization
         return {"message": "User added to organization successfully"}
+    except OrganizationManagementException:
+        # Re-raise custom exceptions (they will be handled by the global handler)
+        raise
     except Exception as e:
-        logging.error("Error adding organization member: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise MembershipException(
+            message="Failed to add organization member",
+            user_email=request.user_email,
+            organization_id=str(org_id),
+            role=request.role.value,
+            operation="add_organization_member",
+            original_exception=e
+        )
 
 @app.get("/api/v1/organizations/{org_id}/members", response_model=List[OrganizationMemberResponse])
 async def list_organization_members(
@@ -442,9 +553,16 @@ async def list_organization_members(
     try:
         # Implementation would list organization members
         return []
+    except OrganizationManagementException:
+        # Re-raise custom exceptions (they will be handled by the global handler)
+        raise
     except Exception as e:
-        logging.error("Error listing organization members: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise MembershipException(
+            message="Failed to list organization members",
+            organization_id=str(org_id),
+            operation="list_organization_members",
+            original_exception=e
+        )
 
 @app.delete("/api/v1/organizations/{org_id}/members/{user_id}")
 async def remove_organization_member(
@@ -456,9 +574,17 @@ async def remove_organization_member(
     try:
         # Implementation would remove user from organization
         return {"message": "User removed from organization successfully"}
+    except OrganizationManagementException:
+        # Re-raise custom exceptions (they will be handled by the global handler)
+        raise
     except Exception as e:
-        logging.error("Error removing organization member: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise MembershipException(
+            message="Failed to remove organization member",
+            user_id=str(user_id),
+            organization_id=str(org_id),
+            operation="remove_organization_member",
+            original_exception=e
+        )
 
 # Instructor Management (Specialized endpoints for org admins)
 @app.post("/api/v1/organizations/{org_id}/instructors")
@@ -478,9 +604,17 @@ async def create_instructor(
             "user_id": "new-instructor-id",
             "email_sent": request.send_welcome_email
         }
+    except OrganizationManagementException:
+        # Re-raise custom exceptions (they will be handled by the global handler)
+        raise
     except Exception as e:
-        logging.error("Error creating instructor: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise InstructorManagementException(
+            message="Failed to create instructor",
+            instructor_email=request.email,
+            organization_id=str(org_id),
+            operation="create_instructor",
+            original_exception=e
+        )
 
 @app.get("/api/v1/organizations/{org_id}/instructors", response_model=List[OrganizationMemberResponse])
 async def list_instructors(
@@ -491,9 +625,16 @@ async def list_instructors(
     try:
         # Implementation would filter organization members by instructor role
         return []
+    except OrganizationManagementException:
+        # Re-raise custom exceptions (they will be handled by the global handler)
+        raise
     except Exception as e:
-        logging.error("Error listing instructors: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise InstructorManagementException(
+            message="Failed to list instructors",
+            organization_id=str(org_id),
+            operation="list_instructors",
+            original_exception=e
+        )
 
 @app.put("/api/v1/organizations/{org_id}/instructors/{user_id}/permissions")
 async def update_instructor_permissions(
@@ -506,9 +647,17 @@ async def update_instructor_permissions(
     try:
         # Implementation would update instructor permissions
         return {"message": "Instructor permissions updated successfully"}
+    except OrganizationManagementException:
+        # Re-raise custom exceptions (they will be handled by the global handler)
+        raise
     except Exception as e:
-        logging.error("Error updating instructor permissions: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise InstructorManagementException(
+            message="Failed to update instructor permissions",
+            instructor_id=str(user_id),
+            organization_id=str(org_id),
+            operation="update_instructor_permissions",
+            original_exception=e
+        )
 
 @app.delete("/api/v1/organizations/{org_id}/instructors/{user_id}")
 async def remove_instructor(
@@ -520,9 +669,17 @@ async def remove_instructor(
     try:
         # Implementation would remove instructor role/membership
         return {"message": "Instructor removed successfully"}
+    except OrganizationManagementException:
+        # Re-raise custom exceptions (they will be handled by the global handler)
+        raise
     except Exception as e:
-        logging.error("Error removing instructor: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise InstructorManagementException(
+            message="Failed to remove instructor",
+            instructor_id=str(user_id),
+            organization_id=str(org_id),
+            operation="remove_instructor",
+            original_exception=e
+        )
 
 # Project Member Management
 @app.post("/api/v1/projects/{project_id}/members")
@@ -535,9 +692,18 @@ async def add_project_member(
     try:
         # Implementation would add user to project
         return {"message": "User added to project successfully"}
+    except OrganizationManagementException:
+        # Re-raise custom exceptions (they will be handled by the global handler)
+        raise
     except Exception as e:
-        logging.error("Error adding project member: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise MembershipException(
+            message="Failed to add project member",
+            user_id=str(request.user_id),
+            project_id=str(project_id),
+            role=request.role.value,
+            operation="add_project_member",
+            original_exception=e
+        )
 
 @app.get("/api/v1/projects/{project_id}/members", response_model=List[ProjectMemberResponse])
 async def list_project_members(
@@ -549,9 +715,16 @@ async def list_project_members(
     try:
         # Implementation would list project members
         return []
+    except OrganizationManagementException:
+        # Re-raise custom exceptions (they will be handled by the global handler)
+        raise
     except Exception as e:
-        logging.error("Error listing project members: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
+        raise MembershipException(
+            message="Failed to list project members",
+            project_id=str(project_id),
+            operation="list_project_members",
+            original_exception=e
+        )
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def main(cfg: DictConfig) -> None:
@@ -561,7 +734,12 @@ def main(cfg: DictConfig) -> None:
 
     # Setup centralized logging
     service_name = os.environ.get('SERVICE_NAME', 'organization-management')
-    log_level = os.environ.get('LOG_LEVEL', cfg.get('logging', {}).get('level', 'INFO'))
+    log_level = os.environ.get('LOG_LEVEL', 'INFO')
+    if not log_level:
+        try:
+            log_level = cfg.get('logging', {}).get('level', 'INFO')
+        except:
+            log_level = 'INFO'
 
     logger = setup_docker_logging(service_name, log_level)
     port = cfg.get('server', {}).get('port', 8008)

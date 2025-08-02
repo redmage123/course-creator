@@ -9,7 +9,7 @@ from typing import Dict, Any, Optional, List
 import asyncpg
 import json
 
-from .base_repository import BaseRepository
+from repositories.base_repository import BaseRepository
 
 
 class SlideRepository(BaseRepository):

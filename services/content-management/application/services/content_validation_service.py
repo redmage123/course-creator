@@ -3,13 +3,13 @@ Content Validation Application Service
 Single Responsibility: Content validation and completeness checking
 """
 from typing import Dict, Any
-from ...domain.interfaces.content_service import IContentValidationService
-from ...domain.entities.base_content import BaseContent
-from ...domain.entities.syllabus import Syllabus
-from ...domain.entities.slide import Slide
-from ...domain.entities.quiz import Quiz
-from ...domain.entities.exercise import Exercise
-from ...domain.entities.lab_environment import LabEnvironment
+from domain.interfaces.content_service import IContentValidationService
+from domain.entities.base_content import BaseContent
+from domain.entities.syllabus import Syllabus
+from domain.entities.slide import Slide
+from domain.entities.quiz import Quiz
+from domain.entities.exercise import Exercise
+from domain.entities.lab_environment import LabEnvironment
 
 
 class ContentValidationService(IContentValidationService):

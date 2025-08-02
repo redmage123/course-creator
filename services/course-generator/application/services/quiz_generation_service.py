@@ -6,10 +6,10 @@ Dependency Inversion: Depends on repository and AI service abstractions
 import uuid
 from datetime import datetime
 from typing import Dict, Any, List, Optional
-from ...domain.entities.quiz import Quiz, QuizQuestion, QuizAttempt, QuizGenerationRequest, QuestionType, DifficultyLevel
-from ...domain.interfaces.content_generation_service import IQuizGenerationService
-from ...domain.interfaces.content_repository import IQuizRepository, IQuizAttemptRepository
-from ...domain.interfaces.ai_service import IAIService, ContentGenerationType, IPromptTemplateService
+from domain.entities.quiz import Quiz, QuizQuestion, QuizAttempt, QuizGenerationRequest, QuestionType, DifficultyLevel
+from domain.interfaces.content_generation_service import IQuizGenerationService
+from domain.interfaces.content_repository import IQuizRepository, IQuizAttemptRepository
+from domain.interfaces.ai_service import IAIService, ContentGenerationType, IPromptTemplateService
 
 class QuizGenerationService(IQuizGenerationService):
     """

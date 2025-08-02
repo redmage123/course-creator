@@ -9,8 +9,8 @@ from typing import Dict, Any, Optional, List
 import asyncpg
 from datetime import datetime
 
-from .base_repository import BaseRepository
-from ..models.course import Course, CourseCreate, CourseUpdate, CourseSearchRequest
+from repositories.base_repository import BaseRepository
+from models.course import Course, CourseCreate, CourseUpdate, CourseSearchRequest
 
 
 class CourseRepository(BaseRepository):

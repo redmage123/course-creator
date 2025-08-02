@@ -16,14 +16,15 @@ from typing import Dict, List, Optional, Tuple
 import docker
 from docker.errors import APIError, NotFound
 
-from ..models.lab_models import LabConfig, ContainerSpec
+from models.lab_models import LabConfig, ContainerSpec
 
 
 class DockerService:
     """Service for managing Docker containers and images for lab environments."""
     
-    def __init__(self, logger: logging.Logger):
+    def __init__(self, logger: logging.Logger, docker_config: dict = None):
         self.logger = logger
+        self.docker_config = docker_config or {}
         self._client = None
         self._initialize_client()
     
@@ -33,8 +34,13 @@ class DockerService:
             # Check if Docker daemon is accessible
             subprocess.run(['docker', 'info'], 
                          capture_output=True, check=True, timeout=10)
-            self._client = docker.from_env()
-            self.logger.info("Docker client initialized successfully")
+            
+            # Use default Docker client (should automatically detect socket)
+            docker_timeout = self.docker_config.get('timeout', 60)
+            
+            # Try to create Docker client using default settings
+            self._client = docker.from_env(timeout=docker_timeout)
+            self.logger.info("Docker client initialized successfully using default environment")
         except (subprocess.CalledProcessError, FileNotFoundError) as e:
             self.logger.error(f"Cannot connect to Docker daemon: {e}")
             raise RuntimeError(f'Cannot connect to Docker daemon: {e}') from e

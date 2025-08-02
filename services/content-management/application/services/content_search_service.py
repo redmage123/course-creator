@@ -4,9 +4,9 @@ Single Responsibility: Handle content search and discovery operations
 """
 from typing import List, Optional, Dict, Any
 
-from ...domain.interfaces.content_service import IContentSearchService
-from ...domain.interfaces.content_repository import IContentSearchRepository
-from ...domain.entities.base_content import ContentType
+from domain.interfaces.content_service import IContentSearchService
+from domain.interfaces.content_repository import IContentSearchRepository
+from domain.entities.base_content import ContentType
 
 
 class ContentSearchService(IContentSearchService):

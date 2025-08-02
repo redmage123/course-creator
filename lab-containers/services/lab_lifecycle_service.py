@@ -15,7 +15,7 @@ from typing import Dict, List, Optional, Tuple
 
 from fastapi import HTTPException
 
-from ..models.lab_models import (
+from models.lab_models import (
     LabEnvironment, LabConfig, LabStatus, IDEType, 
     LabRequest, StudentLabRequest, LabResponse
 )
@@ -25,12 +25,16 @@ from .docker_service import DockerService
 class LabLifecycleService:
     """Service for managing lab environment lifecycle."""
     
-    def __init__(self, docker_service: DockerService, logger):
+    def __init__(self, docker_service: DockerService, logger, lab_config: dict = None):
         self.docker_service = docker_service
         self.logger = logger
+        self.lab_config = lab_config or {}
         self.active_labs: Dict[str, LabEnvironment] = {}
         self.user_labs: Dict[str, str] = {}  # user_id -> lab_id mapping
-        self.base_storage_path = Path("/tmp/lab-storage")
+        
+        # Use configured storage path
+        storage_path = self.lab_config.get('storage_path', '/tmp/lab-storage')
+        self.base_storage_path = Path(storage_path)
         self.base_storage_path.mkdir(exist_ok=True)
     
     async def create_student_lab(self, 

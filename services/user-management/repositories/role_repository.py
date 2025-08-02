@@ -7,8 +7,8 @@ Database operations for role management.
 import logging
 from typing import Dict, Any, Optional, List
 
-from .base_repository import BaseRepository
-from ..models.role import Role
+from repositories.base_repository import BaseRepository
+from models.role import Role
 
 
 class RoleRepository(BaseRepository):

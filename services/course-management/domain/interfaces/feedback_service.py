@@ -5,7 +5,7 @@ Interface Segregation: Focused interface for feedback operations only
 """
 from abc import ABC, abstractmethod
 from typing import List, Optional, Dict, Any
-from ..entities.feedback import CourseFeedback, StudentFeedback, FeedbackResponse
+from domain.entities.feedback import CourseFeedback, StudentFeedback, FeedbackResponse
 
 class IFeedbackService(ABC):
     """Interface for feedback management operations"""

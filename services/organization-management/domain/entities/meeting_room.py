@@ -117,7 +117,7 @@ class MeetingRoom:
 
     def is_accessible_by_user(self, user_id: UUID, user_role: 'EnhancedRole') -> bool:
         """Check if user can access this room"""
-        from .enhanced_role import RoleType, Permission
+        from enhanced_role import RoleType, Permission
 
         # Site admins can access all rooms
         if user_role.role_type == RoleType.SITE_ADMIN:

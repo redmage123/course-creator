@@ -6,9 +6,9 @@ Each sub-module handles a specific domain of the course generation system.
 """
 
 from fastapi import APIRouter
-from .health import router as health_router
-from .syllabus import router as syllabus_router
-from .jobs import router as jobs_router
+from api.health import router as health_router
+from api.syllabus import router as syllabus_router
+from api.jobs import router as jobs_router
 
 # Create main API router
 api_router = APIRouter()

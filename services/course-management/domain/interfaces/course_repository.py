@@ -5,7 +5,7 @@ Dependency Inversion: Abstract interface for data persistence
 """
 from abc import ABC, abstractmethod
 from typing import List, Optional, Dict, Any
-from ..entities.course import Course, CourseStatistics
+from domain.entities.course import Course, CourseStatistics
 
 class ICourseRepository(ABC):
     """Interface for course data access operations"""

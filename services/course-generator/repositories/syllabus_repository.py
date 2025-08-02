@@ -10,7 +10,7 @@ import json
 from datetime import datetime
 import asyncpg
 
-from .base_repository import BaseRepository
+from repositories.base_repository import BaseRepository
 
 
 class SyllabusRepository(BaseRepository):

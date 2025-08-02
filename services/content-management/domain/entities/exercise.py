@@ -6,7 +6,7 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 from enum import Enum
 
-from .base_content import BaseContent, ContentType
+from domain.entities.base_content import BaseContent, ContentType
 
 
 class ExerciseType(Enum):

@@ -6,7 +6,7 @@ Interface Segregation: Focused interfaces for specific analytics concerns
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime, timedelta
-from ..entities.student_analytics import (
+from domain.entities.student_analytics import (
     StudentActivity, LabUsageMetrics, QuizPerformance, 
     StudentProgress, LearningAnalytics, RiskLevel, ActivityType, ContentType
 )

@@ -1,15 +1,62 @@
 """
-User Service Interface
-Interface Segregation: Focused interface for user business operations
+User Service Interface - Business Logic Abstraction Layer
+
+This module defines the abstract interfaces for user-related business operations
+within the User Management Service. It separates business logic from infrastructure
+concerns and provides clear contracts for user and authentication services.
+
+Architectural Benefits:
+    Interface Segregation: Separate interfaces for user and authentication concerns
+    Dependency Inversion: Controllers depend on these abstractions
+    Business Logic Encapsulation: Hides complex business rules behind simple interfaces
+    Testability: Enables comprehensive unit testing with mocks
+    Clean Architecture: Clear boundary between application and domain layers
+
+Service Separation Rationale:
+    IUserService: Focuses on user lifecycle and profile management
+    IAuthenticationService: Focuses on security and credential management
+    
+This separation follows Single Responsibility Principle and makes the codebase
+more maintainable and secure by isolating authentication concerns.
+
+Integration with Enhanced RBAC:
+    These interfaces provide the foundation for enhanced authorization through:
+    - Organization-specific user management
+    - Multi-tenant authentication flows
+    - Role-based permission validation
+    - Cross-service user identity management
+
+Author: Course Creator Platform Team
+Version: 2.3.0
+Last Updated: 2025-08-02
 """
 from abc import ABC, abstractmethod
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
-from ..entities.user import User, UserRole, UserStatus
+from domain.entities.user import User, UserRole, UserStatus
 
 class IUserService(ABC):
-    """Interface for user business operations"""
+    """
+    Abstract interface for user business operations and lifecycle management.
+    
+    This interface defines the contract for user-related business logic,
+    encapsulating complex operations like user creation, profile management,
+    and user lifecycle operations.
+    
+    Business Responsibilities:
+        - User creation with validation and business rules
+        - Profile management and updates
+        - Role and status management
+        - User search and discovery
+        - Data validation and business rule enforcement
+    
+    Security Features:
+        - Username and email uniqueness validation
+        - Role change authorization
+        - Status management for access control
+        - Secure user deletion with data integrity
+    """
     
     @abstractmethod
     async def create_user(self, user_data: Dict[str, Any], password: str) -> User:
@@ -77,7 +124,25 @@ class IUserService(ABC):
         pass
 
 class IAuthenticationService(ABC):
-    """Interface for authentication operations"""
+    """
+    Abstract interface for authentication and credential management operations.
+    
+    This interface defines the contract for all authentication-related business
+    logic, including credential validation, password management, and security
+    operations.
+    
+    Security Responsibilities:
+        - Secure password authentication
+        - Password hashing and validation
+        - Password reset and change operations
+        - Credential verification and management
+    
+    Security Features:
+        - Secure password hashing (bcrypt/scrypt)
+        - Password strength validation
+        - Secure password reset flows
+        - Authentication attempt tracking
+    """
     
     @abstractmethod
     async def authenticate_user(self, email: str, password: str) -> Optional[User]:

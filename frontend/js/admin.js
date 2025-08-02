@@ -18,10 +18,79 @@ function handleAuthError(response) {
     return false;
 }
 
+"""
+COMPREHENSIVE SESSION VALIDATION ON PAGE LOAD - ADMIN DASHBOARD
+
+BUSINESS REQUIREMENT:
+When an admin refreshes the dashboard page after session expiry,
+they should be redirected to the home page with proper validation.
+
+TECHNICAL IMPLEMENTATION:
+1. Check if user data exists in localStorage
+2. Validate session timestamps against timeout thresholds  
+3. Check if authentication token is present and valid
+4. Verify user has correct role (admin)
+5. Redirect to home page if any validation fails
+6. Prevent dashboard initialization for expired sessions
+"""
+
+// Get current user and session data
+function getCurrentUser() {
+    try {
+        const userStr = localStorage.getItem('currentUser');
+        return userStr ? JSON.parse(userStr) : null;
+    } catch (error) {
+        console.error('Error getting current user:', error);
+        return null;
+    }
+}
+
+// Comprehensive session validation for admin dashboard
+function validateAdminSession() {
+    const currentUser = getCurrentUser();
+    const authToken = localStorage.getItem('authToken');
+    const sessionStart = localStorage.getItem('sessionStart');
+    const lastActivity = localStorage.getItem('lastActivity');
+    
+    // Validate complete session state
+    if (!currentUser || !authToken || !sessionStart || !lastActivity) {
+        console.log('Session invalid: Missing session data');
+        window.location.href = window.location.pathname.includes('/html/') ? '../index.html' : 'index.html';
+        return false;
+    }
+    
+    // Check session timeout (8 hours from start)
+    const now = Date.now();
+    const sessionAge = now - parseInt(sessionStart);
+    const timeSinceActivity = now - parseInt(lastActivity);
+    const SESSION_TIMEOUT = 8 * 60 * 60 * 1000; // 8 hours
+    const INACTIVITY_TIMEOUT = 2 * 60 * 60 * 1000; // 2 hours
+    
+    if (sessionAge > SESSION_TIMEOUT || timeSinceActivity > INACTIVITY_TIMEOUT) {
+        console.log('Session expired: Redirecting to home page');
+        // Clear expired session data
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('sessionStart');
+        localStorage.removeItem('lastActivity');
+        window.location.href = window.location.pathname.includes('/html/') ? '../index.html' : 'index.html';
+        return false;
+    }
+    
+    // Check if user has admin role
+    if (currentUser.role !== 'admin') {
+        console.log('Invalid role for admin dashboard:', currentUser.role);
+        window.location.href = window.location.pathname.includes('/html/') ? '../index.html' : 'index.html';
+        return false;
+    }
+    
+    return true;
+}
+
 // Check if user is logged in and has admin role
-if (!authToken) {
-    alert('Please login first');
-    window.location.href = 'index.html';
+if (!validateAdminSession()) {
+    // Function handles redirect, just return
 }
 
 // Show/hide sections

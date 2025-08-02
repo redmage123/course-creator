@@ -9,10 +9,10 @@ from datetime import datetime, timedelta
 from typing import Optional, List
 from omegaconf import DictConfig
 
-from ..repositories.session_repository import SessionRepository
-from ..models.session import SessionCreate, UserSession
-from .jwt_manager import JWTManager
-from .password_manager import PasswordManager
+from repositories.session_repository import SessionRepository
+from models.session import SessionCreate, UserSession
+from auth.jwt_manager import JWTManager
+from auth.password_manager import PasswordManager
 
 
 class SessionManager:

@@ -27,7 +27,7 @@ def test_all_components():
         checks.append(("❌", "Feedback Manager JS - File not found"))
     
     # 2. Check CSS styles
-    css_file = Path("frontend/css/main.css")
+    css_file = Path("frontend/css/feedback.css")
     if css_file.exists():
         content = css_file.read_text()
         required = [".feedback-overlay", ".rating-pill", ".feedback-form", ".star-rating"]
@@ -37,7 +37,7 @@ def test_all_components():
         else:
             checks.append(("❌", f"CSS Styles - Missing: {', '.join(missing)}"))
     else:
-        checks.append(("❌", "CSS Styles - File not found"))
+        checks.append(("❌", "CSS Styles - feedback.css file not found"))
     
     # 3. Check student dashboard integration
     student_js = Path("frontend/js/student-dashboard.js")

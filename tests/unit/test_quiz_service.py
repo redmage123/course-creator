@@ -4,11 +4,12 @@ Tests for fixing quiz display issues in instructor dashboard.
 """
 import sys
 import os
-sys.path.insert(0, '/home/bbrelin/course-creator/services/course-generator')
-
 import pytest
 from unittest.mock import Mock, AsyncMock, patch
 import json
+
+# Add course-generator to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../services/course-generator'))
 
 class TestQuizService:
     """Test suite for QuizService implementation."""
@@ -28,7 +29,7 @@ class TestQuizService:
     def test_quiz_service_init(self):
         """Test QuizService initialization."""
         # This test will fail until we implement QuizService
-        from services.quiz_service import QuizService
+        from application.services.quiz_generation_service import QuizGenerationService as QuizService
         
         service = QuizService(
             db=self.mock_db,
@@ -43,7 +44,7 @@ class TestQuizService:
     @pytest.mark.asyncio
     async def test_get_course_quizzes_from_database(self):
         """Test retrieving quizzes from database first."""
-        from services.quiz_service import QuizService
+        from application.services.quiz_generation_service import QuizGenerationService as QuizService
         
         # Mock database response (as it would come from database)
         mock_db_rows = [
@@ -102,7 +103,7 @@ class TestQuizService:
     @pytest.mark.asyncio
     async def test_get_course_quizzes_fallback_to_memory(self):
         """Test fallback to memory when database fails."""
-        from services.quiz_service import QuizService
+        from application.services.quiz_generation_service import QuizGenerationService as QuizService
         
         # Mock database failure
         self.mock_db.fetch_all.side_effect = Exception("Database unavailable")
@@ -133,7 +134,7 @@ class TestQuizService:
     @pytest.mark.asyncio
     async def test_generate_quizzes_from_syllabus(self):
         """Test quiz generation from syllabus."""
-        from services.quiz_service import QuizService
+        from application.services.quiz_generation_service import QuizGenerationService as QuizService
         
         # Mock syllabus data
         mock_syllabus = {
@@ -190,7 +191,7 @@ class TestQuizService:
     @pytest.mark.asyncio
     async def test_save_quizzes_to_database(self):
         """Test saving quizzes to database with correct schema."""
-        from services.quiz_service import QuizService
+        from application.services.quiz_generation_service import QuizGenerationService as QuizService
         
         quiz_data = {
             'id': 'quiz_1',
@@ -234,7 +235,7 @@ class TestQuizService:
     @pytest.mark.asyncio
     async def test_quiz_validation(self):
         """Test quiz data validation."""
-        from services.quiz_service import QuizService
+        from application.services.quiz_generation_service import QuizGenerationService as QuizService
         
         service = QuizService(
             db=self.mock_db,
@@ -271,7 +272,7 @@ class TestQuizService:
     @pytest.mark.asyncio
     async def test_quiz_repository_integration(self):
         """Test integration with QuizRepository."""
-        from services.quiz_service import QuizService
+        from application.services.quiz_generation_service import QuizGenerationService as QuizService
         from repositories.quiz_repository import QuizRepository
         
         mock_repository = Mock(spec=QuizRepository)

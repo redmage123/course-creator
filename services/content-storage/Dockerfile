@@ -1,39 +1,58 @@
-# Content Storage Service Dockerfile
-FROM python:3.10-slim
+# syntax=docker/dockerfile:1
+# Content Storage Service Dockerfile - Optimized Multi-stage Build
+
+# Stage 1: Base image with system dependencies (rarely changes)
+FROM python:3.10-slim as base
+
+# Install system dependencies with cache mount
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Stage 2: Python dependencies (changes occasionally)
+FROM base as deps
+
+WORKDIR /app
+
+# Copy and install Python dependencies with pip cache
+COPY requirements.txt .
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --no-cache-dir -r requirements.txt
+
+# Stage 3: Runtime (changes frequently)
+FROM base as runtime
+
+WORKDIR /app
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app
 
-# Set work directory
-WORKDIR /app
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy requirements and install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy application code
-COPY . .
+# Copy Python packages from deps stage
+COPY --from=deps /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
+COPY --from=deps /usr/local/bin /usr/local/bin
 
 # Create directories for storage with proper permissions
 RUN mkdir -p /app/storage /app/content_files
-RUN groupadd -r appuser && useradd -r -g appuser appuser
-RUN chown -R appuser:appuser /app
+
+# Copy application code (most frequently changing layer)
+COPY . .
+
+# Create non-root user for security
+RUN groupadd -r appuser && useradd -r -g appuser appuser && \
+    chown -R appuser:appuser /app
 USER appuser
 
 # Expose port
 EXPOSE 8003
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8003/health')"
+# Optimized health check with timeout
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD python -c "import requests; requests.get('http://localhost:8003/health', timeout=5)" || exit 1
 
 # Run the application using Hydra
 CMD ["python", "main.py"]

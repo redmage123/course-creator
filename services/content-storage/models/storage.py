@@ -9,7 +9,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
 
-from .common import TimestampMixin
+from models.common import TimestampMixin
 
 
 class StorageBackend(str, Enum):

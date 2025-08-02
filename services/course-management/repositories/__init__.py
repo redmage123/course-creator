@@ -4,10 +4,10 @@ Course Management Repositories
 Database access layer for course management operations.
 """
 
-from .base_repository import BaseRepository
-from .course_repository import CourseRepository
-from .enrollment_repository import EnrollmentRepository
-from .progress_repository import ProgressRepository
+from repositories.base_repository import BaseRepository
+from repositories.course_repository import CourseRepository
+from repositories.enrollment_repository import EnrollmentRepository
+from repositories.progress_repository import ProgressRepository
 
 __all__ = [
     "BaseRepository",

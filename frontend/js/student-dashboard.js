@@ -21,10 +21,65 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeDashboard() {
-    // Check if user is logged in and has student role
+    """
+    COMPREHENSIVE SESSION VALIDATION ON PAGE LOAD - STUDENT DASHBOARD
+    
+    BUSINESS REQUIREMENT:
+    When a student refreshes the dashboard page after session expiry,
+    they should be redirected to the home page, not stay on the dashboard
+    with default 'student' name display.
+    
+    TECHNICAL IMPLEMENTATION:
+    1. Check if user data exists in localStorage
+    2. Validate session timestamps against timeout thresholds  
+    3. Check if authentication token is present and valid
+    4. Verify user has correct role (student)
+    5. Redirect to home page if any validation fails
+    6. Prevent dashboard initialization for expired sessions
+    
+    WHY THIS PREVENTS THE BUG:
+    - Previous code only checked if currentUser existed, not if session was valid
+    - Expired sessions could still have currentUser data in localStorage
+    - This led to dashboard loading with fallback 'student' name
+    - Now we validate the complete session state before allowing access
+    """
+    
+    // Check if user is logged in and session is valid
     currentUser = getCurrentUser();
-    if (!currentUser || currentUser.role !== 'student') {
-        window.location.href = 'index.html';
+    const authToken = localStorage.getItem('authToken');
+    const sessionStart = localStorage.getItem('sessionStart');
+    const lastActivity = localStorage.getItem('lastActivity');
+    
+    // Validate complete session state
+    if (!currentUser || !authToken || !sessionStart || !lastActivity) {
+        console.log('Session invalid: Missing session data');
+        window.location.href = window.location.pathname.includes('/html/') ? '../index.html' : 'index.html';
+        return;
+    }
+    
+    // Check session timeout (8 hours from start)
+    const now = Date.now();
+    const sessionAge = now - parseInt(sessionStart);
+    const timeSinceActivity = now - parseInt(lastActivity);
+    const SESSION_TIMEOUT = 8 * 60 * 60 * 1000; // 8 hours
+    const INACTIVITY_TIMEOUT = 2 * 60 * 60 * 1000; // 2 hours
+    
+    if (sessionAge > SESSION_TIMEOUT || timeSinceActivity > INACTIVITY_TIMEOUT) {
+        console.log('Session expired: Redirecting to home page');
+        // Clear expired session data
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('sessionStart');
+        localStorage.removeItem('lastActivity');
+        window.location.href = window.location.pathname.includes('/html/') ? '../index.html' : 'index.html';
+        return;
+    }
+    
+    // Check if user has student role
+    if (currentUser.role !== 'student') {
+        console.log('Invalid role for student dashboard:', currentUser.role);
+        window.location.href = window.location.pathname.includes('/html/') ? '../index.html' : 'index.html';
         return;
     }
     

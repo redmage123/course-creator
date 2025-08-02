@@ -1,7 +1,80 @@
 """
-Course Publishing Models
+Course Publishing Models - Educational Platform Data Transfer Objects
 
-Pydantic models for course publishing workflow, instances, and enhanced enrollment system.
+This module defines comprehensive Pydantic models for the course publishing and enrollment
+workflows within the educational platform. It provides data validation, serialization,
+and type safety for all course lifecycle operations and student management processes.
+
+DOMAIN MODEL COVERAGE:
+The models support the complete educational workflow from course creation through student
+completion, including publishing controls, instance scheduling, enrollment management,
+quiz publication systems, and comprehensive communication workflows.
+
+MODEL CATEGORIES AND RESPONSIBILITIES:
+1. Course Publication: Draft → Published → Archived lifecycle with visibility controls
+2. Course Instances: Time-based scheduling with enrollment capacity management
+3. Student Enrollment: Secure registration with automated credential generation
+4. Quiz Management: Instance-specific publication with availability windows
+5. Email Notifications: Template-driven communication system integration
+6. Access Control: Token-based authentication and authorization models
+
+EDUCATIONAL WORKFLOW DATA MODELS:
+- Course Publishing: Business rule validation for publication readiness
+- Instance Scheduling: Time zone-aware scheduling with capacity constraints
+- Student Registration: Multi-step enrollment with security credential management
+- Progress Tracking: Percentage-based advancement with completion validation
+- Assessment Publishing: Quiz availability controls with timing constraints
+- Communication: Email template data with personalization support
+
+VALIDATION AND BUSINESS RULES:
+- Temporal Validation: Course schedules must be future-dated and logically ordered
+- Capacity Management: Enrollment limits with overflow prevention
+- Email Validation: RFC-compliant email address validation for student registration
+- Timezone Support: Comprehensive timezone validation using pytz library
+- Data Integrity: Cross-field validation ensuring consistent educational workflows
+
+SECURITY AND ACCESS CONTROL:
+- Token-Based Authentication: Secure student access with unique URL generation
+- Password Management: Temporary credentials with mandatory reset requirements
+- Access Time Validation: Time-based access controls for course content
+- Permission Boundaries: Role-based access validation for instructor operations
+
+API INTEGRATION SUPPORT:
+- Request/Response Models: Structured data transfer for all API operations
+- Pagination Support: Efficient handling of large datasets with page controls
+- Error Handling: Structured error responses with educational context
+- Bulk Operations: Optimized models for mass enrollment and administrative tasks
+
+EDUCATIONAL PLATFORM FEATURES:
+- Multi-Instance Support: Single course deployed across multiple time periods
+- Student Lifecycle: Complete tracking from enrollment through completion
+- Instructor Tools: Comprehensive course management and student oversight
+- Analytics Integration: Data models supporting educational effectiveness analysis
+- Compliance Support: FERPA-compliant data structures for educational records
+
+COMMUNICATION SYSTEM MODELS:
+- Email Templates: Structured data for enrollment, reminder, and completion emails
+- Personalization: Student and instructor-specific content customization
+- Delivery Tracking: Email status monitoring and failure handling
+- Template Management: Flexible content generation with educational context
+
+PERFORMANCE AND SCALABILITY:
+- Efficient Serialization: Optimized JSON serialization for API performance
+- Memory Optimization: Field-level optimization for large-scale enrollment operations
+- Validation Caching: Efficient validation patterns for high-throughput scenarios
+- Bulk Processing: Specialized models for administrative bulk operations
+
+INTEGRATION PATTERNS:
+- Service Boundaries: Clean data contracts between microservices
+- Event Sourcing: Models supporting educational event streaming
+- Audit Trails: Complete data lineage for educational compliance
+- Configuration Management: Hydra integration for environment-specific settings
+
+EXTENSIBILITY AND MAINTENANCE:
+- Versioned Models: Support for API evolution and backward compatibility
+- Optional Fields: Flexible schemas supporting feature evolution
+- Enum Validation: Type-safe status and category management
+- Documentation: Self-documenting models with educational context
 """
 
 from pydantic import BaseModel, Field, EmailStr, validator
@@ -10,7 +83,7 @@ from datetime import datetime, timezone
 from enum import Enum
 import pytz
 
-from .common import TimestampMixin
+from models.common import TimestampMixin
 
 
 class CourseStatus(str, Enum):

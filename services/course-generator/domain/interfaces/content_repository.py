@@ -6,9 +6,9 @@ Dependency Inversion: Abstract interfaces for data persistence
 from abc import ABC, abstractmethod
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-from ..entities.course_content import Syllabus, Slide, Exercise, LabEnvironment, GenerationJob, ContentType
-from ..entities.quiz import Quiz, QuizQuestion, QuizAttempt
-from ..entities.student_interaction import StudentProgress, ChatInteraction, LabSession
+from entities.course_content import Syllabus, Slide, Exercise, LabEnvironment, GenerationJob, ContentType
+from entities.quiz import Quiz, QuizQuestion, QuizAttempt
+from entities.student_interaction import StudentProgress, ChatInteraction, LabSession
 
 class ISyllabusRepository(ABC):
     """Interface for syllabus data access operations"""

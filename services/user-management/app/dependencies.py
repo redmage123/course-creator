@@ -13,10 +13,10 @@ sys.path.insert(0, str(project_root))
 
 from shared.database.postgresql import PostgreSQLFactory
 from shared.domain.repositories.user_repository import UserRepository, IUserRepository
-from ..services.auth_service import AuthService, IAuthService
-from ..services.user_service import UserService, IUserService
-from ..services.password_service import PasswordService, IPasswordService
-from ..services.token_service import TokenService, ITokenService
+from services.auth_service import AuthService, IAuthService
+from services.user_service import UserService, IUserService
+from services.password_service import PasswordService, IPasswordService
+from services.token_service import TokenService, ITokenService
 
 class UserManagementDependencyContainer:
     """Container for managing user management service dependencies."""

@@ -8,8 +8,8 @@ import logging
 from typing import Dict, Any, Optional, List
 import json
 
-from ..client import AIClient
-from ..prompts import PromptTemplates
+from ai.client import AIClient
+from ai.prompts import PromptTemplates
 
 
 class ChatGenerator:

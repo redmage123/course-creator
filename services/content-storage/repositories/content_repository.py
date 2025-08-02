@@ -1,7 +1,76 @@
 """
-Content Repository
+Content Repository - Advanced Data Access Layer for Content Metadata Management
 
-Repository pattern implementation for content data access.
+This module implements the repository pattern for content-related data operations,
+providing a robust abstraction layer between business logic and database persistence
+for educational content management.
+
+CONTENT DATA MANAGEMENT:
+
+1. CONTENT LIFECYCLE OPERATIONS:
+   - Content creation with comprehensive metadata capture
+   - Content retrieval with performance optimization
+   - Content updates with audit trail maintenance
+   - Soft and hard deletion with compliance support
+   - Access tracking and usage analytics
+   - Content discovery and search capabilities
+
+2. METADATA MANAGEMENT:
+   - Rich content metadata capture and indexing
+   - Content categorization and classification
+   - Tag-based organization and discovery
+   - User attribution and permission tracking
+   - File system integration and path management
+   - Version control and history tracking
+
+3. SEARCH & DISCOVERY:
+   - Advanced search with multiple filter criteria
+   - Full-text search capabilities across metadata
+   - Content type and category filtering
+   - Date range and size-based queries
+   - Tag-based content discovery
+   - Usage-based content ranking
+
+4. ANALYTICS & REPORTING:
+   - Comprehensive content usage statistics
+   - Access pattern analysis and trending
+   - Content distribution metrics
+   - User engagement analytics
+   - Performance monitoring and optimization
+   - Compliance and audit reporting
+
+5. PERFORMANCE OPTIMIZATION:
+   - Efficient database query design and indexing
+   - Connection pooling for scalability
+   - Pagination for large dataset handling
+   - Caching integration points
+   - Asynchronous operations for high throughput
+   - Memory-efficient data processing
+
+DATABASE SCHEMA INTEGRATION:
+- content_storage: Primary content metadata table
+- Optimized indexes for search and retrieval
+- Foreign key relationships for data integrity
+- Audit fields for compliance and tracking
+- JSON fields for flexible metadata storage
+
+SECURITY & COMPLIANCE:
+- User-based content isolation and access control
+- Soft delete for data protection and recovery
+- Audit trail maintenance for compliance
+- Data sanitization and validation
+- Privacy-aware data handling
+
+ARCHITECTURAL PATTERNS:
+- Repository pattern for clean separation of concerns
+- Domain model mapping for business logic isolation
+- Error handling and graceful degradation
+- Comprehensive logging and monitoring
+- Extensible design for future enhancements
+
+This repository serves as the foundation for all content metadata operations,
+ensuring data consistency, performance, and security while providing rich
+querying and analytics capabilities for educational content management.
 """
 
 import logging
@@ -16,9 +85,74 @@ logger = logging.getLogger(__name__)
 
 
 class ContentRepository:
-    """Repository for content data operations."""
+    """
+    Content Repository - Comprehensive Data Access Layer for Educational Content
+    
+    Implements advanced data access patterns for content metadata management,
+    providing efficient, secure, and scalable content operations for the
+    educational platform.
+    
+    DESIGN PRINCIPLES:
+    - Single Responsibility: Focused exclusively on content data operations
+    - Abstraction: Clean interface hiding database implementation details
+    - Performance: Optimized queries and efficient resource utilization
+    - Scalability: Designed for high-volume educational content workloads
+    - Security: User isolation and access control integration
+    
+    CORE CAPABILITIES:
+    
+    1. CONTENT OPERATIONS:
+       - Create, read, update, delete content metadata
+       - Efficient content discovery and retrieval
+       - Bulk operations for administrative tasks
+       - Transaction management for data consistency
+    
+    2. SEARCH & FILTERING:
+       - Advanced multi-criteria search capabilities
+       - Content type and category filtering
+       - Date range and size-based queries
+       - Tag-based content organization
+       - User-specific content isolation
+    
+    3. ANALYTICS & STATISTICS:
+       - Content usage tracking and analytics
+       - Access pattern analysis
+       - Content distribution metrics
+       - Performance monitoring data
+       - Compliance reporting support
+    
+    4. PERFORMANCE FEATURES:
+       - Asynchronous database operations
+       - Connection pooling for scalability
+       - Optimized query design and indexing
+       - Efficient pagination for large datasets
+       - Memory-optimized data processing
+    
+    DATABASE INTEGRATION:
+    - PostgreSQL with AsyncPG for high performance
+    - Proper transaction management and isolation
+    - Comprehensive error handling and recovery
+    - Connection lifecycle management
+    - Query optimization and performance monitoring
+    """
     
     def __init__(self, db_pool: asyncpg.Pool):
+        """
+        Initialize Content Repository with Database Connection Pool
+        
+        Sets up the repository with a PostgreSQL connection pool for
+        efficient content metadata operations and optimal resource utilization.
+        
+        CONNECTION POOL BENEFITS:
+        - Efficient connection reuse and lifecycle management
+        - Automatic connection health monitoring and recovery
+        - Scalable concurrent operation support
+        - Optimal resource allocation and performance
+        - Built-in connection pooling and load balancing
+        
+        Args:
+            db_pool: AsyncPG connection pool for PostgreSQL database
+        """
         self.db_pool = db_pool
     
     async def create_content(self, content_data: ContentCreate, content_id: str, file_path: str, url: str) -> Optional[Content]:
@@ -444,3 +578,5 @@ class ContentRepository:
             storage_backend=row.get("storage_backend", "local"),
             metadata=row.get("metadata", {}) or {}
         )
+        # Note: Content model mapping ensures all fields are properly
+        # handled with appropriate defaults and type conversions

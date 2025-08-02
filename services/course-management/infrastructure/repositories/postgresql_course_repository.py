@@ -6,8 +6,8 @@ Dependency Inversion: Implements abstract repository interface
 import asyncpg
 from typing import List, Optional, Dict, Any
 from datetime import datetime
-from ...domain.entities.course import Course, CourseStatistics, DifficultyLevel, DurationUnit
-from ...domain.interfaces.course_repository import ICourseRepository
+from domain.entities.course import Course, CourseStatistics, DifficultyLevel, DurationUnit
+from domain.interfaces.course_repository import ICourseRepository
 
 class PostgreSQLCourseRepository(ICourseRepository):
     """

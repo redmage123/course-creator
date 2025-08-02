@@ -4,10 +4,10 @@ Course Management Models
 Pydantic models for course management operations.
 """
 
-from .course import Course, CourseCreate, CourseUpdate, CourseBase, CourseResponse
-from .enrollment import Enrollment, EnrollmentCreate, EnrollmentUpdate, EnrollmentRequest, StudentRegistrationRequest
-from .progress import Progress, ProgressUpdate, ProgressResponse
-from .common import BaseModel, PaginatedResponse
+from models.course import Course, CourseCreate, CourseUpdate, CourseBase, CourseResponse
+from models.enrollment import Enrollment, EnrollmentCreate, EnrollmentUpdate, EnrollmentRequest, StudentRegistrationRequest
+from models.progress import Progress, ProgressUpdate, ProgressResponse
+from models.common import BaseModel, PaginatedResponse
 
 __all__ = [
     "Course",

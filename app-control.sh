@@ -43,6 +43,75 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# Parse Docker Compose file for service configurations
+parse_compose_config() {
+    if [ ! -f "$COMPOSE_FILE" ]; then
+        log_error "Docker Compose file not found: $COMPOSE_FILE"
+        return 1
+    fi
+    
+    # Create temporary arrays for service info
+    declare -g -A SERVICE_PORTS=()
+    declare -g -A SERVICE_NAMES=()
+    declare -g -A SERVICE_CONTAINERS=()
+    
+    # Parse docker-compose.yml for ports and service names
+    local in_services_section=false
+    local in_volumes_section=false
+    local in_networks_section=false
+    local current_service=""
+    
+    while IFS= read -r line; do
+        # Track which section we're in
+        if [[ $line =~ ^services:[[:space:]]*$ ]]; then
+            in_services_section=true
+            in_volumes_section=false
+            in_networks_section=false
+            continue
+        elif [[ $line =~ ^volumes:[[:space:]]*$ ]]; then
+            in_services_section=false
+            in_volumes_section=true
+            in_networks_section=false
+            continue
+        elif [[ $line =~ ^networks:[[:space:]]*$ ]]; then
+            in_services_section=false
+            in_volumes_section=false
+            in_networks_section=true
+            continue
+        fi
+        
+        # Only process service definitions when in services section
+        if [[ $in_services_section == true ]]; then
+            # Match service definitions (lines that start with service names and have a colon, at top level)
+            if [[ $line =~ ^[[:space:]]{2}([a-zA-Z0-9_-]+):[[:space:]]*$ ]]; then
+                current_service="${BASH_REMATCH[1]}"
+                SERVICE_NAMES["$current_service"]="$current_service"
+                SERVICE_CONTAINERS["$current_service"]="${DOCKER_PROJECT_NAME}-${current_service}-1"
+            # Match port mappings
+            elif [[ $line =~ ^[[:space:]]*-[[:space:]]*\"([0-9]+):([0-9]+)\"[[:space:]]*$ ]] && [[ -n "$current_service" ]]; then
+                host_port="${BASH_REMATCH[1]}"
+                container_port="${BASH_REMATCH[2]}"
+                SERVICE_PORTS["$current_service"]="$host_port"
+            fi
+        fi
+    done < "$COMPOSE_FILE"
+    
+    # Set display names for services
+    SERVICE_NAMES["user-management"]="User Management"
+    SERVICE_NAMES["course-generator"]="Course Generator"
+    SERVICE_NAMES["content-storage"]="Content Storage"
+    SERVICE_NAMES["course-management"]="Course Management"
+    SERVICE_NAMES["content-management"]="Content Management"
+    SERVICE_NAMES["lab-manager"]="Lab Manager"
+    SERVICE_NAMES["analytics"]="Analytics"
+    SERVICE_NAMES["organization-management"]="Organization Management (RBAC)"
+    SERVICE_NAMES["frontend"]="Frontend"
+    SERVICE_NAMES["postgres"]="PostgreSQL"
+    SERVICE_NAMES["redis"]="Redis"
+    
+    return 0
+}
+
 # Check if Docker and Docker Compose are available
 check_docker() {
     if ! command -v docker &> /dev/null; then
@@ -62,6 +131,9 @@ check_docker() {
         log_info "Please install Docker Compose: https://docs.docker.com/compose/install/"
         return 1
     fi
+
+    # Parse compose configuration
+    parse_compose_config
 
     return 0
 }
@@ -113,18 +185,23 @@ EOF
     log_success "Course Creator Platform started successfully!"
     echo
     echo "🌐 Service URLs:"
-    echo "  Frontend: http://localhost:3000"
-    echo "  User Management: http://localhost:8000"
-    echo "  Course Generator: http://localhost:8001"
-    echo "  Content Storage: http://localhost:8003"
-    echo "  Course Management: http://localhost:8004"
-    echo "  Content Management: http://localhost:8005"
-    echo "  Lab Manager: http://localhost:8006"
-    echo "  Analytics: http://localhost:8007"
+    
+    # Display service URLs based on parsed configuration
+    for service in frontend user-management course-generator content-storage course-management content-management lab-manager analytics organization-management; do
+        if [[ -n "${SERVICE_PORTS[$service]:-}" ]]; then
+            display_name="${SERVICE_NAMES[$service]:-$service}"
+            echo "  $display_name: http://localhost:${SERVICE_PORTS[$service]}"
+        fi
+    done
+    
     echo
     echo "🗄️ Database & Cache:"
-    echo "  PostgreSQL: localhost:5433"
-    echo "  Redis: localhost:6379"
+    if [[ -n "${SERVICE_PORTS[postgres]:-}" ]]; then
+        echo "  PostgreSQL: localhost:${SERVICE_PORTS[postgres]}"
+    fi
+    if [[ -n "${SERVICE_PORTS[redis]:-}" ]]; then
+        echo "  Redis: localhost:${SERVICE_PORTS[redis]}"
+    fi
     echo
     echo "📋 Management:"
     echo "  Status: $0 status"
@@ -181,51 +258,51 @@ docker_status() {
     echo
     echo "🔍 Health Status:"
     
-    # List of expected services and ports
-    declare -a services=(
-        "course-creator-user-management-1:8000:User Management"
-        "course-creator-course-generator-1:8001:Course Generator"
-        "course-creator-content-storage-1:8003:Content Storage"
-        "course-creator-course-management-1:8004:Course Management"
-        "course-creator-content-management-1:8005:Content Management"
-        "course-creator-lab-manager-1:8006:Lab Manager"
-        "course-creator-analytics-1:8007:Analytics"
-        "course-creator-frontend-1:3000:Frontend"
-        "course-creator-postgres-1:5433:PostgreSQL"
-        "course-creator-redis-1:6379:Redis"
-    )
+    # OPTIMIZED: Batch fetch all container info in single Docker call
+    # Get all container names, status, and health in one query
+    docker_info=$(docker ps -a --format '{{.Names}}\t{{.Status}}\t{{json .}}' --filter "name=${DOCKER_PROJECT_NAME}" 2>/dev/null)
     
-    for service_info in "${services[@]}"; do
-        IFS=':' read -r container_name port service_display_name <<< "$service_info"
+    # Check health of all services from parsed configuration
+    for service in "${!SERVICE_CONTAINERS[@]}"; do
+        container_name="${SERVICE_CONTAINERS[$service]}"
+        display_name="${SERVICE_NAMES[$service]:-$service}"
         
-        # Check if container is running
-        if docker ps --format '{{.Names}}' | grep -q "^${container_name}$"; then
-            # Check container health
-            health=$(docker inspect --format='{{.State.Health.Status}}' "$container_name" 2>/dev/null || echo "no-health-check")
-            if [ "$health" = "healthy" ]; then
-                echo -e "  ✅ ${service_display_name} (${container_name}) - Healthy"
-            elif [ "$health" = "unhealthy" ]; then
-                echo -e "  ❌ ${service_display_name} (${container_name}) - Unhealthy"
-            elif [ "$health" = "starting" ]; then
-                echo -e "  🔄 ${service_display_name} (${container_name}) - Starting"
+        # Find matching container from batch query (much faster)
+        container_line=$(echo "$docker_info" | grep "${container_name}$" | head -1)
+        
+        if [ -n "$container_line" ]; then
+            # Extract container name and status from batch query
+            actual_container_name=$(echo "$container_line" | cut -f1)
+            container_status=$(echo "$container_line" | cut -f2)
+            
+            # Quick health check - only inspect if needed
+            if [[ "$container_status" == *"healthy"* ]]; then
+                echo -e "  ✅ ${display_name} (${container_name}) - Healthy"
+            elif [[ "$container_status" == *"unhealthy"* ]]; then
+                echo -e "  ❌ ${display_name} (${container_name}) - Unhealthy"
+            elif [[ "$container_status" == *"starting"* ]] || [[ "$container_status" == *"health: starting"* ]]; then
+                echo -e "  🔄 ${display_name} (${container_name}) - Starting"
+            elif [[ "$container_status" == *"Up"* ]]; then
+                echo -e "  ✅ ${display_name} (${container_name}) - Running"
+            elif [[ "$container_status" == *"Restarting"* ]]; then
+                echo -e "  🔄 ${display_name} (${container_name}) - Restarting"
+            elif [[ "$container_status" == *"Exited"* ]]; then
+                echo -e "  ❌ ${display_name} (${container_name}) - Stopped"
             else
-                # No health check defined, check if container is running
-                status=$(docker inspect --format='{{.State.Status}}' "$container_name" 2>/dev/null || echo "not-found")
-                if [ "$status" = "running" ]; then
-                    echo -e "  ✅ ${service_display_name} (${container_name}) - Running"
-                else
-                    echo -e "  ❌ ${service_display_name} (${container_name}) - ${status}"
-                fi
+                echo -e "  ❓ ${display_name} (${container_name}) - ${container_status}"
             fi
         else
-            echo -e "  ❌ ${service_display_name} (${container_name}) - Not Running"
+            echo -e "  ❌ ${display_name} (${container_name}) - Not Running"
         fi
     done
     
     echo
     echo "🔗 Quick Links:"
-    echo "  Dashboard: http://localhost:3000"
-    echo "  API Health: http://localhost:8000/health"
+    # Use parsed frontend port or default
+    frontend_port="${SERVICE_PORTS[frontend]:-3000}"
+    user_mgmt_port="${SERVICE_PORTS[user-management]:-8000}"
+    echo "  Dashboard: http://localhost:${frontend_port}"
+    echo "  API Health: http://localhost:${user_mgmt_port}/health"
 }
 
 # Show logs for specific service or all services
@@ -313,6 +390,81 @@ docker_clean() {
     log_success "Docker cleanup completed"
 }
 
+# Force rebuild with no cache - useful for fixing import/code changes
+docker_rebuild() {
+    local service_name="${1:-}"
+    
+    log_info "Force rebuilding Course Creator Platform with no cache..."
+    
+    if ! check_docker; then
+        log_error "Docker environment not ready"
+        return 1
+    fi
+    
+    local compose_cmd=$(get_compose_cmd)
+    
+    if [ -n "$service_name" ]; then
+        log_info "Force rebuilding specific service: $service_name"
+        
+        # Stop specific service
+        log_info "Stopping service: $service_name"
+        $compose_cmd -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" stop "$service_name"
+        
+        # Remove specific container and image
+        log_info "Removing container and image for: $service_name"
+        $compose_cmd -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" rm -f "$service_name"
+        docker image rm -f "${DOCKER_PROJECT_NAME}-${service_name}:latest" 2>/dev/null || true
+        
+        # Force rebuild with no cache
+        log_info "Building $service_name with no cache..."
+        $compose_cmd -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" build --no-cache "$service_name"
+        
+        # Start the service
+        log_info "Starting $service_name..."
+        $compose_cmd -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" up -d "$service_name"
+        
+        log_success "Service $service_name rebuilt and started successfully!"
+    else
+        log_info "Force rebuilding all services"
+        
+        # Stop all services
+        log_info "Stopping all services..."
+        $compose_cmd -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" down
+        
+        # Remove all project images
+        log_info "Removing all project images..."
+        docker images "${DOCKER_PROJECT_NAME}-*" --format "{{.Repository}}:{{.Tag}}" | xargs -I {} docker image rm -f {} 2>/dev/null || true
+        
+        # Clear build cache
+        log_info "Clearing Docker build cache..."
+        docker builder prune -f
+        
+        # Rebuild all with no cache
+        log_info "Building all services with no cache..."
+        $compose_cmd -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" build --no-cache
+        
+        # Start all services
+        log_info "Starting all services..."
+        $compose_cmd -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" up -d
+        
+        # Wait for services to be healthy
+        log_info "Waiting for services to become healthy..."
+        sleep 15
+        
+        log_success "All services rebuilt and started successfully!"
+        echo
+        echo "🌐 Service URLs:"
+        
+        # Display service URLs based on parsed configuration
+        for service in frontend user-management course-generator content-storage course-management content-management lab-manager analytics organization-management; do
+            if [[ -n "${SERVICE_PORTS[$service]:-}" ]]; then
+                display_name="${SERVICE_NAMES[$service]:-$service}"
+                echo "  $display_name: http://localhost:${SERVICE_PORTS[$service]}"
+            fi
+        done
+    fi
+}
+
 # Main command handler
 case "${1:-}" in
     start)
@@ -339,6 +491,9 @@ case "${1:-}" in
     clean)
         docker_clean
         ;;
+    rebuild)
+        docker_rebuild "$2"
+        ;;
     # Legacy docker-* commands for backward compatibility
     docker-start)
         start_docker
@@ -364,36 +519,52 @@ case "${1:-}" in
     docker-clean)
         docker_clean
         ;;
+    docker-rebuild)
+        docker_rebuild "$2"
+        ;;
     *)
         echo "Course Creator Platform Control Script (Docker Only)"
         echo
-        echo "Usage: $0 {start|stop|restart|status|logs|build|pull|clean}"
+        echo "Usage: $0 {start|stop|restart|status|logs|build|pull|clean|rebuild}"
         echo
         echo "Commands:"
-        echo "  start            Start all services using Docker Compose"
-        echo "  stop             Stop all Docker containers"
-        echo "  restart          Restart all services using Docker Compose"
-        echo "  status           Show status of all Docker containers"
-        echo "  logs [service]   Show logs for all services or specific service"
-        echo "                   Add 'follow' or '-f' to follow logs in real-time"
-        echo "  build            Build Docker images from scratch"
-        echo "  pull             Pull latest base Docker images"
-        echo "  clean            Clean up Docker resources (containers, volumes, images)"
+        echo "  start              Start all services using Docker Compose"
+        echo "  stop               Stop all Docker containers"
+        echo "  restart            Restart all services using Docker Compose"
+        echo "  status             Show status of all Docker containers"
+        echo "  logs [service]     Show logs for all services or specific service"
+        echo "                     Add 'follow' or '-f' to follow logs in real-time"
+        echo "  build              Build Docker images from scratch"
+        echo "  pull               Pull latest base Docker images"
+        echo "  clean              Clean up Docker resources (containers, volumes, images)"
+        echo "  rebuild [service]  Force rebuild with no-cache (all services or specific service)"
+        echo "                     Useful after code changes that don't reflect in containers"
         echo
         echo "Legacy Commands (backward compatibility):"
-        echo "  docker-start     Same as 'start'"
-        echo "  docker-stop      Same as 'stop'"
-        echo "  docker-restart   Same as 'restart'"
-        echo "  docker-status    Same as 'status'"
-        echo "  docker-logs      Same as 'logs'"
-        echo "  docker-build     Same as 'build'"
-        echo "  docker-pull      Same as 'pull'"
-        echo "  docker-clean     Same as 'clean'"
+        echo "  docker-start       Same as 'start'"
+        echo "  docker-stop        Same as 'stop'"
+        echo "  docker-restart     Same as 'restart'"
+        echo "  docker-status      Same as 'status'"
+        echo "  docker-logs        Same as 'logs'"
+        echo "  docker-build       Same as 'build'"
+        echo "  docker-pull        Same as 'pull'"
+        echo "  docker-clean       Same as 'clean'"
+        echo "  docker-rebuild     Same as 'rebuild'"
         echo
-        echo "Service Names for logs:"
-        echo "  user-management, course-generator, content-storage,"
-        echo "  course-management, content-management, lab-manager,"
-        echo "  analytics, frontend, postgres, redis"
+        echo "Service Names for logs and rebuild:"
+        
+        # Parse and display available service names dynamically
+        if parse_compose_config 2>/dev/null; then
+            echo -n "  "
+            for service in "${!SERVICE_NAMES[@]}"; do
+                echo -n "$service, "
+            done | sed 's/, $//'
+            echo
+        else
+            echo "  user-management, course-generator, content-storage,"
+            echo "  course-management, content-management, lab-manager,"
+            echo "  analytics, organization-management, frontend, postgres, redis"
+        fi
         echo
         echo "Examples:"
         echo "  $0 start"

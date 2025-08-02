@@ -1,6 +1,47 @@
 """
-Role Domain Entity
-Single Responsibility: Encapsulates role and permission business logic
+Role Domain Entity - Fine-Grained Permission Management System
+
+This module defines the Role domain entity and Permission enumeration for the
+Course Creator Platform's authorization system. It provides fine-grained
+permission control that complements the basic role system in the User entity.
+
+Domain Model Design:
+    - Role Entity: Contains permissions and metadata for flexible authorization
+    - Permission Enum: Defines atomic permissions for specific operations
+    - Rich Domain Model: Business logic for permission management and validation
+    - System Roles: Predefined roles for standard platform operations
+
+Integration with Enhanced RBAC:
+    This service provides basic role and permission management that is extended
+    by the Organization Management Service for enhanced RBAC with:
+    - Multi-tenant organization permissions
+    - Granular resource-level authorization
+    - Track-based learning permissions
+    - Meeting room access controls
+
+Permission Categories:
+    - User Management: Create, read, update, delete users
+    - Course Management: Full course lifecycle permissions
+    - Content Management: Content creation and modification
+    - Analytics Access: Various levels of analytics viewing
+    - System Administration: Platform-wide administrative access
+    - Lab Management: Container and environment permissions
+
+Design Patterns Applied:
+    - Entity Pattern: Role has identity and lifecycle
+    - Strategy Pattern: Different permission sets for different roles
+    - Enum Pattern: Type-safe permission definitions
+    - Factory Pattern: Default role creation
+
+Security Principles:
+    - Principle of Least Privilege: Minimal permissions for each role
+    - Defense in Depth: Multiple layers of permission checking
+    - Immutable Permissions: Enum values prevent permission modification
+    - Audit Trail: Timestamp tracking for all permission changes
+
+Author: Course Creator Platform Team
+Version: 2.3.0
+Last Updated: 2025-08-02
 """
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -9,45 +50,153 @@ from enum import Enum
 import uuid
 
 class Permission(Enum):
-    # User permissions
-    CREATE_USER = "create_user"
-    READ_USER = "read_user"
-    UPDATE_USER = "update_user"
-    DELETE_USER = "delete_user"
+    """
+    Atomic Permission Enumeration for Fine-Grained Access Control
     
-    # Course permissions
-    CREATE_COURSE = "create_course"
-    READ_COURSE = "read_course"
-    UPDATE_COURSE = "update_course"
-    DELETE_COURSE = "delete_course"
-    PUBLISH_COURSE = "publish_course"
-    ENROLL_STUDENT = "enroll_student"
+    This enumeration defines all atomic permissions available in the Course Creator
+    Platform. Each permission represents a specific operation that can be granted
+    or denied to users through their roles.
     
-    # Content permissions
-    CREATE_CONTENT = "create_content"
-    READ_CONTENT = "read_content"
-    UPDATE_CONTENT = "update_content"
-    DELETE_CONTENT = "delete_content"
-    EXPORT_CONTENT = "export_content"
+    Permission Design Principles:
+        - Atomic: Each permission represents a single, specific operation
+        - Immutable: Enum values cannot be modified at runtime
+        - Descriptive: Clear naming indicates the operation allowed
+        - Granular: Fine-grained control over platform features
+        - Extensible: New permissions can be added without breaking existing code
     
-    # Analytics permissions
-    VIEW_ANALYTICS = "view_analytics"
-    EXPORT_ANALYTICS = "export_analytics"
-    VIEW_ALL_ANALYTICS = "view_all_analytics"
+    Permission Categories and Business Logic:
+        
+        User Management Permissions:
+            - Controls who can manage user accounts and profiles
+            - Critical for platform administration and security
+            - Should be restricted to administrative roles
+        
+        Course Management Permissions:
+            - Controls course lifecycle from creation to deletion
+            - Instructors need most course permissions for their content
+            - Publishing permissions may be restricted for quality control
+        
+        Content Management Permissions:
+            - Controls creation and modification of learning materials
+            - Export permissions enable content sharing and backup
+            - Read permissions allow content consumption
+        
+        Analytics Permissions:
+            - VIEW_ANALYTICS: User's own analytics or instructor's course analytics
+            - EXPORT_ANALYTICS: Download analytics data and reports
+            - VIEW_ALL_ANALYTICS: Platform-wide analytics (admin only)
+        
+        System Administration Permissions:
+            - Highest privilege permissions for platform management
+            - Should be restricted to system administrators only
+            - Enable platform configuration and monitoring
+        
+        Lab Management Permissions:
+            - ACCESS_LAB: Basic lab container access for students/instructors
+            - MANAGE_LABS: Administrative control over lab environments
     
-    # System administration
-    MANAGE_SYSTEM = "manage_system"
-    MANAGE_ROLES = "manage_roles"
-    VIEW_LOGS = "view_logs"
+    Integration Notes:
+        - These permissions are checked by authorization decorators
+        - Enhanced RBAC system extends these with organization-specific permissions
+        - Permission checks are performed at API endpoint and service levels
+        - Caching strategies should be implemented for frequent permission checks
+    """
     
-    # Lab permissions
-    ACCESS_LAB = "access_lab"
-    MANAGE_LABS = "manage_labs"
+    # User Management Permissions - Control user account operations
+    CREATE_USER = "create_user"        # Create new user accounts
+    READ_USER = "read_user"            # View user profiles and information
+    UPDATE_USER = "update_user"        # Modify user accounts and profiles
+    DELETE_USER = "delete_user"        # Remove user accounts from system
+    
+    # Course Management Permissions - Control course lifecycle operations
+    CREATE_COURSE = "create_course"    # Create new courses and curricula
+    READ_COURSE = "read_course"        # View course content and information
+    UPDATE_COURSE = "update_course"    # Modify existing course content
+    DELETE_COURSE = "delete_course"    # Remove courses from the platform
+    PUBLISH_COURSE = "publish_course"  # Make courses available to students
+    ENROLL_STUDENT = "enroll_student"  # Manage student course enrollments
+    
+    # Content Management Permissions - Control learning material operations
+    CREATE_CONTENT = "create_content"  # Create slides, exercises, quizzes
+    READ_CONTENT = "read_content"      # Access learning materials
+    UPDATE_CONTENT = "update_content"  # Modify existing content
+    DELETE_CONTENT = "delete_content"  # Remove content from courses
+    EXPORT_CONTENT = "export_content"  # Download content in various formats
+    
+    # Analytics Permissions - Control access to platform analytics
+    VIEW_ANALYTICS = "view_analytics"        # View relevant analytics dashboards
+    EXPORT_ANALYTICS = "export_analytics"    # Download analytics reports
+    VIEW_ALL_ANALYTICS = "view_all_analytics" # Platform-wide analytics access
+    
+    # System Administration Permissions - Platform management operations
+    MANAGE_SYSTEM = "manage_system"    # System configuration and administration
+    MANAGE_ROLES = "manage_roles"      # Role and permission management
+    VIEW_LOGS = "view_logs"           # Access system logs and audit trails
+    
+    # Lab Environment Permissions - Container and development environment access
+    ACCESS_LAB = "access_lab"          # Basic lab container access
+    MANAGE_LABS = "manage_labs"        # Administrative lab environment control
 
 @dataclass
 class Role:
     """
-    Role domain entity with permissions and business logic
+    Role Domain Entity - Permission Container with Business Logic
+    
+    This class represents a role within the Course Creator Platform, implementing
+    a flexible permission-based authorization system. Roles aggregate permissions
+    and provide business logic for authorization decisions.
+    
+    Domain Model Characteristics:
+        - Entity Pattern: Has unique identity and lifecycle management
+        - Aggregate Root: Manages permissions as value objects within the role
+        - Rich Domain Model: Contains business logic for permission operations
+        - Immutable Permissions: Permissions are validated enum values
+        - Audit Trail: Tracks creation and modification timestamps
+    
+    Core Responsibilities:
+        - Permission aggregation and management
+        - Authorization decision support
+        - Role lifecycle management (active/inactive)
+        - System role protection (prevent modification)
+        - Metadata storage for extensibility
+        - Validation of role integrity
+    
+    Business Rules:
+        1. Role names must be unique and descriptive
+        2. Descriptions are required for clarity
+        3. Only valid Permission enum values are allowed
+        4. System roles cannot be deactivated
+        5. Permission changes update modification timestamp
+        6. Roles must have at least a name and description
+    
+    Permission Management Strategy:
+        - Set-based storage prevents duplicate permissions
+        - Type safety through Permission enum validation
+        - Atomic operations for permission addition/removal
+        - Bulk operations for permission set management
+        - Query methods for authorization decisions
+    
+    Integration with Authorization:
+        - Used by authorization decorators for endpoint protection
+        - Integrated with JWT tokens for stateless authorization
+        - Cached for performance in high-frequency authorization
+        - Extended by Enhanced RBAC for organization-specific permissions
+    
+    Usage Examples:
+        # Create custom role
+        role = Role(
+            name="content_creator",
+            description="Can create and edit content",
+            permissions={Permission.CREATE_CONTENT, Permission.UPDATE_CONTENT}
+        )
+        
+        # Check permissions
+        if role.has_permission(Permission.CREATE_COURSE):
+            # Allow course creation
+        
+        # Manage permissions
+        role.add_permission(Permission.PUBLISH_COURSE)
+        role.remove_permission(Permission.DELETE_CONTENT)
     """
     name: str
     description: str
@@ -60,11 +209,32 @@ class Role:
     metadata: Dict[str, Any] = field(default_factory=dict)
     
     def __post_init__(self):
-        """Validate role data after initialization"""
+        """
+        Post-initialization validation and setup for role entity.
+        
+        Ensures the role is in a valid state immediately after creation
+        by validating all business rules and constraints.
+        
+        Raises:
+            ValueError: If any validation rule fails
+        """
         self.validate()
     
     def validate(self) -> None:
-        """Validate role data"""
+        """
+        Comprehensive validation of role data against business rules.
+        
+        Validates role integrity including name, description, and permissions
+        to ensure the role can be safely used for authorization decisions.
+        
+        Business Rules Enforced:
+            - Name is required and meaningful (minimum 2 characters)
+            - Description is required for role clarity
+            - All permissions must be valid Permission enum values
+        
+        Raises:
+            ValueError: Specific error message for validation failures
+        """
         if not self.name:
             raise ValueError("Role name is required")
         
@@ -74,7 +244,7 @@ class Role:
         if not self.description:
             raise ValueError("Role description is required")
         
-        # Validate permissions are Permission enum values
+        # Validate permissions are Permission enum values for type safety
         for permission in self.permissions:
             if not isinstance(permission, Permission):
                 raise ValueError(f"Invalid permission: {permission}")
@@ -93,7 +263,22 @@ class Role:
         self.updated_at = datetime.utcnow()
     
     def has_permission(self, permission: Permission) -> bool:
-        """Check if role has specific permission"""
+        """
+        Check if role has a specific permission.
+        
+        This is the primary method for authorization decisions, used
+        throughout the platform to determine if operations are allowed.
+        
+        Args:
+            permission (Permission): The permission to check for
+        
+        Returns:
+            bool: True if role has the permission, False otherwise
+        
+        Usage:
+            if role.has_permission(Permission.CREATE_COURSE):
+                # Allow course creation
+        """
         return permission in self.permissions
     
     def has_any_permission(self, permissions: List[Permission]) -> bool:
@@ -105,7 +290,21 @@ class Role:
         return all(perm in self.permissions for perm in permissions)
     
     def can_manage_users(self) -> bool:
-        """Check if role can manage users"""
+        """
+        Check if role has user management capabilities.
+        
+        Determines if the role can perform any user administration tasks
+        by checking for user management permissions.
+        
+        Returns:
+            bool: True if role can manage users, False otherwise
+        
+        Business Logic:
+            Role can manage users if it has any of:
+            - CREATE_USER: Can create new accounts
+            - UPDATE_USER: Can modify existing accounts
+            - DELETE_USER: Can remove accounts
+        """
         user_management_permissions = [
             Permission.CREATE_USER, Permission.UPDATE_USER, Permission.DELETE_USER
         ]
@@ -179,7 +378,21 @@ class Role:
 
 # Default system roles
 def create_default_roles() -> List[Role]:
-    """Create default system roles"""
+    """
+    Factory function for creating default system roles.
+    
+    Creates the three standard roles used throughout the platform:
+    student, instructor, and admin. These roles define the basic
+    permission hierarchy for the Course Creator Platform.
+    
+    Returns:
+        List[Role]: List of default system roles with appropriate permissions
+        
+    Usage:
+        roles = create_default_roles()
+        for role in roles:
+            role_repository.create(role)
+    """
     
     # Student role
     student_permissions = {

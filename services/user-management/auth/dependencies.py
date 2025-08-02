@@ -9,9 +9,9 @@ from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from typing import Optional
 
-from ..models.user import User
-from ..services.user_service import UserService
-from ..services.auth_service import AuthService
+from models.user import User
+from services.user_service import UserService
+from services.auth_service import AuthService
 
 
 logger = logging.getLogger(__name__)

@@ -1,8 +1,56 @@
 #!/usr/bin/env python3
 """
-Course Publishing API Endpoints
+Course Publishing API Endpoints - Advanced Educational Workflow Management
 
-Extended API endpoints for course publishing workflow, instances, and enhanced enrollment.
+This module provides comprehensive API endpoints for managing the complete course publication
+lifecycle, course instance scheduling, student enrollment workflows, and quiz management
+systems within the educational platform.
+
+CORE FUNCTIONALITY AREAS:
+1. Course Publication Management: Draft → Published → Archived lifecycle with visibility controls
+2. Course Instance Scheduling: Time-based course sessions with enrollment windows
+3. Student Enrollment System: Secure access token generation and management
+4. Quiz Publication Control: Instance-specific quiz publishing with analytics integration
+5. Email Integration: Hydra-configured notification system for enrollment events
+6. Course Completion Workflows: Automated cleanup and data retention management
+
+EDUCATIONAL WORKFLOW PATTERNS:
+- Course Development: Draft creation → Content development → Publication → Instance scheduling
+- Student Access: Enrollment → Secure access → Learning progression → Completion tracking
+- Instructor Management: Course creation → Instance scheduling → Student enrollment → Progress monitoring
+- Analytics Integration: Performance tracking → Student progress → Instructor insights
+
+BUSINESS RULES AND CONSTRAINTS:
+- Course Visibility: Public courses discoverable by all, private courses instructor-only
+- Instance Scheduling: Time-bound access with 30-minute early access window
+- Enrollment Limits: Configurable maximum students per course instance
+- Quiz Publication: Instance-specific publishing with availability windows
+- Data Retention: Automated cleanup after 30 days post-completion
+
+SECURITY AND ACCESS CONTROL:
+- Token-based student authentication with secure password management
+- Instructor authorization validation for all course management operations
+- Course instance isolation preventing cross-enrollment access
+- Secure email delivery with Hydra configuration management
+- Access time validation with timezone-aware scheduling
+
+INTEGRATION PATTERNS:
+- Email Service: Hydra-configured SMTP with mock mode for development
+- Database Transactions: ACID compliance for enrollment and publication operations
+- Analytics Service: Student performance and course effectiveness metrics
+- User Management Service: Authentication and authorization integration
+
+PERFORMANCE CONSIDERATIONS:
+- Connection pooling for high-throughput enrollment operations
+- Async operations for email delivery to prevent blocking
+- Batch processing for bulk enrollment and cleanup operations
+- Optimized queries for instructor dashboards and student course listings
+
+ERROR HANDLING AND RESILIENCE:
+- Comprehensive HTTP exception mapping with educational context
+- Email delivery failure handling with non-blocking enrollment
+- Transaction rollback for failed multi-step operations
+- Graceful degradation for non-critical component failures
 """
 
 from fastapi import HTTPException, Depends
@@ -37,7 +85,45 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class CoursePublishingService:
-    """Service class for course publishing operations."""
+    """
+    Comprehensive service for managing course publication workflows and student enrollment.
+    
+    This service encapsulates the complex business logic for course publication lifecycle,
+    instance scheduling, student enrollment management, and quiz publication controls.
+    It implements enterprise-grade security and educational workflow patterns.
+    
+    CORE RESPONSIBILITIES:
+    1. Course Publication: Managing course visibility and publication status
+    2. Instance Management: Time-based course scheduling with enrollment controls
+    3. Student Enrollment: Secure token-based access with email notifications
+    4. Quiz Publishing: Instance-specific quiz availability with analytics integration
+    5. Access Control: Time-based access validation and security enforcement
+    6. Data Management: Automated cleanup and retention policy enforcement
+    
+    EDUCATIONAL WORKFLOW INTEGRATION:
+    - Supports complete instructor workflow from course creation to completion
+    - Enables student self-enrollment through secure access URLs
+    - Integrates with analytics service for performance tracking
+    - Provides automated email notifications for all enrollment events
+    
+    SECURITY FEATURES:
+    - Cryptographically secure token generation for student access
+    - Password hashing using bcrypt with configurable rounds
+    - Access time validation with timezone awareness
+    - Course instance isolation to prevent cross-enrollment
+    
+    EMAIL INTEGRATION:
+    - Hydra-configured SMTP service with fallback to mock mode
+    - Professional enrollment emails with course details
+    - Instructor contact information inclusion
+    - Failure handling that doesn't block enrollment operations
+    
+    PERFORMANCE OPTIMIZATION:
+    - Database connection pooling for concurrent operations
+    - Async operations throughout for non-blocking I/O
+    - Optimized queries with proper indexing strategies
+    - Batch processing capabilities for bulk operations
+    """
     
     def __init__(self, db_pool, config: Optional[DictConfig] = None):
         self.db_pool = db_pool
@@ -68,7 +154,42 @@ class CoursePublishingService:
     
     # Course Publishing Methods
     async def publish_course(self, course_id: str, instructor_id: str, publish_request: CoursePublishRequest) -> Dict[str, Any]:
-        """Publish a draft course."""
+        """
+        Publish a draft course, making it available for instance scheduling and student enrollment.
+        
+        This method transitions a course from draft status to published status, enabling the
+        creation of course instances and student enrollment workflows. The publication process
+        includes visibility controls and audit trail maintenance.
+        
+        BUSINESS WORKFLOW:
+        1. Validate instructor ownership and course readiness for publication
+        2. Verify course is not already published to prevent duplicate operations
+        3. Update course status with publication timestamp and visibility settings
+        4. Create audit trail for publication event with instructor attribution
+        5. Enable course for instance creation and enrollment workflows
+        
+        VISIBILITY CONTROLS:
+        - Public: Course discoverable in course catalog by all users
+        - Private: Course visible only to the owning instructor
+        - Organization: Course available to users within the instructor's organization
+        
+        PUBLICATION REQUIREMENTS:
+        - Course must be in draft status (not already published or archived)
+        - Course must have minimum required content (title, description)
+        - Instructor must be authenticated and authorized for the course
+        - Course data integrity must be validated before publication
+        
+        ANALYTICS INTEGRATION:
+        - Publication event triggers analytics tracking for course lifecycle
+        - Course discoverability metrics begin collection
+        - Instructor productivity metrics are updated
+        
+        ERROR SCENARIOS:
+        - Course not found or access denied: 404 HTTP exception
+        - Course already published: 400 HTTP exception with clear message
+        - Database constraints violation: Proper error handling and rollback
+        - Invalid visibility setting: Validation error with acceptable values
+        """
         async with self.db_pool.acquire() as conn:
             # Verify course exists and belongs to instructor
             course = await conn.fetchrow(
@@ -345,7 +466,62 @@ class CoursePublishingService:
     
     # Student Enrollment Methods
     async def enroll_student(self, instructor_id: str, enrollment_request: StudentEnrollmentRequest) -> StudentCourseEnrollment:
-        """Enroll a student in a course instance."""
+        """
+        Enroll a student in a course instance with secure access provisioning and email notification.
+        
+        This method implements the complete student enrollment workflow, including security
+        credential generation, enrollment validation, database persistence, and automated
+        email notification with access instructions.
+        
+        ENROLLMENT WORKFLOW:
+        1. Validate instructor authorization for the specified course instance
+        2. Verify course instance is in valid state (scheduled or active)
+        3. Check for duplicate enrollment to prevent multiple registrations
+        4. Validate enrollment capacity constraints (max_students limit)
+        5. Generate secure access credentials (token, temporary password)
+        6. Create enrollment record with metadata and access information
+        7. Update course instance enrollment count atomically
+        8. Send enrollment email with course details and access instructions
+        
+        SECURITY IMPLEMENTATION:
+        - Cryptographically secure 32-character access token generation
+        - Bcrypt password hashing with configurable salt rounds
+        - Unique access URL generation for secure student login
+        - Token-based authentication preventing unauthorized access
+        - Password complexity requirements for temporary credentials
+        
+        ENROLLMENT VALIDATION:
+        - Course instance existence and instructor ownership verification
+        - Student email uniqueness within the course instance
+        - Enrollment capacity limits with graceful error handling
+        - Course instance status validation (cannot enroll in cancelled/completed courses)
+        - Timeline validation (enrollment windows and access periods)
+        
+        EMAIL NOTIFICATION SYSTEM:
+        - Professional enrollment confirmation emails with course details
+        - Secure access instructions with login URL and temporary password
+        - Instructor contact information for student support
+        - Course schedule information with timezone handling
+        - Hydra-configured SMTP with graceful fallback on email failures
+        
+        ANALYTICS INTEGRATION:
+        - Enrollment event tracking for course popularity metrics
+        - Student acquisition analytics for instructor insights
+        - Course capacity utilization monitoring
+        - Email delivery success/failure tracking
+        
+        DATABASE CONSISTENCY:
+        - Atomic enrollment creation with proper transaction handling
+        - Foreign key constraint validation for data integrity
+        - Enrollment count synchronization with course instance records
+        - Audit trail creation for enrollment events
+        
+        ERROR HANDLING PATTERNS:
+        - 404: Course instance not found or instructor access denied
+        - 400: Duplicate enrollment or validation failures
+        - 403: Enrollment not permitted (capacity, status, timing)
+        - 500: Database errors with proper rollback and logging
+        """
         async with self.db_pool.acquire() as conn:
             # Verify instance exists and belongs to instructor
             instance = await conn.fetchrow("""

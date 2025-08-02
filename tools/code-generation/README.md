@@ -1,1 +1,0 @@
-{'files': {}, 'extracted_from_markdown': True}

@@ -1,5 +1,27 @@
 """
-Simplified Centralized Logging Setup for Course Creator Platform
+Educational Content Management Centralized Logging System
+
+Comprehensive logging infrastructure for educational content management operations,
+providing structured logging, audit trails, and operational monitoring for educational workflows.
+
+## Educational Logging Capabilities:
+
+### Centralized Educational Audit Trails
+- **Educational Content Operations**: Comprehensive logging of educational content lifecycle operations
+  - Educational content creation, modification, and deletion tracking
+  - Educational content publication and archival workflow monitoring
+  - Educational content access and usage pattern tracking
+  - Educational content quality assurance and validation logging
+
+- **Educational Service Operations**: Complete educational service operation monitoring
+  - Educational content processing pipeline tracking and performance monitoring
+  - Educational AI integration logging and service interaction tracking
+  - Educational content export and delivery operation logging
+  - Educational content search and discovery operation monitoring
+
+This logging system provides comprehensive educational operation visibility,
+supporting institutional compliance, educational quality assurance, and
+operational excellence in educational content management.
 """
 import logging
 import logging.handlers
@@ -11,13 +33,12 @@ from pathlib import Path
 
 def setup_syslog_logging(service_name: str, log_level: str = "INFO", log_dir: str = "/var/log/course-creator") -> logging.Logger:
     """
-    Setup centralized logging for a service with syslog format
+    Setup comprehensive centralized logging for educational content management service.
     
-    Args:
-        service_name: Name of the service
-        log_level: Logging level
-        log_dir: Directory to write log files
+    Configures structured logging infrastructure for educational content operations
+    with syslog format compliance, educational audit trails, and operational monitoring.
     """
+    # Comprehensive educational service logging configuration
     # Ensure log directory exists
     Path(log_dir).mkdir(parents=True, exist_ok=True)
     
@@ -89,8 +110,12 @@ def setup_syslog_logging(service_name: str, log_level: str = "INFO", log_dir: st
 
 def setup_docker_logging(service_name: str, log_level: str = "INFO") -> logging.Logger:
     """
-    Setup logging specifically for Docker containers
+    Setup educational content management logging for Docker container environments.
+    
+    Configures educational logging infrastructure optimized for containerized
+    educational content management deployments with proper educational audit trails.
     """
+    # Educational content management Docker container logging configuration
     # Check if running in Docker
     if os.environ.get('DOCKER_CONTAINER', 'false').lower() == 'true':
         log_dir = "/var/log/course-creator"

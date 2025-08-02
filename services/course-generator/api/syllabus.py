@@ -12,6 +12,12 @@ from services.syllabus_service import SyllabusService
 from app.dependencies import get_container, get_syllabus_service
 from models.syllabus import SyllabusRequest, SyllabusFeedback, SyllabusResponse
 
+# Custom exceptions
+from exceptions import (
+    CourseGeneratorException, ContentGenerationException, DatabaseException,
+    ValidationException, FileProcessingException
+)
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -87,11 +93,15 @@ async def get_syllabus(
         
     except HTTPException:
         raise
+    except CourseGeneratorException:
+        # Re-raise custom exceptions (they will be handled by the global handler)
+        raise
     except Exception as e:
-        logger.error(f"Failed to retrieve syllabus for course {course_id}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve syllabus: {str(e)}"
+        raise DatabaseException(
+            message=f"Failed to retrieve syllabus for course {course_id}",
+            operation="get_syllabus",
+            table_name="syllabi",
+            original_exception=e
         )
 
 
@@ -132,11 +142,21 @@ async def update_syllabus(
         
     except HTTPException:
         raise
+    except CourseGeneratorException:
+        # Re-raise custom exceptions (they will be handled by the global handler)
+        raise
+    except ValueError as e:
+        raise ValidationException(
+            message="Invalid syllabus update data",
+            field_name="updates",
+            original_exception=e
+        )
     except Exception as e:
-        logger.error(f"Failed to update syllabus for course {course_id}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update syllabus: {str(e)}"
+        raise DatabaseException(
+            message=f"Failed to update syllabus for course {course_id}",
+            operation="update_syllabus",
+            table_name="syllabi",
+            original_exception=e
         )
 
 
@@ -175,11 +195,15 @@ async def delete_syllabus(
         
     except HTTPException:
         raise
+    except CourseGeneratorException:
+        # Re-raise custom exceptions (they will be handled by the global handler)
+        raise
     except Exception as e:
-        logger.error(f"Failed to delete syllabus for course {course_id}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete syllabus: {str(e)}"
+        raise DatabaseException(
+            message=f"Failed to delete syllabus for course {course_id}",
+            operation="delete_syllabus",
+            table_name="syllabi",
+            original_exception=e
         )
 
 
@@ -220,11 +244,15 @@ async def list_syllabi(
             "search": search
         }
         
+    except CourseGeneratorException:
+        # Re-raise custom exceptions (they will be handled by the global handler)
+        raise
     except Exception as e:
-        logger.error(f"Failed to list syllabi: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to list syllabi: {str(e)}"
+        raise DatabaseException(
+            message="Failed to list syllabi",
+            operation="list_syllabi" if not search else "search_syllabi",
+            table_name="syllabi",
+            original_exception=e
         )
 
 

@@ -5,7 +5,7 @@ Dependency Inversion: Abstract interface for data persistence
 """
 from abc import ABC, abstractmethod
 from typing import List, Optional, Dict, Any
-from ..entities.enrollment import Enrollment, EnrollmentStatus
+from domain.entities.enrollment import Enrollment, EnrollmentStatus
 
 class IEnrollmentRepository(ABC):
     """Interface for enrollment data access operations"""

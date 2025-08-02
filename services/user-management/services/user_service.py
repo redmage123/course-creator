@@ -7,9 +7,9 @@ Business logic for user management operations.
 import logging
 from typing import Optional, List, Dict, Any
 
-from ..repositories.user_repository import UserRepository
-from ..models.user import User, UserCreate, UserUpdate, UserProfile, UserStats
-from ..auth.password_manager import PasswordManager
+from repositories.user_repository import UserRepository
+from models.user import User, UserCreate, UserUpdate, UserProfile, UserStats
+from auth.password_manager import PasswordManager
 
 
 class UserService:

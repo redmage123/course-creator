@@ -14,6 +14,43 @@ class AuthManager {
         this.authToken = null;
         this.activityTracker = new ActivityTracker();
         this.authApiBase = CONFIG.API_URLS.USER_MANAGEMENT;
+        
+        """
+        Session Management Configuration and Business Requirements
+        
+        SECURITY TIMEOUT CONFIGURATION:
+        - SESSION_TIMEOUT: 8 hours (28,800,000 ms) - Maximum session duration
+        - INACTIVITY_TIMEOUT: 2 hours (7,200,000 ms) - Inactivity threshold
+        - AUTO_LOGOUT_WARNING: 5 minutes (300,000 ms) - Warning before expiry
+        
+        WHY THESE SPECIFIC TIMEOUTS:
+        
+        8-Hour Absolute Session Timeout:
+        - Aligns with standard work day expectations
+        - Balances security with user convenience
+        - Prevents indefinite session persistence
+        - Meets educational platform security requirements
+        - Reduces risk of session hijacking over time
+        
+        2-Hour Inactivity Timeout:
+        - Prevents sessions from remaining active when users step away
+        - Common industry standard for educational platforms
+        - Allows for lunch breaks and meetings without forced logout
+        - Protects against unauthorized access on unattended devices
+        
+        5-Minute Warning Period:
+        - Provides sufficient time for users to save work
+        - Allows users to extend session through activity
+        - Prevents unexpected data loss from automatic logout
+        - User-friendly approach to session management
+        """
+        this.SESSION_TIMEOUT = 8 * 60 * 60 * 1000; // 8 hours absolute maximum
+        this.INACTIVITY_TIMEOUT = 2 * 60 * 60 * 1000; // 2 hours of inactivity
+        this.AUTO_LOGOUT_WARNING = 5 * 60 * 1000; // 5 minutes warning period
+        
+        // Initialize session monitoring state
+        this.sessionCheckInterval = null;
+        this.warningShown = false;
     }
 
     /**
@@ -92,8 +129,16 @@ class AuthManager {
                 localStorage.setItem('authToken', this.authToken);
                 localStorage.setItem('userEmail', credentials.username);
                 
+                // Initialize session timestamps for proper timeout handling
+                const sessionStart = Date.now();
+                localStorage.setItem('sessionStart', sessionStart.toString());
+                localStorage.setItem('lastActivity', sessionStart.toString());
+                
                 // Start activity tracking
                 this.activityTracker.start();
+                
+                // Start session monitoring for automatic logout
+                this.startSessionMonitoring();
                 
                 // Get user profile
                 const profile = await this.getUserProfile();
@@ -280,15 +325,13 @@ class AuthManager {
     handleSessionExpired() {
         this.activityTracker.stop();
         
-        // Clear session data
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('userEmail');
+        // Clear session data including timestamps
+        this.clearAllSessionData();
         
         showNotification('Your session has expired. Please log in again.', 'error');
         
-        // Redirect to login
-        window.location.href = 'html/index.html';
+        // Redirect to home page (not login page) to show proper landing page
+        window.location.href = window.location.pathname.includes('/html/') ? '../index.html' : 'index.html';
     }
 
     /**
@@ -297,15 +340,13 @@ class AuthManager {
     handleInactivityTimeout() {
         this.activityTracker.stop();
         
-        // Clear session data
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('userEmail');
+        // Clear session data including timestamps
+        this.clearAllSessionData();
         
         showNotification('Your session has expired due to inactivity. Please log in again.', 'error');
         
-        // Redirect to login
-        window.location.href = 'html/index.html';
+        // Redirect to home page (not login page) to show proper landing page
+        window.location.href = window.location.pathname.includes('/html/') ? '../index.html' : 'index.html';
     }
 
     /**
@@ -331,9 +372,9 @@ class AuthManager {
         if (!userRole) return false;
         
         const pageAccess = {
-            'student': ['html/student-dashboard.html', 'html/lab.html', 'html/index.html'],
-            'instructor': ['html/instructor-dashboard.html', 'html/lab.html', 'html/index.html'],
-            'admin': ['html/admin.html', 'html/instructor-dashboard.html', 'html/student-dashboard.html', 'html/lab.html', 'html/index.html']
+            'student': ['student-dashboard.html', 'lab.html', 'index.html'],
+            'instructor': ['instructor-dashboard.html', 'lab.html', 'index.html'],
+            'admin': ['admin.html', 'instructor-dashboard.html', 'student-dashboard.html', 'lab.html', 'index.html']
         };
         
         return pageAccess[userRole]?.includes(page) || false;
@@ -347,14 +388,201 @@ class AuthManager {
         
         switch (userRole) {
             case 'admin':
-                return 'html/admin.html';
+                return 'admin.html';
             case 'instructor':
-                return 'html/instructor-dashboard.html';
+                return 'instructor-dashboard.html';
             case 'student':
-                return 'html/student-dashboard.html';
+                return 'student-dashboard.html';
             default:
-                return 'html/index.html';
+                return 'index.html';
         }
+    }
+
+    /**
+     * SESSION MANAGEMENT METHODS
+     * 
+     * These methods implement comprehensive session timeout functionality:
+     * - Absolute session timeout (8 hours from login)
+     * - Inactivity timeout (2 hours of no activity)
+     * - Cross-tab synchronization
+     * - Automatic cleanup and warning system
+     */
+
+    /**
+     * Check if current session is valid based on timestamps.
+     * 
+     * Validates both absolute session timeout and inactivity timeout.
+     * This method is called frequently to ensure session integrity.
+     * 
+     * Returns:
+     *   boolean: true if session is still valid, false if expired
+     */
+    isSessionValid() {
+        const sessionStart = localStorage.getItem('sessionStart');
+        const lastActivity = localStorage.getItem('lastActivity');
+        const authToken = localStorage.getItem('authToken');
+        
+        // No session data means invalid session
+        if (!sessionStart || !lastActivity || !authToken) {
+            return false;
+        }
+        
+        const now = Date.now();
+        const sessionAge = now - parseInt(sessionStart);
+        const timeSinceActivity = now - parseInt(lastActivity);
+        
+        // Check absolute session timeout (8 hours)
+        if (sessionAge > this.SESSION_TIMEOUT) {
+            console.log('Session expired: Maximum session time exceeded');
+            return false;
+        }
+        
+        // Check inactivity timeout (2 hours)
+        if (timeSinceActivity > this.INACTIVITY_TIMEOUT) {
+            console.log('Session expired: Inactivity timeout exceeded');
+            return false;
+        }
+        
+        return true;
+    }
+
+    /**
+     * Update last activity timestamp.
+     * 
+     * Called whenever user interacts with the application to prevent
+     * inactivity timeout. Uses current timestamp for accuracy.
+     */
+    updateLastActivity() {
+        localStorage.setItem('lastActivity', Date.now().toString());
+        this.warningShown = false; // Reset warning flag on activity
+    }
+
+    /**
+     * Clear all session-related data from localStorage.
+     * 
+     * Comprehensive cleanup method that removes all session data
+     * including timestamps and user information.
+     */
+    clearAllSessionData() {
+        const sessionKeys = [
+            'authToken',
+            'userEmail', 
+            'currentUser',
+            'sessionStart',
+            'lastActivity'
+        ];
+        
+        sessionKeys.forEach(key => localStorage.removeItem(key));
+    }
+
+    /**
+     * Clear expired session and notify user.
+     * 
+     * Called when session validation fails. Performs cleanup and
+     * provides user notification about session expiry.
+     */
+    clearExpiredSession() {
+        console.log('Clearing expired session');
+        this.stopSessionMonitoring();
+        this.clearAllSessionData();
+        
+        // Notify user about session expiry
+        if (typeof showNotification === 'function') {
+            showNotification('Your session has expired. Please log in again.', 'warning');
+        }
+    }
+
+    /**
+     * Start periodic session monitoring.
+     * 
+     * Begins background monitoring of session validity with periodic checks
+     * and automatic logout warnings. Runs every 30 seconds for responsiveness.
+     */
+    startSessionMonitoring() {
+        // Clear any existing interval
+        this.stopSessionMonitoring();
+        
+        // Check session every 30 seconds
+        this.sessionCheckInterval = setInterval(() => {
+            if (!this.isSessionValid()) {
+                this.clearExpiredSession();
+                // Redirect to login page
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // Check if we should show logout warning
+            this.checkLogoutWarning();
+        }, 30000); // 30 second intervals
+        
+        console.log('Session monitoring started');
+    }
+
+    /**
+     * Stop session monitoring.
+     * 
+     * Clears the session check interval to prevent unnecessary background
+     * processing when user is logged out or session is being cleared.
+     */
+    stopSessionMonitoring() {
+        if (this.sessionCheckInterval) {
+            clearInterval(this.sessionCheckInterval);
+            this.sessionCheckInterval = null;
+            console.log('Session monitoring stopped');
+        }
+    }
+
+    /**
+     * Check if logout warning should be displayed.
+     * 
+     * Shows warning message 5 minutes before session expiry to give
+     * users time to save work and extend their session.
+     */
+    checkLogoutWarning() {
+        if (this.warningShown) return;
+        
+        const sessionStart = localStorage.getItem('sessionStart');
+        const lastActivity = localStorage.getItem('lastActivity');
+        
+        if (!sessionStart || !lastActivity) return;
+        
+        const now = Date.now();
+        const sessionAge = now - parseInt(sessionStart);
+        const timeSinceActivity = now - parseInt(lastActivity);
+        
+        // Show warning 5 minutes before absolute timeout
+        const timeUntilSessionExpiry = this.SESSION_TIMEOUT - sessionAge;
+        // Show warning 5 minutes before inactivity timeout  
+        const timeUntilInactivityExpiry = this.INACTIVITY_TIMEOUT - timeSinceActivity;
+        
+        const soonestExpiry = Math.min(timeUntilSessionExpiry, timeUntilInactivityExpiry);
+        
+        if (soonestExpiry <= this.AUTO_LOGOUT_WARNING) {
+            this.showLogoutWarning(Math.floor(soonestExpiry / 60000)); // Convert to minutes
+            this.warningShown = true;
+        }
+    }
+
+    /**
+     * Show logout warning notification.
+     * 
+     * Displays user-friendly warning about impending session expiry
+     * with time remaining and instructions for extending session.
+     * 
+     * Args:
+     *   minutesRemaining: Number of minutes until session expires
+     */
+    showLogoutWarning(minutesRemaining) {
+        const message = `Your session will expire in ${minutesRemaining} minute(s). Please save your work and continue using the application to extend your session.`;
+        
+        if (typeof showNotification === 'function') {
+            showNotification(message, 'warning');
+        } else {
+            // Fallback to alert if notification system not available
+            alert(message);
+        }
+        
+        console.log('Logout warning displayed:', message);
     }
 }
 

@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 from uuid import UUID
 
-from ..entities.meeting_room import MeetingRoom, MeetingRoomUsage, MeetingRoomInvitation, MeetingPlatform, RoomType
+from domain.entities.meeting_room import MeetingRoom, MeetingRoomUsage, MeetingRoomInvitation, MeetingPlatform, RoomType
 
 
 class IMeetingRoomRepository(ABC):

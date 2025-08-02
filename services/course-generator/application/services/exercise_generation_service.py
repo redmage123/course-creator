@@ -6,10 +6,10 @@ Dependency Inversion: Depends on repository and AI service abstractions
 import uuid
 from datetime import datetime
 from typing import Dict, Any, List, Optional
-from ...domain.entities.course_content import Exercise, ExerciseType, DifficultyLevel
-from ...domain.interfaces.content_generation_service import IExerciseGenerationService
-from ...domain.interfaces.content_repository import IExerciseRepository, ISyllabusRepository
-from ...domain.interfaces.ai_service import IAIService, ContentGenerationType, IPromptTemplateService
+from domain.entities.course_content import Exercise, ExerciseType, DifficultyLevel
+from domain.interfaces.content_generation_service import IExerciseGenerationService
+from domain.interfaces.content_repository import IExerciseRepository, ISyllabusRepository
+from domain.interfaces.ai_service import IAIService, ContentGenerationType, IPromptTemplateService
 
 class ExerciseGenerationService(IExerciseGenerationService):
     """

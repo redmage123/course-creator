@@ -7,9 +7,9 @@ Business logic for course management operations.
 import logging
 from typing import Optional, List, Dict, Any
 
-from ..repositories.course_repository import CourseRepository
-from ..repositories.enrollment_repository import EnrollmentRepository
-from ..models.course import Course, CourseCreate, CourseUpdate, CourseSearchRequest, CourseStats
+from repositories.course_repository import CourseRepository
+from repositories.enrollment_repository import EnrollmentRepository
+from models.course import Course, CourseCreate, CourseUpdate, CourseSearchRequest, CourseStats
 
 
 class CourseService:

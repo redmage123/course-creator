@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 from uuid import UUID
 
-from ..entities.enhanced_role import OrganizationMembership, TrackAssignment, RoleType
+from domain.entities.enhanced_role import OrganizationMembership, TrackAssignment, RoleType
 
 
 class IMembershipRepository(ABC):

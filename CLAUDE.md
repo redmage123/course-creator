@@ -2,8 +2,28 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Version**: 2.3.0 - Enhanced RBAC System with Comprehensive Testing  
-**Last Updated**: 2025-07-31
+**Version**: 2.5.0 - Enhanced Session Management, Dashboard Layout Fixes, and Memory System Integration  
+**Last Updated**: 2025-08-02
+
+## CRITICAL: Python Import Requirements
+
+**ABSOLUTE IMPORTS ONLY**: Claude Code must NEVER write relative import statements in this application. All Python imports must be absolute imports only.
+
+**FORBIDDEN**:
+```python
+from ..module import something          # NEVER
+from .module import something           # NEVER
+from ...parent.module import something  # NEVER
+```
+
+**REQUIRED**:
+```python
+from module import something            # ALWAYS
+from package.module import something    # ALWAYS
+from services.package.module import something  # ALWAYS
+```
+
+This directive overrides all other coding conventions and must be followed without exception to prevent Docker container import failures.
 
 ## File Editing Efficiency
 
@@ -14,6 +34,364 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Applying consistent changes across multiple files
 
 Use MultiEdit or multiple single Edit calls in one response to complete all related changes efficiently.
+
+## Claude Code Memory System (v2.5 - MANDATORY USAGE)
+
+**CRITICAL**: Claude Code now has access to a comprehensive persistent memory system that MUST be used to maintain context, store important information, and provide continuity across conversations.
+
+### Memory System Overview
+
+The memory system provides Claude Code with:
+- **Persistent storage** of facts, entities, and relationships across sessions
+- **Context continuity** - remember previous conversations and decisions
+- **Knowledge accumulation** - build understanding of the codebase over time
+- **Entity tracking** - maintain information about users, systems, files, and concepts
+- **Relationship mapping** - understand connections between different components
+- **Search capabilities** - quickly recall relevant information from past interactions
+
+### Mandatory Memory Usage Requirements
+
+**WHEN TO USE MEMORY (Required)**:
+
+1. **Every significant interaction** - Store key facts from each conversation
+2. **User preferences** - Remember user choices, preferences, and requirements
+3. **System discoveries** - Store information learned about the codebase
+4. **Problem solutions** - Remember fixes, workarounds, and troubleshooting steps
+5. **Entity relationships** - Track connections between users, systems, files, projects
+6. **Context preservation** - Maintain conversation context across sessions
+
+### Memory System Location and Files
+
+**Database Location**: `/home/bbrelin/course-creator/claude_memory.db`  
+**Manager Class**: `/home/bbrelin/course-creator/claude_memory_manager.py`  
+**Helper Functions**: `/home/bbrelin/course-creator/claude_memory_helpers.py`  
+**Schema**: `/home/bbrelin/course-creator/claude_memory_schema.sql`  
+**Tests**: `/home/bbrelin/course-creator/memory_tests/test_memory_system.py`
+
+### Memory System Usage Patterns
+
+#### Simple Memory Operations (Use These Frequently)
+
+```python
+# Import helper functions
+import sys
+sys.path.append('/home/bbrelin/course-creator')
+import claude_memory_helpers as memory
+
+# Remember key information
+memory.remember("User prefers dark mode interface", category="user_preferences", importance="medium")
+memory.remember("Docker containers use ports 8000-8008", category="infrastructure", importance="high")
+
+# Recall information
+results = memory.recall("docker ports")
+print(results)
+
+# Remember user-specific information
+memory.remember_user_preference("ui_theme", "dark")
+memory.remember_system_info("Course Creator Platform", "Uses microservices architecture with 8 services")
+
+# Remember troubleshooting solutions
+memory.remember_error_solution("Container startup failure", "Remove old containers and rebuild with --no-cache")
+```
+
+#### Entity and Relationship Management
+
+```python
+# Track entities (people, systems, concepts, files)
+memory.note_entity("Course Creator Platform", "system", "Educational platform with microservices")
+memory.note_entity("PostgreSQL Database", "system", "Primary database for all services")
+memory.note_entity("User", "person", "Platform user working on course creation")
+
+# Create relationships
+memory.connect_entities("Course Creator Platform", "PostgreSQL Database", "uses", "Platform stores data in PostgreSQL")
+memory.connect_entities("User", "Course Creator Platform", "uses", "User develops and maintains the platform")
+```
+
+#### Context and Conversation Management
+
+```python
+# Start memory context for significant work sessions
+memory.start_memory_context("Database Migration Project", "Migrating database schema for v2.5")
+
+# Get current context
+context_info = memory.get_memory_context()
+print(context_info)
+
+# View memory statistics
+summary = memory.memory_summary()
+print(summary)
+```
+
+### Integration with Claude Code Workflows
+
+#### Before Starting Work
+**ALWAYS** check memory for relevant context:
+```python
+# Check for related information
+results = memory.recall("database migration")
+user_prefs = memory.get_user_preferences()
+system_info = memory.get_system_info()
+```
+
+#### During Work
+**CONTINUOUSLY** store important findings:
+```python
+# Store discoveries
+memory.remember("Migration script requires manual intervention for user table", 
+                category="database", importance="critical")
+
+# Track file relationships
+memory.remember_file_info("/path/to/migration.sql", "Contains user table schema updates")
+```
+
+#### After Completing Tasks
+**ALWAYS** summarize and store results:
+```python
+# Store solutions and outcomes
+memory.remember("Database migration completed successfully using manual intervention", 
+                category="project_completion", importance="high")
+
+# Update entity information
+memory.note_entity("Database Schema", "concept", "Updated to v2.5 with enhanced user management")
+```
+
+### Memory System Help and Discovery
+
+```python
+# Get help on available functions
+help_info = memory.memory_help()
+print(help_info)
+
+# View recent activity
+recent = memory.recent_activity(days=7)
+print(recent)
+
+# Search by categories
+db_facts = memory.search_facts_by_category("database")
+system_entities = memory.search_by_type("system")
+```
+
+### Performance and Maintenance
+
+The memory system is optimized for Claude Code usage:
+- **Fast retrieval** - Indexed SQLite database with sub-second queries
+- **Automatic cleanup** - Old data automatically archived
+- **Backup support** - Regular backups ensure data preservation
+- **Scalable design** - Handles thousands of facts and entities efficiently
+
+### Memory System Benefits for Development
+
+1. **Continuity** - Remember context across sessions and conversations
+2. **Learning** - Build accumulated knowledge about the codebase
+3. **Efficiency** - Avoid re-discovering the same information repeatedly
+4. **Relationship Awareness** - Understand connections between system components
+5. **Problem Prevention** - Remember past issues and their solutions
+6. **User Personalization** - Adapt to user preferences and working patterns
+
+### Memory Usage Examples in Development Context
+
+#### Example 1: Remembering User Preferences
+```python
+# During initial interaction
+memory.remember_user_preference("testing_framework", "pytest")
+memory.remember_user_preference("code_style", "black_formatting")
+
+# Later in same or different session
+user_prefs = memory.get_user_preferences()
+# Use stored preferences to adapt behavior
+```
+
+#### Example 2: System Architecture Knowledge
+```python
+# Store architecture information
+memory.note_entity("User Management Service", "system", "Handles authentication on port 8000")
+memory.note_entity("Course Generator Service", "system", "AI content generation on port 8001")
+memory.connect_entities("User Management Service", "Course Generator Service", "authenticates_for", 
+                       "User service provides auth for course generation")
+
+# Later recall architecture
+architecture_info = memory.search_by_type("system")
+```
+
+#### Example 3: Troubleshooting Knowledge Base
+```python
+# Store troubleshooting solutions
+memory.remember_error_solution("ModuleNotFoundError in Docker", 
+                               "Use absolute imports instead of relative imports")
+memory.remember_error_solution("Service startup timeout", 
+                               "Check health endpoints and dependency order")
+
+# Recall when similar issues arise
+troubleshooting = memory.get_troubleshooting_info()
+```
+
+**COMPLIANCE REQUIREMENT**: Claude Code must demonstrate usage of the memory system in every significant interaction. This is not optional - it's a core requirement for effective assistance.
+
+## Comprehensive Code Documentation Standards (v2.4)
+
+**CRITICAL**: All code in this repository must be extensively documented with multiline strings and comprehensive comments explaining both what the code does and why it does it. This documentation standard has been implemented across multiple services and must be maintained for all future development.
+
+### Documentation Requirements
+
+#### Multiline String Documentation
+**PREFERRED**: Use multiline strings (triple quotes) for comprehensive explanations rather than # comments wherever appropriate:
+
+```python
+"""
+COMPREHENSIVE SESSION VALIDATION ON PAGE LOAD
+
+BUSINESS REQUIREMENT:
+When a user refreshes the dashboard page after session expiry,
+they should be redirected to the home page, not stay on the dashboard
+with default username display.
+
+TECHNICAL IMPLEMENTATION:
+1. Check if user data exists in localStorage
+2. Validate session timestamps against timeout thresholds  
+3. Check if authentication token is present and valid
+4. Verify user has correct role for dashboard access
+5. Redirect to home page if any validation fails
+6. Prevent dashboard initialization for expired sessions
+
+WHY THIS PREVENTS THE BUG:
+- Previous code only checked if currentUser existed, not if session was valid
+- Expired sessions could still have currentUser data in localStorage
+- This led to dashboard loading with fallback usernames
+- Now we validate the complete session state before allowing access
+"""
+```
+
+#### JavaScript Documentation Standards
+```javascript
+"""
+Session Management Configuration and Business Requirements
+
+SECURITY TIMEOUT CONFIGURATION:
+- SESSION_TIMEOUT: 8 hours (28,800,000 ms) - Maximum session duration
+- INACTIVITY_TIMEOUT: 2 hours (7,200,000 ms) - Inactivity threshold
+- AUTO_LOGOUT_WARNING: 5 minutes (300,000 ms) - Warning before expiry
+
+WHY THESE SPECIFIC TIMEOUTS:
+
+8-Hour Absolute Session Timeout:
+- Aligns with standard work day expectations
+- Balances security with user convenience
+- Prevents indefinite session persistence
+- Meets educational platform security requirements
+- Reduces risk of session hijacking over time
+"""
+this.SESSION_TIMEOUT = 8 * 60 * 60 * 1000;
+```
+
+#### CSS Documentation Standards
+```css
+"""
+SIDEBAR SCROLLBAR AND LAYOUT FIX
+
+PROBLEMS ADDRESSED:
+1. Missing scrollbar when content exceeds viewport height
+2. Sidebar overlapping header when zoomed in
+3. Inconsistent z-index causing layout conflicts
+
+SOLUTION:
+- Force scrollbar visibility with scrollbar-gutter: stable
+- Ensure proper z-index hierarchy (sidebar below header)
+- Add webkit scrollbar styling for better UX
+- Prevent sidebar from covering top navigation at high zoom levels
+"""
+
+.dashboard-sidebar {
+    scrollbar-gutter: stable;
+    /* Additional CSS properties... */
+}
+```
+
+### Services with Comprehensive Documentation Implemented
+
+#### ✅ Frontend Components (Fully Documented)
+- **`frontend/js/modules/auth.js`** - Complete session management system with business rationale
+- **`frontend/js/modules/app.js`** - Application initialization and error handling
+- **`frontend/js/student-dashboard.js`** - Student dashboard session validation
+- **`frontend/js/admin.js`** - Admin dashboard authentication
+- **`frontend/js/org-admin-enhanced.js`** - Organization admin session management
+- **`frontend/js/site-admin-dashboard.js`** - Site admin session validation
+- **`frontend/css/layout/dashboard.css`** - Dashboard layout fixes with technical explanations
+- **`frontend/html/instructor-dashboard.html`** - Instructor dashboard session validation
+
+#### ✅ Infrastructure Components (Fully Documented)
+- **`app-control.sh`** - Docker container name resolution fixes with comprehensive problem analysis
+
+### Documentation Content Requirements
+
+Each documented code section must include:
+
+1. **Business Context** - Why this code exists and what business problem it solves
+2. **Technical Implementation** - How the code works and its approach
+3. **Problem Analysis** - What specific issues the code addresses
+4. **Solution Rationale** - Why this particular solution was chosen
+5. **Edge Cases** - Special conditions and how they're handled
+6. **Security Considerations** - Any security implications or protections
+7. **Performance Impact** - How the code affects system performance
+8. **Maintenance Notes** - Important information for future developers
+
+### Example Documentation Structure
+
+```python
+"""
+[COMPONENT NAME] - [Brief Description]
+
+BUSINESS REQUIREMENT:
+[Detailed explanation of the business need this code fulfills]
+
+TECHNICAL IMPLEMENTATION:
+[Step-by-step breakdown of the technical approach]
+1. [First major step]
+2. [Second major step]
+3. [Third major step]
+
+PROBLEM ANALYSIS:
+[Detailed analysis of what problems existed before this implementation]
+- [Specific problem 1]
+- [Specific problem 2]
+- [Root cause analysis]
+
+SOLUTION RATIONALE:
+[Explanation of why this specific approach was chosen]
+- [Advantage 1]
+- [Advantage 2]
+- [Trade-offs considered]
+
+SECURITY CONSIDERATIONS:
+[Any security implications, protections, or vulnerabilities addressed]
+
+PERFORMANCE IMPACT:
+[How this code affects system performance, scalability, or resource usage]
+
+MAINTENANCE NOTES:
+[Important information for future developers]
+"""
+```
+
+### Services Requiring Documentation Implementation
+
+The following services still need comprehensive multiline documentation applied:
+
+- **`services/analytics/`** - Analytics service Python files
+- **`services/organization-management/`** - RBAC system Python files  
+- **`services/lab-containers/`** - Lab management Python files
+- **Remaining frontend JavaScript files** - Additional JS modules
+- **Remaining CSS files** - Component and layout stylesheets
+- **HTML templates** - Frontend dashboard and component templates
+- **Utility and configuration files** - Setup scripts and configuration modules
+
+### Documentation Maintenance
+
+- **All new code** must follow these documentation standards
+- **Existing code modifications** must include updated documentation
+- **Code reviews** must verify documentation completeness and quality
+- **Documentation consistency** must be maintained across similar components
+
+This documentation standard ensures that all developers can understand not just what the code does, but why it was implemented in a specific way, what problems it solves, and how to maintain it effectively.
 
 ## Development Commands
 
@@ -293,6 +671,93 @@ GET  /quiz-attempts/student/{student_id}               # Get student's quiz atte
 - **Email Configuration** - Quiz notification emails use Hydra configuration management instead of environment variables
 - **Service Configuration** - All quiz management services properly integrated with platform configuration hierarchy
 - **Environment Support** - Development, staging, and production configuration support with proper defaults
+
+## RAG-Enhanced AI System (v2.4 - Intelligent Learning Integration)
+
+The platform now includes a comprehensive Retrieval-Augmented Generation (RAG) system that makes AI progressively smarter through continuous learning and knowledge accumulation:
+
+### RAG Intelligence Architecture
+- **ChromaDB Vector Database** - High-performance vector storage with 4 specialized collections
+- **Multi-Domain Knowledge** - Separate knowledge bases for content generation, lab assistance, user interactions, and course knowledge
+- **Progressive Learning** - AI gets smarter with each interaction through accumulated experience
+- **Context-Aware Generation** - Enhanced AI prompts with relevant historical knowledge and successful patterns
+- **Quality-Based Learning** - Prioritizes learning from high-quality interactions and user feedback
+
+### RAG-Enhanced Content Generation
+- **Intelligent Syllabus Generation** - Learns from successful syllabi to improve future generations
+- **Context Retrieval** - Queries knowledge base for relevant educational patterns and best practices
+- **Domain Expertise** - Subject-specific knowledge accumulation for different academic disciplines
+- **Continuous Improvement** - Quality scores and user feedback drive learning and optimization
+- **Enhanced Prompts** - AI prompts enriched with accumulated educational wisdom and successful patterns
+
+### RAG-Enhanced Lab Assistant
+- **Programming Intelligence** - Context-aware coding help that learns from successful debugging solutions
+- **Multi-Language Support** - Comprehensive assistance across Python, JavaScript, and other programming languages
+- **Personalized Learning** - Adapts to student skill levels and learning preferences over time
+- **Error Pattern Recognition** - Learns effective debugging strategies and solution patterns
+- **Code Analysis** - Intelligent code review with suggestions based on accumulated programming knowledge
+
+### RAG Service Architecture
+```http
+# Core RAG Operations
+GET  /api/v1/rag/health              # Service health and ChromaDB connectivity
+GET  /api/v1/rag/collections         # List available knowledge collections
+POST /api/v1/rag/add-document        # Add document to knowledge base
+POST /api/v1/rag/query              # Query knowledge base for relevant context
+POST /api/v1/rag/learn              # Learn from user interactions and feedback
+GET  /api/v1/rag/stats              # Performance metrics and usage statistics
+
+# Lab Assistant Integration
+POST /assistant/help                 # RAG-enhanced programming assistance
+GET  /assistant/stats               # Lab assistant performance metrics
+```
+
+### RAG Integration Points
+- **Course Generator Service** - Enhanced content generation with accumulated educational knowledge
+- **Lab Container Manager** - Intelligent programming assistance with learning capabilities
+- **Analytics Service** - RAG-enhanced insights and recommendations
+- **All AI Services** - Systematic integration with RAG context enhancement
+
+### RAG Docker Configuration
+```yaml
+rag-service:
+  image: course-creator-rag-service:latest
+  ports: ["8009:8009"]
+  volumes: 
+    - rag_chromadb_data:/app/chromadb_data
+  environment:
+    - CHROMADB_PATH=/app/chromadb_data
+    - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+```
+
+### RAG Learning Mechanisms
+- **Quality Scoring** - Automatic assessment of generation quality and learning prioritization
+- **User Feedback Integration** - Learning from instructor and student feedback on content effectiveness
+- **Pattern Recognition** - Identification of successful educational structures and approaches
+- **Domain Specialization** - Building expertise in specific subjects and difficulty levels
+- **Continuous Optimization** - Progressive improvement through accumulated experience
+
+### RAG Performance Features
+- **Circuit Breaker Pattern** - Reliable operation with graceful degradation when RAG unavailable
+- **Local Embeddings** - SentenceTransformers for fast local vector generation with OpenAI fallback
+- **Performance Monitoring** - Comprehensive metrics and logging for optimization
+- **Scalable Architecture** - Optimized for high-volume educational content generation
+- **Persistent Storage** - ChromaDB data preservation across container restarts
+
+### RAG Testing Framework
+- **Integration Tests** - Comprehensive validation of RAG system integration (`test_rag_system_integration.py`)
+- **Learning Validation** - Tests for knowledge accumulation and retrieval effectiveness
+- **Performance Testing** - Load testing and reliability validation under various conditions
+- **Cross-Service Testing** - Validation of RAG integration across all platform services
+
+### Key RAG System Files
+- `services/rag-service/main.py` - Complete RAG service with ChromaDB integration
+- `services/rag-service/logging_setup.py` - Comprehensive RAG-specific logging
+- `services/course-generator/rag_integration.py` - Content generation RAG enhancement
+- `lab-containers/rag_lab_assistant.py` - Intelligent programming assistance
+- `services/course-generator/ai/generators/syllabus_generator.py` - RAG-enhanced syllabus generation
+- `tests/integration/test_rag_system_integration.py` - Comprehensive RAG validation tests
 
 ## Enhanced RBAC System (v2.3)
 
@@ -1002,8 +1467,8 @@ tail -f ./logs/course-creator/*.log
 ls -lh ./logs/course-creator/
 ```
 
-### Current Platform Status (v2.3 - Enhanced RBAC System)
-All services verified healthy and operational with syslog format logging and comprehensive RBAC system:
+### Current Platform Status (v2.4 - Enhanced Session Management and Dashboard Layout Fixes)
+All services verified healthy and operational with syslog format logging, comprehensive RBAC system, and enhanced session management:
 - ✅ Frontend (port 3000) - Nginx with proper health checks and RBAC dashboards
 - ✅ User Management (port 8000) - Authentication and basic RBAC with syslog logging
 - ✅ Course Generator (port 8001) - AI content generation with syslog logging
@@ -1040,6 +1505,153 @@ python test_feedback_final.py        # Feedback system
 python tests/runners/run_rbac_tests.py # Enhanced RBAC system (102 tests - 100% success rate)
 python tests/run_all_tests.py        # All test suites
 ```
+
+## Enhanced Session Management System (v2.4)
+
+The platform now implements comprehensive session management with automatic timeout and security features across all dashboards:
+
+### Session Security Configuration
+```javascript
+// Session timeout constants applied platform-wide
+SESSION_TIMEOUT = 8 * 60 * 60 * 1000;     // 8 hours absolute maximum
+INACTIVITY_TIMEOUT = 2 * 60 * 60 * 1000;  // 2 hours of inactivity
+AUTO_LOGOUT_WARNING = 5 * 60 * 1000;      // 5 minutes warning period
+```
+
+### Session Management Features
+- **Absolute Session Timeout** - Maximum 8-hour session duration from login
+- **Inactivity Timeout** - 2-hour automatic logout for inactive users
+- **Warning System** - 5-minute advance warning before session expiry
+- **Cross-tab Synchronization** - Session state synchronized across browser tabs
+- **Activity Tracking** - User interactions extend session automatically
+- **Secure Cleanup** - Complete localStorage cleanup on logout/expiry
+- **Smart Redirects** - Context-aware home page redirects after expiry
+
+### Dashboard Session Validation
+All dashboards now implement comprehensive session validation on page load:
+
+#### Session Validation Checks
+1. **User Data Validation** - Verify currentUser exists in localStorage
+2. **Token Validation** - Confirm authToken is present and valid
+3. **Timestamp Validation** - Check sessionStart and lastActivity timestamps
+4. **Timeout Enforcement** - Validate against absolute and inactivity timeouts
+5. **Role Verification** - Ensure user has appropriate role for dashboard
+6. **Automatic Cleanup** - Clear expired session data before redirect
+
+#### Dashboards with Enhanced Session Management
+- ✅ **Instructor Dashboard** (`instructor-dashboard.html`) - Comprehensive session validation with role verification
+- ✅ **Student Dashboard** (`student-dashboard.js`) - Session timeout and role-based access control
+- ✅ **Admin Dashboard** (`admin.js`) - Enhanced session validation with admin role verification
+- ✅ **Organization Admin Dashboard** (`org-admin-enhanced.js`) - Class-based session management with API integration
+- ✅ **Site Admin Dashboard** (`site-admin-dashboard.js`) - Complete session lifecycle management
+
+### Session Management Implementation Patterns
+
+#### Pattern 1: Inline Session Validation (Student/Instructor Dashboards)
+```javascript
+// Validate complete session state
+if (!currentUser || !authToken || !sessionStart || !lastActivity) {
+    console.log('Session invalid: Missing session data');
+    window.location.href = '../index.html';
+    return;
+}
+
+// Check session timeouts
+const now = Date.now();
+const sessionAge = now - parseInt(sessionStart);
+const timeSinceActivity = now - parseInt(lastActivity);
+
+if (sessionAge > SESSION_TIMEOUT || timeSinceActivity > INACTIVITY_TIMEOUT) {
+    // Clear expired session and redirect
+    clearExpiredSessionData();
+    window.location.href = '../index.html';
+    return;
+}
+```
+
+#### Pattern 2: Class-based Session Management (RBAC Dashboards)
+```javascript
+validateSession() {
+    // Complete session validation with role checking
+    // Automatic cleanup and smart redirect handling
+    // Integration with API authentication flows
+}
+
+clearExpiredSession() {
+    // Comprehensive localStorage cleanup
+    // User-friendly redirect to home page
+}
+```
+
+## Enhanced Dashboard Layout System (v2.4)
+
+The platform now includes comprehensive dashboard layout fixes addressing scrollbar visibility and z-index hierarchy issues:
+
+### Sidebar Layout Improvements
+
+#### Scrollbar Enhancements
+- **Forced Scrollbar Visibility** - `scrollbar-gutter: stable` ensures scrollbar space is always reserved
+- **Custom Webkit Styling** - Professional scrollbar appearance with hover effects
+- **Cross-browser Support** - Works on Firefox (`scrollbar-width: thin`) and Webkit browsers
+- **High DPI Support** - Responsive scrollbar sizing for high-resolution displays
+- **Mobile Compatibility** - Maintains scrollbar functionality on touch devices
+
+#### Z-index Hierarchy Fixes
+- **Sidebar Z-index** - `var(--z-fixed)` (1000) - Base sidebar layer
+- **Header Z-index** - `calc(var(--z-fixed) + 10)` (1010) - Always above sidebar
+- **Mobile Overlay** - `calc(var(--z-fixed) + 1)` - Proper touch interaction
+- **Mobile Sidebar** - `calc(var(--z-fixed) + 5)` - Above overlay when shown
+
+### Layout CSS Implementation
+```css
+/* Enhanced sidebar with scrollbar and z-index fixes */
+.dashboard-sidebar {
+    scrollbar-gutter: stable;           /* Reserve scrollbar space */
+    scrollbar-width: thin;              /* Firefox scrollbar styling */
+    z-index: var(--z-fixed);          /* Proper layering */
+    max-height: 100vh;                 /* Prevent header overlap */
+}
+
+/* Custom webkit scrollbar styling */
+.dashboard-sidebar::-webkit-scrollbar {
+    width: 8px;
+}
+
+.dashboard-sidebar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+/* Header z-index fix for zoom level compatibility */
+.dashboard-header {
+    z-index: calc(var(--z-fixed) + 10);  /* Above sidebar */
+}
+```
+
+### Zoom Level Compatibility
+- **High Zoom Support** - Layout remains functional at 300%+ zoom levels
+- **Scrollbar Scaling** - Responsive scrollbar sizing at high magnifications  
+- **Header Protection** - Prevents sidebar from overlapping header at any zoom level
+- **Content Accessibility** - Maintains readability and navigation at all zoom levels
+
+### Responsive Design Enhancements
+- **Mobile Sidebar Behavior** - Proper overlay and z-index management on mobile
+- **Touch Interaction** - Correct layering for mobile sidebar controls
+- **Grid Responsiveness** - Adaptive layouts for different screen sizes
+- **Cross-device Compatibility** - Consistent experience across desktop, tablet, mobile
+
+### Dashboard Types Supported
+1. **Sidebar Dashboards** (Student, Instructor) - Full sidebar layout with scrollbar and z-index fixes
+2. **Tab-based Dashboards** (Site Admin, Org Admin) - Header z-index improvements for proper layering
+3. **Hybrid Layouts** - Support for complex dashboard configurations
+
+### Bug Fixes Implemented
+- ✅ **Fixed**: Missing scrollbar when sidebar content exceeds viewport height
+- ✅ **Fixed**: Sidebar overlapping header at high zoom levels (200%+)
+- ✅ **Fixed**: Inconsistent z-index causing layout conflicts
+- ✅ **Fixed**: Touch interaction issues on mobile sidebar overlays
+- ✅ **Fixed**: Session expiry showing default usernames instead of redirecting
 
 ## Problem-Solving Methodology
 
@@ -1103,6 +1715,250 @@ python -m pytest tests/unit/ -v
 # 5. Run full test suite
 python -m pytest --cov=services --cov-report=html
 ```
+
+## Code Quality and Syntax Validation Requirements (v2.4)
+
+**CRITICAL**: All code generated by Claude Code must pass comprehensive syntax checks and adhere to all directives specified in this CLAUDE.md file. This is a mandatory requirement that cannot be bypassed.
+
+### Mandatory Syntax and Quality Checks
+
+#### Pre-Deployment Validation Checklist
+Before any code is considered complete, it MUST pass all of the following validation steps:
+
+**✅ Python Code Validation:**
+```bash
+# 1. Syntax validation
+python -m py_compile filename.py
+
+# 2. Import validation (critical for Docker containers)
+python -c "import filename; print('Import successful')"
+
+# 3. Code quality checks
+flake8 filename.py                    # PEP8 compliance
+black --check filename.py             # Formatting validation
+isort --check-only filename.py        # Import order validation
+
+# 4. Security scanning
+bandit -r filename.py                 # Security vulnerability detection
+
+# 5. Type checking (if type hints used)
+mypy filename.py                      # Static type checking
+```
+
+**✅ JavaScript Code Validation:**
+```bash
+# 1. Syntax validation
+node -c filename.js                   # Node.js syntax check
+
+# 2. Code quality checks
+eslint filename.js                    # ESLint validation
+jshint filename.js                    # Alternative syntax checking
+
+# 3. Module import validation
+# Verify ES6 imports work correctly in browser environment
+
+# 4. Browser compatibility validation
+# Test in Chrome, Firefox, Safari, Edge
+```
+
+**✅ CSS Code Validation:**
+```bash
+# 1. Syntax validation
+csslint filename.css                  # CSS syntax validation
+
+# 2. Code quality checks
+stylelint filename.css                # Modern CSS linting
+
+# 3. Browser compatibility
+# Verify CSS works across target browsers
+
+# 4. Performance validation
+# Check for unused CSS and optimization opportunities
+```
+
+**✅ HTML Code Validation:**
+```bash
+# 1. HTML5 validation
+html5validator filename.html          # W3C HTML5 validation
+
+# 2. Accessibility validation
+axe-core filename.html               # Accessibility compliance
+
+# 3. Cross-browser testing
+# Manual verification in target browsers
+```
+
+### CLAUDE.md Directive Compliance Verification
+
+Every piece of generated code MUST comply with ALL directives in this CLAUDE.md file:
+
+#### ✅ Critical Directive Compliance Checklist:
+
+**1. Python Import Requirements (CRITICAL)**
+- [ ] **VERIFIED**: All Python imports use absolute imports only
+- [ ] **VERIFIED**: No relative imports (../, ./) present anywhere
+- [ ] **VERIFIED**: Import statements follow required patterns
+- [ ] **VERIFIED**: All imports work in Docker container environment
+
+**2. Comprehensive Documentation Standards**
+- [ ] **VERIFIED**: All new code includes multiline string documentation
+- [ ] **VERIFIED**: Documentation explains both "what" and "why"
+- [ ] **VERIFIED**: Business context included in documentation
+- [ ] **VERIFIED**: Technical implementation details provided
+- [ ] **VERIFIED**: Problem analysis and solution rationale documented
+
+**3. File Editing Efficiency**
+- [ ] **VERIFIED**: Multiple related edits batched together
+- [ ] **VERIFIED**: MultiEdit used for systematic updates
+- [ ] **VERIFIED**: No unnecessary permission requests for related changes
+
+**4. Session Management Requirements**
+- [ ] **VERIFIED**: All dashboard code includes proper session validation
+- [ ] **VERIFIED**: Session timeouts properly configured (8hr/2hr/5min)
+- [ ] **VERIFIED**: Role-based access control implemented
+- [ ] **VERIFIED**: Proper session cleanup on expiry
+
+**5. Dashboard Layout Standards**
+- [ ] **VERIFIED**: Sidebar scrollbar visibility implemented
+- [ ] **VERIFIED**: Z-index hierarchy properly configured
+- [ ] **VERIFIED**: High zoom level compatibility ensured
+- [ ] **VERIFIED**: Mobile responsiveness maintained
+
+**6. SOLID Principles Adherence**
+- [ ] **VERIFIED**: Single Responsibility Principle followed
+- [ ] **VERIFIED**: Open/Closed Principle implemented
+- [ ] **VERIFIED**: Interface segregation applied
+- [ ] **VERIFIED**: Dependency inversion respected
+
+**7. Test Driven Development**
+- [ ] **VERIFIED**: Tests written before implementation
+- [ ] **VERIFIED**: Red-Green-Refactor cycle followed
+- [ ] **VERIFIED**: Comprehensive test coverage achieved
+
+### Automated Validation Pipeline
+
+#### Pre-Commit Validation Script
+```bash
+#!/bin/bash
+# validate-code.sh - Comprehensive code validation pipeline
+
+echo "🔍 Starting comprehensive code validation..."
+
+# Python validation
+echo "🐍 Validating Python code..."
+find . -name "*.py" -exec python -m py_compile {} \; || exit 1
+find . -name "*.py" -exec flake8 {} \; || exit 1
+find . -name "*.py" -exec black --check {} \; || exit 1
+
+# JavaScript validation  
+echo "🌐 Validating JavaScript code..."
+find . -name "*.js" -exec node -c {} \; || exit 1
+find . -name "*.js" -exec eslint {} \; || exit 1
+
+# CSS validation
+echo "🎨 Validating CSS code..."
+find . -name "*.css" -exec stylelint {} \; || exit 1
+
+# Import validation (critical for Docker)
+echo "📦 Validating Python imports..."
+python -c "
+import sys
+import os
+sys.path.append('.')
+# Test critical imports
+try:
+    import services.analytics.main
+    import services.user_management.main  
+    print('✅ Critical imports successful')
+except ImportError as e:
+    print(f'❌ Import error: {e}')
+    sys.exit(1)
+"
+
+# CLAUDE.md directive compliance
+echo "📋 Verifying CLAUDE.md directive compliance..."
+# Check for relative imports (forbidden)
+if grep -r "from \.\." services/ frontend/; then
+    echo "❌ ERROR: Relative imports found (violates CLAUDE.md directive)"
+    exit 1
+fi
+
+# Check for proper documentation
+echo "📝 Validating documentation standards..."
+# Verify multiline strings exist in new Python files
+python -c "
+import ast
+import os
+import sys
+
+def check_documentation(filepath):
+    with open(filepath, 'r') as f:
+        try:
+            tree = ast.parse(f.read())
+            # Check for docstrings and multiline strings
+            has_multiline_docs = False
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Str) and '\\n' in node.s and len(node.s) > 100:
+                    has_multiline_docs = True
+                    break
+            return has_multiline_docs
+        except:
+            return False
+
+documented_files = 0
+total_files = 0
+
+for root, dirs, files in os.walk('services/'):
+    for file in files:
+        if file.endswith('.py') and '__pycache__' not in root:
+            filepath = os.path.join(root, file)
+            total_files += 1
+            if check_documentation(filepath):
+                documented_files += 1
+
+if total_files > 0:
+    doc_percentage = (documented_files / total_files) * 100
+    print(f'📊 Documentation coverage: {doc_percentage:.1f}% ({documented_files}/{total_files})')
+    if doc_percentage < 80:
+        print('⚠️  WARNING: Documentation coverage below 80%')
+"
+
+echo "✅ All validation checks passed!"
+echo "🚀 Code is ready for deployment"
+```
+
+### Quality Gate Requirements
+
+Code CANNOT be deployed unless it passes ALL of these gates:
+
+1. **Syntax Validation Gate** - 100% syntax error-free
+2. **Import Validation Gate** - All imports work in target environment
+3. **CLAUDE.md Compliance Gate** - Full adherence to all directives
+4. **Documentation Gate** - Comprehensive multiline documentation present
+5. **Security Gate** - No security vulnerabilities detected
+6. **Performance Gate** - No critical performance issues identified
+7. **Test Coverage Gate** - Minimum 80% test coverage achieved
+8. **Browser Compatibility Gate** - Works in all target browsers
+
+### Failure Response Protocol
+
+If ANY validation check fails:
+
+1. **STOP IMMEDIATELY** - Do not proceed with deployment
+2. **IDENTIFY ROOT CAUSE** - Use systematic analysis to understand the failure
+3. **FIX COMPREHENSIVELY** - Address the underlying issue, not just symptoms
+4. **RE-VALIDATE COMPLETELY** - Run all validation checks again
+5. **DOCUMENT THE FIX** - Update relevant documentation and CLAUDE.md if needed
+
+### Continuous Compliance Monitoring
+
+- **Daily Validation** - Automated validation runs on all changed files
+- **Pre-commit Hooks** - Validation integrated into git workflow
+- **CI/CD Integration** - Validation gates in deployment pipeline
+- **Code Review Requirements** - Manual verification of CLAUDE.md compliance
+- **Documentation Audits** - Regular reviews of documentation completeness
+
+**This validation system ensures that all code maintains the high quality standards established in this repository and prevents regressions in critical areas like session management, documentation quality, and architectural compliance.**
 
 ### CI/CD Pipeline
 

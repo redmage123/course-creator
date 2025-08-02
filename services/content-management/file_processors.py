@@ -1,6 +1,83 @@
 """
-File Processing Module
-Handles text extraction and processing from various file formats
+Educational Content File Processing Module
+
+Comprehensive file processing system for educational content management,
+supporting multi-format document analysis, text extraction, and content structure recognition.
+
+## Core File Processing Pipeline:
+
+### Multi-Format Support
+- **PDF Processing**: Advanced text extraction with educational document structure recognition
+- **DOCX Processing**: Microsoft Word document parsing with educational content analysis
+- **PowerPoint Processing**: Slide content extraction with educational presentation structure
+- **JSON Processing**: Structured educational content with metadata preservation
+- **Text Processing**: Plain text educational materials with intelligent parsing
+
+### Educational Content Analysis
+- **Syllabus Structure Recognition**: Automatic identification of course components
+  - Course information extraction (title, instructor, credits, prerequisites)
+  - Learning objectives parsing and categorization
+  - Topic and module structure analysis with timeline estimation
+  - Assessment method identification and weighting extraction
+  - Schedule and calendar information parsing
+
+- **Slide Content Processing**: Educational presentation analysis
+  - Title and content extraction with educational context recognition
+  - Speaker notes preservation for instructor guidance
+  - Slide sequence and navigation structure analysis
+  - Educational media and resource identification
+
+### Content Quality Assurance
+- **Educational Standards Validation**: Ensures content meets pedagogical requirements
+- **Structure Consistency**: Validates document organization and flow
+- **Content Completeness**: Identifies missing educational components
+- **Format Standardization**: Normalizes content for cross-platform compatibility
+
+### Performance Optimization
+- **Async Processing**: Non-blocking operations for large educational documents
+- **Memory Management**: Efficient handling of large educational files and media
+- **Batch Processing**: Optimized multi-file processing for course-wide operations
+- **Caching Strategy**: Intelligent caching for frequently processed educational content
+
+### Export and Conversion Capabilities
+- **Multi-Format Export**: Professional conversion between educational content formats
+  - PowerPoint generation with educational templates and design standards
+  - PDF creation with proper educational formatting and accessibility
+  - Excel export for data-driven educational content and assessments
+  - JSON export for system integration and content management
+  - ZIP packaging for complete educational resource distribution
+  - SCORM compliance for LMS integration and educational standards
+
+### Integration Features
+- **AI Service Integration**: Seamless connection with content generation services
+- **Storage System Integration**: Efficient file management with metadata preservation
+- **Template Processing**: Educational template application and customization
+- **Content Validation**: Quality assurance and educational standards compliance
+
+### Security and Validation
+- **File Type Validation**: Comprehensive security scanning for uploaded educational content
+- **Content Sanitization**: Safe processing of educational materials with malware protection
+- **Size and Format Limits**: Reasonable constraints for educational content processing
+- **Educational Content Standards**: Validation against pedagogical best practices
+
+## Educational Use Cases:
+
+### Course Development Workflow
+1. **Upload**: Instructors upload existing educational materials in various formats
+2. **Analysis**: System analyzes content structure and educational components
+3. **Enhancement**: AI services suggest improvements and generate supplementary content
+4. **Export**: Content is converted to appropriate formats for different delivery methods
+5. **Distribution**: Materials are packaged for LMS integration or direct distribution
+
+### Content Management Benefits
+- **Format Flexibility**: Support for diverse educational content creation tools
+- **Content Reusability**: Efficient extraction and repurposing of educational materials
+- **Quality Consistency**: Standardized processing ensures uniform educational content quality
+- **Accessibility Compliance**: Proper formatting for educational accessibility requirements
+- **Integration Ready**: Seamless integration with learning management systems
+
+This module serves as the foundation for all educational content processing,
+ensuring high-quality, accessible, and pedagogically sound educational materials.
 """
 
 import os
@@ -35,6 +112,31 @@ except ImportError:
 
 @dataclass
 class ProcessedContent:
+    """
+    Structured container for processed educational content with comprehensive metadata.
+    
+    This class represents the result of educational content processing operations,
+    containing extracted text, structural analysis, and educational metadata.
+    
+    Educational Content Structure:
+    - **text**: Clean, extracted text content suitable for AI processing and analysis
+    - **metadata**: Educational metadata including document type, processing details, and quality metrics
+    - **structure**: Hierarchical representation of educational content organization
+    - **images**: References to educational images, diagrams, and visual learning aids
+    - **tables**: Structured data tables for educational content and assessments
+    
+    Processing Benefits:
+    - Standardized representation across all educational content types
+    - Preservation of educational structure and context during processing
+    - Support for AI-enhanced content analysis and generation
+    - Efficient storage and retrieval of processed educational materials
+    
+    Integration Features:
+    - Compatible with AI content generation services
+    - Supports educational template application and customization
+    - Enables content quality assessment and improvement recommendations
+    - Facilitates educational content search and discovery operations
+    """
     """Structured content extracted from files"""
     text: str
     metadata: Dict[str, Any]
@@ -44,6 +146,76 @@ class ProcessedContent:
 
 
 class SyllabusProcessor:
+    """
+    Specialized processor for educational syllabus documents with comprehensive analysis capabilities.
+    
+    This processor handles the complex task of analyzing syllabus documents to extract
+    structured educational information, supporting automated course development workflows.
+    
+    ## Educational Content Recognition:
+    
+    ### Course Information Extraction
+    - **Course Identification**: Course code, title, credits, and prerequisite parsing
+    - **Instructor Information**: Faculty details, contact information, and office hours
+    - **Course Logistics**: Meeting times, locations, and delivery modalities
+    - **Administrative Details**: Academic calendar alignment and institutional requirements
+    
+    ### Learning Objectives Analysis
+    - **Objective Identification**: Automatic recognition of learning outcome statements
+    - **Bloom's Taxonomy Mapping**: Classification of objectives by cognitive complexity
+    - **Competency Alignment**: Mapping to institutional and program learning goals
+    - **Assessment Alignment**: Connection between objectives and evaluation methods
+    
+    ### Course Structure Processing
+    - **Module Organization**: Identification of course units, chapters, and topics
+    - **Timeline Analysis**: Schedule extraction and academic calendar mapping
+    - **Content Sequencing**: Logical flow analysis and prerequisite identification
+    - **Workload Estimation**: Credit hour validation and student effort calculation
+    
+    ### Assessment Framework Extraction
+    - **Evaluation Methods**: Assignment, exam, and project identification
+    - **Grading Schemes**: Point distributions and weighting analysis
+    - **Rubric References**: Performance criteria and assessment standards
+    - **Academic Policies**: Late work, attendance, and integrity requirements
+    
+    ## Processing Capabilities:
+    
+    ### Multi-Format Support
+    - **PDF Syllabi**: Advanced text extraction with layout preservation
+    - **Word Documents**: Native DOCX processing with style and structure recognition
+    - **Plain Text**: Intelligent parsing of text-based syllabi with pattern recognition
+    - **Structured Formats**: Template-based syllabus processing with validation
+    
+    ### Educational Quality Assurance
+    - **Completeness Validation**: Ensures all required syllabus components are present
+    - **Standards Compliance**: Validates against institutional syllabus requirements
+    - **Accessibility Check**: Reviews content for educational accessibility standards
+    - **Clarity Assessment**: Evaluates language clarity and student comprehension
+    
+    ### AI Integration Support
+    - **Content Enhancement**: Provides structured data for AI-driven course development
+    - **Gap Analysis**: Identifies missing educational components for AI completion
+    - **Template Matching**: Supports AI-driven syllabus standardization and improvement
+    - **Content Generation**: Enables AI-assisted course material creation from syllabus analysis
+    
+    ## Educational Benefits:
+    
+    ### Course Development Acceleration
+    - **Automated Analysis**: Rapid extraction of educational structure from existing syllabi
+    - **Content Reuse**: Efficient repurposing of educational content across courses
+    - **Quality Improvement**: Systematic identification of syllabus enhancement opportunities
+    - **Standards Alignment**: Ensures educational content meets institutional requirements
+    
+    ### Institutional Analytics
+    - **Curriculum Mapping**: Cross-course analysis and program coherence assessment
+    - **Workload Analysis**: Credit hour validation and student workload optimization
+    - **Learning Outcome Tracking**: Program-level learning objective alignment
+    - **Assessment Strategy Analysis**: Evaluation method effectiveness and alignment
+    
+    This processor is essential for automated course development workflows,
+    enabling efficient transformation of traditional syllabi into structured,
+    AI-enhanced educational content management systems.
+    """
     """Processes syllabus files and extracts structured content"""
     
     def __init__(self):
@@ -270,6 +442,113 @@ class SyllabusProcessor:
 
 
 class SlidesProcessor:
+    """
+    Advanced processor for educational slide content with multi-format support and pedagogical analysis.
+    
+    This processor specializes in extracting, analyzing, and converting educational presentations
+    across multiple formats, supporting diverse instructional design approaches and content creation workflows.
+    
+    ## Educational Slide Processing Capabilities:
+    
+    ### Multi-Format Presentation Support
+    - **PowerPoint Processing**: Native PPTX/PPT parsing with complete slide structure extraction
+      - Slide content and title recognition with educational context analysis
+      - Speaker notes preservation for instructor guidance and presentation delivery
+      - Animation and transition metadata for interactive educational content
+      - Embedded media and educational resource identification
+    
+    - **PDF Slide Processing**: Advanced PDF-based presentation analysis
+      - Page-by-slide content extraction with educational layout recognition
+      - Text and graphic separation for content analysis and enhancement
+      - Educational diagram and visual learning aid identification
+      - Multi-column and complex layout parsing for diverse presentation styles
+    
+    - **JSON Slide Processing**: Structured educational content with metadata preservation
+      - Template-based slide content validation and enhancement
+      - Educational metadata integration and cross-referencing
+      - Content relationship mapping and educational flow analysis
+      - API-friendly format for educational content management systems
+    
+    ### Educational Content Analysis
+    - **Pedagogical Structure Recognition**: Identification of educational presentation patterns
+      - Learning objective slides and educational goal mapping
+      - Content organization and educational flow analysis
+      - Assessment and review slide identification
+      - Interactive element and engagement opportunity recognition
+    
+    - **Content Quality Assessment**: Educational effectiveness evaluation
+      - Text-to-visual ratio analysis for optimal learning design
+      - Content complexity assessment and readability evaluation
+      - Educational accessibility compliance and improvement recommendations
+      - Engagement factor analysis and interaction opportunity identification
+    
+    ### AI-Enhanced Processing
+    - **Content Enhancement**: AI-driven educational content improvement
+      - Slide content optimization for educational effectiveness
+      - Missing content identification and generation recommendations
+      - Educational template application and design standardization
+      - Cross-slide coherence and educational flow optimization
+    
+    - **Template Integration**: Educational template application and customization
+      - Institutional branding and educational design standard application
+      - Content adaptation for different educational contexts and audiences
+      - Accessibility enhancement and universal design implementation
+      - Multi-modal content suggestion for diverse learning preferences
+    
+    ## Export and Conversion Features:
+    
+    ### Educational Format Conversion
+    - **PowerPoint Generation**: Professional slide creation with educational templates
+      - Institutional design standards and branding integration
+      - Educational accessibility features and compliance
+      - Interactive element integration and engagement enhancement
+      - Speaker note generation and instructor guidance inclusion
+    
+    - **Educational PDF Export**: Formatted document creation for diverse educational uses
+      - Student handout generation with note-taking space
+      - Instructor guide creation with teaching recommendations
+      - Accessibility-compliant PDF generation for diverse learners
+      - Print-optimized formatting for traditional educational delivery
+    
+    - **Structured Data Export**: JSON and database-friendly formats
+      - Educational content management system integration
+      - Analytics-ready data structure for educational effectiveness tracking
+      - API integration support for educational technology ecosystems
+      - Content versioning and educational change tracking
+    
+    ### Educational Quality Assurance
+    - **Content Validation**: Educational standards compliance verification
+      - Learning objective alignment and pedagogical consistency
+      - Educational accessibility and universal design compliance
+      - Content accuracy and educational appropriateness validation
+      - Cross-cultural sensitivity and inclusive education consideration
+    
+    - **Performance Optimization**: Efficient processing for educational workflows
+      - Large presentation handling with memory optimization
+      - Batch processing support for course-wide slide management
+      - Caching strategies for frequently accessed educational content
+      - Scalable processing for institutional educational content management
+    
+    ## Educational Use Cases:
+    
+    ### Course Development Workflow
+    1. **Content Import**: Instructors upload existing presentations in various formats
+    2. **Analysis**: System analyzes educational content structure and pedagogical effectiveness
+    3. **Enhancement**: AI services suggest improvements and generate supplementary content
+    4. **Standardization**: Content is adapted to institutional templates and accessibility standards
+    5. **Export**: Presentations are converted to appropriate formats for diverse delivery methods
+    
+    ### Educational Benefits
+    - **Content Reusability**: Efficient repurposing of educational presentations across courses
+    - **Quality Consistency**: Standardized processing ensures uniform educational presentation quality
+    - **Accessibility Enhancement**: Automatic improvement of educational content accessibility
+    - **Pedagogical Optimization**: AI-driven enhancement of educational effectiveness
+    - **Multi-Modal Support**: Conversion between formats for diverse educational delivery needs
+    
+    This processor is crucial for modern educational content management,
+    enabling seamless integration of diverse presentation formats into
+    comprehensive, AI-enhanced educational content workflows.
+    """
     """Processes slide files and extracts content"""
     
     def __init__(self):
@@ -399,6 +678,142 @@ class SlidesProcessor:
 
 
 class ExportProcessor:
+    """
+    Comprehensive educational content export system with multi-format generation capabilities.
+    
+    This processor handles the complex task of converting structured educational content
+    into various professional formats suitable for diverse educational delivery methods and platforms.
+    
+    ## Multi-Format Export Capabilities:
+    
+    ### PowerPoint Export System
+    - **Professional Slide Generation**: High-quality presentation creation with educational templates
+      - Institutional branding integration and educational design standards
+      - Automated slide layout optimization for educational content types
+      - Speaker notes generation with instructor guidance and teaching tips
+      - Educational accessibility features and compliance integration
+    
+    - **Template-Based Creation**: Sophisticated template application system
+      - Course-specific template selection and customization
+      - Content-aware layout selection for optimal educational presentation
+      - Consistent styling and educational branding across all generated slides
+      - Interactive element integration for enhanced student engagement
+    
+    ### PDF Generation System
+    - **Educational Document Creation**: Professional PDF generation for diverse educational uses
+      - Student handout generation with note-taking space and study guides
+      - Instructor guide creation with teaching recommendations and answer keys
+      - Assessment document generation with proper formatting and accessibility
+      - Course packet creation with comprehensive educational resource compilation
+    
+    - **Accessibility Compliance**: Universal design principles for educational PDF creation
+      - Screen reader compatibility and navigation optimization
+      - High contrast and readable formatting for diverse learning needs
+      - Alternative text integration for educational images and diagrams
+      - Structured document organization for assistive technology support
+    
+    ### Excel Export System
+    - **Educational Data Management**: Spreadsheet creation for data-driven educational content
+      - Quiz and assessment data organization with automatic scoring capabilities
+      - Student performance tracking with analytics and progress monitoring
+      - Grade book integration with institutional grading systems
+      - Educational resource inventory and content management spreadsheets
+    
+    - **Analytics Integration**: Data export for educational effectiveness analysis
+      - Learning outcome tracking and assessment alignment analysis
+      - Student engagement metrics and participation tracking
+      - Content usage analytics and educational resource effectiveness measurement
+      - Institutional reporting and educational compliance documentation
+    
+    ### JSON Export System
+    - **Structured Data Export**: API-friendly format for educational system integration
+      - Learning Management System (LMS) integration support
+      - Educational technology ecosystem compatibility
+      - Content versioning and educational change tracking
+      - Cross-platform educational content sharing and collaboration
+    
+    - **Metadata Preservation**: Comprehensive educational context maintenance
+      - Learning objective mapping and competency alignment preservation
+      - Educational relationship tracking and content dependency management
+      - Assessment criteria and rubric integration
+      - Educational standards and compliance metadata inclusion
+    
+    ### ZIP Packaging System
+    - **Complete Course Package Creation**: Comprehensive educational resource bundling
+      - Multi-format content compilation with organized directory structure
+      - Educational resource categorization and content type organization
+      - Instructor and student material separation with appropriate access controls
+      - Supplementary resource integration and educational support material inclusion
+    
+    - **Distribution Optimization**: Efficient packaging for educational content delivery
+      - Compressed file size optimization for network efficiency
+      - Educational content organization with intuitive navigation structure
+      - Version control and educational content update management
+      - Cross-platform compatibility for diverse educational technology environments
+    
+    ### SCORM Compliance System
+    - **Learning Management System Integration**: Industry-standard educational package creation
+      - SCORM 1.2 and 2004 specification compliance for maximum LMS compatibility
+      - Educational tracking and reporting integration with institutional systems
+      - Learning objective mapping and competency-based education support
+      - Assessment integration with automatic grading and progress tracking
+    
+    - **Educational Standards Compliance**: Adherence to educational technology standards
+      - Accessibility compliance and universal design principle integration
+      - Educational metadata standards and cross-platform compatibility
+      - Quality assurance and educational effectiveness validation
+      - Institutional policy compliance and educational governance support
+    
+    ## Advanced Processing Features:
+    
+    ### Performance Optimization
+    - **Scalable Processing**: Efficient handling of large educational content collections
+      - Memory optimization for large course packages and institutional content
+      - Parallel processing support for bulk educational content conversion
+      - Caching strategies for frequently exported educational materials
+      - Resource management for concurrent educational content processing operations
+    
+    ### Quality Assurance
+    - **Educational Content Validation**: Comprehensive quality checking for exported materials
+      - Content completeness verification and educational component validation
+      - Format consistency checking and educational standard compliance
+      - Educational accessibility validation and improvement recommendations
+      - Cross-format compatibility testing and educational delivery optimization
+    
+    ### Integration Support
+    - **Educational System Integration**: Seamless connectivity with educational technology ecosystems
+      - Learning Management System API integration and content delivery
+      - Educational analytics platform compatibility and data sharing
+      - Institutional repository integration and educational content archiving
+      - Cross-platform educational content sharing and collaboration support
+    
+    ## Educational Benefits:
+    
+    ### Course Delivery Flexibility
+    - **Multi-Modal Content Delivery**: Support for diverse educational delivery methods
+      - Online learning platform integration and digital content delivery
+      - Traditional classroom support with print-ready educational materials
+      - Hybrid learning environment compatibility and flexible content access
+      - Mobile learning optimization and responsive educational content design
+    
+    ### Educational Efficiency
+    - **Automated Content Conversion**: Streamlined workflow for educational content preparation
+      - Reduced manual effort in educational content formatting and preparation
+      - Consistent quality and educational standard compliance across all exports
+      - Rapid content update and educational material maintenance capabilities
+      - Scalable content management for institutional educational programs
+    
+    ### Professional Quality
+    - **Industry-Standard Output**: Professional-grade educational materials creation
+      - Institutional branding and educational design standard compliance
+      - Educational accessibility and universal design principle integration
+      - Quality assurance and educational effectiveness optimization
+      - Professional presentation and educational credibility enhancement
+    
+    This export processor is essential for modern educational content management,
+    enabling professional, accessible, and effective delivery of educational materials
+    across diverse platforms and educational technology environments.
+    """
     """Handles content export to various formats"""
     
     def __init__(self):

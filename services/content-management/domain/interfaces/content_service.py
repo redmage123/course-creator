@@ -5,12 +5,12 @@ Interface Segregation: Separate interfaces for different content operations
 """
 from abc import ABC, abstractmethod
 from typing import List, Optional, Dict, Any, Union
-from ..entities.base_content import ContentType, ContentStatus
-from ..entities.syllabus import Syllabus
-from ..entities.slide import Slide
-from ..entities.quiz import Quiz
-from ..entities.exercise import Exercise
-from ..entities.lab_environment import LabEnvironment
+from domain.entities.base_content import ContentType, ContentStatus
+from domain.entities.syllabus import Syllabus
+from domain.entities.slide import Slide
+from domain.entities.quiz import Quiz
+from domain.entities.exercise import Exercise
+from domain.entities.lab_environment import LabEnvironment
 
 
 class IContentValidationService(ABC):

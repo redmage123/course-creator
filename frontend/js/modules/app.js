@@ -8,11 +8,15 @@ import { Navigation } from './navigation.js';
 import { showNotification } from './notifications.js';
 import UIComponents from './ui-components.js';
 import { ActivityTracker } from './activity-tracker.js';
+import configManager from './config-manager.js';
+import assetCacheManager from './asset-cache.js';
 
 class App {
     constructor() {
         this.initialized = false;
         this.currentPage = this.getCurrentPage();
+        this.configManager = configManager;
+        this.assetCacheManager = assetCacheManager;
         
         // Bind methods
         this.init = this.init.bind(this);
@@ -36,6 +40,10 @@ class App {
         if (this.initialized) return;
 
         try {
+            console.log('Initializing Course Creator Application with advanced caching...');
+            
+            // Initialize configuration and asset caching first
+            await this._initializePerformanceOptimizations();
             
             // Setup global error handlers
             this.setupGlobalHandlers();
@@ -58,7 +66,11 @@ class App {
             // Page-specific initialization
             this.initializePage();
             
+            // Preload page-specific assets
+            await this._preloadPageAssets();
+            
             this.initialized = true;
+            console.log('Course Creator Application initialized successfully');
             
         } catch (error) {
             console.error('Error initializing application:', error);
@@ -82,6 +94,15 @@ class App {
                 Auth.activityTracker.trackActivity();
             }
         });
+        
+        // ServiceWorker message handler for updates
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.addEventListener('message', (event) => {
+                if (event.data && event.data.type === 'SW_UPDATED') {
+                    console.log('ServiceWorker updated to version:', event.data.version);
+                }
+            });
+        }
     }
 
     /**
@@ -308,6 +329,15 @@ class App {
         window.throttle = UIComponents.throttle;
         window.formatDate = UIComponents.formatDate;
         window.showNotification = showNotification;
+        
+        // Configuration and caching functions
+        window.getConfig = (key, options) => this.configManager.getConfig(key, options);
+        window.setConfig = (key, value, options) => this.configManager.setConfig(key, value, options);
+        window.preloadAssets = (assets) => this.assetCacheManager.preloadAssets(assets);
+        window.getCacheStats = () => ({
+            config: this.configManager.getCacheStats(),
+            assets: this.assetCacheManager.getStats()
+        });
     }
 
     /**
@@ -358,8 +388,107 @@ class App {
             initialized: this.initialized,
             currentPage: this.currentPage,
             isAuthenticated: Auth.isAuthenticated(),
-            user: Auth.getCurrentUser()
+            user: Auth.getCurrentUser(),
+            performance: {
+                configCache: this.configManager.getCacheStats(),
+                assetCache: this.assetCacheManager.getStats()
+            }
         };
+    }
+    
+    /**
+     * PERFORMANCE OPTIMIZATION INITIALIZATION
+     * 
+     * Initializes advanced configuration and asset caching systems for
+     * improved application performance and user experience.
+     */
+    async _initializePerformanceOptimizations() {
+        try {
+            // The configuration and asset managers are already initialized
+            // in their constructors, so we just need to warm critical caches
+            
+            // Warm configuration cache with critical settings
+            const criticalConfigs = [
+                'api.baseUrl',
+                'ui.theme', 
+                'performance.cacheEnabled',
+                'security.sessionTimeout'
+            ];
+            
+            await Promise.allSettled(
+                criticalConfigs.map(key => this.configManager.getConfig(key))
+            );
+            
+            console.log('Performance optimizations initialized successfully');
+            
+        } catch (error) {
+            console.warn('Error initializing performance optimizations:', error);
+            // Continue without advanced optimizations
+        }
+    }
+    
+    /**
+     * PAGE-SPECIFIC ASSET PRELOADING
+     * 
+     * Preloads assets specific to the current page for improved performance.
+     */
+    async _preloadPageAssets() {
+        try {
+            const pageAssets = this._getPageSpecificAssets();
+            
+            if (pageAssets.length > 0) {
+                console.log(`Preloading ${pageAssets.length} page-specific assets...`);
+                const result = await this.assetCacheManager.preloadAssets(pageAssets);
+                console.log(`Asset preloading completed: ${result.successful}/${result.total} successful`);
+            }
+            
+        } catch (error) {
+            console.warn('Error preloading page assets:', error);
+        }
+    }
+    
+    /**
+     * GET PAGE-SPECIFIC ASSETS FOR PRELOADING
+     */
+    _getPageSpecificAssets() {
+        const assets = [];
+        
+        switch (this.currentPage) {
+            case 'student-dashboard.html':
+                assets.push(
+                    '/js/student-dashboard.js',
+                    '/css/components/student-interface.css',
+                    '/js/modules/student-file-manager.js'
+                );
+                break;
+                
+            case 'instructor-dashboard.html':
+                assets.push(
+                    '/js/modules/instructor-dashboard.js',
+                    '/css/components/course-creation.css',
+                    '/js/components/course-manager.js'
+                );
+                break;
+                
+            case 'admin.html':
+                assets.push(
+                    '/js/admin.js',
+                    '/css/components/admin-panel.css',
+                    '/js/modules/analytics-dashboard.js'
+                );
+                break;
+                
+            case 'lab.html':
+            case 'lab-multi-ide.html':
+                assets.push(
+                    '/js/lab-integration.js',
+                    '/css/components/lab-interface.css',
+                    '/js/lab/lab-controller.js'
+                );
+                break;
+        }
+        
+        return assets;
     }
 }
 

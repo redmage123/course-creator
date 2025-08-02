@@ -6,7 +6,7 @@ Dependency Inversion: Abstract interfaces for data persistence
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime
-from ..entities.student_analytics import (
+from domain.entities.student_analytics import (
     StudentActivity, LabUsageMetrics, QuizPerformance, 
     StudentProgress, LearningAnalytics, ActivityType, ContentType, RiskLevel
 )

@@ -1,0 +1,28 @@
+# Content Management Service Configuration
+defaults:
+  - /database/postgres
+  - _self_
+
+name: "Content Management Service"
+version: "2.0.0"
+host: "0.0.0.0"
+port: 8005
+
+# Service configuration
+server:
+  host: "0.0.0.0"
+  port: 8005
+  workers: 1
+  timeout: 300
+
+# Logging
+logging:
+  level: INFO
+
+# Content management specific settings
+content:
+  upload_path: "/app/uploads"
+  export_path: "/app/exports"
+  temp_path: "/app/temp"
+  max_file_size: 104857600  # 100MB
+  allowed_types: ["pdf", "docx", "pptx", "txt", "json"]

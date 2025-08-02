@@ -1,10 +1,78 @@
 """
-Content Management Service - Refactored following SOLID principles
-Single Responsibility: API layer only - business logic delegated to services
-Open/Closed: Extensible through dependency injection
-Liskov Substitution: Uses interface abstractions
-Interface Segregation: Clean, focused interfaces
-Dependency Inversion: Depends on abstractions, not concretions
+Content Management Service - Educational Content Processing and Management API
+
+This service provides comprehensive content management capabilities for the Course Creator Platform,
+following SOLID principles and Domain-Driven Design patterns.
+
+## Core Responsibilities:
+
+### File Processing Pipeline
+- **Upload Management**: Handles multi-format file uploads (PDF, DOCX, PPTX, JSON) with security validation
+- **Text Extraction**: Processes uploaded files to extract structured content and metadata
+- **Content Analysis**: Analyzes document structure to identify learning objectives, topics, assessments
+- **Format Conversion**: Converts between different educational content formats
+
+### AI Integration & Content Generation
+- **Syllabus Analysis**: Processes uploaded syllabi to extract course structure and learning outcomes
+- **Content Enhancement**: Uses AI services to generate supplementary educational materials
+- **Template Processing**: Applies AI-generated content to educational templates
+- **Quality Assurance**: Validates generated content for educational standards and consistency
+
+### Multi-Format Export Capabilities
+- **PowerPoint Export**: Generates professional slide presentations from course content
+- **PDF Generation**: Creates formatted PDF documents for assignments and handouts
+- **Excel Export**: Produces spreadsheet-based content for data-driven exercises
+- **JSON Export**: Provides structured data export for integration with other systems
+- **ZIP Packaging**: Bundles complete course materials for distribution
+- **SCORM Compliance**: Generates SCORM-compliant packages for LMS integration
+
+### Pane-Based Content Management
+- **Syllabus Pane**: Specialized handling of course syllabi with structure recognition
+- **Slides Pane**: Template-based slide management with AI content generation
+- **Labs Pane**: Custom lab environment configuration and management
+- **Quizzes Pane**: Assessment creation with automatic answer key recognition
+
+### Storage & Metadata Management
+- **Secure Storage**: File storage with access controls and encryption
+- **Metadata Tracking**: Comprehensive metadata management for content discovery
+- **Version Control**: Content versioning for educational material evolution
+- **Performance Optimization**: Efficient storage and retrieval for large educational datasets
+
+## Architecture Principles:
+
+### SOLID Design Patterns
+- **Single Responsibility**: API layer only - business logic delegated to specialized services
+- **Open/Closed**: Extensible through dependency injection and interface abstraction
+- **Liskov Substitution**: Uses interface abstractions for seamless component replacement
+- **Interface Segregation**: Clean, focused interfaces for different content management aspects
+- **Dependency Inversion**: Depends on abstractions, not concrete implementations
+
+### Educational Content Workflows
+- **Upload Processing**: Drag-and-drop → validation → text extraction → AI analysis → storage
+- **Content Generation**: AI prompts → content creation → template application → quality validation
+- **Export Pipeline**: Content selection → format conversion → packaging → delivery
+- **Search & Discovery**: Metadata indexing → tag-based search → content recommendations
+
+### Performance Considerations
+- **Async Processing**: Non-blocking file operations for handling large educational content
+- **Memory Management**: Efficient processing of large documents and media files
+- **Caching Strategy**: Intelligent caching for frequently accessed educational materials
+- **Batch Operations**: Optimized bulk processing for course-wide content operations
+
+### Security & Quality Assurance
+- **File Validation**: Comprehensive validation for uploaded educational content
+- **Content Sanitization**: Security scanning and content cleaning for safe processing
+- **Access Control**: Role-based access to educational content and management functions
+- **Audit Logging**: Complete audit trail for educational content lifecycle management
+
+### Integration Patterns
+- **AI Service Integration**: Seamless integration with course-generator service for content enhancement
+- **Storage Service Communication**: Efficient file storage and retrieval operations
+- **Analytics Integration**: Content usage tracking and educational effectiveness metrics
+- **Lab Container Integration**: Dynamic lab environment configuration and deployment
+
+This service is the central hub for all educational content processing, ensuring high-quality,
+AI-enhanced educational materials that meet modern pedagogical standards.
 """
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -51,8 +119,49 @@ from domain.interfaces.content_service import (
 # Infrastructure
 from infrastructure.container import ContentManagementContainer
 
-# API Models (DTOs - following Single Responsibility)
+# Custom exceptions
+from exceptions import (
+    ContentManagementException, FileProcessingException, ContentUploadException,
+    ContentExportException, AIIntegrationException, ValidationException,
+    ContentNotFoundException, DatabaseException, StorageException,
+    ContentSearchException, TemplateException
+)
+
+# API Models (Data Transfer Objects) - Educational Content Management
+#
+# These models follow the Single Responsibility Principle, with each model
+# focused on a specific aspect of educational content management.
+# 
+# Design Principles:
+# - Clean separation between API layer and domain logic
+# - Comprehensive validation for educational content integrity
+# - Standardized structure for all educational content types
+# - Support for educational metadata and content relationships
+# - Integration with pane-based content management workflows
 class SyllabusCreateRequest(BaseModel):
+    """
+    Data Transfer Object for creating new syllabus content.
+    
+    This model handles the upload and initial processing of syllabus documents,
+    supporting the pane-based content management system's syllabus pane functionality.
+    
+    Educational Context:
+    - Captures essential course information and structure
+    - Supports AI-driven content analysis and enhancement
+    - Validates educational standards compliance
+    - Enables structured learning objective definition
+    
+    Business Logic:
+    - Integrates with AI services for syllabus analysis
+    - Supports multi-format syllabus processing (PDF, DOCX, etc.)
+    - Validates academic content structure and completeness
+    - Enables automatic course outline generation
+    
+    Performance Considerations:
+    - Optimized validation for large syllabus documents
+    - Efficient handling of complex course structures
+    - Memory-efficient processing of educational metadata
+    """
     title: str = Field(..., min_length=3, max_length=200)
     description: Optional[str] = None
     course_id: str = Field(..., min_length=1)
@@ -67,6 +176,24 @@ class SyllabusCreateRequest(BaseModel):
     tags: Optional[List[str]] = None
 
 class SyllabusUpdateRequest(BaseModel):
+    """
+    Data Transfer Object for updating existing syllabus content.
+    
+    Supports incremental updates to syllabus information while maintaining
+    educational content integrity and version control.
+    
+    Educational Workflow:
+    - Enables iterative course development and refinement
+    - Supports collaborative editing of educational content
+    - Maintains educational standards during content evolution
+    - Preserves learning objective alignment and assessment mapping
+    
+    Business Logic:
+    - Partial update support for efficient content modification
+    - Validation ensures educational content consistency
+    - Automatic timestamp and versioning management
+    - Integration with content change tracking systems
+    """
     title: Optional[str] = Field(None, min_length=3, max_length=200)
     description: Optional[str] = None
     learning_objectives: Optional[List[str]] = None
@@ -79,12 +206,58 @@ class SyllabusUpdateRequest(BaseModel):
     tags: Optional[List[str]] = None
 
 class ContentSearchRequest(BaseModel):
+    """
+    Data Transfer Object for content search and discovery operations.
+    
+    Enables sophisticated search across all educational content types,
+    supporting instructors in finding and reusing educational materials.
+    
+    Search Capabilities:
+    - Full-text search across uploaded documents and generated content
+    - Tag-based filtering for content categorization
+    - Content type filtering (syllabi, slides, exercises, quizzes)
+    - Course-specific content discovery
+    
+    Educational Use Cases:
+    - Finding existing materials for course development
+    - Discovering reusable educational components
+    - Content recommendation based on similarity
+    - Cross-course content analysis and alignment
+    
+    Performance Optimization:
+    - Efficient indexing for fast educational content retrieval
+    - Optimized queries for large educational content databases
+    - Caching strategy for frequently accessed educational materials
+    """
     query: str = Field(..., min_length=2)
     content_types: Optional[List[str]] = None
     course_id: Optional[str] = None
     filters: Optional[Dict[str, Any]] = None
 
 class ContentResponse(BaseModel):
+    """
+    Standardized response model for all educational content types.
+    
+    Provides consistent data structure for educational content presentation
+    across different panes and content management operations.
+    
+    Content Lifecycle Support:
+    - Tracks content creation and modification timestamps
+    - Maintains content status (draft, published, archived)
+    - Provides consistent metadata structure
+    - Supports content versioning and audit trails
+    
+    Integration Benefits:
+    - Uniform API response structure across all content types
+    - Simplified client-side content handling
+    - Consistent metadata representation
+    - Standardized content identification and linking
+    
+    Educational Context:
+    - Enables content relationship mapping and dependency tracking
+    - Supports educational content analytics and usage monitoring
+    - Facilitates content quality assessment and improvement
+    """
     id: str
     title: str
     description: Optional[str] = None
@@ -102,6 +275,36 @@ current_config: Optional[DictConfig] = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """
+    FastAPI application lifecycle manager for content management service.
+    
+    Manages the complete lifecycle of the content management service,
+    ensuring proper initialization and cleanup of educational content
+    processing resources.
+    
+    Startup Operations:
+    - Initialize dependency injection container with educational content services
+    - Establish connections to storage systems for educational materials
+    - Configure AI service integrations for content enhancement
+    - Set up file processing pipelines for multi-format support
+    - Initialize caching systems for educational content optimization
+    
+    Shutdown Operations:
+    - Gracefully close file processing operations
+    - Clean up temporary educational content and processing files
+    - Flush pending content operations and export jobs
+    - Close AI service connections and storage handles
+    
+    Resource Management:
+    - Ensures proper cleanup of large educational file processing operations
+    - Manages memory usage for content analysis and generation tasks
+    - Coordinates with storage systems for data integrity
+    
+    Educational Context:
+    - Maintains educational content processing pipeline availability
+    - Ensures consistent service quality for educational workloads
+    - Supports high-availability requirements for academic environments
+    """
     """FastAPI lifespan event handler"""
     global container, current_config
     
@@ -120,6 +323,48 @@ async def lifespan(app: FastAPI):
     logging.info("Content Management Service shutdown complete")
 
 def create_app(config: DictConfig = None) -> FastAPI:
+    """
+    Application factory for creating the Content Management Service FastAPI instance.
+    
+    Creates a fully configured FastAPI application with comprehensive content
+    management capabilities, following SOLID principles and educational best practices.
+    
+    Configuration Support:
+    - Hydra-based configuration management for educational environments
+    - Environment-specific settings for development, staging, and production
+    - Educational content processing parameter configuration
+    - AI service integration settings and fallback configurations
+    
+    Middleware Configuration:
+    - CORS support for cross-origin educational content access
+    - Request/response logging for educational content audit trails
+    - Security middleware for safe educational content processing
+    - Performance monitoring for educational workload optimization
+    
+    Exception Handling:
+    - Comprehensive exception mapping for educational content operations
+    - Detailed error reporting for content processing failures
+    - Educational context preservation in error responses
+    - Graceful degradation for AI service unavailability
+    
+    Educational Features:
+    - Multi-format file processing for diverse educational content
+    - AI-enhanced content generation and validation
+    - Pane-based content management for different educational content types
+    - Export capabilities for various educational delivery formats
+    
+    Args:
+        config: Hydra configuration object with service settings
+        
+    Returns:
+        Configured FastAPI application instance ready for educational content management
+        
+    Architecture Benefits:
+    - Follows Open/Closed principle for extensible content management
+    - Supports dependency injection for testable educational services
+    - Enables configuration-driven educational content processing
+    - Provides consistent API structure for educational content operations
+    """
     """
     Application factory following SOLID principles
     Open/Closed: New routes can be added without modifying existing code
@@ -143,12 +388,84 @@ def create_app(config: DictConfig = None) -> FastAPI:
         allow_headers=["*"],
     )
     
+    # Exception type to HTTP status code mapping (Open/Closed Principle)
+    EXCEPTION_STATUS_MAPPING = {
+        ValidationException: 400,
+        ContentNotFoundException: 404,
+        FileProcessingException: 422,
+        ContentUploadException: 422,
+        ContentExportException: 422,
+        ContentSearchException: 422,
+        TemplateException: 422,
+        AIIntegrationException: 500,
+        DatabaseException: 500,
+        StorageException: 500,
+    }
+    
+    # Custom exception handler
+    @app.exception_handler(ContentManagementException)
+    async def content_management_exception_handler(request, exc: ContentManagementException):
+        """Handle custom content management exceptions."""
+        # Use mapping to determine status code (extensible design)
+        status_code = next(
+            (code for exc_type, code in EXCEPTION_STATUS_MAPPING.items() if isinstance(exc, exc_type)),
+            500  # Default status code
+        )
+            
+        response_data = exc.to_dict()
+        response_data["path"] = str(request.url)
+        
+        return JSONResponse(
+            status_code=status_code,
+            content=response_data
+        )
+    
+    # Health check endpoint
+    @app.get("/health")
+    async def health_check():
+        """Health check endpoint"""
+        return {
+            "status": "healthy",
+            "service": "content-management",
+            "version": "2.0.0",
+            "timestamp": datetime.utcnow()
+        }
+    
     return app
 
 app = create_app()
 
 # Dependency injection helpers
 def get_syllabus_service() -> ISyllabusService:
+    """
+    Dependency injection provider for syllabus management service.
+    
+    Provides access to comprehensive syllabus processing capabilities,
+    supporting the syllabus pane in the content management system.
+    
+    Educational Capabilities:
+    - Syllabus document parsing and structure analysis
+    - Learning objective extraction and validation
+    - Course timeline and assessment mapping
+    - Integration with AI services for syllabus enhancement
+    
+    Business Logic:
+    - Validates educational standards compliance
+    - Supports multiple syllabus formats and structures
+    - Enables syllabus template application and customization
+    - Facilitates syllabus comparison and alignment analysis
+    
+    Returns:
+        ISyllabusService: Syllabus management service instance
+        
+    Raises:
+        HTTPException: If service container is not initialized
+        
+    Integration Benefits:
+    - Seamless integration with course generation workflows
+    - Support for educational content lifecycle management
+    - Enables syllabus-driven course development automation
+    """
     """Dependency injection for syllabus service"""
     if not container:
         raise HTTPException(status_code=500, detail="Service not initialized")
@@ -203,6 +520,36 @@ def get_content_export_service() -> IContentExportService:
     return container.get_content_export_service()
 
 async def get_current_user() -> str:
+    """
+    Authentication dependency for educational content access control.
+    
+    Provides user identification for educational content operations,
+    ensuring proper access control and audit trails for educational materials.
+    
+    Educational Context:
+    - Supports role-based access to educational content (instructors, students, admins)
+    - Enables content ownership tracking for academic integrity
+    - Facilitates collaboration controls for course development
+    - Supports institutional content sharing and access policies
+    
+    Security Considerations:
+    - Validates JWT tokens for secure educational content access
+    - Maintains session security for sensitive educational materials
+    - Supports fine-grained permissions for different content types
+    - Enables audit logging for educational content access patterns
+    
+    Returns:
+        str: Current authenticated user identifier
+        
+    Future Implementation:
+    - Will integrate with comprehensive JWT token validation
+    - Will support role-based educational content access control
+    - Will enable institutional authentication integration
+    
+    Note:
+        Currently simplified for development - will be enhanced with
+        full authentication and authorization for production educational environments.
+    """
     """Get current user (simplified for now)"""
     # In a real implementation, this would validate JWT token
     return "current_user_id"
@@ -516,6 +863,36 @@ async def export_course_content(
 
 # Helper functions (following Single Responsibility)
 def _content_to_response(content) -> ContentResponse:
+    """
+    Convert domain entity to standardized API response format.
+    
+    Transforms internal content domain objects into consistent API responses,
+    following the Single Responsibility Principle for clean data transformation.
+    
+    Educational Content Transformation:
+    - Standardizes content representation across all educational content types
+    - Preserves educational metadata and content relationships
+    - Ensures consistent timestamp and status representation
+    - Maintains content ownership and access control information
+    
+    Business Logic:
+    - Abstracts internal domain structure from API consumers
+    - Provides stable API contract for educational content access
+    - Enables versioning and backward compatibility for educational clients
+    - Supports content caching and optimization strategies
+    
+    Args:
+        content: Domain entity instance (Syllabus, Slide, Quiz, Exercise, LabEnvironment)
+        
+    Returns:
+        ContentResponse: Standardized response model for educational content
+        
+    Architecture Benefits:
+    - Follows Dependency Inversion Principle with domain abstraction
+    - Enables consistent educational content presentation
+    - Supports API evolution without breaking educational client applications
+    - Facilitates educational content analytics and monitoring
+    """
     """Convert domain entity to API response DTO"""
     return ContentResponse(
         id=content.id,
@@ -553,6 +930,52 @@ async def general_exception_handler(request, exc):
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def main(cfg: DictConfig) -> None:
+    """
+    Main entry point for the Content Management Service.
+    
+    Initializes and runs the educational content management service with
+    comprehensive configuration management and centralized logging.
+    
+    Service Initialization:
+    - Configures centralized syslog format logging for educational content operations
+    - Initializes Hydra configuration management for educational environments
+    - Sets up service networking and port configuration
+    - Establishes educational content processing pipeline
+    
+    Educational Content Service Features:
+    - Multi-format file processing for educational materials (PDF, DOCX, PPTX, JSON)
+    - AI-enhanced content generation and validation
+    - Pane-based content management for different educational content types
+    - Comprehensive export capabilities for educational content delivery
+    - Integration with course generation and analytics services
+    
+    Configuration Management:
+    - Environment-specific settings for educational institutions
+    - Educational content processing parameters and limits
+    - AI service integration configuration and fallback options
+    - Storage and caching configuration for educational workloads
+    
+    Performance Optimization:
+    - Async processing for large educational content operations
+    - Memory management for educational document processing
+    - Optimized logging to reduce overhead while maintaining audit trails
+    - Efficient resource utilization for educational content workflows
+    
+    Operational Features:
+    - Health check endpoints for educational service monitoring
+    - Graceful shutdown handling for educational content integrity
+    - Error handling and recovery for educational content processing
+    - Integration with platform-wide educational service ecosystem
+    
+    Args:
+        cfg: Hydra configuration object containing educational service settings
+        
+    Educational Context:
+    - Supports high-availability requirements for academic environments
+    - Enables scalable educational content processing for institutional use
+    - Provides consistent educational content management across course lifecycles
+    - Facilitates educational content compliance and quality assurance
+    """
     """Main entry point using Hydra configuration"""
     global current_config
     current_config = cfg

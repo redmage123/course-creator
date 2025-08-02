@@ -8,10 +8,10 @@ import asyncio
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional, Callable
 from enum import Enum
-from ...domain.entities.course_content import GenerationJob, JobStatus, ContentType
-from ...domain.interfaces.content_generation_service import IJobManagementService
-from ...domain.interfaces.content_repository import IGenerationJobRepository
-from ...domain.interfaces.ai_service import IAIService
+from domain.entities.course_content import GenerationJob, JobStatus, ContentType
+from domain.interfaces.content_generation_service import IJobManagementService
+from domain.interfaces.content_repository import IGenerationJobRepository
+from domain.interfaces.ai_service import IAIService
 
 class JobPriority(Enum):
     LOW = "low"

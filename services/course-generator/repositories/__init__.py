@@ -6,12 +6,12 @@ Repositories handle database operations and data persistence following the
 Repository pattern for clean architecture.
 """
 
-from .base_repository import BaseRepository
-from .syllabus_repository import SyllabusRepository
-from .slide_repository import SlideRepository
-from .quiz_repository import QuizRepository
-from .lab_repository import LabRepository
-from .course_repository import CourseRepository
+from repositories.base_repository import BaseRepository
+from repositories.syllabus_repository import SyllabusRepository
+from repositories.slide_repository import SlideRepository
+from repositories.quiz_repository import QuizRepository
+from repositories.lab_repository import LabRepository
+from repositories.course_repository import CourseRepository
 
 __all__ = [
     "BaseRepository",

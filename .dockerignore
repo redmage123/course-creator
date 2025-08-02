@@ -1,0 +1,73 @@
+# Global .dockerignore for all services
+# This reduces build context size significantly
+
+# Git and version control
+.git
+.gitignore
+.gitattributes
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.coverage
+.pytest_cache/
+.mypy_cache/
+.tox/
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation and markdown (unless needed)
+*.md
+docs/
+README*
+
+# Test files (unless building test images)
+tests/
+test_*
+*_test.py
+
+# Logs and temporary files
+logs/
+*.log
+tmp/
+temp/
+
+# Node.js (if present)
+node_modules/
+npm-debug.log
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Database files
+*.db
+*.sqlite
+
+# Configuration files that shouldn't be in containers
+.env.local
+.env.production
+config.local.*
+
+# Backup files
+*.bak
+*.backup

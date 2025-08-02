@@ -9,15 +9,15 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from fastapi import Request
 
-from ..repositories.user_repository import UserRepository
-from ..repositories.session_repository import SessionRepository
-from ..repositories.role_repository import RoleRepository
-from ..models.user import User
-from ..models.auth import LoginResponse, ValidateResponse
-from ..models.session import UserSession
-from ..auth.jwt_manager import JWTManager
-from ..auth.session_manager import SessionManager
-from ..auth.password_manager import PasswordManager
+from repositories.user_repository import UserRepository
+from repositories.session_repository import SessionRepository
+from repositories.role_repository import RoleRepository
+from models.user import User
+from models.auth import LoginResponse, ValidateResponse
+from models.session import UserSession
+from auth.jwt_manager import JWTManager
+from auth.session_manager import SessionManager
+from auth.password_manager import PasswordManager
 
 
 class AuthService:

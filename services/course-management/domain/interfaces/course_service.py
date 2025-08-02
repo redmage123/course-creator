@@ -5,7 +5,7 @@ Interface Segregation: Focused interface for course operations only
 """
 from abc import ABC, abstractmethod
 from typing import List, Optional
-from ..entities.course import Course, CourseStatistics
+from domain.entities.course import Course, CourseStatistics
 
 class ICourseService(ABC):
     """Interface for course management operations"""

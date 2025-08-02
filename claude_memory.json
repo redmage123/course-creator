@@ -1,0 +1,61 @@
+{
+  "conversations": {
+    "current_session": {
+      "id": "session_001",
+      "started": "2025-08-02T00:00:00Z",
+      "last_updated": "2025-08-02T00:00:00Z",
+      "context": [],
+      "entities_mentioned": [],
+      "key_topics": []
+    }
+  },
+  "entities": {
+    "course-creator-platform": {
+      "type": "system",
+      "description": "Educational platform with microservices architecture",
+      "properties": {
+        "version": "2.4.0",
+        "services_count": 8,
+        "has_rbac": true,
+        "has_lab_containers": true
+      },
+      "relationships": [],
+      "created": "2025-08-02T00:00:00Z",
+      "last_updated": "2025-08-02T00:00:00Z"
+    }
+  },
+  "facts": {
+    "platform_requirements": {
+      "fact": "All Python imports must be absolute imports only - no relative imports allowed",
+      "category": "development_standards",
+      "importance": "critical",
+      "source": "CLAUDE.md",
+      "created": "2025-08-02T00:00:00Z"
+    },
+    "session_timeouts": {
+      "fact": "Session timeouts are configured as 8hr absolute, 2hr inactivity, 5min warning",
+      "category": "session_management",
+      "importance": "high",
+      "source": "CLAUDE.md",
+      "created": "2025-08-02T00:00:00Z"
+    }
+  },
+  "relationships": {
+    "user_to_platform": {
+      "from": "user",
+      "to": "course-creator-platform",
+      "type": "uses",
+      "created": "2025-08-02T00:00:00Z"
+    }
+  },
+  "queries": [],
+  "metadata": {
+    "created": "2025-08-02T00:00:00Z",
+    "version": "1.0",
+    "last_accessed": "2025-08-02T00:00:00Z",
+    "total_conversations": 0,
+    "total_entities": 1,
+    "total_facts": 2,
+    "total_relationships": 1
+  }
+}

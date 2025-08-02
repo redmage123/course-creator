@@ -22,6 +22,13 @@ from models.content import (
 )
 from repositories.content_repository import ContentRepository
 
+# Custom exceptions
+from exceptions import (
+    ContentManagementException, FileProcessingException, ContentUploadException,
+    ValidationException, ContentNotFoundException, DatabaseException,
+    StorageException, AIIntegrationException
+)
+
 
 class ContentService:
     """Service for managing content operations"""
@@ -76,8 +83,16 @@ class ContentService:
                 created_by=created_syllabus.created_by
             )
             
+        except ContentManagementException:
+            # Re-raise custom exceptions (they will be handled by the global handler)
+            raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to create syllabus: {str(e)}")
+            raise DatabaseException(
+                message="Failed to create syllabus",
+                operation="create_syllabus",
+                table_name="syllabi",
+                original_exception=e
+            )
     
     async def get_syllabus(self, syllabus_id: str) -> Optional[SyllabusResponse]:
         """Get syllabus by ID"""
@@ -105,8 +120,17 @@ class ContentService:
                 created_by=syllabus.created_by
             )
             
+        except ContentManagementException:
+            # Re-raise custom exceptions (they will be handled by the global handler)
+            raise
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to get syllabus: {str(e)}")
+            raise DatabaseException(
+                message=f"Failed to retrieve syllabus with ID {syllabus_id}",
+                operation="get_syllabus",
+                table_name="syllabi",
+                record_id=syllabus_id,
+                original_exception=e
+            )
     
     async def update_syllabus(self, syllabus_id: str, updates: SyllabusUpdate) -> Optional[SyllabusResponse]:
         """Update syllabus"""

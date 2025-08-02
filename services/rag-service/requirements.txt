@@ -1,0 +1,47 @@
+# RAG Service Dependencies - ChromaDB and AI Integration Requirements
+
+# FastAPI and ASGI server for REST API endpoints
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.4.2
+
+# ChromaDB for vector storage and retrieval
+chromadb==0.4.18
+sentence-transformers==2.2.2
+
+# OpenAI integration for embedding fallback
+openai==1.3.0
+
+# Scientific computing and vector operations
+numpy==1.24.3
+scipy==1.11.4
+
+# Async HTTP client for service communication
+httpx==0.25.0
+aiohttp==3.9.0
+
+# Redis for caching integration
+redis==5.0.1
+aioredis>=2.0.0
+
+# Configuration and environment management
+python-dotenv==1.0.0
+pydantic-settings==2.0.3
+
+# Logging and monitoring
+structlog==23.1.0
+
+# Data processing and serialization
+pandas==2.0.3
+pyarrow==14.0.0
+
+# UUID and datetime utilities
+python-dateutil==2.8.2
+
+# CORS middleware for cross-origin requests
+python-multipart==0.0.6
+
+# Testing dependencies
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-mock==3.12.0

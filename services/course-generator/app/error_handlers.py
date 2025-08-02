@@ -7,10 +7,50 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+# Custom exceptions - ABSOLUTE IMPORTS ONLY
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent))
+
+from exceptions import (
+    CourseGeneratorException, ContentGenerationException, AIServiceException,
+    FileProcessingException, ConfigurationException, ValidationException,
+    DatabaseException, TemplateException, ExportException
+)
+
 logger = logging.getLogger(__name__)
 
 def setup_error_handlers(app: FastAPI) -> None:
     """Setup global error handlers."""
+    
+    # Exception type to HTTP status code mapping (Open/Closed Principle)
+    EXCEPTION_STATUS_MAPPING = {
+        ValidationException: 400,
+        ConfigurationException: 500,
+        FileProcessingException: 422,
+        ContentGenerationException: 500,
+        AIServiceException: 503,
+        DatabaseException: 500,
+        TemplateException: 422,
+        ExportException: 500,
+    }
+    
+    @app.exception_handler(CourseGeneratorException)
+    async def course_generator_exception_handler(request: Request, exc: CourseGeneratorException):
+        """Handle custom course generator exceptions."""
+        # Use mapping to determine status code (extensible design)
+        status_code = next(
+            (code for exc_type, code in EXCEPTION_STATUS_MAPPING.items() if isinstance(exc, exc_type)),
+            500  # Default status code
+        )
+            
+        response_data = exc.to_dict()
+        response_data["path"] = str(request.url)
+        
+        return JSONResponse(
+            status_code=status_code,
+            content=response_data
+        )
     
     @app.exception_handler(HTTPException)
     async def http_exception_handler(request: Request, exc: HTTPException):

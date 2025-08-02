@@ -10,7 +10,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
 from enum import Enum
 
-from .common import (
+from models.common import (
     BaseContentModel, ContentType, DifficultyLevel, ExportFormat,
     ProcessingStatus
 )
