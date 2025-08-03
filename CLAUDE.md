@@ -89,11 +89,11 @@ The memory system provides Claude Code with:
 ### Memory System Location and Files
 
 **Configuration**: `config/memory/claude_memory.yaml` - Hydra-based configuration with environment-aware settings  
-**Manager Class**: `claude_memory_manager.py` - Core memory management with Hydra integration  
-**Helper Functions**: `claude_memory_helpers.py` - Simplified interface for Claude Code  
-**Schema**: `claude_memory_schema.sql` - SQLite database schema  
-**Tests**: `memory_tests/test_memory_system.py` - Comprehensive test suite  
-**Database Location**: Configurable via Hydra (default: `./claude_memory.db`)
+**Manager Class**: `shared/memory/claude_memory_manager.py` - Core memory management with Hydra integration  
+**Helper Functions**: `shared/memory/claude_memory_helpers.py` - Simplified interface for Claude Code  
+**Schema**: `shared/memory/claude_memory_schema.sql` - SQLite database schema  
+**Tests**: `shared/memory/tests/test_memory_system.py` - Comprehensive test suite  
+**Database Location**: Configurable via Hydra (default: `shared/memory/claude_memory.db`)
 
 ### Memory System Usage Patterns
 
@@ -101,6 +101,8 @@ The memory system provides Claude Code with:
 
 ```python
 # Import helper functions (Hydra configuration automatic)
+import sys
+sys.path.append('shared/memory')
 import claude_memory_helpers as memory
 
 # Remember key information
@@ -123,6 +125,8 @@ memory.remember_error_solution("Container startup failure", "Remove old containe
 
 ```python
 # Explicit Hydra initialization for services that need configuration control
+import sys
+sys.path.append('shared/memory')
 import claude_memory_helpers as memory
 
 # Initialize with specific Hydra configuration
@@ -589,10 +593,10 @@ docker-compose -f docker-compose.test.yml up --build
 ### Database Operations
 ```bash
 # Setup database and run migrations
-python setup-database.py
+python deploy/setup-database.py
 
-# Reset database (caution: destructive)
-python setup-database.py --reset
+# Reset database (caution: destructive)  
+python deploy/setup-database.py --reset
 
 # Create admin user
 python create-admin.py

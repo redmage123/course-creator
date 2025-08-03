@@ -311,7 +311,7 @@ spec:
       containers:
       - name: migration
         image: $REGISTRY/$REPO-user-management:$VERSION
-        command: ["python", "setup-database.py", "--migrate"]
+        command: ["python", "deploy/setup-database.py", "--migrate"]
         env:
         - name: DATABASE_URL
           valueFrom:
