@@ -62,6 +62,37 @@ pytest-mock>=3.12.0
 coverage>=7.3.0
 faker>=20.1.0
 
+# Selenium and Chrome WebDriver for browser automation testing
+selenium>=4.15.0
+webdriver-manager>=4.0.1
+chromedriver-py>=118.0.5993.70
+
+# PyUnit (unittest) - included in Python standard library but with extensions
+unittest-xml-reporting>=3.2.0
+nose2>=0.14.0
+parameterized>=0.9.0
+
+# Additional browser testing and automation
+playwright>=1.40.0
+beautifulsoup4>=4.12.0
+requests-html>=0.10.0
+
+# Test data generation and utilities
+factory-boy>=3.3.0
+freezegun>=1.2.2
+responses>=0.24.0
+vcrpy>=5.1.0
+
+# Performance and load testing enhancements
+pytest-benchmark>=4.0.0
+pytest-xdist>=3.5.0  # Parallel test execution
+pytest-timeout>=2.2.0
+
+# Browser testing utilities
+pytest-selenium>=4.1.0
+pytest-html>=4.1.0  # HTML test reports
+allure-pytest>=2.13.2  # Advanced test reporting
+
 # Performance and monitoring
 locust>=2.17.0
 
@@ -77,3 +108,17 @@ pytest-postgresql>=5.0.0
 
 # Redis testing
 fakeredis>=2.20.1
+
+# Additional testing and development tools
+tox>=4.11.4  # Testing across multiple Python versions
+pre-commit>=3.6.0  # Git pre-commit hooks for code quality
+bandit>=1.7.5  # Security testing
+safety>=3.0.1  # Dependency vulnerability scanning
+
+# Memory and profiling tools for performance testing
+memory-profiler>=0.61.0
+psutil>=5.9.6
+
+# API testing utilities
+httpx>=0.25.0  # Already included above but ensuring it's here
+aioresponses>=0.7.6  # Async HTTP mocking

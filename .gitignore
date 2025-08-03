@@ -177,3 +177,4 @@ package-lock.json
 postgres_data/
 redis_data/
 lab-storage/
+.aider*

@@ -1,0 +1,28 @@
+# Course Creator Base Image with Common System Dependencies
+# This eliminates repeated apt downloads across all services
+
+FROM python:3.11-slim AS course-creator-base
+
+# Install all common system dependencies once
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Basic build tools (needed by most services)
+    gcc g++ build-essential \
+    # Network and security tools
+    curl ca-certificates \
+    # Database connectivity
+    libpq-dev \
+    # Additional utilities
+    git procps \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Set common environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DEBIAN_FRONTEND=noninteractive
+
+# Create common app structure
+WORKDIR /app
+
+# Create non-root user (can be reused by all services)
+RUN groupadd -r appuser && useradd -r -g appuser appuser

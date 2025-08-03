@@ -5,6 +5,7 @@ defaults:
   - ai: claude
   - messaging: redis
   - logging: default
+  - memory: claude_memory
 
 app:
   name: "Course Creator"

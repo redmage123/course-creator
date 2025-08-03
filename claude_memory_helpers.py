@@ -23,22 +23,86 @@ WHY THESE HELPERS:
 import json
 import logging
 from typing import Dict, List, Optional, Any, Union
-from claude_memory_manager import ClaudeMemoryManager, get_memory_manager
+from omegaconf import DictConfig
+try:
+    # Try to use hybrid memory manager for better performance
+    from claude_hybrid_memory_manager import HybridMemoryManager as ClaudeMemoryManager
+    from claude_hybrid_memory_helpers import get_hybrid_memory_manager as get_memory_manager
+    HYBRID_MODE = True
+except ImportError:
+    # Fallback to original memory manager if hybrid not available
+    from claude_memory_manager import ClaudeMemoryManager, get_memory_manager
+    HYBRID_MODE = False
 
 # Global memory manager instance
 _memory = None
 
-def get_memory() -> ClaudeMemoryManager:
+def init_memory_with_hydra(config_path: str = "config", config_name: str = "config") -> ClaudeMemoryManager:
     """
-    Get global memory manager instance
+    Initialize memory system using Hydra configuration
+    
+    BUSINESS REQUIREMENT:
+    Provide easy initialization of memory system using Hydra configuration
+    for services that want explicit configuration management.
+    
+    TECHNICAL IMPLEMENTATION:
+    Uses Hydra to load configuration and initializes memory system with
+    proper configuration hierarchy and environment overrides.
+    
+    Args:
+        config_path: Path to Hydra configuration directory
+        config_name: Name of main configuration file
+        
+    Returns:
+        Configured ClaudeMemoryManager instance
+    """
+    try:
+        from hydra import compose, initialize
+        from hydra.core.global_hydra import GlobalHydra
+        
+        # Clear any existing Hydra instance for clean initialization
+        if GlobalHydra.instance().is_initialized():
+            GlobalHydra.instance().clear()
+            
+        # Initialize Hydra with memory configuration
+        with initialize(config_path=config_path, version_base=None):
+            cfg = compose(config_name=config_name)
+            return get_memory(cfg)
+            
+    except Exception as e:
+        # Fall back to default configuration if Hydra fails
+        logging.warning(f"Failed to initialize memory with Hydra: {e}")
+        logging.warning("Falling back to default memory configuration")
+        return get_memory()
+
+def get_memory(config: DictConfig = None) -> ClaudeMemoryManager:
+    """
+    Get global memory manager instance with Hydra configuration support
+    
+    BUSINESS REQUIREMENT:
+    Provide simple access to memory system that works with Hydra configuration
+    while maintaining backwards compatibility for existing Claude Code usage.
+    
+    TECHNICAL IMPLEMENTATION:
+    Singleton pattern with lazy initialization, supporting both Hydra
+    configuration and intelligent fallback defaults.
     
     SINGLETON PATTERN:
     Ensures consistent memory access across Claude Code operations
-    while maintaining session continuity.
+    while maintaining session continuity and configuration consistency.
+    
+    Args:
+        config: Optional Hydra DictConfig for memory system configuration
+        
+    Returns:
+        Singleton ClaudeMemoryManager instance
     """
     global _memory
     if _memory is None:
-        _memory = get_memory_manager()
+        if HYBRID_MODE:
+            _memory = get_memory_manager()  # No config parameter for hybrid
+        else:
+            _memory = get_memory_manager(config)
     return _memory
 
 
@@ -59,12 +123,18 @@ def remember(content: str, **kwargs) -> str:
         remember("Docker containers use port 8000-8008", category="infrastructure", importance="high")
     """
     memory = get_memory()
-    result = memory.remember(content, **kwargs)
     
-    if result['entity_id']:
-        return f"✅ Remembered: {content[:50]}... (linked to entity)"
+    if HYBRID_MODE:
+        # Hybrid mode returns fact_id string directly
+        result = memory.remember(content, kwargs.get('category', 'general'), kwargs.get('importance', 'medium'))
+        return f"✅ Remembered: {content[:50]}... (ID: {result})"
     else:
-        return f"✅ Remembered: {content[:50]}..."
+        # Original mode returns dictionary
+        result = memory.remember(content, **kwargs)
+        if result['entity_id']:
+            return f"✅ Remembered: {content[:50]}... (linked to entity)"
+        else:
+            return f"✅ Remembered: {content[:50]}..."
 
 
 def recall(query: str, limit: int = 5) -> str:

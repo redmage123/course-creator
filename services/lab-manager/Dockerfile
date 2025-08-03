@@ -1,8 +1,7 @@
-# organization-management Service Dockerfile - Using mounted .venv
+# Lab Manager Service Dockerfile - Using mounted .venv
 # No pip installs - uses pre-installed packages from mounted virtual environment
 
 FROM course-creator-base:latest
-
 
 WORKDIR /app
 
@@ -15,15 +14,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Copy application code
 COPY . .
 
-# Create non-root user
-RUN \
-    chown -R appuser:appuser /app
+# Use existing appuser from base image and fix ownership
+RUN chown -R appuser:appuser /app
 USER appuser
 
 # The virtual environment directory will be mounted from host
 # Path configured via VENV_MOUNT_PATH environment variable in docker-compose.yml
 # No pip install needed!
 
-EXPOSE 8008
+EXPOSE 8006
 
 CMD ["python", "main.py"]

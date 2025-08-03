@@ -1,4 +1,17 @@
 services:
+  # Shared Base Image for System Package Caching
+  base-image:
+    image: course-creator-base:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.base
+      cache_from:
+        - course-creator-base:latest
+    # This service only exists to build the base image
+    # Other services depend on it being built first
+    command: "true"  # Do nothing, just build the image
+    profiles: ["build-base"]  # Only run when specifically requested
+
   # Database Services
   postgres:
     image: postgres:15-alpine
@@ -54,7 +67,10 @@ services:
       - DOCKER_CONTAINER=true
       - SERVICE_NAME=user-management
       - LOG_LEVEL=INFO
+      - PATH=${VENV_MOUNT_PATH}/bin:$PATH
+      - VIRTUAL_ENV=${VENV_MOUNT_PATH}
     volumes:
+      - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
       - /var/log/course-creator:/var/log/course-creator
     ports:
       - "8000:8000"
@@ -94,6 +110,7 @@ services:
       - LOG_LEVEL=INFO
       - ENVIRONMENT=docker
     volumes:
+      - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
       - /var/log/course-creator:/var/log/course-creator
     networks:
       - course-creator-network
@@ -128,6 +145,7 @@ services:
     ports:
       - "8003:8003"
     volumes:
+      - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
       - content_files:/app/content_files
       - content_storage:/app/storage
       - /var/log/course-creator:/var/log/course-creator
@@ -177,6 +195,7 @@ services:
     ports:
       - "8004:8004"
     volumes:
+      - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
       - /var/log/course-creator:/var/log/course-creator
     networks:
       - course-creator-network
@@ -220,6 +239,7 @@ services:
     ports:
       - "8005:8005"
     volumes:
+      - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
       - content_uploads:/app/uploads
       - content_exports:/app/exports
       - template_storage:/app/storage
@@ -243,7 +263,7 @@ services:
     image: course-creator-rag-service:latest
     build:
       context: ./services/rag-service
-      dockerfile: Dockerfile.volume
+      dockerfile: Dockerfile
       cache_from:
         - course-creator-rag-service:latest
     environment:
@@ -255,9 +275,12 @@ services:
       - LOG_DIR=/var/log/course-creator
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - PATH=${VENV_MOUNT_PATH}/bin:$PATH
+      - VIRTUAL_ENV=${VENV_MOUNT_PATH}
     ports:
       - "8009:8009"
     volumes:
+      - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
       - rag_chromadb_data:/app/chromadb_data
       - rag_huggingface_cache:/app/.cache/huggingface
       - /var/log/course-creator:/var/log/course-creator
@@ -297,6 +320,7 @@ services:
     ports:
       - "8007:8007"
     volumes:
+      - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
       - /var/log/course-creator:/var/log/course-creator
     networks:
       - course-creator-network
@@ -342,6 +366,7 @@ services:
     ports:
       - "8008:8008"
     volumes:
+      - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
       - /var/log/course-creator:/var/log/course-creator
     networks:
       - course-creator-network
@@ -387,7 +412,7 @@ services:
   lab-manager:
     image: course-creator-lab-manager:latest
     build:
-      context: ./lab-containers
+      context: ./services/lab-manager
       dockerfile: Dockerfile
       cache_from:
         - course-creator-lab-manager:latest
@@ -409,6 +434,7 @@ services:
       - LOG_LEVEL=INFO
       - LAB_STORAGE_PATH=/home/bbrelin/course-creator/lab-storage
     volumes:
+      - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
       - /var/run/docker.sock:/var/run/docker.sock:rw
       - ./lab-storage:/home/bbrelin/course-creator/lab-storage
       - /var/log/course-creator:/var/log/course-creator

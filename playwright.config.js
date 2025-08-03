@@ -77,6 +77,36 @@ export default defineConfig({
       name: 'Google Chrome',
       use: { ...devices['Desktop Chrome'], channel: 'chrome' },
     },
+
+    /* Specialized testing projects */
+    {
+      name: 'visual-regression',
+      use: { 
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1280, height: 720 },
+      },
+      testMatch: '**/tests/e2e/visual/**/*.spec.js',
+    },
+    {
+      name: 'accessibility',
+      use: { ...devices['Desktop Chrome'] },
+      testMatch: '**/tests/e2e/accessibility/**/*.spec.js',
+    },
+    {
+      name: 'performance',
+      use: { 
+        ...devices['Desktop Chrome'],
+        launchOptions: {
+          args: ['--enable-precise-memory-info'],
+        },
+      },
+      testMatch: '**/tests/e2e/performance/**/*.spec.js',
+    },
+    {
+      name: 'mobile',
+      use: { ...devices['Pixel 5'] },
+      testMatch: '**/tests/e2e/mobile/**/*.spec.js',
+    },
   ],
 
   /* Run your local dev server before starting the tests */

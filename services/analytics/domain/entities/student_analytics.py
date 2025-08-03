@@ -42,8 +42,53 @@ class ContentType(Enum):
 @dataclass
 class StudentActivity:
     """
-    Domain entity representing a student activity event
-    Encapsulates business rules for activity tracking
+    STUDENT ACTIVITY TRACKING DOMAIN ENTITY
+
+    BUSINESS REQUIREMENT:
+    Educational platforms need comprehensive activity tracking to measure student engagement,
+    identify learning patterns, and provide analytics for instructors and administrators.
+    This entity captures all student interactions with the learning platform including
+    login sessions, content access, lab usage, quiz attempts, and exercise submissions.
+
+    TECHNICAL IMPLEMENTATION:
+    Implements domain-driven design principles with immutable data structures and
+    comprehensive validation. Uses dataclass for efficient memory usage and automatic
+    equality/hashing. Includes activity-specific validation rules and engagement analysis.
+
+    EDUCATIONAL METHODOLOGY:
+    Based on learning analytics research showing that fine-grained activity tracking
+    enables better understanding of student engagement patterns, time-on-task analysis,
+    and early identification of at-risk students through behavioral indicators.
+
+    PROBLEM ANALYSIS:
+    Traditional educational systems lack granular activity data, making it difficult
+    to understand how students actually interact with learning materials. This entity
+    solves that by capturing detailed interaction data with proper validation and
+    business rule enforcement.
+
+    SOLUTION RATIONALE:
+    - Enum-based activity types prevent invalid data entry
+    - Timestamp validation ensures data integrity
+    - Activity-specific validation maintains data quality
+    - Engagement analysis methods support real-time insights
+    - UUID-based IDs prevent conflicts in distributed systems
+
+    SECURITY CONSIDERATIONS:
+    - All student data handling must comply with FERPA regulations
+    - IP addresses and user agents stored for security audit trails
+    - Session IDs enable tracking without exposing sensitive user data
+    - Data validation prevents injection attacks through activity data
+
+    PERFORMANCE IMPACT:
+    - Lightweight dataclass structure minimizes memory overhead
+    - Validation occurs only during object creation for efficiency
+    - Engagement analysis methods use efficient set operations
+    - Time calculations use optimized datetime operations
+
+    MAINTENANCE NOTES:
+    - Activity types should be extended carefully to maintain compatibility
+    - Validation rules must be updated when new activity types are added
+    - Consider archiving old activity data for performance in high-volume scenarios
     """
     student_id: str
     course_id: str
@@ -120,7 +165,53 @@ class StudentActivity:
 @dataclass
 class LabUsageMetrics:
     """
-    Domain entity for lab usage tracking and analysis
+    LAB USAGE ANALYTICS DOMAIN ENTITY
+
+    BUSINESS REQUIREMENT:
+    Interactive coding labs are central to programming education, requiring detailed
+    usage analytics to understand student learning patterns, identify struggling students,
+    and optimize lab design for maximum educational effectiveness.
+
+    TECHNICAL IMPLEMENTATION:
+    Tracks comprehensive lab session data including duration, code executions, errors,
+    and completion status. Implements real-time productivity scoring and engagement
+    level calculation based on educational research methodologies.
+
+    EDUCATIONAL METHODOLOGY:
+    Based on experiential learning theory and constructivist pedagogy showing that
+    hands-on coding practice with immediate feedback leads to deeper understanding
+    and skill development. Metrics align with research on deliberate practice.
+
+    PROBLEM ANALYSIS:
+    Traditional lab environments provide minimal analytics, making it difficult to:
+    - Identify students struggling with coding concepts
+    - Optimize lab difficulty and scaffolding
+    - Measure learning progress in programming skills
+    - Provide timely intervention for skill development
+
+    SOLUTION RATIONALE:
+    - Session-based tracking captures complete learning episodes
+    - Error counting enables mistake-based learning analysis
+    - Productivity scoring motivates efficient coding practices
+    - Engagement levels guide instructional support allocation
+    - Real-time metrics enable immediate intervention
+
+    SECURITY CONSIDERATIONS:
+    - Student code stored securely with appropriate access controls
+    - Lab session data anonymized for institutional research
+    - FERPA compliance for educational record handling
+    - Error data protected to prevent skill-based discrimination
+
+    PERFORMANCE IMPACT:
+    - Efficient session tracking minimizes overhead during active coding
+    - Calculation methods optimized for real-time dashboard updates
+    - Batch processing for historical trend analysis
+    - Memory-efficient storage of lab interaction data
+
+    MAINTENANCE NOTES:
+    - Lab metrics should align with current pedagogical research
+    - Productivity scoring algorithms may need periodic recalibration
+    - Consider different metrics for various programming language contexts
     """
     student_id: str
     course_id: str
@@ -223,7 +314,53 @@ class LabUsageMetrics:
 @dataclass
 class QuizPerformance:
     """
-    Domain entity for quiz performance tracking and analysis
+    QUIZ PERFORMANCE ANALYTICS DOMAIN ENTITY
+
+    BUSINESS REQUIREMENT:
+    Formative and summative assessment through quizzes requires comprehensive performance
+    tracking to measure learning outcomes, identify knowledge gaps, and provide feedback
+    for both students and instructors on educational effectiveness.
+
+    TECHNICAL IMPLEMENTATION:
+    Captures detailed quiz attempt data including timing, accuracy, attempt patterns,
+    and question-level analysis. Supports multiple attempts with progression tracking
+    and comprehensive performance calculation methods.
+
+    EDUCATIONAL METHODOLOGY:
+    Based on assessment theory and cognitive load research showing that frequent,
+    low-stakes assessment improves learning retention and provides valuable feedback
+    for adaptive instruction and personalized learning paths.
+
+    PROBLEM ANALYSIS:
+    Traditional quiz systems provide only final scores, missing crucial data:
+    - Time-on-task analysis for cognitive load assessment
+    - Question-level difficulty and discrimination analysis
+    - Learning progression tracking across multiple attempts
+    - Early warning indicators for knowledge gaps
+
+    SOLUTION RATIONALE:
+    - Attempt-based tracking enables learning progression analysis
+    - Time-per-question data reveals cognitive processing patterns
+    - Multiple attempt support encourages mastery-based learning
+    - Performance levels guide instructional intervention decisions
+    - Comprehensive validation ensures assessment data integrity
+
+    SECURITY CONSIDERATIONS:
+    - Quiz answers protected against unauthorized access
+    - Performance data used constructively for educational improvement
+    - Student privacy maintained in performance comparisons
+    - Assessment integrity protected through validation
+
+    PERFORMANCE IMPACT:
+    - Efficient scoring calculations for real-time feedback
+    - Optimized storage for large-scale quiz deployment
+    - Fast retrieval for instructor dashboard analytics
+    - Minimal overhead during quiz-taking experience
+
+    MAINTENANCE NOTES:
+    - Performance thresholds should align with educational standards
+    - Question timing analysis may need adjustment for accessibility
+    - Consider cultural and linguistic factors in performance interpretation
     """
     student_id: str
     course_id: str
@@ -326,7 +463,53 @@ class QuizPerformance:
 @dataclass
 class StudentProgress:
     """
-    Domain entity for tracking student progress on content items
+    STUDENT PROGRESS TRACKING DOMAIN ENTITY
+
+    BUSINESS REQUIREMENT:
+    Comprehensive progress tracking across diverse content types enables personalized
+    learning paths, early intervention for struggling students, and data-driven
+    instructional design optimization for improved educational outcomes.
+
+    TECHNICAL IMPLEMENTATION:
+    Tracks progress percentage, time investment, access patterns, and mastery indicators
+    across all content types. Implements learning velocity calculation and at-risk
+    student identification through sophisticated progress analysis algorithms.
+
+    EDUCATIONAL METHODOLOGY:
+    Based on mastery learning theory and competency-based education research showing
+    that granular progress tracking enables personalized pacing, adaptive instruction,
+    and improved student success through targeted support.
+
+    PROBLEM ANALYSIS:
+    Traditional progress tracking provides insufficient granularity:
+    - Binary completion status misses learning progression nuances
+    - Lack of time-on-task data prevents learning efficiency analysis
+    - Missing mastery indicators limit competency-based advancement
+    - No early warning system for at-risk student identification
+
+    SOLUTION RATIONALE:
+    - Percentage-based progress enables nuanced learning tracking
+    - Time investment data reveals learning efficiency patterns
+    - Mastery scoring supports competency-based progression
+    - At-risk identification enables proactive intervention
+    - Learning velocity calculation guides pacing recommendations
+
+    SECURITY CONSIDERATIONS:
+    - Progress data protected under FERPA educational record regulations
+    - Mastery scores used constructively for student advancement
+    - Learning velocity data anonymized for institutional research
+    - Access patterns protected to maintain student privacy
+
+    PERFORMANCE IMPACT:
+    - Efficient progress calculation for real-time dashboard updates
+    - Optimized velocity algorithms for minimal computational overhead
+    - Batch processing for large-scale progress analysis
+    - Fast retrieval for adaptive learning system integration
+
+    MAINTENANCE NOTES:
+    - Progress thresholds should align with educational research
+    - Mastery criteria may need periodic review and adjustment
+    - At-risk algorithms require validation against student success outcomes
     """
     student_id: str
     course_id: str
@@ -428,8 +611,66 @@ class StudentProgress:
 @dataclass
 class LearningAnalytics:
     """
-    Domain entity for comprehensive learning analytics
-    Aggregates multiple metrics to provide insights
+    COMPREHENSIVE LEARNING ANALYTICS DOMAIN ENTITY
+
+    BUSINESS REQUIREMENT:
+    Holistic learning analytics combining engagement, progress, performance, and behavioral
+    data enable evidence-based educational decision-making, personalized learning experiences,
+    and institutional effectiveness measurement for continuous improvement.
+
+    TECHNICAL IMPLEMENTATION:
+    Aggregates data from multiple analytics dimensions including engagement scoring,
+    progress velocity, lab proficiency, quiz performance, and risk assessment.
+    Implements sophisticated recommendation generation and overall performance calculation.
+
+    EDUCATIONAL METHODOLOGY:
+    Based on learning analytics research and educational data mining principles showing
+    that multi-dimensional student modeling provides more accurate and actionable
+    insights than single-metric approaches for educational intervention and optimization.
+
+    PROBLEM ANALYSIS:
+    Fragmented analytics across different systems create incomplete student pictures:
+    - Isolated metrics miss holistic learning patterns
+    - Lack of integrated risk assessment delays intervention
+    - Missing comprehensive recommendation systems
+    - No unified student success measurement framework
+
+    SOLUTION RATIONALE:
+    - Multi-dimensional scoring provides comprehensive student assessment
+    - Weighted performance calculation balances different learning aspects
+    - Risk level determination enables proactive intervention
+    - Personalized recommendations support individual learning needs
+    - Unified analytics framework supports institutional decision-making
+
+    PERFORMANCE CALCULATION METHODOLOGY:
+    Uses research-based weighting system:
+    - Engagement (25%): Behavioral participation and platform interaction
+    - Progress (25%): Learning velocity and content completion patterns
+    - Lab Proficiency (25%): Hands-on skill development and application
+    - Quiz Performance (25%): Knowledge retention and assessment outcomes
+
+    RISK ASSESSMENT FRAMEWORK:
+    - Critical Risk: Overall performance < 40%, engagement < 30%, no recent activity
+    - High Risk: Overall performance < 60%, engagement < 50%, inconsistent participation
+    - Medium Risk: Overall performance < 75%, engagement < 70%, some areas of concern
+    - Low Risk: Overall performance ≥ 75%, consistent engagement, positive trends
+
+    SECURITY CONSIDERATIONS:
+    - Comprehensive analytics data protected under FERPA regulations
+    - Risk assessments used constructively for student support
+    - Recommendation data anonymized for research applications
+    - Individual analytics protected from unauthorized access
+
+    PERFORMANCE IMPACT:
+    - Efficient calculation algorithms for real-time analytics generation
+    - Cached results for dashboard and reporting system performance
+    - Optimized recommendation generation for personalized learning
+    - Scalable architecture for institutional-level analytics
+
+    MAINTENANCE NOTES:
+    - Weighting algorithms should be validated against student success outcomes
+    - Risk thresholds may need periodic adjustment based on institutional data
+    - Recommendation systems require continuous improvement based on effectiveness
     """
     student_id: str
     course_id: str

@@ -62,20 +62,19 @@ The memory system provides Claude Code with:
 
 ### Memory System Location and Files
 
-**Database Location**: `/home/bbrelin/course-creator/claude_memory.db`  
-**Manager Class**: `/home/bbrelin/course-creator/claude_memory_manager.py`  
-**Helper Functions**: `/home/bbrelin/course-creator/claude_memory_helpers.py`  
-**Schema**: `/home/bbrelin/course-creator/claude_memory_schema.sql`  
-**Tests**: `/home/bbrelin/course-creator/memory_tests/test_memory_system.py`
+**Configuration**: `config/memory/claude_memory.yaml` - Hydra-based configuration with environment-aware settings  
+**Manager Class**: `claude_memory_manager.py` - Core memory management with Hydra integration  
+**Helper Functions**: `claude_memory_helpers.py` - Simplified interface for Claude Code  
+**Schema**: `claude_memory_schema.sql` - SQLite database schema  
+**Tests**: `memory_tests/test_memory_system.py` - Comprehensive test suite  
+**Database Location**: Configurable via Hydra (default: `./claude_memory.db`)
 
 ### Memory System Usage Patterns
 
 #### Simple Memory Operations (Use These Frequently)
 
 ```python
-# Import helper functions
-import sys
-sys.path.append('/home/bbrelin/course-creator')
+# Import helper functions (Hydra configuration automatic)
 import claude_memory_helpers as memory
 
 # Remember key information
@@ -92,6 +91,24 @@ memory.remember_system_info("Course Creator Platform", "Uses microservices archi
 
 # Remember troubleshooting solutions
 memory.remember_error_solution("Container startup failure", "Remove old containers and rebuild with --no-cache")
+```
+
+#### Hydra-Based Memory Initialization (For Services)
+
+```python
+# Explicit Hydra initialization for services that need configuration control
+import claude_memory_helpers as memory
+
+# Initialize with specific Hydra configuration
+memory_manager = memory.init_memory_with_hydra(config_path="config", config_name="config")
+
+# Use memory with custom configuration
+memory.remember("Service-specific information", category="service_config", importance="high")
+
+# Access configuration details
+config = memory_manager.config
+db_path = config.memory.database.db_path
+performance_settings = config.memory.performance
 ```
 
 #### Entity and Relationship Management
@@ -225,6 +242,51 @@ memory.remember_error_solution("Service startup timeout",
 troubleshooting = memory.get_troubleshooting_info()
 ```
 
+### Memory System Configuration (Hydra-Based)
+
+The memory system now uses Hydra configuration for flexible, environment-aware setup:
+
+#### Configuration File Structure
+```yaml
+# config/memory/claude_memory.yaml
+memory:
+  database:
+    db_path: ${oc.env:CLAUDE_MEMORY_DB_PATH,./claude_memory.db}
+    schema_path: ${oc.env:CLAUDE_MEMORY_SCHEMA_PATH,./claude_memory_schema.sql}
+    connection_params:
+      journal_mode: "WAL"
+      cache_size: 2000
+      foreign_keys: true
+  
+  session:
+    cleanup_after_hours: 24
+    max_sessions: 100
+    track_context: true
+  
+  performance:
+    enable_caching: true
+    cache_timeout_minutes: 30
+    auto_optimize_days: 7
+```
+
+#### Environment Variable Overrides
+```bash
+# Override database location
+export CLAUDE_MEMORY_DB_PATH="/custom/path/memory.db"
+export CLAUDE_MEMORY_SCHEMA_PATH="/custom/path/schema.sql"
+
+# Performance tuning
+export MEMORY_CACHE_TIMEOUT=60
+export MEMORY_MAX_SEARCH_RESULTS=100
+```
+
+#### Configuration Benefits
+- **Environment-Aware**: Different settings for development, staging, production
+- **No Hardcoded Paths**: All paths configurable via environment variables
+- **Performance Tuning**: Adjustable caching, optimization, and resource limits
+- **Security Options**: Encryption, audit logging, access controls
+- **Development Features**: Test mode, debug logging, sample data population
+
 **COMPLIANCE REQUIREMENT**: Claude Code must demonstrate usage of the memory system in every significant interaction. This is not optional - it's a core requirement for effective assistance.
 
 ## Comprehensive Code Documentation Standards (v2.4)
@@ -235,6 +297,16 @@ troubleshooting = memory.get_troubleshooting_info()
 
 #### Multiline String Documentation
 **PREFERRED**: Use multiline strings (triple quotes) for comprehensive explanations rather than # comments wherever appropriate:
+
+**CRITICAL RESTRICTION**: Python multiline string syntax (`"""` or `'''`) must ONLY be used in Python files. Never use Python multiline syntax in non-Python files such as:
+- YAML files (use `#` comments)
+- JSON files (comments not supported)
+- SQL files (use `--` or `/* */` comments)
+- JavaScript files (use `//` or `/* */` comments)
+- CSS files (use `/* */` comments)
+- HTML files (use `<!-- -->` comments)
+- Bash scripts (use `#` comments)
+- Docker files (use `#` comments)
 
 ```python
 """
@@ -378,7 +450,7 @@ The following services still need comprehensive multiline documentation applied:
 
 - **`services/analytics/`** - Analytics service Python files
 - **`services/organization-management/`** - RBAC system Python files  
-- **`services/lab-containers/`** - Lab management Python files
+- **`services/lab-manager/`** - Lab management Python files
 - **Remaining frontend JavaScript files** - Additional JS modules
 - **Remaining CSS files** - Component and layout stylesheets
 - **HTML templates** - Frontend dashboard and component templates
@@ -440,7 +512,7 @@ cd services/course-management && python run.py    # Port 8004
 cd services/content-storage && python run.py      # Port 8003
 cd services/content-management && python run.py   # Port 8005
 cd services/analytics && python main.py           # Port 8007
-cd lab-containers && python run.py               # Port 8006 (Lab Manager)
+cd services/lab-manager && python run.py        # Port 8006 (Lab Manager)
 
 # Or start individual services using app-control.sh
 ./app-control.sh start user-management
@@ -477,7 +549,7 @@ python -m pytest tests/e2e/                      # End-to-end tests only
 python -m pytest tests/frontend/                 # Frontend tests only
 
 # Run tests with coverage
-python -m pytest --cov=services --cov=lab-containers --cov-report=html
+python -m pytest --cov=services --cov-report=html
 
 # Run frontend tests
 npm test                          # Jest unit tests
@@ -755,7 +827,7 @@ rag-service:
 - `services/rag-service/main.py` - Complete RAG service with ChromaDB integration
 - `services/rag-service/logging_setup.py` - Comprehensive RAG-specific logging
 - `services/course-generator/rag_integration.py` - Content generation RAG enhancement
-- `lab-containers/rag_lab_assistant.py` - Intelligent programming assistance
+- `services/lab-manager/rag_lab_assistant.py` - Intelligent programming assistance
 - `services/course-generator/ai/generators/syllabus_generator.py` - RAG-enhanced syllabus generation
 - `tests/integration/test_rag_system_integration.py` - Comprehensive RAG validation tests
 
@@ -1060,11 +1132,11 @@ The platform now includes a comprehensive lab container management system with m
 - **Resource Analytics** - Usage metrics, performance monitoring, and IDE utilization stats
 
 ### Key Lab Container Files
-- `lab-containers/main.py` - FastAPI lab manager service with Docker and multi-IDE integration
-- `lab-containers/Dockerfile` - Lab manager container configuration
-- `lab-containers/lab-images/multi-ide-base/` - Multi-IDE Docker base images
-- `lab-containers/lab-images/python-lab-multi-ide/` - Python lab with multi-IDE support
-- `lab-containers/lab-images/multi-ide-base/ide-startup.py` - IDE management service
+- `services/lab-manager/main.py` - FastAPI lab manager service with Docker and multi-IDE integration
+- `services/lab-manager/Dockerfile` - Lab manager container configuration
+- `services/lab-manager/lab-images/multi-ide-base/` - Multi-IDE Docker base images
+- `services/lab-manager/lab-images/python-lab-multi-ide/` - Python lab with multi-IDE support
+- `services/lab-manager/lab-images/multi-ide-base/ide-startup.py` - IDE management service
 - `frontend/lab-multi-ide.html` - Multi-IDE lab interface with IDE selection
 - `frontend/lab.html` - Legacy lab interface (terminal-only)
 - `docker-compose.yml` - Full platform orchestration including lab manager
@@ -1812,6 +1884,16 @@ Every piece of generated code MUST comply with ALL directives in this CLAUDE.md 
 - [ ] **VERIFIED**: MultiEdit used for systematic updates
 - [ ] **VERIFIED**: No unnecessary permission requests for related changes
 
+**3a. File Type-Specific Comment Syntax**
+- [ ] **VERIFIED**: Python multiline strings (`"""`) only used in .py files
+- [ ] **VERIFIED**: YAML files use `#` comments only
+- [ ] **VERIFIED**: JSON files have no comments (not supported)
+- [ ] **VERIFIED**: SQL files use `--` or `/* */` comments
+- [ ] **VERIFIED**: JavaScript files use `//` or `/* */` comments
+- [ ] **VERIFIED**: CSS files use `/* */` comments
+- [ ] **VERIFIED**: HTML files use `<!-- -->` comments
+- [ ] **VERIFIED**: Bash/shell scripts use `#` comments
+
 **4. Session Management Requirements**
 - [ ] **VERIFIED**: All dashboard code includes proper session validation
 - [ ] **VERIFIED**: Session timeouts properly configured (8hr/2hr/5min)
@@ -2190,7 +2272,7 @@ docker-compose up -d --scale lab-manager=3
 - `docker-compose.yml` - Main production orchestration
 - `docker-compose.dev.yml` - Development with hot reload
 - `docker-compose.test.yml` - Testing environment
-- `lab-containers/Dockerfile` - Lab manager service container
+- `services/lab-manager/Dockerfile` - Lab manager service container
 - Individual service Dockerfiles in each service directory
 
 ## Lab Container System Architecture Notes (v2.1 - Multi-IDE Edition)

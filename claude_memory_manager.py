@@ -36,6 +36,10 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple, Any, Union
 from contextlib import contextmanager
 from pathlib import Path
+import os
+from omegaconf import DictConfig
+import hydra
+from hydra.core.config_store import ConfigStore
 
 
 class ClaudeMemoryManager:
@@ -50,27 +54,184 @@ class ClaudeMemoryManager:
     - Query patterns and frequency
     """
     
-    def __init__(self, db_path: str = "/home/bbrelin/course-creator/claude_memory.db"):
+    def __init__(self, config: DictConfig = None):
         """
-        Initialize memory manager with SQLite database
+        Initialize memory manager with Hydra configuration
+        
+        BUSINESS REQUIREMENT:
+        Create memory manager instance using Hydra configuration for
+        environment-aware setup with proper fallback defaults.
+        
+        TECHNICAL IMPLEMENTATION:
+        Uses Hydra DictConfig for all paths and settings, with intelligent
+        fallback to sensible defaults for development environments.
         
         Args:
-            db_path: Path to SQLite database file
+            config: Hydra DictConfig with memory system configuration
         """
-        self.db_path = Path(db_path)
-        self.schema_path = Path("/home/bbrelin/course-creator/claude_memory_schema.sql")
+        # Initialize configuration with fallbacks
+        self.config = self._init_config(config)
+        
+        # Extract paths from configuration
+        self.db_path = Path(self.config.memory.database.db_path)
+        self.schema_path = Path(self.config.memory.database.schema_path)
+        
+        # Session tracking
         self.current_session_id = None
         self.current_conversation_id = None
         
-        # Setup logging
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
-        self.logger = logging.getLogger(__name__)
+        # Setup logging based on configuration
+        self._setup_logging()
         
         # Initialize database
         self._init_database()
+    
+    def _init_config(self, config: DictConfig = None) -> DictConfig:
+        """
+        Initialize configuration with Hydra or fallback defaults
+        
+        BUSINESS REQUIREMENT:
+        Provide robust configuration initialization that works in all environments,
+        from development to production, with intelligent path resolution.
+        
+        TECHNICAL IMPLEMENTATION:
+        - Try to use provided config first
+        - Fall back to Hydra global config if available
+        - Use hardcoded defaults as last resort
+        - Resolve relative paths relative to current working directory
+        
+        Args:
+            config: Optional Hydra configuration object
+            
+        Returns:
+            DictConfig with complete memory system configuration
+        """
+        if config is not None:
+            return config
+            
+        # Try to get Hydra config if running in Hydra context
+        try:
+            from hydra import compose, initialize_config_module
+            from hydra.core.global_hydra import GlobalHydra
+            
+            if GlobalHydra.instance().is_initialized():
+                # Use existing Hydra configuration
+                from hydra.core.hydra_config import HydraConfig
+                hydra_cfg = HydraConfig.get()
+                return hydra_cfg.cfg
+        except Exception:
+            pass
+            
+        # Fallback to default configuration
+        return self._get_default_config()
+    
+    def _get_default_config(self) -> DictConfig:
+        """
+        Get default configuration for standalone operation
+        
+        BUSINESS REQUIREMENT:
+        Provide sensible defaults that work in development environments
+        without requiring complex configuration setup.
+        
+        TECHNICAL IMPLEMENTATION:
+        Returns a DictConfig-compatible object with all necessary
+        memory system settings using current working directory as base.
+        
+        Returns:
+            DictConfig with default memory system configuration
+        """
+        from omegaconf import OmegaConf
+        
+        # Get current working directory for relative paths
+        cwd = os.getcwd()
+        
+        default_config = {
+            'memory': {
+                'database': {
+                    'db_path': os.path.join(cwd, 'claude_memory.db'),
+                    'schema_path': os.path.join(cwd, 'claude_memory_schema.sql'),
+                    'connection_params': {
+                        'journal_mode': 'WAL',
+                        'cache_size': 2000,
+                        'foreign_keys': True,
+                        'timeout': 30.0,
+                        'wal_autocheckpoint': 1000
+                    }
+                },
+                'session': {
+                    'cleanup_after_hours': 24,
+                    'max_sessions': 100,
+                    'track_context': True
+                },
+                'entities': {
+                    'cache_size': 1000,
+                    'cleanup_threshold_days': 90,
+                    'auto_discover_relationships': True
+                },
+                'search': {
+                    'max_results': 50,
+                    'fuzzy_matching': True,
+                    'fuzzy_threshold': 0.6
+                },
+                'performance': {
+                    'enable_caching': True,
+                    'cache_timeout_minutes': 30,
+                    'auto_optimize_days': 7,
+                    'enable_monitoring': False
+                },
+                'logging': {
+                    'level': 'INFO',
+                    'log_queries': False,
+                    'log_file': '',
+                    'structured_logging': True
+                },
+                'development': {
+                    'test_mode': False,
+                    'reset_on_startup': False,
+                    'debug_mode': False,
+                    'populate_sample_data': False
+                },
+                'security': {
+                    'encrypt_data': False,
+                    'encryption_key_path': '',
+                    'audit_logging': False,
+                    'max_memory_mb': 100
+                }
+            }
+        }
+        
+        return OmegaConf.create(default_config)
+    
+    def _setup_logging(self) -> None:
+        """
+        Setup logging based on configuration
+        
+        BUSINESS REQUIREMENT:
+        Configure logging that integrates with the Course Creator platform's
+        centralized logging system while supporting standalone operation.
+        
+        TECHNICAL IMPLEMENTATION:
+        Uses configuration-driven log level and format settings with
+        fallback to basic logging for development environments.
+        """
+        log_level = getattr(logging, self.config.memory.logging.level.upper())
+        
+        # Setup logger with appropriate format
+        if self.config.memory.logging.structured_logging:
+            log_format = '%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s'
+        else:
+            log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            
+        logging.basicConfig(
+            level=log_level,
+            format=log_format
+        )
+        
+        self.logger = logging.getLogger(__name__)
+        
+        if self.config.memory.development.debug_mode:
+            self.logger.setLevel(logging.DEBUG)
+            self.logger.debug("Memory system initialized in debug mode")
         
     def _init_database(self) -> None:
         """
@@ -90,10 +251,29 @@ class ClaudeMemoryManager:
         self._start_session()
     
     def _create_database(self) -> None:
-        """Create database with schema from SQL file"""
+        """
+        Create database with schema from SQL file
+        
+        BUSINESS REQUIREMENT:
+        Initialize SQLite database with proper schema and constraints
+        for Claude Code memory system operations.
+        
+        TECHNICAL IMPLEMENTATION:
+        Reads schema from configured path and applies it to new database,
+        with proper error handling and configuration validation.
+        """
         if not self.schema_path.exists():
-            raise FileNotFoundError(f"Schema file not found: {self.schema_path}")
+            # Provide helpful error message with configuration info
+            self.logger.error(f"Schema file not found: {self.schema_path}")
+            self.logger.error(f"Current working directory: {os.getcwd()}")
+            self.logger.error(f"Configured schema path: {self.config.memory.database.schema_path}")
+            raise FileNotFoundError(
+                f"Schema file not found: {self.schema_path}. "
+                f"Please ensure the claude_memory_schema.sql file exists in the configured location."
+            )
             
+        self.logger.info(f"Creating memory database at: {self.db_path}")
+        
         with open(self.schema_path, 'r') as f:
             schema_sql = f.read()
             
@@ -759,10 +939,26 @@ class ClaudeMemoryManager:
 
 
 # Convenience function for Claude Code
-def get_memory_manager() -> ClaudeMemoryManager:
-    """Get singleton memory manager instance"""
+def get_memory_manager(config: DictConfig = None) -> ClaudeMemoryManager:
+    """
+    Get singleton memory manager instance with Hydra configuration support
+    
+    BUSINESS REQUIREMENT:
+    Provide a singleton memory manager that can be configured with Hydra
+    while maintaining backwards compatibility for existing code.
+    
+    TECHNICAL IMPLEMENTATION:
+    Uses singleton pattern with lazy initialization, supporting both
+    Hydra configuration and fallback defaults for development.
+    
+    Args:
+        config: Optional Hydra DictConfig for memory system configuration
+        
+    Returns:
+        Singleton ClaudeMemoryManager instance
+    """
     if not hasattr(get_memory_manager, '_instance'):
-        get_memory_manager._instance = ClaudeMemoryManager()
+        get_memory_manager._instance = ClaudeMemoryManager(config)
     return get_memory_manager._instance
 
 
