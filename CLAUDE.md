@@ -2,8 +2,34 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Version**: 2.5.0 - Enhanced Session Management, Dashboard Layout Fixes, and Memory System Integration  
-**Last Updated**: 2025-08-02
+**Version**: 2.6.0 - Docker Optimization, Virtual Environment Fix, and Service Architecture Consolidation  
+**Last Updated**: 2025-08-03
+
+## Version 2.6.0 - Major Docker and Architecture Improvements
+
+### Docker Container Optimization
+- **Shared Base Image**: Created `course-creator-base:latest` eliminating system package duplication across all services
+- **Virtual Environment Mounting**: Fixed container startup by mounting host `.venv` with `--copies` flag for Python 3.11 compatibility
+- **Zero Pip Downloads**: Services now start instantly without downloading packages during container initialization
+- **Requirements Consolidation**: Created `requirements-base.txt` with common dependencies, eliminated 90% duplication
+
+### Service Architecture Consolidation  
+- **Lab Manager Relocation**: Moved `lab-containers/` to `services/lab-manager/` for architectural consistency
+- **Unified Service Structure**: All services now follow identical patterns (main.py, run.py, Dockerfile, requirements.txt)
+- **Configuration Standardization**: Updated mypy.ini, CLAUDE.md, and all references to use consistent service paths
+- **Docker Compose Updates**: Updated build contexts and volume mounts for new service locations
+
+### Virtual Environment Compatibility Fix
+- **Python 3.11 Alignment**: Recreated virtual environment using system Python 3.11 to match Docker containers
+- **Copy-based Installation**: Used `python3.11 -m venv .venv --copies` to avoid symlink issues in containers
+- **Dependency Resolution**: Installed all service-specific requirements (chromadb, sentence-transformers, etc.)
+- **Container Testing**: Verified imports work correctly within mounted virtual environment
+
+### Health Monitoring Enhancements
+- **Comprehensive Status Display**: Enhanced app-control.sh status to show all 13 configured services
+- **Real-time Health Checks**: Added wait_for_service_health() function with 5-minute timeout and progress indicators
+- **Dependency Chain Visualization**: Status shows which services are waiting for dependencies vs. actually failing
+- **Service URL Display**: Provides quick access links once all services are healthy
 
 ## CRITICAL: Python Import Requirements
 
