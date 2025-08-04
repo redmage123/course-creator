@@ -8,6 +8,11 @@ import logging
 import asyncpg
 from typing import Optional
 from omegaconf import DictConfig
+from exceptions import (
+    ContentStorageException,
+    DatabaseException,
+    ConfigurationException
+)
 
 logger = logging.getLogger(__name__)
 
@@ -46,9 +51,19 @@ class DatabaseManager:
             logger.info("Database pool created successfully")
             return self.pool
             
+        except asyncpg.PostgreSQLError as e:
+            raise DatabaseException(
+                message=f"PostgreSQL error while creating database pool: Failed to establish database connection",
+                operation="create_database_pool",
+                original_exception=e
+            )
         except Exception as e:
-            logger.error(f"Failed to create database pool: {e}")
-            raise
+            raise ConfigurationException(
+                message=f"Database configuration error: Unable to create database connection pool",
+                config_key="database",
+                config_section="database_connection",
+                original_exception=e
+            )
     
     async def disconnect(self):
         """Close database connection pool."""
@@ -157,9 +172,18 @@ class DatabaseManager:
                 
                 logger.info("Database tables created successfully")
                 
+        except asyncpg.PostgreSQLError as e:
+            raise DatabaseException(
+                message=f"PostgreSQL error while creating database tables: Failed to execute table creation DDL",
+                operation="create_database_tables",
+                original_exception=e
+            )
         except Exception as e:
-            logger.error(f"Failed to create database tables: {e}")
-            raise
+            raise DatabaseException(
+                message=f"Failed to create database tables: Unable to initialize database schema",
+                operation="create_database_tables",
+                original_exception=e
+            )
     
     def _build_database_url(self) -> str:
         """Build database URL from configuration."""

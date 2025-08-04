@@ -1,20 +1,125 @@
 /**
- * Site Admin Dashboard
- * Complete platform administration interface with organization deletion
+ * SITE ADMIN DASHBOARD - COMPREHENSIVE PLATFORM ADMINISTRATION INTERFACE
+ * 
+ * PURPOSE: Complete administrative control panel for Course Creator platform management
+ * WHY: Site administrators need centralized tools for organization, user, and system management
+ * ARCHITECTURE: Class-based dashboard with comprehensive RBAC integration and real-time monitoring
+ * 
+ * CORE RESPONSIBILITIES:
+ * - Organization lifecycle management (create, deactivate, delete)
+ * - User management across all organizations with role-based controls
+ * - Platform analytics and performance monitoring
+ * - Integration status monitoring (Teams, Zoom)
+ * - Audit logging and security oversight
+ * - System health monitoring and diagnostics
+ * 
+ * BUSINESS REQUIREMENTS:
+ * - Complete platform oversight for site administrators
+ * - Organization deletion with cascade handling
+ * - User activation/deactivation across organizations
+ * - Real-time platform statistics and health monitoring
+ * - Comprehensive audit trail for compliance
+ * - Integration testing and configuration management
+ * 
+ * TECHNICAL FEATURES:
+ * - Advanced session validation with timeout management
+ * - Tab-based navigation with lazy loading
+ * - Real-time data updates with error resilience
+ * - Professional modal systems for critical operations
+ * - Comprehensive error handling and user feedback
+ * - Responsive design for desktop and mobile usage
+ * 
+ * SECURITY FEATURES:
+ * - Strict role-based access control (site_admin only)
+ * - Session timeout enforcement with automatic cleanup
+ * - Confirmation dialogs for destructive operations
+ * - Audit logging for all administrative actions
+ * - JWT token validation and renewal
  */
 
+/**
+ * IMPORT DEPENDENCIES
+ * PURPOSE: Import configuration and utility modules
+ * WHY: Centralized configuration and consistent notification system
+ */
+import { CONFIG } from './config.js';
+import { showNotification } from './modules/notifications.js';
+
 class SiteAdminDashboard {
+    /**
+     * SITE ADMIN DASHBOARD CONSTRUCTOR
+     * PURPOSE: Initialize site administration dashboard with comprehensive state management
+     * WHY: Proper initialization ensures reliable dashboard functionality and security
+     * 
+     * STATE MANAGEMENT:
+     * - currentUser: Site administrator user information and permissions
+     * - organizations: Complete organization data with statistics
+     * - platformStats: Platform-wide metrics and performance data
+     * - auditLog: Security and administrative audit trail
+     * 
+     * INITIALIZATION WORKFLOW:
+     * 1. Set up initial state with empty data structures
+     * 2. Configure session management and security validation
+     * 3. Initialize dashboard components and event handlers
+     * 4. Load initial data from backend services
+     */
     constructor() {
+        // USER STATE: Site administrator information and permissions
+        // WHY: Site admin requires elevated privileges and identity tracking
         this.currentUser = null;
+        
+        // ORGANIZATION DATA: Complete organization information with statistics
+        // WHY: Organization management is core site admin functionality
         this.organizations = [];
+        
+        // PLATFORM METRICS: System-wide statistics and performance data
+        // WHY: Site admins need platform oversight and monitoring capabilities
         this.platformStats = {};
+        
+        // AUDIT TRAIL: Security and administrative action logging
+        // WHY: Compliance and security require comprehensive audit capabilities
         this.auditLog = [];
         
+        // CONFIGURATION: Centralized timeout and API settings
+        // WHY: Configurable values enable easy maintenance and environment adaptation
+        this.SESSION_TIMEOUT = CONFIG.SECURITY.SESSION_TIMEOUT || 8 * 60 * 60 * 1000; // 8 hours
+        this.INACTIVITY_TIMEOUT = CONFIG.SECURITY.INACTIVITY_TIMEOUT || 2 * 60 * 60 * 1000; // 2 hours
+        this.NOTIFICATION_TIMEOUT = CONFIG.UI.NOTIFICATION_TIMEOUT || 5000; // 5 seconds
+        this.INTEGRATION_TEST_DELAY = CONFIG.TESTING.INTEGRATION_DELAY || 2000; // 2 seconds
+        
+        // API ENDPOINTS: Centralized endpoint configuration
+        this.API_BASE = CONFIG.API_URLS.RBAC_SERVICE || '/api/v1';
+        
+        // AUTOMATIC INITIALIZATION: Set up dashboard immediately
+        // WHY: Constructor should establish fully functional dashboard system
         this.init();
     }
 
     /**
-     * Validate current session for site admin dashboard
+     * COMPREHENSIVE SESSION VALIDATION SYSTEM
+     * PURPOSE: Validate complete session state for site administrator access
+     * WHY: Site admin dashboard requires the highest level of security validation
+     * 
+     * VALIDATION WORKFLOW:
+     * 1. Check existence of all required session components
+     * 2. Validate session timestamps against timeout thresholds
+     * 3. Verify user has site administrator privileges
+     * 4. Handle session expiry with secure cleanup
+     * 5. Redirect unauthorized users to appropriate page
+     * 
+     * SECURITY REQUIREMENTS:
+     * - Complete session data validation
+     * - Absolute and inactivity timeout enforcement
+     * - Role-based access control (site_admin or admin)
+     * - Automatic cleanup of expired sessions
+     * - Secure redirect for unauthorized access
+     * 
+     * TIMEOUT CONFIGURATION:
+     * - SESSION_TIMEOUT: 8 hours absolute maximum session duration
+     * - INACTIVITY_TIMEOUT: 2 hours maximum allowed inactivity
+     * - Configurable through CONFIG system for environment adaptation
+     * 
+     * @returns {boolean} True if session is valid for site admin access
      */
     validateSession() {
         const currentUser = this.getCurrentUser();
@@ -29,14 +134,14 @@ class SiteAdminDashboard {
             return false;
         }
         
-        // Check session timeout (8 hours from start)
+        // SESSION TIMEOUT VALIDATION: Check both absolute and inactivity timeouts
+        // WHY: Site admin security requires strict time-based session limits
         const now = Date.now();
         const sessionAge = now - parseInt(sessionStart);
         const timeSinceActivity = now - parseInt(lastActivity);
-        const SESSION_TIMEOUT = 8 * 60 * 60 * 1000; // 8 hours
-        const INACTIVITY_TIMEOUT = 2 * 60 * 60 * 1000; // 2 hours
         
-        if (sessionAge > SESSION_TIMEOUT || timeSinceActivity > INACTIVITY_TIMEOUT) {
+        // USE CONFIGURED TIMEOUTS: Enable environment-specific timeout configuration
+        if (sessionAge > this.SESSION_TIMEOUT || timeSinceActivity > this.INACTIVITY_TIMEOUT) {
             console.log('Session expired: Redirecting to home page');
             this.clearExpiredSession();
             return false;
@@ -53,7 +158,23 @@ class SiteAdminDashboard {
     }
 
     /**
-     * Get current user from localStorage
+     * CURRENT USER RETRIEVAL SYSTEM
+     * PURPOSE: Safely retrieve and parse site administrator user data
+     * WHY: Site admin operations require validated user information
+     * 
+     * RETRIEVAL STRATEGY:
+     * - Parse JSON user data from localStorage
+     * - Handle corrupted or missing data gracefully
+     * - Return null for invalid or missing user information
+     * - Comprehensive error logging for debugging
+     * 
+     * ERROR HANDLING:
+     * - JSON parsing errors from corrupted localStorage
+     * - Missing user data scenarios
+     * - Malformed user object structures
+     * - Network-related localStorage issues
+     * 
+     * @returns {Object|null} Site administrator user object or null
      */
     getCurrentUser() {
         try {
@@ -66,7 +187,21 @@ class SiteAdminDashboard {
     }
 
     /**
-     * Clear expired session data and redirect
+     * EXPIRED SESSION CLEANUP SYSTEM
+     * PURPOSE: Comprehensive cleanup of expired site admin session
+     * WHY: Security requires complete removal of expired authentication data
+     * 
+     * CLEANUP PROCESS:
+     * 1. Remove all authentication tokens and user data
+     * 2. Clear session timestamps and activity tracking
+     * 3. Ensure no authentication remnants remain
+     * 4. Redirect to appropriate public page
+     * 
+     * SECURITY COMPLIANCE:
+     * - Complete localStorage cleanup prevents session remnants
+     * - Automatic redirect prevents unauthorized access attempts
+     * - No sensitive data left in browser storage
+     * - Consistent cleanup across all site admin sessions
      */
     clearExpiredSession() {
         localStorage.removeItem('authToken');
@@ -84,6 +219,29 @@ class SiteAdminDashboard {
         window.location.href = window.location.pathname.includes('/html/') ? '../index.html' : 'index.html';
     }
 
+    /**
+     * SITE ADMIN DASHBOARD INITIALIZATION SYSTEM
+     * PURPOSE: Complete dashboard setup with authentication, data loading, and UI rendering
+     * WHY: Proper initialization ensures secure access and reliable dashboard functionality
+     * 
+     * INITIALIZATION WORKFLOW:
+     * 1. Load and validate current site administrator
+     * 2. Set up comprehensive event listeners
+     * 3. Load all dashboard data (stats, organizations, audit)
+     * 4. Display overview tab with current platform state
+     * 5. Handle initialization errors gracefully
+     * 
+     * ERROR HANDLING:
+     * - Authentication failures with secure redirect
+     * - Data loading failures with user notification
+     * - Network issues with retry mechanisms
+     * - Comprehensive error logging for debugging
+     * 
+     * PERFORMANCE OPTIMIZATION:
+     * - Parallel data loading for faster dashboard startup
+     * - Lazy loading of tab-specific data
+     * - Progressive enhancement for better user experience
+     */
     async init() {
         try {
             // Initialize authentication
@@ -104,6 +262,30 @@ class SiteAdminDashboard {
         }
     }
 
+    /**
+     * SITE ADMINISTRATOR USER LOADING SYSTEM
+     * PURPOSE: Load and validate site administrator with comprehensive security checks
+     * WHY: Site admin dashboard requires verified elevated privileges
+     * 
+     * USER LOADING WORKFLOW:
+     * 1. Validate session before making API calls
+     * 2. Fetch user information with authentication
+     * 3. Verify site administrator permissions
+     * 4. Update dashboard UI with user context
+     * 5. Handle authentication failures securely
+     * 
+     * SECURITY VALIDATION:
+     * - Session validation before API requests
+     * - JWT token authentication for API access
+     * - Site admin privilege verification
+     * - Automatic redirect for insufficient permissions
+     * 
+     * API INTEGRATION:
+     * - Uses authenticated API endpoints
+     * - Handles token expiry and renewal
+     * - Processes API errors with appropriate actions
+     * - Updates UI based on successful authentication
+     */
     async loadCurrentUser() {
         """
         COMPREHENSIVE SESSION VALIDATION ON PAGE LOAD - SITE ADMIN DASHBOARD
@@ -127,7 +309,7 @@ class SiteAdminDashboard {
         }
         
         try {
-            const response = await fetch('/api/v1/auth/me', {
+            const response = await fetch(`${this.API_BASE}/auth/me`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                     'Content-Type': 'application/json'
@@ -154,8 +336,8 @@ class SiteAdminDashboard {
             
         } catch (error) {
             console.error('Failed to load user:', error);
-            // Redirect to login if authentication fails
-            window.location.href = '/login.html';
+            // SECURE REDIRECT: Send failed authentication to appropriate page
+            this.redirectToHome();
         }
     }
 

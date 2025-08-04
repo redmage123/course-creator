@@ -1,6 +1,35 @@
 /**
- * Instructor Dashboard Module
- * Handles instructor-specific functionality
+ * INSTRUCTOR DASHBOARD MODULE - COMPREHENSIVE COURSE MANAGEMENT AND STUDENT INTERACTION
+ * 
+ * PURPOSE: Complete instructor interface for Course Creator platform management
+ * WHY: Instructors need centralized tools for course creation, student management, and analytics
+ * ARCHITECTURE: Tab-based dashboard with integrated feedback systems and quiz management
+ * 
+ * CORE RESPONSIBILITIES:
+ * - Course creation, editing, and publishing management
+ * - Student enrollment and progress tracking
+ * - Comprehensive feedback system (bi-directional student-instructor communication)
+ * - Quiz management with course instance-specific publication controls
+ * - Analytics dashboard with performance metrics and insights
+ * - Content management with upload/export capabilities
+ * - Course instance management with scheduling and timezone support
+ * 
+ * BUSINESS REQUIREMENTS:
+ * - Professional instructor workflow from course creation to student assessment
+ * - Real-time feedback exchange between instructors and students
+ * - Granular quiz publication control per course instance
+ * - Comprehensive analytics for data-driven teaching decisions
+ * - Multi-format content support and export capabilities
+ * - Scalable course instance management for multiple sessions
+ * 
+ * TECHNICAL FEATURES:
+ * - Tab-based navigation with persistent state management
+ * - Async data loading with comprehensive error handling
+ * - Integration with feedback management system
+ * - Real-time quiz publication status updates
+ * - Course instance lifecycle management
+ * - Professional modal systems for complex workflows
+ * - Responsive design for desktop and mobile usage
  */
 
 import { Auth } from './auth.js';
@@ -17,35 +46,113 @@ if (typeof window !== 'undefined') {
 }
 
 export class InstructorDashboard {
+    /**
+     * INSTRUCTOR DASHBOARD CONSTRUCTOR
+     * PURPOSE: Initialize instructor dashboard with comprehensive state management
+     * WHY: Proper initialization ensures reliable dashboard functionality and data consistency
+     * 
+     * STATE MANAGEMENT:
+     * - courses: Array of instructor's courses with metadata
+     * - students: Array of enrolled students with progress tracking
+     * - currentCourse: Currently selected course for context-specific operations
+     * - activeTab: Current dashboard tab for navigation state persistence
+     * - feedbackData: Complete feedback system data structure
+     * 
+     * INITIALIZATION WORKFLOW:
+     * 1. Set up initial state with empty data structures
+     * 2. Configure feedback system integration
+     * 3. Initialize dashboard components and event handlers
+     * 4. Load initial data from backend services
+     */
     constructor() {
+        // COURSE DATA STATE: Complete course information and metadata
+        // WHY: Instructors need access to all their courses for management operations
         this.courses = [];
+        
+        // STUDENT DATA STATE: Enrolled students with progress and engagement metrics
+        // WHY: Student management requires comprehensive student information
         this.students = [];
+        
+        // CURRENT CONTEXT: Selected course for context-specific operations
+        // WHY: Many operations are course-specific and need context awareness
         this.currentCourse = null;
+        
+        // NAVIGATION STATE: Active dashboard tab for persistent user experience
+        // WHY: Users expect dashboard to remember their last viewed section
         this.activeTab = 'courses';
+        
+        // FEEDBACK SYSTEM STATE: Bi-directional feedback data structure
+        // WHY: Comprehensive feedback system requires organized data management
         this.feedbackData = {
-            courseFeedback: [],
-            studentFeedback: []
+            courseFeedback: [],    // Student feedback about courses
+            studentFeedback: []    // Instructor feedback about students
         };
         
+        // AUTOMATIC INITIALIZATION: Set up dashboard immediately
+        // WHY: Constructor should establish fully functional dashboard system
         this.init();
     }
 
     /**
-     * Initialize the instructor dashboard
+     * INSTRUCTOR DASHBOARD INITIALIZATION SYSTEM
+     * PURPOSE: Complete dashboard setup with authentication, data loading, and UI rendering
+     * WHY: Proper initialization ensures secure access and reliable dashboard functionality
+     * 
+     * INITIALIZATION WORKFLOW:
+     * 1. Authentication validation: Ensure user has instructor privileges
+     * 2. Event system setup: Establish all user interaction handlers
+     * 3. Data loading: Retrieve courses, students, and feedback data
+     * 4. UI rendering: Display dashboard with current data
+     * 
+     * SECURITY FEATURES:
+     * - Role-based access control (instructor-only access)
+     * - Automatic redirect for unauthorized users
+     * - Session validation before dashboard access
+     * 
+     * ERROR HANDLING:
+     * - Graceful degradation for authentication failures
+     * - Safe redirect to login page for unauthenticated users
+     * - Comprehensive error logging for debugging
      */
     init() {
+        // AUTHENTICATION VALIDATION: Ensure instructor access privileges
+        // WHY: Dashboard contains sensitive instructor tools requiring proper authorization
         if (!Auth.isAuthenticated() || !Auth.hasRole('instructor')) {
+            // SECURITY REDIRECT: Send unauthorized users to login page
             window.location.href = 'html/index.html';
             return;
         }
 
+        // PHASE 1: EVENT SYSTEM SETUP: Establish all user interaction handlers
         this.setupEventListeners();
+        
+        // PHASE 2: DATA INITIALIZATION: Load all required dashboard data
         this.loadInitialData();
+        
+        // PHASE 3: UI RENDERING: Display dashboard with loaded data
         this.renderDashboard();
     }
 
     /**
-     * Quiz Management Methods
+     * QUIZ MANAGEMENT SYSTEM
+     * PURPOSE: Comprehensive quiz publication management with course instance-specific controls
+     * WHY: Instructors need granular control over quiz availability per course session
+     * 
+     * QUIZ MANAGEMENT FEATURES:
+     * - Course instance-specific quiz publication
+     * - Real-time publication status updates
+     * - Professional tabbed interface for multiple instances
+     * - Bulk publication operations
+     * - Analytics integration for quiz performance tracking
+     * 
+     * BUSINESS WORKFLOW:
+     * 1. Load course instances for quiz management context
+     * 2. Display tabbed interface for instance selection
+     * 3. Provide publication controls for each instance
+     * 4. Enable analytics viewing and bulk operations
+     * 5. Handle instance creation if none exist
+     * 
+     * @param {string} courseId - Course identifier for quiz management
      */
     async showQuizManagement(courseId) {
         try {
@@ -116,7 +223,21 @@ export class InstructorDashboard {
     }
 
     /**
-     * Setup event listeners
+     * COMPREHENSIVE EVENT LISTENER SETUP
+     * PURPOSE: Establish all user interaction handlers for dashboard functionality
+     * WHY: Centralized event management ensures consistent behavior and easier maintenance
+     * 
+     * EVENT CATEGORIES:
+     * 1. Tab navigation: Dashboard section switching
+     * 2. Course management: Create, edit, delete course operations
+     * 3. Student management: Add, remove, feedback student operations
+     * 4. Modal interactions: Form submissions and dialog management
+     * 
+     * EVENT DELEGATION STRATEGY:
+     * - Use event delegation for performance optimization
+     * - Handle dynamic content with consistent event patterns
+     * - Graceful degradation when elements don't exist
+     * - Consistent event handling patterns across all interactions
      */
     setupEventListeners() {
         // Tab switching
@@ -150,7 +271,25 @@ export class InstructorDashboard {
     }
 
     /**
-     * Load initial data
+     * INITIAL DATA LOADING SYSTEM
+     * PURPOSE: Load all required dashboard data with parallel processing for performance
+     * WHY: Dashboard requires multiple data sources that can be loaded concurrently
+     * 
+     * DATA LOADING STRATEGY:
+     * - Parallel loading: Load courses and students simultaneously
+     * - Error isolation: Handle individual loading failures gracefully
+     * - Progress indication: Provide user feedback during loading
+     * - Retry mechanism: Handle network failures with retry logic
+     * 
+     * DATA SOURCES:
+     * - Courses: Instructor's courses with metadata and statistics
+     * - Students: Enrolled students with progress and engagement data
+     * - Feedback: Historical feedback data for analytics
+     * 
+     * PERFORMANCE OPTIMIZATION:
+     * - Use Promise.all for concurrent loading
+     * - Cache data for subsequent requests
+     * - Implement loading states for better UX
      */
     async loadInitialData() {
         try {
@@ -165,7 +304,26 @@ export class InstructorDashboard {
     }
 
     /**
-     * Load courses
+     * COURSE DATA LOADING SYSTEM
+     * PURPOSE: Retrieve instructor's courses with comprehensive error handling
+     * WHY: Course data is central to all instructor dashboard functionality
+     * 
+     * COURSE DATA INCLUDES:
+     * - Course metadata: Title, description, difficulty, category
+     * - Publication status: Draft, published, archived states
+     * - Enrollment statistics: Student counts and engagement metrics
+     * - Creation dates: Temporal data for organization and sorting
+     * 
+     * ERROR HANDLING STRATEGY:
+     * - Network failure resilience with detailed error logging
+     * - Graceful degradation with empty state handling
+     * - User-friendly error notifications
+     * - Automatic retry mechanisms for transient failures
+     * 
+     * AUTHENTICATION INTEGRATION:
+     * - Uses authenticated fetch for secure API access
+     * - Automatic token validation and renewal
+     * - Session expiry handling with proper redirects
      */
     async loadCourses() {
         try {
@@ -186,7 +344,26 @@ export class InstructorDashboard {
     }
 
     /**
-     * Load students
+     * STUDENT DATA LOADING SYSTEM
+     * PURPOSE: Retrieve enrolled students with progress and engagement metrics
+     * WHY: Student management requires comprehensive student information for effective teaching
+     * 
+     * STUDENT DATA INCLUDES:
+     * - Profile information: Names, emails, enrollment dates
+     * - Progress tracking: Course completion percentages and milestones
+     * - Engagement metrics: Activity levels and participation rates
+     * - Performance data: Quiz scores, assignment submissions
+     * 
+     * PRIVACY CONSIDERATIONS:
+     * - Only load students enrolled in instructor's courses
+     * - Respect student privacy settings and permissions
+     * - Secure data transmission with authentication
+     * - Compliance with educational data protection requirements
+     * 
+     * FUTURE IMPLEMENTATION:
+     * - Currently returns empty array as placeholder
+     * - Will integrate with student management API
+     * - Will include real-time progress updates
      */
     async loadStudents() {
         try {
@@ -200,7 +377,26 @@ export class InstructorDashboard {
     }
 
     /**
-     * Render the dashboard
+     * MAIN DASHBOARD RENDERING SYSTEM
+     * PURPOSE: Generate complete dashboard UI with current data and state
+     * WHY: Dynamic UI rendering enables real-time updates and responsive design
+     * 
+     * RENDERING ARCHITECTURE:
+     * - Header section: Welcome message and user context
+     * - Tab navigation: Course management, student tracking, analytics, content, feedback
+     * - Content area: Dynamic content based on active tab
+     * - State persistence: Maintain tab selection across page refreshes
+     * 
+     * UI COMPONENTS:
+     * - Professional header with instructor greeting
+     * - Icon-based tab navigation for intuitive user experience
+     * - Dynamic content rendering based on selected tab
+     * - Responsive design for desktop and mobile devices
+     * 
+     * STATE MANAGEMENT:
+     * - Active tab highlighting based on current state
+     * - Content area updates without full page reload
+     * - Persistent navigation state across interactions
      */
     renderDashboard() {
         const main = document.getElementById('main-content');
@@ -239,7 +435,27 @@ export class InstructorDashboard {
     }
 
     /**
-     * Render tab content
+     * DYNAMIC TAB CONTENT RENDERING SYSTEM
+     * PURPOSE: Generate appropriate content based on active dashboard tab
+     * WHY: Single-page application requires dynamic content switching
+     * 
+     * TAB CONTENT TYPES:
+     * - courses: Course management interface with creation and editing tools
+     * - students: Student enrollment and progress tracking interface
+     * - analytics: Performance metrics, statistics, and reporting dashboard
+     * - content: Content management tools and upload/export functionality
+     * - feedback: Bi-directional feedback system with analytics integration
+     * 
+     * RENDERING STRATEGY:
+     * - Switch-based content selection for performance
+     * - Lazy loading of complex content when tab is accessed
+     * - State-aware rendering based on available data
+     * - Fallback to default content for unknown tabs
+     * 
+     * PERFORMANCE OPTIMIZATION:
+     * - Only render content for active tab
+     * - Cache rendered content where appropriate
+     * - Minimize DOM manipulation for better performance
      */
     renderTabContent() {
         switch (this.activeTab) {
@@ -259,7 +475,27 @@ export class InstructorDashboard {
     }
 
     /**
-     * Render courses tab
+     * COURSES TAB RENDERING SYSTEM
+     * PURPOSE: Display comprehensive course management interface
+     * WHY: Instructors need intuitive course creation and management tools
+     * 
+     * COURSE TAB FEATURES:
+     * - Course creation: Quick access to new course creation
+     * - Course grid: Visual card-based course display
+     * - Course actions: Edit, delete, and management operations
+     * - Empty state: Encouraging interface for first-time users
+     * 
+     * COURSE CARD INFORMATION:
+     * - Course metadata: Title, description, difficulty, category
+     * - Enrollment statistics: Student count and engagement metrics
+     * - Publication status: Draft or published state indicators
+     * - Action buttons: Edit and delete operations
+     * 
+     * USER EXPERIENCE:
+     * - Professional card-based layout for easy scanning
+     * - Clear call-to-action buttons for course creation
+     * - Encouraging empty state for new instructors
+     * - Consistent action patterns across all courses
      */
     renderCoursesTab() {
         return `
@@ -288,7 +524,30 @@ export class InstructorDashboard {
     }
 
     /**
-     * Render course card
+     * INDIVIDUAL COURSE CARD RENDERING SYSTEM
+     * PURPOSE: Generate professional course display with metadata and actions
+     * WHY: Consistent course representation enables efficient course management
+     * 
+     * COURSE CARD COMPONENTS:
+     * - Header: Course title with edit/delete action buttons
+     * - Body: Description, difficulty, and category information
+     * - Footer: Enrollment statistics and publication status
+     * - Actions: Context-sensitive operations for course management
+     * 
+     * VISUAL DESIGN:
+     * - Professional card layout with clear information hierarchy
+     * - Status badges for publication state indication
+     * - Icon-based statistics for quick information consumption
+     * - Consistent styling across all course cards
+     * 
+     * INTERACTIVE FEATURES:
+     * - Hover effects for better user experience
+     * - Click handlers for edit and delete operations
+     * - Contextual information display with tooltips
+     * - Responsive design for different screen sizes
+     * 
+     * @param {Object} course - Course object with metadata and statistics
+     * @returns {string} HTML string for course card component
      */
     renderCourseCard(course) {
         return `
@@ -329,7 +588,28 @@ export class InstructorDashboard {
     }
 
     /**
-     * Render students tab
+     * STUDENTS TAB RENDERING SYSTEM
+     * PURPOSE: Display comprehensive student management interface with progress tracking
+     * WHY: Instructors need efficient tools for student enrollment and progress monitoring
+     * 
+     * STUDENT TAB FEATURES:
+     * - Student enrollment: Add new students to courses
+     * - Student table: Comprehensive student information display
+     * - Progress tracking: Visual progress bars and completion percentages
+     * - Student actions: Feedback provision and enrollment management
+     * 
+     * STUDENT TABLE COLUMNS:
+     * - Student profile: Avatar, name, and contact information
+     * - Course association: Which course the student is enrolled in
+     * - Progress metrics: Completion percentage with visual indicators
+     * - Enrollment dates: When student joined the course
+     * - Action buttons: Feedback and removal operations
+     * 
+     * USER EXPERIENCE:
+     * - Professional table layout for efficient data scanning
+     * - Visual progress indicators for quick assessment
+     * - Encouraging empty state for courses without students
+     * - Consistent action patterns for student management
      */
     renderStudentsTab() {
         return `
@@ -372,7 +652,32 @@ export class InstructorDashboard {
     }
 
     /**
-     * Render student row
+     * INDIVIDUAL STUDENT ROW RENDERING SYSTEM
+     * PURPOSE: Generate comprehensive student display with progress and actions
+     * WHY: Consistent student representation enables efficient student management
+     * 
+     * STUDENT ROW COMPONENTS:
+     * - Profile section: Avatar, name, and visual identification
+     * - Contact information: Email address for communication
+     * - Course association: Which course the student is enrolled in
+     * - Progress visualization: Completion percentage with progress bar
+     * - Enrollment tracking: When student joined the course
+     * - Action buttons: Feedback provision and enrollment management
+     * 
+     * VISUAL DESIGN:
+     * - Avatar integration for personal connection
+     * - Progress bars for quick visual assessment
+     * - Icon-based action buttons for intuitive interaction
+     * - Responsive design for table functionality
+     * 
+     * INTERACTIVE FEATURES:
+     * - Feedback modal trigger for student assessment
+     * - Removal confirmation for enrollment management
+     * - Hover effects for better user experience
+     * - Accessible design with proper ARIA labels
+     * 
+     * @param {Object} student - Student object with profile and progress data
+     * @returns {string} HTML string for student table row
      */
     renderStudentRow(student) {
         return `
@@ -405,7 +710,32 @@ export class InstructorDashboard {
     }
 
     /**
-     * Render analytics tab
+     * ANALYTICS TAB RENDERING SYSTEM
+     * PURPOSE: Display comprehensive instructor analytics and performance metrics
+     * WHY: Data-driven teaching requires accessible analytics and reporting tools
+     * 
+     * ANALYTICS FEATURES:
+     * - Key performance indicators: Course, student, completion, and rating metrics
+     * - Visual statistics: Professional stat cards with icons and numbers
+     * - Trend analysis: Chart placeholders for enrollment and progress trends
+     * - Performance overview: Aggregated metrics for quick assessment
+     * 
+     * STAT CARD METRICS:
+     * - Total Courses: Complete count of instructor's courses
+     * - Total Students: Aggregate student enrollment across all courses
+     * - Average Completion: Platform-wide course completion percentage
+     * - Average Rating: Instructor rating based on student feedback
+     * 
+     * VISUALIZATION PLACEHOLDERS:
+     * - Course Enrollment Trends: Time-based enrollment visualization
+     * - Student Progress Overview: Completion progress across all courses
+     * - Future: Interactive charts with drill-down capabilities
+     * 
+     * USER EXPERIENCE:
+     * - Professional dashboard-style analytics display
+     * - Icon-based visual hierarchy for quick information consumption
+     * - Placeholder content for future chart integration
+     * - Consistent styling with main dashboard theme
      */
     renderAnalyticsTab() {
         return `
@@ -476,7 +806,33 @@ export class InstructorDashboard {
     }
 
     /**
-     * Render content tab
+     * CONTENT TAB RENDERING SYSTEM
+     * PURPOSE: Display comprehensive content management tools and library
+     * WHY: Instructors need centralized content creation and management capabilities
+     * 
+     * CONTENT MANAGEMENT FEATURES:
+     * - Content upload: File upload interface for course materials
+     * - Content generation tools: AI-powered content creation utilities
+     * - Content library: Organized display of existing course materials
+     * - Tool integration: Quick access to specialized content tools
+     * 
+     * CONTENT CREATION TOOLS:
+     * - Course Generator: AI-powered content generation from templates
+     * - Slide Creator: Professional presentation slide creation
+     * - Quiz Builder: Interactive quiz and assessment creation
+     * - Upload Interface: Direct file upload for existing content
+     * 
+     * CONTENT LIBRARY FEATURES:
+     * - File type organization: PDF, PPTX, video content categorization
+     * - File size display: Storage usage awareness for instructors
+     * - Visual file icons: Quick content type identification
+     * - Professional grid layout: Easy content browsing and selection
+     * 
+     * USER EXPERIENCE:
+     * - Tool-based workflow for content creation
+     * - Visual content library for easy asset management
+     * - Professional styling consistent with dashboard theme
+     * - Intuitive content organization and access patterns
      */
     renderContentTab() {
         return `
@@ -547,7 +903,39 @@ export class InstructorDashboard {
     }
 
     /**
-     * Render feedback tab
+     * FEEDBACK TAB RENDERING SYSTEM
+     * PURPOSE: Display comprehensive bi-directional feedback management interface
+     * WHY: Effective teaching requires systematic feedback exchange with students
+     * 
+     * FEEDBACK SYSTEM FEATURES:
+     * - Course feedback viewing: Student ratings and comments about courses
+     * - Student feedback management: Instructor assessments of student progress
+     * - Feedback analytics: Performance metrics and trend analysis
+     * - Export capabilities: Report generation for institutional requirements
+     * 
+     * FEEDBACK TAB STRUCTURE:
+     * - Header controls: Refresh data and export report functionality
+     * - Sub-tab navigation: Course feedback vs. student feedback sections
+     * - Filter controls: Course selection and rating-based filtering
+     * - Feedback display: Professional feedback item rendering
+     * 
+     * COURSE FEEDBACK SECTION:
+     * - Student ratings: Star ratings with detailed breakdowns
+     * - Written feedback: Positive aspects, improvements, additional comments
+     * - Anonymous support: Respect student privacy preferences  
+     * - Filter capabilities: Course-specific and rating-based filtering
+     * 
+     * STUDENT FEEDBACK SECTION:
+     * - Student assessment cards: Individual student progress evaluation
+     * - Feedback history: Previous feedback provided to students
+     * - Bulk operations: Efficient feedback provision for multiple students
+     * - Action buttons: Individual feedback and history viewing
+     * 
+     * USER EXPERIENCE:
+     * - Professional tabbed interface for organized feedback management
+     * - Real-time refresh capabilities for current data
+     * - Export functionality for institutional reporting
+     * - Consistent styling with main dashboard theme
      */
     renderFeedbackTab() {
         return `
@@ -588,7 +976,33 @@ export class InstructorDashboard {
     }
 
     /**
-     * Render course feedback section
+     * COURSE FEEDBACK SECTION RENDERING SYSTEM
+     * PURPOSE: Display student feedback about instructor's courses with filtering
+     * WHY: Instructor improvement requires systematic access to student course evaluations
+     * 
+     * COURSE FEEDBACK FEATURES:
+     * - Feedback display: Student ratings and written comments
+     * - Filter controls: Course selection and rating-based filtering
+     * - Loading states: Professional loading indicators during data fetch
+     * - Empty states: Encouraging interface when no feedback exists
+     * 
+     * FILTER CAPABILITIES:
+     * - Course filter: View feedback for specific courses
+     * - Rating filter: Filter by star rating (1-5 stars)
+     * - Dynamic filtering: Real-time filter application
+     * - Filter persistence: Maintain filter state across interactions
+     * 
+     * FEEDBACK DISPLAY FORMAT:
+     * - Star ratings: Visual rating display with numeric values
+     * - Written feedback: Structured display of student comments
+     * - Anonymous support: Respect student privacy preferences
+     * - Timestamp information: When feedback was provided
+     * 
+     * USER EXPERIENCE:
+     * - Professional feedback list with clear information hierarchy
+     * - Loading indicators for better perceived performance
+     * - Encouraging empty state for courses without feedback
+     * - Consistent filter interface for easy data exploration
      */
     renderCourseFeedbackSection() {
         return `
@@ -624,7 +1038,33 @@ export class InstructorDashboard {
     }
 
     /**
-     * Render student feedback section
+     * STUDENT FEEDBACK SECTION RENDERING SYSTEM
+     * PURPOSE: Display instructor feedback management for student assessments
+     * WHY: Student development requires systematic instructor feedback and progress tracking
+     * 
+     * STUDENT FEEDBACK FEATURES:
+     * - Student assessment cards: Individual student progress evaluation interface
+     * - Bulk feedback tools: Efficient feedback provision for multiple students
+     * - Feedback history: Previous assessments and progress tracking
+     * - Action buttons: Individual and bulk feedback operations
+     * 
+     * STUDENT FEEDBACK CARDS:
+     * - Student profile: Avatar, name, and course association
+     * - Progress indicators: Completion percentage and engagement metrics
+     * - Feedback status: Last feedback date and assessment history
+     * - Action buttons: Give feedback and view history operations
+     * 
+     * BULK OPERATIONS:
+     * - Bulk feedback modal: Efficient feedback for multiple students
+     * - Class-wide assessments: Consistent evaluation across all students
+     * - Template feedback: Reusable feedback templates for common assessments
+     * - Batch processing: Handle multiple feedback submissions efficiently
+     * 
+     * USER EXPERIENCE:
+     * - Card-based layout for individual student focus
+     * - Professional styling with clear information hierarchy
+     * - Encouraging empty state for courses without students
+     * - Consistent action patterns for feedback operations
      */
     renderStudentFeedbackSection() {
         return `
@@ -682,7 +1122,27 @@ export class InstructorDashboard {
     }
 
     /**
-     * Switch tab
+     * TAB SWITCHING SYSTEM
+     * PURPOSE: Handle dashboard tab navigation with state persistence and data loading
+     * WHY: Single-page application requires coordinated tab switching and content updates
+     * 
+     * TAB SWITCHING WORKFLOW:
+     * 1. Update internal active tab state
+     * 2. Load tab-specific data if required (feedback system)
+     * 3. Re-render dashboard with new tab content
+     * 4. Maintain navigation state across interactions
+     * 
+     * SPECIAL TAB HANDLING:
+     * - feedback: Triggers feedback data loading for real-time information
+     * - analytics: May trigger analytics data refresh
+     * - students: Updates student progress information
+     * 
+     * STATE MANAGEMENT:
+     * - activeTab: Updates current tab for persistent navigation
+     * - UI synchronization: Ensures navigation highlights match content
+     * - Data freshness: Loads current data for data-dependent tabs
+     * 
+     * @param {string} tabName - Target tab identifier for navigation
      */
     switchTab(tabName) {
         this.activeTab = tabName;
@@ -693,7 +1153,32 @@ export class InstructorDashboard {
     }
 
     /**
-     * Show create course modal
+     * CREATE COURSE MODAL SYSTEM
+     * PURPOSE: Display professional course creation interface with comprehensive form
+     * WHY: Course creation requires structured input collection and validation
+     * 
+     * COURSE CREATION FORM FIELDS:
+     * - Course title: Primary course identifier and display name
+     * - Description: Detailed course information for student understanding
+     * - Difficulty level: Beginner, intermediate, advanced categorization
+     * - Category: Subject area classification for organization
+     * 
+     * MODAL FEATURES:
+     * - Professional modal design with form validation
+     * - Cancel and create action buttons
+     * - Form reset on successful submission
+     * - Error handling with user feedback
+     * 
+     * USER EXPERIENCE:
+     * - Clear form labels and input validation
+     * - Professional modal styling with Course Creator branding
+     * - Responsive design for desktop and mobile
+     * - Intuitive form flow with logical field ordering
+     * 
+     * INTEGRATION:
+     * - Uses UIComponents.createModal for consistent styling
+     * - Integrates with course creation API endpoint
+     * - Updates dashboard immediately after creation
      */
     showCreateCourseModal() {
         const modalContent = `
@@ -740,7 +1225,36 @@ export class InstructorDashboard {
     }
 
     /**
-     * Create course
+     * COURSE CREATION SYSTEM
+     * PURPOSE: Create new course with API integration and dashboard updates
+     * WHY: Instructors need reliable course creation with immediate feedback
+     * 
+     * COURSE CREATION WORKFLOW:
+     * 1. Extract course data from form submission
+     * 2. Send authenticated API request to course service
+     * 3. Handle successful creation with dashboard update
+     * 4. Provide user feedback through notification system
+     * 5. Update local course list for immediate UI reflection
+     * 
+     * COURSE DATA STRUCTURE:
+     * - title: Course display name from form input
+     * - description: Detailed course information
+     * - difficulty: Skill level requirement (beginner/intermediate/advanced)
+     * - category: Subject area classification
+     * 
+     * ERROR HANDLING:
+     * - Network failure resilience with user notification
+     * - API error response processing and display
+     * - Comprehensive error logging for debugging
+     * - Graceful degradation with meaningful error messages
+     * 
+     * SUCCESS HANDLING:
+     * - Add new course to local courses array
+     * - Re-render dashboard to show new course
+     * - Display success notification to user
+     * - Close modal after successful creation
+     * 
+     * @param {FormData} formData - Form data from course creation modal
      */
     async createCourse(formData) {
         try {
@@ -771,7 +1285,30 @@ export class InstructorDashboard {
     }
 
     /**
-     * Edit course
+     * COURSE EDITING SYSTEM
+     * PURPOSE: Enable course modification with existing data pre-population
+     * WHY: Instructors need to update course information as requirements change
+     * 
+     * COURSE EDITING WORKFLOW:
+     * 1. Locate course by ID in local courses array
+     * 2. Validate course exists and belongs to instructor
+     * 3. Pre-populate edit form with existing course data
+     * 4. Handle form submission with updated course information
+     * 5. Update local and server data with changes
+     * 
+     * EDITING CAPABILITIES:
+     * - Course metadata: Title, description, difficulty, category
+     * - Publication status: Draft/published state management
+     * - Course settings: Enrollment limits, access permissions
+     * - Content updates: Syllabus, materials, and resources
+     * 
+     * FUTURE IMPLEMENTATION:
+     * - Currently placeholder for full editing system
+     * - Will include comprehensive edit modal
+     * - Will integrate with course update API endpoint
+     * - Will include validation and conflict resolution
+     * 
+     * @param {string} courseId - Unique identifier for course to edit
      */
     editCourse(courseId) {
         const course = this.courses.find(c => c.id === courseId);
@@ -781,7 +1318,36 @@ export class InstructorDashboard {
     }
 
     /**
-     * Delete course
+     * COURSE DELETION SYSTEM
+     * PURPOSE: Safely delete courses with confirmation and cascade handling
+     * WHY: Course deletion requires careful confirmation due to permanent data loss
+     * 
+     * DELETION SAFETY WORKFLOW:
+     * 1. Locate course by ID and validate ownership
+     * 2. Display confirmation dialog with course title
+     * 3. Warn user about permanent nature of deletion
+     * 4. Execute authenticated API deletion request
+     * 5. Update local dashboard state and notify user
+     * 
+     * SAFETY FEATURES:
+     * - Confirmation dialog with explicit course identification
+     * - Warning about irreversible nature of deletion
+     * - User-friendly error messages for deletion failures
+     * - Graceful handling of network issues
+     * 
+     * CASCADE CONSIDERATIONS:
+     * - Student enrollments: Handle enrolled student data
+     * - Course content: Manage associated materials and resources
+     * - Analytics data: Preserve historical data where appropriate
+     * - Feedback data: Maintain student feedback records
+     * 
+     * ERROR HANDLING:
+     * - Network failure resilience with retry options
+     * - Server error processing with meaningful messages
+     * - Permission validation for instructor ownership
+     * - Comprehensive error logging for troubleshooting
+     * 
+     * @param {string} courseId - Unique identifier for course to delete
      */
     async deleteCourse(courseId) {
         const course = this.courses.find(c => c.id === courseId);
@@ -812,7 +1378,33 @@ export class InstructorDashboard {
     }
 
     /**
-     * Show add student modal
+     * ADD STUDENT MODAL SYSTEM
+     * PURPOSE: Display student enrollment interface with course selection
+     * WHY: Student enrollment requires structured input and course association
+     * 
+     * STUDENT ENROLLMENT FORM:
+     * - Student email: Primary identifier for student account creation/lookup
+     * - Course selection: Dropdown of instructor's available courses
+     * - Validation: Email format and course selection validation
+     * - Submission: Secure enrollment API integration
+     * 
+     * COURSE SELECTION FEATURES:
+     * - Dynamic course list: Only instructor's courses available
+     * - Course information: Title display for easy selection
+     * - Validation: Ensures course selection before submission
+     * - Error handling: Manages course loading failures
+     * 
+     * MODAL FEATURES:
+     * - Professional modal design with form validation
+     * - Cancel and add action buttons
+     * - Form reset after successful submission
+     * - Error display for enrollment failures
+     * 
+     * USER EXPERIENCE:
+     * - Clear form labels and validation feedback
+     * - Professional styling consistent with dashboard
+     * - Responsive design for all device types
+     * - Intuitive enrollment workflow
      */
     showAddStudentModal() {
         const modalContent = `
@@ -850,7 +1442,42 @@ export class InstructorDashboard {
     }
 
     /**
-     * Add student
+     * STUDENT ENROLLMENT SYSTEM
+     * PURPOSE: Enroll students in courses with API integration and validation
+     * WHY: Student enrollment requires secure processing and immediate dashboard updates
+     * 
+     * ENROLLMENT WORKFLOW:
+     * 1. Extract student data from enrollment form
+     * 2. Validate email format and course selection
+     * 3. Send authenticated enrollment request to API
+     * 4. Handle enrollment success with dashboard refresh
+     * 5. Provide user feedback through notification system
+     * 
+     * ENROLLMENT DATA:
+     * - email: Student email for account lookup/creation
+     * - course_id: Target course for student enrollment
+     * - Validation: Ensures required fields are present
+     * - Security: Uses authenticated API requests
+     * 
+     * ENROLLMENT PROCESSING:
+     * - Student account creation: If student doesn't exist
+     * - Course association: Link student to specific course
+     * - Progress initialization: Set up progress tracking
+     * - Notification: Send welcome email to student
+     * 
+     * ERROR HANDLING:
+     * - Duplicate enrollment: Handle already enrolled students
+     * - Invalid email: Validate email format and existence
+     * - Course capacity: Check enrollment limits
+     * - Network failures: Provide retry mechanisms
+     * 
+     * SUCCESS HANDLING:
+     * - Refresh student list with new enrollment
+     * - Re-render dashboard to show updated data
+     * - Display success notification to instructor
+     * - Close modal after successful enrollment
+     * 
+     * @param {FormData} formData - Form data from student enrollment modal
      */
     async addStudent(formData) {
         try {
@@ -909,7 +1536,32 @@ export class InstructorDashboard {
     }
 
     /**
-     * Load feedback data
+     * COMPREHENSIVE FEEDBACK DATA LOADING SYSTEM
+     * PURPOSE: Load all feedback data with parallel processing and error handling
+     * WHY: Feedback tab requires current data from multiple sources for effective display
+     * 
+     * FEEDBACK DATA SOURCES:
+     * - Course feedback: Student ratings and comments about instructor's courses
+     * - Student feedback: Instructor assessments and feedback about students
+     * - Feedback analytics: Aggregated metrics and performance data
+     * 
+     * PARALLEL LOADING STRATEGY:
+     * - Course feedback: Load feedback for all instructor courses simultaneously
+     * - Student feedback: Load feedback history for all enrolled students
+     * - Error isolation: Handle individual course/student failures gracefully
+     * - Performance optimization: Use Promise.all for concurrent requests
+     * 
+     * ERROR HANDLING:
+     * - Individual failure handling: Continue loading even if some requests fail
+     * - Comprehensive error logging: Track failures for debugging
+     * - User notification: Inform instructor of loading issues
+     * - Graceful degradation: Display available data even with partial failures
+     * 
+     * FEEDBACK MANAGER INTEGRATION:
+     * - Dynamic import: Load feedback manager when needed
+     * - Lazy loading: Initialize feedback system on demand
+     * - Service dependency: Handle feedback manager unavailability
+     * - Real-time updates: Refresh feedback display after loading
      */
     async loadFeedbackData() {
         if (!feedbackManager) {
@@ -1011,7 +1663,39 @@ export class InstructorDashboard {
     }
 
     /**
-     * Show student feedback modal
+     * STUDENT FEEDBACK MODAL SYSTEM
+     * PURPOSE: Display comprehensive student assessment interface
+     * WHY: Instructor feedback requires structured input and professional presentation
+     * 
+     * STUDENT FEEDBACK WORKFLOW:
+     * 1. Validate student and course existence
+     * 2. Create professional feedback modal overlay
+     * 3. Generate student-specific feedback form
+     * 4. Handle form submission with API integration
+     * 5. Update feedback data and close modal
+     * 
+     * FEEDBACK FORM FEATURES:
+     * - Student identification: Name and course context
+     * - Assessment categories: Progress, participation, performance
+     * - Rating scales: Numeric ratings for objective assessment
+     * - Written feedback: Detailed comments and recommendations
+     * - Action plans: Specific improvement suggestions
+     * 
+     * MODAL FEATURES:
+     * - Professional overlay design with large form area
+     * - Click-outside-to-close functionality
+     * - Form validation and submission handling
+     * - Loading states during submission
+     * - Success/error feedback to instructor
+     * 
+     * INTEGRATION REQUIREMENTS:
+     * - Feedback manager: Requires feedback system to be loaded
+     * - Student data: Validates student exists and is enrolled
+     * - Course context: Provides course-specific assessment context
+     * - API integration: Submits feedback through authenticated endpoints
+     * 
+     * @param {string} studentId - Unique identifier for student receiving feedback
+     * @param {string} courseId - Course context for feedback assessment
      */
     showStudentFeedbackModal(studentId, courseId) {
         if (!feedbackManager) {
@@ -1261,7 +1945,43 @@ export class InstructorDashboard {
     }
 
     /**
-     * Show create instance modal
+     * CREATE COURSE INSTANCE MODAL SYSTEM
+     * PURPOSE: Display comprehensive course instance creation interface
+     * WHY: Course instances require detailed scheduling and configuration input
+     * 
+     * COURSE INSTANCE CREATION WORKFLOW:
+     * 1. Load published courses for instance creation
+     * 2. Populate course selection dropdown
+     * 3. Configure default timezone settings
+     * 4. Display professional instance creation form
+     * 5. Handle form submission with validation
+     * 
+     * INSTANCE FORM FIELDS:
+     * - Course selection: Choose from published courses
+     * - Instance name: Unique identifier for course session
+     * - Start/end dates: Course session scheduling
+     * - Start/end times: Daily session timing
+     * - Timezone: Session timezone configuration
+     * - Maximum students: Enrollment capacity limits
+     * - Description: Optional instance-specific details
+     * 
+     * ADVANCED FEATURES:
+     * - Timezone detection: Auto-detect user's local timezone
+     * - Date/time validation: Ensure logical scheduling
+     * - Course filtering: Only show published courses
+     * - Capacity management: Set enrollment limits
+     * 
+     * ERROR HANDLING:
+     * - Course loading failures: Handle published course API errors
+     * - Validation errors: Display form validation messages
+     * - Submission errors: Process API error responses
+     * - Network failures: Provide retry mechanisms
+     * 
+     * USER EXPERIENCE:
+     * - Professional modal with comprehensive form
+     * - Auto-timezone detection for convenience
+     * - Clear validation feedback
+     * - Responsive design for all devices
      */
     async showCreateInstanceModal() {
         // Load published courses for the dropdown
@@ -1490,7 +2210,43 @@ export class InstructorDashboard {
     }
 
     /**
-     * Complete a course instance and disable student access
+     * COURSE INSTANCE COMPLETION SYSTEM
+     * PURPOSE: Complete course instances with student access management
+     * WHY: Course completion requires systematic closure and access control
+     * 
+     * COURSE COMPLETION WORKFLOW:
+     * 1. Display comprehensive confirmation dialog
+     * 2. Explain completion consequences to instructor
+     * 3. Execute authenticated completion API request
+     * 4. Update instance status and disable student access
+     * 5. Refresh dashboard to reflect changes
+     * 
+     * COMPLETION CONSEQUENCES:
+     * - Course status: Mark instance as completed
+     * - Student access: Disable all student login URLs
+     * - Data preservation: Maintain student progress and grades
+     * - Irreversible action: Cannot be undone once completed
+     * 
+     * CONFIRMATION DIALOG:
+     * - Clear action explanation: What completion means
+     * - Consequence list: Specific impacts on students and data
+     * - Irreversible warning: Emphasize permanent nature
+     * - Cancel option: Allow instructor to reconsider
+     * 
+     * API INTEGRATION:
+     * - Authenticated request: Secure completion processing
+     * - Error handling: Process API failures gracefully
+     * - Status updates: Update local instance data
+     * - Success feedback: Confirm completion to instructor
+     * 
+     * POST-COMPLETION ACTIONS:
+     * - Dashboard refresh: Update instance status display
+     * - Student notifications: Inform students of completion
+     * - Data archival: Preserve completion records
+     * - Access revocation: Disable student portal access
+     * 
+     * @param {string} instanceId - Unique identifier for course instance
+     * @param {string} instanceName - Display name for confirmation dialog
      */
     async completeCourseInstance(instanceId, instanceName) {
         const confirmed = confirm(

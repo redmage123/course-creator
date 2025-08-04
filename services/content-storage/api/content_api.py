@@ -227,11 +227,22 @@ async def download_content(
             
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Error downloading content: {e}")
+    except ContentNotFoundException as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Content not found: {e.message}"
+        )
+    except FileOperationException as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            detail=f"File operation error: {e.message}"
+        )
+    except Exception as e:
+        raise ContentStorageException(
+            message=f"Failed to download content via API for content_id '{content_id}': Unexpected error in download endpoint",
+            error_code="API_DOWNLOAD_CONTENT_ERROR",
+            details={"endpoint": f"/download/{content_id}", "content_id": content_id},
+            original_exception=e
         )
 
 
@@ -252,11 +263,17 @@ async def list_content(
         
         return result
         
-    except Exception as e:
-        logger.error(f"Error listing content: {e}")
+    except DatabaseException as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Database error: {e.message}"
+        )
+    except Exception as e:
+        raise ContentStorageException(
+            message=f"Failed to list content via API (limit: {limit}, offset: {offset}): Unexpected error in content listing endpoint",
+            error_code="API_LIST_CONTENT_ERROR",
+            details={"endpoint": "/", "limit": limit, "offset": offset, "uploaded_by": uploaded_by},
+            original_exception=e
         )
 
 
@@ -277,11 +294,22 @@ async def search_content(
         
         return result
         
-    except Exception as e:
-        logger.error(f"Error searching content: {e}")
+    except DatabaseException as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Database error: {e.message}"
+        )
+    except ValidationException as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Validation error: {e.message}"
+        )
+    except Exception as e:
+        raise ContentStorageException(
+            message=f"Failed to search content via API (query: '{query}'): Unexpected error in content search endpoint",
+            error_code="API_SEARCH_CONTENT_ERROR",
+            details={"endpoint": "/search", "query": query, "limit": limit, "offset": offset},
+            original_exception=e
         )
 
 
@@ -305,11 +333,27 @@ async def update_content(
             
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Error updating content: {e}")
+    except ContentNotFoundException as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Content not found: {e.message}"
+        )
+    except ValidationException as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Validation error: {e.message}"
+        )
+    except DatabaseException as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Database error: {e.message}"
+        )
+    except Exception as e:
+        raise ContentStorageException(
+            message=f"Failed to update content via API for content_id '{content_id}': Unexpected error in content update endpoint",
+            error_code="API_UPDATE_CONTENT_ERROR",
+            details={"endpoint": f"/{content_id}", "content_id": content_id},
+            original_exception=e
         )
 
 
@@ -336,11 +380,27 @@ async def delete_content(
             
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Error deleting content: {e}")
+    except ContentNotFoundException as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Content not found: {e.message}"
+        )
+    except FileOperationException as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            detail=f"File operation error: {e.message}"
+        )
+    except DatabaseException as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Database error: {e.message}"
+        )
+    except Exception as e:
+        raise ContentStorageException(
+            message=f"Failed to delete content via API for content_id '{content_id}': Unexpected error in content deletion endpoint",
+            error_code="API_DELETE_CONTENT_ERROR",
+            details={"endpoint": f"/{content_id}", "content_id": content_id},
+            original_exception=e
         )
 
 
@@ -354,11 +414,17 @@ async def get_content_stats(
         result = await content_service.get_content_stats(uploaded_by)
         return result
         
-    except Exception as e:
-        logger.error(f"Error getting content stats: {e}")
+    except DatabaseException as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Database error: {e.message}"
+        )
+    except Exception as e:
+        raise ContentStorageException(
+            message=f"Failed to retrieve content statistics via API (uploaded_by: '{uploaded_by}'): Unexpected error in stats endpoint",
+            error_code="API_CONTENT_STATS_ERROR",
+            details={"endpoint": "/stats", "uploaded_by": uploaded_by},
+            original_exception=e
         )
 
 
@@ -382,9 +448,20 @@ async def create_content_backup(
             
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Error creating backup: {e}")
+    except ContentNotFoundException as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Content not found: {e.message}"
+        )
+    except StorageException as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Storage service error: {e.message}"
+        )
+    except Exception as e:
+        raise ContentStorageException(
+            message=f"Failed to create content backup via API for content_id '{content_id}': Unexpected error in backup endpoint",
+            error_code="API_CREATE_CONTENT_BACKUP_ERROR",
+            details={"endpoint": f"/{content_id}/backup", "content_id": content_id},
+            original_exception=e
         )

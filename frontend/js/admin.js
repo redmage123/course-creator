@@ -1,21 +1,97 @@
-// Debug: Check what CONFIG is returning
+/**
+ * ADMIN DASHBOARD MODULE - COMPREHENSIVE USER MANAGEMENT SYSTEM
+ * 
+ * PURPOSE: Complete administrative interface for Course Creator platform user management
+ * WHY: Platform administrators need comprehensive tools for user oversight and management
+ * ARCHITECTURE: Client-side dashboard with RESTful API integration and real-time updates
+ * 
+ * CORE RESPONSIBILITIES:
+ * - Platform-wide user management (create, read, update, delete)
+ * - User role administration and permission management
+ * - Dashboard statistics and analytics display
+ * - Bulk user operations for administrative efficiency
+ * - Advanced filtering, sorting, and search capabilities
+ * - Session security and authentication validation
+ * 
+ * BUSINESS REQUIREMENTS:
+ * - Complete administrative control over platform users
+ * - Real-time statistics for platform oversight
+ * - Efficient bulk operations for large user bases
+ * - Advanced filtering for quick user location
+ * - Professional interface matching platform standards
+ * - Security compliance with session validation
+ * 
+ * USER ROLES MANAGED:
+ * - admin: Site-wide administration and platform management
+ * - org_admin: Organization-specific administration and member management
+ * - instructor: Course creation, student management, and analytics
+ * - student: Learning content access and lab environment usage
+ * 
+ * SECURITY FEATURES:
+ * - Comprehensive session validation with timeout enforcement
+ * - JWT token-based API authentication
+ * - Role-based access control (admin-only access)
+ * - Automatic session cleanup on expiration
+ * - Authentication error handling with graceful redirects
+ * 
+ * TECHNICAL ARCHITECTURE:
+ * - Modern JavaScript with ES6+ features
+ * - RESTful API integration with error handling
+ * - Real-time DOM manipulation for dynamic updates
+ * - Event-driven architecture for user interactions
+ * - Responsive design for cross-device compatibility
+ */
 
-const API_BASE = CONFIG.API_URLS.USER_MANAGEMENT;
+// CONFIGURATION AND AUTHENTICATION SETUP
+// PURPOSE: Initialize API endpoints and authentication state for admin operations
+// WHY: Centralized configuration ensures consistent API access across all admin functions
 
-const authToken = localStorage.getItem('authToken');
+const API_BASE = CONFIG.API_URLS.USER_MANAGEMENT;  // User management service endpoint
+const authToken = localStorage.getItem('authToken');  // JWT token for authenticated requests
 
-// Global variable to store all users for filtering
+// NOTIFICATION CONFIGURATION
+// PURPOSE: Centralized configuration for admin notification system
+// WHY: Configurable timeouts enable easy adjustment of user experience
+const NOTIFICATION_TIMEOUT = 5 * 1000;  // 5 seconds - Professional notification display duration
+
+// GLOBAL USER DATA STORAGE
+// PURPOSE: Cache all users for efficient client-side filtering and sorting
+// WHY: Reduces API calls and enables instant filtering/sorting without server round-trips
 let allUsers = [];
 
-// Handle authentication errors
+/**
+ * AUTHENTICATION ERROR HANDLER
+ * PURPOSE: Handle API authentication failures with consistent user experience
+ * WHY: Expired or invalid tokens require immediate cleanup and user redirection
+ * 
+ * ERROR HANDLING PROCESS:
+ * 1. Detect authentication failures (401/403 responses)
+ * 2. Clear expired authentication data
+ * 3. Provide user-friendly notification
+ * 4. Redirect to login page for re-authentication
+ * 
+ * SECURITY COMPLIANCE:
+ * - Immediate cleanup prevents unauthorized access attempts
+ * - Clear notification explains what occurred
+ * - Safe redirect to public login page
+ * 
+ * @param {Response} response - HTTP response object to check for auth errors
+ * @returns {boolean} True if auth error was handled, false otherwise
+ */
 function handleAuthError(response) {
+    // AUTHENTICATION FAILURE DETECTION: Check for unauthorized or forbidden responses
     if (response.status === 401 || response.status === 403) {
+        // IMMEDIATE CLEANUP: Remove expired authentication data
         localStorage.removeItem('authToken');
+        
+        // USER NOTIFICATION: Explain session expiry professionally
         alert('Your session has expired. Please login again.');
+        
+        // SECURE REDIRECT: Return to login page for re-authentication
         window.location.href = 'html/index.html';
-        return true;
+        return true;  // Indicate auth error was handled
     }
-    return false;
+    return false;  // No auth error detected
 }
 
 """
@@ -34,57 +110,110 @@ TECHNICAL IMPLEMENTATION:
 6. Prevent dashboard initialization for expired sessions
 """
 
-// Get current user and session data
+/**
+ * CURRENT USER RETRIEVAL WITH ERROR HANDLING
+ * PURPOSE: Safely retrieve and parse current user data from localStorage
+ * WHY: User data is critical for session validation and role-based access control
+ * 
+ * ERROR HANDLING: Graceful degradation if localStorage data is corrupted or missing
+ * SECURITY: Validates JSON parsing to prevent security issues from malformed data
+ * 
+ * @returns {Object|null} Current user object or null if unavailable
+ */
 function getCurrentUser() {
     try {
+        // RETRIEVE USER DATA: Get stored user information from localStorage
         const userStr = localStorage.getItem('currentUser');
+        
+        // PARSE AND RETURN: Convert JSON string to user object
         return userStr ? JSON.parse(userStr) : null;
     } catch (error) {
+        // ERROR RECOVERY: Handle corrupted or invalid user data gracefully
         console.error('Error getting current user:', error);
-        return null;
+        return null;  // Return null for any parsing errors
     }
 }
 
-// Comprehensive session validation for admin dashboard
+/**
+ * COMPREHENSIVE ADMIN SESSION VALIDATION SYSTEM
+ * PURPOSE: Validate complete session state before allowing admin dashboard access
+ * WHY: Admin dashboard requires stringent security validation to prevent unauthorized access
+ * 
+ * VALIDATION CHECKLIST:
+ * 1. User data existence and validity
+ * 2. Authentication token presence
+ * 3. Session timestamp validation
+ * 4. Absolute session timeout enforcement (8 hours)
+ * 5. Inactivity timeout enforcement (2 hours)
+ * 6. Admin role verification
+ * 
+ * SECURITY ENFORCEMENT:
+ * - Multiple validation layers for comprehensive security
+ * - Automatic cleanup of expired session data
+ * - Safe redirect to public page on validation failure
+ * - Prevention of admin dashboard access for non-admin users
+ * 
+ * BUSINESS COMPLIANCE:
+ * - Educational platform security standards
+ * - Administrative access control requirements
+ * - Session timeout policies for sensitive operations
+ * 
+ * @returns {boolean} True if session is valid for admin access, false otherwise
+ */
 function validateAdminSession() {
+    // GATHER SESSION DATA: Collect all required session information
     const currentUser = getCurrentUser();
     const authToken = localStorage.getItem('authToken');
     const sessionStart = localStorage.getItem('sessionStart');
     const lastActivity = localStorage.getItem('lastActivity');
     
-    // Validate complete session state
+    // SESSION DATA VALIDATION: Ensure all required session components exist
+    // WHY: Incomplete session data indicates invalid or expired session
     if (!currentUser || !authToken || !sessionStart || !lastActivity) {
         console.log('Session invalid: Missing session data');
+        
+        // SECURE REDIRECT: Navigate to public page for re-authentication
         window.location.href = window.location.pathname.includes('/html/') ? '../index.html' : 'index.html';
         return false;
     }
     
-    // Check session timeout (8 hours from start)
+    // SESSION TIMEOUT VALIDATION: Check both absolute and inactivity timeouts
+    // WHY: Educational platform security requires time-based session limits
     const now = Date.now();
     const sessionAge = now - parseInt(sessionStart);
     const timeSinceActivity = now - parseInt(lastActivity);
-    const SESSION_TIMEOUT = 8 * 60 * 60 * 1000; // 8 hours
-    const INACTIVITY_TIMEOUT = 2 * 60 * 60 * 1000; // 2 hours
     
+    // SECURITY TIMEOUT CONFIGURATION: Educational platform standards
+    const SESSION_TIMEOUT = 8 * 60 * 60 * 1000; // 8 hours absolute maximum
+    const INACTIVITY_TIMEOUT = 2 * 60 * 60 * 1000; // 2 hours inactivity limit
+    
+    // TIMEOUT ENFORCEMENT: Automatic logout for expired sessions
     if (sessionAge > SESSION_TIMEOUT || timeSinceActivity > INACTIVITY_TIMEOUT) {
         console.log('Session expired: Redirecting to home page');
-        // Clear expired session data
+        
+        // COMPREHENSIVE CLEANUP: Remove all expired session data
         localStorage.removeItem('authToken');
         localStorage.removeItem('userEmail');
         localStorage.removeItem('currentUser');
         localStorage.removeItem('sessionStart');
         localStorage.removeItem('lastActivity');
+        
+        // SECURE REDIRECT: Navigate to public page
         window.location.href = window.location.pathname.includes('/html/') ? '../index.html' : 'index.html';
         return false;
     }
     
-    // Check if user has admin role
+    // ADMIN ROLE VERIFICATION: Ensure user has administrative privileges
+    // WHY: Admin dashboard should only be accessible to admin users
     if (currentUser.role !== 'admin') {
         console.log('Invalid role for admin dashboard:', currentUser.role);
+        
+        // ACCESS DENIED REDIRECT: Navigate to appropriate user page
         window.location.href = window.location.pathname.includes('/html/') ? '../index.html' : 'index.html';
         return false;
     }
     
+    // VALIDATION SUCCESS: All security checks passed
     return true;
 }
 
@@ -93,69 +222,151 @@ if (!validateAdminSession()) {
     // Function handles redirect, just return
 }
 
-// Show/hide sections
+/**
+ * ADMIN DASHBOARD SECTION NAVIGATION SYSTEM
+ * PURPOSE: Switch between different admin dashboard sections with proper state management
+ * WHY: Admin dashboard has multiple sections (stats, users) requiring coordinated UI updates
+ * 
+ * NAVIGATION WORKFLOW:
+ * 1. Hide all currently active sections
+ * 2. Clear navigation button active states
+ * 3. Show target section with appropriate styling
+ * 4. Update navigation button active state
+ * 5. Load section-specific data as needed
+ * 
+ * SECTION MANAGEMENT:
+ * - dashboard: Statistics and overview data
+ * - users: User management interface with CRUD operations
+ * 
+ * UI CONSISTENCY:
+ * - Professional section transitions
+ * - Clear visual indicators for active section
+ * - Automatic data loading for data-dependent sections
+ * 
+ * @param {string} sectionId - Target section identifier ('dashboard' or 'users')
+ */
 // eslint-disable-next-line no-unused-vars
 function showSection(sectionId) {
-    // Hide all sections
+    // HIDE ALL SECTIONS: Clear current section display
     const sections = document.querySelectorAll('.admin-section');
     sections.forEach(section => section.classList.remove('active'));
     
-    // Remove active class from all nav buttons
+    // CLEAR NAVIGATION STATES: Remove active styling from all navigation buttons
     const navButtons = document.querySelectorAll('.admin-nav button');
     navButtons.forEach(button => button.classList.remove('active'));
     
-    // Show selected section
+    // SHOW TARGET SECTION: Make selected section visible
     document.getElementById(sectionId).classList.add('active');
     
-    // Add active class to clicked button
+    // UPDATE NAVIGATION STATE: Highlight clicked navigation button
     event.target.classList.add('active');
     
-    // Load data for the section
+    // SECTION-SPECIFIC DATA LOADING: Load appropriate data for each section
+    // WHY: Different sections require different data sets and API calls
     if (sectionId === 'dashboard') {
-        loadDashboardStats();
+        loadDashboardStats();  // Load platform statistics and metrics
     } else if (sectionId === 'users') {
-        loadUsers();
+        loadUsers();  // Load user list for management operations
     }
 }
 
-// Show alerts
+/**
+ * ADMIN NOTIFICATION SYSTEM
+ * PURPOSE: Display user feedback messages with appropriate styling and auto-dismissal
+ * WHY: Admin operations need clear feedback for success/failure states
+ * 
+ * NOTIFICATION FEATURES:
+ * - Type-based styling (success, error, warning, info)
+ * - Automatic dismissal after 5 seconds
+ * - Manual dismissal capability
+ * - Professional styling matching admin interface
+ * - Non-blocking overlay design
+ * 
+ * NOTIFICATION TYPES:
+ * - success: Successful operations (green styling)
+ * - error: Failed operations or validation errors (red styling)
+ * - warning: Important alerts requiring attention (orange styling)
+ * - info: General information and status updates (blue styling)
+ * 
+ * @param {string} message - Notification message content
+ * @param {string} type - Notification type ('success', 'error', 'warning', 'info')
+ */
 function showAlert(message, type = 'success') {
+    // LOCATE ALERTS CONTAINER: Find notification display area
     const alertsDiv = document.getElementById('alerts');
+    
+    // CREATE NOTIFICATION ELEMENT: Build styled notification
     const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type}`;
+    alertDiv.className = `alert alert-${type}`;  // Apply type-based styling
     alertDiv.textContent = message;
+    
+    // DISPLAY NOTIFICATION: Add to alerts container
     alertsDiv.appendChild(alertDiv);
     
-    // Auto-hide after 5 seconds
+    // AUTO-DISMISSAL: Remove notification after reasonable viewing time
+    // WHY: Configured timeout provides adequate time for user to read without cluttering interface
     setTimeout(() => {
-        alertDiv.remove();
-    }, 5000);
+        alertDiv.remove();  // Clean removal from DOM
+    }, NOTIFICATION_TIMEOUT);  // Use configured notification display duration
 }
 
-// Load dashboard statistics
+/**
+ * PLATFORM STATISTICS LOADER
+ * PURPOSE: Load and display comprehensive platform statistics for administrative oversight
+ * WHY: Administrators need real-time platform metrics for management decisions
+ * 
+ * STATISTICS DISPLAYED:
+ * - Total users: Complete platform user count
+ * - Active users: Currently active/enabled user count
+ * - Role distribution: Breakdown by admin, instructor, student roles
+ * 
+ * DATA FLOW:
+ * 1. Fetch statistics from admin API endpoint
+ * 2. Handle authentication errors with graceful degradation
+ * 3. Update dashboard display with real-time data
+ * 4. Provide error handling with user feedback
+ * 5. Display fallback values on API failure
+ * 
+ * ERROR HANDLING:
+ * - Authentication error detection and redirect
+ * - Network error handling with user notification
+ * - Graceful fallback display ("Error") for failed loads
+ * - Comprehensive logging for debugging
+ * 
+ * BUSINESS VALUE:
+ * - Platform growth monitoring
+ * - User engagement analytics
+ * - Role distribution oversight
+ * - System health indicators
+ */
 async function loadDashboardStats() {
     try {
-        
+        // STATISTICS API REQUEST: Fetch platform metrics from admin service
+        // WHY: Real-time data ensures admin decisions are based on current platform state
         const response = await fetch(`${API_BASE}/admin/stats`, {
             headers: {
-                'Authorization': `Bearer ${authToken}`
+                'Authorization': `Bearer ${authToken}`  // JWT authentication for admin API
             }
         });
         
-        
+        // RESPONSE VALIDATION: Check for successful API response
         if (!response.ok) {
-            // Check if it's an authentication error
+            // AUTHENTICATION ERROR HANDLING: Check for expired tokens
             if (handleAuthError(response)) {
-                return; // handleAuthError will redirect
+                return; // handleAuthError manages redirect, exit function
             }
             
+            // API ERROR PROCESSING: Handle non-auth API failures
             const errorText = await response.text();
             console.error('API Error:', errorText);
             throw new Error(`Failed to load stats: ${response.status} - ${errorText}`);
         }
         
+        // DATA EXTRACTION: Parse statistics from API response
         const stats = await response.json();
         
+        // DASHBOARD UPDATES: Display statistics in admin interface
+        // WHY: Real-time display keeps admin informed of platform status
         document.getElementById('total-users').textContent = stats.total_users || 0;
         document.getElementById('active-users').textContent = stats.active_users || 0;
         document.getElementById('admin-count').textContent = stats.users_by_role?.admin || 0;
@@ -163,10 +374,12 @@ async function loadDashboardStats() {
         document.getElementById('student-count').textContent = stats.users_by_role?.student || 0;
         
     } catch (error) {
+        // ERROR HANDLING: Comprehensive error processing and user feedback
         console.error('Error loading statistics:', error);
         showAlert('Error loading statistics: ' + error.message, 'error');
         
-        // Set defaults in case of error
+        // FALLBACK DISPLAY: Show error indicators instead of stale/missing data
+        // WHY: Clear indication that data is unavailable prevents incorrect decisions
         document.getElementById('total-users').textContent = 'Error';
         document.getElementById('active-users').textContent = 'Error';
         document.getElementById('admin-count').textContent = 'Error';

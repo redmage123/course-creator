@@ -67,10 +67,11 @@ services:
       - DOCKER_CONTAINER=true
       - SERVICE_NAME=user-management
       - LOG_LEVEL=INFO
-      - PATH=${VENV_MOUNT_PATH}/bin:$PATH
+      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.11/site-packages
       - VIRTUAL_ENV=${VENV_MOUNT_PATH}
     volumes:
       - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
+      - ./shared:/app/shared:ro
       - /var/log/course-creator:/var/log/course-creator
     ports:
       - "8000:8000"
@@ -109,8 +110,11 @@ services:
       - SERVICE_NAME=course-generator
       - LOG_LEVEL=INFO
       - ENVIRONMENT=docker
+      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.11/site-packages
+      - VIRTUAL_ENV=${VENV_MOUNT_PATH}
     volumes:
       - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
+      - ./shared:/app/shared:ro
       - /var/log/course-creator:/var/log/course-creator
     networks:
       - course-creator-network
@@ -142,10 +146,13 @@ services:
       - DOCKER_CONTAINER=true
       - SERVICE_NAME=content-storage
       - LOG_LEVEL=INFO
+      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.11/site-packages
+      - VIRTUAL_ENV=${VENV_MOUNT_PATH}
     ports:
       - "8003:8003"
     volumes:
       - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
+      - ./shared:/app/shared:ro
       - content_files:/app/content_files
       - content_storage:/app/storage
       - /var/log/course-creator:/var/log/course-creator
@@ -185,6 +192,8 @@ services:
       - DOCKER_CONTAINER=true
       - SERVICE_NAME=course-management
       - LOG_LEVEL=INFO
+      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.11/site-packages
+      - VIRTUAL_ENV=${VENV_MOUNT_PATH}
       # Email Service Configuration
       - USE_MOCK_EMAIL=true
       - SMTP_SERVER=${SMTP_SERVER:-localhost}
@@ -196,6 +205,7 @@ services:
       - "8004:8004"
     volumes:
       - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
+      - ./shared:/app/shared:ro
       - /var/log/course-creator:/var/log/course-creator
     networks:
       - course-creator-network
@@ -236,6 +246,8 @@ services:
       - DOCKER_CONTAINER=true
       - SERVICE_NAME=content-management
       - LOG_LEVEL=INFO
+      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.11/site-packages
+      - VIRTUAL_ENV=${VENV_MOUNT_PATH}
     ports:
       - "8005:8005"
     volumes:
@@ -275,7 +287,7 @@ services:
       - LOG_DIR=/var/log/course-creator
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-      - PATH=${VENV_MOUNT_PATH}/bin:$PATH
+      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.11/site-packages
       - VIRTUAL_ENV=${VENV_MOUNT_PATH}
     ports:
       - "8009:8009"
@@ -317,10 +329,13 @@ services:
       - DOCKER_CONTAINER=true
       - SERVICE_NAME=analytics
       - LOG_LEVEL=INFO
+      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.11/site-packages
+      - VIRTUAL_ENV=${VENV_MOUNT_PATH}
     ports:
       - "8007:8007"
     volumes:
       - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
+      - ./shared:/app/shared:ro
       - /var/log/course-creator:/var/log/course-creator
     networks:
       - course-creator-network
@@ -363,10 +378,13 @@ services:
       - SERVICE_NAME=organization-management
       - LOG_LEVEL=INFO
       - JWT_SECRET_KEY=your-secret-key-change-in-production
+      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.11/site-packages
+      - VIRTUAL_ENV=${VENV_MOUNT_PATH}
     ports:
       - "8008:8008"
     volumes:
       - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
+      - ./shared:/app/shared:ro
       - /var/log/course-creator:/var/log/course-creator
     networks:
       - course-creator-network
@@ -433,6 +451,8 @@ services:
       - SERVICE_NAME=lab-containers
       - LOG_LEVEL=INFO
       - LAB_STORAGE_PATH=/home/bbrelin/course-creator/lab-storage
+      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.11/site-packages
+      - VIRTUAL_ENV=${VENV_MOUNT_PATH}
     volumes:
       - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
       - /var/run/docker.sock:/var/run/docker.sock:rw

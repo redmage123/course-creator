@@ -62,8 +62,16 @@ def setup_syslog_logging(service_name: str, log_level: str = "INFO", log_dir: st
         )
         file_handler.setFormatter(file_formatter)
         logger.addHandler(file_handler)
+    except PermissionError as e:
+        logger.warning(f"Permission denied setting up file logging: {e}")
+    except FileNotFoundError as e:
+        logger.warning(f"Log directory not found: {e}")
+    except OSError as e:
+        logger.warning(f"OS error setting up file logging: {e}")
     except Exception as e:
-        logger.warning(f"Could not setup file logging: {e}")
+        # For logging setup, we should not raise exceptions that could crash the service
+        # Instead, we log a warning and continue with console logging only
+        logger.warning(f"Unexpected error setting up file logging, continuing with console logging only: {e}")
     
     # Setup other loggers to use the same format
     for logger_name in ['uvicorn', 'uvicorn.access', 'fastapi']:

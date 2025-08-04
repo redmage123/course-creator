@@ -1,24 +1,55 @@
 /**
- * Main Application Module
- * Initializes and coordinates all other modules
+ * MAIN APPLICATION MODULE - CENTRAL COORDINATOR AND LIFECYCLE MANAGER
+ * 
+ * PURPOSE: Primary application controller that orchestrates all platform functionality
+ * WHY: Centralized initialization ensures proper startup sequence and dependency management
+ * ARCHITECTURE: Singleton pattern with lifecycle management and error handling
+ * 
+ * RESPONSIBILITIES:
+ * - Module coordination and initialization
+ * - Global error handling and logging
+ * - Performance optimization and asset caching
+ * - Legacy function export for backward compatibility
+ * - Page-specific initialization and routing
  */
 
-import { Auth } from './auth.js';
-import { Navigation } from './navigation.js';
-import { showNotification } from './notifications.js';
-import UIComponents from './ui-components.js';
-import { ActivityTracker } from './activity-tracker.js';
-import configManager from './config-manager.js';
-import assetCacheManager from './asset-cache.js';
+/**
+ * MODULE DEPENDENCY IMPORTS
+ * PURPOSE: Import all core modules that App coordinates
+ * WHY: Explicit imports make dependencies clear and enable proper initialization order
+ */
+import { Auth } from './auth.js';                    // Authentication and session management
+import { Navigation } from './navigation.js';        // Site navigation and routing
+import { showNotification } from './notifications.js'; // User notification system
+import UIComponents from './ui-components.js';       // Reusable UI component library
+import { ActivityTracker } from './activity-tracker.js'; // User activity monitoring
+import configManager from './config-manager.js';     // Configuration management system
+import assetCacheManager from './asset-cache.js';    // Performance optimization and caching
 
+/**
+ * MAIN APPLICATION CLASS
+ * PATTERN: Singleton class that manages the entire application lifecycle
+ * WHY: Single instance ensures consistent state and prevents initialization conflicts
+ */
 class App {
+    /**
+     * CONSTRUCTOR - APPLICATION STATE INITIALIZATION
+     * PURPOSE: Set up initial application state and method bindings
+     * WHY: Proper method binding ensures 'this' context is preserved in callbacks
+     */
     constructor() {
+        // INITIALIZATION STATE: Prevents duplicate initialization
         this.initialized = false;
+        
+        // PAGE CONTEXT: Determines what functionality to initialize
         this.currentPage = this.getCurrentPage();
+        
+        // SUBSYSTEM MANAGERS: References to major platform components
         this.configManager = configManager;
         this.assetCacheManager = assetCacheManager;
         
-        // Bind methods
+        // METHOD BINDING: Ensure proper 'this' context for event handlers
+        // WHY: Event listeners lose 'this' context without explicit binding
         this.init = this.init.bind(this);
         this.handleGlobalError = this.handleGlobalError.bind(this);
         this.handleUnhandledRejection = this.handleUnhandledRejection.bind(this);
@@ -27,115 +58,189 @@ class App {
     }
 
     /**
-     * Get current page filename
+     * CURRENT PAGE DETECTION
+     * PURPOSE: Determine which page the user is currently viewing
+     * WHY: Different pages require different initialization logic and features
+     * USAGE: Used to conditionally load page-specific functionality
      */
     getCurrentPage() {
+        // Extract filename from URL path, defaulting to index.html if empty
+        // WHY: Empty pathname typically means root, which serves index.html
         return window.location.pathname.split('/').pop() || 'index.html';
     }
 
     /**
-     * Initialize the application
+     * MAIN APPLICATION INITIALIZATION
+     * PURPOSE: Orchestrate the complete application startup sequence
+     * WHY: Proper initialization order prevents race conditions and ensures stability
+     * PATTERN: Async initialization with comprehensive error handling
+     * 
+     * INITIALIZATION SEQUENCE:
+     * 1. Performance optimizations (caching, config)
+     * 2. Global error handlers
+     * 3. Core authentication system
+     * 4. Navigation system
+     * 5. Page-specific features (activity tracking for dashboards)
+     * 6. Legacy compatibility layer  
+     * 7. Page-specific initialization
+     * 8. Asset preloading for performance
      */
     async init() {
+        // DUPLICATE INITIALIZATION PREVENTION
+        // WHY: Multiple calls to init() could cause conflicts and memory leaks
         if (this.initialized) return;
 
         try {
             console.log('Initializing Course Creator Application with advanced caching...');
             
-            // Initialize configuration and asset caching first
+            // STEP 1: Initialize performance systems first
+            // WHY: Caching and config must be ready before other modules use them
             await this._initializePerformanceOptimizations();
             
-            // Setup global error handlers
+            // STEP 2: Setup global error handling early
+            // WHY: Catch errors from subsequent initialization steps
             this.setupGlobalHandlers();
             
-            // Initialize authentication
+            // STEP 3: Initialize authentication system
+            // WHY: Many other modules depend on user authentication state
             Auth.initializeAuth();
             
-            // Initialize navigation
+            // STEP 4: Initialize navigation system
+            // WHY: Navigation must be ready for route changes and menu updates
             Navigation.init();
             
-            // Initialize activity tracking for dashboard pages
+            // STEP 5: Initialize activity tracking for dashboard pages
+            // WHY: Dashboard pages need session timeout and activity monitoring
             if (this.currentPage.includes('dashboard')) {
                 this.activityTracker = new ActivityTracker();
                 this.activityTracker.start();
             }
             
-            // Setup global function exports for backward compatibility
+            // STEP 6: Setup legacy compatibility layer
+            // WHY: Support older HTML pages that expect global functions
             this.setupGlobalExports();
             
-            // Page-specific initialization
+            // STEP 7: Initialize page-specific functionality
+            // WHY: Different pages have different requirements and components
             this.initializePage();
             
-            // Preload page-specific assets
+            // STEP 8: Preload page-specific assets for performance
+            // WHY: Improves user experience by loading likely-needed resources
             await this._preloadPageAssets();
             
+            // MARK INITIALIZATION COMPLETE
             this.initialized = true;
             console.log('Course Creator Application initialized successfully');
             
         } catch (error) {
+            // INITIALIZATION ERROR HANDLING
+            // WHY: Graceful error handling prevents blank pages and provides debugging info
             console.error('Error initializing application:', error);
             this.handleGlobalError(error);
         }
     }
 
     /**
-     * Setup global error handlers
+     * GLOBAL ERROR HANDLING SYSTEM SETUP
+     * PURPOSE: Establish comprehensive error handling for the entire application
+     * WHY: Unhandled errors can crash the application or leave users in broken states
+     * COVERAGE: JavaScript errors, promise rejections, visibility changes, ServiceWorker updates
+     * 
+     * ERROR HANDLING STRATEGY:
+     * - Capture all unhandled errors and log them for debugging
+     * - Show user-friendly error messages without technical details
+     * - Store error logs in localStorage for developer troubleshooting
+     * - Maintain application stability even when errors occur
      */
     setupGlobalHandlers() {
-        // Global error handler
+        // JAVASCRIPT ERROR HANDLER: Catches all unhandled JavaScript errors
+        // WHY: Prevents errors from crashing the application and provides debugging info
         window.addEventListener('error', this.handleGlobalError);
         
-        // Unhandled promise rejection handler
+        // PROMISE REJECTION HANDLER: Catches unhandled promise rejections
+        // WHY: Async operations can fail silently without this handler
         window.addEventListener('unhandledrejection', this.handleUnhandledRejection);
         
-        // Visibility change handler for activity tracking
+        // VISIBILITY CHANGE HANDLER: Track user activity when they return to the tab
+        // WHY: Session timeout management requires knowing when user is active
+        // BUSINESS LOGIC: Only track activity for authenticated users
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden && Auth.isAuthenticated()) {
                 Auth.activityTracker.trackActivity();
             }
         });
         
-        // ServiceWorker message handler for updates
+        // SERVICEWORKER UPDATE HANDLER: Handle background updates from service worker
+        // WHY: Provides feedback when the application has been updated in the background
+        // PROGRESSIVE WEB APP: Enables offline functionality and update notifications
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.addEventListener('message', (event) => {
                 if (event.data && event.data.type === 'SW_UPDATED') {
                     console.log('ServiceWorker updated to version:', event.data.version);
+                    // Future enhancement: Show user notification about updates
                 }
             });
         }
     }
 
     /**
-     * Handle global JavaScript errors
+     * GLOBAL JAVASCRIPT ERROR HANDLER
+     * PURPOSE: Process and log all unhandled JavaScript errors in the application
+     * WHY: Unhandled errors can break functionality and create poor user experience
+     * 
+     * ERROR PROCESSING WORKFLOW:
+     * 1. Extract error details (message, filename, line number, stack trace)
+     * 2. Log comprehensive error information for debugging
+     * 3. Store error in localStorage for developer access
+     * 4. Show user-friendly notification without technical details
+     * 5. Maintain application stability and user confidence
      */
     handleGlobalError(event) {
+        // EXTRACT ERROR OBJECT: Handle both Error objects and ErrorEvent objects
         const error = event.error || event;
         console.error('Global error caught:', error);
         
-        // Log error details
+        // COLLECT COMPREHENSIVE ERROR DETAILS: Gather all available debugging information
+        // WHY: Complete error context is essential for effective debugging
         const errorDetails = {
-            message: error.message || event.message,
-            filename: event.filename,
-            lineno: event.lineno,
-            colno: event.colno,
-            stack: error.stack
+            message: error.message || event.message,           // Human-readable error message
+            filename: event.filename,                          // File where error occurred
+            lineno: event.lineno,                             // Line number of error
+            colno: event.colno,                               // Column number of error
+            stack: error.stack                                // Complete stack trace
         };
         
-        // Store error in localStorage for debugging
+        // PERSISTENT ERROR LOGGING: Store error for developer troubleshooting
+        // WHY: Developers need access to error details even after page refresh
         this.logError('JavaScript Error', errorDetails);
         
-        // Show user-friendly error notification
+        // USER-FRIENDLY ERROR NOTIFICATION: Show helpful message without technical details
+        // WHY: Users need to know something went wrong but don't need technical information
+        // BUSINESS LOGIC: Only show notification after app is fully initialized
         if (this.initialized) {
             showNotification(
                 'An unexpected error occurred. Please refresh the page if the problem persists.',
                 'error',
-                { timeout: 8000 }
+                { timeout: 8000 }  // 8 second timeout for error messages
             );
         }
     }
 
     /**
-     * Handle unhandled promise rejections
+     * UNHANDLED PROMISE REJECTION HANDLER
+     * PURPOSE: Catch and process promises that reject without .catch() handlers
+     * WHY: Unhandled promise rejections can indicate network issues, API failures, or logic errors
+     * 
+     * COMMON CAUSES:
+     * - Network requests that fail without error handling
+     * - Async/await functions with missing try/catch blocks
+     * - Third-party library promises that reject unexpectedly
+     * - Database or API calls that timeout or return errors
+     * 
+     * HANDLING STRATEGY:
+     * - Log the rejection reason for debugging
+     * - Store error details for developer analysis
+     * - Show user-friendly message about network/processing issues
      */
     handleUnhandledRejection(event) {
         console.error('Unhandled promise rejection:', event.reason);
@@ -156,7 +261,21 @@ class App {
     }
 
     /**
-     * Log error to localStorage for debugging
+     * PERSISTENT ERROR LOGGING SYSTEM
+     * PURPOSE: Store detailed error information in localStorage for debugging
+     * WHY: Developers need access to error details to diagnose and fix issues
+     * 
+     * ERROR LOG STRUCTURE:
+     * - Timestamp: When the error occurred
+     * - Type: Category of error (JavaScript Error, Promise Rejection, etc.)
+     * - Details: Complete error information (message, stack, location)
+     * - Page: Which page the error occurred on
+     * - User Agent: Browser and device information for compatibility debugging
+     * 
+     * STORAGE MANAGEMENT:
+     * - Maintains only the 20 most recent errors to prevent storage overflow
+     * - Gracefully handles localStorage failures (quota exceeded, disabled)
+     * - Provides structured data that can be easily analyzed or exported
      */
     logError(type, details) {
         const timestamp = new Date().toISOString();
@@ -189,18 +308,36 @@ class App {
     }
 
     /**
-     * Setup global function exports for backward compatibility
+     * GLOBAL FUNCTION EXPORTS FOR LEGACY COMPATIBILITY
+     * PURPOSE: Export modern module functions as global window functions
+     * WHY: Older HTML pages and inline scripts expect global functions to exist
+     * 
+     * LEGACY SUPPORT STRATEGY:
+     * - Maintain compatibility with existing HTML pages that use onclick handlers
+     * - Bridge modern ES6 modules with legacy global function expectations
+     * - Provide consistent API surface for both modern and legacy code
+     * - Enable gradual migration from global functions to module imports
+     * 
+     * FUNCTION CATEGORIES:
+     * - Authentication: Login, logout, user management
+     * - Navigation: Page transitions and routing
+     * - UI Utilities: Password visibility, dropdowns, modals
+     * - Configuration: Access to modern config and caching systems
+     * - Error Handling: Access to error logs and debugging tools
      */
     setupGlobalExports() {
-        // Auth functions
+        // AUTHENTICATION FUNCTIONS: User session management
+        // WHY: Legacy HTML pages need access to authentication without module imports
         window.getCurrentUser = () => Auth.getCurrentUser();
         window.logout = async () => {
             const result = await Auth.logout();
             if (result.success) {
                 showNotification('Logged out successfully', 'success');
+                // CONTEXT-AWARE REDIRECT: Different pages need different logout behaviors
                 if (this.currentPage.includes('dashboard') || this.currentPage.includes('admin')) {
-                    window.location.href = 'html/index.html';
+                    window.location.href = 'html/index.html';  // Redirect admin/dashboard pages
                 } else {
+                    // UPDATE UI IN-PLACE: For public pages, update navigation without redirect
                     Navigation.updateAccountSection();
                     Navigation.updateNavigation();
                     Navigation.showHome();
@@ -208,7 +345,8 @@ class App {
             }
         };
         
-        // Navigation functions
+        // NAVIGATION FUNCTIONS: Page routing and transitions
+        // WHY: Onclick handlers in HTML need direct access to navigation functions
         window.showHome = () => Navigation.showHome();
         window.showLogin = () => Navigation.showLogin();
         window.showRegister = () => Navigation.showRegister();
@@ -217,7 +355,11 @@ class App {
         window.showHelp = () => Navigation.showHelp();
         window.showPasswordReset = () => Navigation.showPasswordReset();
         
-        // UI functions
+        // UI UTILITY FUNCTIONS: Common interface interactions
+        // WHY: Forms and interactive elements need consistent behavior across pages
+        
+        // PASSWORD VISIBILITY TOGGLE: Show/hide password in input fields
+        // BUSINESS LOGIC: Improves user experience by allowing password verification
         window.togglePasswordVisibility = (inputId, buttonId) => {
             const input = document.getElementById(inputId);
             const button = document.getElementById(buttonId);
@@ -225,15 +367,17 @@ class App {
             if (input && button) {
                 const icon = button.querySelector('i');
                 if (input.type === 'password') {
+                    // REVEAL PASSWORD: Change input type and update icon
                     input.type = 'text';
                     if (icon) {
-                        icon.className = 'fas fa-eye-slash';
+                        icon.className = 'fas fa-eye-slash';  // "Hide" icon
                     }
                     button.title = 'Hide password';
                 } else {
+                    // HIDE PASSWORD: Restore password type and update icon
                     input.type = 'password';
                     if (icon) {
-                        icon.className = 'fas fa-eye';
+                        icon.className = 'fas fa-eye';        // "Show" icon
                     }
                     button.title = 'Show password';
                 }
@@ -341,47 +485,83 @@ class App {
     }
 
     /**
-     * Initialize page-specific functionality
+     * PAGE-SPECIFIC INITIALIZATION
+     * PURPOSE: Set up functionality that only applies to the current page
+     * WHY: Different pages have different interaction patterns and requirements
+     * 
+     * CURRENT FUNCTIONALITY:
+     * - Account dropdown click-outside-to-close behavior
+     * - Prevent dropdown from closing when clicking inside (except logout)
+     * - Future: Page-specific component initialization, event handlers, etc.
+     * 
+     * DESIGN PATTERN: 
+     * - Use event delegation for better performance
+     * - Check for element existence before attaching handlers
+     * - Use page detection to conditionally initialize features
      */
     initializePage() {
-        // Setup dropdown close handlers
+        // DROPDOWN CLOSE-ON-OUTSIDE-CLICK: Account dropdown behavior
+        // WHY: Standard UI pattern - dropdowns should close when clicking outside
         document.addEventListener('click', (event) => {
             const accountDropdown = document.getElementById('accountDropdown');
             const accountMenu = document.getElementById('accountMenu');
             
+            // CLICK OUTSIDE DETECTION: Close dropdown if click is outside the dropdown trigger
             if (accountMenu && accountDropdown && !accountDropdown.contains(event.target)) {
                 accountMenu.style.display = 'none';
                 accountMenu.style.visibility = 'hidden';
             }
         });
         
-        // Prevent dropdown from closing when clicking inside
+        // DROPDOWN INTERNAL CLICK HANDLING: Prevent accidental closure
+        // WHY: Clicking inside dropdown shouldn't close it (except for logout action)
         document.addEventListener('click', (event) => {
             const accountMenu = document.getElementById('accountMenu');
             if (accountMenu && accountMenu.contains(event.target)) {
+                // SELECTIVE PROPAGATION: Allow logout to close dropdown, prevent others
                 if (!event.target.textContent.includes('Logout')) {
-                    event.stopPropagation();
+                    event.stopPropagation();  // Prevent dropdown from closing
                 }
             }
         });
     }
 
     /**
-     * Check if current page requires authentication
+     * AUTHENTICATION REQUIREMENT CHECKER
+     * PURPOSE: Determine if the current page requires user authentication
+     * WHY: Some pages are public, others require login - this enables conditional logic
+     * 
+     * PROTECTED PAGES:
+     * - admin.html: Administrator functionality
+     * - instructor-dashboard.html: Course creation and management
+     * - student-dashboard.html: Course consumption and progress
+     * - lab.html: Interactive lab environment
+     * 
+     * USAGE: Guards can check this before initializing authenticated features
      */
     requiresAuth() {
         const protectedPages = [
-            'admin.html',
-            'instructor-dashboard.html',
-            'student-dashboard.html',
-            'lab.html'
+            'admin.html',                    // Platform administration
+            'instructor-dashboard.html',     // Course creation interface  
+            'student-dashboard.html',        // Student learning interface
+            'lab.html'                      // Interactive coding environment
         ];
         
         return protectedPages.includes(this.currentPage);
     }
 
     /**
-     * Get application state
+     * APPLICATION STATE INSPECTOR
+     * PURPOSE: Provide complete view of current application state
+     * WHY: Debugging, monitoring, and state-dependent logic need access to app state
+     * 
+     * STATE INFORMATION INCLUDES:
+     * - Initialization status
+     * - Current page context
+     * - Authentication state and user info
+     * - Performance metrics (cache hit rates, etc.)
+     * 
+     * USAGE: Debugging tools, health checks, conditional feature loading
      */
     getState() {
         return {

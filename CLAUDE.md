@@ -2,8 +2,83 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Version**: 2.6.0 - Docker Optimization, Virtual Environment Fix, and Service Architecture Consolidation  
-**Last Updated**: 2025-08-03
+**Version**: 2.8.0 - Frontend Configuration System Consolidation and Documentation Enhancement  
+**Last Updated**: 2025-08-04
+
+## Version 2.8.0 - Frontend Configuration System Consolidation and Comprehensive JavaScript Documentation
+
+### Centralized Configuration System Implementation
+- **Hardcoded Value Elimination**: Systematically replaced ALL hardcoded IP addresses and port numbers throughout frontend codebase
+- **CONFIG System Integration**: Extended existing `frontend/js/config.js` with comprehensive microservice endpoint configuration
+- **JavaScript Module Updates**: Updated 10+ JavaScript modules to use centralized CONFIG.API_URLS instead of hardcoded values
+- **HTML File Modernization**: Converted HTML files to use ES6 module imports for configuration system integration
+- **Legacy Compatibility**: Maintained backward compatibility with existing code through global CONFIG object exposure
+
+### Comprehensive JavaScript Documentation Standard
+- **Explicit Code Comments**: Added comprehensive comments to ALL frontend JavaScript files explaining purpose, architecture, and business rationale
+- **File-Level Documentation**: Each JavaScript file now includes multiline string documentation explaining module purpose and integration
+- **Function-Level Comments**: Added detailed explanations for all functions including parameters, return values, and business logic
+- **Architectural Context**: Comments explain how each module fits into the overall Course Creator Platform architecture
+- **Business Rationale**: Documentation includes WHY code was implemented a specific way, not just WHAT it does
+
+### Configuration Files Enhanced
+- **`frontend/js/config.js`**: Extended with all microservice endpoints (USER_MANAGEMENT, COURSE_GENERATOR, CONTENT_STORAGE, etc.)
+- **Dynamic Host Detection**: Automatic detection of development vs production environments with appropriate API URL construction
+- **Port Mapping**: Centralized port configuration for all 8 microservices with clear service descriptions
+- **API URL Generation**: Dynamic API URL construction using getter functions for consistent endpoint access
+
+### HTML Files Modernized
+- **`instructor-dashboard-refactored.html`**: Replaced hardcoded CONFIG object with ES6 module import system
+- **`quiz.html`**: Updated to use centralized configuration with import statement
+- **`lab-multi-ide.html`**: Integrated with CONFIG system for lab manager and container URL resolution
+- **ES6 Module Integration**: All HTML files now properly import and utilize the centralized configuration system
+
+### JavaScript Modules Documentation Status
+✅ **Fully Documented Modules**:
+- `frontend/js/config.js` - Centralized configuration with comprehensive API endpoint mapping
+- `frontend/js/main.js` - Main application entry point with ES6 module coordination
+- `frontend/js/modules/app.js` - Core application controller (partial documentation)
+- `frontend/js/modules/navigation.js` - Centralized navigation system with routing
+- `frontend/js/student-dashboard.js` - Student dashboard with CONFIG integration
+- `frontend/js/modules/lab-lifecycle.js` - Lab container lifecycle management
+- `frontend/js/modules/feedback-manager.js` - Bi-directional feedback system
+- `frontend/js/modules/student-file-manager.js` - Student file management
+- `frontend/js/modules/analytics-dashboard.js` - Analytics visualization
+- `frontend/js/org-admin-dashboard.js` - Organization administration with CONFIG integration
+
+### Configuration System Benefits
+- **Development Efficiency**: Single location for all API endpoint configuration
+- **Environment Flexibility**: Automatic adaptation to development, staging, and production environments
+- **Maintenance Reduction**: No more searching for hardcoded values scattered throughout codebase
+- **Debugging Improvement**: Centralized configuration makes endpoint issues easier to diagnose
+- **Deployment Simplification**: Environment-specific deployments only require config.js updates
+
+### Hardcoded Value Elimination Results
+- **JavaScript Files**: 10+ files updated to use CONFIG.API_URLS instead of hardcoded URLs
+- **HTML Files**: 3+ files modernized with ES6 imports and CONFIG integration
+- **IP Address Removal**: Eliminated hardcoded 176.9.99.103 and localhost references
+- **Port Centralization**: All service ports now managed through CONFIG.PORTS object
+- **Backward Compatibility**: Legacy code continues to work through global CONFIG exposure
+
+## Version 2.7.0 - Exception Handling and Architecture Quality Improvements
+
+### Custom Exception System Implementation
+- **Comprehensive Exception Hierarchy**: Implemented structured custom exceptions across all services replacing generic `except Exception as e` handlers
+- **F-String Requirement**: All exception messages now use f-strings for better context and debugging information
+- **Custom Exception Classes**: Created service-specific exception hierarchies (DatabaseException, FileOperationException, StorageException, etc.)
+- **Structured Logging**: Exception classes include automatic logging with context, error codes, and original exception tracking
+
+### DAO Pattern Implementation
+- **Centralized Query Management**: Implemented Data Access Object (DAO) pattern with all SQL queries centralized in dedicated query classes
+- **Separation of Concerns**: Repository classes now call DAO functions eliminating inline SQL and improving maintainability
+- **Query Organization**: Organized queries by functional categories (CRUD operations, search, analytics, maintenance)
+- **Content Storage Service**: Fully refactored with ContentQueries, StorageQueries, and BackupQueries DAO classes
+
+### Code Quality Enforcement
+- **Systematic Refactoring**: Used systematic approach to replace ALL generic exception handlers across services
+- **Consistent Patterns**: Established consistent patterns for exception handling with proper context and error details
+- **Repository Pattern**: Enhanced repository classes to use DAO pattern with proper custom exception handling
+- **Service Layer**: Business logic services now use custom exceptions with f-string messages and detailed context
 
 ## Version 2.6.0 - Major Docker and Architecture Improvements
 
@@ -50,6 +125,80 @@ from services.package.module import something  # ALWAYS
 ```
 
 This directive overrides all other coding conventions and must be followed without exception to prevent Docker container import failures.
+
+## CRITICAL: Exception Handling Requirements
+
+**CUSTOM EXCEPTIONS MANDATORY**: Claude Code must NEVER use generic `except Exception as e` handlers. All exception handling must use specific custom exception classes with f-string messages.
+
+**FORBIDDEN**:
+```python
+except Exception as e:                    # NEVER
+    logger.error(f"Error: {e}")          # NEVER
+    return None                          # NEVER
+
+try:                                     # NEVER
+    # code here
+except:                                  # NEVER - bare except
+    pass
+```
+
+**REQUIRED**:
+```python
+except FileNotFoundError as e:                      # ALWAYS - specific exception
+    raise FileOperationException(
+        message=f"File operation failed during {operation}: {filename}",  # ALWAYS f-string
+        file_path=filename,
+        operation=operation,
+        original_exception=e
+    )
+except asyncpg.PostgreSQLError as e:               # ALWAYS - specific DB exception
+    raise DatabaseException(
+        message=f"Database error while {operation}: {record_id}",  # ALWAYS f-string
+        operation=operation,
+        table_name="table_name",
+        record_id=record_id,
+        original_exception=e
+    )
+except Exception as e:                             # ONLY as final fallback
+    raise ServiceSpecificException(                # ALWAYS use service-specific exception
+        message=f"Unexpected error during {operation}: {context}",  # ALWAYS f-string
+        error_code="SPECIFIC_ERROR_CODE",
+        details={"operation": operation, "context": context},
+        original_exception=e
+    )
+```
+
+### Exception Handling Implementation Requirements
+
+#### Custom Exception Classes Structure
+Each service must have a comprehensive exception hierarchy:
+- **Base Exception**: Service-specific base (e.g., ContentStorageException)
+- **Specific Exceptions**: FileOperationException, DatabaseException, ValidationException, etc.
+- **Automatic Logging**: Exceptions automatically log with context and error details
+- **Structured Details**: Include operation context, error codes, and debugging information
+
+#### F-String Message Requirements
+ALL exception messages must use f-strings with descriptive context:
+```python
+# GOOD Examples:
+f"Database error while creating content: {content_id}"
+f"File operation failed during upload: {filename}"
+f"Validation error for field {field_name}: {validation_error}"
+f"Permission denied accessing content file: {content_id}"
+```
+
+#### Exception Context Requirements
+Custom exceptions must include relevant context:
+- **operation**: What operation was being performed
+- **file_path/content_id**: What resource was involved
+- **error_details**: Specific error information
+- **original_exception**: The underlying exception that occurred
+
+#### Service Integration Patterns
+- **Repository Layer**: Use DatabaseException for database errors
+- **Service Layer**: Use business-logic specific exceptions
+- **API Layer**: Convert exceptions to appropriate HTTP responses
+- **File Operations**: Use FileOperationException for I/O errors
 
 ## File Editing Efficiency
 

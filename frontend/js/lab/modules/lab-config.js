@@ -3,6 +3,8 @@
  * Single Responsibility: Manage lab environment configuration
  */
 
+import { CONFIG } from '../../config.js';
+
 export class LabConfig {
     constructor() {
         this.config = {
@@ -28,11 +30,8 @@ export class LabConfig {
     }
 
     getBaseUrl() {
-        // Use global CONFIG if available, otherwise fallback
-        if (typeof window.CONFIG !== 'undefined' && window.CONFIG.BASE_URL) {
-            return window.CONFIG.BASE_URL;
-        }
-        return 'http://localhost:8001'; // Default fallback
+        // Use CONFIG system for consistent API endpoints
+        return CONFIG.API_URLS.COURSE_GENERATOR;
     }
 
     getEndpoint(name, ...args) {

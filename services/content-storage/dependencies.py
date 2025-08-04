@@ -15,6 +15,10 @@ from core.config import Settings
 from core.logging_config import LOGGING_CONFIG
 from core.security import verify_token
 from schemas.auth import TokenData
+from exceptions import (
+    ContentStorageException,
+    AuthenticationException
+)
 
 # Initialize logging
 dictConfig(LOGGING_CONFIG)
@@ -54,9 +58,14 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> TokenData:
         if token_data is None:
             raise credentials_exception
         return token_data
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Token verification failed: {str(e)}")
-        raise credentials_exception
+        raise AuthenticationException(
+            message=f"Token verification failed: Unable to validate authentication credentials",
+            auth_method="bearer_token",
+            original_exception=e
+        )
 
 # HTTP client dependencies
 async def get_user_service_client() -> httpx.AsyncClient:

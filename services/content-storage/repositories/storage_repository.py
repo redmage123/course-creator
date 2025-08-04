@@ -77,7 +77,17 @@ from datetime import datetime, timedelta
 import asyncpg
 import os
 
+# DAO imports for centralized query management following DAO pattern
+from dao.backup_queries import BackupQueries
+from dao.storage_queries import StorageQueries
+
 from models.storage import StorageStats, StorageQuota, StorageHealth, StorageOperation
+from exceptions import (
+    ContentStorageException,
+    StorageException,
+    DatabaseException,
+    FileOperationException
+)
 
 logger = logging.getLogger(__name__)
 
@@ -211,43 +221,19 @@ class StorageRepository:
         """
         try:
             async with self.db_pool.acquire() as conn:
+                # Using DAO pattern - centralized query management
                 # Total files and size
-                total_query = """
-                    SELECT 
-                        COUNT(*) as total_files,
-                        COALESCE(SUM(size), 0) as total_size
-                    FROM content 
-                    WHERE status != 'deleted'
-                """
-                total_row = await conn.fetchrow(total_query)
+                total_row = await conn.fetchrow(StorageQueries.GET_CONTENT_STORAGE_STATS)
                 
                 # Files by type
-                type_query = """
-                    SELECT content_type, COUNT(*) as count
-                    FROM content 
-                    WHERE status != 'deleted'
-                    GROUP BY content_type
-                """
-                type_rows = await conn.fetch(type_query)
+                type_rows = await conn.fetch(StorageQueries.GET_CONTENT_BY_TYPE_DISTRIBUTION)
                 
                 # Size by type
-                size_query = """
-                    SELECT content_type, COALESCE(SUM(size), 0) as total_size
-                    FROM content 
-                    WHERE status != 'deleted'
-                    GROUP BY content_type
-                """
-                size_rows = await conn.fetch(size_query)
+                size_rows = await conn.fetch(StorageQueries.GET_CONTENT_SIZE_BY_TYPE_DISTRIBUTION)
                 
                 # Calculate upload rate (files per day over last 7 days)
-                upload_rate_query = """
-                    SELECT COUNT(*) as recent_uploads
-                    FROM content 
-                    WHERE status != 'deleted' 
-                    AND created_at >= $1
-                """
                 week_ago = datetime.utcnow() - timedelta(days=7)
-                upload_rate_row = await conn.fetchrow(upload_rate_query, week_ago)
+                upload_rate_row = await conn.fetchrow(StorageQueries.GET_RECENT_UPLOAD_COUNT, week_ago)
                 
                 # Get disk usage (this would need to be implemented based on storage backend)
                 available_space = self._get_available_disk_space()
@@ -264,17 +250,19 @@ class StorageRepository:
                     storage_efficiency=1.0  # placeholder - would calculate compression ratio
                 )
                 
+        except asyncpg.PostgreSQLError as e:
+            raise DatabaseException(
+                message=f"Database error while retrieving storage statistics: Failed to query storage metrics from database",
+                operation="get_storage_stats",
+                table_name="content", 
+                original_exception=e
+            )
         except Exception as e:
-            logger.error(f"Error getting storage stats: {e}")
-            return StorageStats(
-                total_files=0,
-                total_size=0,
-                available_space=0,
-                used_space=0,
-                files_by_type={},
-                size_by_type={},
-                upload_rate=0.0,
-                storage_efficiency=1.0
+            raise StorageException(
+                message=f"Failed to retrieve storage statistics: Unable to calculate storage metrics and analytics",
+                storage_type="statistics",
+                operation="get_storage_stats",
+                original_exception=e
             )
     
     async def get_user_quota(self, user_id: str) -> Optional[StorageQuota]:
@@ -334,17 +322,8 @@ class StorageRepository:
         """
         try:
             async with self.db_pool.acquire() as conn:
-                query = """
-                    SELECT 
-                        user_id,
-                        quota_limit,
-                        quota_used,
-                        file_count_limit,
-                        file_count_used
-                    FROM storage_quotas 
-                    WHERE user_id = $1
-                """
-                row = await conn.fetchrow(query, user_id)
+                # Using DAO pattern - centralized query management
+                row = await conn.fetchrow(StorageQueries.GET_USER_QUOTA_INFO, user_id)
                 
                 if row:
                     return StorageQuota(
@@ -357,9 +336,21 @@ class StorageRepository:
                 
                 return None
                 
+        except asyncpg.PostgreSQLError as e:
+            raise DatabaseException(
+                message=f"Database error while retrieving user quota for user_id '{user_id}': Failed to query quota information",
+                operation="get_user_quota",
+                table_name="user_quota",
+                record_id=user_id,
+                original_exception=e
+            )
         except Exception as e:
-            logger.error(f"Error getting user quota: {e}")
-            return None
+            raise StorageException(
+                message=f"Failed to retrieve user quota for user_id '{user_id}': Unable to access quota information",
+                storage_type="quota",
+                operation="get_user_quota",
+                original_exception=e
+            )
     
     async def update_user_quota(self, user_id: str, size_delta: int, file_count_delta: int = 0) -> bool:
         """
@@ -418,33 +409,32 @@ class StorageRepository:
         """
         try:
             async with self.db_pool.acquire() as conn:
-                query = """
-                    UPDATE storage_quotas 
-                    SET 
-                        quota_used = quota_used + $1,
-                        file_count_used = file_count_used + $2
-                    WHERE user_id = $3
-                    RETURNING user_id
-                """
-                row = await conn.fetchrow(query, size_delta, file_count_delta, user_id)
+                # Using DAO pattern - centralized query management
+                row = await conn.fetchrow(StorageQueries.UPDATE_USER_QUOTA_USAGE, size_delta, file_count_delta, user_id)
                 
                 if not row:
                     # Create quota record if it doesn't exist
                     default_quota = 1024 * 1024 * 1024  # 1GB default
-                    insert_query = """
-                        INSERT INTO storage_quotas (user_id, quota_limit, quota_used, file_count_used)
-                        VALUES ($1, $2, $3, $4)
-                        ON CONFLICT (user_id) DO UPDATE SET
-                            quota_used = storage_quotas.quota_used + $3,
-                            file_count_used = storage_quotas.file_count_used + $4
-                    """
-                    await conn.execute(insert_query, user_id, default_quota, max(0, size_delta), max(0, file_count_delta))
+                    # Using DAO pattern - centralized query management
+                    await conn.execute(StorageQueries.CREATE_USER_QUOTA_ON_CONFLICT, user_id, default_quota, max(0, size_delta), max(0, file_count_delta))
                 
                 return True
                 
+        except asyncpg.PostgreSQLError as e:
+            raise DatabaseException(
+                message=f"Database error while updating user quota for user_id '{user_id}': Failed to update quota in database",
+                operation="update_user_quota",
+                table_name="user_quota",
+                record_id=user_id,
+                original_exception=e
+            )
         except Exception as e:
-            logger.error(f"Error updating user quota: {e}")
-            return False
+            raise StorageException(
+                message=f"Failed to update user quota for user_id '{user_id}': Unable to update quota information in storage system",
+                storage_type="quota",
+                operation="update_user_quota",
+                original_exception=e
+            )
     
     async def get_storage_health(self) -> StorageHealth:
         """
@@ -541,15 +531,19 @@ class StorageRepository:
                 backup_status="unknown"
             )
             
+        except asyncpg.PostgreSQLError as e:
+            raise DatabaseException(
+                message=f"Database error while assessing storage health: Failed to query storage health metrics from database",
+                operation="get_storage_health",
+                table_name="storage_operations",
+                original_exception=e
+            )
         except Exception as e:
-            logger.error(f"Error getting storage health: {e}")
-            return StorageHealth(
-                status="error",
-                disk_usage=0.0,
-                available_inodes=0,
-                read_latency=0.0,
-                write_latency=0.0,
-                error_rate=100.0
+            raise StorageException(
+                message=f"Failed to assess storage health: Unable to perform comprehensive storage health checks",
+                storage_type="health_check",
+                operation="get_storage_health",
+                original_exception=e
             )
     
     async def log_storage_operation(self, operation: StorageOperation) -> bool:
@@ -617,14 +611,9 @@ class StorageRepository:
         """
         try:
             async with self.db_pool.acquire() as conn:
-                query = """
-                    INSERT INTO storage_operations (
-                        id, operation_type, file_path, status, size, 
-                        duration, error_message, metadata, created_at
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                """
+                # Using DAO pattern - centralized query management
                 await conn.execute(
-                    query,
+                    StorageQueries.LOG_STORAGE_OPERATION,
                     operation.id,
                     operation.operation_type,
                     operation.file_path,
@@ -637,9 +626,20 @@ class StorageRepository:
                 )
                 return True
                 
+        except asyncpg.PostgreSQLError as e:
+            raise DatabaseException(
+                message=f"Database error while logging storage operation '{operation}': Failed to insert operation record",
+                operation="log_storage_operation",
+                table_name="storage_operations",
+                original_exception=e
+            )
         except Exception as e:
-            logger.error(f"Error logging storage operation: {e}")
-            return False
+            raise StorageException(
+                message=f"Failed to log storage operation '{operation}': Unable to record operation in audit trail",
+                storage_type="operations_log",
+                operation="log_storage_operation",
+                original_exception=e
+            )
     
     async def get_recent_operations(self, limit: int = 100) -> List[StorageOperation]:
         """
@@ -703,12 +703,8 @@ class StorageRepository:
         """
         try:
             async with self.db_pool.acquire() as conn:
-                query = """
-                    SELECT * FROM storage_operations 
-                    ORDER BY created_at DESC 
-                    LIMIT $1
-                """
-                rows = await conn.fetch(query, limit)
+                # Using DAO pattern - centralized query management
+                rows = await conn.fetch(StorageQueries.GET_RECENT_STORAGE_OPERATIONS, limit)
                 
                 return [
                     StorageOperation(
@@ -725,9 +721,20 @@ class StorageRepository:
                     for row in rows
                 ]
                 
+        except asyncpg.PostgreSQLError as e:
+            raise DatabaseException(
+                message=f"Database error while retrieving recent operations (limit: {limit}): Failed to query operation history",
+                operation="get_recent_operations",
+                table_name="storage_operations",
+                original_exception=e
+            )
         except Exception as e:
-            logger.error(f"Error getting recent operations: {e}")
-            return []
+            raise StorageException(
+                message=f"Failed to retrieve recent operations (limit: {limit}): Unable to access operation history",
+                storage_type="operations_log",
+                operation="get_recent_operations",
+                original_exception=e
+            )
     
     async def cleanup_old_operations(self, retention_days: int = 30) -> int:
         """
@@ -790,8 +797,8 @@ class StorageRepository:
             cutoff_date = datetime.utcnow() - timedelta(days=retention_days)
             
             async with self.db_pool.acquire() as conn:
-                query = "DELETE FROM storage_operations WHERE created_at < $1"
-                result = await conn.execute(query, cutoff_date)
+                # Using DAO pattern - centralized query management
+                result = await conn.execute(StorageQueries.DELETE_OLD_STORAGE_OPERATIONS, cutoff_date)
                 
                 # Extract count from result string like "DELETE 123"
                 deleted_count = int(result.split()[-1]) if result.split()[-1].isdigit() else 0
@@ -799,9 +806,20 @@ class StorageRepository:
                 
                 return deleted_count
                 
+        except asyncpg.PostgreSQLError as e:
+            raise DatabaseException(
+                message=f"Database error while cleaning up operations older than {retention_days} days: Failed to delete old records",
+                operation="cleanup_old_operations",
+                table_name="storage_operations",
+                original_exception=e
+            )
         except Exception as e:
-            logger.error(f"Error cleaning up old operations: {e}")
-            return 0
+            raise StorageException(
+                message=f"Failed to cleanup old operations (retention: {retention_days} days): Unable to remove expired operation records",
+                storage_type="operations_log",
+                operation="cleanup_old_operations",
+                original_exception=e
+            )
     
     def _get_available_disk_space(self) -> int:
         """
@@ -938,23 +956,28 @@ class StorageRepository:
             async with self.db_pool.acquire() as conn:
                 # Get operations from last hour
                 hour_ago = datetime.utcnow() - timedelta(hours=1)
-                query = """
-                    SELECT 
-                        COUNT(*) as total_ops,
-                        COUNT(CASE WHEN status = 'error' THEN 1 END) as error_ops
-                    FROM storage_operations 
-                    WHERE created_at >= $1
-                """
-                row = await conn.fetchrow(query, hour_ago)
+                # Using DAO pattern - centralized query management
+                row = await conn.fetchrow(StorageQueries.GET_OPERATION_ERROR_STATS, hour_ago)
                 
                 if row and row["total_ops"] > 0:
                     return (row["error_ops"] / row["total_ops"]) * 100
                 
                 return 0.0
                 
+        except asyncpg.PostgreSQLError as e:
+            raise DatabaseException(
+                message=f"Database error while calculating error rate: Failed to query operation success/failure statistics",
+                operation="_calculate_error_rate",
+                table_name="storage_operations",
+                original_exception=e
+            )
         except Exception as e:
-            logger.error(f"Error calculating error rate: {e}")
-            return 0.0
+            raise StorageException(
+                message=f"Failed to calculate storage error rate: Unable to analyze operation success statistics",
+                storage_type="health_metrics",
+                operation="_calculate_error_rate",
+                original_exception=e
+            )
     
     async def _get_last_backup_time(self) -> Optional[datetime]:
         """
@@ -993,19 +1016,26 @@ class StorageRepository:
         
         Returns:
             Datetime of last successful backup, None if no backups found
-        ""\
+        """
         try:
             async with self.db_pool.acquire() as conn:
-                query = """
-                    SELECT MAX(created_at) as last_backup
-                    FROM storage_operations 
-                    WHERE operation_type = 'backup' AND status = 'success'
-                """
-                row = await conn.fetchrow(query)
+                # Using DAO pattern - centralized query management
+                row = await conn.fetchrow(BackupQueries.GET_LAST_SUCCESSFUL_BACKUP, 'full')
                 return row["last_backup"] if row else None
                 
+        except asyncpg.PostgreSQLError as e:
+            raise DatabaseException(
+                message=f"Database error while retrieving last backup time: Failed to query backup history",
+                operation="_get_last_backup_time",
+                table_name="backups",
+                original_exception=e
+            )
         except Exception as e:
-            logger.error(f"Error getting last backup time: {e}")
-            return None
+            raise StorageException(
+                message=f"Failed to retrieve last backup time: Unable to access backup history information",
+                storage_type="backup_history",
+                operation="_get_last_backup_time",
+                original_exception=e
+            )
             # Note: Backup time retrieval failure indicates potential
             # monitoring system issues that should be investigated

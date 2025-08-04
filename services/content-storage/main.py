@@ -77,6 +77,11 @@ except ImportError:
 
 from config.database import DatabaseManager
 from repositories.content_repository import ContentRepository
+from exceptions import (
+    ContentStorageException,
+    DatabaseException,
+    ConfigurationException
+)
 from repositories.storage_repository import StorageRepository
 from services.content_service import ContentService
 from services.storage_service import StorageService
@@ -175,9 +180,16 @@ async def lifespan(app: FastAPI):
         
         yield
         
-    except Exception as e:
-        logger.error("Failed to initialize service: %s", e)
+    except DatabaseException:
+        # Re-raise database exceptions as they are already properly formatted
         raise
+    except Exception as e:
+        raise ConfigurationException(
+            message=f"Failed to initialize content storage service: Service startup configuration or dependency error",
+            config_key="service_initialization",
+            config_section="startup",
+            original_exception=e
+        )
     finally:
         # Cleanup
         if db_manager:
@@ -331,12 +343,19 @@ def create_app(config: DictConfig) -> FastAPI:
                     "database": "disconnected",
                     "service": "content-storage"
                 }
+        except DatabaseException as e:
+            return {
+                "status": "unhealthy",
+                "database": "error",
+                "service": "content-storage",
+                "error": f"Database health check failed: {e.message}"
+            }
         except Exception as e:
             return {
                 "status": "unhealthy",
                 "database": "error",
                 "service": "content-storage",
-                "error": str(e)
+                "error": f"Health check failed: {str(e)}"
             }
     
     # Exception type to HTTP status code mapping (Open/Closed Principle)

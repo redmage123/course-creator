@@ -293,10 +293,13 @@
         </div>
     </div>
 
-    <script>
-        // Configuration
+    <script type="module">
+        // Import centralized configuration system
+        import { CONFIG as GLOBAL_CONFIG } from '../js/config.js';
+        
+        // Configuration with CONFIG system integration
         const CONFIG = {
-            BASE_URL: 'http://176.9.99.103:8001',
+            BASE_URL: GLOBAL_CONFIG.API_URLS.COURSE_GENERATOR,
             COURSE_ID: 'b892987a-0781-471c-81b6-09e09654adf2' // Default course ID
         };
 

@@ -1,17 +1,60 @@
 /**
- * Notifications Module
- * Handles displaying user notifications, alerts, and messages
+ * NOTIFICATIONS MODULE - USER FEEDBACK AND MESSAGING SYSTEM
+ * 
+ * PURPOSE: Comprehensive notification system for user feedback across Course Creator Platform
+ * WHY: Users need immediate feedback for actions, errors, and system status changes
+ * ARCHITECTURE: Singleton notification manager with toast-style notifications
+ * 
+ * NOTIFICATION TYPES:
+ * - Success: Positive feedback for completed actions (green, 3s timeout)
+ * - Error: Error messages and failure states (red, 6s timeout)
+ * - Warning: Important alerts requiring attention (orange, 5s timeout)
+ * - Info: General information and system updates (blue, 4s timeout)
+ * 
+ * FEATURES:
+ * - Auto-dismiss with type-specific timeouts
+ * - Manual dismiss with close button
+ * - Smooth slide-in animations from right
+ * - Stacked notifications with proper z-index
+ * - Mobile-responsive design
+ * - Icon indicators for each notification type
+ * - Click-outside-to-close prevention (intentional UX choice)
+ * 
+ * BUSINESS REQUIREMENTS:
+ * - Non-intrusive: Don't block user workflow
+ * - Informative: Clear message hierarchy and visual distinction
+ * - Accessible: Proper color contrast and keyboard navigation
+ * - Performance: Lightweight DOM manipulation and memory management
  */
 
 export class NotificationManager {
+    /**
+     * NOTIFICATION MANAGER CONSTRUCTOR
+     * PURPOSE: Initialize notification system with container and tracking
+     * WHY: Centralized management ensures consistent behavior and prevents conflicts
+     */
     constructor() {
+        // NOTIFICATION TRACKING: Array of active notification elements
         this.notifications = [];
+        
+        // CONTAINER REFERENCE: DOM element that holds all notifications
         this.container = null;
+        
+        // INITIALIZE SYSTEM: Create container and inject styles
         this.createContainer();
     }
 
     /**
-     * Create notification container
+     * NOTIFICATION CONTAINER CREATION
+     * PURPOSE: Create and style the container that holds all notifications
+     * WHY: Fixed positioning ensures notifications stay visible during scrolling
+     * 
+     * CONTAINER FEATURES:
+     * - Fixed positioning (top-right corner)
+     * - High z-index (9999) to stay above other content
+     * - Pointer-events disabled on container, enabled on individual notifications
+     * - Mobile-responsive with appropriate margins
+     * - Self-contained CSS injection for component independence
      */
     createContainer() {
         this.container = document.createElement('div');
@@ -144,7 +187,23 @@ export class NotificationManager {
     }
 
     /**
-     * Show notification
+     * NOTIFICATION DISPLAY METHOD
+     * PURPOSE: Create and display a notification with specified message and type
+     * WHY: Central method for all notification display with consistent behavior
+     * 
+     * DISPLAY PROCESS:
+     * 1. Create notification element with appropriate styling
+     * 2. Add to container and tracking array
+     * 3. Trigger slide-in animation using requestAnimationFrame
+     * 4. Set auto-dismiss timer based on notification type
+     * 5. Return notification element for additional manipulation if needed
+     * 
+     * @param {string} message - Notification message content
+     * @param {string} type - Notification type ('success', 'error', 'warning', 'info')
+     * @param {object} options - Configuration options
+     * @param {string} options.title - Custom notification title
+     * @param {number} options.timeout - Custom auto-dismiss timeout (0 = no auto-dismiss)
+     * @returns {HTMLElement} The created notification element
      */
     show(message, type = 'info', options = {}) {
         const notification = this.createNotification(message, type, options);
@@ -152,12 +211,14 @@ export class NotificationManager {
         this.container.appendChild(notification);
         this.notifications.push(notification);
         
-        // Trigger animation
+        // ANIMATION TRIGGER: Use requestAnimationFrame for smooth transitions
+        // WHY: Ensures CSS transition occurs after element is fully rendered
         requestAnimationFrame(() => {
-            notification.classList.add('show');
+            notification.classList.add('show');  // Triggers slide-in animation
         });
         
-        // Auto-dismiss after timeout
+        // AUTO-DISMISS TIMER: Remove notification after appropriate timeout
+        // WHY: Different notification types need different visibility durations
         const timeout = options.timeout || this.getDefaultTimeout(type);
         if (timeout > 0) {
             setTimeout(() => {
@@ -275,30 +336,71 @@ export class NotificationManager {
     }
 }
 
-// Create singleton instance
+/**
+ * SINGLETON INSTANCE CREATION
+ * PURPOSE: Create single shared notification manager for entire application
+ * WHY: Prevents multiple notification containers and ensures consistent behavior
+ */
 const notificationManager = new NotificationManager();
 
-// Export convenience functions
+/**
+ * CONVENIENCE FUNCTIONS FOR EASY NOTIFICATION USAGE
+ * PURPOSE: Provide simple, direct functions for common notification operations
+ * WHY: Reduces boilerplate code and makes notifications easier to use throughout app
+ * 
+ * USAGE EXAMPLES:
+ * - showSuccess('User logged in successfully')
+ * - showError('Failed to save changes')
+ * - showWarning('Session will expire in 5 minutes')
+ * - showInfo('New features available')
+ */
+
+/**
+ * GENERAL NOTIFICATION FUNCTION
+ * @param {string} message - Notification message
+ * @param {string} type - Notification type ('success', 'error', 'warning', 'info')
+ * @param {object} options - Additional options (title, timeout, etc.)
+ */
 export function showNotification(message, type = 'info', options = {}) {
     return notificationManager.show(message, type, options);
 }
 
+/**
+ * SUCCESS NOTIFICATION - Green with checkmark icon
+ * USAGE: Successful operations, completed tasks, positive confirmations
+ */
 export function showSuccess(message, options = {}) {
     return notificationManager.success(message, options);
 }
 
+/**
+ * ERROR NOTIFICATION - Red with X icon
+ * USAGE: Failed operations, validation errors, system errors
+ */
 export function showError(message, options = {}) {
     return notificationManager.error(message, options);
 }
 
+/**
+ * WARNING NOTIFICATION - Orange with warning icon
+ * USAGE: Important alerts, potential issues, user attention required
+ */
 export function showWarning(message, options = {}) {
     return notificationManager.warning(message, options);
 }
 
+/**
+ * INFO NOTIFICATION - Blue with info icon
+ * USAGE: General information, status updates, feature announcements
+ */
 export function showInfo(message, options = {}) {
     return notificationManager.info(message, options);
 }
 
+/**
+ * DISMISS ALL NOTIFICATIONS
+ * PURPOSE: Clear all active notifications (useful for page transitions)
+ */
 export function dismissAllNotifications() {
     notificationManager.dismissAll();
 }

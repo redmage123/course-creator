@@ -11,7 +11,7 @@ COPY . .
 RUN chown -R appuser:appuser /app
 USER appuser
 
-# The virtual environment directory will be mounted from host
+# The virtual environment directory will be mounted to /app/.venv from host
 # Path configured via VENV_MOUNT_PATH environment variable
 # No pip install needed!
 

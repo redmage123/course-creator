@@ -1,11 +1,47 @@
 /**
- * UI Components Module
- * Reusable UI components and utilities
+ * UI COMPONENTS MODULE - REUSABLE INTERFACE BUILDING BLOCKS
+ * 
+ * PURPOSE: Comprehensive library of reusable UI components for Course Creator Platform
+ * WHY: Consistent, standardized UI components improve user experience and development efficiency
+ * ARCHITECTURE: Static class with factory methods for creating UI elements
+ * 
+ * COMPONENT CATEGORIES:
+ * - Modal Systems: Dialogs, confirmations, overlays
+ * - Form Elements: Fields, validation, password toggles
+ * - Navigation: Dropdowns, menus
+ * - Feedback: Loading spinners, status indicators
+ * - User Interface: Avatars, date formatting
+ * - Performance: Debounce, throttle utilities
+ * 
+ * DESIGN PRINCIPLES:
+ * - Self-contained: Each component includes its own styles
+ * - Consistent: Unified design language across all components
+ * - Accessible: Keyboard navigation and ARIA compliance
+ * - Responsive: Mobile-first design with adaptive layouts
+ * - Performance: Minimal DOM manipulation and efficient event handling
  */
 
 export class UIComponents {
     /**
-     * Create a modal dialog
+     * MODAL DIALOG FACTORY
+     * PURPOSE: Create standardized modal dialogs with consistent behavior
+     * WHY: Modals are essential for user interactions without page navigation
+     * 
+     * FEATURES:
+     * - Backdrop click to close (configurable)
+     * - Escape key handling
+     * - Smooth animations (slide-in effect)
+     * - Responsive design (mobile-friendly)
+     * - Auto-focus management
+     * - Accessibility compliance
+     * 
+     * USAGE: Login forms, confirmations, content viewers, settings panels
+     * 
+     * @param {string} title - Modal header title
+     * @param {string} content - HTML content for modal body
+     * @param {object} options - Configuration options
+     * @param {string} options.footer - Optional footer HTML
+     * @param {boolean} options.disableBackdropClose - Prevent closing on backdrop click
      */
     static createModal(title, content, options = {}) {
         const modal = document.createElement('div');
@@ -24,14 +60,16 @@ export class UIComponents {
             </div>
         `;
         
-        // Add event listener for backdrop clicks
+        // BACKDROP CLICK HANDLING: Close modal when clicking outside content area
+        // WHY: Standard UI pattern for modal dismissal
         modal.addEventListener('click', (e) => {
             if (e.target === modal && !options.disableBackdropClose) {
-                modal.remove();
+                modal.remove();  // Remove modal from DOM
             }
         });
         
-        // Add styles if not already present
+        // DYNAMIC STYLE INJECTION: Add modal styles only once per page
+        // WHY: Avoid duplicate styles while ensuring components are self-contained
         if (!document.getElementById('modal-styles')) {
             const style = document.createElement('style');
             style.id = 'modal-styles';
@@ -128,7 +166,20 @@ export class UIComponents {
     }
 
     /**
-     * Create a loading spinner
+     * LOADING SPINNER FACTORY
+     * PURPOSE: Create animated loading indicators for async operations
+     * WHY: Users need visual feedback during network requests and processing
+     * 
+     * FEATURES:
+     * - Smooth CSS animation (1s rotation)
+     * - Customizable loading text
+     * - Professional appearance with subtle colors
+     * - Flexible positioning (can be embedded anywhere)
+     * 
+     * USAGE: API calls, file uploads, form submissions, page transitions
+     * 
+     * @param {string} text - Loading message to display (default: 'Loading...')
+     * @returns {HTMLElement} Complete loading spinner element
      */
     static createLoadingSpinner(text = 'Loading...') {
         const spinner = document.createElement('div');
@@ -180,7 +231,20 @@ export class UIComponents {
     }
 
     /**
-     * Create a toggle password visibility button
+     * PASSWORD VISIBILITY TOGGLE FACTORY
+     * PURPOSE: Create buttons that toggle password field visibility
+     * WHY: Improves user experience by allowing password verification without retyping
+     * 
+     * FEATURES:
+     * - Eye icon indicators (show/hide states)
+     * - Absolute positioning within input container
+     * - Hover effects and smooth transitions
+     * - Accessible with proper ARIA labels
+     * 
+     * USAGE: Login forms, registration forms, password change interfaces
+     * 
+     * @param {string} inputId - ID of the password input element to control
+     * @returns {HTMLElement} Toggle button element
      */
     static createPasswordToggle(inputId) {
         const button = document.createElement('button');
@@ -530,7 +594,21 @@ export class UIComponents {
     }
 
     /**
-     * Debounce function
+     * DEBOUNCE UTILITY FUNCTION
+     * PURPOSE: Limit function execution frequency by delaying calls until after quiet period
+     * WHY: Prevents excessive API calls and improves performance for user input events
+     * 
+     * COMMON USE CASES:
+     * - Search input fields (wait for user to stop typing)
+     * - Window resize events (wait for resize to complete)
+     * - Form validation (validate after user finishes input)
+     * - API requests triggered by user actions
+     * 
+     * MECHANISM: Cancels previous calls and waits for specified delay before execution
+     * 
+     * @param {Function} func - Function to debounce
+     * @param {number} wait - Delay in milliseconds
+     * @returns {Function} Debounced function
      */
     static debounce(func, wait) {
         let timeout;
@@ -545,7 +623,21 @@ export class UIComponents {
     }
 
     /**
-     * Throttle function
+     * THROTTLE UTILITY FUNCTION
+     * PURPOSE: Limit function execution frequency by allowing calls only at specified intervals
+     * WHY: Prevents performance issues from high-frequency events while maintaining responsiveness
+     * 
+     * COMMON USE CASES:
+     * - Scroll events (update UI elements during scrolling)
+     * - Mouse move events (drag and drop operations)
+     * - Button clicks (prevent double-clicks)
+     * - API rate limiting (respect server rate limits)
+     * 
+     * MECHANISM: Executes immediately, then blocks subsequent calls for specified duration
+     * 
+     * @param {Function} func - Function to throttle
+     * @param {number} limit - Minimum interval between calls in milliseconds
+     * @returns {Function} Throttled function
      */
     static throttle(func, limit) {
         let inThrottle;

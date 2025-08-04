@@ -1,22 +1,61 @@
-// Student Dashboard JavaScript
-import { authManager } from './modules/auth.js';
-import { labLifecycleManager } from './modules/lab-lifecycle.js';
-import StudentFileManager from './modules/student-file-manager.js';
+/**
+ * STUDENT DASHBOARD - COMPREHENSIVE LEARNING MANAGEMENT INTERFACE
+ * 
+ * PURPOSE: Primary dashboard for student users to access courses, labs, and progress tracking
+ * WHY: Centralized interface improves student experience and provides unified access to all learning resources
+ * ARCHITECTURE: Module-based architecture with session management and dynamic content loading
+ * 
+ * CORE FUNCTIONALITY:
+ * - Session validation and user authentication
+ * - Course enrollment display and management
+ * - Lab environment access and lifecycle management
+ * - Progress tracking and analytics visualization
+ * - File management for student work
+ * - Feedback system integration for course evaluation
+ */
 
-// Import feedback manager
+/**
+ * MODULE IMPORTS - CORE STUDENT DASHBOARD DEPENDENCIES
+ * PURPOSE: Import all required modules for comprehensive student functionality
+ * WHY: Modular imports enable clean separation of concerns and better maintainability
+ */
+import { CONFIG } from './config.js';                      // Configuration system for API endpoints
+import { authManager } from './modules/auth.js';           // Authentication and session management
+import { labLifecycleManager } from './modules/lab-lifecycle.js'; // Lab container lifecycle management
+import StudentFileManager from './modules/student-file-manager.js'; // Student file operations
+
+/**
+ * DYNAMIC FEEDBACK MANAGER IMPORT
+ * PURPOSE: Load feedback system asynchronously to avoid blocking dashboard initialization
+ * WHY: Feedback system is not critical for initial dashboard load, so we load it after core functionality
+ * PATTERN: Dynamic import with fallback handling
+ */
 let feedbackManager = null;
 import('./modules/feedback-manager.js').then(module => {
     feedbackManager = window.feedbackManager;
 });
 
-let enrolledCourses = [];
-let labEnvironments = [];
-let currentUser = null;
-let studentProgress = {};
+/**
+ * STUDENT DASHBOARD STATE VARIABLES
+ * PURPOSE: Maintain dashboard state and student data
+ * WHY: Central state management enables consistent data handling across dashboard functions
+ */
+let enrolledCourses = [];      // List of courses the student is enrolled in
+let labEnvironments = [];      // Available lab environments for student access
+let currentUser = null;        // Current authenticated student user object
+let studentProgress = {};      // Student progress tracking across all courses
 
-// Initialize dashboard
+/**
+ * DASHBOARD INITIALIZATION - DOM READY EVENT HANDLER
+ * PURPOSE: Initialize dashboard when DOM is fully loaded
+ * WHY: Ensures all DOM elements are available before attempting to manipulate them
+ * SEQUENCE: Session validation → Dashboard setup → Data loading
+ */
 document.addEventListener('DOMContentLoaded', function() {
+    // STEP 1: Initialize core dashboard functionality with session validation
     initializeDashboard();
+    
+    // STEP 2: Load student-specific data (courses, progress, labs)
     loadStudentData();
 });
 
@@ -647,7 +686,7 @@ async function loadLabEnvironments() {
     try {
         // Get lab environments for all enrolled courses
         const labPromises = enrolledCourses.map(enrollment => 
-            fetch(`http://176.9.99.103:8001/student/lab-access/${enrollment.course_id}/${currentUser.id}`)
+            fetch(`${CONFIG.API_URLS.COURSE_GENERATOR}/student/lab-access/${enrollment.course_id}/${currentUser.id}`)
                 .then(response => response.ok ? response.json() : null)
                 .catch(() => null)
         );
@@ -711,9 +750,9 @@ function displayLabEnvironments(labs) {
 async function viewCourseDetails(courseId) {
     try {
         // Get course details
-        const courseResponse = await fetch(`http://localhost:8004/courses/${courseId}`);
-        const slidesResponse = await fetch(`http://176.9.99.103:8001/slides/${courseId}`);
-        const exercisesResponse = await fetch(`http://176.9.99.103:8001/exercises/${courseId}`);
+        const courseResponse = await fetch(`${CONFIG.API_URLS.COURSE_MANAGEMENT}/courses/${courseId}`);
+        const slidesResponse = await fetch(`${CONFIG.API_URLS.COURSE_GENERATOR}/slides/${courseId}`);
+        const exercisesResponse = await fetch(`${CONFIG.API_URLS.COURSE_GENERATOR}/exercises/${courseId}`);
         
         const course = courseResponse.ok ? await courseResponse.json() : null;
         const slides = slidesResponse.ok ? await slidesResponse.json() : null;
@@ -788,7 +827,7 @@ function displayCourseModal(course, slides, exercises) {
 // eslint-disable-next-line no-unused-vars
 async function accessLabEnvironment(courseId) {
     try {
-        const response = await fetch(`http://176.9.99.103:8001/student/lab-access/${courseId}/${currentUser.id}`);
+        const response = await fetch(`${CONFIG.API_URLS.COURSE_GENERATOR}/student/lab-access/${courseId}/${currentUser.id}`);
         
         if (response.ok) {
             const labAccess = await response.json();
@@ -893,7 +932,7 @@ function displayLabModal(lab, courseId) {
 
 async function loadLabExercises(courseId) {
     try {
-        const response = await fetch(`http://176.9.99.103:8001/exercises/${courseId}`);
+        const response = await fetch(`${CONFIG.API_URLS.COURSE_GENERATOR}/exercises/${courseId}`);
         if (response.ok) {
             const exercises = await response.json();
             displayLabExercises(exercises.exercises);
@@ -944,7 +983,7 @@ async function askAI(courseId) {
     if (!question) return;
     
     try {
-        const response = await fetch('http://176.9.99.103:8001/ai-assistant/help', {
+        const response = await fetch(`${CONFIG.API_URLS.COURSE_GENERATOR}/ai-assistant/help`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1198,7 +1237,7 @@ async function refreshLabFiles() {
     showLabFileLoading();
     
     try {
-        const response = await fetch(`http://localhost:8006/labs/${labId}/files`);
+        const response = await fetch(`${CONFIG.API_URLS.LAB_MANAGER}/labs/${labId}/files`);
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
         }
@@ -1254,7 +1293,7 @@ async function downloadLabFile(filename) {
     }
     
     try {
-        const response = await fetch(`http://localhost:8006/labs/${labId}/download/${encodeURIComponent(filename)}`);
+        const response = await fetch(`${CONFIG.API_URLS.LAB_MANAGER}/labs/${labId}/download/${encodeURIComponent(filename)}`);
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
         }
@@ -1284,7 +1323,7 @@ async function downloadAllFiles() {
     }
     
     try {
-        const response = await fetch(`http://localhost:8006/labs/${labId}/download-workspace`);
+        const response = await fetch(`${CONFIG.API_URLS.LAB_MANAGER}/labs/${labId}/download-workspace`);
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
         }

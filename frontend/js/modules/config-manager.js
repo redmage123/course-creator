@@ -23,7 +23,7 @@
  * - Dynamic cache warming for critical configuration values
  */
 
-import { showNotification } from './notifications.js';
+import { showNotification } from './notifications.js';\nimport { CONFIG } from '../config.js';
 
 class ConfigManager {
     constructor() {
@@ -337,7 +337,7 @@ class ConfigManager {
         // Use environment-specific API URLs
         switch (this._currentEnvironment) {
             case 'development':
-                return `${protocol}//${hostname}:8000`;
+                return `${protocol}//${hostname}:${CONFIG?.PORTS?.USER_MANAGEMENT || 8000}`;
             case 'staging':
                 return `${protocol}//staging-api.${hostname}`;
             case 'production':

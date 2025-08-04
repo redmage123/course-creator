@@ -75,6 +75,13 @@ from datetime import datetime, timedelta
 
 from models.storage import StorageStats, StorageHealth, StorageQuota, StorageOperation
 from repositories.storage_repository import StorageRepository
+from exceptions import (
+    ContentStorageException,
+    StorageException,
+    DatabaseException,
+    FileOperationException,
+    ContentProcessingException
+)
 
 logger = logging.getLogger(__name__)
 
@@ -210,16 +217,11 @@ class StorageService:
         try:
             return await self.storage_repo.get_storage_stats()
         except Exception as e:
-            logger.error(f"Error getting storage stats: {e}")
-            return StorageStats(
-                total_files=0,
-                total_size=0,
-                available_space=0,
-                used_space=0,
-                files_by_type={},
-                size_by_type={},
-                upload_rate=0.0,
-                storage_efficiency=1.0
+            raise StorageException(
+                message=f"Failed to retrieve storage statistics: Unable to access storage metrics from repository",
+                storage_type="statistics",
+                operation="get_storage_stats",
+                original_exception=e
             )
     
     async def get_storage_health(self) -> StorageHealth:
@@ -267,14 +269,11 @@ class StorageService:
         try:
             return await self.storage_repo.get_storage_health()
         except Exception as e:
-            logger.error(f"Error getting storage health: {e}")
-            return StorageHealth(
-                status="error",
-                disk_usage=0.0,
-                available_inodes=0,
-                read_latency=0.0,
-                write_latency=0.0,
-                error_rate=100.0
+            raise StorageException(
+                message=f"Failed to assess storage health: Unable to perform health checks on storage system",
+                storage_type="health_check",
+                operation="get_storage_health",
+                original_exception=e
             )
     
     async def get_user_quota(self, user_id: str) -> Optional[StorageQuota]:
@@ -345,8 +344,12 @@ class StorageService:
             # For now, we'll just update the existing quota
             return await self.storage_repo.update_user_quota(user_id, 0, 0)
         except Exception as e:
-            logger.error(f"Error setting user quota: {e}")
-            return False
+            raise StorageException(
+                message=f"Failed to set user quota for user_id '{user_id}': Unable to update quota limits in storage system",
+                storage_type="quota",
+                operation="set_user_quota",
+                original_exception=e
+            )
     
     async def get_recent_operations(self, limit: int = 100) -> List[StorageOperation]:
         """
@@ -483,10 +486,15 @@ class StorageService:
             maintenance_results["status"] = "completed"
             
         except Exception as e:
-            logger.error(f"Error during maintenance: {e}")
             maintenance_results["status"] = "error"
             maintenance_results["error"] = str(e)
             maintenance_results["completed_at"] = datetime.utcnow()
+            raise ContentProcessingException(
+                message=f"Storage maintenance workflow failed: Unable to complete automated maintenance tasks",
+                content_type="maintenance",
+                processing_stage="maintenance_workflow",
+                original_exception=e
+            )
         
         return maintenance_results
     
@@ -572,10 +580,15 @@ class StorageService:
             optimization_results["status"] = "completed"
             
         except Exception as e:
-            logger.error(f"Error during storage optimization: {e}")
             optimization_results["status"] = "error"
             optimization_results["error"] = str(e)
             optimization_results["completed_at"] = datetime.utcnow()
+            raise ContentProcessingException(
+                message=f"Storage optimization failed: Unable to complete storage optimization procedures",
+                content_type="optimization",
+                processing_stage="storage_optimization",
+                original_exception=e
+            )
         
         return optimization_results
     
@@ -672,10 +685,15 @@ class StorageService:
             backup_results["backup_size"] = self._get_directory_size(backup_dir)
             
         except Exception as e:
-            logger.error(f"Error creating backup: {e}")
             backup_results["status"] = "error"
             backup_results["error"] = str(e)
             backup_results["completed_at"] = datetime.utcnow()
+            raise StorageException(
+                message=f"Backup creation failed for backup_type '{backup_type}': Unable to create storage backup",
+                storage_type="backup",
+                operation="create_backup",
+                original_exception=e
+            )
         
         return backup_results
     
@@ -772,10 +790,15 @@ class StorageService:
             restore_results["pre_restore_backup"] = current_backup
             
         except Exception as e:
-            logger.error(f"Error restoring backup: {e}")
             restore_results["status"] = "error"
             restore_results["error"] = str(e)
             restore_results["completed_at"] = datetime.utcnow()
+            raise StorageException(
+                message=f"Backup restoration failed from path '{backup_path}': Unable to restore storage from backup",
+                storage_type="restore",
+                operation="restore_backup",
+                original_exception=e
+            )
         
         return restore_results
     
@@ -853,11 +876,12 @@ class StorageService:
             }
             
         except Exception as e:
-            logger.error(f"Error verifying file integrity: {e}")
-            return {
-                "status": "error",
-                "error": str(e)
-            }
+            raise FileOperationException(
+                message=f"File integrity verification failed: Unable to verify file system integrity",
+                file_path=self.base_path,
+                operation="verify_file_integrity",
+                original_exception=e
+            )
     
     async def _cleanup_orphaned_files(self) -> Dict[str, Any]:
         """
@@ -926,11 +950,12 @@ class StorageService:
             }
             
         except Exception as e:
-            logger.error(f"Error cleaning up orphaned files: {e}")
-            return {
-                "status": "error",
-                "error": str(e)
-            }
+            raise FileOperationException(
+                message=f"Orphaned file cleanup failed: Unable to identify and clean up orphaned files",
+                file_path=self.base_path,
+                operation="cleanup_orphaned_files",
+                original_exception=e
+            )
     
     async def _compress_old_files(self) -> Dict[str, Any]:
         """
@@ -1004,11 +1029,12 @@ class StorageService:
             }
             
         except Exception as e:
-            logger.error(f"Error compressing old files: {e}")
-            return {
-                "status": "error",
-                "error": str(e)
-            }
+            raise ContentProcessingException(
+                message=f"File compression failed: Unable to compress aging files for storage optimization",
+                content_type="compression",
+                processing_stage="compress_old_files",
+                original_exception=e
+            )
     
     async def _create_system_backup(self) -> Dict[str, Any]:
         """
@@ -1030,11 +1056,12 @@ class StorageService:
         try:
             return await self.create_backup("full")
         except Exception as e:
-            logger.error(f"Error creating system backup: {e}")
-            return {
-                "status": "error",
-                "error": str(e)
-            }
+            raise StorageException(
+                message=f"System backup creation failed: Unable to create comprehensive system backup during maintenance",
+                storage_type="system_backup",
+                operation="create_system_backup",
+                original_exception=e
+            )
     
     def _get_directory_size(self, directory: str) -> int:
         """
@@ -1069,8 +1096,12 @@ class StorageService:
                     total_size += os.path.getsize(file_path)
             return total_size
         except Exception as e:
-            logger.error(f"Error getting directory size: {e}")
-            return 0
+            raise FileOperationException(
+                message=f"Directory size calculation failed for path '{directory}': Unable to calculate total directory size",
+                file_path=directory,
+                operation="get_directory_size",
+                original_exception=e
+            )
             # Note: Returns 0 to ensure graceful degradation
             # Consider implementing alternative size estimation methods
             # for critical operations requiring accurate size information

@@ -710,6 +710,14 @@
         </div>
     </div>
 
+    <script type="module">
+        // Import centralized configuration system
+        import { CONFIG } from '../js/config.js';
+        
+        // Make CONFIG available globally for this lab environment
+        window.CONFIG = CONFIG;
+    </script>
+    
     <script>
         // Multi-IDE Lab Environment JavaScript
         class MultiIDELab {
@@ -728,7 +736,9 @@
             getLabContainerURL() {
                 // Extract lab container URL from URL parameters or use default
                 const urlParams = new URLSearchParams(window.location.search);
-                return urlParams.get('lab_url') || 'http://localhost:8080';
+                // Use configuration system to get default lab container URL
+                const defaultURL = window.CONFIG?.API_URLS?.LAB_MANAGER?.replace(':8006', ':8080') || 'http://localhost:8080';
+                return urlParams.get('lab_url') || defaultURL;
             }
             
             init() {
@@ -1033,7 +1043,8 @@
                 }
                 
                 try {
-                    const response = await fetch(`http://localhost:8006/labs/${labId}/files`);
+                    const labManagerURL = window.CONFIG?.API_URLS?.LAB_MANAGER || 'http://localhost:8006';
+                    const response = await fetch(`${labManagerURL}/labs/${labId}/files`);
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}`);
                     }
@@ -1099,7 +1110,8 @@
                 }
                 
                 try {
-                    const response = await fetch(`http://localhost:8006/labs/${labId}/download/${encodeURIComponent(filename)}`);
+                    const labManagerURL = window.CONFIG?.API_URLS?.LAB_MANAGER || 'http://localhost:8006';
+                    const response = await fetch(`${labManagerURL}/labs/${labId}/download/${encodeURIComponent(filename)}`);
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}`);
                     }
@@ -1130,7 +1142,8 @@
                 }
                 
                 try {
-                    const response = await fetch(`http://localhost:8006/labs/${labId}/download-workspace`);
+                    const labManagerURL = window.CONFIG?.API_URLS?.LAB_MANAGER || 'http://localhost:8006';
+                    const response = await fetch(`${labManagerURL}/labs/${labId}/download-workspace`);
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}`);
                     }

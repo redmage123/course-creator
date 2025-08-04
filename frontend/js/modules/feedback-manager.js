@@ -3,9 +3,11 @@
  * Handles both student course feedback and instructor student feedback
  */
 
+import { CONFIG } from '../config.js';
+
 class FeedbackManager {
     constructor() {
-        this.courseManagementURL = 'http://localhost:8004';
+        this.courseManagementURL = CONFIG.API_URLS.COURSE_MANAGEMENT;
         this.currentUser = null;
         this.currentUserRole = null;
     }

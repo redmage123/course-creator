@@ -1,24 +1,57 @@
 /**
- * Navigation Module
- * Handles navigation, routing, and access control
+ * NAVIGATION MODULE - ROUTING, ACCESS CONTROL, AND PAGE MANAGEMENT
+ * 
+ * PURPOSE: Centralized navigation system for Course Creator Platform
+ * WHY: Unified navigation ensures consistent user experience and proper access control
+ * ARCHITECTURE: Event-driven navigation with hash-based routing and security validation
+ * 
+ * CORE RESPONSIBILITIES:
+ * - Hash-based routing for single-page application behavior
+ * - Access control enforcement based on user roles and authentication
+ * - Link click interception for security validation
+ * - Page context detection and navigation state management
+ * - Integration with authentication system for protected routes
  */
 
-import { Auth } from './auth.js';
-import UIComponents from './ui-components.js';
+/**
+ * MODULE DEPENDENCIES
+ * PURPOSE: Import required modules for navigation functionality
+ * WHY: Navigation depends on auth state and UI components for proper operation
+ */
+import { Auth } from './auth.js';          // Authentication state and user validation
+import UIComponents from './ui-components.js'; // UI helper functions and components
 
+/**
+ * NAVIGATION MANAGER CLASS
+ * PATTERN: Centralized navigation controller with event-driven architecture
+ * WHY: Single navigation manager prevents routing conflicts and ensures consistency
+ */
 export class NavigationManager {
+    /**
+     * CONSTRUCTOR - NAVIGATION SYSTEM INITIALIZATION
+     * PURPOSE: Initialize navigation state and event listeners
+     * WHY: Immediate setup ensures navigation works from page load
+     */
     constructor() {
+        // CURRENT PAGE DETECTION: Determine initial page context
         this.currentPage = this.getCurrentPage();
+        
+        // EVENT LISTENER SETUP: Enable navigation event handling
         this.setupEventListeners();
     }
 
     /**
-     * Get current page filename
+     * CURRENT PAGE DETECTION
+     * PURPOSE: Extract current page filename from URL for routing logic
+     * WHY: Different pages require different navigation behavior and access control
+     * HANDLES: Both root-level and html/ subdirectory structures
      */
     getCurrentPage() {
         const fullPath = window.location.pathname;
         const fileName = fullPath.split('/').pop() || 'index.html';
-        // Handle new html/ directory structure
+        
+        // DIRECTORY STRUCTURE HANDLING: Support both old and new HTML organization
+        // WHY: Platform supports both /page.html and /html/page.html structures
         if (fullPath.includes('/html/')) {
             return fileName;
         }
@@ -26,20 +59,30 @@ export class NavigationManager {
     }
 
     /**
-     * Setup navigation event listeners
+     * NAVIGATION EVENT LISTENER SETUP
+     * PURPOSE: Register event handlers for all navigation interactions
+     * WHY: Centralized event handling ensures consistent navigation behavior
+     * 
+     * EVENT TYPES HANDLED:
+     * - Hash changes for single-page routing
+     * - Link clicks for access control validation
+     * - Initial page load routing
      */
     setupEventListeners() {
-        // Handle hash changes
+        // HASH CHANGE HANDLER: Enable hash-based routing
+        // WHY: Hash navigation allows SPA behavior without full page reloads
         window.addEventListener('hashchange', () => {
             this.handleHashNavigation();
         });
 
-        // Handle link clicks for access control
+        // LINK CLICK INTERCEPTION: Validate access before navigation
+        // WHY: Prevents unauthorized access to protected pages and resources
         document.addEventListener('click', (e) => {
             this.handleLinkClick(e);
         });
 
-        // Handle initial hash navigation
+        // INITIAL NAVIGATION: Handle page load routing
+        // WHY: Ensure proper navigation state on first page load
         this.handleHashNavigation();
     }
 

@@ -8,7 +8,7 @@ import { showNotification } from './notifications.js';
 
 class LabLifecycleManager {
     constructor() {
-        this.labApiBase = 'http://localhost:8006';
+        this.labApiBase = CONFIG.API_URLS.LAB_MANAGER;
         this.currentUser = null;
         this.enrolledCourses = [];
         this.activeLabs = {};

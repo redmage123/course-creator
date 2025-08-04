@@ -3,8 +3,10 @@
  * Manages organization settings, projects, instructors, and members
  */
 
+import { CONFIG } from './config.js';
+
 // Configuration
-const ORG_API_BASE = CONFIG.ENDPOINTS.ORGANIZATION_SERVICE || 'http://localhost:8008/api/v1';
+const ORG_API_BASE = CONFIG.API_URLS.ORGANIZATION;
 
 // Global state
 let currentOrganization = null;

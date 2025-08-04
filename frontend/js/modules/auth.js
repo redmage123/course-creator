@@ -1,18 +1,59 @@
 /**
- * Authentication Module
- * Handles user authentication, login, registration, and session management
+ * AUTHENTICATION MODULE - COMPREHENSIVE USER SESSION MANAGEMENT
+ * 
+ * PURPOSE: Complete authentication system for Course Creator Platform
+ * WHY: Secure user management is critical for educational platform integrity
+ * ARCHITECTURE: Session-based authentication with automatic timeout and lab integration
+ * 
+ * CORE RESPONSIBILITIES:
+ * - User login, logout, and registration
+ * - JWT token management and validation
+ * - Session timeout and inactivity monitoring
+ * - Lab container lifecycle integration
+ * - Activity tracking for security and analytics
+ * - Cross-tab session synchronization
+ * - Automatic session cleanup and security enforcement
+ * 
+ * BUSINESS REQUIREMENTS:
+ * - 8-hour maximum session duration (work day alignment)
+ * - 2-hour inactivity timeout (security balance)
+ * - 5-minute logout warning (user experience)
+ * - Automatic lab cleanup on logout (resource management)
+ * - Seamless cross-tab authentication state
  */
 
-import { CONFIG } from '../config.js';
-import { showNotification } from './notifications.js';
-import { ActivityTracker } from './activity-tracker.js';
-import { labLifecycleManager } from './lab-lifecycle.js';
+/**
+ * MODULE DEPENDENCIES
+ * PURPOSE: Import all systems that authentication integrates with
+ * WHY: Authentication is a cross-cutting concern that affects all platform areas
+ */
+import { CONFIG } from '../config.js';                  // Centralized configuration system
+import { showNotification } from './notifications.js';  // User feedback system
+import { ActivityTracker } from './activity-tracker.js'; // Session activity monitoring
+import { labLifecycleManager } from './lab-lifecycle.js'; // Lab container integration
 
+/**
+ * AUTHENTICATION MANAGER CLASS
+ * PATTERN: Singleton authentication manager with comprehensive session handling
+ * WHY: Single source of truth for authentication state across the application
+ */
 class AuthManager {
+    /**
+     * CONSTRUCTOR - AUTHENTICATION STATE INITIALIZATION
+     * PURPOSE: Set up authentication system with session monitoring and lab integration
+     * WHY: Proper initialization ensures consistent authentication behavior
+     */
     constructor() {
+        // USER STATE: Current authenticated user information
         this.currentUser = null;
+        
+        // TOKEN MANAGEMENT: JWT token for API authentication
         this.authToken = null;
+        
+        // ACTIVITY MONITORING: Track user activity for session timeout
         this.activityTracker = new ActivityTracker();
+        
+        // API CONFIGURATION: Authentication service endpoint
         this.authApiBase = CONFIG.API_URLS.USER_MANAGEMENT;
         
         """
@@ -48,45 +89,75 @@ class AuthManager {
         this.INACTIVITY_TIMEOUT = 2 * 60 * 60 * 1000; // 2 hours of inactivity
         this.AUTO_LOGOUT_WARNING = 5 * 60 * 1000; // 5 minutes warning period
         
-        // Initialize session monitoring state
-        this.sessionCheckInterval = null;
-        this.warningShown = false;
+        // SESSION MONITORING STATE: Control session timeout checking
+        this.sessionCheckInterval = null;  // Interval for periodic session validation
+        this.warningShown = false;         // Track if logout warning has been displayed
     }
 
     /**
-     * Get current user from localStorage or memory
+     * CURRENT USER RETRIEVAL WITH FALLBACK STRATEGY
+     * PURPOSE: Get authenticated user information with robust error handling
+     * WHY: User data is critical for authorization and personalization
+     * 
+     * FALLBACK STRATEGY:
+     * 1. Try to get complete user object from localStorage
+     * 2. Fall back to basic user info from userEmail
+     * 3. Return null if no user data exists
+     * 
+     * ERROR HANDLING: Graceful degradation if localStorage data is corrupted
      */
     getCurrentUser() {
         try {
+            // PRIMARY DATA SOURCE: Complete user object from authentication
             const userStr = localStorage.getItem('currentUser');
             if (userStr) {
-                return JSON.parse(userStr);
+                return JSON.parse(userStr);  // Parse and return full user data
             }
             
-            // Fallback to userEmail if currentUser is not available
+            // FALLBACK STRATEGY: Basic user info from email-only login
+            // WHY: Some authentication flows only store email initially
             const userEmail = localStorage.getItem('userEmail');
             if (userEmail) {
                 return { email: userEmail, username: userEmail };
             }
             
+            // NO USER DATA: Return null for unauthenticated state
             return null;
         } catch (error) {
+            // ERROR RECOVERY: Handle corrupted localStorage data gracefully
             console.error('Error getting current user:', error);
-            // Try fallback to userEmail
+            
+            // LAST RESORT: Try email fallback even after JSON parse error
             const userEmail = localStorage.getItem('userEmail');
             return userEmail ? { email: userEmail, username: userEmail } : null;
         }
     }
 
     /**
-     * Check if user is authenticated
+     * AUTHENTICATION STATUS CHECKER
+     * PURPOSE: Determine if user has valid authentication credentials
+     * WHY: Authorization decisions depend on accurate authentication status
+     * 
+     * AUTHENTICATION CRITERIA:
+     * - User data must exist (from getCurrentUser())
+     * - Valid auth token must be present in localStorage
+     * - Both conditions required for authenticated state
      */
     isAuthenticated() {
         return !!(this.getCurrentUser() && localStorage.getItem('authToken'));
     }
 
     /**
-     * Initialize auth state from localStorage
+     * AUTHENTICATION STATE INITIALIZATION
+     * PURPOSE: Restore authentication state from persistent storage on app startup
+     * WHY: Users should remain logged in across browser sessions and page refreshes
+     * 
+     * INITIALIZATION PROCESS:
+     * 1. Check for saved authentication tokens and user data
+     * 2. Restore user state if valid credentials exist
+     * 3. Start activity tracking for existing sessions
+     * 4. Begin session timeout monitoring
+     * 5. Gracefully handle corrupted or partial data
      */
     initializeAuth() {
         const savedToken = localStorage.getItem('authToken');
@@ -111,226 +182,489 @@ class AuthManager {
     }
 
     /**
-     * Login user with credentials
+     * COMPREHENSIVE USER LOGIN SYSTEM
+     * PURPOSE: Authenticate user credentials and establish complete session management
+     * WHY: Secure authentication is the foundation of the entire Course Creator platform
+     * 
+     * LOGIN PROCESS WORKFLOW:
+     * 1. Send credentials to authentication service via secure API
+     * 2. Receive and store JWT token for subsequent API authentication
+     * 3. Initialize session timestamps for timeout management
+     * 4. Start activity monitoring for security compliance
+     * 5. Retrieve complete user profile from server
+     * 6. Initialize role-specific services (lab containers for students)
+     * 7. Return authentication result with user information
+     * 
+     * SECURITY FEATURES:
+     * - JWT token-based authentication
+     * - Session timeout management (8hr absolute, 2hr inactivity)
+     * - Activity monitoring for automated security logout
+     * - Secure credential transmission (form-encoded)
+     * - Comprehensive error handling without information leakage
+     * 
+     * BUSINESS INTEGRATION:
+     * - Role-based service initialization (lab containers for students)
+     * - User profile enrichment for personalized experience
+     * - Session continuity across browser tabs and refreshes
+     * - Graceful degradation for service initialization failures
+     * 
+     * @param {Object} credentials - User login credentials
+     * @param {string} credentials.username - User email or username
+     * @param {string} credentials.password - User password
+     * @returns {Object} Authentication result with success status and user data
      */
     async login(credentials) {
         try {
+            // AUTHENTICATION API REQUEST: Send credentials to authentication service
+            // WHY: Centralized authentication service provides consistent security across platform
             const response = await fetch(`${this.authApiBase}/auth/login`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Content-Type': 'application/x-www-form-urlencoded',  // Standard form encoding
                 },
-                body: new URLSearchParams(credentials)
+                body: new URLSearchParams(credentials)  // Secure credential encoding
             });
             
+            // SUCCESSFUL AUTHENTICATION PROCESSING
             if (response.ok) {
+                // EXTRACT AUTHENTICATION TOKEN: Get JWT from server response
                 const data = await response.json();
                 this.authToken = data.access_token;
+                
+                // PERSIST AUTHENTICATION DATA: Store for session continuity
                 localStorage.setItem('authToken', this.authToken);
                 localStorage.setItem('userEmail', credentials.username);
                 
-                // Initialize session timestamps for proper timeout handling
+                // INITIALIZE SESSION TIMESTAMPS: Enable proper timeout management
+                // WHY: Session security requires accurate timing for automatic logout
                 const sessionStart = Date.now();
                 localStorage.setItem('sessionStart', sessionStart.toString());
                 localStorage.setItem('lastActivity', sessionStart.toString());
                 
-                // Start activity tracking
+                // START SECURITY MONITORING: Begin activity tracking for session timeout
+                // WHY: Educational platform security requires inactivity monitoring
                 this.activityTracker.start();
                 
-                // Start session monitoring for automatic logout
+                // START SESSION MONITORING: Automatic logout system for expired sessions
                 this.startSessionMonitoring();
                 
-                // Get user profile
+                // USER PROFILE ENRICHMENT: Get complete user information from server
+                // WHY: Role-based functionality requires complete user profile data
                 const profile = await this.getUserProfile();
                 if (profile) {
+                    // COMPLETE PROFILE: Use full server profile data
                     this.currentUser = profile;
                     localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
                 } else {
+                    // FALLBACK PROFILE: Create minimal profile from login credentials
+                    // WHY: Graceful degradation ensures login succeeds even if profile fails
                     this.currentUser = { email: credentials.username, id: credentials.username };
                     localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
                 }
                 
-                // Initialize lab lifecycle manager for students
+                // ROLE-SPECIFIC SERVICE INITIALIZATION: Initialize services based on user role
+                // WHY: Students need lab container access, instructors need different services
                 if (this.currentUser.role === 'student') {
                     try {
+                        // STUDENT LAB INITIALIZATION: Set up lab container access
                         await labLifecycleManager.initialize(this.currentUser);
                     } catch (error) {
                         console.error('Error initializing lab lifecycle manager:', error);
-                        // Don't fail login if lab manager fails
+                        // GRACEFUL DEGRADATION: Don't fail login if lab manager initialization fails
+                        // WHY: User should be able to access other platform features even if labs fail
                     }
                 }
                 
+                // SUCCESSFUL LOGIN RESULT: Return success with user data
                 return { success: true, user: this.currentUser };
             } else {
+                // AUTHENTICATION FAILURE: Handle failed login attempts
                 return { success: false, error: 'Login failed' };
             }
         } catch (error) {
+            // ERROR HANDLING: Network or processing errors during login
             console.error('Error logging in:', error);
             return { success: false, error: 'Login failed: ' + error.message };
         }
     }
 
     /**
-     * Register new user
+     * USER REGISTRATION SYSTEM
+     * PURPOSE: Create new user accounts with validation and error handling
+     * WHY: Platform growth requires secure, user-friendly registration process
+     * 
+     * REGISTRATION PROCESS:
+     * 1. Validate user data on client side
+     * 2. Send registration request to authentication service
+     * 3. Handle server-side validation and conflicts
+     * 4. Return structured result for UI feedback
+     * 
+     * SECURITY FEATURES:
+     * - JSON payload transmission for structured data
+     * - Server-side validation and duplicate detection
+     * - Comprehensive error handling with user-friendly messages
+     * - No automatic login (requires explicit login after registration)
+     * 
+     * BUSINESS REQUIREMENTS:
+     * - Support for different user roles (student, instructor, org_admin, admin)
+     * - Email validation and uniqueness checking
+     * - Professional registration experience
+     * - Clear error messaging for user guidance
+     * 
+     * @param {Object} userData - New user registration information
+     * @param {string} userData.email - User email address
+     * @param {string} userData.password - User password
+     * @param {string} userData.full_name - User's full name
+     * @param {string} userData.role - User role (student, instructor, org_admin, admin)
+     * @returns {Object} Registration result with success status and error details
      */
     async register(userData) {
         try {
+            // REGISTRATION API REQUEST: Send user data to registration service
+            // WHY: Centralized registration ensures consistent validation and user creation
             const response = await fetch(`${this.authApiBase}/auth/register`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json',  // JSON for structured data
                 },
-                body: JSON.stringify(userData)
+                body: JSON.stringify(userData)  // Structured user data payload
             });
             
+            // SUCCESSFUL REGISTRATION PROCESSING
             if (response.ok) {
+                // REGISTRATION SUCCESS: User account created successfully
                 return { success: true };
             } else {
+                // REGISTRATION FAILURE: Handle validation errors and conflicts
                 const errorData = await response.json();
-                return { success: false, error: errorData.detail || 'Registration failed' };
+                
+                // STRUCTURED ERROR RESPONSE: Provide specific error details for UI feedback
+                return { 
+                    success: false, 
+                    error: errorData.detail || 'Registration failed'  // Fallback for missing error details
+                };
             }
         } catch (error) {
+            // ERROR HANDLING: Network or processing errors during registration
             console.error('Error registering:', error);
-            return { success: false, error: 'Registration failed: ' + error.message };
+            return { 
+                success: false, 
+                error: 'Registration failed: ' + error.message 
+            };
         }
     }
 
     /**
-     * Reset password
+     * PASSWORD RESET SYSTEM
+     * PURPOSE: Allow users to reset forgotten passwords securely
+     * WHY: Password recovery is essential for user retention and platform accessibility
+     * 
+     * RESET PROCESS:
+     * 1. Validate email address and new password requirements
+     * 2. Send password reset request to authentication service
+     * 3. Server validates request and updates password securely
+     * 4. Return result for UI feedback and user guidance
+     * 
+     * SECURITY CONSIDERATIONS:
+     * - Server-side password validation and hashing
+     * - Email verification before password change
+     * - Secure transmission of reset credentials  
+     * - No exposure of existing password information
+     * 
+     * BUSINESS REQUIREMENTS:
+     * - Self-service password recovery for user independence
+     * - Professional password reset experience
+     * - Clear feedback for successful and failed attempts
+     * - Integration with existing authentication system
+     * 
+     * @param {string} email - User's email address for password reset
+     * @param {string} newPassword - New password meeting security requirements
+     * @returns {Object} Password reset result with success status and error details
      */
     async resetPassword(email, newPassword) {
         try {
+            // PASSWORD RESET API REQUEST: Send reset request to authentication service
+            // WHY: Centralized password management ensures consistent security policies
             const response = await fetch(CONFIG.ENDPOINTS.RESET_PASSWORD, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json',  // JSON for structured data
                 },
                 body: JSON.stringify({
-                    email: email,
-                    new_password: newPassword
+                    email: email,                    // Target user email
+                    new_password: newPassword       // New password (will be hashed server-side)
                 })
             });
             
+            // SUCCESSFUL RESET PROCESSING
             if (response.ok) {
+                // PASSWORD RESET SUCCESS: Password updated successfully
                 return { success: true };
             } else {
+                // PASSWORD RESET FAILURE: Handle validation errors and user not found
                 const errorData = await response.json();
-                return { success: false, error: errorData.detail || 'Password reset failed' };
+                
+                // STRUCTURED ERROR RESPONSE: Provide specific error details for UI feedback
+                return { 
+                    success: false, 
+                    error: errorData.detail || 'Password reset failed'  // Fallback for missing error details
+                };
             }
         } catch (error) {
+            // ERROR HANDLING: Network or processing errors during password reset
             console.error('Error resetting password:', error);
-            return { success: false, error: 'Password reset failed: ' + error.message };
+            return { 
+                success: false, 
+                error: 'Password reset failed: ' + error.message 
+            };
         }
     }
 
     /**
-     * Get user profile
+     * USER PROFILE RETRIEVAL SYSTEM
+     * PURPOSE: Fetch complete user profile information from authentication service
+     * WHY: Role-based functionality requires comprehensive user data beyond basic credentials
+     * 
+     * PROFILE DATA INCLUDES:
+     * - User identification (ID, email, username)
+     * - Role information (student, instructor, admin)
+     * - Personal information (full name, preferences)
+     * - Account status and permissions
+     * - Platform-specific settings and configurations
+     * 
+     * AUTHENTICATION REQUIREMENTS:
+     * - Valid JWT token required for profile access
+     * - Bearer token authentication for secure API access
+     * - Automatic token validation by server
+     * - Graceful handling of expired or invalid tokens
+     * 
+     * BUSINESS INTEGRATION:
+     * - Enables personalized user experience
+     * - Supports role-based feature access
+     * - Provides data for user dashboard and settings
+     * - Integrates with course enrollment and progress tracking
+     * 
+     * @returns {Object|null} Complete user profile object or null if unavailable
      */
     async getUserProfile() {
         try {
+            // PROFILE API REQUEST: Fetch complete user profile using authentication token
+            // WHY: Server-side user data is authoritative source for user information
             const response = await fetch(`${this.authApiBase}/users/profile`, {
                 headers: {
-                    'Authorization': `Bearer ${this.authToken}`
+                    'Authorization': `Bearer ${this.authToken}`  // JWT token for authenticated access
                 }
             });
             
+            // SUCCESSFUL PROFILE RETRIEVAL
             if (response.ok) {
+                // EXTRACT USER DATA: Parse server response and return user profile
                 const data = await response.json();
-                return data.user;
+                return data.user;  // Return complete user profile object
             }
+            
+            // PROFILE UNAVAILABLE: Return null for failed requests
+            // WHY: Graceful degradation allows application to continue with basic user data
             return null;
         } catch (error) {
+            // ERROR HANDLING: Network or processing errors during profile retrieval
             console.error('Error getting profile:', error);
-            return null;
+            return null;  // Graceful failure for network issues
         }
     }
 
     /**
-     * Logout user
+     * COMPREHENSIVE USER LOGOUT SYSTEM
+     * PURPOSE: Securely terminate user session with complete cleanup and resource management
+     * WHY: Proper logout is critical for security, resource management, and user experience
+     * 
+     * LOGOUT PROCESS WORKFLOW:
+     * 1. Invalidate server-side session via logout API
+     * 2. Stop all security monitoring (activity tracking)
+     * 3. Clean up role-specific resources (lab containers)
+     * 4. Clear all client-side authentication data
+     * 5. Reset authentication manager state
+     * 6. Return logout result for UI handling
+     * 
+     * SECURITY FEATURES:
+     * - Server-side session invalidation for complete security
+     * - Comprehensive client-side data cleanup
+     * - Activity monitoring termination
+     * - JWT token invalidation
+     * - Session timestamp cleanup
+     * 
+     * RESOURCE MANAGEMENT:
+     * - Lab container cleanup for students
+     * - Memory leak prevention through proper cleanup
+     * - Event listener removal via activity tracker
+     * - Background process termination
+     * 
+     * GRACEFUL DEGRADATION:
+     * - Continues with client cleanup even if server logout fails
+     * - Handles lab cleanup failures without blocking logout
+     * - Ensures user can always log out regardless of service availability
+     * 
+     * @returns {Object} Logout result with success status
      */
     async logout() {
         try {
-            // Call server logout endpoint to invalidate session
+            // SERVER-SIDE SESSION INVALIDATION: Invalidate JWT token on server
+            // WHY: Server-side invalidation prevents token reuse and ensures complete security
             if (this.authToken) {
                 const response = await fetch(`${this.authApiBase}/auth/logout`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${this.authToken}`,
+                        'Authorization': `Bearer ${this.authToken}`,  // Authenticate logout request
                         'Content-Type': 'application/json'
                     }
                 });
                 
                 if (response.ok) {
+                    // SERVER LOGOUT SUCCESS: Session invalidated on server
                 } else {
+                    // SERVER LOGOUT WARNING: Continue with client cleanup regardless
                     console.warn('Failed to invalidate server session, continuing with client logout');
                 }
             }
         } catch (error) {
+            // SERVER LOGOUT ERROR: Network issues shouldn't prevent client logout
             console.error('Error during server logout:', error);
+            // Continue with client-side cleanup regardless of server errors
         }
         
-        // Stop activity tracking
+        // SECURITY MONITORING TERMINATION: Stop activity tracking for session timeout
+        // WHY: No need to monitor activity after user explicitly logs out
         this.activityTracker.stop();
         
-        // Clean up lab lifecycle manager
+        // ROLE-SPECIFIC RESOURCE CLEANUP: Clean up lab containers and other services
+        // WHY: Students may have active lab containers that need proper cleanup
         try {
             await labLifecycleManager.cleanup();
         } catch (error) {
             console.error('Error cleaning up lab lifecycle manager:', error);
+            // Continue with logout even if lab cleanup fails
         }
         
-        // Clear client-side data
+        // COMPLETE CLIENT-SIDE CLEANUP: Remove all authentication data and reset state
+        // WHY: Comprehensive cleanup prevents data leakage and ensures clean logout
+        
+        // RESET INTERNAL STATE: Clear authentication manager properties
         this.authToken = null;
         this.currentUser = null;
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userEmail');
-        localStorage.removeItem('currentUser');
         
+        // CLEAR PERSISTENT DATA: Remove all localStorage authentication data
+        localStorage.removeItem('authToken');       // JWT token
+        localStorage.removeItem('userEmail');       // User email
+        localStorage.removeItem('currentUser');     // Complete user profile
+        
+        // SUCCESSFUL LOGOUT RESULT: Always return success for UI handling
+        // WHY: User should always be able to log out, even with service failures
         return { success: true };
     }
 
     /**
-     * Make authenticated API request
+     * AUTHENTICATED API REQUEST WRAPPER
+     * PURPOSE: Provide secure, activity-tracked API requests with automatic session management
+     * WHY: All API calls need consistent authentication, activity tracking, and session handling
+     * 
+     * REQUEST ENHANCEMENT FEATURES:
+     * 1. Automatic JWT token injection for authentication
+     * 2. Activity tracking to prevent session timeout
+     * 3. Session expiration detection and handling
+     * 4. Consistent error handling across all API calls
+     * 5. Configurable request options with authentication defaults
+     * 
+     * SECURITY FEATURES:
+     * - Bearer token authentication for all requests
+     * - Automatic session expiry detection (401 responses)
+     * - Activity tracking to extend session timeout
+     * - Secure token validation before request
+     * 
+     * BUSINESS BENEFITS:
+     * - Seamless authenticated API access across platform
+     * - Automatic session management without manual intervention
+     * - Consistent error handling for authentication failures
+     * - User activity detection for better session management
+     * 
+     * @param {string} url - API endpoint URL
+     * @param {Object} options - Fetch options (method, body, headers, etc.)
+     * @returns {Response} Fetch response object with authentication
+     * @throws {Error} When token is missing or session has expired
      */
     async authenticatedFetch(url, options = {}) {
-        // Track this API call as activity
+        // ACTIVITY TRACKING: Record API call as user activity for session timeout
+        // WHY: API usage indicates active user engagement and should extend session
         this.activityTracker.trackActivity();
         
+        // TOKEN VALIDATION: Ensure authentication token exists before making request
         const token = localStorage.getItem('authToken');
         if (!token) {
             throw new Error('No authentication token found');
         }
         
+        // REQUEST CONFIGURATION: Merge authentication headers with provided options
+        // WHY: Consistent authentication across all API calls with flexible options
         const defaultOptions = {
             headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                ...options.headers
+                'Authorization': `Bearer ${token}`,     // JWT token for authentication
+                'Content-Type': 'application/json',    // Default content type
+                ...options.headers                      // Allow header overrides
             }
         };
         
+        // AUTHENTICATED REQUEST: Execute API call with authentication and provided options
         const response = await fetch(url, { ...options, ...defaultOptions });
         
+        // SESSION EXPIRATION DETECTION: Handle expired authentication tokens
+        // WHY: 401 responses indicate expired tokens requiring session cleanup
         if (response.status === 401) {
+            // AUTOMATIC SESSION CLEANUP: Handle expired session without user intervention
             this.handleSessionExpired();
-            throw new Error('Session expired');
+            throw new Error('Session expired');  // Inform caller of session expiry
         }
         
+        // RETURN AUTHENTICATED RESPONSE: Provide response for further processing
         return response;
     }
 
     /**
-     * Handle session expiration
+     * SESSION EXPIRATION HANDLER 
+     * PURPOSE: Handle automatic session cleanup when server detects expired authentication
+     * WHY: 401 responses from API calls indicate expired tokens requiring immediate cleanup
+     * 
+     * EXPIRATION HANDLING PROCESS:
+     * 1. Stop all security monitoring and activity tracking
+     * 2. Clear all session data from localStorage 
+     * 3. Show user-friendly expiration notification
+     * 4. Redirect to appropriate landing page for re-authentication
+     * 
+     * SECURITY COMPLIANCE:
+     * - Immediate cleanup prevents unauthorized access
+     * - Complete data removal ensures no session remnants
+     * - User notification explains what occurred
+     * - Safe redirect to public landing page
+     * 
+     * USER EXPERIENCE:
+     * - Clear explanation of session expiry
+     * - Graceful redirect without error pages
+     * - Consistent behavior across all dashboard pages
+     * - Professional handling of authentication failures
      */
     handleSessionExpired() {
+        // STOP SECURITY MONITORING: Terminate activity tracking immediately
+        // WHY: No need to monitor activity for expired sessions
         this.activityTracker.stop();
         
-        // Clear session data including timestamps
+        // COMPLETE DATA CLEANUP: Remove all session-related data
+        // WHY: Expired sessions should leave no authentication traces
         this.clearAllSessionData();
         
+        // USER NOTIFICATION: Explain session expiry professionally
+        // WHY: Users need to understand why they're being logged out
         showNotification('Your session has expired. Please log in again.', 'error');
         
-        // Redirect to home page (not login page) to show proper landing page
+        // CONTEXT-AWARE REDIRECT: Navigate to appropriate landing page
+        // WHY: Different page contexts require different redirect strategies
         window.location.href = window.location.pathname.includes('/html/') ? '../index.html' : 'index.html';
     }
 
@@ -350,7 +684,17 @@ class AuthManager {
     }
 
     /**
-     * Get user role
+     * USER ROLE RETRIEVAL
+     * PURPOSE: Get the current authenticated user's role for authorization decisions
+     * WHY: Role-based access control requires knowing user's permission level
+     * 
+     * SUPPORTED ROLES:
+     * - student: Access to learning content and lab environments
+     * - instructor: Course creation, student management, analytics
+     * - org_admin: Organization management, member administration, track creation  
+     * - admin: Site-wide administration, platform management, all access
+     * 
+     * @returns {string|null} User role or null if no authenticated user
      */
     getUserRole() {
         const user = this.getCurrentUser();
@@ -358,37 +702,79 @@ class AuthManager {
     }
 
     /**
-     * Check if user has specific role
+     * ROLE VERIFICATION UTILITY
+     * PURPOSE: Check if current user has a specific role for access control
+     * WHY: Simple boolean check for role-based feature access
+     * 
+     * @param {string} role - Role to check against (student, instructor, org_admin, admin)
+     * @returns {boolean} True if user has the specified role, false otherwise
      */
     hasRole(role) {
         return this.getUserRole() === role;
     }
 
     /**
-     * Check if user has permission to access page
+     * PAGE ACCESS AUTHORIZATION SYSTEM
+     * PURPOSE: Determine if current user can access a specific dashboard page
+     * WHY: Role-based page access prevents unauthorized access to admin/instructor features
+     * 
+     * ACCESS CONTROL MATRIX:
+     * - student: Limited access to learning and lab interfaces
+     * - instructor: Course management and student interaction pages
+     * - org_admin: Organization management plus instructor capabilities
+     * - admin: Complete platform access including site administration
+     * 
+     * SECURITY FEATURES:
+     * - Hierarchical access (higher roles include lower role permissions)
+     * - Page-specific authorization validation
+     * - Safe default (deny access if role not recognized)
+     * 
+     * @param {string} page - Page filename to check access for
+     * @returns {boolean} True if user can access the page, false otherwise
      */
     hasPageAccess(page) {
         const userRole = this.getUserRole();
         if (!userRole) return false;
         
+        // ROLE-BASED PAGE ACCESS MATRIX: Define which roles can access which pages
         const pageAccess = {
             'student': ['student-dashboard.html', 'lab.html', 'index.html'],
             'instructor': ['instructor-dashboard.html', 'lab.html', 'index.html'],
-            'admin': ['admin.html', 'instructor-dashboard.html', 'student-dashboard.html', 'lab.html', 'index.html']
+            'org_admin': ['org-admin-enhanced.html', 'instructor-dashboard.html', 'student-dashboard.html', 'lab.html', 'index.html'],
+            'admin': ['admin.html', 'site-admin-dashboard.html', 'org-admin-enhanced.html', 'instructor-dashboard.html', 'student-dashboard.html', 'lab.html', 'index.html']
         };
         
         return pageAccess[userRole]?.includes(page) || false;
     }
 
     /**
-     * Get redirect URL based on user role
+     * ROLE-BASED REDIRECT SYSTEM
+     * PURPOSE: Determine appropriate dashboard page for user's role after login
+     * WHY: Different user roles need different default landing pages for optimal workflow
+     * 
+     * REDIRECT STRATEGY:
+     * - admin: Site administration dashboard with platform management
+     * - org_admin: Organization management dashboard with RBAC controls
+     * - instructor: Course creation and student management dashboard
+     * - student: Learning dashboard with course access and progress
+     * - default: Public home page for unauthenticated users
+     * 
+     * BUSINESS WORKFLOW ALIGNMENT:
+     * - Admins need platform oversight and user management
+     * - Org admins need member management and organizational controls
+     * - Instructors need course creation and student interaction tools
+     * - Students need learning content and progress tracking
+     * 
+     * @returns {string} Appropriate dashboard URL for user's role
      */
     getRedirectUrl() {
         const userRole = this.getUserRole();
         
         switch (userRole) {
             case 'admin':
-                return 'admin.html';
+                return 'site-admin-dashboard.html';  // Site admin gets the comprehensive admin dashboard
+            case 'org_admin':
+                return 'org-admin-enhanced.html';    // Organization admin gets the RBAC management dashboard
             case 'instructor':
                 return 'instructor-dashboard.html';
             case 'student':

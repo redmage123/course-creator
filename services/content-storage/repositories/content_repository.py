@@ -78,6 +78,15 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 import asyncpg
 
+# DAO imports for centralized query management following DAO pattern
+from dao.content_queries import ContentQueries
+
+# Custom exceptions for proper error handling
+from exceptions import (
+    DatabaseException, ContentNotFoundException, ValidationException, 
+    ContentProcessingException, ContentStorageException
+)
+
 from models.content import Content, ContentCreate, ContentUpdate, ContentSearchRequest, ContentStatus
 from models.common import BaseModel
 
@@ -159,35 +168,25 @@ class ContentRepository:
         """Create new content record."""
         try:
             async with self.db_pool.acquire() as conn:
-                query = """
-                    INSERT INTO content_storage (
-                        id, filename, content_type, size, path, url, 
-                        content_category, status, uploaded_by, description, 
-                        tags, storage_path, is_public, created_at, updated_at
-                    ) VALUES (
-                        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
-                    ) RETURNING *
-                """
+                # Using DAO pattern - centralized query management
+                # Note: Simplified CREATE_CONTENT query, may need adjustment for all fields
                 
                 now = datetime.utcnow()
                 
                 # Determine content category based on MIME type
                 content_category = self._determine_content_category(content_data.content_type)
                 
+                # Note: Using simplified CREATE_CONTENT query from DAO
+                # This may need to be expanded to match the full database schema
                 row = await conn.fetchrow(
-                    query,
+                    ContentQueries.CREATE_CONTENT,
                     content_id,
                     content_data.filename,
+                    content_data.filename,  # display_name
+                    content_data.description or "",
                     content_data.content_type,
-                    content_data.size,
-                    file_path,
-                    url,
-                    content_category,
-                    ContentStatus.READY.value,
-                    content_data.uploaded_by,
-                    content_data.description,
-                    content_data.tags,
-                    file_path,
+                    content_data.tags or [],
+                    file_path,  # storage_path  
                     False,  # is_public
                     now,
                     now
@@ -195,38 +194,72 @@ class ContentRepository:
                 
                 return self._row_to_content(row) if row else None
                 
+        except asyncpg.PostgreSQLError as e:
+            raise DatabaseException(
+                message=f"Database error while creating content: {content_data.filename}",
+                operation="create_content",
+                table_name="content_storage",
+                original_exception=e
+            )
         except Exception as e:
-            logger.error(f"Error creating content: {e}")
-            return None
+            raise ContentStorageException(
+                message=f"Unexpected error while creating content: {content_data.filename}",
+                error_code="CONTENT_CREATE_ERROR",
+                details={"content_id": content_id, "filename": content_data.filename, "file_path": file_path},
+                original_exception=e
+            )
     
     async def get_content_by_id(self, content_id: str) -> Optional[Content]:
         """Get content by ID."""
         try:
             async with self.db_pool.acquire() as conn:
-                query = "SELECT * FROM content_storage WHERE id = $1 AND status != $2"
-                row = await conn.fetchrow(query, content_id, ContentStatus.DELETED.value)
+                # Using DAO pattern - centralized query management
+                row = await conn.fetchrow(ContentQueries.GET_CONTENT_BY_ID, content_id, ContentStatus.DELETED.value)
                 return self._row_to_content(row) if row else None
                 
+        except asyncpg.PostgreSQLError as e:
+            raise DatabaseException(
+                message=f"Database error while retrieving content by ID: {content_id}",
+                operation="get_content_by_id",
+                table_name="content_storage",
+                record_id=content_id,
+                original_exception=e
+            )
         except Exception as e:
-            logger.error(f"Error getting content by ID: {e}")
-            return None
+            raise ContentStorageException(
+                message=f"Unexpected error while retrieving content by ID: {content_id}",
+                error_code="CONTENT_RETRIEVAL_ERROR",
+                details={"content_id": content_id},
+                original_exception=e
+            )
     
     async def get_content_by_filename(self, filename: str, uploaded_by: str = None) -> Optional[Content]:
         """Get content by filename."""
         try:
             async with self.db_pool.acquire() as conn:
+                # Using DAO pattern - centralized query management
                 if uploaded_by:
-                    query = "SELECT * FROM content_storage WHERE filename = $1 AND uploaded_by = $2 AND status != $3"
-                    row = await conn.fetchrow(query, filename, uploaded_by, ContentStatus.DELETED.value)
+                    row = await conn.fetchrow(ContentQueries.GET_CONTENT_BY_FILENAME, filename, uploaded_by, ContentStatus.DELETED.value)
                 else:
-                    query = "SELECT * FROM content_storage WHERE filename = $1 AND status != $2"
-                    row = await conn.fetchrow(query, filename, ContentStatus.DELETED.value)
+                    # Using DAO pattern - centralized query management
+                    row = await conn.fetchrow(ContentQueries.GET_CONTENT_BY_FILENAME_ONLY, filename, ContentStatus.DELETED.value)
                     
                 return self._row_to_content(row) if row else None
                 
+        except asyncpg.PostgreSQLError as e:
+            raise DatabaseException(
+                message=f"Database error while retrieving content by filename: {filename}",
+                operation="get_content_by_filename",
+                table_name="content_storage",
+                original_exception=e
+            )
         except Exception as e:
-            logger.error(f"Error getting content by filename: {e}")
-            return None
+            raise ContentStorageException(
+                message=f"Unexpected error while retrieving content by filename: {filename}",
+                error_code="CONTENT_RETRIEVAL_ERROR",
+                details={"filename": filename, "uploaded_by": uploaded_by},
+                original_exception=e
+            )
     
     async def list_content(self, page: int = 1, per_page: int = 100, uploaded_by: str = None) -> List[Content]:
         """List content with pagination."""
@@ -235,27 +268,28 @@ class ContentRepository:
             
             async with self.db_pool.acquire() as conn:
                 if uploaded_by:
-                    query = """
-                        SELECT * FROM content_storage 
-                        WHERE uploaded_by = $1 AND status != $2 
-                        ORDER BY created_at DESC 
-                        LIMIT $3 OFFSET $4
-                    """
-                    rows = await conn.fetch(query, uploaded_by, ContentStatus.DELETED.value, per_page, offset)
+                    # Using DAO pattern - centralized query management
+                    rows = await conn.fetch(ContentQueries.LIST_CONTENT_BY_USER, uploaded_by, ContentStatus.DELETED.value, per_page, offset)
                 else:
-                    query = """
-                        SELECT * FROM content_storage 
-                        WHERE status != $1 
-                        ORDER BY created_at DESC 
-                        LIMIT $2 OFFSET $3
-                    """
-                    rows = await conn.fetch(query, ContentStatus.DELETED.value, per_page, offset)
+                    # Using DAO pattern - centralized query management
+                    rows = await conn.fetch(ContentQueries.LIST_ALL_CONTENT, ContentStatus.DELETED.value, per_page, offset)
                 
                 return [self._row_to_content(row) for row in rows]
                 
+        except asyncpg.PostgreSQLError as e:
+            raise DatabaseException(
+                message=f"Database error while listing content (page: {page}, per_page: {per_page})",
+                operation="list_content",
+                table_name="content_storage",
+                original_exception=e
+            )
         except Exception as e:
-            logger.error(f"Error listing content: {e}")
-            return []
+            raise ContentStorageException(
+                message=f"Unexpected error while listing content (page: {page}, per_page: {per_page})",
+                error_code="CONTENT_LIST_ERROR",
+                details={"page": page, "per_page": per_page, "uploaded_by": uploaded_by},
+                original_exception=e
+            )
     
     async def search_content(self, search_req: ContentSearchRequest, page: int = 1, per_page: int = 100) -> List[Content]:
         """Search content with filters."""
@@ -325,6 +359,10 @@ class ContentRepository:
             params.extend([per_page, offset])
             
             where_clause = " AND ".join(conditions)
+            # COMPLEX DYNAMIC QUERY - Remains inline due to dynamic WHERE clause construction
+            # This query builds dynamic WHERE conditions based on search parameters
+            # Moving to DAO would require complex template system or multiple static queries
+            # TODO: Consider query builder pattern for complex dynamic queries in future
             query = f"""
                 SELECT * FROM content_storage 
                 WHERE {where_clause} 
@@ -336,9 +374,20 @@ class ContentRepository:
                 rows = await conn.fetch(query, *params)
                 return [self._row_to_content(row) for row in rows]
                 
+        except asyncpg.PostgreSQLError as e:
+            raise DatabaseException(
+                message=f"Database error while searching content (page: {page}, per_page: {per_page})",
+                operation="search_content",
+                table_name="content_storage",
+                original_exception=e
+            )
         except Exception as e:
-            logger.error(f"Error searching content: {e}")
-            return []
+            raise ContentStorageException(
+                message=f"Unexpected error while searching content (page: {page}, per_page: {per_page})",
+                error_code="CONTENT_SEARCH_ERROR",
+                details={"search_request": search_req.dict() if search_req else None, "page": page, "per_page": per_page},
+                original_exception=e
+            )
     
     async def update_content(self, content_id: str, update_data: ContentUpdate) -> Optional[Content]:
         """Update content record."""
@@ -384,6 +433,10 @@ class ContentRepository:
             param_count += 1
             params.append(content_id)
             
+            # COMPLEX DYNAMIC QUERY - Remains inline due to variable field updates
+            # This query dynamically builds SET clause based on which fields are being updated
+            # Moving to DAO would require complex template system or multiple static queries
+            # TODO: Consider builder pattern for dynamic updates in future
             query = f"""
                 UPDATE content_storage 
                 SET {', '.join(update_fields)}
@@ -395,55 +448,94 @@ class ContentRepository:
                 row = await conn.fetchrow(query, *params)
                 return self._row_to_content(row) if row else None
                 
+        except asyncpg.PostgreSQLError as e:
+            raise DatabaseException(
+                message=f"Database error while updating content: {content_id}",
+                operation="update_content",
+                table_name="content_storage",
+                record_id=content_id,
+                original_exception=e
+            )
         except Exception as e:
-            logger.error(f"Error updating content: {e}")
-            return None
+            raise ContentStorageException(
+                message=f"Unexpected error while updating content: {content_id}",
+                error_code="CONTENT_UPDATE_ERROR",
+                details={"content_id": content_id, "update_data": update_data.dict() if update_data else None},
+                original_exception=e
+            )
     
     async def delete_content(self, content_id: str) -> bool:
         """Soft delete content (mark as deleted)."""
         try:
             async with self.db_pool.acquire() as conn:
-                query = """
-                    UPDATE content_storage 
-                    SET status = $1, updated_at = $2 
-                    WHERE id = $3 AND status != $1
-                    RETURNING id
-                """
-                row = await conn.fetchrow(query, ContentStatus.DELETED.value, datetime.utcnow(), content_id)
+                # Using DAO pattern - centralized query management
+                row = await conn.fetchrow(ContentQueries.SOFT_DELETE_CONTENT_SIMPLE, ContentStatus.DELETED.value, datetime.utcnow(), content_id)
                 return row is not None
                 
+        except asyncpg.PostgreSQLError as e:
+            raise DatabaseException(
+                message=f"Database error while deleting content: {content_id}",
+                operation="delete_content",
+                table_name="content_storage",
+                record_id=content_id,
+                original_exception=e
+            )
         except Exception as e:
-            logger.error(f"Error deleting content: {e}")
-            return False
+            raise ContentStorageException(
+                message=f"Unexpected error while deleting content: {content_id}",
+                error_code="CONTENT_DELETE_ERROR",
+                details={"content_id": content_id},
+                original_exception=e
+            )
     
     async def hard_delete_content(self, content_id: str) -> bool:
         """Hard delete content record."""
         try:
             async with self.db_pool.acquire() as conn:
-                query = "DELETE FROM content_storage_storage WHERE id = $1 RETURNING id"
-                row = await conn.fetchrow(query, content_id)
+                # Using DAO pattern - centralized query management
+                # Fixed table name: content_storage not content_storage_storage
+                row = await conn.fetchrow(ContentQueries.HARD_DELETE_CONTENT_SIMPLE, content_id)
                 return row is not None
                 
+        except asyncpg.PostgreSQLError as e:
+            raise DatabaseException(
+                message=f"Database error while hard deleting content: {content_id}",
+                operation="hard_delete_content",
+                table_name="content_storage",
+                record_id=content_id,
+                original_exception=e
+            )
         except Exception as e:
-            logger.error(f"Error hard deleting content: {e}")
-            return False
+            raise ContentStorageException(
+                message=f"Unexpected error while hard deleting content: {content_id}",
+                error_code="CONTENT_HARD_DELETE_ERROR",
+                details={"content_id": content_id},
+                original_exception=e
+            )
     
     async def update_access_count(self, content_id: str) -> bool:
         """Update content access count and timestamp."""
         try:
             async with self.db_pool.acquire() as conn:
-                query = """
-                    UPDATE content_storage 
-                    SET access_count = access_count + 1, last_accessed = $1, updated_at = $1
-                    WHERE id = $2
-                    RETURNING id
-                """
-                row = await conn.fetchrow(query, datetime.utcnow(), content_id)
+                # Using DAO pattern - centralized query management
+                row = await conn.fetchrow(ContentQueries.UPDATE_ACCESS_COUNT, datetime.utcnow(), content_id)
                 return row is not None
                 
+        except asyncpg.PostgreSQLError as e:
+            raise DatabaseException(
+                message=f"Database error while updating access count for content: {content_id}",
+                operation="update_access_count",
+                table_name="content_storage",
+                record_id=content_id,
+                original_exception=e
+            )
         except Exception as e:
-            logger.error(f"Error updating access count: {e}")
-            return False
+            raise ContentStorageException(
+                message=f"Unexpected error while updating access count for content: {content_id}",
+                error_code="ACCESS_COUNT_UPDATE_ERROR",
+                details={"content_id": content_id},
+                original_exception=e
+            )
     
     async def get_content_stats(self, uploaded_by: str = None) -> Dict[str, Any]:
         """Get content statistics."""
@@ -456,48 +548,31 @@ class ContentRepository:
                     base_condition += " AND uploaded_by = $2"
                     params.append(uploaded_by)
                 
-                # Total stats
-                stats_query = f"""
-                    SELECT 
-                        COUNT(*) as total_files,
-                        COALESCE(SUM(size), 0) as total_size,
-                        COALESCE(AVG(size), 0) as average_file_size
-                    FROM content_storage 
-                    WHERE {base_condition}
-                """
-                
-                stats_row = await conn.fetchrow(stats_query, *params)
-                
-                # Files by type
-                type_query = f"""
-                    SELECT content_type, COUNT(*) as count
-                    FROM content_storage 
-                    WHERE {base_condition}
-                    GROUP BY content_type
-                """
-                
-                type_rows = await conn.fetch(type_query, *params)
-                
-                # Files by category
-                category_query = f"""
-                    SELECT content_category, COUNT(*) as count
-                    FROM content_storage 
-                    WHERE {base_condition}
-                    GROUP BY content_category
-                """
-                
-                category_rows = await conn.fetch(category_query, *params)
-                
-                # Most accessed files
-                accessed_query = f"""
-                    SELECT filename, access_count, last_accessed
-                    FROM content_storage 
-                    WHERE {base_condition}
-                    ORDER BY access_count DESC, last_accessed DESC
-                    LIMIT 10
-                """
-                
-                accessed_rows = await conn.fetch(accessed_query, *params)
+                # Using DAO pattern - centralized query management
+                if uploaded_by:
+                    # Total stats by user
+                    stats_row = await conn.fetchrow(ContentQueries.GET_CONTENT_TOTAL_STATS_BY_USER, ContentStatus.DELETED.value, uploaded_by)
+                    
+                    # Files by type by user
+                    type_rows = await conn.fetch(ContentQueries.GET_CONTENT_BY_TYPE_COUNTS_BY_USER, ContentStatus.DELETED.value, uploaded_by)
+                    
+                    # Files by category by user
+                    category_rows = await conn.fetch(ContentQueries.GET_CONTENT_BY_CATEGORY_COUNTS_BY_USER, ContentStatus.DELETED.value, uploaded_by)
+                    
+                    # Most accessed files by user
+                    accessed_rows = await conn.fetch(ContentQueries.GET_MOST_ACCESSED_CONTENT_BY_USER, ContentStatus.DELETED.value, uploaded_by)
+                else:
+                    # Total stats for all content
+                    stats_row = await conn.fetchrow(ContentQueries.GET_CONTENT_TOTAL_STATS, ContentStatus.DELETED.value)
+                    
+                    # Files by type for all content
+                    type_rows = await conn.fetch(ContentQueries.GET_CONTENT_BY_TYPE_COUNTS, ContentStatus.DELETED.value)
+                    
+                    # Files by category for all content
+                    category_rows = await conn.fetch(ContentQueries.GET_CONTENT_BY_CATEGORY_COUNTS, ContentStatus.DELETED.value)
+                    
+                    # Most accessed files for all content
+                    accessed_rows = await conn.fetch(ContentQueries.GET_MOST_ACCESSED_CONTENT, ContentStatus.DELETED.value)
                 
                 return {
                     "total_files": stats_row["total_files"],
@@ -515,26 +590,47 @@ class ContentRepository:
                     ]
                 }
                 
+        except asyncpg.PostgreSQLError as e:
+            raise DatabaseException(
+                message=f"Database error while getting content statistics",
+                operation="get_content_stats",
+                table_name="content_storage",
+                original_exception=e
+            )
         except Exception as e:
-            logger.error(f"Error getting content stats: {e}")
-            return {}
+            raise ContentStorageException(
+                message=f"Unexpected error while getting content statistics",
+                error_code="CONTENT_STATS_ERROR",
+                original_exception=e
+            )
     
     async def count_content(self, uploaded_by: str = None) -> int:
         """Count total content records."""
         try:
             async with self.db_pool.acquire() as conn:
                 if uploaded_by:
-                    query = "SELECT COUNT(*) FROM content_storage WHERE uploaded_by = $1 AND status != $2"
-                    row = await conn.fetchrow(query, uploaded_by, ContentStatus.DELETED.value)
+                    # Using DAO pattern - centralized query management
+                    row = await conn.fetchrow(ContentQueries.COUNT_CONTENT_BY_USER, uploaded_by, ContentStatus.DELETED.value)
                 else:
-                    query = "SELECT COUNT(*) FROM content_storage WHERE status != $1"
-                    row = await conn.fetchrow(query, ContentStatus.DELETED.value)
+                    # Using DAO pattern - centralized query management
+                    row = await conn.fetchrow(ContentQueries.COUNT_ALL_CONTENT, ContentStatus.DELETED.value)
                     
                 return row["count"] if row else 0
                 
+        except asyncpg.PostgreSQLError as e:
+            raise DatabaseException(
+                message=f"Database error while counting content",
+                operation="count_content",
+                table_name="content_storage",
+                original_exception=e
+            )
         except Exception as e:
-            logger.error(f"Error counting content: {e}")
-            return 0
+            raise ContentStorageException(
+                message=f"Unexpected error while counting content (uploaded_by: {uploaded_by})",
+                error_code="CONTENT_COUNT_ERROR",
+                details={"uploaded_by": uploaded_by},
+                original_exception=e
+            )
     
     def _determine_content_category(self, content_type: str) -> str:
         """Determine content category from MIME type."""

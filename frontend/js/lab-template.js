@@ -1,15 +1,11 @@
 // Lab environment JavaScript functions (global scope)
 
-// Fallback CONFIG if not loaded yet
+// Import CONFIG or use fallback
+import { CONFIG } from './config.js';
+
+// Ensure CONFIG is available globally for legacy compatibility
 if (typeof window.CONFIG === 'undefined') {
-    window.CONFIG = {
-        ENDPOINTS: {
-            EXERCISES: (courseId) => `http://176.9.99.103:8001/exercises/${courseId}`,
-            SYLLABUS: (courseId) => `http://176.9.99.103:8001/syllabus/${courseId}`,
-            GENERATE_EXERCISES: () => `http://176.9.99.103:8001/generate-exercises`,
-            REFRESH_LAB_EXERCISES: `http://176.9.99.103:8001/lab/refresh-exercises`
-        }
-    };
+    window.CONFIG = CONFIG;
 }
 
 let exercises = [];

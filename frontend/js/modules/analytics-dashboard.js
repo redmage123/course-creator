@@ -3,9 +3,11 @@
  * Provides comprehensive student analytics visualization and reporting
  */
 
+import { CONFIG } from '../config.js';
+
 class AnalyticsDashboard {
     constructor() {
-        this.analyticsAPI = 'http://localhost:8007';
+        this.analyticsAPI = CONFIG.API_URLS.ANALYTICS;
         this.currentCourse = null;
         this.charts = {};
         this.initialized = false;

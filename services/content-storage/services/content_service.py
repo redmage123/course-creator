@@ -78,6 +78,12 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 import aiofiles
 
+# Custom exceptions for proper error handling
+from exceptions import (
+    FileOperationException, StorageException, ValidationException,
+    ContentNotFoundException, ContentProcessingException, ContentStorageException
+)
+
 from models.content import (
     Content, ContentCreate, ContentUpdate, ContentSearchRequest, 
     ContentUploadResponse, ContentListResponse, ContentResponse,
@@ -344,14 +350,28 @@ class ContentService:
                 )
                 return None
                 
-        except Exception as e:
-            logger.error(f"Error uploading content: {e}")
-            await self._log_operation(
-                operation_id, "upload", filename, "error",
-                size=len(file_content),
-                error_message=str(e)
+        except FileNotFoundError as e:
+            raise FileOperationException(
+                message=f"File operation failed during upload: {filename}",
+                file_path=filename,
+                operation="upload",
+                file_size=len(file_content),
+                original_exception=e
             )
-            return None
+        except PermissionError as e:
+            raise StorageException(
+                message=f"Storage permission error during upload: {filename}",
+                storage_type="local",
+                operation="upload",
+                original_exception=e
+            )
+        except Exception as e:
+            raise ContentStorageException(
+                message=f"Unexpected error during content upload: {filename}",
+                error_code="CONTENT_UPLOAD_ERROR",
+                details={"filename": filename, "file_size": len(file_content), "operation_id": operation_id},
+                original_exception=e
+            )
     
     async def get_content(self, content_id: str) -> Optional[ContentResponse]:
         """
@@ -409,8 +429,12 @@ class ContentService:
             return None
             
         except Exception as e:
-            logger.error(f"Error getting content: {e}")
-            return None
+            raise ContentStorageException(
+                message=f"Unexpected error while retrieving content: {content_id}",
+                error_code="CONTENT_GET_ERROR",
+                details={"content_id": content_id},
+                original_exception=e
+            )
     
     async def get_content_file(self, content_id: str) -> Optional[Dict[str, Any]]:
         """
@@ -501,9 +525,26 @@ class ContentService:
                 "size": content.size
             }
             
+        except FileNotFoundError as e:
+            raise ContentNotFoundException(
+                message=f"Content file not found: {content_id}",
+                content_id=content_id,
+                original_exception=e
+            )
+        except PermissionError as e:
+            raise FileOperationException(
+                message=f"Permission denied accessing content file: {content_id}",
+                file_path=content.path if 'content' in locals() else content_id,
+                operation="read",
+                original_exception=e
+            )
         except Exception as e:
-            logger.error(f"Error getting content file: {e}")
-            return None
+            raise ContentStorageException(
+                message=f"Unexpected error while retrieving content file: {content_id}",
+                error_code="CONTENT_FILE_GET_ERROR",
+                details={"content_id": content_id},
+                original_exception=e
+            )
     
     async def list_content(self, page: int = 1, per_page: int = 100, uploaded_by: str = None) -> ContentListResponse:
         """
@@ -574,14 +615,11 @@ class ContentService:
             )
             
         except Exception as e:
-            logger.error(f"Error listing content: {e}")
-            return ContentListResponse(
-                success=False,
-                content=[],
-                total=0,
-                page=page,
-                per_page=per_page,
-                message=str(e)
+            raise ContentStorageException(
+                message=f"Unexpected error while listing content (page: {page}, per_page: {per_page})",
+                error_code="CONTENT_LIST_ERROR",
+                details={"page": page, "per_page": per_page, "uploaded_by": uploaded_by},
+                original_exception=e
             )
     
     async def search_content(self, search_request: ContentSearchRequest, page: int = 1, per_page: int = 100) -> ContentListResponse:
@@ -663,14 +701,11 @@ class ContentService:
             )
             
         except Exception as e:
-            logger.error(f"Error searching content: {e}")
-            return ContentListResponse(
-                success=False,
-                content=[],
-                total=0,
-                page=page,
-                per_page=per_page,
-                message=str(e)
+            raise ContentStorageException(
+                message=f"Unexpected error while searching content (page: {page}, per_page: {per_page})",
+                error_code="CONTENT_SEARCH_ERROR",
+                details={"search_request": search_request.dict() if search_request else None, "page": page, "per_page": per_page},
+                original_exception=e
             )
     
     async def update_content(self, content_id: str, update_data: ContentUpdate) -> Optional[ContentResponse]:
@@ -728,8 +763,12 @@ class ContentService:
             return None
             
         except Exception as e:
-            logger.error(f"Error updating content: {e}")
-            return None
+            raise ContentStorageException(
+                message=f"Unexpected error while updating content: {content_id}",
+                error_code="CONTENT_UPDATE_ERROR",
+                details={"content_id": content_id, "update_data": update_data.dict() if update_data else None},
+                original_exception=e
+            )
     
     async def delete_content(self, content_id: str) -> bool:
         """
@@ -811,12 +850,12 @@ class ContentService:
             return False
             
         except Exception as e:
-            logger.error(f"Error deleting content: {e}")
-            await self._log_operation(
-                operation_id, "delete", content_id, "error",
-                error_message=str(e)
+            raise ContentStorageException(
+                message=f"Unexpected error while deleting content: {content_id}",
+                error_code="CONTENT_DELETE_ERROR",
+                details={"content_id": content_id, "operation_id": operation_id},
+                original_exception=e
             )
-            return False
     
     async def permanently_delete_content(self, content_id: str) -> bool:
         """
@@ -904,13 +943,26 @@ class ContentService:
             
             return False
             
-        except Exception as e:
-            logger.error(f"Error permanently deleting content: {e}")
-            await self._log_operation(
-                operation_id, "permanent_delete", content_id, "error",
-                error_message=str(e)
+        except FileNotFoundError as e:
+            raise ContentNotFoundException(
+                message=f"Content file not found for permanent deletion: {content_id}",
+                content_id=content_id,
+                original_exception=e
             )
-            return False
+        except PermissionError as e:
+            raise FileOperationException(
+                message=f"Permission denied during permanent deletion: {content_id}",
+                file_path=content.path if 'content' in locals() else content_id,
+                operation="permanent_delete",
+                original_exception=e
+            )
+        except Exception as e:
+            raise ContentStorageException(
+                message=f"Unexpected error during permanent content deletion: {content_id}",
+                error_code="CONTENT_PERMANENT_DELETE_ERROR",
+                details={"content_id": content_id, "operation_id": operation_id},
+                original_exception=e
+            )
     
     async def get_content_stats(self, uploaded_by: str = None) -> ContentStats:
         """
@@ -988,17 +1040,11 @@ class ContentService:
             )
             
         except Exception as e:
-            logger.error(f"Error getting content stats: {e}")
-            return ContentStats(
-                total_files=0,
-                total_size=0,
-                files_by_type={},
-                files_by_category={},
-                average_file_size=0.0,
-                storage_used=0,
-                storage_available=0,
-                most_accessed_files=[],
-                upload_trends={}
+            raise ContentStorageException(
+                message=f"Unexpected error while getting content statistics",
+                error_code="CONTENT_STATS_ERROR",
+                details={"uploaded_by": uploaded_by},
+                original_exception=e
             )
     
     async def get_user_quota(self, user_id: str) -> Optional[StorageQuota]:
@@ -1114,13 +1160,26 @@ class ContentService:
             
             return True
             
-        except Exception as e:
-            logger.error(f"Error creating backup: {e}")
-            await self._log_operation(
-                operation_id, "backup", content_id, "error",
-                error_message=str(e)
+        except FileNotFoundError as e:
+            raise ContentNotFoundException(
+                message=f"Content file not found for backup: {content_id}",
+                content_id=content_id,
+                original_exception=e
             )
-            return False
+        except PermissionError as e:
+            raise FileOperationException(
+                message=f"Permission denied during backup creation: {content_id}",
+                file_path=backup_path,
+                operation="backup",
+                original_exception=e
+            )
+        except Exception as e:
+            raise ContentStorageException(
+                message=f"Unexpected error during backup creation: {content_id}",
+                error_code="CONTENT_BACKUP_ERROR",
+                details={"content_id": content_id, "backup_path": backup_path, "operation_id": operation_id},
+                original_exception=e
+            )
     
     def _validate_file(self, filename: str, file_size: int) -> Dict[str, Any]:
         """
@@ -1274,8 +1333,9 @@ class ContentService:
             return {"allowed": True}
             
         except Exception as e:
-            logger.error(f"Error checking user quota: {e}")
-            return {"allowed": True}  # Allow upload if quota check fails
+            logger.warning(f"Quota check failed for user {user_id}, allowing upload: {e}")
+            # Return permissive result if quota system is unavailable
+            return {"allowed": True, "error": f"Quota system unavailable: {str(e)}"}
     
     async def _log_operation(self, operation_id: str, operation_type: str, file_path: str, 
                            status: str, size: int = None, duration: float = None, 
@@ -1362,7 +1422,8 @@ class ContentService:
             await self.storage_repo.log_storage_operation(operation)
             
         except Exception as e:
-            logger.error(f"Error logging storage operation: {e}")
+            logger.error(f"Failed to log storage operation {operation_id}: {e}")
             # Note: Logging failures should not affect primary operations
             # Consider implementing retry mechanisms or alternative logging
             # paths for critical audit requirements
+            # Do not raise exception here as logging is non-critical

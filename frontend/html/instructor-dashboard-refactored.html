@@ -75,20 +75,26 @@
         </div>
     </div>
 
-    <!-- Configuration -->
-    <script>
-        // Global configuration
-        window.CONFIG = {
-            BASE_URL: 'http://localhost:8001',
-            ENDPOINTS: {
-                USER_SERVICE: 'http://localhost:8000',
-                COURSE_SERVICE: 'http://localhost:8004',
-                CONTENT_SERVICE: 'http://localhost:8003',
-                CONTENT_MANAGEMENT: 'http://localhost:8005',
-                ANALYTICS_SERVICE: 'http://localhost:8007',
-                LAB_MANAGER: 'http://localhost:8006'
-            }
+    <!-- Configuration Import -->
+    <script type="module">
+        // Import centralized configuration system
+        import { CONFIG } from '../js/config.js';
+        
+        // Make CONFIG available globally for backward compatibility with existing code
+        window.CONFIG = CONFIG;
+        
+        // Also create the legacy ENDPOINTS structure for compatibility
+        window.CONFIG.ENDPOINTS = {
+            USER_SERVICE: CONFIG.API_URLS.USER_MANAGEMENT,
+            COURSE_SERVICE: CONFIG.API_URLS.COURSE_MANAGEMENT,
+            CONTENT_SERVICE: CONFIG.API_URLS.CONTENT_STORAGE,
+            CONTENT_MANAGEMENT: CONFIG.API_URLS.CONTENT_MANAGEMENT,
+            ANALYTICS_SERVICE: CONFIG.API_URLS.ANALYTICS,
+            LAB_MANAGER: CONFIG.API_URLS.LAB_MANAGER
         };
+        
+        // Set BASE_URL for backward compatibility
+        window.CONFIG.BASE_URL = CONFIG.API_URLS.COURSE_GENERATOR;
     </script>
 
     <!-- Core JavaScript Modules -->

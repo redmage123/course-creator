@@ -10,6 +10,13 @@ from fastapi import APIRouter, HTTPException, Query, Depends, status
 
 from models.storage import StorageStats, StorageHealth, StorageQuota, StorageOperation
 from services.storage_service import StorageService
+from exceptions import (
+    ContentStorageException,
+    StorageException,
+    DatabaseException,
+    ValidationException,
+    ContentNotFoundException
+)
 
 logger = logging.getLogger(__name__)
 
@@ -32,11 +39,22 @@ async def get_storage_stats(
         result = await storage_service.get_storage_stats()
         return result
         
-    except Exception as e:
-        logger.error(f"Error getting storage stats: {e}")
+    except StorageException as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Storage service error: {e.message}"
+        )
+    except DatabaseException as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Database error: {e.message}"
+        )
+    except Exception as e:
+        raise ContentStorageException(
+            message=f"Failed to retrieve storage statistics via API: Unexpected error in storage stats endpoint",
+            error_code="API_STORAGE_STATS_ERROR",
+            details={"endpoint": "/stats"},
+            original_exception=e
         )
 
 
@@ -49,11 +67,22 @@ async def get_storage_health(
         result = await storage_service.get_storage_health()
         return result
         
-    except Exception as e:
-        logger.error(f"Error getting storage health: {e}")
+    except StorageException as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Storage service error: {e.message}"
+        )
+    except DatabaseException as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Database error: {e.message}"
+        )
+    except Exception as e:
+        raise ContentStorageException(
+            message=f"Failed to retrieve storage health via API: Unexpected error in storage health endpoint",
+            error_code="API_STORAGE_HEALTH_ERROR",
+            details={"endpoint": "/health"},
+            original_exception=e
         )
 
 
@@ -76,11 +105,22 @@ async def get_user_quota(
             
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Error getting user quota: {e}")
+    except StorageException as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Storage service error: {e.message}"
+        )
+    except DatabaseException as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Database error: {e.message}"
+        )
+    except Exception as e:
+        raise ContentStorageException(
+            message=f"Failed to retrieve user quota via API for user_id '{user_id}': Unexpected error in quota endpoint",
+            error_code="API_USER_QUOTA_ERROR",
+            details={"endpoint": f"/quota/{user_id}", "user_id": user_id},
+            original_exception=e
         )
 
 
@@ -105,11 +145,22 @@ async def set_user_quota(
             
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Error setting user quota: {e}")
+    except StorageException as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Storage service error: {e.message}"
+        )
+    except ValidationException as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Validation error: {e.message}"
+        )
+    except Exception as e:
+        raise ContentStorageException(
+            message=f"Failed to set user quota via API for user_id '{user_id}': Unexpected error in quota update endpoint",
+            error_code="API_SET_QUOTA_ERROR",
+            details={"endpoint": f"/quota/{user_id}", "user_id": user_id, "quota_limit": quota_limit},
+            original_exception=e
         )
 
 
@@ -123,11 +174,22 @@ async def get_recent_operations(
         result = await storage_service.get_recent_operations(limit)
         return result
         
-    except Exception as e:
-        logger.error(f"Error getting recent operations: {e}")
+    except StorageException as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Storage service error: {e.message}"
+        )
+    except DatabaseException as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Database error: {e.message}"
+        )
+    except Exception as e:
+        raise ContentStorageException(
+            message=f"Failed to retrieve recent operations via API (limit: {limit}): Unexpected error in operations endpoint",
+            error_code="API_RECENT_OPERATIONS_ERROR",
+            details={"endpoint": "/operations", "limit": limit},
+            original_exception=e
         )
 
 
@@ -140,11 +202,22 @@ async def perform_maintenance(
         result = await storage_service.perform_maintenance()
         return result
         
-    except Exception as e:
-        logger.error(f"Error performing maintenance: {e}")
+    except StorageException as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Storage service error: {e.message}"
+        )
+    except DatabaseException as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Database error: {e.message}"
+        )
+    except Exception as e:
+        raise ContentStorageException(
+            message=f"Failed to perform storage maintenance via API: Unexpected error in maintenance endpoint",
+            error_code="API_MAINTENANCE_ERROR",
+            details={"endpoint": "/maintenance"},
+            original_exception=e
         )
 
 
@@ -157,11 +230,22 @@ async def optimize_storage(
         result = await storage_service.optimize_storage()
         return result
         
-    except Exception as e:
-        logger.error(f"Error optimizing storage: {e}")
+    except StorageException as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Storage service error: {e.message}"
+        )
+    except DatabaseException as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Database error: {e.message}"
+        )
+    except Exception as e:
+        raise ContentStorageException(
+            message=f"Failed to optimize storage via API: Unexpected error in storage optimization endpoint",
+            error_code="API_STORAGE_OPTIMIZATION_ERROR",
+            details={"endpoint": "/optimize"},
+            original_exception=e
         )
 
 
@@ -183,11 +267,22 @@ async def create_backup(
         
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Error creating backup: {e}")
+    except StorageException as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Storage service error: {e.message}"
+        )
+    except ValidationException as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Validation error: {e.message}"
+        )
+    except Exception as e:
+        raise ContentStorageException(
+            message=f"Failed to create backup via API (type: '{backup_type}'): Unexpected error in backup creation endpoint",
+            error_code="API_CREATE_BACKUP_ERROR",
+            details={"endpoint": "/backup", "backup_type": backup_type},
+            original_exception=e
         )
 
 
@@ -201,11 +296,22 @@ async def restore_backup(
         result = await storage_service.restore_backup(backup_path)
         return result
         
-    except Exception as e:
-        logger.error(f"Error restoring backup: {e}")
+    except StorageException as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Storage service error: {e.message}"
+        )
+    except ValidationException as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Validation error: {e.message}"
+        )
+    except Exception as e:
+        raise ContentStorageException(
+            message=f"Failed to restore backup via API from path '{backup_path}': Unexpected error in backup restore endpoint",
+            error_code="API_RESTORE_BACKUP_ERROR",
+            details={"endpoint": "/restore", "backup_path": backup_path},
+            original_exception=e
         )
 
 
@@ -222,9 +328,20 @@ async def cleanup_old_operations(
             "cleaned_count": cleaned_count
         }
         
-    except Exception as e:
-        logger.error(f"Error cleaning up operations: {e}")
+    except StorageException as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Storage service error: {e.message}"
+        )
+    except DatabaseException as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Database error: {e.message}"
+        )
+    except Exception as e:
+        raise ContentStorageException(
+            message=f"Failed to cleanup operations via API (retention: {retention_days} days): Unexpected error in cleanup endpoint",
+            error_code="API_CLEANUP_OPERATIONS_ERROR",
+            details={"endpoint": "/cleanup", "retention_days": retention_days},
+            original_exception=e
         )
