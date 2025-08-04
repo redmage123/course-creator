@@ -46,10 +46,10 @@ import httpx
 import ast
 from pydantic import BaseModel
 
-from logging_setup import setup_logging
+from logging_setup import setup_docker_logging
 
 # Setup logging
-logger = setup_logging(__name__)
+logger = setup_docker_logging(__name__)
 
 class AssistanceType(Enum):
     """

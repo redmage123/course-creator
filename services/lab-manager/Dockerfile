@@ -15,7 +15,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 COPY . .
 
 # Use existing appuser from base image and fix ownership
-RUN chown -R appuser:appuser /app
+# Find the group with GID 999 and add appuser to it for Docker socket access
+RUN DOCKER_GID=999 && \
+    DOCKER_GROUP=$(getent group $DOCKER_GID | cut -d: -f1) && \
+    if [ -z "$DOCKER_GROUP" ]; then \
+        groupadd -g $DOCKER_GID docker; \
+        DOCKER_GROUP=docker; \
+    fi && \
+    usermod -aG $DOCKER_GROUP appuser && \
+    chown -R appuser:appuser /app
 USER appuser
 
 # The virtual environment directory will be mounted from host

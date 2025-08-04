@@ -100,7 +100,7 @@ class RedisCacheManager:
         - File processing: 2-4 hours (expensive, infrequent changes)
     """
     
-    def __init__(self, redis_url: str = "redis://localhost:6379", max_retries: int = 3):
+    def __init__(self, redis_url: str = "redis://redis:6379", max_retries: int = 3):
         """
         Initialize Redis Cache Manager with connection configuration.
         
@@ -620,7 +620,7 @@ async def get_cache_manager() -> Optional[RedisCacheManager]:
     return _global_cache_manager if _global_cache_manager._connection_healthy else None
 
 
-async def initialize_cache_manager(redis_url: str = "redis://localhost:6379") -> RedisCacheManager:
+async def initialize_cache_manager(redis_url: str = "redis://redis:6379") -> RedisCacheManager:
     """
     Initialize the global cache manager with specific Redis configuration.
     

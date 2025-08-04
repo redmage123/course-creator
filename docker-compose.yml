@@ -252,6 +252,8 @@ services:
       - "8005:8005"
     volumes:
       - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
+      - ./shared:/app/shared:ro
+      - ./config:/app/config:ro
       - content_uploads:/app/uploads
       - content_exports:/app/exports
       - template_storage:/app/storage
@@ -293,6 +295,7 @@ services:
       - "8009:8009"
     volumes:
       - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
+      - ./shared:/app/shared:ro
       - rag_chromadb_data:/app/chromadb_data
       - rag_huggingface_cache:/app/.cache/huggingface
       - /var/log/course-creator:/var/log/course-creator

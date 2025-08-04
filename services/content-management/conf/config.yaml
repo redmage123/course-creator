@@ -1,6 +1,5 @@
 # Content Management Service Configuration
 defaults:
-  - /database/postgres
   - _self_
 
 name: "Content Management Service"
@@ -14,6 +13,16 @@ server:
   port: 8005
   workers: 1
   timeout: 300
+
+# Database configuration
+database:
+  url: postgresql://${oc.env:DB_USER,postgres}:${oc.env:DB_PASSWORD,postgres_password}@${oc.env:DB_HOST,postgres}:${oc.env:DB_PORT,5432}/${oc.env:DB_NAME,course_creator}
+
+# Redis configuration
+redis:
+  host: ${oc.env:REDIS_HOST,localhost}
+  port: ${oc.env:REDIS_PORT,6379}
+  db: ${oc.env:REDIS_DB,0}
 
 # Logging
 logging:

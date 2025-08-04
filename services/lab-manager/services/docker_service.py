@@ -31,17 +31,16 @@ class DockerService:
     def _initialize_client(self):
         """Initialize Docker client with proper error handling."""
         try:
-            # Check if Docker daemon is accessible
-            subprocess.run(['docker', 'info'], 
-                         capture_output=True, check=True, timeout=10)
-            
             # Use default Docker client (should automatically detect socket)
             docker_timeout = self.docker_config.get('timeout', 60)
             
             # Try to create Docker client using default settings
             self._client = docker.from_env(timeout=docker_timeout)
-            self.logger.info("Docker client initialized successfully using default environment")
-        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            
+            # Test the connection by getting Docker info via Python SDK
+            self._client.info()
+            self.logger.info("Docker client initialized successfully using socket connection")
+        except Exception as e:
             self.logger.error(f"Cannot connect to Docker daemon: {e}")
             raise RuntimeError(f'Cannot connect to Docker daemon: {e}') from e
     
