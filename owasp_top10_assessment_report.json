@@ -1,0 +1,203 @@
+{
+  "timestamp": "2025-08-05T05:13:21.691597",
+  "assessment_version": "OWASP Top 10 2021",
+  "platform": "Course Creator Platform v2.8.0",
+  "total_tests": 17,
+  "passed_tests": 11,
+  "failed_tests": 6,
+  "critical_issues": 0,
+  "high_issues": 2,
+  "medium_issues": 4,
+  "low_issues": 0,
+  "owasp_categories": {
+    "A01": {
+      "total_tests": 4,
+      "passed_tests": 3,
+      "failed_tests": 1,
+      "risk_level": "HIGH"
+    },
+    "A02": {
+      "total_tests": 4,
+      "passed_tests": 3,
+      "failed_tests": 1,
+      "risk_level": "MEDIUM"
+    },
+    "A03": {
+      "total_tests": 3,
+      "passed_tests": 3,
+      "failed_tests": 0,
+      "risk_level": "LOW"
+    },
+    "A04": {
+      "total_tests": 3,
+      "passed_tests": 0,
+      "failed_tests": 3,
+      "risk_level": "HIGH"
+    },
+    "A05": {
+      "total_tests": 3,
+      "passed_tests": 2,
+      "failed_tests": 1,
+      "risk_level": "MEDIUM"
+    }
+  },
+  "detailed_findings": [
+    {
+      "category": "A01",
+      "test_name": "Vertical Privilege Escalation Prevention",
+      "severity": "HIGH",
+      "passed": false,
+      "details": "Student access to admin endpoints: ALLOWED",
+      "remediation": "Implement role-based access control checks on all admin endpoints",
+      "timestamp": "2025-08-05T05:13:21.692274"
+    },
+    {
+      "category": "A01",
+      "test_name": "Horizontal Privilege Escalation Prevention",
+      "severity": "CRITICAL",
+      "passed": true,
+      "details": "Cross-organization access: BLOCKED",
+      "remediation": "Implement organization-based access control middleware on all endpoints",
+      "timestamp": "2025-08-05T05:13:21.692568"
+    },
+    {
+      "category": "A01",
+      "test_name": "IDOR Protection",
+      "severity": "HIGH",
+      "passed": true,
+      "details": "Direct object reference protection: ENABLED",
+      "remediation": "Implement authorization checks before returning object data",
+      "timestamp": "2025-08-05T05:13:21.692931"
+    },
+    {
+      "category": "A01",
+      "test_name": "Function Level Access Control",
+      "severity": "HIGH",
+      "passed": true,
+      "details": "Sensitive functions protection: ENABLED",
+      "remediation": "Add authentication and authorization requirements to all sensitive functions",
+      "timestamp": "2025-08-05T05:13:21.712532"
+    },
+    {
+      "category": "A02",
+      "test_name": "JWT Algorithm Security",
+      "severity": "HIGH",
+      "passed": true,
+      "details": "JWT algorithm: HS256, Secure: True",
+      "remediation": "Use secure JWT algorithms (HS256+ or RS256+) and never allow 'none'",
+      "timestamp": "2025-08-05T05:13:21.713042"
+    },
+    {
+      "category": "A02",
+      "test_name": "Password Hashing Security",
+      "severity": "CRITICAL",
+      "passed": true,
+      "details": "Secure password hashing: bcrypt",
+      "remediation": "Implement bcrypt, scrypt, or Argon2 for password hashing",
+      "timestamp": "2025-08-05T05:13:21.713204"
+    },
+    {
+      "category": "A02",
+      "test_name": "TLS/HTTPS Configuration",
+      "severity": "MEDIUM",
+      "passed": true,
+      "details": "HTTPS endpoints: 0, HTTP endpoints: 8",
+      "remediation": "Configure HTTPS with valid certificates for production deployment",
+      "timestamp": "2025-08-05T05:13:21.776718"
+    },
+    {
+      "category": "A02",
+      "test_name": "Log Data Exposure Test",
+      "severity": "MEDIUM",
+      "passed": false,
+      "details": "Log analysis failed: 'str' object has no attribute 'exists'",
+      "remediation": "Review logging practices for sensitive data exposure",
+      "timestamp": "2025-08-05T05:13:21.776826"
+    },
+    {
+      "category": "A03",
+      "test_name": "SQL Injection Prevention",
+      "severity": "CRITICAL",
+      "passed": true,
+      "details": "SQL injection protection: ENABLED",
+      "remediation": "Use parameterized queries and input validation to prevent SQL injection",
+      "timestamp": "2025-08-05T05:13:21.779181"
+    },
+    {
+      "category": "A03",
+      "test_name": "Command Injection Prevention",
+      "severity": "HIGH",
+      "passed": true,
+      "details": "Command injection protection: ENABLED",
+      "remediation": "Sanitize all user inputs and avoid system command execution",
+      "timestamp": "2025-08-05T05:13:21.779544"
+    },
+    {
+      "category": "A03",
+      "test_name": "XSS Prevention in API",
+      "severity": "HIGH",
+      "passed": true,
+      "details": "XSS prevention: ENABLED",
+      "remediation": "Implement output encoding and input validation to prevent XSS",
+      "timestamp": "2025-08-05T05:13:21.779897"
+    },
+    {
+      "category": "A04",
+      "test_name": "Rate Limiting Implementation",
+      "severity": "MEDIUM",
+      "passed": false,
+      "details": "Rate limiting: NOT IMPLEMENTED",
+      "remediation": "Implement rate limiting to prevent abuse and DoS attacks",
+      "timestamp": "2025-08-05T05:13:21.780329"
+    },
+    {
+      "category": "A04",
+      "test_name": "Business Logic Security",
+      "severity": "HIGH",
+      "passed": false,
+      "details": "Business logic controls: VULNERABLE",
+      "remediation": "Review business logic flows for unauthorized access patterns",
+      "timestamp": "2025-08-05T05:13:21.780403"
+    },
+    {
+      "category": "A04",
+      "test_name": "Security Headers Implementation",
+      "severity": "MEDIUM",
+      "passed": false,
+      "details": "Security headers: MISSING",
+      "remediation": "Implement security headers (CSP, HSTS, X-Frame-Options, etc.)",
+      "timestamp": "2025-08-05T05:13:21.786332"
+    },
+    {
+      "category": "A05",
+      "test_name": "Debug Mode Configuration",
+      "severity": "MEDIUM",
+      "passed": false,
+      "details": "Debug features: ENABLED",
+      "remediation": "Disable debug features and API documentation in production",
+      "timestamp": "2025-08-05T05:13:21.788770"
+    },
+    {
+      "category": "A05",
+      "test_name": "Default Credentials Security",
+      "severity": "HIGH",
+      "passed": true,
+      "details": "Default credentials: SECURE",
+      "remediation": "Change all default credentials and enforce strong password policies",
+      "timestamp": "2025-08-05T05:13:21.817040"
+    },
+    {
+      "category": "A05",
+      "test_name": "Error Message Security",
+      "severity": "MEDIUM",
+      "passed": true,
+      "details": "Error information disclosure: SECURE",
+      "remediation": "Implement generic error messages to prevent information disclosure",
+      "timestamp": "2025-08-05T05:13:21.832319"
+    }
+  ],
+  "remediation_summary": [],
+  "overall_risk_score": 79.4,
+  "security_posture": "ACCEPTABLE",
+  "completion_time": "2025-08-05T05:13:21.832750"
+}

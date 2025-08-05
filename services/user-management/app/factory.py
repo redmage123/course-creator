@@ -54,6 +54,12 @@ except ImportError:
     OrganizationAuthorizationMiddleware = None
     get_organization_context = None
 
+# Add shared middleware path for rate limiting
+import sys
+from pathlib import Path
+shared_path = Path(__file__).parent.parent.parent.parent / 'shared'
+sys.path.append(str(shared_path))
+
 """
 Path setup for importing modules from parent directory.
 
@@ -291,6 +297,20 @@ class ApplicationFactory:
                 OrganizationAuthorizationMiddleware,
                 config=config
             )
+        
+        # Rate limiting middleware (second for security)
+        try:
+            from middleware.rate_limiting import setup_rate_limiting
+            setup_rate_limiting(app, config)
+        except ImportError:
+            logging.warning("Rate limiting middleware not available")
+        
+        # Security headers middleware (third for security)
+        try:
+            from middleware.security_headers import setup_security_headers
+            setup_security_headers(app, config)
+        except ImportError:
+            logging.warning("Security headers middleware not available")
         
         setup_cors_middleware(app, config)
         setup_logging_middleware(app, config)

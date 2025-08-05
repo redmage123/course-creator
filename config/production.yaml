@@ -1,0 +1,156 @@
+# Production Configuration - Course Creator Platform
+# Security-hardened configuration for production deployment
+
+# Environment settings
+environment: production
+debug: false
+
+# Service configuration
+service:
+  debug: false
+  docs_enabled: false
+  redoc_enabled: false
+  reload: false
+  
+# Security configuration
+security:
+  headers:
+    enabled: true
+    strict_csp: true
+    hsts_enabled: true
+  rate_limiting:
+    enabled: true
+    strict_limits: true
+  debug_endpoints:
+    enabled: false
+
+# Server configuration
+server:
+  host: "0.0.0.0"
+  port: ${oc.env:PORT,8000}
+  workers: ${oc.env:WORKERS,4}
+  log_level: "info"
+  access_log: false
+  
+# Database configuration
+database:
+  host: ${oc.env:DB_HOST,localhost}
+  port: ${oc.env:DB_PORT,5432}
+  name: ${oc.env:DB_NAME,course_creator}
+  user: ${oc.env:DB_USER,course_creator}
+  password: ${oc.env:DB_PASSWORD}
+  ssl_mode: require
+  pool_size: 20
+  max_overflow: 30
+  
+# Redis configuration
+redis:
+  host: ${oc.env:REDIS_HOST,localhost}
+  port: ${oc.env:REDIS_PORT,6379}
+  db: ${oc.env:REDIS_DB,0}
+  password: ${oc.env:REDIS_PASSWORD}
+  ssl: ${oc.env:REDIS_SSL,false}
+  
+# Logging configuration
+logging:
+  level: "INFO"
+  format: "structured"
+  enable_access_log: false
+  sanitize_logs: true
+  
+# JWT configuration
+jwt:
+  secret_key: ${oc.env:JWT_SECRET_KEY}
+  algorithm: "HS256"
+  expire_minutes: 480  # 8 hours
+  issuer: "course-creator-platform"
+  
+# CORS configuration (restrictive for production)
+cors:
+  allow_origins: ${oc.env:ALLOWED_ORIGINS,["https://your-domain.com"]}
+  allow_credentials: true
+  allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+  allow_headers: ["*"]
+  expose_headers: ["X-RateLimit-Limit", "X-RateLimit-Remaining"]
+  
+# Rate limiting configuration (production limits)
+rate_limiting:
+  enabled: true
+  redis_backend: true
+  limits:
+    auth_login:
+      requests: 5
+      window: 60
+      burst: 8
+    auth_register:
+      requests: 3
+      window: 300
+      burst: 5
+    api_read:
+      requests: 100
+      window: 60
+      burst: 150
+    api_write:
+      requests: 30
+      window: 60
+      burst: 50
+    admin_users:
+      requests: 10
+      window: 60
+      burst: 15
+      
+# AI service configuration
+ai:
+  anthropic:
+    api_key: ${oc.env:ANTHROPIC_API_KEY}
+    model: "claude-3-sonnet-20240229"
+    max_tokens: 4000
+    timeout: 30
+  openai:
+    api_key: ${oc.env:OPENAI_API_KEY}
+    model: "gpt-4"
+    max_tokens: 4000
+    timeout: 30
+    
+# File upload configuration
+uploads:
+  max_file_size: 10485760  # 10MB
+  allowed_extensions: [".pdf", ".docx", ".pptx", ".txt", ".json", ".csv"]
+  storage_path: ${oc.env:UPLOAD_PATH,"/app/uploads"}
+  virus_scanning: true
+  
+# Session configuration
+session:
+  secure: true
+  httponly: true
+  samesite: "strict"
+  max_age: 28800  # 8 hours
+  
+# Email configuration
+email:
+  smtp_host: ${oc.env:SMTP_HOST}
+  smtp_port: ${oc.env:SMTP_PORT,587}
+  smtp_user: ${oc.env:SMTP_USER}
+  smtp_password: ${oc.env:SMTP_PASSWORD}
+  use_tls: true
+  from_address: ${oc.env:FROM_EMAIL,"noreply@course-creator.com"}
+  
+# Monitoring configuration
+monitoring:
+  metrics_enabled: true
+  health_check_enabled: true
+  prometheus_endpoint: "/metrics"
+  sentry_dsn: ${oc.env:SENTRY_DSN}
+  
+# Content Security Policy
+csp:
+  default_src: ["'self'"]
+  script_src: ["'self'"]
+  style_src: ["'self'", "'unsafe-inline'"]
+  img_src: ["'self'", "data:", "blob:"]
+  font_src: ["'self'", "data:"]
+  connect_src: ["'self'"]
+  object_src: ["'none'"]
+  frame_ancestors: ["'none'"]
+  base_uri: ["'self'"]
+  form_action: ["'self'"]
