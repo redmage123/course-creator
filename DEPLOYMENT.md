@@ -1,10 +1,20 @@
 # Course Creator Platform - Deployment Guide
 
-## 🚀 Complete Ubuntu Deployment System
+## 🚀 Universal Linux Deployment System
 
-### **Version**: 2.8.0 (OWASP Security Enhanced - 96%+ Security Score)
+### **Version**: 3.0.0 (Universal Linux Support - 96%+ Security Score)
 
-This deployment system provides **enterprise-grade, production-ready deployment** of the Course Creator Platform on Ubuntu systems with comprehensive security, monitoring, and automated setup.
+This deployment system provides **enterprise-grade, production-ready deployment** of the Course Creator Platform on **ANY** Linux distribution with comprehensive security, monitoring, and automated setup.
+
+## 📱 Supported Linux Distributions
+
+- **Ubuntu / Debian** (apt package manager)
+- **CentOS / RHEL / Rocky Linux / AlmaLinux** (yum/dnf)
+- **Fedora** (dnf)
+- **openSUSE / SUSE Enterprise** (zypper)
+- **Arch Linux / Manjaro** (pacman)
+- **Alpine Linux** (apk)
+- **Any modern Linux distribution** with automatic detection
 
 ---
 
@@ -26,15 +36,15 @@ This deployment system provides **enterprise-grade, production-ready deployment*
 ### Automated Deployment (Recommended)
 
 ```bash
-# 1. Download the deployment script
-wget https://raw.githubusercontent.com/yourusername/course-creator/main/deploy-ubuntu.sh
-chmod +x deploy-ubuntu.sh
+# 1. Download the universal deployment script
+wget https://raw.githubusercontent.com/yourusername/course-creator/main/deploy-linux.sh
+chmod +x deploy-linux.sh
 
 # 2. Development deployment (default)
-sudo ./deploy-ubuntu.sh
+sudo ./deploy-linux.sh
 
 # 3. Production deployment with SSL
-sudo ./deploy-ubuntu.sh --production --domain yourdomain.com --ssl-email admin@yourdomain.com
+sudo ./deploy-linux.sh --production --domain yourdomain.com --ssl-email admin@yourdomain.com
 ```
 
 ### Manual Deployment
@@ -45,6 +55,10 @@ git clone https://github.com/yourusername/course-creator.git
 cd course-creator
 
 # 2. Run deployment script
+# Use deploy-linux.sh for universal Linux support
+sudo ./deploy-linux.sh [OPTIONS]
+
+# Or use deploy-ubuntu.sh for Ubuntu-specific optimizations
 sudo ./deploy-ubuntu.sh [OPTIONS]
 ```
 
@@ -54,7 +68,11 @@ sudo ./deploy-ubuntu.sh [OPTIONS]
 
 ### System Requirements
 
-- **Operating System**: Ubuntu 20.04 LTS or later
+- **Operating System**: Any modern Linux distribution (2018 or later)
+  - Ubuntu 18.04+ / Debian 10+
+  - CentOS 7+ / RHEL 7+ / Rocky Linux 8+
+  - Fedora 30+ / openSUSE Leap 15+
+  - Arch Linux / Alpine Linux 3.12+
 - **Memory**: Minimum 4GB RAM (8GB+ recommended for production)
 - **Storage**: Minimum 20GB available disk space
 - **Network**: Internet connection for package downloads
@@ -74,6 +92,10 @@ sudo ./deploy-ubuntu.sh [OPTIONS]
 ### Development Deployment
 
 ```bash
+# Universal Linux deployment (auto-detects distribution)
+sudo ./deploy-linux.sh
+
+# Or Ubuntu-specific deployment
 sudo ./deploy-ubuntu.sh
 ```
 
@@ -89,6 +111,10 @@ sudo ./deploy-ubuntu.sh
 ### Production Deployment
 
 ```bash
+# Universal Linux deployment (auto-detects distribution)
+sudo ./deploy-linux.sh --production --domain yourdomain.com --ssl-email admin@yourdomain.com
+
+# Or Ubuntu-specific deployment
 sudo ./deploy-ubuntu.sh --production --domain yourdomain.com --ssl-email admin@yourdomain.com
 ```
 
@@ -113,6 +139,14 @@ sudo ./deploy-ubuntu.sh --production --domain yourdomain.com --ssl-email admin@y
 ---
 
 ## 🛡️ Security Features
+
+### Universal Linux Distribution Support
+
+- **Automatic Detection**: Intelligently detects your Linux distribution and adapts accordingly
+- **Package Manager Support**: Works with apt, yum, dnf, zypper, pacman, and apk
+- **Init System Compatibility**: Supports systemd, OpenRC, and SysV init systems
+- **Firewall Integration**: Configures ufw, firewalld, or iptables based on distribution
+- **Service Management**: Creates appropriate service files for your init system
 
 ### OWASP Top 10 2021 Compliance (96%+ Score)
 
@@ -482,5 +516,25 @@ Your Course Creator Platform is now deployed with enterprise-grade security and 
 
 ---
 
-*Deployment Guide v2.8.0 - OWASP Security Enhanced*  
+*Deployment Guide v3.0.0 - Universal Linux Support*  
 *Course Creator Platform Team*
+
+---
+
+## 🔄 Migration from Ubuntu-Only Deployment
+
+If you're currently using the Ubuntu-specific deployment script:
+
+```bash
+# Your existing Ubuntu deployment continues to work
+sudo ./deploy-ubuntu.sh [options]
+
+# Or migrate to universal deployment (recommended)
+sudo ./deploy-linux.sh [options]
+```
+
+The universal deployment script provides:
+- **Broader compatibility** across Linux distributions
+- **Automatic detection** and adaptation
+- **Enhanced portability** for multi-environment deployments
+- **Future-proof** support for new distributions
