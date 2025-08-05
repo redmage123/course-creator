@@ -42,6 +42,16 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 import logging
 from typing import Optional
+import sys
+import os
+
+# Add shared directory to path for organization middleware
+sys.path.append('/app/shared')
+try:
+    from auth.organization_middleware import OrganizationAuthorizationMiddleware
+except ImportError:
+    # Fallback if middleware not available
+    OrganizationAuthorizationMiddleware = None
 
 """
 Path setup for importing modules from parent directory.
@@ -274,6 +284,13 @@ class ApplicationFactory:
         - Different endpoints may require different auth levels
         - Route-level dependencies provide more flexibility
         """
+        # Organization security middleware (must be first for security)
+        if OrganizationAuthorizationMiddleware:
+            app.add_middleware(
+                OrganizationAuthorizationMiddleware,
+                config=config
+            )
+        
         setup_cors_middleware(app, config)
         setup_logging_middleware(app, config)
         setup_exception_handlers(app)

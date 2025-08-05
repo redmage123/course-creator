@@ -5,6 +5,13 @@
 
 set -e
 
+# Run as the appuser so that we can log to /var/log/course-creator
+# without permission errors. 
+
+#if [ "$USER" != "appuser" ]; then
+#    exec sudo -u appuser "$0" "$@"
+#fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
@@ -402,6 +409,11 @@ docker_status() {
         
         # Check health of all services from parsed configuration
         for service in "${!SERVICE_CONTAINERS[@]}"; do
+            # Skip base-image service (it's not meant to run)
+            if [ "$service" = "base-image" ]; then
+                continue
+            fi
+            
             container_name="${SERVICE_CONTAINERS[$service]}"
             display_name="${SERVICE_NAMES[$service]:-$service}"
             

@@ -105,8 +105,8 @@ class ContentManagementContainer:
         # Initialize Redis cache manager for content search and filtering performance optimization
         logger.info("Initializing Redis cache manager for content management performance optimization...")
         try:
-            # Get Redis URL from config or use default
-            redis_url = getattr(self._config, 'redis', {}).get('url', 'redis://localhost:6379')
+            # Get Redis URL from config or use default (Docker service name)
+            redis_url = getattr(self._config, 'redis', {}).get('url', 'redis://redis:6379')
             
             # Initialize global cache manager for content management memoization
             cache_manager = await initialize_cache_manager(redis_url)
@@ -125,13 +125,9 @@ class ContentManagementContainer:
         
         logger.info("Initializing PostgreSQL connection pool for content management service...")
         
-        # Handle both dict and DictConfig configurations
-        if hasattr(self._config, 'database'):
-            db_config = self._config.database
-            database_url = f"postgresql://{db_config.user}:{db_config.password}@{db_config.host}:{db_config.port}/{db_config.name}"
-        elif isinstance(self._config, dict) and 'database' in self._config:
-            db_config = self._config['database']
-            database_url = f"postgresql://{db_config['user']}:{db_config['password']}@{db_config['host']}:{db_config['port']}/{db_config['name']}"
+        # Use database URL from configuration (consistent with analytics service pattern)
+        if hasattr(self._config, 'database') and hasattr(self._config.database, 'url'):
+            database_url = self._config.database.url
         else:
             # Fallback to environment variables
             database_url = os.environ.get('DATABASE_URL', 

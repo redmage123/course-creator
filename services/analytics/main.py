@@ -84,6 +84,15 @@ except ImportError:
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 
+# Add shared directory to path for organization middleware
+sys.path.append('/app/shared')
+try:
+    from auth.organization_middleware import OrganizationAuthorizationMiddleware, get_organization_context
+except ImportError:
+    # Fallback if middleware not available
+    OrganizationAuthorizationMiddleware = None
+    get_organization_context = None
+
 # Pydantic models for API (Data Transfer Objects)
 from pydantic import BaseModel, Field
 
@@ -518,6 +527,13 @@ def create_app(config: DictConfig) -> FastAPI:
         version="2.0.0",
         lifespan=lifespan
     )
+    
+    # Organization security middleware (must be first for security)
+    if OrganizationAuthorizationMiddleware:
+        app.add_middleware(
+            OrganizationAuthorizationMiddleware,
+            config=config
+        )
     
     # CORS middleware
     app.add_middleware(

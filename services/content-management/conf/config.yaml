@@ -20,7 +20,8 @@ database:
 
 # Redis configuration
 redis:
-  host: ${oc.env:REDIS_HOST,localhost}
+  url: redis://${oc.env:REDIS_HOST,redis}:${oc.env:REDIS_PORT,6379}/${oc.env:REDIS_DB,0}
+  host: ${oc.env:REDIS_HOST,redis}
   port: ${oc.env:REDIS_PORT,6379}
   db: ${oc.env:REDIS_DB,0}
 

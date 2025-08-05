@@ -1,0 +1,201 @@
+{
+  "timestamp": "2025-08-05T01:50:13.158315",
+  "tests_passed": 16,
+  "tests_failed": 3,
+  "tests_total": 19,
+  "security_score": 77.2,
+  "validation_details": [
+    {
+      "test_name": "Middleware Organization ID Extraction",
+      "passed": true,
+      "details": "Successfully extracted organization ID: 7f31f77b-6647-4bdc-b0bd-29a56ea7965d",
+      "duration": 0.0003292560577392578,
+      "timestamp": "2025-08-05T01:50:13.158803"
+    },
+    {
+      "test_name": "Cache Organization Isolation",
+      "passed": true,
+      "details": "Organization B cannot access Organization A's cached data",
+      "duration": 0.0045239925384521484,
+      "timestamp": "2025-08-05T01:50:13.192337"
+    },
+    {
+      "test_name": "Cache Key Enumeration Prevention",
+      "passed": true,
+      "details": "Org A: 1 keys, Org B: 0 keys",
+      "duration": 0.0005033016204833984,
+      "timestamp": "2025-08-05T01:50:13.192858"
+    },
+    {
+      "test_name": "Database Security - Organization ID columns",
+      "passed": true,
+      "details": "Found ADD COLUMN IF NOT EXISTS organization_id UUID in migration",
+      "duration": 0.0,
+      "timestamp": "2025-08-05T01:50:13.193076"
+    },
+    {
+      "test_name": "Database Security - Foreign key constraints",
+      "passed": true,
+      "details": "Found REFERENCES organizations(id) in migration",
+      "duration": 0.0,
+      "timestamp": "2025-08-05T01:50:13.193084"
+    },
+    {
+      "test_name": "Database Security - Row-level security",
+      "passed": true,
+      "details": "Found ENABLE ROW LEVEL SECURITY in migration",
+      "duration": 0.0,
+      "timestamp": "2025-08-05T01:50:13.193092"
+    },
+    {
+      "test_name": "Database Security - Security policies",
+      "passed": true,
+      "details": "Found CREATE POLICY in migration",
+      "duration": 0.0,
+      "timestamp": "2025-08-05T01:50:13.193101"
+    },
+    {
+      "test_name": "Database Security - Security functions",
+      "passed": true,
+      "details": "Found set_organization_context in migration",
+      "duration": 0.0,
+      "timestamp": "2025-08-05T01:50:13.193112"
+    },
+    {
+      "test_name": "Database Security - Audit logging",
+      "passed": true,
+      "details": "Found security_audit_log in migration",
+      "duration": 0.0,
+      "timestamp": "2025-08-05T01:50:13.193123"
+    },
+    {
+      "test_name": "Database Security Migration",
+      "passed": true,
+      "details": "Migration file validation completed",
+      "duration": 0.0002086162567138672,
+      "timestamp": "2025-08-05T01:50:13.193135"
+    },
+    {
+      "test_name": "API Legitimate Access",
+      "passed": true,
+      "details": "Status code: 200",
+      "duration": 0.00019121170043945312,
+      "timestamp": "2025-08-05T01:50:13.193639"
+    },
+    {
+      "test_name": "API Cross-Organization Access Prevention",
+      "passed": false,
+      "details": "Status code: 200",
+      "duration": 8.869171142578125e-05,
+      "timestamp": "2025-08-05T01:50:13.193746"
+    },
+    {
+      "test_name": "Service Integration - course-management",
+      "passed": true,
+      "details": "Middleware: True, Context: True",
+      "duration": 0.0,
+      "timestamp": "2025-08-05T01:50:13.194013"
+    },
+    {
+      "test_name": "Service Integration - user-management",
+      "passed": false,
+      "details": "Middleware: True, Context: False",
+      "duration": 0.0,
+      "timestamp": "2025-08-05T01:50:13.194096"
+    },
+    {
+      "test_name": "Service Integration - content-management",
+      "passed": true,
+      "details": "Middleware: True, Context: True",
+      "duration": 0.0,
+      "timestamp": "2025-08-05T01:50:13.194252"
+    },
+    {
+      "test_name": "Service Integration - analytics",
+      "passed": true,
+      "details": "Middleware: True, Context: True",
+      "duration": 0.0,
+      "timestamp": "2025-08-05T01:50:13.194416"
+    },
+    {
+      "test_name": "Overall Service Integration",
+      "passed": false,
+      "details": "Integrated services: 3/4",
+      "duration": 0.0,
+      "timestamp": "2025-08-05T01:50:13.194426"
+    },
+    {
+      "test_name": "Cache Set Performance",
+      "passed": true,
+      "details": "Average: 0.21ms (threshold: 10.0ms)",
+      "duration": 0.02111506462097168,
+      "timestamp": "2025-08-05T01:50:13.233313"
+    },
+    {
+      "test_name": "Cache Get Performance",
+      "passed": true,
+      "details": "Average: 0.17ms (threshold: 5.0ms)",
+      "duration": 0.017331600189208984,
+      "timestamp": "2025-08-05T01:50:13.233344"
+    }
+  ],
+  "performance_metrics": {
+    "Middleware Organization ID Extraction": {
+      "count": 1,
+      "average_time": 0.0003292560577392578,
+      "min_time": 0.0003292560577392578,
+      "max_time": 0.0003292560577392578,
+      "total_time": 0.0003292560577392578
+    },
+    "Cache Organization Isolation": {
+      "count": 1,
+      "average_time": 0.0045239925384521484,
+      "min_time": 0.0045239925384521484,
+      "max_time": 0.0045239925384521484,
+      "total_time": 0.0045239925384521484
+    },
+    "Cache Key Enumeration Prevention": {
+      "count": 1,
+      "average_time": 0.0005033016204833984,
+      "min_time": 0.0005033016204833984,
+      "max_time": 0.0005033016204833984,
+      "total_time": 0.0005033016204833984
+    },
+    "Database Security Migration": {
+      "count": 1,
+      "average_time": 0.0002086162567138672,
+      "min_time": 0.0002086162567138672,
+      "max_time": 0.0002086162567138672,
+      "total_time": 0.0002086162567138672
+    },
+    "API Legitimate Access": {
+      "count": 1,
+      "average_time": 0.00019121170043945312,
+      "min_time": 0.00019121170043945312,
+      "max_time": 0.00019121170043945312,
+      "total_time": 0.00019121170043945312
+    },
+    "API Cross-Organization Access Prevention": {
+      "count": 1,
+      "average_time": 8.869171142578125e-05,
+      "min_time": 8.869171142578125e-05,
+      "max_time": 8.869171142578125e-05,
+      "total_time": 8.869171142578125e-05
+    },
+    "Cache Set Performance": {
+      "count": 1,
+      "average_time": 0.02111506462097168,
+      "min_time": 0.02111506462097168,
+      "max_time": 0.02111506462097168,
+      "total_time": 0.02111506462097168
+    },
+    "Cache Get Performance": {
+      "count": 1,
+      "average_time": 0.017331600189208984,
+      "min_time": 0.017331600189208984,
+      "max_time": 0.017331600189208984,
+      "total_time": 0.017331600189208984
+    }
+  },
+  "security_status": "ACCEPTABLE"
+}

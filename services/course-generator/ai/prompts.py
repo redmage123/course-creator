@@ -400,7 +400,6 @@ class PromptTemplates:
         
         Generate a high-quality, educationally sound syllabus that would be valuable for students.
         """
-        )
     
     def build_syllabus_refinement_prompt(self, 
                                        existing_syllabus: Dict[str, Any], 

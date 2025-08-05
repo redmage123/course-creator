@@ -359,7 +359,7 @@ class SecurityValidationSuite:
             # Check that services are properly configured
             services_to_check = [
                 'services/course-management/main.py',
-                'services/user-management/main.py',
+                'services/user-management/app/factory.py',  # User management uses factory pattern
                 'services/content-management/main.py',
                 'services/analytics/main.py'
             ]

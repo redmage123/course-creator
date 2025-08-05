@@ -107,7 +107,7 @@ class AnalyticsContainer:
         logger.info("Initializing Redis cache manager for analytics performance optimization...")
         try:
             # Get Redis URL from config or use default
-            redis_url = getattr(self._config, 'redis', {}).get('url', 'redis://localhost:6379')
+            redis_url = getattr(self._config, 'redis', {}).get('url', 'redis://redis:6379')
             
             # Initialize global cache manager for analytics memoization
             cache_manager = await initialize_cache_manager(redis_url)
