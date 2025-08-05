@@ -78,11 +78,13 @@ sudo ./deploy-ubuntu.sh
 ```
 
 **Features**:
-- HTTP-only (no SSL)
+- HTTPS by default (secure connections)
 - Debug mode enabled
 - API documentation accessible
 - All service ports exposed
 - Local development optimized
+
+**Note**: The application now uses HTTPS as the default protocol for enhanced security. If you need to use HTTP for local development without SSL certificates, modify `frontend/js/config.js` and change `PROTOCOL: 'https'` to `PROTOCOL: 'http'`.
 
 ### Production Deployment
 
@@ -419,19 +421,19 @@ After successful deployment:
 - **Student Dashboard**: http(s)://yourdomain.com/student-dashboard.html
 
 ### Development URLs (if deployed in development mode)
-- **Frontend**: http://localhost:3000
-- **User Management**: http://localhost:8000
-- **Course Generator**: http://localhost:8001
-- **Content Storage**: http://localhost:8003
-- **Course Management**: http://localhost:8004
-- **Content Management**: http://localhost:8005
-- **Lab Manager**: http://localhost:8006
-- **Analytics**: http://localhost:8007
-- **Organization Management**: http://localhost:8008
+- **Frontend**: https://localhost:3000
+- **User Management**: https://localhost:8000
+- **Course Generator**: https://localhost:8001
+- **Content Storage**: https://localhost:8003
+- **Course Management**: https://localhost:8004
+- **Content Management**: https://localhost:8005
+- **Lab Manager**: https://localhost:8006
+- **Analytics**: https://localhost:8007
+- **Organization Management**: https://localhost:8008
 
 ### Monitoring URLs
-- **Prometheus**: http://localhost:9090
-- **Grafana**: http://localhost:3001
+- **Prometheus**: https://localhost:9090
+- **Grafana**: https://localhost:3001
 
 ---
 

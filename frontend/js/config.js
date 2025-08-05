@@ -85,23 +85,38 @@ const CONFIG = {
     },
     
     /**
+     * PROTOCOL CONFIGURATION
+     * PURPOSE: Defines default protocol for all API communications
+     * WHY: HTTPS provides encrypted communication and is production security standard
+     * 
+     * DEVELOPMENT OVERRIDE: To use HTTP for local development, change to:
+     * PROTOCOL: 'http',
+     * 
+     * SECURITY NOTE: HTTPS is strongly recommended for all deployments.
+     * HTTP should only be used for local development when SSL certificates are not available.
+     */
+    PROTOCOL: 'https',
+    
+    /**
      * DYNAMIC API URL BUILDER
-     * PURPOSE: Constructs complete service URLs from host and port configuration
-     * WHY: Getter pattern ensures URLs are always current if host/ports change
+     * PURPOSE: Constructs complete service URLs from protocol, host and port configuration
+     * WHY: Getter pattern ensures URLs are always current if protocol/host/ports change
      * USAGE: Accessed as CONFIG.API_URLS.USER_MANAGEMENT
      */
     get API_URLS() {
+        const protocol = this.PROTOCOL;
         const host = this.HOST;
         return {
-            // Build HTTP URLs for each microservice
-            // WHY: HTTP used instead of HTTPS for development/internal communication
-            USER_MANAGEMENT: `http://${host}:${this.PORTS.USER_MANAGEMENT}`,
-            COURSE_GENERATOR: `http://${host}:${this.PORTS.COURSE_GENERATOR}`,
-            CONTENT_STORAGE: `http://${host}:${this.PORTS.CONTENT_STORAGE}`,
-            COURSE_MANAGEMENT: `http://${host}:${this.PORTS.COURSE_MANAGEMENT}`,
-            LAB_MANAGER: `http://${host}:${this.PORTS.LAB_MANAGER}`,
-            ANALYTICS: `http://${host}:${this.PORTS.ANALYTICS}`,
-            ORGANIZATION: `http://${host}:${this.PORTS.ORGANIZATION}`
+            // Build HTTPS URLs for each microservice (secure by default)
+            // WHY: HTTPS provides encryption and authentication for production security
+            // NOTE: Protocol can be overridden to HTTP for local development if needed
+            USER_MANAGEMENT: `${protocol}://${host}:${this.PORTS.USER_MANAGEMENT}`,
+            COURSE_GENERATOR: `${protocol}://${host}:${this.PORTS.COURSE_GENERATOR}`,
+            CONTENT_STORAGE: `${protocol}://${host}:${this.PORTS.CONTENT_STORAGE}`,
+            COURSE_MANAGEMENT: `${protocol}://${host}:${this.PORTS.COURSE_MANAGEMENT}`,
+            LAB_MANAGER: `${protocol}://${host}:${this.PORTS.LAB_MANAGER}`,
+            ANALYTICS: `${protocol}://${host}:${this.PORTS.ANALYTICS}`,
+            ORGANIZATION: `${protocol}://${host}:${this.PORTS.ORGANIZATION}`
         };
     },
     

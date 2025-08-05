@@ -55,7 +55,7 @@ JSON_OUTPUT=false
 RUN_SECURITY_CHECKS=false
 RUN_PERFORMANCE_TESTS=false
 RUN_INTEGRATION_TESTS=false
-BASE_URL="http://localhost"
+BASE_URL="https://localhost"
 
 # Service ports and endpoints
 declare -A SERVICES=(

@@ -1066,7 +1066,7 @@ parse_arguments() {
 }
 
 show_deployment_summary() {
-    local domain_url="http://localhost"
+    local domain_url="https://localhost"
     if [[ -n "$DOMAIN_NAME" ]] && [[ "$SKIP_SSL" != "true" ]]; then
         domain_url="https://$DOMAIN_NAME"
     elif [[ -n "$DOMAIN_NAME" ]]; then

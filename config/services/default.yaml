@@ -4,9 +4,9 @@ services:
     port: ${oc.env:API_GATEWAY_PORT,8000}
     workers: 1
     cors_origins:
-      - "http://localhost:3000"
-      - "http://localhost:8000"
-      - "http://localhost:8080"
+      - "https://localhost:3000"
+      - "https://localhost:8000"
+      - "https://localhost:8080"
       - "http://176.9.99.103:3000"
       - "http://176.9.99.103:8000"
       - "http://176.9.99.103:8080"
@@ -39,5 +39,5 @@ services:
   user_interface:
     host: "0.0.0.0"
     port: ${oc.env:USER_INTERFACE_PORT,3000}
-    api_base_url: "http://localhost:${oc.env:API_GATEWAY_PORT,8000}"
+    api_base_url: "https://localhost:${oc.env:API_GATEWAY_PORT,8000}"
     websocket_url: "ws://localhost:${oc.env:API_GATEWAY_PORT,8000}"
