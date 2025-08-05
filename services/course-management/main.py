@@ -87,6 +87,11 @@ from domain.interfaces.feedback_service import IFeedbackService
 # Infrastructure
 from infrastructure.container import Container
 
+# Organization security middleware
+sys.path.append('/app/shared')
+from auth.organization_middleware import OrganizationAuthorizationMiddleware, get_organization_context, require_organization_role
+from cache.organization_redis_cache import OrganizationCacheManager
+
 # Custom exceptions
 from exceptions import (
     CourseManagementException, CourseNotFoundException, CourseValidationException,
@@ -314,6 +319,12 @@ def create_app(config: DictConfig) -> FastAPI:
         lifespan=lifespan
     )
     
+    # Organization security middleware (must be added before CORS)
+    app.add_middleware(
+        OrganizationAuthorizationMiddleware,
+        config=config
+    )
+    
     # CORS middleware
     app.add_middleware(
         CORSMiddleware,
@@ -472,11 +483,14 @@ async def create_course(
 @app.get("/courses/{course_id}", response_model=CourseResponse)
 async def get_course(
     course_id: str,
-    course_service: ICourseService = Depends(get_course_service)
+    course_service: ICourseService = Depends(get_course_service),
+    org_context: dict = Depends(get_organization_context)
 ):
     """Get course by ID"""
     try:
-        course = await course_service.get_course_by_id(course_id)
+        # Include organization context in query
+        organization_id = org_context['organization_id']
+        course = await course_service.get_course_by_id(course_id, organization_id=organization_id)
         if not course:
             raise CourseNotFoundException(
                 message="Course not found",
@@ -500,11 +514,14 @@ async def get_course(
 @app.get("/courses", response_model=List[CourseResponse])
 async def get_instructor_courses(
     course_service: ICourseService = Depends(get_course_service),
-    current_user_id: str = Depends(get_current_user_id)
+    current_user_id: str = Depends(get_current_user_id),
+    org_context: dict = Depends(get_organization_context)
 ):
     """Get all courses for the current instructor"""
     try:
-        courses = await course_service.get_courses_by_instructor(current_user_id)
+        # Include organization context in query
+        organization_id = org_context['organization_id']
+        courses = await course_service.get_courses_by_instructor(current_user_id, organization_id=organization_id)
         return [_course_to_response(course) for course in courses]
         
     except Exception as e:
