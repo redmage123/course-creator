@@ -48,10 +48,11 @@ import os
 # Add shared directory to path for organization middleware
 sys.path.append('/app/shared')
 try:
-    from auth.organization_middleware import OrganizationAuthorizationMiddleware
+    from auth.organization_middleware import OrganizationAuthorizationMiddleware, get_organization_context
 except ImportError:
     # Fallback if middleware not available
     OrganizationAuthorizationMiddleware = None
+    get_organization_context = None
 
 """
 Path setup for importing modules from parent directory.

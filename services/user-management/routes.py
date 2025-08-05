@@ -24,6 +24,16 @@ from exceptions import (
     SessionException, JWTException, EmailServiceException
 )
 
+# Organization context
+import sys
+sys.path.append('/app/shared')
+try:
+    from auth.organization_middleware import get_organization_context
+except ImportError:
+    # Fallback if middleware not available
+    def get_organization_context():
+        return None
+
 # API Models (DTOs - following Single Responsibility)
 class UserCreateRequest(BaseModel):
     email: EmailStr
@@ -304,9 +314,10 @@ def setup_user_routes(app: FastAPI) -> None:
         q: str,
         limit: int = 50,
         current_user: User = Depends(get_current_user),
-        user_service: IUserService = Depends(get_user_service)
+        user_service: IUserService = Depends(get_user_service),
+        org_context = Depends(get_organization_context)
     ):
-        """Search users (requires authentication)"""
+        """Search users (requires authentication and organization context)"""
         try:
             users = await user_service.search_users(q, limit)
             return [_user_to_response(user) for user in users]

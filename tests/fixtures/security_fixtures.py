@@ -276,28 +276,25 @@ class MockSecurityClient:
         token = auth_header.split(' ')[1]
         
         try:
-            # Decode JWT (in real implementation this would validate signature)
-            import base64
-            # Simple JWT validation simulation
-            parts = token.split('.')
-            if len(parts) != 3:
-                self.auth_valid = False
-                return
+            # Decode JWT to extract user's organization
+            payload = jwt.decode(token, 'test-secret-key-for-testing', algorithms=['HS256'])
+            self.user_org_id = payload.get('organization_id')
             
             # Simulate successful auth
             self.auth_valid = True
             
             # Simulate organization membership validation
             org_id = self.headers.get('X-Organization-ID')
-            if org_id and self.organization_id:
-                # In real implementation, this would check database
-                self.org_access_valid = True  # Simplified for testing
+            if org_id and self.user_org_id:
+                # Check if user belongs to the organization being accessed
+                self.org_access_valid = (org_id == self.user_org_id)
             else:
                 self.org_access_valid = False
                 
         except Exception:
             self.auth_valid = False
             self.org_access_valid = False
+            self.user_org_id = None
     
     async def get(self, url: str, **kwargs) -> 'MockResponse':
         """Mock GET request with security validation"""
@@ -342,8 +339,8 @@ class MockSecurityClient:
             except ValueError:
                 return MockResponse(400, {'detail': 'Invalid organization ID format'})
             
-            # Check organization membership (simplified simulation)
-            if org_id != self.organization_id:
+            # Check organization membership using JWT validation
+            if not self.org_access_valid:
                 return MockResponse(403, {'detail': f'Access denied: User not authorized for organization {org_id}'})
         
         # Simulate successful request
