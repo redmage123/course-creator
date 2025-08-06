@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.5, maximum-scale=3.0">
     <title>Course Creator Platform</title>
-    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/main.css?v=3.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
@@ -47,16 +47,110 @@
     </header>
     
     <main id="main-content">
-        <div class="container">
-            <section id="home">
-                <h2>Welcome to Course Creator</h2>
-                <p>Create and manage online courses with AI assistance.</p>
-                <button onclick="loadCourses()">View Courses</button>
-            </section>
-        </div>
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="container">
+                <div class="hero-content">
+                    <div class="hero-text">
+                        <h1 class="hero-title">
+                            Transform Learning with <span class="gradient-text">AI-Powered</span> Course Creation
+                        </h1>
+                        <p class="hero-subtitle">
+                            Build engaging, personalized online courses with cutting-edge AI assistance. 
+                            From concept to completion in minutes, not months.
+                        </p>
+                        <div class="hero-buttons">
+                            <button class="btn btn-primary btn-lg" onclick="startDemo()">
+                                <i class="fas fa-play"></i> Try Demo
+                            </button>
+                            <a href="html/organization-registration.html" class="btn btn-outline btn-lg">
+                                <i class="fas fa-building"></i> Register Organization
+                            </a>
+                        </div>
+                        <div class="hero-features">
+                            <div class="feature-point">
+                                <i class="fas fa-check-circle"></i>
+                                <span>AI-Powered Course Generation</span>
+                            </div>
+                            <div class="feature-point">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Interactive Learning Labs</span>
+                            </div>
+                            <div class="feature-point">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Enterprise-Ready Security</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hero-visual">
+                        <div class="hero-card">
+                            <div class="card-icon">
+                                <i class="fas fa-graduation-cap"></i>
+                            </div>
+                            <h3>Smart Course Builder</h3>
+                            <p>AI analyzes your content and suggests optimal learning paths</p>
+                        </div>
+                        <div class="hero-card">
+                            <div class="card-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <h3>Real-time Analytics</h3>
+                            <p>Track student progress and optimize course performance</p>
+                        </div>
+                        <div class="hero-card">
+                            <div class="card-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <h3>Collaborative Learning</h3>
+                            <p>Foster student engagement with interactive features</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="features-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">Everything You Need to Create Amazing Courses</h2>
+                    <p class="section-subtitle">Powerful tools designed for educators, by educators</p>
+                </div>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <h3>AI Content Generation</h3>
+                        <p>Generate course materials, quizzes, and assessments automatically with our advanced AI.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-code"></i>
+                        </div>
+                        <h3>Interactive Labs</h3>
+                        <p>Hands-on coding environments with multiple IDE support for practical learning.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h3>Enterprise Security</h3>
+                        <p>Role-based access control and enterprise-grade security for your organization.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <h3>Mobile Optimized</h3>
+                        <p>Learn anywhere with our responsive design that works on all devices.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
     
     <!-- Modern ES6 module system -->
-    <script type="module" src="../js/main.js"></script>
+    <script type="module" src="../js/main.js?v=3.1"></script>
 </body>
 </html>

@@ -36,6 +36,9 @@
     "test:coverage:open": "npm run test:coverage && open coverage/lcov-report/index.html",
     "test:watch": "jest --watch",
     "test:debug": "jest --detectOpenHandles --runInBand",
+    "test:organization": "jest tests/frontend/test_organization_registration_frontend.js --verbose",
+    "test:organization:watch": "jest tests/frontend/test_organization_registration_frontend.js --watch",
+    "test:organization:coverage": "jest tests/frontend/test_organization_registration_frontend.js --coverage",
     "lint": "eslint frontend/js/**/*.js",
     "lint:fix": "eslint frontend/js/**/*.js --fix",
     "lint:css": "stylelint frontend/css/**/*.css",
@@ -97,7 +100,8 @@
   "jest": {
     "testEnvironment": "jsdom",
     "setupFilesAfterEnv": [
-      "<rootDir>/tests/setup.js"
+      "<rootDir>/tests/setup.js",
+      "<rootDir>/tests/frontend/setup.js"
     ],
     "testMatch": [
       "**/tests/**/*.test.js",

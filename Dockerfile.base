@@ -1,7 +1,7 @@
 # Course Creator Base Image with Common System Dependencies
 # This eliminates repeated apt downloads across all services
 
-FROM python:3.11-slim AS course-creator-base
+FROM python:3.12-slim AS course-creator-base
 
 # Install all common system dependencies once
 RUN apt-get update && apt-get install -y --no-install-recommends \

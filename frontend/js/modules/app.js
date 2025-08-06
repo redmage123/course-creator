@@ -433,6 +433,57 @@ class App {
             }
         };
         
+        // Demo mode function
+        window.startDemo = async () => {
+            try {
+                // Show loading state
+                showNotification('Starting demo session...', 'info', { timeout: 2000 });
+                
+                // Call demo service to start session
+                const response = await fetch('/api/v1/demo/start?user_type=instructor', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to start demo session');
+                }
+                
+                const demoData = await response.json();
+                
+                // Store demo session data
+                localStorage.setItem('demoSession', JSON.stringify({
+                    sessionId: demoData.session_id,
+                    user: demoData.user,
+                    expiresAt: demoData.expires_at,
+                    isDemo: true
+                }));
+                localStorage.setItem('currentUser', JSON.stringify(demoData.user));
+                
+                // Show success notification
+                showNotification(
+                    `Welcome ${demoData.user.name}! You're now exploring as a Demo Instructor. This session expires in 2 hours.`,
+                    'success',
+                    { timeout: 5000 }
+                );
+                
+                // Redirect to instructor dashboard with demo session
+                setTimeout(() => {
+                    window.location.href = `html/instructor-dashboard.html?demo=true&session=${demoData.session_id}`;
+                }, 2000);
+                
+            } catch (error) {
+                console.error('Failed to start demo:', error);
+                showNotification(
+                    'Failed to start demo session. Please try again.',
+                    'error',
+                    { timeout: 5000 }
+                );
+            }
+        };
+        
         // Session management
         window.handleSessionExpired = () => Auth.handleSessionExpired();
         window.handleInactivityTimeout = () => Auth.handleInactivityTimeout();

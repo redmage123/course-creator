@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   # Shared Base Image for System Package Caching
   base-image:
@@ -36,8 +38,8 @@ services:
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
-    ports:
-      - "6379:6379"
+    # Removed external port mapping to avoid conflicts
+    # Services communicate via internal Docker network
     networks:
       - course-creator-network
     healthcheck:
@@ -67,12 +69,12 @@ services:
       - DOCKER_CONTAINER=true
       - SERVICE_NAME=user-management
       - LOG_LEVEL=INFO
-      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.11/site-packages
+      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.12/site-packages
       - VIRTUAL_ENV=${VENV_MOUNT_PATH}
     volumes:
       - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
       - ./shared:/app/shared:ro
-      - /var/log/course-creator:/var/log/course-creator
+      - ./logs:/var/log/course-creator
     ports:
       - "8000:8000"
     networks:
@@ -110,12 +112,12 @@ services:
       - SERVICE_NAME=course-generator
       - LOG_LEVEL=INFO
       - ENVIRONMENT=docker
-      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.11/site-packages
+      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.12/site-packages
       - VIRTUAL_ENV=${VENV_MOUNT_PATH}
     volumes:
       - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
       - ./shared:/app/shared:ro
-      - /var/log/course-creator:/var/log/course-creator
+      - ./logs:/var/log/course-creator
     networks:
       - course-creator-network
     depends_on:
@@ -146,7 +148,7 @@ services:
       - DOCKER_CONTAINER=true
       - SERVICE_NAME=content-storage
       - LOG_LEVEL=INFO
-      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.11/site-packages
+      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.12/site-packages
       - VIRTUAL_ENV=${VENV_MOUNT_PATH}
     ports:
       - "8003:8003"
@@ -155,7 +157,7 @@ services:
       - ./shared:/app/shared:ro
       - content_files:/app/content_files
       - content_storage:/app/storage
-      - /var/log/course-creator:/var/log/course-creator
+      - ./logs:/var/log/course-creator
     networks:
       - course-creator-network
     depends_on:
@@ -192,7 +194,7 @@ services:
       - DOCKER_CONTAINER=true
       - SERVICE_NAME=course-management
       - LOG_LEVEL=INFO
-      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.11/site-packages
+      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.12/site-packages
       - VIRTUAL_ENV=${VENV_MOUNT_PATH}
       # Email Service Configuration
       - USE_MOCK_EMAIL=true
@@ -206,7 +208,7 @@ services:
     volumes:
       - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
       - ./shared:/app/shared:ro
-      - /var/log/course-creator:/var/log/course-creator
+      - ./logs:/var/log/course-creator
     networks:
       - course-creator-network
     depends_on:
@@ -246,7 +248,7 @@ services:
       - DOCKER_CONTAINER=true
       - SERVICE_NAME=content-management
       - LOG_LEVEL=INFO
-      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.11/site-packages
+      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.12/site-packages
       - VIRTUAL_ENV=${VENV_MOUNT_PATH}
     ports:
       - "8005:8005"
@@ -257,7 +259,7 @@ services:
       - content_uploads:/app/uploads
       - content_exports:/app/exports
       - template_storage:/app/storage
-      - /var/log/course-creator:/var/log/course-creator
+      - ./logs:/var/log/course-creator
     networks:
       - course-creator-network
     depends_on:
@@ -289,7 +291,7 @@ services:
       - LOG_DIR=/var/log/course-creator
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.11/site-packages
+      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.12/site-packages
       - VIRTUAL_ENV=${VENV_MOUNT_PATH}
     ports:
       - "8009:8009"
@@ -298,7 +300,7 @@ services:
       - ./shared:/app/shared:ro
       - rag_chromadb_data:/app/chromadb_data
       - rag_huggingface_cache:/app/.cache/huggingface
-      - /var/log/course-creator:/var/log/course-creator
+      - ./logs:/var/log/course-creator
     networks:
       - course-creator-network
     healthcheck:
@@ -332,14 +334,14 @@ services:
       - DOCKER_CONTAINER=true
       - SERVICE_NAME=analytics
       - LOG_LEVEL=INFO
-      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.11/site-packages
+      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.12/site-packages
       - VIRTUAL_ENV=${VENV_MOUNT_PATH}
     ports:
       - "8007:8007"
     volumes:
       - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
       - ./shared:/app/shared:ro
-      - /var/log/course-creator:/var/log/course-creator
+      - ./logs:/var/log/course-creator
     networks:
       - course-creator-network
     depends_on:
@@ -381,14 +383,14 @@ services:
       - SERVICE_NAME=organization-management
       - LOG_LEVEL=INFO
       - JWT_SECRET_KEY=your-secret-key-change-in-production
-      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.11/site-packages
+      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.12/site-packages
       - VIRTUAL_ENV=${VENV_MOUNT_PATH}
     ports:
       - "8008:8008"
     volumes:
       - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
       - ./shared:/app/shared:ro
-      - /var/log/course-creator:/var/log/course-creator
+      - ./logs:/var/log/course-creator
     networks:
       - course-creator-network
     depends_on:
@@ -413,6 +415,8 @@ services:
       dockerfile: Dockerfile
       cache_from:
         - course-creator-frontend:latest
+    env_file:
+      - .cc_env
     ports:
       - "3000:3000"
     networks:
@@ -423,7 +427,28 @@ services:
       - content-management
       - analytics
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "--no-check-certificate", "https://127.0.0.1:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Demo Service - Realistic Platform Demonstration
+  demo-service:
+    image: course-creator-demo-service:latest
+    build:
+      context: ./services/demo-service
+      dockerfile: Dockerfile
+      cache_from:
+        - course-creator-demo-service:latest
+    env_file:
+      - .cc_env
+    ports:
+      - "8010:8010"
+    networks:
+      - course-creator-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8010/api/v1/demo/health'); exit(0 if r.status_code == 200 else 1)"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -437,6 +462,8 @@ services:
       dockerfile: Dockerfile
       cache_from:
         - course-creator-lab-manager:latest
+    # Run as root initially to setup Docker permissions, then su to appuser
+    user: "0:0"
     environment:
       - LAB_IMAGE_REGISTRY=course-creator/labs
       - MAX_CONCURRENT_LABS=10
@@ -454,13 +481,14 @@ services:
       - SERVICE_NAME=lab-containers
       - LOG_LEVEL=INFO
       - LAB_STORAGE_PATH=/home/bbrelin/course-creator/lab-storage
-      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.11/site-packages
+      - PYTHONPATH=/app:${VENV_MOUNT_PATH}/lib/python3.12/site-packages
       - VIRTUAL_ENV=${VENV_MOUNT_PATH}
+      - DOCKER_HOST=unix:///var/run/docker.sock
     volumes:
       - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
       - /var/run/docker.sock:/var/run/docker.sock:rw
       - ./lab-storage:/home/bbrelin/course-creator/lab-storage
-      - /var/log/course-creator:/var/log/course-creator
+      - ./logs:/var/log/course-creator
       - ./config:/home/bbrelin/course-creator/config:ro
     ports:
       - "8006:8006"
@@ -469,6 +497,33 @@ services:
     depends_on:
       - course-management
       - rag-service
+    # Custom command to setup Docker permissions and run as appuser
+    command: >
+      sh -c "
+        # Get the Docker socket group ID from the mounted socket
+        DOCKER_GID=$$(stat -c '%g' /var/run/docker.sock) &&
+        echo 'Docker socket GID: '$$DOCKER_GID &&
+        
+        # Create or update docker group with correct GID
+        if getent group $$DOCKER_GID >/dev/null 2>&1; then
+          DOCKER_GROUP=$$(getent group $$DOCKER_GID | cut -d: -f1)
+          echo 'Found existing group with GID '$$DOCKER_GID': '$$DOCKER_GROUP
+        else
+          groupadd -g $$DOCKER_GID docker
+          DOCKER_GROUP=docker  
+          echo 'Created docker group with GID '$$DOCKER_GID
+        fi &&
+        
+        # Add appuser to docker group
+        usermod -aG $$DOCKER_GROUP appuser &&
+        echo 'Added appuser to group '$$DOCKER_GROUP &&
+        
+        # Verify appuser has docker group access
+        groups appuser &&
+        
+        # Switch to appuser and run the application
+        exec su appuser -c 'cd /app && python main.py'
+      "
     healthcheck:
       test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8006/health'); exit(0 if r.status_code == 200 else 1)"]
       interval: 30s

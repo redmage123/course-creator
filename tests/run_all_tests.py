@@ -13,6 +13,13 @@ from pathlib import Path
 from datetime import datetime
 import json
 
+# Import specialized test runners
+sys.path.append(str(Path(__file__).parent))
+try:
+    from runners.run_organization_tests import OrganizationTestRunner
+except ImportError:
+    OrganizationTestRunner = None
+
 def run_command(command, description, timeout=600):
     """Run a command and return the result"""
     print(f"\n{'='*60}")
@@ -127,7 +134,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run comprehensive test suite")
     parser.add_argument(
         "--suite", 
-        choices=["unit", "integration", "frontend", "e2e", "security", "content", "lab", "analytics", "rbac"],
+        choices=["unit", "integration", "frontend", "e2e", "security", "content", "lab", "analytics", "rbac", "organization"],
         help="Run specific test suite (default: all)"
     )
     parser.add_argument(
@@ -186,6 +193,12 @@ def main():
                 "command": "python -m pytest tests/unit/rbac/ -v --tb=short",
                 "description": "Unit Tests - RBAC System",
                 "timeout": 300
+            },
+            "organization_management": {
+                "path": "tests/unit/organization_management/",
+                "command": "python -m pytest tests/unit/organization_management/ -v --tb=short",
+                "description": "Unit Tests - Organization Management",
+                "timeout": 300
             }
         },
         "integration": {
@@ -206,6 +219,12 @@ def main():
                 "command": "python -m pytest tests/integration/test_rbac_api_integration.py -v --tb=short",
                 "description": "Integration Tests - RBAC API",
                 "timeout": 600
+            },
+            "organization_api": {
+                "path": "tests/integration/test_organization_api_integration.py",
+                "command": "python -m pytest tests/integration/test_organization_api_integration.py -v --tb=short",
+                "description": "Integration Tests - Organization API",
+                "timeout": 600
             }
         },
         "frontend": {
@@ -220,6 +239,12 @@ def main():
                 "command": "python -m pytest tests/frontend/test_rbac_dashboard_frontend.py -v --tb=short",
                 "description": "Frontend Tests - RBAC Dashboard Components",
                 "timeout": 600
+            },
+            "organization_registration": {
+                "path": "tests/frontend/test_organization_registration_frontend.js",
+                "command": "npx jest tests/frontend/test_organization_registration_frontend.js --verbose",
+                "description": "Frontend Tests - Organization Registration JavaScript",
+                "timeout": 300
             }
         },
         "e2e": {
@@ -233,6 +258,12 @@ def main():
                 "path": "tests/e2e/test_rbac_complete_workflows.py",
                 "command": "python -m pytest tests/e2e/test_rbac_complete_workflows.py -v --tb=short -s",
                 "description": "End-to-End Tests - RBAC Complete Workflows",
+                "timeout": 900
+            },
+            "organization_registration": {
+                "path": "tests/e2e/test_organization_registration_e2e.py",
+                "command": "python -m pytest tests/e2e/test_organization_registration_e2e.py -v --tb=short -s",
+                "description": "End-to-End Tests - Organization Registration Flow",
                 "timeout": 900
             }
         },
@@ -270,6 +301,11 @@ def main():
             "path": "tests/runners/run_rbac_tests.py",
             "command": "python tests/runners/run_rbac_tests.py",
             "description": "Enhanced RBAC System Comprehensive Tests"
+        },
+        "organization": {
+            "path": "tests/runners/run_organization_tests.py",
+            "command": "python tests/runners/run_organization_tests.py",
+            "description": "Organization Management Comprehensive Tests (Unit, Integration, E2E, Frontend)"
         }
     }
     

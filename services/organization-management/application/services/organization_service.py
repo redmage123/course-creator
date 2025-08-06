@@ -21,7 +21,8 @@ class OrganizationService:
         self._organization_repository = organization_repository
         self._logger = logging.getLogger(__name__)
 
-    async def create_organization(self, name: str, slug: str, description: str = None,
+    async def create_organization(self, name: str, slug: str, address: str,
+                                  contact_phone: str, contact_email: str, description: str = None,
                                   logo_url: str = None, domain: str = None,
                                   settings: Dict[str, Any] = None) -> Organization:
         """Create a new organization"""
@@ -38,6 +39,9 @@ class OrganizationService:
             organization = Organization(
                 name=name,
                 slug=slug,
+                address=address,
+                contact_phone=contact_phone,
+                contact_email=contact_email,
                 description=description,
                 logo_url=logo_url,
                 domain=domain,
@@ -84,7 +88,9 @@ class OrganizationService:
 
     async def update_organization(self, organization_id: UUID, name: str = None,
                                   description: str = None, logo_url: str = None,
-                                  domain: str = None, settings: Dict[str, Any] = None,
+                                  domain: str = None, address: str = None,
+                                  contact_phone: str = None, contact_email: str = None,
+                                  settings: Dict[str, Any] = None,
                                   is_active: bool = None) -> Organization:
         """Update organization"""
         try:
@@ -99,7 +105,7 @@ class OrganizationService:
                     raise ValueError(f"Organization with domain '{domain}' already exists")
 
             # Update organization
-            organization.update_info(name, description, logo_url, domain, settings)
+            organization.update_info(name, description, logo_url, None, domain, address, contact_phone, contact_email, settings)
             if is_active is not None:
                 if is_active:
                     organization.activate()

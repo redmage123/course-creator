@@ -24,11 +24,12 @@ class PostgreSQLOrganizationRepository(IOrganizationRepository):
     async def create(self, organization: Organization) -> Organization:
         """Create a new organization"""
         query = """
-        INSERT INTO organizations (
+        INSERT INTO course_creator.organizations (
             id, name, slug, description, logo_url, domain,
+            address, contact_phone, contact_email, logo_file_path,
             settings, is_active, created_at, updated_at
         ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14
         ) RETURNING *
         """
 
@@ -37,6 +38,8 @@ class PostgreSQLOrganizationRepository(IOrganizationRepository):
                 query,
                 organization.id, organization.name, organization.slug,
                 organization.description, organization.logo_url, organization.domain,
+                organization.address, organization.contact_phone, organization.contact_email,
+                organization.logo_file_path,
                 json.dumps(organization.settings), organization.is_active,
                 organization.created_at, organization.updated_at
             )
@@ -45,7 +48,7 @@ class PostgreSQLOrganizationRepository(IOrganizationRepository):
 
     async def get_by_id(self, organization_id: UUID) -> Optional[Organization]:
         """Get organization by ID"""
-        query = "SELECT * FROM organizations WHERE id = $1"
+        query = "SELECT * FROM course_creator.organizations WHERE id = $1"
 
         async with self._pool.acquire() as connection:
             row = await connection.fetchrow(query, organization_id)
@@ -54,7 +57,7 @@ class PostgreSQLOrganizationRepository(IOrganizationRepository):
 
     async def get_by_slug(self, slug: str) -> Optional[Organization]:
         """Get organization by slug"""
-        query = "SELECT * FROM organizations WHERE slug = $1"
+        query = "SELECT * FROM course_creator.organizations WHERE slug = $1"
 
         async with self._pool.acquire() as connection:
             row = await connection.fetchrow(query, slug)
@@ -63,7 +66,7 @@ class PostgreSQLOrganizationRepository(IOrganizationRepository):
 
     async def get_by_domain(self, domain: str) -> Optional[Organization]:
         """Get organization by domain"""
-        query = "SELECT * FROM organizations WHERE domain = $1"
+        query = "SELECT * FROM course_creator.organizations WHERE domain = $1"
 
         async with self._pool.acquire() as connection:
             row = await connection.fetchrow(query, domain)
@@ -73,9 +76,10 @@ class PostgreSQLOrganizationRepository(IOrganizationRepository):
     async def update(self, organization: Organization) -> Organization:
         """Update organization"""
         query = """
-        UPDATE organizations SET
+        UPDATE course_creator.organizations SET
             name = $2, slug = $3, description = $4, logo_url = $5, domain = $6,
-            settings = $7, is_active = $8, updated_at = $9
+            address = $7, contact_phone = $8, contact_email = $9, logo_file_path = $10,
+            settings = $11, is_active = $12, updated_at = $13
         WHERE id = $1
         RETURNING *
         """
@@ -87,6 +91,8 @@ class PostgreSQLOrganizationRepository(IOrganizationRepository):
                 query,
                 organization.id, organization.name, organization.slug,
                 organization.description, organization.logo_url, organization.domain,
+                organization.address, organization.contact_phone, organization.contact_email,
+                organization.logo_file_path,
                 json.dumps(organization.settings), organization.is_active,
                 organization.updated_at
             )
@@ -95,7 +101,7 @@ class PostgreSQLOrganizationRepository(IOrganizationRepository):
 
     async def delete(self, organization_id: UUID) -> bool:
         """Delete organization"""
-        query = "DELETE FROM organizations WHERE id = $1"
+        query = "DELETE FROM course_creator.organizations WHERE id = $1"
 
         async with self._pool.acquire() as connection:
             result = await connection.execute(query, organization_id)
@@ -104,21 +110,21 @@ class PostgreSQLOrganizationRepository(IOrganizationRepository):
 
     async def exists_by_slug(self, slug: str) -> bool:
         """Check if organization exists by slug"""
-        query = "SELECT EXISTS(SELECT 1 FROM organizations WHERE slug = $1)"
+        query = "SELECT EXISTS(SELECT 1 FROM course_creator.organizations WHERE slug = $1)"
 
         async with self._pool.acquire() as connection:
             return await connection.fetchval(query, slug)
 
     async def exists_by_domain(self, domain: str) -> bool:
         """Check if organization exists by domain"""
-        query = "SELECT EXISTS(SELECT 1 FROM organizations WHERE domain = $1)"
+        query = "SELECT EXISTS(SELECT 1 FROM course_creator.organizations WHERE domain = $1)"
 
         async with self._pool.acquire() as connection:
             return await connection.fetchval(query, domain)
 
     async def get_all(self, limit: int = 100, offset: int = 0) -> List[Organization]:
         """Get all organizations with pagination"""
-        query = "SELECT * FROM organizations ORDER BY created_at DESC LIMIT $1 OFFSET $2"
+        query = "SELECT * FROM course_creator.organizations ORDER BY created_at DESC LIMIT $1 OFFSET $2"
 
         async with self._pool.acquire() as connection:
             rows = await connection.fetch(query, limit, offset)
@@ -127,7 +133,7 @@ class PostgreSQLOrganizationRepository(IOrganizationRepository):
 
     async def get_active(self) -> List[Organization]:
         """Get all active organizations"""
-        query = "SELECT * FROM organizations WHERE is_active = true ORDER BY name"
+        query = "SELECT * FROM course_creator.organizations WHERE is_active = true ORDER BY name"
 
         async with self._pool.acquire() as connection:
             rows = await connection.fetch(query)
@@ -137,7 +143,7 @@ class PostgreSQLOrganizationRepository(IOrganizationRepository):
     async def search(self, query: str, limit: int = 50) -> List[Organization]:
         """Search organizations by name or slug"""
         search_query = """
-        SELECT * FROM organizations
+        SELECT * FROM course_creator.organizations
         WHERE name ILIKE $1 OR slug ILIKE $1
         ORDER BY
             CASE
@@ -158,14 +164,14 @@ class PostgreSQLOrganizationRepository(IOrganizationRepository):
 
     async def count(self) -> int:
         """Count total organizations"""
-        query = "SELECT COUNT(*) FROM organizations"
+        query = "SELECT COUNT(*) FROM course_creator.organizations"
 
         async with self._pool.acquire() as connection:
             return await connection.fetchval(query)
 
     async def count_active(self) -> int:
         """Count active organizations"""
-        query = "SELECT COUNT(*) FROM organizations WHERE is_active = true"
+        query = "SELECT COUNT(*) FROM course_creator.organizations WHERE is_active = true"
 
         async with self._pool.acquire() as connection:
             return await connection.fetchval(query)
@@ -182,8 +188,12 @@ class PostgreSQLOrganizationRepository(IOrganizationRepository):
             id=row['id'],
             name=row['name'],
             slug=row['slug'],
+            address=row.get('address', ''),
+            contact_phone=row.get('contact_phone', ''),
+            contact_email=row.get('contact_email', ''),
             description=row['description'],
             logo_url=row['logo_url'],
+            logo_file_path=row.get('logo_file_path'),
             domain=row['domain'],
             settings=settings,
             is_active=row['is_active'],

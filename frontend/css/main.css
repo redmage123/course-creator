@@ -25,6 +25,10 @@
 @import url('./components/forms.css');
 @import url('./components/modals.css');
 
+/* ===== PAGES LAYER ===== */
+/* Page-specific styles */
+@import url('./pages/home.css');
+
 /* ===== UTILITIES LAYER ===== */
 /* Helper classes and utilities */
 @import url('./utilities/spacing.css');

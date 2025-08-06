@@ -89,11 +89,8 @@ const CONFIG = {
      * PURPOSE: Defines default protocol for all API communications
      * WHY: HTTPS provides encrypted communication and is production security standard
      * 
-     * DEVELOPMENT OVERRIDE: To use HTTP for local development, change to:
-     * PROTOCOL: 'http',
-     * 
-     * SECURITY NOTE: HTTPS is strongly recommended for all deployments.
-     * HTTP should only be used for local development when SSL certificates are not available.
+     * SECURITY REQUIREMENT: Always use HTTPS for secure communication
+     * All Course Creator Platform services must use encrypted connections
      */
     PROTOCOL: 'https',
     

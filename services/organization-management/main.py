@@ -15,6 +15,7 @@ from typing import List, Optional, Dict, Any
 import logging
 import os
 import sys
+import re
 import hydra
 from omegaconf import DictConfig
 import uvicorn
@@ -31,7 +32,8 @@ from application.services.organization_service import OrganizationService
 from auth.jwt_auth import JWTAuthenticator
 
 # Import API route modules
-from api import rbac_endpoints, site_admin_endpoints, track_endpoints
+from api.organization_endpoints import router as organization_router
+# from api import rbac_endpoints, site_admin_endpoints, track_endpoints
 
 # Custom exceptions
 from exceptions import (
@@ -70,12 +72,66 @@ class ProjectMemberRole(str, Enum):
 # API Models (DTOs)
 
 class OrganizationCreateRequest(BaseModel):
-    name: str = Field(..., min_length=2, max_length=255)
-    slug: str = Field(..., min_length=2, max_length=100, pattern=r'^[a-z0-9-]+$')
-    description: Optional[str] = None
-    logo_url: Optional[str] = None
-    domain: Optional[str] = Field(None, pattern=r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+    """
+    Organization creation request with professional requirements.
+    
+    BUSINESS REQUIREMENTS:
+    - Organization name and address are required
+    - Contact phone must be professional business number
+    - Contact email must be professional domain (no Gmail, Yahoo, etc.)
+    - Optional logo file upload (JPG, GIF, PNG only)
+    - Organization admin details must be provided
+    """
+    # Required organization information
+    name: str = Field(..., min_length=2, max_length=255, description="Official organization name")
+    slug: str = Field(..., min_length=2, max_length=100, pattern=r'^[a-z0-9-]+$', description="URL-friendly organization identifier")
+    address: str = Field(..., min_length=10, max_length=500, description="Complete physical address")
+    contact_phone: str = Field(..., min_length=10, max_length=20, description="Professional contact phone number")
+    contact_email: EmailStr = Field(..., description="Professional contact email (no Gmail, Yahoo, etc.)")
+    
+    # Organization admin information  
+    admin_full_name: str = Field(..., min_length=2, max_length=100, description="Full name of organization administrator")
+    admin_email: EmailStr = Field(..., description="Administrator email address (professional domain required)")
+    admin_phone: Optional[str] = Field(None, min_length=10, max_length=20, description="Administrator phone number")
+    
+    # Optional fields
+    description: Optional[str] = Field(None, max_length=1000, description="Organization description")
+    logo_url: Optional[str] = Field(None, description="URL to organization logo")
+    domain: Optional[str] = Field(None, pattern=r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', description="Organization website domain")
     settings: Dict[str, Any] = Field(default_factory=dict)
+    
+    @validator('contact_email', 'admin_email')
+    def validate_professional_email(cls, v):
+        """Validate that email addresses are from professional domains"""
+        if not v:
+            return v
+            
+        # Check against common personal email providers
+        personal_domains = {
+            'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 
+            'aol.com', 'icloud.com', 'me.com', 'live.com'
+        }
+        
+        domain = v.split('@')[-1].lower()
+        if domain in personal_domains:
+            raise ValueError(f'Personal email provider {domain} not allowed. Please use a professional business email address.')
+        
+        return v.lower()
+    
+    @validator('contact_phone', 'admin_phone')
+    def validate_phone_format(cls, v):
+        """Validate phone number format"""
+        if not v:
+            return v
+        
+        # Remove common phone formatting characters
+        cleaned = re.sub(r'[^\d+]', '', str(v))
+        
+        # Basic phone validation (10+ digits, optional + prefix)
+        if not re.match(r'^\+?\d{10,15}$', cleaned):
+            raise ValueError('Invalid phone number format. Please provide a valid business phone number.')
+        
+        return cleaned
 
 
 class OrganizationUpdateRequest(BaseModel):
@@ -83,8 +139,45 @@ class OrganizationUpdateRequest(BaseModel):
     description: Optional[str] = None
     logo_url: Optional[str] = None
     domain: Optional[str] = Field(None, pattern=r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+    # Contact information updates
+    address: Optional[str] = Field(None, min_length=10, max_length=500)
+    contact_phone: Optional[str] = Field(None, min_length=10, max_length=20)
+    contact_email: Optional[EmailStr] = None
     settings: Optional[Dict[str, Any]] = None
     is_active: Optional[bool] = None
+    
+    @validator('contact_email')
+    def validate_professional_email_update(cls, v):
+        """Validate that email addresses are from professional domains"""
+        if not v:
+            return v
+            
+        # Check against common personal email providers
+        personal_domains = {
+            'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 
+            'aol.com', 'icloud.com', 'me.com', 'live.com'
+        }
+        
+        domain = v.split('@')[-1].lower()
+        if domain in personal_domains:
+            raise ValueError(f'Personal email provider {domain} not allowed. Please use a professional business email address.')
+        
+        return v.lower()
+    
+    @validator('contact_phone')
+    def validate_phone_format_update(cls, v):
+        """Validate phone number format"""
+        if not v:
+            return v
+        
+        # Remove common phone formatting characters
+        cleaned = re.sub(r'[^\d+]', '', str(v))
+        
+        # Basic phone validation (10+ digits, optional + prefix)
+        if not re.match(r'^\+?\d{10,15}$', cleaned):
+            raise ValueError('Invalid phone number format. Please provide a valid business phone number.')
+        
+        return cleaned
 
 
 class ProjectCreateRequest(BaseModel):
@@ -141,11 +234,18 @@ class InstructorCreateRequest(BaseModel):
 # Response Models
 
 class OrganizationResponse(BaseModel):
+    """Organization response with complete contact information"""
     id: UUID
     name: str
     slug: str
     description: Optional[str]
+    # Contact information
+    address: str
+    contact_phone: str
+    contact_email: str
+    # Optional fields
     logo_url: Optional[str]
+    logo_file_path: Optional[str] 
     domain: Optional[str]
     is_active: bool
     member_count: int
@@ -199,35 +299,31 @@ class ProjectMemberResponse(BaseModel):
 # Global container and config
 container = None
 current_config: Optional[DictConfig] = None
-security = HTTPBearer()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """FastAPI lifespan event handler"""
-    global container, current_config
-
+    """FastAPI lifespan event handler with container management"""
+    global container
+    
     # Startup
     logging.info("Initializing Organization Management Service...")
     
-    # Initialize caching infrastructure for RBAC performance optimization
-    sys.path.append('/home/bbrelin/course-creator')
-    from shared.cache import initialize_cache_manager
+    # Initialize dependency injection container
+    container = initialize_container(current_config)
+    logging.info("Dependency injection container initialized")
     
-    redis_url = current_config.get("redis", {}).get("url", "redis://redis:6379")
-    await initialize_cache_manager(redis_url)
-    logging.info("Cache manager initialized for RBAC permission checking optimization")
-    
-    # Initialize your dependency injection container here
-    # container = OrganizationContainer(current_config)
-    # await container.initialize()
     logging.info("Organization Management Service initialized successfully")
 
     yield
 
-    # Shutdown
+    # Shutdown  
     logging.info("Shutting down Organization Management Service...")
+    
+    # Cleanup container
     if container:
-        await container.cleanup()
+        cleanup_container(container)
+        logging.info("Dependency injection container cleaned up")
+    
     logging.info("Organization Management Service shutdown complete")
 
 
@@ -286,9 +382,10 @@ def create_app(config: DictConfig = None) -> FastAPI:
         )
 
     # Include API routers
-    app.include_router(rbac_endpoints.router)
-    app.include_router(site_admin_endpoints.router)
-    app.include_router(track_endpoints.router)
+    app.include_router(organization_router)
+    # app.include_router(rbac_endpoints.router)
+    # app.include_router(site_admin_endpoints.router)
+    # app.include_router(track_endpoints.router)
 
     # Health check endpoint
     @app.get("/health")
@@ -301,430 +398,18 @@ def create_app(config: DictConfig = None) -> FastAPI:
             "timestamp": datetime.utcnow()
         }
 
+    # Test endpoint
+    @app.get("/test")
+    async def test_endpoint():
+        """Test endpoint to verify routing works"""
+        return {"message": "Organization service is working!", "test": True}
+
     return app
 
 app = create_app()
 
-# Dependency injection helpers
-
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
-    """Extract and validate user from JWT token"""
-    try:
-        # In production, validate JWT token properly
-        # For now, mock user data
-        return {
-            "id": "123e4567-e89b-12d3-a456-426614174000",
-            "email": "admin@example.com",
-            "role": "org_admin",
-            "organization_id": "456e7890-e89b-12d3-a456-426614174000"
-        }
-    except Exception as e:
-        raise AuthenticationException(
-            message="Invalid authentication credentials",
-            auth_method="jwt_bearer",
-            original_exception=e
-        )
-
-
-async def require_org_admin(current_user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
-    """Require organization admin role"""
-    if current_user["role"] not in ["super_admin", "org_admin"]:
-        raise AuthorizationException(
-            message="Organization admin access required",
-            user_id=current_user.get("id"),
-            user_role=current_user.get("role"),
-            required_role="org_admin",
-            action="organization_management"
-        )
-    return current_user
-
-
-# Organization Management Endpoints
-@app.post("/api/v1/organizations", response_model=OrganizationResponse)
-async def create_organization(
-    request: OrganizationCreateRequest,
-    organization_service: OrganizationService = Depends(get_organization_service),
-    current_user: Dict[str, Any] = Depends(require_org_admin)
-):
-    """Create a new organization"""
-    try:
-        # Use organization service with DAO pattern
-        organization = await organization_service.create_organization(
-            name=request.name,
-            slug=request.slug,
-            description=request.description,
-            logo_url=request.logo_url,
-            domain=request.domain,
-            settings=request.settings
-        )
-
-        return OrganizationResponse(
-            id=organization.id,
-            name=organization.name,
-            slug=organization.slug,
-            description=organization.description,
-            logo_url=organization.logo_url,
-            domain=organization.domain,
-            is_active=organization.is_active,
-            member_count=0,  # TODO: Implement member count query
-            project_count=0,  # TODO: Implement project count query
-            created_at=organization.created_at,
-            updated_at=organization.updated_at
-        )
-    except ValueError as e:
-        raise ValidationException(
-            message="Invalid organization data provided",
-            validation_errors={"organization_data": str(e)},
-            original_exception=e
-        )
-    except OrganizationManagementException:
-        # Re-raise custom exceptions (they will be handled by the global handler)
-        raise
-    except Exception as e:
-        raise OrganizationException(
-            message="Failed to create organization",
-            operation="create_organization",
-            original_exception=e
-        )
-
-@app.get("/api/v1/organizations", response_model=List[OrganizationResponse])
-async def list_organizations(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
-    current_user: Dict[str, Any] = Depends(get_current_user)
-):
-    """List organizations (filtered by user permissions)"""
-    try:
-        # Implementation would filter based on user permissions
-        return []
-    except OrganizationManagementException:
-        # Re-raise custom exceptions (they will be handled by the global handler)
-        raise
-    except Exception as e:
-        raise OrganizationException(
-            message="Failed to list organizations",
-            operation="list_organizations",
-            original_exception=e
-        )
-
-@app.get("/api/v1/organizations/{org_id}", response_model=OrganizationResponse)
-async def get_organization(
-    org_id: UUID,
-    current_user: Dict[str, Any] = Depends(get_current_user)
-):
-    """Get organization details"""
-    try:
-        # Implementation would check user access to organization
-        raise OrganizationNotFoundException(
-            message="Organization not found",
-            organization_id=str(org_id)
-        )
-    except OrganizationManagementException:
-        # Re-raise custom exceptions (they will be handled by the global handler)
-        raise
-    except Exception as e:
-        raise OrganizationException(
-            message="Failed to retrieve organization details",
-            organization_id=str(org_id),
-            operation="get_organization",
-            original_exception=e
-        )
-
-@app.put("/api/v1/organizations/{org_id}", response_model=OrganizationResponse)
-async def update_organization(
-    org_id: UUID,
-    request: OrganizationUpdateRequest,
-    current_user: Dict[str, Any] = Depends(require_org_admin)
-):
-    """Update organization"""
-    try:
-        # Implementation here
-        raise OrganizationNotFoundException(
-            message="Organization not found",
-            organization_id=str(org_id)
-        )
-    except OrganizationManagementException:
-        # Re-raise custom exceptions (they will be handled by the global handler)
-        raise
-    except Exception as e:
-        raise OrganizationException(
-            message="Failed to update organization",
-            organization_id=str(org_id),
-            operation="update_organization",
-            original_exception=e
-        )
-
-# Project Management Endpoints
-@app.post("/api/v1/organizations/{org_id}/projects", response_model=ProjectResponse)
-async def create_project(
-    org_id: UUID,
-    request: ProjectCreateRequest,
-    current_user: Dict[str, Any] = Depends(require_org_admin)
-):
-    """Create a new project within an organization"""
-    try:
-        # Implementation would create project
-        return ProjectResponse(
-            id=UUID("789e0123-e89b-12d3-a456-426614174000"),
-            organization_id=org_id,
-            name=request.name,
-            slug=request.slug,
-            description=request.description,
-            objectives=request.objectives,
-            target_roles=request.target_roles,
-            duration_weeks=request.duration_weeks,
-            max_participants=request.max_participants,
-            current_participants=0,
-            start_date=request.start_date,
-            end_date=request.end_date,
-            status=ProjectStatus.DRAFT,
-            created_by=UUID(current_user["id"]),
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow()
-        )
-    except OrganizationManagementException:
-        # Re-raise custom exceptions (they will be handled by the global handler)
-        raise
-    except Exception as e:
-        raise ProjectException(
-            message="Failed to create project",
-            organization_id=str(org_id),
-            project_slug=request.slug,
-            operation="create_project",
-            original_exception=e
-        )
-
-@app.get("/api/v1/organizations/{org_id}/projects", response_model=List[ProjectResponse])
-async def list_projects(
-    org_id: UUID,
-    status: Optional[ProjectStatus] = None,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
-    current_user: Dict[str, Any] = Depends(get_current_user)
-):
-    """List projects within an organization"""
-    try:
-        # Implementation would filter projects by organization and user access
-        return []
-    except OrganizationManagementException:
-        # Re-raise custom exceptions (they will be handled by the global handler)
-        raise
-    except Exception as e:
-        raise ProjectException(
-            message="Failed to list projects",
-            organization_id=str(org_id),
-            operation="list_projects",
-            original_exception=e
-        )
-
-# Organization Member Management
-@app.post("/api/v1/organizations/{org_id}/members")
-async def add_organization_member(
-    org_id: UUID,
-    request: OrganizationMembershipRequest,
-    current_user: Dict[str, Any] = Depends(require_org_admin)
-):
-    """Add a user to an organization"""
-    try:
-        # Implementation would add user to organization
-        return {"message": "User added to organization successfully"}
-    except OrganizationManagementException:
-        # Re-raise custom exceptions (they will be handled by the global handler)
-        raise
-    except Exception as e:
-        raise MembershipException(
-            message="Failed to add organization member",
-            user_email=request.user_email,
-            organization_id=str(org_id),
-            role=request.role.value,
-            operation="add_organization_member",
-            original_exception=e
-        )
-
-@app.get("/api/v1/organizations/{org_id}/members", response_model=List[OrganizationMemberResponse])
-async def list_organization_members(
-    org_id: UUID,
-    role: Optional[UserRole] = None,
-    skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
-    current_user: Dict[str, Any] = Depends(require_org_admin)
-):
-    """List organization members"""
-    try:
-        # Implementation would list organization members
-        return []
-    except OrganizationManagementException:
-        # Re-raise custom exceptions (they will be handled by the global handler)
-        raise
-    except Exception as e:
-        raise MembershipException(
-            message="Failed to list organization members",
-            organization_id=str(org_id),
-            operation="list_organization_members",
-            original_exception=e
-        )
-
-@app.delete("/api/v1/organizations/{org_id}/members/{user_id}")
-async def remove_organization_member(
-    org_id: UUID,
-    user_id: UUID,
-    current_user: Dict[str, Any] = Depends(require_org_admin)
-):
-    """Remove a user from an organization"""
-    try:
-        # Implementation would remove user from organization
-        return {"message": "User removed from organization successfully"}
-    except OrganizationManagementException:
-        # Re-raise custom exceptions (they will be handled by the global handler)
-        raise
-    except Exception as e:
-        raise MembershipException(
-            message="Failed to remove organization member",
-            user_id=str(user_id),
-            organization_id=str(org_id),
-            operation="remove_organization_member",
-            original_exception=e
-        )
-
-# Instructor Management (Specialized endpoints for org admins)
-@app.post("/api/v1/organizations/{org_id}/instructors")
-async def create_instructor(
-    org_id: UUID,
-    request: InstructorCreateRequest,
-    current_user: Dict[str, Any] = Depends(require_org_admin)
-):
-    """Create a new instructor within the organization"""
-    try:
-        # Implementation would:
-        # 1. Create user account if doesn't exist
-        # 2. Add to organization with instructor role
-        # 3. Send welcome email if requested
-        return {
-            "message": "Instructor created successfully",
-            "user_id": "new-instructor-id",
-            "email_sent": request.send_welcome_email
-        }
-    except OrganizationManagementException:
-        # Re-raise custom exceptions (they will be handled by the global handler)
-        raise
-    except Exception as e:
-        raise InstructorManagementException(
-            message="Failed to create instructor",
-            instructor_email=request.email,
-            organization_id=str(org_id),
-            operation="create_instructor",
-            original_exception=e
-        )
-
-@app.get("/api/v1/organizations/{org_id}/instructors", response_model=List[OrganizationMemberResponse])
-async def list_instructors(
-    org_id: UUID,
-    current_user: Dict[str, Any] = Depends(require_org_admin)
-):
-    """List all instructors in the organization"""
-    try:
-        # Implementation would filter organization members by instructor role
-        return []
-    except OrganizationManagementException:
-        # Re-raise custom exceptions (they will be handled by the global handler)
-        raise
-    except Exception as e:
-        raise InstructorManagementException(
-            message="Failed to list instructors",
-            organization_id=str(org_id),
-            operation="list_instructors",
-            original_exception=e
-        )
-
-@app.put("/api/v1/organizations/{org_id}/instructors/{user_id}/permissions")
-async def update_instructor_permissions(
-    org_id: UUID,
-    user_id: UUID,
-    permissions: Dict[str, Any],
-    current_user: Dict[str, Any] = Depends(require_org_admin)
-):
-    """Update instructor permissions within the organization"""
-    try:
-        # Implementation would update instructor permissions
-        return {"message": "Instructor permissions updated successfully"}
-    except OrganizationManagementException:
-        # Re-raise custom exceptions (they will be handled by the global handler)
-        raise
-    except Exception as e:
-        raise InstructorManagementException(
-            message="Failed to update instructor permissions",
-            instructor_id=str(user_id),
-            organization_id=str(org_id),
-            operation="update_instructor_permissions",
-            original_exception=e
-        )
-
-@app.delete("/api/v1/organizations/{org_id}/instructors/{user_id}")
-async def remove_instructor(
-    org_id: UUID,
-    user_id: UUID,
-    current_user: Dict[str, Any] = Depends(require_org_admin)
-):
-    """Remove an instructor from the organization"""
-    try:
-        # Implementation would remove instructor role/membership
-        return {"message": "Instructor removed successfully"}
-    except OrganizationManagementException:
-        # Re-raise custom exceptions (they will be handled by the global handler)
-        raise
-    except Exception as e:
-        raise InstructorManagementException(
-            message="Failed to remove instructor",
-            instructor_id=str(user_id),
-            organization_id=str(org_id),
-            operation="remove_instructor",
-            original_exception=e
-        )
-
-# Project Member Management
-@app.post("/api/v1/projects/{project_id}/members")
-async def add_project_member(
-    project_id: UUID,
-    request: ProjectMembershipRequest,
-    current_user: Dict[str, Any] = Depends(require_org_admin)
-):
-    """Add a user to a project"""
-    try:
-        # Implementation would add user to project
-        return {"message": "User added to project successfully"}
-    except OrganizationManagementException:
-        # Re-raise custom exceptions (they will be handled by the global handler)
-        raise
-    except Exception as e:
-        raise MembershipException(
-            message="Failed to add project member",
-            user_id=str(request.user_id),
-            project_id=str(project_id),
-            role=request.role.value,
-            operation="add_project_member",
-            original_exception=e
-        )
-
-@app.get("/api/v1/projects/{project_id}/members", response_model=List[ProjectMemberResponse])
-async def list_project_members(
-    project_id: UUID,
-    role: Optional[ProjectMemberRole] = None,
-    current_user: Dict[str, Any] = Depends(get_current_user)
-):
-    """List project members"""
-    try:
-        # Implementation would list project members
-        return []
-    except OrganizationManagementException:
-        # Re-raise custom exceptions (they will be handled by the global handler)
-        raise
-    except Exception as e:
-        raise MembershipException(
-            message="Failed to list project members",
-            project_id=str(project_id),
-            operation="list_project_members",
-            original_exception=e
-        )
+# All organization endpoints have been moved to api/organization_endpoints.py
+# and are now properly registered via router inclusion with complex dependency injection
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def main(cfg: DictConfig) -> None:

@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Your Organization - Course Creator</title>
+    <link rel="stylesheet" href="../css/main.css?v=2.0">
+    <link rel="stylesheet" href="../css/components.css?v=2.0">
+    <link rel="stylesheet" href="../css/components/upload.css?v=2.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .registration-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .registration-card {
+            background: var(--card-background);
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            padding: 3rem;
+            width: 100%;
+            max-width: 800px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .registration-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+        }
+
+        .registration-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .registration-header h1 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            font-size: 2.25rem;
+            font-weight: var(--font-weight-bold);
+        }
+
+        .registration-header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+        }
+
+        .professional-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--success-color);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+            font-size: 0.875rem;
+            font-weight: var(--font-weight-medium);
+        }
+
+        .form-section {
+            margin-bottom: 2.5rem;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--surface-color);
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--primary-color);
+            font-size: 1.25rem;
+            font-weight: var(--font-weight-semibold);
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .form-grid.single {
+            grid-template-columns: 1fr;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            color: var(--text-primary);
+            font-weight: var(--font-weight-medium);
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .form-label.required::after {
+            content: ' *';
+            color: var(--danger-color);
+        }
+
+        .form-input,
+        .form-textarea {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background-color: var(--background-color);
+        }
+
+        .form-input:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-help {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .form-error {
+            color: var(--danger-color);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            display: none;
+            padding: 0.5rem;
+            background-color: rgba(239, 68, 68, 0.1);
+            border-radius: 6px;
+            border-left: 3px solid var(--danger-color);
+        }
+
+        .form-error.show {
+            display: block;
+        }
+
+        .form-success {
+            color: var(--success-color);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            display: none;
+            padding: 0.5rem;
+            background-color: rgba(16, 185, 129, 0.1);
+            border-radius: 6px;
+            border-left: 3px solid var(--success-color);
+        }
+
+        .form-success.show {
+            display: block;
+        }
+
+        .form-input.error {
+            border-color: var(--danger-color);
+        }
+
+        .form-input.success {
+            border-color: var(--success-color);
+        }
+
+        .submit-section {
+            text-align: center;
+            padding-top: 2rem;
+        }
+
+        .btn-submit {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            padding: 1rem 3rem;
+            font-size: 1.1rem;
+            font-weight: var(--font-weight-semibold);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-submit .loading {
+            display: none;
+        }
+
+        .btn-submit.loading .loading {
+            display: inline-block;
+        }
+
+        .btn-submit.loading .btn-text {
+            display: none;
+        }
+
+        .back-link {
+            position: absolute;
+            top: 2rem;
+            left: 2rem;
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: var(--font-weight-medium);
+            transition: all 0.3s ease;
+        }
+
+        .back-link:hover {
+            transform: translateX(-5px);
+        }
+
+        .success-message {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+            background: var(--success-color);
+            color: white;
+            border-radius: 12px;
+            margin-top: 2rem;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .registration-container {
+                padding: 1rem;
+            }
+
+            .registration-card {
+                padding: 2rem 1.5rem;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .registration-header h1 {
+                font-size: 1.875rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="registration-container">
+        <a href="index.html" class="back-link">
+            <i class="fas fa-arrow-left"></i>
+            Back to Home
+        </a>
+
+        <div class="registration-card">
+            <div class="registration-header">
+                <h1><i class="fas fa-building"></i> Register Your Organization</h1>
+                <p>Join the Course Creator Platform with professional standards</p>
+                <div class="professional-badge">
+                    <i class="fas fa-shield-alt"></i>
+                    Professional Organizations Only
+                </div>
+            </div>
+
+            <form id="organizationRegistrationForm" novalidate>
+                <!-- Organization Information Section -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-building"></i>
+                        Organization Information
+                    </h3>
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="orgName" class="form-label required">Organization Name</label>
+                            <input 
+                                type="text" 
+                                id="orgName" 
+                                name="name" 
+                                class="form-input" 
+                                required 
+                                minlength="2" 
+                                maxlength="255"
+                                placeholder="e.g., TechCorp Training Institute"
+                            >
+                            <div class="form-help">Official name of your organization</div>
+                            <div class="form-error" id="orgName-error"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="orgSlug" class="form-label required">Organization ID</label>
+                            <input 
+                                type="text" 
+                                id="orgSlug" 
+                                name="slug" 
+                                class="form-input" 
+                                required 
+                                pattern="^[a-z0-9-]+$"
+                                minlength="2" 
+                                maxlength="100"
+                                placeholder="e.g., techcorp-training"
+                            >
+                            <div class="form-help">URL-friendly identifier (lowercase, numbers, hyphens only)</div>
+                            <div class="form-error" id="orgSlug-error"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="orgDescription" class="form-label">Description</label>
+                        <textarea 
+                            id="orgDescription" 
+                            name="description" 
+                            class="form-textarea"
+                            maxlength="1000"
+                            placeholder="Brief description of your organization and training focus..."
+                        ></textarea>
+                        <div class="form-help">Optional description (max 1000 characters)</div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="orgDomain" class="form-label">Website Domain</label>
+                            <input 
+                                type="text" 
+                                id="orgDomain" 
+                                name="domain" 
+                                class="form-input"
+                                pattern="^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+                                placeholder="e.g., techcorp.com"
+                            >
+                            <div class="form-help">Your organization's website domain (optional)</div>
+                            <div class="form-error" id="orgDomain-error"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="orgLogo" class="form-label">Organization Logo</label>
+                            <div class="logo-upload-area" id="logoUploadArea">
+                                <div class="upload-content">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <p>Drag & drop your logo here</p>
+                                    <p class="upload-hint">or <span class="upload-link">click to browse</span></p>
+                                    <p class="file-types">JPG, PNG, GIF (max 5MB)</p>
+                                </div>
+                                <input 
+                                    type="file" 
+                                    id="orgLogo" 
+                                    name="logo" 
+                                    class="logo-file-input"
+                                    accept=".jpg,.jpeg,.png,.gif"
+                                    hidden
+                                >
+                            </div>
+                            <div class="logo-preview" id="logoPreview" style="display: none;">
+                                <img id="previewImage" src="" alt="Logo preview">
+                                <div class="preview-info">
+                                    <span class="file-name" id="fileName"></span>
+                                    <button type="button" class="remove-logo" id="removeLogo">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="form-help">Optional organization logo (JPG, PNG, GIF format, max 5MB)</div>
+                            <div class="form-error" id="orgLogo-error"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Information Section -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-address-book"></i>
+                        Contact Information
+                    </h3>
+
+                    <div class="form-group">
+                        <label for="orgAddress" class="form-label required">Business Address</label>
+                        <input 
+                            type="text" 
+                            id="orgAddress" 
+                            name="address" 
+                            class="form-input" 
+                            required 
+                            minlength="10" 
+                            maxlength="500"
+                            placeholder="Complete business address including street, city, state, postal code"
+                        >
+                        <div class="form-help">Complete physical address of your organization</div>
+                        <div class="form-error" id="orgAddress-error"></div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="orgPhone" class="form-label required">Business Phone</label>
+                            <input 
+                                type="tel" 
+                                id="orgPhone" 
+                                name="contact_phone" 
+                                class="form-input" 
+                                required
+                                placeholder="e.g., +1-555-123-4567"
+                            >
+                            <div class="form-help">Professional business phone number</div>
+                            <div class="form-error" id="orgPhone-error"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="orgEmail" class="form-label required">Business Email</label>
+                            <input 
+                                type="email" 
+                                id="orgEmail" 
+                                name="contact_email" 
+                                class="form-input" 
+                                required
+                                placeholder="e.g., admin@techcorp.com"
+                            >
+                            <div class="form-help">Professional email (no Gmail, Yahoo, etc.)</div>
+                            <div class="form-error" id="orgEmail-error"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Organization Administrator Section -->
+                <div class="form-section">
+                    <h3 class="section-title">
+                        <i class="fas fa-user-shield"></i>
+                        Organization Administrator
+                    </h3>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="adminName" class="form-label required">Full Name</label>
+                            <input 
+                                type="text" 
+                                id="adminName" 
+                                name="admin_full_name" 
+                                class="form-input" 
+                                required 
+                                minlength="2" 
+                                maxlength="100"
+                                placeholder="e.g., John Smith"
+                            >
+                            <div class="form-help">Full name of the organization administrator</div>
+                            <div class="form-error" id="adminName-error"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="adminEmail" class="form-label required">Email Address</label>
+                            <input 
+                                type="email" 
+                                id="adminEmail" 
+                                name="admin_email" 
+                                class="form-input" 
+                                required
+                                placeholder="e.g., john.smith@techcorp.com"
+                            >
+                            <div class="form-help">Professional email for administrator</div>
+                            <div class="form-error" id="adminEmail-error"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="adminPhone" class="form-label">Phone Number</label>
+                        <input 
+                            type="tel" 
+                            id="adminPhone" 
+                            name="admin_phone" 
+                            class="form-input"
+                            placeholder="e.g., +1-555-123-4568"
+                        >
+                        <div class="form-help">Administrator's phone number (optional)</div>
+                        <div class="form-error" id="adminPhone-error"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="adminRole" class="form-label required">Primary Role</label>
+                        <select 
+                            id="adminRole" 
+                            name="admin_role" 
+                            class="form-input"
+                            required
+                        >
+                            <option value="">Select your primary role</option>
+                            <option value="organization_admin">Organization Administrator</option>
+                            <option value="instructor">Instructor</option>
+                            <option value="student">Student</option>
+                        </select>
+                        <div class="form-help">Your primary role in this organization (you can have multiple roles later)</div>
+                        <div class="form-error" id="adminRole-error"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Additional Roles (Optional)</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input 
+                                    type="checkbox" 
+                                    id="roleInstructor" 
+                                    name="additional_roles" 
+                                    value="instructor"
+                                    class="form-checkbox"
+                                >
+                                <span class="checkmark"></span>
+                                Also serve as Instructor
+                            </label>
+                            <label class="checkbox-label">
+                                <input 
+                                    type="checkbox" 
+                                    id="roleStudent" 
+                                    name="additional_roles" 
+                                    value="student"
+                                    class="form-checkbox"
+                                >
+                                <span class="checkmark"></span>
+                                Also participate as Student
+                            </label>
+                        </div>
+                        <div class="form-help">Select additional roles you'll have in this organization</div>
+                    </div>
+                </div>
+
+                <div class="submit-section">
+                    <button type="submit" class="btn-submit" id="submitBtn">
+                        <span class="btn-text">
+                            <i class="fas fa-check"></i>
+                            Register Organization
+                        </span>
+                        <span class="loading">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            Processing...
+                        </span>
+                    </button>
+                </div>
+
+                <div class="success-message" id="successMessage">
+                    <h3><i class="fas fa-check-circle"></i> Registration Successful!</h3>
+                    <p>Your organization has been registered successfully. You will receive a confirmation email shortly.</p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../js/config.js?v=2.0"></script>
+    <script src="../js/organization-registration.js?v=2.0"></script>
+</body>
+</html>

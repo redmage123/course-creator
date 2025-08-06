@@ -1,0 +1,385 @@
+/**
+ * Upload Component Styles
+ * 
+ * PURPOSE: Drag and drop file upload interface with preview functionality
+ * FEATURES: Visual feedback, file validation, image preview, professional styling
+ */
+
+/* Logo Upload Area */
+.logo-upload-area {
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    background: var(--surface-color);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    min-height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-upload-area:hover {
+    border-color: var(--primary-color);
+    background: rgba(99, 102, 241, 0.05);
+}
+
+.logo-upload-area.dragover {
+    border-color: var(--primary-color);
+    background: rgba(99, 102, 241, 0.1);
+    transform: scale(1.02);
+}
+
+.logo-upload-area.error {
+    border-color: var(--danger-color);
+    background: rgba(239, 68, 68, 0.05);
+}
+
+/* Upload Content */
+.upload-content {
+    color: var(--text-secondary);
+}
+
+.upload-content i {
+    font-size: 3rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.upload-content p {
+    margin: 0.5rem 0;
+    font-size: 1rem;
+}
+
+.upload-content .upload-hint {
+    font-size: 0.875rem;
+}
+
+.upload-content .upload-link {
+    color: var(--primary-color);
+    font-weight: var(--font-weight-medium);
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.upload-content .file-types {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+}
+
+/* Hidden File Input */
+.logo-file-input {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+/* Logo Preview */
+.logo-preview {
+    border: 2px solid var(--success-color);
+    border-radius: 12px;
+    padding: 1rem;
+    background: var(--surface-color);
+    text-align: center;
+    position: relative;
+}
+
+.logo-preview img {
+    max-width: 100%;
+    max-height: 150px;
+    border-radius: 8px;
+    object-fit: contain;
+    margin-bottom: 1rem;
+}
+
+.preview-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem;
+    background: var(--background-color);
+    border-radius: 8px;
+}
+
+.preview-info .file-name {
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    font-weight: var(--font-weight-medium);
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    flex: 1;
+    margin-right: 1rem;
+}
+
+.remove-logo {
+    background: var(--danger-color);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.75rem;
+}
+
+.remove-logo:hover {
+    background: #dc2626;
+    transform: scale(1.1);
+}
+
+/* Upload States */
+.upload-processing {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.upload-processing::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.upload-processing::before {
+    content: '\f110'; /* FontAwesome spinner */
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2rem;
+    color: var(--primary-color);
+    animation: spin 1s linear infinite;
+    z-index: 1;
+}
+
+@keyframes spin {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* File Type Validation Visual Feedback */
+.upload-invalid-type {
+    border-color: var(--danger-color);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.upload-invalid-type .upload-content {
+    color: var(--danger-color);
+}
+
+.upload-invalid-type .upload-content i {
+    color: var(--danger-color);
+}
+
+/* File Size Validation */
+.upload-too-large {
+    border-color: var(--warning-color);
+    background: rgba(245, 158, 11, 0.1);
+}
+
+.upload-too-large .upload-content {
+    color: var(--warning-color);
+}
+
+.upload-too-large .upload-content i {
+    color: var(--warning-color);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .logo-upload-area {
+        padding: 1.5rem;
+        min-height: 120px;
+    }
+    
+    .upload-content i {
+        font-size: 2.5rem;
+    }
+    
+    .upload-content p {
+        font-size: 0.875rem;
+    }
+    
+    .logo-preview img {
+        max-height: 120px;
+    }
+}
+
+/* Success Animation */
+.upload-success {
+    border-color: var(--success-color);
+    background: rgba(16, 185, 129, 0.1);
+    animation: uploadSuccess 0.5s ease-out;
+}
+
+@keyframes uploadSuccess {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* Accessibility */
+.logo-upload-area:focus-within {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+.logo-file-input:focus {
+    outline: none;
+}
+
+/* Checkbox Group Styles */
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    position: relative;
+    padding-left: 2rem;
+}
+
+.form-checkbox {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.checkmark {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 18px;
+    width: 18px;
+    background-color: var(--background-color);
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.checkbox-label:hover .checkmark {
+    border-color: var(--primary-color);
+}
+
+.form-checkbox:checked ~ .checkmark {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+    left: 5px;
+    top: 1px;
+    width: 6px;
+    height: 12px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.form-checkbox:checked ~ .checkmark:after {
+    display: block;
+}
+
+.form-checkbox:disabled ~ .checkmark {
+    background-color: var(--background-secondary);
+    border-color: var(--border-color);
+    opacity: 0.6;
+}
+
+.checkbox-label:has(.form-checkbox:disabled) {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Select dropdown styles */
+select.form-input {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1rem;
+    padding-right: 2.5rem;
+    cursor: pointer;
+}
+
+select.form-input:focus {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+}
+
+select.form-input option {
+    padding: 0.5rem;
+    background-color: var(--background-color);
+    color: var(--text-primary);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .logo-upload-area {
+        background: rgba(255, 255, 255, 0.02);
+    }
+    
+    .logo-upload-area:hover {
+        background: rgba(99, 102, 241, 0.1);
+    }
+    
+    .logo-preview {
+        background: rgba(255, 255, 255, 0.02);
+    }
+    
+    .preview-info {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .checkmark {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .checkbox-label:hover .checkmark {
+        border-color: var(--primary-color);
+    }
+    
+    select.form-input {
+        background-color: rgba(255, 255, 255, 0.05);
+        color: rgba(255, 255, 255, 0.9);
+    }
+    
+    select.form-input option {
+        background-color: var(--background-color);
+        color: var(--text-primary);
+    }
+}

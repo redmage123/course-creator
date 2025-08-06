@@ -13,17 +13,19 @@ set -e
 #fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+#PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+PROJECT_ROOT="$(pwd)"
+cd "$PROJECT_ROOT"
 
 # Load environment variables from .cc_env file
-if [ -f "$SCRIPT_DIR/.cc_env" ]; then
+if [ -f "$PROJECT_ROOT/.cc_env" ]; then
     set -a  # automatically export all variables
-    source "$SCRIPT_DIR/.cc_env"
+    source "$PROJECT_ROOT/.cc_env"
     set +a  # stop automatically exporting
 fi
 
 # Docker configuration
-COMPOSE_FILE="$SCRIPT_DIR/docker-compose.yml"
+COMPOSE_FILE="$PROJECT_ROOT/docker-compose.yml"
 DOCKER_PROJECT_NAME="course-creator"
 
 # Colors for output
@@ -93,7 +95,7 @@ parse_compose_config() {
             if [[ $line =~ ^[[:space:]]{2}([a-zA-Z0-9_-]+):[[:space:]]*$ ]]; then
                 current_service="${BASH_REMATCH[1]}"
                 SERVICE_NAMES["$current_service"]="$current_service"
-                SERVICE_CONTAINERS["$current_service"]="${DOCKER_PROJECT_NAME}-${current_service}-1"
+                SERVICE_CONTAINERS["$current_service"]="${DOCKER_PROJECT_NAME}_${current_service}_1"
             # Match port mappings
             elif [[ $line =~ ^[[:space:]]*-[[:space:]]*\"([0-9]+):([0-9]+)\"[[:space:]]*$ ]] && [[ -n "$current_service" ]]; then
                 host_port="${BASH_REMATCH[1]}"
@@ -264,9 +266,9 @@ start_docker() {
     local compose_cmd=$(get_compose_cmd)
     
     # Ensure .cc_env file exists with default values
-    if [ ! -f "$SCRIPT_DIR/.cc_env" ]; then
+    if [ ! -f "$PROJECT_ROOT/.cc_env" ]; then
         log_warning ".cc_env not found, creating with default values..."
-        cat > "$SCRIPT_DIR/.cc_env" << EOF
+        cat > "$PROJECT_ROOT/.cc_env" << EOF
 # Course Creator Environment Variables
 DB_PASSWORD=postgres_password
 JWT_SECRET_KEY=your-super-secret-key-change-in-production
@@ -277,21 +279,21 @@ EOF
 
     # Load updated environment
     set -a
-    source "$SCRIPT_DIR/.cc_env"
+    source "$PROJECT_ROOT/.cc_env"
     set +a
 
     # Build base image first for system package caching
     log_info "Building base image for system package caching..."
     if ! sg docker -c "docker image inspect course-creator-base:latest" >/dev/null 2>&1; then
         log_info "Base image not found, building..."
-        sg docker -c "docker build -f \"$SCRIPT_DIR/Dockerfile.base\" -t course-creator-base:latest \"$SCRIPT_DIR\""
+        sg docker -c "docker build -f \"$PROJECT_ROOT/Dockerfile.base\" -t course-creator-base:latest \"$PROJECT_ROOT\""
         log_success "Base image built successfully"
     else
         log_info "Base image already exists, skipping build"
     fi
     
     log_info "Building and starting services..."
-    sg docker -c "$compose_cmd --env-file \"$SCRIPT_DIR/.cc_env\" -f \"$COMPOSE_FILE\" -p \"$DOCKER_PROJECT_NAME\" up -d --build"
+    sg docker -c "$compose_cmd --env-file \"$PROJECT_ROOT/.cc_env\" -f \"$COMPOSE_FILE\" -p \"$DOCKER_PROJECT_NAME\" up -d --build"
 
     # Wait for services to reach final state and show status
     log_info "Waiting for services to start and checking health status..."
@@ -347,7 +349,7 @@ stop_docker() {
     local compose_cmd=$(get_compose_cmd)
     
     # Use sg docker for permissions
-    sg docker -c "$compose_cmd --env-file \"$SCRIPT_DIR/.cc_env\" -f \"$COMPOSE_FILE\" -p \"$DOCKER_PROJECT_NAME\" down"
+    sg docker -c "$compose_cmd --env-file \"$PROJECT_ROOT/.cc_env\" -f \"$COMPOSE_FILE\" -p \"$DOCKER_PROJECT_NAME\" down"
     
     log_success "Docker services stopped"
 }
@@ -379,7 +381,7 @@ docker_status() {
         local compose_cmd=$(get_compose_cmd)
         
         # Show compose services status
-        if sg docker -c "$compose_cmd --env-file \"$SCRIPT_DIR/.cc_env\" -f \"$COMPOSE_FILE\" -p \"$DOCKER_PROJECT_NAME\" ps --format table" 2>/dev/null; then
+        if sg docker -c "$compose_cmd --env-file \"$PROJECT_ROOT/.cc_env\" -f \"$COMPOSE_FILE\" -p \"$DOCKER_PROJECT_NAME\" ps --format table" 2>/dev/null; then
             echo
         else
             log_warning "No services found or Docker Compose not available"
@@ -479,16 +481,16 @@ docker_logs() {
     if [ -z "$service_name" ]; then
         log_info "Showing logs for all services..."
         if [ "$follow_flag" = "follow" ] || [ "$follow_flag" = "-f" ]; then
-            $compose_cmd --env-file "$SCRIPT_DIR/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" logs -f
+            $compose_cmd --env-file "$PROJECT_ROOT/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" logs -f
         else
-            $compose_cmd --env-file "$SCRIPT_DIR/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" logs --tail=50
+            $compose_cmd --env-file "$PROJECT_ROOT/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" logs --tail=50
         fi
     else
         log_info "Showing logs for service: $service_name"
         if [ "$follow_flag" = "follow" ] || [ "$follow_flag" = "-f" ]; then
-            $compose_cmd --env-file "$SCRIPT_DIR/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" logs -f "$service_name"
+            $compose_cmd --env-file "$PROJECT_ROOT/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" logs -f "$service_name"
         else
-            $compose_cmd --env-file "$SCRIPT_DIR/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" logs --tail=50 "$service_name"
+            $compose_cmd --env-file "$PROJECT_ROOT/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" logs --tail=50 "$service_name"
         fi
     fi
 }
@@ -504,7 +506,7 @@ docker_build() {
     
     local compose_cmd=$(get_compose_cmd)
     
-    $compose_cmd --env-file "$SCRIPT_DIR/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" build --no-cache
+    $compose_cmd --env-file "$PROJECT_ROOT/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" build --no-cache
     
     log_success "Docker images built successfully"
 }
@@ -520,7 +522,7 @@ docker_pull() {
     
     local compose_cmd=$(get_compose_cmd)
     
-    $compose_cmd --env-file "$SCRIPT_DIR/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" pull
+    $compose_cmd --env-file "$PROJECT_ROOT/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" pull
     
     log_success "Docker images pulled successfully"
 }
@@ -537,7 +539,7 @@ docker_clean() {
     local compose_cmd=$(get_compose_cmd)
     
     # Stop and remove containers, networks, volumes
-    $compose_cmd --env-file "$SCRIPT_DIR/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" down -v --remove-orphans
+    $compose_cmd --env-file "$PROJECT_ROOT/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" down -v --remove-orphans
     
     # Remove unused images (be careful with this)
     read -p "Remove unused Docker images? (y/N): " -n 1 -r
@@ -568,20 +570,20 @@ docker_rebuild() {
         
         # Stop specific service
         log_info "Stopping service: $service_name"
-        $compose_cmd --env-file "$SCRIPT_DIR/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" stop "$service_name"
+        $compose_cmd --env-file "$PROJECT_ROOT/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" stop "$service_name"
         
         # Remove specific container and image
         log_info "Removing container and image for: $service_name"
-        $compose_cmd --env-file "$SCRIPT_DIR/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" rm -f "$service_name"
+        $compose_cmd --env-file "$PROJECT_ROOT/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" rm -f "$service_name"
         docker image rm -f "${DOCKER_PROJECT_NAME}-${service_name}:latest" 2>/dev/null || true
         
         # Force rebuild with no cache
         log_info "Building $service_name with no cache..."
-        $compose_cmd --env-file "$SCRIPT_DIR/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" build --no-cache "$service_name"
+        $compose_cmd --env-file "$PROJECT_ROOT/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" build --no-cache "$service_name"
         
         # Start the service
         log_info "Starting $service_name..."
-        $compose_cmd --env-file "$SCRIPT_DIR/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" up -d "$service_name"
+        $compose_cmd --env-file "$PROJECT_ROOT/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" up -d "$service_name"
         
         log_success "Service $service_name rebuilt and started successfully!"
     else
@@ -589,7 +591,7 @@ docker_rebuild() {
         
         # Stop all services
         log_info "Stopping all services..."
-        $compose_cmd --env-file "$SCRIPT_DIR/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" down
+        $compose_cmd --env-file "$PROJECT_ROOT/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" down
         
         # Remove all project images
         log_info "Removing all project images..."
@@ -601,11 +603,11 @@ docker_rebuild() {
         
         # Rebuild all with no cache
         log_info "Building all services with no cache..."
-        $compose_cmd --env-file "$SCRIPT_DIR/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" build --no-cache
+        $compose_cmd --env-file "$PROJECT_ROOT/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" build --no-cache
         
         # Start all services
         log_info "Starting all services..."
-        $compose_cmd --env-file "$SCRIPT_DIR/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" up -d
+        $compose_cmd --env-file "$PROJECT_ROOT/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" up -d
         
         # Wait for services to be healthy
         log_info "Waiting for services to become healthy..."

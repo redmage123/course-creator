@@ -31,18 +31,32 @@ class DockerService:
     def _initialize_client(self):
         """Initialize Docker client with proper error handling."""
         try:
-            # Use default Docker client (should automatically detect socket)
+            # Use explicit socket path for container environments
             docker_timeout = self.docker_config.get('timeout', 60)
+            socket_path = 'unix:///var/run/docker.sock'
             
-            # Try to create Docker client using default settings
-            self._client = docker.from_env(timeout=docker_timeout)
+            # Create Docker client with explicit socket path
+            self._client = docker.DockerClient(
+                base_url=socket_path,
+                timeout=docker_timeout
+            )
             
-            # Test the connection by getting Docker info via Python SDK
-            self._client.info()
-            self.logger.info("Docker client initialized successfully using socket connection")
+            # Test the connection by getting Docker info
+            info = self._client.info()
+            self.logger.info(f"Docker client initialized successfully. Server version: {info.get('ServerVersion', 'unknown')}")
+            self.logger.info(f"Connected to Docker daemon at {socket_path}")
+            
         except Exception as e:
-            self.logger.error(f"Cannot connect to Docker daemon: {e}")
-            raise RuntimeError(f'Cannot connect to Docker daemon: {e}') from e
+            self.logger.error(f"Cannot connect to Docker daemon at {socket_path}: {e}")
+            # Try fallback to environment detection
+            try:
+                self.logger.info("Attempting fallback to environment-based Docker client...")
+                self._client = docker.from_env(timeout=docker_timeout)
+                info = self._client.info()
+                self.logger.info(f"Fallback successful. Server version: {info.get('ServerVersion', 'unknown')}")
+            except Exception as fallback_e:
+                self.logger.error(f"Fallback also failed: {fallback_e}")
+                raise RuntimeError(f'Cannot connect to Docker daemon: {e}. Fallback failed: {fallback_e}') from e
     
     @property
     def client(self) -> docker.DockerClient:
@@ -59,7 +73,13 @@ class DockerService:
                         environment: Dict[str, str],
                         cpu_limit: str = "1.0",
                         memory_limit: str = "1g") -> str:
-        """Create and start a Docker container."""
+        """
+        Create and start a Docker container as a sibling container on the main VM.
+        
+        This method creates student lab containers directly on the host Docker daemon,
+        NOT as Docker-in-Docker containers. The containers will be siblings to the
+        lab-manager container and accessible from the main VM.
+        """
         try:
             # Build port configuration
             port_bindings = {}
@@ -76,28 +96,63 @@ class DockerService:
                     exposed_ports[internal_port] = {}
                     self.logger.warning(f"Port {external_port} unavailable, using {alt_port}")
             
-            # Create container
+            # Prepare volumes with host paths (important for main VM access)
+            volume_mounts = {}
+            for container_path, host_path in volumes.items():
+                # Ensure host paths are accessible from main VM
+                volume_mounts[host_path] = {'bind': container_path, 'mode': 'rw'}
+            
+            # Add environment variables for student containers
+            student_env = {
+                **environment,
+                'CONTAINER_TYPE': 'student_lab',
+                'LAB_MANAGER_HOST': 'lab-manager:8006',
+                'CREATED_BY': 'course-creator-lab-manager'
+            }
+            
+            # Create container with specific configuration for main VM deployment
             container = self.client.containers.create(
                 image=image_name,
                 name=container_name,
                 ports=port_bindings,
-                volumes=volumes,
-                environment=environment,
+                volumes=volume_mounts,
+                environment=student_env,
                 detach=True,
-                network_mode='bridge',
+                network_mode='bridge',  # Use bridge network for main VM access
                 cpu_period=100000,
                 cpu_quota=int(float(cpu_limit) * 100000),
                 mem_limit=memory_limit,
-                restart_policy={"Name": "unless-stopped"}
+                restart_policy={"Name": "unless-stopped"},
+                labels={
+                    'created_by': 'course-creator-lab-manager',
+                    'container_type': 'student_lab',
+                    'lab_session': container_name
+                },
+                # Security options for lab containers
+                security_opt=['no-new-privileges:true'],
+                # Prevent container from accessing Docker socket
+                tmpfs={'/tmp': 'rw,noexec,nosuid,size=100m'}
             )
             
             container.start()
-            self.logger.info(f"Container {container_name} created and started")
+            
+            # Get the actual port mappings after start
+            container.reload()
+            actual_ports = {}
+            if container.ports:
+                for container_port, host_bindings in container.ports.items():
+                    if host_bindings:
+                        actual_ports[container_port] = host_bindings[0]['HostPort']
+            
+            self.logger.info(f"Student lab container {container_name} created and started on main VM")
+            self.logger.info(f"Container ID: {container.id[:12]}")
+            self.logger.info(f"Port mappings: {actual_ports}")
+            
             return container.id
             
         except APIError as e:
-            self.logger.error(f"Failed to create container {container_name}: {e}")
-            raise HTTPException(status_code=500, detail=f"Container creation failed: {e}")
+            self.logger.error(f"Failed to create student lab container {container_name}: {e}")
+            raise Exception(f"Container creation failed: {e}")
     
     def stop_container(self, container_name: str, timeout: int = 10) -> bool:
         """Stop a Docker container."""

@@ -2,8 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Version**: 2.8.0 - Frontend Configuration System Consolidation and Documentation Enhancement  
-**Last Updated**: 2025-08-04
+**Version**: 2.9.0 - Demo Service Test Suite Completion and App Control Path Fix  
+**Last Updated**: 2025-08-06
 
 ## 📁 Documentation Structure
 
@@ -52,11 +52,12 @@ This documentation is organized into logical sections within the `claude.md/` su
 
 The Course Creator Platform is a comprehensive educational technology system with:
 
-- **8 Microservices** (ports 8000-8008) providing authentication, content generation, lab management, analytics, and RBAC
+- **9 Microservices** (ports 8000-8010) providing authentication, content generation, lab management, analytics, RBAC, and demo functionality
 - **Multi-IDE Lab Environment** with individual Docker containers for students
 - **Enhanced RBAC System** with multi-tenant organization management
 - **RAG-Enhanced AI** for progressive learning and content generation
-- **Comprehensive Testing** with 102 RBAC tests achieving 100% success rate
+- **Demo Service** with realistic data generation for platform demonstration (port 8010)
+- **Comprehensive Testing** with 102 RBAC tests achieving 100% success rate plus 70+ demo service tests
 
 ## 📖 How to Read This Documentation
 

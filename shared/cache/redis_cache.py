@@ -59,8 +59,8 @@ from typing import Any, Optional, Union, Dict, List
 from datetime import datetime, timedelta
 import asyncio
 from functools import wraps
-import aioredis
-from aioredis import Redis
+import redis.asyncio as redis
+from redis.asyncio import Redis
 
 
 class RedisCacheManager:
@@ -153,7 +153,7 @@ class RedisCacheManager:
             - Health status updates for monitoring systems
         """
         try:
-            self._redis = await aioredis.from_url(
+            self._redis = redis.from_url(
                 self.redis_url,
                 decode_responses=True,
                 max_connections=20,

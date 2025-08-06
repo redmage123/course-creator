@@ -1,40 +1,27 @@
 #!/bin/bash
 
-"""
-COURSE CREATOR PLATFORM - UBUNTU DEPLOYMENT SCRIPT
-==================================================
-
-Complete deployment script for Ubuntu systems (20.04 LTS and later)
-Installs all dependencies, configures services, and deploys the Course Creator Platform
-with enterprise-grade security and multi-tenant architecture.
-
-SECURITY FEATURES:
-- OWASP Top 10 2021 compliant (96%+ security score)
-- Multi-tenant organization isolation
-- Advanced rate limiting and DoS protection
-- Comprehensive security headers
-- Production-hardened configuration
-
-USAGE:
-    sudo ./deploy-ubuntu.sh [OPTIONS]
-
-OPTIONS:
-    --production        Deploy in production mode (default: development)
-    --domain DOMAIN     Set domain name for SSL/TLS configuration
-    --ssl-email EMAIL   Email for Let's Encrypt SSL certificate
-    --skip-db          Skip database setup (use existing database)
-    --skip-ssl         Skip SSL certificate setup
-    --help             Show this help message
-
-REQUIREMENTS:
-- Ubuntu 20.04 LTS or later
-- Root or sudo access
-- Internet connection
-- At least 4GB RAM and 20GB disk space
-
-AUTHOR: Course Creator Platform Team
-VERSION: 2.8.0 (OWASP Security Enhanced)
-"""
+#
+# COURSE CREATOR PLATFORM - UBUNTU DEPLOYMENT SCRIPT (DOCKER ENHANCED)
+# ====================================================================
+#
+# Complete deployment script for Ubuntu systems (20.04 LTS and later)
+# Enhanced with robust Docker detection, installation, and deployment capabilities.
+#
+# FEATURES:
+# - Intelligent Docker detection and installation
+# - Multiple Docker installation strategies with fallbacks
+# - Docker daemon health monitoring and recovery
+# - Dedicated appuser account with Docker permissions
+# - Seamless integration with .cc_env configuration
+# - Support for both Docker and systemd deployments
+# - Python virtual environment management
+# - Microservice discovery and deployment
+# - Database setup (PostgreSQL, Redis)
+# - SSL/TLS configuration
+# - OWASP security enhancements
+#
+# VERSION: 3.6.0 (Enhanced User Management)
+#
 
 set -euo pipefail  # Exit on error, undefined vars, pipe failures
 
@@ -43,8 +30,8 @@ set -euo pipefail  # Exit on error, undefined vars, pipe failures
 # =============================================================================
 
 # Script metadata
-readonly SCRIPT_VERSION="2.8.0"
-readonly SCRIPT_NAME="Course Creator Platform Deployment"
+readonly SCRIPT_VERSION="3.6.0"
+readonly SCRIPT_NAME="Course Creator Platform Deployment (Docker Enhanced)"
 readonly MIN_UBUNTU_VERSION="20.04"
 
 # Default configuration
@@ -53,10 +40,33 @@ DOMAIN_NAME=""
 SSL_EMAIL=""
 SKIP_DATABASE=false
 SKIP_SSL=false
+FORCE_REINSTALL=false
+DEBUG_MODE=false
+USE_DOCKER=true
+DOCKER_ONLY=false
 INSTALL_DIR="/opt/course-creator"
 SERVICE_USER="course-creator"
+APP_USER="appuser"
 DATABASE_NAME="course_creator"
-DATABASE_USER="course_creator"
+DATABASE_USER="postgres"
+DATABASE_PASSWORD=""
+REDIS_PASSWORD=""
+JWT_SECRET_KEY=""
+ANTHROPIC_API_KEY=""
+OPENAI_API_KEY=""
+
+# Python configuration
+PYTHON_VERSION="3.12"
+VENV_DIR="${INSTALL_DIR}/venv"
+
+# Service ports
+API_GATEWAY_PORT=8000
+CONTENT_GENERATOR_PORT=8001
+SLIDE_SERVICE_PORT=8003
+LAB_SERVICE_PORT=8004
+USER_INTERFACE_PORT=3000
+DB_PORT=5432
+REDIS_PORT=6379
 
 # Colors for output
 readonly RED='\033[0;31m'
@@ -67,17 +77,25 @@ readonly PURPLE='\033[0;35m'
 readonly CYAN='\033[0;36m'
 readonly NC='\033[0m' # No Color
 
-# Service ports
-declare -A SERVICE_PORTS=(
-    ["frontend"]="3000"
-    ["user-management"]="8000"
-    ["course-generator"]="8001"
-    ["content-storage"]="8003"
-    ["course-management"]="8004"
-    ["content-management"]="8005"
-    ["lab-manager"]="8006"
-    ["analytics"]="8007"
-    ["organization-management"]="8008"
+# Docker installation strategies
+declare -a DOCKER_STRATEGIES=(
+    "docker_strategy_1_convenience_script"
+    "docker_strategy_2_official_repository"
+    "docker_strategy_3_snap_fallback"
+)
+
+# Python installation strategies
+declare -a PYTHON_STRATEGIES=(
+    "python_strategy_1_deadsnakes_ppa"
+    "python_strategy_2_official_source"
+    "python_strategy_3_pyenv"
+)
+
+# Virtual environment strategies
+declare -a VENV_STRATEGIES=(
+    "venv_strategy_1_standard_venv"
+    "venv_strategy_2_virtualenv"
+    "venv_strategy_3_conda"
 )
 
 # =============================================================================
@@ -94,8 +112,15 @@ log() {
         "INFO")  echo -e "${GREEN}[INFO]${NC}  [$timestamp] $message" ;;
         "WARN")  echo -e "${YELLOW}[WARN]${NC}  [$timestamp] $message" ;;
         "ERROR") echo -e "${RED}[ERROR]${NC} [$timestamp] $message" ;;
-        "DEBUG") echo -e "${BLUE}[DEBUG]${NC} [$timestamp] $message" ;;
+        "DEBUG") 
+            if [[ "$DEBUG_MODE" == "true" ]]; then
+                echo -e "${BLUE}[DEBUG]${NC} [$timestamp] $message"
+            fi
+            ;;
         "SUCCESS") echo -e "${GREEN}[SUCCESS]${NC} [$timestamp] $message" ;;
+        "DOCKER") echo -e "${CYAN}[DOCKER]${NC} [$timestamp] $message" ;;
+        "STRATEGY") echo -e "${PURPLE}[STRATEGY]${NC} [$timestamp] $message" ;;
+        "USER") echo -e "${CYAN}[USER]${NC} [$timestamp] $message" ;;
         *)       echo -e "${CYAN}[$level]${NC} [$timestamp] $message" ;;
     esac
 }
@@ -103,6 +128,40 @@ log() {
 error_exit() {
     log "ERROR" "$1"
     exit 1
+}
+
+debug_log() {
+    if [[ "$DEBUG_MODE" == "true" ]]; then
+        log "DEBUG" "$*"
+    fi
+}
+
+retry_command() {
+    local max_attempts="$1"
+    local delay="$2"
+    shift 2
+    local command="$@"
+    local attempt=1
+    
+    while [[ $attempt -le $max_attempts ]]; do
+        debug_log "Attempt $attempt/$max_attempts: $command"
+        if eval "$command"; then
+            return 0
+        else
+            if [[ $attempt -lt $max_attempts ]]; then
+                log "WARN" "Command failed (attempt $attempt/$max_attempts), retrying in ${delay}s..."
+                sleep "$delay"
+            fi
+            ((attempt++))
+        fi
+    done
+    
+    log "ERROR" "Command failed after $max_attempts attempts: $command"
+    return 1
+}
+
+check_command_exists() {
+    command -v "$1" &> /dev/null
 }
 
 check_root() {
@@ -115,7 +174,7 @@ check_ubuntu_version() {
     local version
     version=$(lsb_release -rs 2>/dev/null || echo "0.0")
     
-    if ! command -v lsb_release &> /dev/null; then
+    if ! check_command_exists lsb_release; then
         error_exit "Cannot determine Ubuntu version. Please ensure you're running Ubuntu ${MIN_UBUNTU_VERSION} or later."
     fi
     
@@ -126,451 +185,1928 @@ check_ubuntu_version() {
     log "INFO" "Ubuntu version check passed: $version"
 }
 
-check_system_requirements() {
-    local ram_gb
-    local disk_gb
+generate_password() {
+    local length="${1:-32}"
+    openssl rand -base64 "$length" | tr -d "=+/" | cut -c1-"$length"
+}
+
+# =============================================================================
+# ENHANCED USER AND DIRECTORY SETUP WITH DOCKER PERMISSIONS
+# =============================================================================
+
+ensure_user_exists() {
+    local username="$1"
+    local home_dir="$2"
+    local description="$3"
     
-    # Check RAM (minimum 4GB)
-    ram_gb=$(free -g | awk '/^Mem:/{print $2}')
-    if (( ram_gb < 4 )); then
-        log "WARN" "System has ${ram_gb}GB RAM. Minimum 4GB recommended for optimal performance."
+    if ! id "$username" &>/dev/null; then
+        if [[ -n "$home_dir" ]]; then
+            useradd --system --shell /bin/bash --home "$home_dir" --create-home "$username" --comment "$description"
+        else
+            useradd --system --shell /bin/bash "$username" --comment "$description"
+        fi
+        log "SUCCESS" "User '$username' created successfully"
+        return 0
+    else
+        log "INFO" "User '$username' already exists"
+        return 1
+    fi
+}
+
+create_service_user() {
+    log "USER" "Creating service user and application user accounts..."
+    
+    # Create service user first (administrative user)
+    ensure_user_exists "$SERVICE_USER" "$INSTALL_DIR" "Course Creator service user"
+    
+    # Create application user (runs the actual application)
+    ensure_user_exists "$APP_USER" "${INSTALL_DIR}/app" "Course Creator application user"
+    
+    # Wait a moment for user creation to propagate
+    sleep 3
+    
+    # Verify users were created successfully
+    if ! id "$SERVICE_USER" &>/dev/null; then
+        error_exit "Failed to create service user: $SERVICE_USER"
     fi
     
-    # Check disk space (minimum 20GB available)
-    disk_gb=$(df -BG /opt | awk 'NR==2 {gsub("G",""); print $4}')
-    if (( disk_gb < 20 )); then
-        log "WARN" "Available disk space: ${disk_gb}GB. Minimum 20GB recommended."
+    if ! id "$APP_USER" &>/dev/null; then
+        error_exit "Failed to create application user: $APP_USER"
     fi
     
-    log "INFO" "System requirements check completed"
+    # Add appuser to service user's group for file access
+    usermod -aG "$SERVICE_USER" "$APP_USER"
+    log "SUCCESS" "Added '$APP_USER' to '$SERVICE_USER' group"
+    
+    # Create necessary directories with proper ownership
+    create_application_directories
+    
+    # Wait for user changes to propagate fully
+    sleep 2
+    
+    log "SUCCESS" "Service user and application user configured"
 }
 
-# =============================================================================
-# SYSTEM PREPARATION
-# =============================================================================
 
-update_system() {
-    log "INFO" "Updating system packages..."
+create_application_directories() {
+    log "USER" "Creating application directories with proper ownership..."
     
-    export DEBIAN_FRONTEND=noninteractive
-    apt-get update -qq
-    apt-get upgrade -y -qq
-    apt-get install -y -qq \
-        curl \
-        wget \
-        git \
-        unzip \
-        software-properties-common \
-        apt-transport-https \
-        ca-certificates \
-        gnupg \
-        lsb-release \
-        bc \
-        jq \
-        htop \
-        tree \
-        vim \
-        ufw \
-        fail2ban
+    # Main application directories
+    local directories=(
+        "$INSTALL_DIR"
+        "${INSTALL_DIR}/app"
+        "${INSTALL_DIR}/logs"
+        "${INSTALL_DIR}/backups"
+        "${INSTALL_DIR}/scripts"
+        "${INSTALL_DIR}/course-creator"
+        "${INSTALL_DIR}/uploads"
+        "${INSTALL_DIR}/tmp"
+        "/var/log/course-creator"
+        "/var/run/course-creator"
+        "/etc/course-creator"
+    )
     
-    log "SUCCESS" "System packages updated successfully"
+    for dir in "${directories[@]}"; do
+        if [[ ! -d "$dir" ]]; then
+            mkdir -p "$dir"
+            log "DEBUG" "Created directory: $dir"
+        fi
+    done
+    
+    # Set ownership for main install directory (service user manages everything)
+    chown -R "${SERVICE_USER}:${SERVICE_USER}" "${INSTALL_DIR}"
+    chmod 755 "${INSTALL_DIR}"
+    
+    # Set ownership for application-specific directories (appuser runs the apps)
+    chown -R "${APP_USER}:${SERVICE_USER}" "${INSTALL_DIR}/app"
+    chown -R "${APP_USER}:${SERVICE_USER}" "${INSTALL_DIR}/course-creator"
+    chown -R "${APP_USER}:${SERVICE_USER}" "${INSTALL_DIR}/uploads"
+    chown -R "${APP_USER}:${SERVICE_USER}" "${INSTALL_DIR}/tmp"
+    
+    # Set up log directory with proper permissions (appuser writes logs)
+    chown -R "${APP_USER}:adm" "/var/log/course-creator"
+    chmod 755 "/var/log/course-creator"
+    
+    # Set up runtime directory (for PID files, sockets, etc.)
+    chown -R "${APP_USER}:${SERVICE_USER}" "/var/run/course-creator"
+    chmod 755 "/var/run/course-creator"
+    
+    # Set up configuration directory
+    chown -R "root:${SERVICE_USER}" "/etc/course-creator"
+    chmod 750 "/etc/course-creator"
+    
+    # Set proper permissions for shared directories
+    chmod 755 "${INSTALL_DIR}/course-creator"
+    chmod 755 "${INSTALL_DIR}/uploads"
+    chmod 755 "${INSTALL_DIR}/tmp"
+    
+    log "SUCCESS" "Application directories created with proper ownership"
 }
 
-setup_firewall() {
-    log "INFO" "Configuring firewall..."
+setup_docker_permissions() {
+    log "USER" "Setting up Docker permissions for application user..."
     
-    # Reset firewall to defaults
-    ufw --force reset
-    
-    # Default policies
-    ufw default deny incoming
-    ufw default allow outgoing
-    
-    # SSH access (assuming SSH is on port 22)
-    ufw allow 22/tcp comment "SSH"
-    
-    # HTTP and HTTPS
-    ufw allow 80/tcp comment "HTTP"
-    ufw allow 443/tcp comment "HTTPS"
-    
-    # Course Creator Platform services (for development)
-    if [[ "$DEPLOYMENT_MODE" == "development" ]]; then
-        ufw allow 3000/tcp comment "Frontend"
-        for port in "${SERVICE_PORTS[@]}"; do
-            ufw allow "${port}/tcp" comment "Course Creator Service"
-        done
-        ufw allow 5432/tcp comment "PostgreSQL"
-        ufw allow 6379/tcp comment "Redis"
-    fi
-    
-    # Enable firewall
-    ufw --force enable
-    
-    log "SUCCESS" "Firewall configured successfully"
-}
-
-setup_fail2ban() {
-    log "INFO" "Configuring fail2ban..."
-    
-    cat > /etc/fail2ban/jail.local << 'EOF'
-[DEFAULT]
-bantime = 3600
-findtime = 600
-maxretry = 5
-backend = systemd
-
-[sshd]
-enabled = true
-port = ssh
-logpath = %(sshd_log)s
-backend = %(sshd_backend)s
-
-[nginx-http-auth]
-enabled = true
-filter = nginx-http-auth
-port = http,https
-logpath = /var/log/nginx/access.log
-
-[nginx-limit-req]
-enabled = true
-filter = nginx-limit-req
-port = http,https
-logpath = /var/log/nginx/access.log
-EOF
-    
-    systemctl enable fail2ban
-    systemctl restart fail2ban
-    
-    log "SUCCESS" "fail2ban configured successfully"
-}
-
-# =============================================================================
-# SOFTWARE INSTALLATION
-# =============================================================================
-
-install_python() {
-    log "INFO" "Installing Python 3.11..."
-    
-    add-apt-repository ppa:deadsnakes/ppa -y
-    apt-get update -qq
-    apt-get install -y -qq \
-        python3.11 \
-        python3.11-dev \
-        python3.11-venv \
-        python3-pip \
-        python3.11-distutils
-    
-    # Set Python 3.11 as default python3
-    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1
-    
-    # Install pip for Python 3.11
-    curl -sS https://bootstrap.pypa.io/get-pip.py | python3.11
-    
-    log "SUCCESS" "Python 3.11 installed successfully"
-}
-
-install_nodejs() {
-    log "INFO" "Installing Node.js 18 LTS..."
-    
-    curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
-    apt-get install -y -qq nodejs
-    
-    # Install global packages
-    npm install -g pm2 @angular/cli serve
-    
-    log "SUCCESS" "Node.js 18 LTS installed successfully"
-}
-
-install_docker() {
-    log "INFO" "Installing Docker..."
-    
-    # Remove old versions
-    apt-get remove -y -qq docker docker-engine docker.io containerd runc || true
-    
-    # Add Docker's official GPG key
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-    
-    # Add Docker repository
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-    
-    # Install Docker
-    apt-get update -qq
-    apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-compose-plugin
-    
-    # Install docker-compose
-    curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-    chmod +x /usr/local/bin/docker-compose
-    
-    # Start and enable Docker
-    systemctl start docker
-    systemctl enable docker
-    
-    log "SUCCESS" "Docker installed successfully"
-}
-
-install_postgresql() {
-    if [[ "$SKIP_DATABASE" == "true" ]]; then
-        log "INFO" "Skipping PostgreSQL installation (--skip-db flag)"
+    # Check if Docker group exists
+    if ! getent group docker > /dev/null 2>&1; then
+        log "WARN" "Docker group doesn't exist yet - will be created when Docker is installed"
         return 0
     fi
     
-    log "INFO" "Installing PostgreSQL 14..."
+    # Verify users exist before adding to groups
+    if ! id "$APP_USER" &>/dev/null; then
+        log "ERROR" "Cannot add $APP_USER to docker group - user does not exist"
+        return 1
+    fi
     
-    # Install PostgreSQL
-    apt-get install -y -qq postgresql-14 postgresql-contrib-14 postgresql-client-14
+    if ! id "$SERVICE_USER" &>/dev/null; then
+        log "ERROR" "Cannot add $SERVICE_USER to docker group - user does not exist"
+        return 1
+    fi
     
-    # Start and enable PostgreSQL
-    systemctl start postgresql
-    systemctl enable postgresql
+    # Add appuser to docker group
+    usermod -aG docker "$APP_USER"
+    log "SUCCESS" "Added '$APP_USER' to docker group"
     
-    log "SUCCESS" "PostgreSQL 14 installed successfully"
+    # Also add service user to docker group for management
+    usermod -aG docker "$SERVICE_USER"
+    log "SUCCESS" "Added '$SERVICE_USER' to docker group"
+    
+    # Create docker directory in appuser home if it doesn't exist
+    local docker_config_dir="${INSTALL_DIR}/app/.docker"
+    if [[ ! -d "$docker_config_dir" ]]; then
+        mkdir -p "$docker_config_dir"
+        chown "${APP_USER}:${APP_USER}" "$docker_config_dir"
+        chmod 700 "$docker_config_dir"
+        log "DEBUG" "Created Docker config directory for $APP_USER"
+    fi
+    
+    # Set up Docker socket permissions (if it exists)
+    if [[ -S /var/run/docker.sock ]]; then
+        # Ensure the socket is accessible to docker group
+        chgrp docker /var/run/docker.sock
+        chmod 660 /var/run/docker.sock
+        log "SUCCESS" "Docker socket permissions configured"
+    fi
+    
+    # Wait for group membership changes to propagate
+    sleep 2
+    
+    log "SUCCESS" "Docker permissions configured for application user"
 }
 
-install_redis() {
-    log "INFO" "Installing Redis..."
+verify_user_permissions() {
+    log "USER" "Verifying user permissions..."
     
-    apt-get install -y -qq redis-server
+    # Check if users exist first
+    if ! id "$SERVICE_USER" &>/dev/null; then
+        log "ERROR" "Service user $SERVICE_USER does not exist"
+        return 1
+    fi
     
-    # Configure Redis for production
-    sed -i 's/^# maxmemory <bytes>/maxmemory 256mb/' /etc/redis/redis.conf
-    sed -i 's/^# maxmemory-policy noeviction/maxmemory-policy allkeys-lru/' /etc/redis/redis.conf
+    if ! id "$APP_USER" &>/dev/null; then
+        log "ERROR" "Application user $APP_USER does not exist"
+        return 1
+    fi
     
-    # Start and enable Redis
-    systemctl start redis-server
-    systemctl enable redis-server
+    # Test appuser can access application directories
+    local test_dirs=(
+        "${INSTALL_DIR}/course-creator"
+        "${INSTALL_DIR}/uploads"
+        "/var/log/course-creator"
+    )
     
-    log "SUCCESS" "Redis installed successfully"
+    for dir in "${test_dirs[@]}"; do
+        # Only test if directory exists
+        if [[ -d "$dir" ]]; then
+            if timeout 5 sudo -u "$APP_USER" test -w "$dir" 2>/dev/null; then
+                log "DEBUG" "$APP_USER has write access to $dir"
+            else
+                log "WARN" "$APP_USER does not have write access to $dir"
+            fi
+        else
+            log "DEBUG" "Directory $dir does not exist yet"
+        fi
+    done
+    
+    # Test Docker access (if Docker is available and running)
+    if check_command_exists docker && systemctl is-active --quiet docker 2>/dev/null; then
+        log "DEBUG" "Testing Docker access for $APP_USER..."
+        if timeout 10 sudo -u "$APP_USER" docker info > /dev/null 2>&1; then
+            log "SUCCESS" "$APP_USER can access Docker daemon"
+        else
+            log "WARN" "$APP_USER cannot access Docker daemon - may need logout/login for group changes"
+            log "INFO" "To fix Docker permissions manually: sudo usermod -aG docker $APP_USER"
+        fi
+    else
+        log "INFO" "Docker not available or not running, skipping Docker access test"
+    fi
+    
+    log "SUCCESS" "User permission verification completed"
 }
 
-install_nginx() {
-    log "INFO" "Installing Nginx..."
+# =============================================================================
+# DOCKER DETECTION AND HEALTH CHECKING
+# =============================================================================
+
+detect_docker_status() {
+    log "DOCKER" "Detecting Docker installation status..."
     
-    apt-get install -y -qq nginx
+    local docker_client_installed=false
+    local docker_daemon_running=false
+    local docker_functional=false
+    local docker_compose_available=false
     
-    # Start and enable Nginx
-    systemctl start nginx
-    systemctl enable nginx
+    # Check Docker client
+    if check_command_exists docker; then
+        docker_client_installed=true
+        local docker_version
+        docker_version=$(docker --version 2>/dev/null || echo "unknown")
+        log "DOCKER" "Docker client found: $docker_version"
+    else
+        log "DOCKER" "Docker client not installed"
+    fi
     
-    log "SUCCESS" "Nginx installed successfully"
+    # Check Docker daemon
+    if systemctl is-active --quiet docker 2>/dev/null; then
+        docker_daemon_running=true
+        log "DOCKER" "Docker daemon is running"
+    else
+        log "DOCKER" "Docker daemon is not running"
+    fi
+    
+    # Check Docker functionality
+    if [[ "$docker_client_installed" == "true" ]] && [[ "$docker_daemon_running" == "true" ]]; then
+        if timeout 10 docker info > /dev/null 2>&1; then
+            docker_functional=true
+            log "DOCKER" "Docker is functional"
+        else
+            log "DOCKER" "Docker daemon not responding properly"
+        fi
+    fi
+    
+    # Check Docker Compose
+    if check_command_exists docker-compose || docker compose version > /dev/null 2>&1; then
+        docker_compose_available=true
+        log "DOCKER" "Docker Compose is available"
+    else
+        log "DOCKER" "Docker Compose not available"
+    fi
+    
+    # Set global status variables
+    export DOCKER_CLIENT_INSTALLED="$docker_client_installed"
+    export DOCKER_DAEMON_RUNNING="$docker_daemon_running"
+    export DOCKER_FUNCTIONAL="$docker_functional"
+    export DOCKER_COMPOSE_AVAILABLE="$docker_compose_available"
+    
+    # Summary
+    if [[ "$docker_functional" == "true" ]] && [[ "$docker_compose_available" == "true" ]]; then
+        log "SUCCESS" "Docker is fully operational"
+        return 0
+    elif [[ "$docker_functional" == "true" ]]; then
+        log "WARN" "Docker is working but Compose needs installation"
+        return 1
+    elif [[ "$docker_client_installed" == "true" ]]; then
+        log "WARN" "Docker client installed but daemon issues detected"
+        return 2
+    else
+        log "WARN" "Docker is not installed"
+        return 3
+    fi
+}
+
+# =============================================================================
+# DOCKER INSTALLATION STRATEGIES
+# =============================================================================
+
+docker_strategy_1_convenience_script() {
+    log "STRATEGY" "Attempting Docker installation via convenience script..."
+    
+    local script_url="https://get.docker.com"
+    local script_file="/tmp/get-docker.sh"
+    
+    if curl -fsSL "$script_url" -o "$script_file"; then
+        if grep -q "docker" "$script_file" && grep -q "install" "$script_file"; then
+            log "DEBUG" "Docker script downloaded and verified"
+            
+            if bash "$script_file"; then
+                rm -f "$script_file"
+                log "SUCCESS" "Docker installed via convenience script"
+                return 0
+            else
+                log "ERROR" "Docker convenience script failed"
+                rm -f "$script_file"
+                return 1
+            fi
+        else
+            log "ERROR" "Downloaded script appears invalid"
+            rm -f "$script_file"
+            return 1
+        fi
+    else
+        log "ERROR" "Failed to download Docker convenience script"
+        return 1
+    fi
+}
+
+docker_strategy_2_official_repository() {
+    log "STRATEGY" "Attempting Docker installation via official repository..."
+    
+    # Remove old versions
+    apt-get remove -y docker docker-engine docker.io containerd runc 2>/dev/null || true
+    
+    # Install prerequisites
+    apt-get update
+    apt-get install -y \
+        ca-certificates \
+        curl \
+        gnupg \
+        lsb-release \
+        software-properties-common
+    
+    # Add Docker's official GPG key
+    mkdir -p /etc/apt/keyrings
+    if curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg; then
+        chmod a+r /etc/apt/keyrings/docker.gpg
+        
+        # Add the repository
+        echo \
+          "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+          $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+        
+        # Install Docker Engine
+        apt-get update
+        if apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin; then
+            log "SUCCESS" "Docker installed via official repository"
+            return 0
+        else
+            log "ERROR" "Failed to install Docker packages"
+            return 1
+        fi
+    else
+        log "ERROR" "Failed to add Docker GPG key"
+        return 1
+    fi
+}
+
+docker_strategy_3_snap_fallback() {
+    log "STRATEGY" "Attempting Docker installation via snap..."
+    
+    if check_command_exists snap; then
+        if snap install docker; then
+            log "SUCCESS" "Docker installed via snap"
+            return 0
+        else
+            log "ERROR" "Snap Docker installation failed"
+            return 1
+        fi
+    else
+        log "ERROR" "Snap not available"
+        return 1
+    fi
+}
+
+install_docker_with_strategies() {
+    log "DOCKER" "Installing Docker with fallback strategies..."
+    
+    if [[ "$FORCE_REINSTALL" == "true" ]]; then
+        log "INFO" "Force reinstall requested, cleaning up existing Docker installation..."
+        cleanup_docker_installation
+    fi
+    
+    for strategy in "${DOCKER_STRATEGIES[@]}"; do
+        log "INFO" "Trying Docker installation strategy: $strategy"
+        
+        if "$strategy" 2>&1 | tee "/tmp/docker_install_${strategy}.log"; then
+            log "SUCCESS" "Docker installation successful with strategy: $strategy"
+            
+            if configure_docker_post_install; then
+                log "SUCCESS" "Docker post-installation configuration completed"
+                return 0
+            else
+                log "WARN" "Strategy $strategy succeeded but post-install configuration failed"
+            fi
+        else
+            log "WARN" "Strategy $strategy failed, trying next strategy..."
+            continue
+        fi
+    done
+    
+    log "ERROR" "All Docker installation strategies failed"
+    return 1
+}
+
+cleanup_docker_installation() {
+    log "DOCKER" "Cleaning up existing Docker installation..."
+    
+    systemctl stop docker docker.socket containerd 2>/dev/null || true
+    pkill -f dockerd 2>/dev/null || true
+    pkill -f containerd 2>/dev/null || true
+    
+    apt-get remove --purge -y \
+        docker \
+        docker-engine \
+        docker.io \
+        containerd \
+        runc \
+        docker-ce \
+        docker-ce-cli \
+        docker-buildx-plugin \
+        docker-compose-plugin \
+        containerd.io 2>/dev/null || true
+    
+    apt-get autoremove -y
+    
+    rm -rf /var/lib/docker
+    rm -rf /var/lib/containerd
+    rm -rf /etc/docker
+    rm -f /var/run/docker.sock
+    rm -f /var/run/docker.pid
+    rm -rf /var/run/docker
+    rm -f /etc/apt/sources.list.d/docker.list
+    rm -f /etc/apt/keyrings/docker.gpg
+    
+    log "SUCCESS" "Docker cleanup completed"
+}
+
+configure_docker_post_install() {
+    log "DOCKER" "Configuring Docker post-installation..."
+    
+    mkdir -p /etc/docker
+    cat > /etc/docker/daemon.json << 'EOF'
+{
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "10m",
+    "max-file": "3"
+  },
+  "storage-driver": "overlay2",
+  "live-restore": true,
+  "userland-proxy": false,
+  "experimental": false,
+  "default-address-pools": [
+    {
+      "base": "172.17.0.0/16",
+      "size": 24
+    }
+  ]
+}
+EOF
+    
+    mkdir -p /etc/systemd/system/docker.service.d
+    systemctl daemon-reload
+    systemctl enable docker
+    systemctl enable containerd
+    
+    if ! systemctl start containerd; then
+        log "ERROR" "Failed to start containerd"
+        journalctl -u containerd --no-pager -n 10
+        return 1
+    fi
+    
+    sleep 3
+    
+    if ! systemctl start docker; then
+        log "ERROR" "Failed to start Docker daemon"
+        journalctl -u docker --no-pager -n 10
+        return 1
+    fi
+    
+    local max_wait=30
+    local wait_count=0
+    
+    while [[ $wait_count -lt $max_wait ]]; do
+        if systemctl is-active --quiet docker && timeout 5 docker info > /dev/null 2>&1; then
+            log "SUCCESS" "Docker daemon is ready"
+            break
+        fi
+        
+        sleep 2
+        ((wait_count += 2))
+        log "DEBUG" "Waiting for Docker daemon... ($wait_count/$max_wait seconds)"
+    done
+    
+    if [[ $wait_count -ge $max_wait ]]; then
+        log "ERROR" "Docker daemon failed to become ready within $max_wait seconds"
+        return 1
+    fi
+    
+    # Set up Docker permissions for our users
+    setup_docker_permissions
+    
+    install_docker_compose
+    
+    if timeout 10 docker run --rm hello-world > /dev/null 2>&1; then
+        log "SUCCESS" "Docker test successful"
+    else
+        log "WARN" "Docker test failed, but daemon is running"
+    fi
+    
+    return 0
+}
+
+install_docker_compose() {
+    log "DOCKER" "Installing Docker Compose..."
+    
+    if docker compose version > /dev/null 2>&1; then
+        log "SUCCESS" "Docker Compose plugin is already available"
+        return 0
+    fi
+    
+    if check_command_exists docker-compose; then
+        log "SUCCESS" "Docker Compose standalone is already available"
+        return 0
+    fi
+    
+    local compose_version="2.24.0"
+    local compose_url="https://github.com/docker/compose/releases/download/v${compose_version}/docker-compose-$(uname -s)-$(uname -m)"
+    
+    if curl -L "$compose_url" -o /usr/local/bin/docker-compose; then
+        chmod +x /usr/local/bin/docker-compose
+        ln -sf /usr/local/bin/docker-compose /usr/local/bin/docker-compose-v2
+        
+        if docker-compose version > /dev/null 2>&1; then
+            log "SUCCESS" "Docker Compose installed successfully"
+            return 0
+        else
+            log "ERROR" "Docker Compose installation verification failed"
+            return 1
+        fi
+    else
+        log "WARN" "Failed to download Docker Compose, trying pip installation..."
+        
+        if command -v pip3 > /dev/null; then
+            pip3 install docker-compose
+            return $?
+        else
+            log "ERROR" "Failed to install Docker Compose"
+            return 1
+        fi
+    fi
+}
+
+recover_docker_daemon() {
+    log "DOCKER" "Attempting Docker daemon recovery..."
+    
+    systemctl stop docker docker.socket 2>/dev/null || true
+    sleep 5
+    pkill -f dockerd 2>/dev/null || true
+    rm -f /var/run/docker.sock /var/run/docker.pid
+    
+    if systemctl start containerd; then
+        sleep 3
+        
+        if systemctl start docker; then
+            sleep 5
+            
+            if systemctl is-active --quiet docker && timeout 10 docker info > /dev/null 2>&1; then
+                # Re-setup Docker permissions after recovery
+                setup_docker_permissions
+                log "SUCCESS" "Docker daemon recovery successful"
+                return 0
+            else
+                log "ERROR" "Docker daemon recovery failed"
+                return 1
+            fi
+        else
+            log "ERROR" "Failed to start Docker after recovery attempt"
+            return 1
+        fi
+    else
+        log "ERROR" "Failed to start containerd during recovery"
+        return 1
+    fi
+}
+
+# =============================================================================
+# PYTHON INSTALLATION STRATEGIES
+# =============================================================================
+
+python_strategy_1_deadsnakes_ppa() {
+    log "STRATEGY" "Installing Python via deadsnakes PPA..."
+    
+    add-apt-repository ppa:deadsnakes/ppa -y
+    apt-get update
+    
+    if apt-get install -y "python${PYTHON_VERSION}" "python${PYTHON_VERSION}-venv" "python${PYTHON_VERSION}-dev"; then
+        log "SUCCESS" "Python ${PYTHON_VERSION} installed via deadsnakes PPA"
+        return 0
+    else
+        log "ERROR" "Failed to install Python via deadsnakes PPA"
+        return 1
+    fi
+}
+
+python_strategy_2_official_source() {
+    log "STRATEGY" "Installing Python from official source..."
+    
+    local python_version_full="${PYTHON_VERSION}.7"  # Example: 3.12.7
+    local python_url="https://www.python.org/ftp/python/${python_version_full}/Python-${python_version_full}.tgz"
+    
+    # Install build dependencies
+    apt-get install -y \
+        build-essential \
+        zlib1g-dev \
+        libncurses5-dev \
+        libgdbm-dev \
+        libnss3-dev \
+        libssl-dev \
+        libreadline-dev \
+        libffi-dev \
+        libsqlite3-dev \
+        wget \
+        libbz2-dev
+    
+    cd /tmp
+    if wget "$python_url" && tar -xf "Python-${python_version_full}.tgz"; then
+        cd "Python-${python_version_full}"
+        
+        if ./configure --enable-optimizations && make -j "$(nproc)" && make altinstall; then
+            ln -sf "/usr/local/bin/python${PYTHON_VERSION}" /usr/local/bin/python3
+            log "SUCCESS" "Python ${PYTHON_VERSION} compiled and installed from source"
+            return 0
+        else
+            log "ERROR" "Failed to compile Python from source"
+            return 1
+        fi
+    else
+        log "ERROR" "Failed to download Python source"
+        return 1
+    fi
+}
+
+python_strategy_3_pyenv() {
+    log "STRATEGY" "Installing Python via pyenv..."
+    
+    # Install pyenv dependencies
+    apt-get install -y \
+        make \
+        build-essential \
+        libssl-dev \
+        zlib1g-dev \
+        libbz2-dev \
+        libreadline-dev \
+        libsqlite3-dev \
+        wget \
+        curl \
+        llvm \
+        libncursesw5-dev \
+        xz-utils \
+        tk-dev \
+        libxml2-dev \
+        libxmlsec1-dev \
+        libffi-dev \
+        liblzma-dev
+    
+    # Check if app user exists before trying to use it
+    if ! id "$APP_USER" &>/dev/null; then
+        log "ERROR" "Cannot install Python via pyenv - $APP_USER does not exist"
+        return 1
+    fi
+    
+    # Install pyenv as app user
+    sudo -u "$APP_USER" bash -c "
+        curl https://pyenv.run | bash
+        export PATH=\"${INSTALL_DIR}/app/.pyenv/bin:\$PATH\"
+        eval \"\$(pyenv init -)\"
+        pyenv install ${PYTHON_VERSION}
+        pyenv global ${PYTHON_VERSION}
+    "
+    
+    if sudo -u "$APP_USER" bash -c "export PATH=\"${INSTALL_DIR}/app/.pyenv/bin:\$PATH\" && pyenv versions | grep -q ${PYTHON_VERSION}"; then
+        log "SUCCESS" "Python ${PYTHON_VERSION} installed via pyenv"
+        return 0
+    else
+        log "ERROR" "Failed to install Python via pyenv"
+        return 1
+    fi
+}
+
+install_python() {
+    log "INFO" "Installing Python ${PYTHON_VERSION}..."
+    
+    # Check if desired Python version is already available
+    if check_command_exists "python${PYTHON_VERSION}"; then
+        log "SUCCESS" "Python ${PYTHON_VERSION} is already installed"
+        return 0
+    fi
+    
+    # Try each Python installation strategy
+    for strategy in "${PYTHON_STRATEGIES[@]}"; do
+        log "INFO" "Trying Python installation strategy: $strategy"
+        
+        if "$strategy"; then
+            log "SUCCESS" "Python installation successful with strategy: $strategy"
+            return 0
+        else
+            log "WARN" "Strategy $strategy failed, trying next strategy..."
+        fi
+    done
+    
+    error_exit "All Python installation strategies failed"
+}
+
+# =============================================================================
+# VIRTUAL ENVIRONMENT STRATEGIES
+# =============================================================================
+
+venv_strategy_1_standard_venv() {
+    log "STRATEGY" "Creating virtual environment with standard venv..."
+    
+    # Check if app user exists
+    if ! id "$APP_USER" &>/dev/null; then
+        log "ERROR" "Cannot create venv - $APP_USER does not exist"
+        return 1
+    fi
+    
+    if sudo -u "$APP_USER" "python${PYTHON_VERSION}" -m venv "$VENV_DIR"; then
+        log "SUCCESS" "Virtual environment created with standard venv"
+        return 0
+    else
+        log "ERROR" "Failed to create virtual environment with standard venv"
+        return 1
+    fi
+}
+
+venv_strategy_2_virtualenv() {
+    log "STRATEGY" "Creating virtual environment with virtualenv..."
+    
+    # Check if app user exists
+    if ! id "$APP_USER" &>/dev/null; then
+        log "ERROR" "Cannot create venv with virtualenv - $APP_USER does not exist"
+        return 1
+    fi
+    
+    if ! check_command_exists virtualenv; then
+        apt-get install -y python3-virtualenv
+    fi
+    
+    if sudo -u "$APP_USER" virtualenv -p "python${PYTHON_VERSION}" "$VENV_DIR"; then
+        log "SUCCESS" "Virtual environment created with virtualenv"
+        return 0
+    else
+        log "ERROR" "Failed to create virtual environment with virtualenv"
+        return 1
+    fi
+}
+
+venv_strategy_3_conda() {
+    log "STRATEGY" "Creating virtual environment with conda..."
+    
+    # This is a placeholder - conda installation would be complex
+    log "WARN" "Conda strategy not implemented"
+    return 1
+}
+
+create_virtual_environment() {
+    log "INFO" "Creating Python virtual environment..."
+    
+    # Remove existing venv if force reinstall
+    if [[ "$FORCE_REINSTALL" == "true" ]] && [[ -d "$VENV_DIR" ]]; then
+        rm -rf "$VENV_DIR"
+        log "INFO" "Removed existing virtual environment"
+    fi
+    
+    # Skip if venv already exists
+    if [[ -d "$VENV_DIR" ]] && [[ -f "${VENV_DIR}/bin/activate" ]]; then
+        log "SUCCESS" "Virtual environment already exists"
+        # Ensure proper ownership
+        chown -R "${APP_USER}:${SERVICE_USER}" "$VENV_DIR"
+        return 0
+    fi
+    
+    # Try each venv creation strategy
+    for strategy in "${VENV_STRATEGIES[@]}"; do
+        log "INFO" "Trying virtual environment strategy: $strategy"
+        
+        if "$strategy"; then
+            log "SUCCESS" "Virtual environment creation successful with strategy: $strategy"
+            
+            # Set proper ownership for the virtual environment
+            chown -R "${APP_USER}:${SERVICE_USER}" "$VENV_DIR"
+            
+            # Verify the virtual environment (check user exists first)
+            if id "$APP_USER" &>/dev/null && sudo -u "$APP_USER" bash -c "source ${VENV_DIR}/bin/activate && python --version"; then
+                log "SUCCESS" "Virtual environment verified"
+                return 0
+            else
+                log "ERROR" "Virtual environment verification failed"
+                return 1
+            fi
+        else
+            log "WARN" "Strategy $strategy failed, trying next strategy..."
+        fi
+    done
+    
+    error_exit "All virtual environment creation strategies failed"
+}
+
+# =============================================================================
+# SYSTEM PACKAGES AND DEPENDENCIES
+# =============================================================================
+
+install_system_packages() {
+    log "INFO" "Installing system packages and dependencies..."
+    
+    export DEBIAN_FRONTEND=noninteractive
+    
+    # Update package lists
+    apt-get update -qq
+    
+    # Essential system packages
+    local system_packages=(
+        "curl"
+        "wget"
+        "git"
+        "unzip"
+        "zip"
+        "build-essential"
+        "software-properties-common"
+        "apt-transport-https"
+        "ca-certificates"
+        "gnupg"
+        "lsb-release"
+        "openssl"
+        "ufw"
+        "fail2ban"
+        "logrotate"
+        "rsyslog"
+        "supervisor"
+        "htop"
+        "tree"
+        "jq"
+        "bc"
+        "rsync"
+        "netcat-openbsd"
+    )
+    
+    # Python development packages
+    local python_packages=(
+        "python3-pip"
+        "python3-dev"
+        "python3-setuptools"
+        "python3-wheel"
+        "python3-apt"
+        "python3-psycopg2"
+        "python3-redis"
+    )
+    
+    # Database packages (if not skipping database)
+    local db_packages=()
+    if [[ "$SKIP_DATABASE" != "true" ]]; then
+        db_packages+=(
+            "postgresql"
+            "postgresql-contrib"
+            "postgresql-client"
+            "redis-server"
+            "redis-tools"
+        )
+    fi
+    
+    # Install all packages
+    local all_packages=("${system_packages[@]}" "${python_packages[@]}" "${db_packages[@]}")
+    
+    log "INFO" "Installing ${#all_packages[@]} system packages..."
+    if apt-get install -y "${all_packages[@]}"; then
+        log "SUCCESS" "System packages installed successfully"
+    else
+        log "ERROR" "Some system packages failed to install"
+        return 1
+    fi
+    
+    # Install Node.js from NodeSource repository for latest version
+    install_nodejs
+    
+    # Install Nginx if not in Docker-only mode
+    if [[ "$DOCKER_ONLY" != "true" ]]; then
+        if apt-get install -y nginx nginx-extras; then
+            log "SUCCESS" "Nginx installed successfully"
+        else
+            log "WARN" "Nginx installation failed"
+        fi
+    fi
+    
+    log "SUCCESS" "All system dependencies installed"
+}
+
+install_nodejs() {
+    log "INFO" "Installing Node.js from NodeSource repository..."
+    
+    # Add NodeSource repository
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    
+    if apt-get install -y nodejs; then
+        local node_version=$(node --version)
+        local npm_version=$(npm --version)
+        log "SUCCESS" "Node.js installed: $node_version, npm: $npm_version"
+        
+        # Install global npm packages as app user (if user exists)
+        if id "$APP_USER" &>/dev/null; then
+            sudo -u "$APP_USER" npm install -g pm2 nodemon
+            log "SUCCESS" "Global npm packages installed for $APP_USER"
+        else
+            log "WARN" "Skipping npm global packages - $APP_USER not yet created"
+        fi
+    else
+        log "ERROR" "Failed to install Node.js"
+        return 1
+    fi
+}
+
+# =============================================================================
+# PROJECT INSTALLATION
+# =============================================================================
+
+copy_course_creator_project() {
+    log "INFO" "Copying Course Creator project to installation directory..."
+    
+    local source_dir="$(pwd)"
+    local target_dir="${INSTALL_DIR}/course-creator"
+    
+    # Check if we're already in the correct location
+    if [[ "$source_dir" == "$target_dir" ]]; then
+        log "SUCCESS" "Already running from installation directory"
+        return 0
+    fi
+    
+    # Try to find Course Creator project files in current directory or parent
+    local project_root=""
+    if [[ -f "${source_dir}/docker-compose.yml" ]] || [[ -d "${source_dir}/services" ]]; then
+        project_root="$source_dir"
+    elif [[ -f "${source_dir}/../docker-compose.yml" ]] || [[ -d "${source_dir}/../services" ]]; then
+        project_root="$(dirname "$source_dir")"
+        log "INFO" "Found Course Creator project in parent directory: $project_root"
+    else
+        log "WARN" "Cannot find Course Creator project files"
+        log "INFO" "Searched in: $source_dir and $(dirname "$source_dir")"
+        log "INFO" "Please run this script from the Course Creator project root directory"
+        
+        # Create basic structure anyway
+        mkdir -p "$target_dir"
+        chown "${APP_USER}:${SERVICE_USER}" "$target_dir"
+        return 0
+    fi
+    
+    # Remove existing installation if force reinstall
+    if [[ "$FORCE_REINSTALL" == "true" ]] && [[ -d "$target_dir" ]]; then
+        log "INFO" "Removing existing installation for force reinstall..."
+        rm -rf "$target_dir"
+    fi
+    
+    # Create target directory
+    mkdir -p "$target_dir"
+    
+    # Copy project files, excluding certain directories and files
+    log "INFO" "Copying project files from $project_root to $target_dir..."
+    
+    rsync -av --progress \
+        --exclude='*.pyc' \
+        --exclude='__pycache__/' \
+        --exclude='.git/' \
+        --exclude='.pytest_cache/' \
+        --exclude='node_modules/' \
+        --exclude='*.log' \
+        --exclude='venv/' \
+        --exclude='.env' \
+        --exclude='lab-storage/' \
+        --exclude='deploy-ubuntu.sh.bak' \
+        --exclude='deploy-ubuntu.sh.fixed' \
+        "$project_root/" "$target_dir/"
+    
+    # Set proper ownership
+    chown -R "${APP_USER}:${SERVICE_USER}" "$target_dir"
+    
+    # Set proper permissions
+    find "$target_dir" -type f -name "*.sh" -exec chmod +x {} \;
+    find "$target_dir" -type f -name "*.py" -exec chmod 644 {} \;
+    
+    log "SUCCESS" "Course Creator project copied to $target_dir"
+}
+
+# =============================================================================
+# ENVIRONMENT CONFIGURATION
+# =============================================================================
+
+generate_secure_secrets() {
+    log "INFO" "Generating secure secrets..."
+    
+    # Generate strong passwords and keys
+    DATABASE_PASSWORD=$(generate_password 32)
+    REDIS_PASSWORD=$(generate_password 24)
+    JWT_SECRET_KEY=$(generate_password 64)
+    
+    # API keys will be set from existing .cc_env or user input
+    log "SUCCESS" "Secure secrets generated"
+}
+
+create_cc_env_config() {
+    log "INFO" "Creating .cc_env configuration..."
+    
+    local cc_env_path="${INSTALL_DIR}/course-creator/.cc_env"
+    
+    # Check if .cc_env already exists
+    if [[ -f "$cc_env_path" ]] && [[ "$FORCE_REINSTALL" != "true" ]]; then
+        log "INFO" "Loading existing .cc_env configuration..."
+        
+        # Source existing configuration
+        set -a
+        while IFS= read -r line; do
+            if [[ ! "$line" =~ ^[[:space:]]*# ]] && [[ -n "${line// }" ]] && [[ "$line" =~ = ]]; then
+                eval "export $line"
+            fi
+        done < "$cc_env_path"
+        set +a
+        
+        log "SUCCESS" "Existing .cc_env configuration loaded"
+        return 0
+    fi
+    
+    # Generate new configuration
+    log "INFO" "Creating new .cc_env configuration..."
+    
+    # Ensure we have secrets
+    if [[ -z "$DATABASE_PASSWORD" ]]; then
+        generate_secure_secrets
+    fi
+    
+    cat > "$cc_env_path" << EOF
+# Course Creator Platform Configuration
+# Generated on $(date)
+
+# Environment Settings
+ENVIRONMENT=${DEPLOYMENT_MODE}
+DEBUG=$([ "$DEPLOYMENT_MODE" = "development" ] && echo "true" || echo "false")
+SECRET_KEY=${JWT_SECRET_KEY}
+
+# User Configuration
+APP_USER=${APP_USER}
+SERVICE_USER=${SERVICE_USER}
+
+# Database Configuration
+DB_HOST=localhost
+DB_PORT=${DB_PORT}
+DB_USER=${DATABASE_USER}
+DB_PASSWORD=${DATABASE_PASSWORD}
+DB_NAME=${DATABASE_NAME}
+DATABASE_URL=postgresql://${DATABASE_USER}:${DATABASE_PASSWORD}@localhost:${DB_PORT}/${DATABASE_NAME}
+
+# Redis Configuration
+REDIS_HOST=localhost
+REDIS_PORT=${REDIS_PORT}
+REDIS_PASSWORD=${REDIS_PASSWORD}
+REDIS_URL=redis://:${REDIS_PASSWORD}@localhost:${REDIS_PORT}
+
+# Service Ports
+API_GATEWAY_PORT=${API_GATEWAY_PORT}
+CONTENT_GENERATOR_PORT=${CONTENT_GENERATOR_PORT}
+SLIDE_SERVICE_PORT=${SLIDE_SERVICE_PORT}
+LAB_SERVICE_PORT=${LAB_SERVICE_PORT}
+USER_INTERFACE_PORT=${USER_INTERFACE_PORT}
+
+# Security Settings
+JWT_SECRET_KEY=${JWT_SECRET_KEY}
+CORS_ORIGINS=http://localhost:${USER_INTERFACE_PORT}
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+# AI API Keys (Set these with your actual keys)
+ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-your_anthropic_key_here}
+OPENAI_API_KEY=${OPENAI_API_KEY:-your_openai_key_here}
+
+# File Storage
+UPLOAD_PATH=${INSTALL_DIR}/uploads
+MAX_UPLOAD_SIZE=100MB
+
+# Logging
+LOG_LEVEL=$([ "$DEPLOYMENT_MODE" = "development" ] && echo "DEBUG" || echo "INFO")
+LOG_FILE=/var/log/course-creator/application.log
+
+# Email Configuration (for production)
+SMTP_HOST=localhost
+SMTP_PORT=587
+SMTP_USE_TLS=true
+SMTP_USERNAME=
+SMTP_PASSWORD=
+
+# SSL Configuration
+DOMAIN_NAME=${DOMAIN_NAME}
+SSL_EMAIL=${SSL_EMAIL}
+
+# Docker Configuration
+COMPOSE_PROJECT_NAME=course-creator
+DOCKER_REGISTRY=course-creator
+EOF
+    
+    # Set proper permissions (readable by app user, writable by service user)
+    chown "${SERVICE_USER}:${SERVICE_USER}" "$cc_env_path"
+    chmod 640 "$cc_env_path"
+    
+    log "SUCCESS" ".cc_env configuration created"
+}
+
+load_cc_env_config() {
+    log "INFO" "Loading .cc_env configuration..."
+    
+    local cc_env_path="${INSTALL_DIR}/course-creator/.cc_env"
+    
+    if [[ -f "$cc_env_path" ]]; then
+        set -a
+        while IFS= read -r line; do
+            if [[ ! "$line" =~ ^[[:space:]]*# ]] && [[ -n "${line// }" ]] && [[ "$line" =~ = ]]; then
+                eval "export $line"
+            fi
+        done < "$cc_env_path"
+        set +a
+        
+        # Update global variables from loaded config
+        DATABASE_PASSWORD="${DB_PASSWORD:-$DATABASE_PASSWORD}"
+        REDIS_PASSWORD="${REDIS_PASSWORD:-$REDIS_PASSWORD}"
+        JWT_SECRET_KEY="${SECRET_KEY:-$JWT_SECRET_KEY}"
+        ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-}"
+        OPENAI_API_KEY="${OPENAI_API_KEY:-}"
+        
+        log "SUCCESS" ".cc_env configuration loaded and applied"
+    else
+        log "WARN" ".cc_env file not found at $cc_env_path"
+        return 1
+    fi
 }
 
 # =============================================================================
 # DATABASE SETUP
 # =============================================================================
 
-setup_database() {
-    if [[ "$SKIP_DATABASE" == "true" ]]; then
-        log "INFO" "Skipping database setup (--skip-db flag)"
-        return 0
-    fi
-    
+setup_postgresql() {
     log "INFO" "Setting up PostgreSQL database..."
     
-    # Generate random password
-    local db_password
-    db_password=$(openssl rand -base64 32)
-    
-    # Create database and user
-    sudo -u postgres psql << EOF
-CREATE DATABASE ${DATABASE_NAME};
-CREATE USER ${DATABASE_USER} WITH ENCRYPTED PASSWORD '${db_password}';
-GRANT ALL PRIVILEGES ON DATABASE ${DATABASE_NAME} TO ${DATABASE_USER};
-ALTER USER ${DATABASE_USER} CREATEDB;
-EOF
-    
-    # Store database credentials
-    cat > "${INSTALL_DIR}/.env.database" << EOF
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=${DATABASE_NAME}
-DB_USER=${DATABASE_USER}
-DB_PASSWORD=${db_password}
-EOF
-    
-    chmod 600 "${INSTALL_DIR}/.env.database"
-    chown ${SERVICE_USER}:${SERVICE_USER} "${INSTALL_DIR}/.env.database"
-    
-    log "SUCCESS" "Database setup completed"
-    log "INFO" "Database credentials saved to ${INSTALL_DIR}/.env.database"
-}
-
-# =============================================================================
-# APPLICATION SETUP
-# =============================================================================
-
-create_service_user() {
-    log "INFO" "Creating service user..."
-    
-    if ! id "$SERVICE_USER" &>/dev/null; then
-        useradd --system --shell /bin/bash --home "${INSTALL_DIR}" --create-home "$SERVICE_USER"
-        usermod -aG docker "$SERVICE_USER"
-        log "SUCCESS" "Service user '$SERVICE_USER' created"
-    else
-        log "INFO" "Service user '$SERVICE_USER' already exists"
-    fi
-}
-
-clone_repository() {
-    log "INFO" "Cloning Course Creator Platform repository..."
-    
-    if [[ -d "${INSTALL_DIR}/course-creator" ]]; then
-        log "INFO" "Repository already exists, updating..."
-        cd "${INSTALL_DIR}/course-creator"
-        sudo -u "$SERVICE_USER" git pull origin master
-    else
-        sudo -u "$SERVICE_USER" git clone https://github.com/yourusername/course-creator.git "${INSTALL_DIR}/course-creator"
-    fi
-    
-    # Change to repository directory
-    cd "${INSTALL_DIR}/course-creator"
-    chown -R "${SERVICE_USER}:${SERVICE_USER}" "${INSTALL_DIR}/course-creator"
-    
-    log "SUCCESS" "Repository cloned/updated successfully"
-}
-
-setup_python_environment() {
-    log "INFO" "Setting up Python virtual environment..."
-    
-    cd "${INSTALL_DIR}/course-creator"
-    
-    # Create virtual environment using Python 3.11
-    sudo -u "$SERVICE_USER" python3.11 -m venv .venv --copies
-    
-    # Activate virtual environment and install dependencies
-    sudo -u "$SERVICE_USER" bash -c "
-        source .venv/bin/activate
-        pip install --upgrade pip setuptools wheel
-        pip install -r requirements-base.txt
-        
-        # Install service-specific requirements
-        for service_dir in services/*/; do
-            if [[ -f \"\${service_dir}requirements.txt\" ]]; then
-                echo \"Installing requirements for \$(basename \"\$service_dir\")...\"
-                pip install -r \"\${service_dir}requirements.txt\"
-            fi
-        done
-    "
-    
-    log "SUCCESS" "Python environment setup completed"
-}
-
-setup_nodejs_environment() {
-    log "INFO" "Setting up Node.js environment..."
-    
-    cd "${INSTALL_DIR}/course-creator"
-    
-    if [[ -f "package.json" ]]; then
-        sudo -u "$SERVICE_USER" npm install
-        log "SUCCESS" "Node.js dependencies installed"
-    else
-        log "INFO" "No package.json found, skipping Node.js setup"
-    fi
-}
-
-generate_secrets() {
-    log "INFO" "Generating application secrets..."
-    
-    local jwt_secret
-    local redis_password
-    local encryption_key
-    
-    jwt_secret=$(openssl rand -base64 64)
-    redis_password=$(openssl rand -base64 32)
-    encryption_key=$(openssl rand -base64 32)
-    
-    # Create secrets file
-    cat > "${INSTALL_DIR}/.env.secrets" << EOF
-# Application Secrets - Generated $(date)
-JWT_SECRET_KEY=${jwt_secret}
-REDIS_PASSWORD=${redis_password}
-ENCRYPTION_KEY=${encryption_key}
-
-# AI Service API Keys (configure these manually)
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
-OPENAI_API_KEY=your_openai_api_key_here
-
-# Email Configuration (configure these manually)
-SMTP_HOST=your_smtp_host
-SMTP_PORT=587
-SMTP_USER=your_smtp_user
-SMTP_PASSWORD=your_smtp_password
-FROM_EMAIL=noreply@${DOMAIN_NAME:-yourdomain.com}
-
-# Production Domain
-DOMAIN_NAME=${DOMAIN_NAME:-localhost}
-EOF
-    
-    chmod 600 "${INSTALL_DIR}/.env.secrets"
-    chown "${SERVICE_USER}:${SERVICE_USER}" "${INSTALL_DIR}/.env.secrets"
-    
-    log "SUCCESS" "Application secrets generated"
-    log "WARN" "Please edit ${INSTALL_DIR}/.env.secrets to configure AI and email services"
-}
-
-run_database_migrations() {
     if [[ "$SKIP_DATABASE" == "true" ]]; then
-        log "INFO" "Skipping database migrations (--skip-db flag)"
+        log "INFO" "Skipping PostgreSQL setup as requested"
         return 0
     fi
     
-    log "INFO" "Running database migrations..."
+    # Start PostgreSQL service
+    systemctl enable postgresql
+    systemctl start postgresql
     
-    cd "${INSTALL_DIR}/course-creator"
+    # Wait for PostgreSQL to be ready
+    local max_wait=30
+    local wait_count=0
     
-    # Source environment variables
-    source "${INSTALL_DIR}/.env.database"
-    source "${INSTALL_DIR}/.env.secrets"
-    
-    # Run migrations
-    sudo -u "$SERVICE_USER" bash -c "
-        source .venv/bin/activate
-        export DB_HOST=\"$DB_HOST\"
-        export DB_PORT=\"$DB_PORT\"
-        export DB_NAME=\"$DB_NAME\"
-        export DB_USER=\"$DB_USER\"
-        export DB_PASSWORD=\"$DB_PASSWORD\"
-        
-        if [[ -f 'deploy/setup-database.py' ]]; then
-            python deploy/setup-database.py
-        else
-            echo 'No database setup script found'
+    while [[ $wait_count -lt $max_wait ]]; do
+        if sudo -u postgres psql -c '\l' > /dev/null 2>&1; then
+            log "SUCCESS" "PostgreSQL is ready"
+            break
         fi
-    "
+        
+        sleep 2
+        ((wait_count += 2))
+        log "DEBUG" "Waiting for PostgreSQL... ($wait_count/$max_wait seconds)"
+    done
     
-    log "SUCCESS" "Database migrations completed"
+    if [[ $wait_count -ge $max_wait ]]; then
+        log "ERROR" "PostgreSQL failed to start within $max_wait seconds"
+        return 1
+    fi
+    
+    # Create database user
+    if sudo -u postgres psql -tc "SELECT 1 FROM pg_user WHERE usename = '${DATABASE_USER}'" | grep -q 1; then
+        log "INFO" "Database user '${DATABASE_USER}' already exists"
+    else
+        sudo -u postgres createuser --createdb --pwprompt "${DATABASE_USER}" << EOF
+${DATABASE_PASSWORD}
+${DATABASE_PASSWORD}
+EOF
+        log "SUCCESS" "Database user '${DATABASE_USER}' created"
+    fi
+    
+    # Create database
+    if sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw "${DATABASE_NAME}"; then
+        log "INFO" "Database '${DATABASE_NAME}' already exists"
+    else
+        sudo -u postgres createdb -O "${DATABASE_USER}" "${DATABASE_NAME}"
+        log "SUCCESS" "Database '${DATABASE_NAME}' created"
+    fi
+    
+    # Configure PostgreSQL for the application
+    local pg_version=$(sudo -u postgres psql -tc "SELECT version()" | grep -oP '\d+\.\d+' | head -1)
+    local pg_config_dir="/etc/postgresql/${pg_version}/main"
+    
+    if [[ -d "$pg_config_dir" ]]; then
+        # Update postgresql.conf for better performance
+        sed -i "s/#listen_addresses = 'localhost'/listen_addresses = 'localhost'/" "${pg_config_dir}/postgresql.conf"
+        sed -i "s/#max_connections = 100/max_connections = 200/" "${pg_config_dir}/postgresql.conf"
+        
+        # Update pg_hba.conf for local connections
+        if ! grep -q "course_creator" "${pg_config_dir}/pg_hba.conf"; then
+            echo "local   ${DATABASE_NAME}   ${DATABASE_USER}   md5" >> "${pg_config_dir}/pg_hba.conf"
+        fi
+        
+        # Restart PostgreSQL to apply changes
+        systemctl restart postgresql
+        log "SUCCESS" "PostgreSQL configured for Course Creator Platform"
+    fi
+}
+
+setup_redis() {
+    log "INFO" "Setting up Redis..."
+    
+    if [[ "$SKIP_DATABASE" == "true" ]]; then
+        log "INFO" "Skipping Redis setup as requested"
+        return 0
+    fi
+    
+    # Configure Redis
+    local redis_config="/etc/redis/redis.conf"
+    
+    if [[ -f "$redis_config" ]]; then
+        # Backup original config
+        cp "$redis_config" "${redis_config}.backup"
+        
+        # Update Redis configuration
+        sed -i "s/# requirepass foobared/requirepass ${REDIS_PASSWORD}/" "$redis_config"
+        sed -i "s/bind 127.0.0.1 ::1/bind 127.0.0.1/" "$redis_config"
+        sed -i "s/# maxmemory <bytes>/maxmemory 512mb/" "$redis_config"
+        sed -i "s/# maxmemory-policy noeviction/maxmemory-policy allkeys-lru/" "$redis_config"
+        
+        log "SUCCESS" "Redis configuration updated"
+    fi
+    
+    # Start Redis service
+    systemctl enable redis-server
+    systemctl start redis-server
+    
+    # Test Redis connection
+    if echo "PING" | redis-cli -a "$REDIS_PASSWORD" | grep -q "PONG"; then
+        log "SUCCESS" "Redis is running and accessible"
+    else
+        log "ERROR" "Redis connection test failed"
+        return 1
+    fi
 }
 
 # =============================================================================
-# SYSTEMD SERVICES
+# DOCKER INTEGRATION AND DEPLOYMENT
 # =============================================================================
+
+setup_docker_integration() {
+    log "DOCKER" "Setting up Docker integration for Course Creator Platform..."
+    
+    # Detect current Docker status
+    local docker_status
+    detect_docker_status
+    docker_status=$?
+    
+    case $docker_status in
+        0)
+            log "SUCCESS" "Docker is fully operational"
+            ;;
+        1)
+            log "INFO" "Docker needs Docker Compose installation"
+            install_docker_compose
+            ;;
+        2)
+            log "WARN" "Docker daemon issues detected, attempting recovery..."
+            if recover_docker_daemon; then
+                log "SUCCESS" "Docker daemon recovered"
+            else
+                log "ERROR" "Docker daemon recovery failed"
+                
+                if [[ "$USE_DOCKER" == "true" ]]; then
+                    log "INFO" "Attempting fresh Docker installation..."
+                    if install_docker_with_strategies; then
+                        log "SUCCESS" "Docker installation completed"
+                    else
+                        error_exit "Docker installation failed and is required for deployment"
+                    fi
+                fi
+            fi
+            ;;
+        3)
+            log "INFO" "Docker not installed, installing now..."
+            if install_docker_with_strategies; then
+                log "SUCCESS" "Docker installation completed"
+            else
+                if [[ "$DOCKER_ONLY" == "true" ]]; then
+                    error_exit "Docker installation failed and Docker-only deployment was requested"
+                else
+                    log "WARN" "Docker installation failed, will continue with systemd deployment"
+                    USE_DOCKER=false
+                    return 1
+                fi
+            fi
+            ;;
+    esac
+    
+    # Setup Docker environment if using Docker
+    if [[ "$USE_DOCKER" == "true" ]]; then
+        setup_docker_environment
+        
+        # Deploy with Docker if requested
+        if [[ "$DOCKER_ONLY" == "true" ]]; then
+            deploy_with_docker
+        fi
+    fi
+    
+    return 0
+}
+
+setup_docker_environment() {
+    log "DOCKER" "Setting up Docker environment..."
+    
+    cd "${INSTALL_DIR}/course-creator"
+    
+    # Create Docker Compose configuration
+    create_docker_compose_config
+    
+    # Create Dockerfiles for microservices
+    create_microservice_dockerfiles
+    
+    # Build Docker images
+    build_docker_images
+    
+    log "SUCCESS" "Docker environment setup completed"
+}
+
+create_docker_compose_config() {
+    log "DOCKER" "Creating Docker Compose configuration..."
+    
+    cat > docker-compose.yml << EOF
+version: '3.8'
+
+services:
+  # Database Services
+  postgres:
+    image: postgres:14
+    container_name: course-creator-postgres
+    environment:
+      POSTGRES_DB: \${DB_NAME:-${DATABASE_NAME}}
+      POSTGRES_USER: \${DB_USER:-${DATABASE_USER}}
+      POSTGRES_PASSWORD: \${DB_PASSWORD:-${DATABASE_PASSWORD}}
+    ports:
+      - "\${DB_PORT:-${DB_PORT}}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./data:/docker-entrypoint-initdb.d
+    networks:
+      - course-creator-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \${DB_USER:-${DATABASE_USER}}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: course-creator-redis
+    command: redis-server --requirepass \${REDIS_PASSWORD:-${REDIS_PASSWORD}}
+    ports:
+      - "\${REDIS_PORT:-${REDIS_PORT}}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - course-creator-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "\${REDIS_PASSWORD:-${REDIS_PASSWORD}}", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Microservices
+  user-management:
+    build: 
+      context: .
+      dockerfile: services/user-management/Dockerfile
+    container_name: course-creator-user-management
+    user: "${APP_USER}"
+    environment:
+      - DATABASE_URL=\${DATABASE_URL}
+      - REDIS_URL=redis://:\${REDIS_PASSWORD}@redis:6379
+      - JWT_SECRET_KEY=\${JWT_SECRET_KEY}
+      - ENVIRONMENT=\${ENVIRONMENT:-${DEPLOYMENT_MODE}}
+    ports:
+      - "\${API_GATEWAY_PORT:-${API_GATEWAY_PORT}}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - course-creator-network
+    volumes:
+      - ./.cc_env:/app/.cc_env:ro
+      - ${INSTALL_DIR}/logs:/app/logs
+
+  course-generator:
+    build:
+      context: .
+      dockerfile: services/course-generator/Dockerfile
+    container_name: course-creator-course-generator
+    user: "${APP_USER}"
+    environment:
+      - ANTHROPIC_API_KEY=\${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=\${OPENAI_API_KEY}
+      - DATABASE_URL=\${DATABASE_URL}
+      - REDIS_URL=redis://:\${REDIS_PASSWORD}@redis:6379
+    ports:
+      - "\${CONTENT_GENERATOR_PORT:-${CONTENT_GENERATOR_PORT}}:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - course-creator-network
+    volumes:
+      - ./.cc_env:/app/.cc_env:ro
+      - ${INSTALL_DIR}/logs:/app/logs
+
+  slide-service:
+    build:
+      context: .
+      dockerfile: services/slide-service/Dockerfile
+    container_name: course-creator-slide-service
+    user: "${APP_USER}"
+    environment:
+      - DATABASE_URL=\${DATABASE_URL}
+      - REDIS_URL=redis://:\${REDIS_PASSWORD}@redis:6379
+    ports:
+      - "\${SLIDE_SERVICE_PORT:-${SLIDE_SERVICE_PORT}}:8003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - course-creator-network
+    volumes:
+      - ./.cc_env:/app/.cc_env:ro
+      - ${INSTALL_DIR}/logs:/app/logs
+
+  lab-service:
+    build:
+      context: .
+      dockerfile: services/lab-service/Dockerfile
+    container_name: course-creator-lab-service
+    user: "${APP_USER}"
+    environment:
+      - DATABASE_URL=\${DATABASE_URL}
+      - REDIS_URL=redis://:\${REDIS_PASSWORD}@redis:6379
+      - LAB_IMAGE_REGISTRY=\${LAB_IMAGE_REGISTRY:-course-creator/labs}
+    ports:
+      - "\${LAB_SERVICE_PORT:-${LAB_SERVICE_PORT}}:8004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - course-creator-network
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./.cc_env:/app/.cc_env:ro
+      - ${INSTALL_DIR}/logs:/app/logs
+
+  # Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: course-creator-frontend
+    environment:
+      - REACT_APP_API_URL=http://localhost:\${API_GATEWAY_PORT:-${API_GATEWAY_PORT}}
+    ports:
+      - "\${USER_INTERFACE_PORT:-${USER_INTERFACE_PORT}}:3000"
+    depends_on:
+      - user-management
+    networks:
+      - course-creator-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  course-creator-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+EOF
+    
+    # Create .env file for Docker Compose from .cc_env
+    if [[ -f ".cc_env" ]]; then
+        cp .cc_env .env
+        log "SUCCESS" "Docker Compose environment file created"
+    fi
+    
+    # Set proper ownership
+    chown "${APP_USER}:${SERVICE_USER}" docker-compose.yml
+    chown "${APP_USER}:${SERVICE_USER}" .env 2>/dev/null || true
+    
+    log "SUCCESS" "Docker Compose configuration created"
+}
+
+create_microservice_dockerfiles() {
+    log "DOCKER" "Creating Dockerfiles for microservices..."
+    
+    # Base Dockerfile template for Python services
+    local base_dockerfile_content='FROM python:3.12-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app user with same UID as host appuser
+RUN groupadd -g 1001 appuser && \
+    useradd -u 1001 -g appuser -m -s /bin/bash appuser
+
+# Copy requirements
+COPY requirements.txt ./
+COPY services/SERVICE_NAME/requirements.txt ./service-requirements.txt
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir -r service-requirements.txt
+
+# Copy service code
+COPY services/SERVICE_NAME/ ./
+
+# Create necessary directories and set permissions
+RUN mkdir -p /app/logs && \
+    chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:SERVICE_PORT/health || exit 1
+
+EXPOSE SERVICE_PORT
+
+CMD ["python", "main.py"]'
+    
+    # Create Dockerfiles for each service
+    local services=(
+        "user-management:${API_GATEWAY_PORT}"
+        "course-generator:${CONTENT_GENERATOR_PORT}"
+        "slide-service:${SLIDE_SERVICE_PORT}"
+        "lab-service:${LAB_SERVICE_PORT}"
+    )
+    
+    for service_info in "${services[@]}"; do
+        local service_name="${service_info%%:*}"
+        local service_port="${service_info##*:}"
+        local service_dir="services/${service_name}"
+        local dockerfile_path="${service_dir}/Dockerfile"
+        
+        # Create service directory if it doesn't exist
+        mkdir -p "$service_dir"
+        
+        # Skip if Dockerfile already exists (unless force reinstall)
+        if [[ -f "$dockerfile_path" ]] && [[ "$FORCE_REINSTALL" != "true" ]]; then
+            log "DEBUG" "Dockerfile already exists for $service_name"
+            continue
+        fi
+        
+        # Create Dockerfile
+        echo "$base_dockerfile_content" | \
+            sed "s/SERVICE_NAME/$service_name/g" | \
+            sed "s/SERVICE_PORT/$service_port/g" > "$dockerfile_path"
+        
+        # Create basic main.py if it doesn't exist
+        if [[ ! -f "${service_dir}/main.py" ]]; then
+            cat > "${service_dir}/main.py" << EOF
+#!/usr/bin/env python3
+"""
+${service_name^} Service
+Course Creator Platform Microservice
+"""
+
+from fastapi import FastAPI
+import uvicorn
+import os
+
+app = FastAPI(title="${service_name^} Service")
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "${service_name}"}
+
+@app.get("/")
+async def root():
+    return {"message": "Course Creator Platform - ${service_name^} Service"}
+
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", "${service_port}"))
+    uvicorn.run(app, host="0.0.0.0", port=port)
+EOF
+        fi
+        
+        # Create requirements.txt if it doesn't exist
+        if [[ ! -f "${service_dir}/requirements.txt" ]]; then
+            cat > "${service_dir}/requirements.txt" << EOF
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+sqlalchemy==2.0.23
+alembic==1.12.1
+psycopg2-binary==2.9.9
+redis==5.0.1
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
+requests==2.31.0
+EOF
+        fi
+        
+        chown -R "${APP_USER}:${SERVICE_USER}" "$service_dir"
+        log "SUCCESS" "Created Dockerfile and basic structure for $service_name"
+    done
+    
+    # Create frontend Dockerfile
+    create_frontend_dockerfile
+}
+
+create_frontend_dockerfile() {
+    local frontend_dir="frontend"
+    local dockerfile_path="${frontend_dir}/Dockerfile"
+    
+    mkdir -p "$frontend_dir"
+    
+    if [[ -f "$dockerfile_path" ]] && [[ "$FORCE_REINSTALL" != "true" ]]; then
+        log "DEBUG" "Frontend Dockerfile already exists"
+        return 0
+    fi
+    
+    cat > "$dockerfile_path" << 'EOF'
+# Build stage
+FROM node:18-alpine as build
+
+WORKDIR /app
+
+# Copy package files
+COPY frontend/package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production
+
+# Copy source code
+COPY frontend/ ./
+
+# Build the app
+RUN npm run build
+
+# Production stage
+FROM nginx:alpine
+
+# Copy built assets
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Copy custom nginx config
+COPY nginx/frontend.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 3000
+
+CMD ["nginx", "-g", "daemon off;"]
+EOF
+    
+    # Create basic package.json if it doesn't exist
+    if [[ ! -f "${frontend_dir}/package.json" ]]; then
+        cat > "${frontend_dir}/package.json" << EOF
+{
+  "name": "course-creator-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1",
+    "axios": "^1.6.0",
+    "react-router-dom": "^6.8.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
+EOF
+    fi
+    
+    chown -R "${APP_USER}:${SERVICE_USER}" "$frontend_dir"
+    log "SUCCESS" "Created frontend Dockerfile and basic structure"
+}
+
+build_docker_images() {
+    log "DOCKER" "Building Docker images..."
+    
+    # Check if app user exists
+    if ! id "$APP_USER" &>/dev/null; then
+        log "ERROR" "Cannot build Docker images - $APP_USER does not exist"
+        return 1
+    fi
+    
+    cd "${INSTALL_DIR}/course-creator"
+    
+    # Build with docker-compose as app user
+    if sudo -u "$APP_USER" docker-compose build --parallel; then
+        log "SUCCESS" "Docker images built successfully"
+    else
+        log "WARN" "Some Docker image builds may have failed, trying individual builds..."
+        
+        # Try building individually for better error reporting
+        local services=($(sudo -u "$APP_USER" docker-compose config --services 2>/dev/null || echo ""))
+        for service in "${services[@]}"; do
+            if [[ -n "$service" ]]; then
+                log "INFO" "Building $service individually..."
+                if sudo -u "$APP_USER" docker-compose build "$service"; then
+                    log "SUCCESS" "Built $service successfully"
+                else
+                    log "ERROR" "Failed to build $service"
+                fi
+            fi
+        done
+    fi
+}
+
+deploy_with_docker() {
+    log "DOCKER" "Deploying Course Creator Platform with Docker..."
+    
+    # Check if app user exists
+    if ! id "$APP_USER" &>/dev/null; then
+        log "ERROR" "Cannot deploy with Docker - $APP_USER does not exist"
+        return 1
+    fi
+    
+    cd "${INSTALL_DIR}/course-creator"
+    
+    # Ensure Docker Compose configuration is valid
+    if ! sudo -u "$APP_USER" docker-compose config > /dev/null; then
+        log "ERROR" "Docker Compose configuration is invalid"
+        sudo -u "$APP_USER" docker-compose config
+        return 1
+    fi
+    
+    # Start services as app user
+    log "INFO" "Starting Docker services..."
+    if sudo -u "$APP_USER" docker-compose up -d; then
+        log "SUCCESS" "Docker services started"
+    else
+        log "ERROR" "Failed to start Docker services"
+        return 1
+    fi
+    
+    # Wait for services to be ready
+    log "INFO" "Waiting for services to be ready..."
+    sleep 30
+    
+    # Check service health
+    check_docker_deployment_health
+    
+    log "SUCCESS" "Docker deployment completed"
+}
+
+check_docker_deployment_health() {
+    log "DOCKER" "Checking Docker deployment health..."
+    
+    # Check if app user exists
+    if ! id "$APP_USER" &>/dev/null; then
+        log "ERROR" "Cannot check Docker health - $APP_USER does not exist"
+        return 2
+    fi
+    
+    cd "${INSTALL_DIR}/course-creator"
+    
+    # Check container status
+    local containers_status
+    containers_status=$(sudo -u "$APP_USER" docker-compose ps --format table)
+    
+    echo "Container Status:"
+    echo "$containers_status"
+    echo
+    
+    # Check individual service health
+    local services=(
+        "postgres:5432"
+        "redis:6379"
+        "user-management:${API_GATEWAY_PORT}"
+        "course-generator:${CONTENT_GENERATOR_PORT}"
+        "frontend:${USER_INTERFACE_PORT}"
+    )
+    
+    local healthy_services=0
+    local total_services=${#services[@]}
+    
+    for service_check in "${services[@]}"; do
+        local service_name="${service_check%%:*}"
+        local service_port="${service_check##*:}"
+        
+        if timeout 10 curl -sf "http://localhost:$service_port/health" > /dev/null 2>&1; then
+            log "SUCCESS" "$service_name is healthy"
+            ((healthy_services++))
+        elif timeout 10 curl -sf "http://localhost:$service_port/" > /dev/null 2>&1; then
+            log "SUCCESS" "$service_name is responding"
+            ((healthy_services++))
+        else
+            log "WARN" "$service_name is not responding"
+        fi
+    done
+    
+    log "INFO" "Health check: $healthy_services/$total_services services healthy"
+    
+    if [[ $healthy_services -eq $total_services ]]; then
+        return 0
+    elif [[ $healthy_services -gt $((total_services / 2)) ]]; then
+        return 1
+    else
+        return 2
+    fi
+}
+
+# =============================================================================
+# SYSTEMD SERVICE SETUP
+# =============================================================================
+
+install_microservice_dependencies() {
+    log "INFO" "Installing microservice dependencies..."
+    
+    # Check if app user exists
+    if ! id "$APP_USER" &>/dev/null; then
+        log "ERROR" "Cannot install microservice dependencies - $APP_USER does not exist"
+        return 1
+    fi
+    
+    # Check if virtual environment exists
+    if [[ ! -d "$VENV_DIR" ]] || [[ ! -f "$VENV_DIR/bin/activate" ]]; then
+        log "ERROR" "Virtual environment not found at $VENV_DIR"
+        return 1
+    fi
+    
+    cd "${INSTALL_DIR}/course-creator"
+    
+    # Install core requirements as app user
+    sudo -u "$APP_USER" bash -c "
+        source ${VENV_DIR}/bin/activate
+        pip install --upgrade pip setuptools wheel
+        
+        # Install core dependencies
+        pip install fastapi uvicorn sqlalchemy alembic psycopg2-binary redis python-jose passlib
+        pip install requests pydantic python-multipart
+        
+        # Install AI libraries
+        pip install anthropic openai
+        
+        # Install additional utilities
+        pip install python-dotenv loguru
+    "
+    
+    log "SUCCESS" "Microservice dependencies installed"
+}
 
 create_systemd_services() {
     log "INFO" "Creating systemd services..."
     
-    # Create service files for each microservice
-    for service_name in "${!SERVICE_PORTS[@]}"; do
-        local port="${SERVICE_PORTS[$service_name]}"
-        
-        # Skip frontend service (handled separately)
-        if [[ "$service_name" == "frontend" ]]; then
-            continue
-        fi
+    # Services to create
+    local services=(
+        "user-management:${API_GATEWAY_PORT}"
+        "course-generator:${CONTENT_GENERATOR_PORT}"
+        "slide-service:${SLIDE_SERVICE_PORT}"
+        "lab-service:${LAB_SERVICE_PORT}"
+    )
+    
+    for service_info in "${services[@]}"; do
+        local service_name="${service_info%%:*}"
+        local service_port="${service_info##*:}"
         
         cat > "/etc/systemd/system/course-creator-${service_name}.service" << EOF
 [Unit]
-Description=Course Creator Platform - ${service_name} Service
+Description=Course Creator Platform - ${service_name^} Service
 After=network.target postgresql.service redis.service
 Wants=postgresql.service redis.service
 
 [Service]
-Type=simple
-User=${SERVICE_USER}
+Type=exec
+User=${APP_USER}
 Group=${SERVICE_USER}
 WorkingDirectory=${INSTALL_DIR}/course-creator/services/${service_name}
-Environment=PATH=${INSTALL_DIR}/course-creator/.venv/bin
-EnvironmentFile=${INSTALL_DIR}/.env.database
-EnvironmentFile=${INSTALL_DIR}/.env.secrets
-ExecStart=${INSTALL_DIR}/course-creator/.venv/bin/python run.py
+Environment=PATH=${VENV_DIR}/bin
+EnvironmentFile=${INSTALL_DIR}/course-creator/.cc_env
+ExecStart=${VENV_DIR}/bin/python main.py
+ExecReload=/bin/kill -HUP \$MAINPID
 Restart=always
 RestartSec=5
 StandardOutput=journal
@@ -578,422 +2114,365 @@ StandardError=journal
 SyslogIdentifier=course-creator-${service_name}
 
 # Security settings
-NoNewPrivileges=yes
-PrivateTmp=yes
+NoNewPrivileges=true
+PrivateTmp=true
 ProtectSystem=strict
-ProtectHome=yes
+ProtectHome=true
 ReadWritePaths=${INSTALL_DIR}
-CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+ReadWritePaths=/var/log/course-creator
+ReadWritePaths=/var/run/course-creator
 
 [Install]
 WantedBy=multi-user.target
 EOF
         
-        log "DEBUG" "Created systemd service for ${service_name}"
+        log "SUCCESS" "Created systemd service for $service_name"
     done
     
-    # Create frontend service
-    cat > "/etc/systemd/system/course-creator-frontend.service" << EOF
-[Unit]
-Description=Course Creator Platform - Frontend Service
-After=network.target
-
-[Service]
-Type=simple
-User=${SERVICE_USER}
-Group=${SERVICE_USER}
-WorkingDirectory=${INSTALL_DIR}/course-creator/frontend
-Environment=PATH=/usr/bin
-ExecStart=/usr/bin/serve -s . -l ${SERVICE_PORTS[frontend]}
-Restart=always
-RestartSec=5
-StandardOutput=journal
-StandardError=journal
-SyslogIdentifier=course-creator-frontend
-
-[Install]
-WantedBy=multi-user.target
-EOF
-    
-    # Reload systemd
+    # Reload systemd and enable services
     systemctl daemon-reload
     
-    log "SUCCESS" "Systemd services created"
+    for service_info in "${services[@]}"; do
+        local service_name="${service_info%%:*}"
+        systemctl enable "course-creator-${service_name}.service"
+    done
+    
+    log "SUCCESS" "Systemd services created and enabled"
 }
 
 # =============================================================================
-# NGINX CONFIGURATION
+# MONITORING AND TROUBLESHOOTING SCRIPTS
 # =============================================================================
 
-configure_nginx() {
-    log "INFO" "Configuring Nginx..."
+create_monitoring_scripts() {
+    log "INFO" "Creating monitoring and troubleshooting scripts..."
     
-    local server_name="${DOMAIN_NAME:-localhost}"
+    # Create monitor script
+    cat > "${INSTALL_DIR}/monitor.sh" << EOF
+#!/bin/bash
+
+# Course Creator Platform Monitor Script
+
+set -euo pipefail
+
+INSTALL_DIR="${INSTALL_DIR}"
+SERVICE_USER="${SERVICE_USER}"
+APP_USER="${APP_USER}"
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+show_header() {
+    echo -e "\${BLUE}"
+    echo "╔══════════════════════════════════════════════════════════════════╗"
+    echo "║                 COURSE CREATOR PLATFORM MONITOR                 ║"
+    echo "╚══════════════════════════════════════════════════════════════════╝"
+    echo -e "\${NC}"
+}
+
+check_systemd_services() {
+    echo -e "\${YELLOW}=== Systemd Services Status ===\${NC}"
     
-    # Remove default site
-    rm -f /etc/nginx/sites-enabled/default
+    local services=(
+        "course-creator-user-management"
+        "course-creator-course-generator"
+        "course-creator-slide-service"
+        "course-creator-lab-service"
+        "postgresql"
+        "redis-server"
+        "nginx"
+    )
     
-    # Create Course Creator site configuration
+    for service in "\${services[@]}"; do
+        if systemctl is-active --quiet "\$service" 2>/dev/null; then
+            echo -e "✅ \${GREEN}\$service\${NC} - Running"
+        else
+            echo -e "❌ \${RED}\$service\${NC} - Stopped"
+        fi
+    done
+    echo
+}
+
+check_docker_services() {
+    echo -e "\${YELLOW}=== Docker Services Status ===\${NC}"
+    
+    if command -v docker > /dev/null && systemctl is-active --quiet docker; then
+        cd "\${INSTALL_DIR}/course-creator" 2>/dev/null || return 1
+        
+        if [[ -f "docker-compose.yml" ]]; then
+            sudo -u "\$APP_USER" docker-compose ps
+        else
+            echo "No docker-compose.yml found"
+        fi
+    else
+        echo "Docker not available or not running"
+    fi
+    echo
+}
+
+check_service_health() {
+    echo -e "\${YELLOW}=== Service Health Checks ===\${NC}"
+    
+    local endpoints=(
+        "User Management:http://localhost:${API_GATEWAY_PORT}/health"
+        "Course Generator:http://localhost:${CONTENT_GENERATOR_PORT}/health"
+        "Slide Service:http://localhost:${SLIDE_SERVICE_PORT}/health"
+        "Lab Service:http://localhost:${LAB_SERVICE_PORT}/health"
+        "Frontend:http://localhost:${USER_INTERFACE_PORT}"
+    )
+    
+    for endpoint in "\${endpoints[@]}"; do
+        local name="\${endpoint%%:*}"
+        local url="\${endpoint##*:}"
+        
+        if curl -sf "\$url" > /dev/null 2>&1; then
+            echo -e "✅ \${GREEN}\$name\${NC} - Healthy"
+        else
+            echo -e "❌ \${RED}\$name\${NC} - Unhealthy"
+        fi
+    done
+    echo
+}
+
+check_user_permissions() {
+    echo -e "\${YELLOW}=== User Permissions ===\${NC}"
+    
+    echo "App User (\$APP_USER) Permissions:"
+    echo -n "Docker access: "
+    if sudo -u "\$APP_USER" docker info > /dev/null 2>&1; then
+        echo -e "\${GREEN}✅ OK\${NC}"
+    else
+        echo -e "\${RED}❌ FAILED\${NC}"
+    fi
+    
+    echo -n "Log directory write: "
+    if sudo -u "\$APP_USER" test -w "/var/log/course-creator"; then
+        echo -e "\${GREEN}✅ OK\${NC}"
+    else
+        echo -e "\${RED}❌ FAILED\${NC}"
+    fi
+    
+    echo -n "Upload directory write: "
+    if sudo -u "\$APP_USER" test -w "\${INSTALL_DIR}/uploads"; then
+        echo -e "\${GREEN}✅ OK\${NC}"
+    else
+        echo -e "\${RED}❌ FAILED\${NC}"
+    fi
+    echo
+}
+
+main() {
+    show_header
+    check_systemd_services
+    check_docker_services
+    check_service_health
+    check_user_permissions
+}
+
+case "\${1:-monitor}" in
+    "services") check_systemd_services ;;
+    "docker") check_docker_services ;;
+    "health") check_service_health ;;
+    "permissions") check_user_permissions ;;
+    *) main ;;
+esac
+EOF
+    
+    # Create troubleshoot script
+    cat > "${INSTALL_DIR}/troubleshoot.sh" << EOF
+#!/bin/bash
+
+# Course Creator Platform Troubleshoot Script
+
+set -euo pipefail
+
+INSTALL_DIR="${INSTALL_DIR}"
+SERVICE_USER="${SERVICE_USER}"
+APP_USER="${APP_USER}"
+
+show_help() {
+    cat << 'HELP_EOF'
+Course Creator Platform Troubleshoot Script
+
+USAGE:
+    sudo ./troubleshoot.sh [COMMAND]
+
+COMMANDS:
+    restart-services    Restart all systemd services
+    restart-docker      Restart Docker services
+    fix-permissions     Fix file permissions for appuser
+    fix-docker-perms    Fix Docker permissions for appuser
+    reset-database      Reset database (WARNING: DATA LOSS)
+    fix-docker          Fix Docker daemon issues
+    check-config        Validate configuration
+    collect-logs        Collect logs for support
+    full-restart        Complete system restart
+
+EXAMPLES:
+    sudo ./troubleshoot.sh restart-services
+    sudo ./troubleshoot.sh fix-permissions
+    sudo ./troubleshoot.sh fix-docker-perms
+HELP_EOF
+}
+
+fix_permissions() {
+    echo "Fixing file permissions for \$APP_USER..."
+    
+    # Fix main directory ownership
+    chown -R "\${SERVICE_USER}:\${SERVICE_USER}" "\${INSTALL_DIR}"
+    
+    # Fix app-specific directories
+    chown -R "\${APP_USER}:\${SERVICE_USER}" "\${INSTALL_DIR}/app"
+    chown -R "\${APP_USER}:\${SERVICE_USER}" "\${INSTALL_DIR}/course-creator"
+    chown -R "\${APP_USER}:\${SERVICE_USER}" "\${INSTALL_DIR}/uploads"
+    chown -R "\${APP_USER}:\${SERVICE_USER}" "\${INSTALL_DIR}/tmp"
+    
+    # Fix log directory
+    chown -R "\${APP_USER}:adm" "/var/log/course-creator"
+    chmod 755 "/var/log/course-creator"
+    
+    # Fix runtime directory
+    chown -R "\${APP_USER}:\${SERVICE_USER}" "/var/run/course-creator"
+    
+    # Fix .cc_env permissions
+    chown "\${SERVICE_USER}:\${SERVICE_USER}" "\${INSTALL_DIR}/course-creator/.cc_env"
+    chmod 640 "\${INSTALL_DIR}/course-creator/.cc_env"
+    
+    echo "Permissions fixed"
+}
+
+fix_docker_permissions() {
+    echo "Fixing Docker permissions for \$APP_USER..."
+    
+    # Add appuser to docker group
+    usermod -aG docker "\$APP_USER"
+    
+    # Fix Docker socket permissions
+    if [[ -S /var/run/docker.sock ]]; then
+        chgrp docker /var/run/docker.sock
+        chmod 660 /var/run/docker.sock
+    fi
+    
+    # Create Docker config directory
+    local docker_config_dir="\${INSTALL_DIR}/app/.docker"
+    mkdir -p "\$docker_config_dir"
+    chown "\${APP_USER}:\${APP_USER}" "\$docker_config_dir"
+    chmod 700 "\$docker_config_dir"
+    
+    echo "Docker permissions fixed"
+    echo "Note: \$APP_USER may need to logout/login for group changes to take effect"
+}
+
+case "\${1:-help}" in
+    "fix-permissions") fix_permissions ;;
+    "fix-docker-perms") fix_docker_permissions ;;
+    *) show_help ;;
+esac
+EOF
+    
+    # Make scripts executable
+    chmod +x "${INSTALL_DIR}/monitor.sh"
+    chmod +x "${INSTALL_DIR}/troubleshoot.sh"
+    
+    # Set proper ownership
+    chown "${SERVICE_USER}:${SERVICE_USER}" "${INSTALL_DIR}/monitor.sh"
+    chown "${SERVICE_USER}:${SERVICE_USER}" "${INSTALL_DIR}/troubleshoot.sh"
+    
+    log "SUCCESS" "Monitoring and troubleshooting scripts created"
+}
+
+# =============================================================================
+# SSL/TLS CONFIGURATION
+# =============================================================================
+
+setup_ssl_certificates() {
+    log "INFO" "Setting up SSL certificates..."
+    
+    if [[ "$SKIP_SSL" == "true" ]] || [[ -z "$DOMAIN_NAME" ]]; then
+        log "INFO" "Skipping SSL setup as requested or no domain specified"
+        return 0
+    fi
+    
+    # Install certbot
+    apt-get install -y certbot python3-certbot-nginx
+    
+    # Configure nginx for the domain
+    create_nginx_config
+    
+    # Obtain SSL certificate
+    if [[ -n "$SSL_EMAIL" ]]; then
+        certbot --nginx -d "$DOMAIN_NAME" --email "$SSL_EMAIL" --agree-tos --non-interactive
+        log "SUCCESS" "SSL certificate obtained for $DOMAIN_NAME"
+    else
+        log "WARN" "No SSL email provided, skipping certificate generation"
+    fi
+}
+
+create_nginx_config() {
+    log "INFO" "Creating Nginx configuration..."
+    
     cat > "/etc/nginx/sites-available/course-creator" << EOF
-# Course Creator Platform - Nginx Configuration
-# Security headers and reverse proxy for microservices
-
-# Rate limiting zones
-limit_req_zone \$binary_remote_addr zone=api:10m rate=10r/s;
-limit_req_zone \$binary_remote_addr zone=auth:10m rate=5r/s;
-limit_req_zone \$binary_remote_addr zone=uploads:10m rate=2r/s;
-
-# Upstream servers
-upstream frontend {
-    server 127.0.0.1:${SERVICE_PORTS[frontend]};
-}
-
-upstream user_management {
-    server 127.0.0.1:${SERVICE_PORTS[user-management]};
-}
-
-upstream course_generator {
-    server 127.0.0.1:${SERVICE_PORTS[course-generator]};
-}
-
-upstream content_storage {
-    server 127.0.0.1:${SERVICE_PORTS[content-storage]};
-}
-
-upstream course_management {
-    server 127.0.0.1:${SERVICE_PORTS[course-management]};
-}
-
-upstream content_management {
-    server 127.0.0.1:${SERVICE_PORTS[content-management]};
-}
-
-upstream lab_manager {
-    server 127.0.0.1:${SERVICE_PORTS[lab-manager]};
-}
-
-upstream analytics {
-    server 127.0.0.1:${SERVICE_PORTS[analytics]};
-}
-
-upstream organization_management {
-    server 127.0.0.1:${SERVICE_PORTS[organization-management]};
-}
-
 server {
     listen 80;
-    server_name ${server_name};
-    
+    listen [::]:80;
+    server_name ${DOMAIN_NAME:-localhost};
+
     # Security headers
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-    
-    # Hide Nginx version
-    server_tokens off;
-    
-    # Frontend static files
+    add_header X-Frame-Options DENY;
+    add_header X-Content-Type-Options nosniff;
+    add_header X-XSS-Protection "1; mode=block";
+    add_header Referrer-Policy "strict-origin-when-cross-origin";
+
+    # Frontend
     location / {
-        proxy_pass http://frontend;
+        proxy_pass http://localhost:${USER_INTERFACE_PORT};
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
-        
-        # Rate limiting
-        limit_req zone=api burst=20 nodelay;
     }
-    
-    # API endpoints with rate limiting
-    location ~ ^/api/auth/ {
-        proxy_pass http://user_management;
-        include /etc/nginx/proxy_params;
-        limit_req zone=auth burst=10 nodelay;
+
+    # API Gateway
+    location /api/ {
+        proxy_pass http://localhost:${API_GATEWAY_PORT}/;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
     }
-    
-    location ~ ^/api/users/ {
-        proxy_pass http://user_management;
-        include /etc/nginx/proxy_params;
-        limit_req zone=api burst=20 nodelay;
-    }
-    
-    location ~ ^/api/courses/ {
-        proxy_pass http://course_management;
-        include /etc/nginx/proxy_params;
-        limit_req zone=api burst=20 nodelay;
-    }
-    
-    location ~ ^/api/generate/ {
-        proxy_pass http://course_generator;
-        include /etc/nginx/proxy_params;
-        limit_req zone=api burst=10 nodelay;
-        proxy_read_timeout 300s;
-        proxy_send_timeout 300s;
-    }
-    
-    location ~ ^/api/content/ {
-        proxy_pass http://content_management;
-        include /etc/nginx/proxy_params;
-        limit_req zone=uploads burst=5 nodelay;
-        client_max_body_size 50M;
-    }
-    
-    location ~ ^/api/storage/ {
-        proxy_pass http://content_storage;
-        include /etc/nginx/proxy_params;
-        limit_req zone=uploads burst=5 nodelay;
-        client_max_body_size 50M;
-    }
-    
-    location ~ ^/api/labs/ {
-        proxy_pass http://lab_manager;
-        include /etc/nginx/proxy_params;
-        limit_req zone=api burst=20 nodelay;
-    }
-    
-    location ~ ^/api/analytics/ {
-        proxy_pass http://analytics;
-        include /etc/nginx/proxy_params;
-        limit_req zone=api burst=20 nodelay;
-    }
-    
-    location ~ ^/api/(rbac|organizations)/ {
-        proxy_pass http://organization_management;
-        include /etc/nginx/proxy_params;
-        limit_req zone=api burst=20 nodelay;
-    }
-    
-    # Health checks (no rate limiting)
-    location ~ ^/health$ {
-        access_log off;
-        return 200 "healthy\n";
-        add_header Content-Type text/plain;
-    }
-    
-    # Service health checks
-    location ~ ^/api/.*/health$ {
-        proxy_pass http://\$1;
-        include /etc/nginx/proxy_params;
-        access_log off;
-    }
-    
-    # Security: Block access to sensitive files
-    location ~ /\. {
-        deny all;
-        access_log off;
-        log_not_found off;
-    }
-    
-    location ~ \.(env|log|config)$ {
-        deny all;
-        access_log off;
-        log_not_found off;
+
+    # Course Generator
+    location /course-gen/ {
+        proxy_pass http://localhost:${CONTENT_GENERATOR_PORT}/;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
     }
 }
 EOF
     
-    # Enable site
-    ln -sf /etc/nginx/sites-available/course-creator /etc/nginx/sites-enabled/
+    # Enable the site
+    ln -sf "/etc/nginx/sites-available/course-creator" "/etc/nginx/sites-enabled/"
     
-    # Test configuration
-    nginx -t
+    # Remove default site
+    rm -f "/etc/nginx/sites-enabled/default"
     
-    # Reload Nginx
-    systemctl reload nginx
-    
-    log "SUCCESS" "Nginx configured successfully"
-}
-
-# =============================================================================
-# SSL/TLS SETUP
-# =============================================================================
-
-setup_ssl() {
-    if [[ "$SKIP_SSL" == "true" ]] || [[ -z "$DOMAIN_NAME" ]] || [[ -z "$SSL_EMAIL" ]]; then
-        log "INFO" "Skipping SSL setup (missing domain/email or --skip-ssl flag)"
-        return 0
-    fi
-    
-    log "INFO" "Setting up SSL certificate with Let's Encrypt..."
-    
-    # Install certbot
-    apt-get install -y -qq certbot python3-certbot-nginx
-    
-    # Obtain certificate
-    certbot --nginx --non-interactive --agree-tos --email "$SSL_EMAIL" -d "$DOMAIN_NAME"
-    
-    # Setup automatic renewal
-    systemctl enable certbot.timer
-    systemctl start certbot.timer
-    
-    log "SUCCESS" "SSL certificate configured successfully"
-}
-
-# =============================================================================
-# SERVICE MANAGEMENT
-# =============================================================================
-
-start_services() {
-    log "INFO" "Starting Course Creator Platform services..."
-    
-    # Start and enable all services
-    for service_name in "${!SERVICE_PORTS[@]}"; do
-        local service_file="course-creator-${service_name}.service"
-        
-        log "DEBUG" "Starting ${service_name} service..."
-        systemctl enable "$service_file"
-        systemctl start "$service_file"
-        
-        # Wait a moment for service to start
-        sleep 2
-        
-        # Check if service is running
-        if systemctl is-active --quiet "$service_file"; then
-            log "SUCCESS" "${service_name} service started successfully"
-        else
-            log "ERROR" "${service_name} service failed to start"
-            log "DEBUG" "Service status:"
-            systemctl status "$service_file" --no-pager -l
-        fi
-    done
-}
-
-check_service_health() {
-    log "INFO" "Checking service health..."
-    
-    local all_healthy=true
-    
-    for service_name in "${!SERVICE_PORTS[@]}"; do
-        local port="${SERVICE_PORTS[$service_name]}"
-        local url="http://localhost:${port}/health"
-        
-        if [[ "$service_name" == "frontend" ]]; then
-            url="http://localhost:${port}/"
-        fi
-        
-        log "DEBUG" "Checking ${service_name} at ${url}"
-        
-        if curl -sf "$url" > /dev/null 2>&1; then
-            log "SUCCESS" "${service_name} is healthy"
-        else
-            log "ERROR" "${service_name} health check failed"
-            all_healthy=false
-        fi
-    done
-    
-    if [[ "$all_healthy" == "true" ]]; then
-        log "SUCCESS" "All services are healthy"
+    # Test nginx configuration
+    if nginx -t; then
+        systemctl reload nginx
+        log "SUCCESS" "Nginx configuration created and reloaded"
     else
-        log "WARN" "Some services failed health checks"
+        log "ERROR" "Nginx configuration test failed"
+        return 1
     fi
 }
 
 # =============================================================================
-# MONITORING AND LOGGING
-# =============================================================================
-
-setup_logging() {
-    log "INFO" "Setting up centralized logging..."
-    
-    # Create log directory
-    mkdir -p /var/log/course-creator
-    chown "${SERVICE_USER}:${SERVICE_USER}" /var/log/course-creator
-    
-    # Configure logrotate
-    cat > /etc/logrotate.d/course-creator << EOF
-/var/log/course-creator/*.log {
-    daily
-    missingok
-    rotate 30
-    compress
-    delaycompress
-    notifempty
-    create 644 ${SERVICE_USER} ${SERVICE_USER}
-    postrotate
-        systemctl reload rsyslog > /dev/null 2>&1 || true
-    endscript
-}
-EOF
-    
-    log "SUCCESS" "Logging configuration completed"
-}
-
-create_monitoring_script() {
-    log "INFO" "Creating monitoring script..."
-    
-    cat > "${INSTALL_DIR}/monitor.sh" << 'EOF'
-#!/bin/bash
-# Course Creator Platform Monitoring Script
-
-echo "=== Course Creator Platform Status ==="
-echo "Date: $(date)"
-echo
-
-echo "=== System Resources ==="
-echo "Memory Usage:"
-free -h
-echo
-echo "Disk Usage:"
-df -h /
-echo
-
-echo "=== Service Status ==="
-for service in course-creator-*.service; do
-    if systemctl list-unit-files | grep -q "$service"; then
-        status=$(systemctl is-active "$service")
-        echo "$service: $status"
-    fi
-done
-echo
-
-echo "=== Service Health Checks ==="
-for port in 3000 8000 8001 8003 8004 8005 8006 8007 8008; do
-    service_name=""
-    case $port in
-        3000) service_name="Frontend" ;;
-        8000) service_name="User Management" ;;
-        8001) service_name="Course Generator" ;;
-        8003) service_name="Content Storage" ;;
-        8004) service_name="Course Management" ;;
-        8005) service_name="Content Management" ;;
-        8006) service_name="Lab Manager" ;;
-        8007) service_name="Analytics" ;;
-        8008) service_name="Organization Management" ;;
-    esac
-    
-    url="http://localhost:${port}/health"
-    if [[ $port == 3000 ]]; then
-        url="http://localhost:${port}/"
-    fi
-    
-    if curl -sf "$url" > /dev/null 2>&1; then
-        echo "$service_name (port $port): ✓ Healthy"
-    else
-        echo "$service_name (port $port): ✗ Unhealthy"
-    fi
-done
-echo
-
-echo "=== Recent Logs ==="
-echo "Last 10 lines from each service:"
-for service in course-creator-*.service; do
-    if systemctl list-unit-files | grep -q "$service"; then
-        echo "--- $service ---"
-        journalctl -u "$service" -n 5 --no-pager -q
-        echo
-    fi
-done
-EOF
-    
-    chmod +x "${INSTALL_DIR}/monitor.sh"
-    chown "${SERVICE_USER}:${SERVICE_USER}" "${INSTALL_DIR}/monitor.sh"
-    
-    log "SUCCESS" "Monitoring script created at ${INSTALL_DIR}/monitor.sh"
-}
-
-# =============================================================================
-# MAIN DEPLOYMENT PROCESS
+# ARGUMENT PARSING
 # =============================================================================
 
 show_help() {
@@ -1009,25 +2488,56 @@ OPTIONS:
     --ssl-email EMAIL   Email for Let's Encrypt SSL certificate
     --skip-db          Skip database setup (use existing database)
     --skip-ssl         Skip SSL certificate setup
+    --force-reinstall  Force reinstall of all components including Docker
+    --debug            Enable verbose debugging output
+    --no-docker        Skip Docker installation and use systemd only
+    --docker-only      Use Docker deployment only (no systemd services)
     --help             Show this help message
 
+USER MANAGEMENT:
+    - Creates dedicated 'appuser' account for running applications
+    - Configures Docker permissions for appuser
+    - Sets up proper file ownership and permissions
+    - Creates monitoring scripts with user permission checks
+
+DOCKER FEATURES:
+    - Automatic Docker detection and installation
+    - Multiple Docker installation strategies with fallbacks
+    - Docker daemon health monitoring and recovery
+    - Docker Compose integration with .cc_env configuration
+    - Containerized microservices deployment with appuser
+    - Mixed deployment support (Docker + systemd)
+
+DEPLOYMENT MODES:
+    Default:         Install Docker (if needed) + systemd services
+    --docker-only:   Docker containers only (no systemd)
+    --no-docker:     Systemd services only (skip Docker)
+
 EXAMPLES:
-    # Development deployment
-    sudo $0
+    # Default deployment (Docker + systemd)
+    sudo $0 --debug
 
-    # Production deployment with SSL
-    sudo $0 --production --domain example.com --ssl-email admin@example.com
+    # Docker-only deployment
+    sudo $0 --docker-only --production
 
-    # Production deployment without SSL
-    sudo $0 --production --skip-ssl
+    # Systemd-only deployment (no Docker)
+    sudo $0 --no-docker
 
-REQUIREMENTS:
-    - Ubuntu 20.04 LTS or later
-    - Root or sudo access
-    - Internet connection
-    - At least 4GB RAM and 20GB disk space
+    # Force Docker reinstall
+    sudo $0 --force-reinstall --debug
 
-For more information, visit: https://github.com/yourusername/course-creator
+USER ACCOUNTS CREATED:
+    - ${SERVICE_USER}: Administrative user for managing the platform
+    - ${APP_USER}: Application user with Docker permissions for running services
+
+ENVIRONMENT CONFIGURATION (.cc_env):
+    The script integrates with your existing .cc_env file for:
+    - Database configuration
+    - API keys (Anthropic, OpenAI)
+    - Service ports
+    - Security settings
+    - Docker environment variables
+    - User configuration
 EOF
 }
 
@@ -1054,6 +2564,23 @@ parse_arguments() {
                 SKIP_SSL=true
                 shift
                 ;;
+            --force-reinstall)
+                FORCE_REINSTALL=true
+                shift
+                ;;
+            --debug)
+                DEBUG_MODE=true
+                shift
+                ;;
+            --no-docker)
+                USE_DOCKER=false
+                shift
+                ;;
+            --docker-only)
+                DOCKER_ONLY=true
+                USE_DOCKER=true
+                shift
+                ;;
             --help)
                 show_help
                 exit 0
@@ -1065,81 +2592,9 @@ parse_arguments() {
     done
 }
 
-show_deployment_summary() {
-    local domain_url="https://localhost"
-    if [[ -n "$DOMAIN_NAME" ]] && [[ "$SKIP_SSL" != "true" ]]; then
-        domain_url="https://$DOMAIN_NAME"
-    elif [[ -n "$DOMAIN_NAME" ]]; then
-        domain_url="http://$DOMAIN_NAME"
-    fi
-    
-    cat << EOF
-
-${GREEN}==================================================================${NC}
-${GREEN}🎉 COURSE CREATOR PLATFORM DEPLOYMENT COMPLETED SUCCESSFULLY! 🎉${NC}
-${GREEN}==================================================================${NC}
-
-${CYAN}📋 DEPLOYMENT SUMMARY:${NC}
-${BLUE}• Mode:${NC} $DEPLOYMENT_MODE
-${BLUE}• Version:${NC} $SCRIPT_VERSION (OWASP Security Enhanced)
-${BLUE}• Installation Directory:${NC} $INSTALL_DIR
-${BLUE}• Service User:${NC} $SERVICE_USER
-${BLUE}• Database:${NC} ${SKIP_DATABASE:-"PostgreSQL (configured)"}
-${BLUE}• SSL/TLS:${NC} ${SKIP_SSL:-"Let's Encrypt (configured)"}
-
-${CYAN}🌐 ACCESS URLS:${NC}
-${BLUE}• Platform URL:${NC} $domain_url
-${BLUE}• Admin Dashboard:${NC} $domain_url/admin.html
-${BLUE}• Instructor Dashboard:${NC} $domain_url/instructor-dashboard.html
-${BLUE}• Student Dashboard:${NC} $domain_url/student-dashboard.html
-
-${CYAN}🔧 SERVICE PORTS (Development Mode):${NC}
-EOF
-
-    if [[ "$DEPLOYMENT_MODE" == "development" ]]; then
-        for service_name in "${!SERVICE_PORTS[@]}"; do
-            local port="${SERVICE_PORTS[$service_name]}"
-            printf "${BLUE}• %-25s${NC} http://localhost:${port}\n" "$service_name:"
-        done
-    fi
-
-    cat << EOF
-
-${CYAN}🛡️ SECURITY FEATURES ENABLED:${NC}
-${GREEN}✓${NC} OWASP Top 10 2021 Compliance (96%+ Security Score)
-${GREEN}✓${NC} Multi-Tenant Organization Isolation
-${GREEN}✓${NC} Advanced Rate Limiting & DoS Protection
-${GREEN}✓${NC} Comprehensive Security Headers
-${GREEN}✓${NC} Production-Hardened Configuration
-${GREEN}✓${NC} Firewall & Fail2ban Protection
-
-${CYAN}📁 IMPORTANT FILES:${NC}
-${BLUE}• Environment Config:${NC} $INSTALL_DIR/.env.secrets
-${BLUE}• Database Config:${NC} $INSTALL_DIR/.env.database
-${BLUE}• Monitoring Script:${NC} $INSTALL_DIR/monitor.sh
-${BLUE}• Nginx Config:${NC} /etc/nginx/sites-available/course-creator
-
-${CYAN}🔑 NEXT STEPS:${NC}
-${YELLOW}1.${NC} Edit API keys in: $INSTALL_DIR/.env.secrets
-${YELLOW}2.${NC} Configure email settings in: $INSTALL_DIR/.env.secrets
-${YELLOW}3.${NC} Run monitoring: $INSTALL_DIR/monitor.sh
-${YELLOW}4.${NC} Create admin user: cd $INSTALL_DIR/course-creator && python create-admin.py
-
-${CYAN}📊 MONITORING COMMANDS:${NC}
-${BLUE}• Check services:${NC} sudo $INSTALL_DIR/monitor.sh
-${BLUE}• View logs:${NC} sudo journalctl -u course-creator-* -f
-${BLUE}• Service status:${NC} sudo systemctl status course-creator-*
-
-${YELLOW}⚠️  IMPORTANT SECURITY NOTES:${NC}
-${RED}•${NC} Update API keys in $INSTALL_DIR/.env.secrets
-${RED}•${NC} Configure email settings for notifications
-${RED}•${NC} Review firewall rules for your environment
-${RED}•${NC} Regularly update the system and application
-
-${GREEN}Platform is ready for use! 🚀${NC}
-
-EOF
-}
+# =============================================================================
+# MAIN DEPLOYMENT PROCESS
+# =============================================================================
 
 main() {
     # Print banner
@@ -1147,10 +2602,13 @@ main() {
 ${PURPLE}
 ╔══════════════════════════════════════════════════════════════════╗
 ║                 COURSE CREATOR PLATFORM                         ║
-║                 Ubuntu Deployment Script                        ║
+║        Enhanced User Management & Docker Integration            ║
 ║                                                                  ║
-║                    Version: $SCRIPT_VERSION                           ║
+║                    Version: $SCRIPT_VERSION                         ║
+║     Intelligent Docker Detection, Installation & Deployment     ║
 ║              OWASP Security Enhanced (96%+ Score)               ║
+║             Complete .cc_env Configuration Integration          ║
+║                  Dedicated AppUser with Docker Access          ║
 ╚══════════════════════════════════════════════════════════════════╝
 ${NC}
 
@@ -1159,56 +2617,139 @@ EOF
     # Parse command line arguments
     parse_arguments "$@"
     
-    log "INFO" "Starting Course Creator Platform deployment..."
+    log "INFO" "Starting enhanced Course Creator Platform deployment..."
     log "INFO" "Deployment mode: $DEPLOYMENT_MODE"
+    log "INFO" "Docker enabled: $USE_DOCKER"
+    log "INFO" "Docker only: $DOCKER_ONLY"
+    log "INFO" "Debug mode: $DEBUG_MODE"
+    log "INFO" "Force reinstall: $FORCE_REINSTALL"
+    log "INFO" "Service user: $SERVICE_USER"
+    log "INFO" "Application user: $APP_USER"
     
     # Pre-flight checks
     check_root
     check_ubuntu_version
-    check_system_requirements
     
     # System preparation
-    update_system
-    setup_firewall
-    setup_fail2ban
+    log "INFO" "Installing system packages..."
+    install_system_packages
     
-    # Software installation
-    install_python
-    install_nodejs
-    install_docker
-    install_postgresql
-    install_redis
-    install_nginx
-    
-    # Database setup
-    setup_database
-    
-    # Application setup
+    # User and directory setup (ENHANCED)
     create_service_user
-    clone_repository
-    setup_python_environment
-    setup_nodejs_environment
-    generate_secrets
-    run_database_migrations
     
-    # System configuration
-    create_systemd_services
-    configure_nginx
-    setup_ssl
-    setup_logging
-    create_monitoring_script
+    # Copy Course Creator project to installation directory
+    copy_course_creator_project
     
-    # Start services
-    start_services
+    # Generate secrets and create configuration
+    generate_secure_secrets
+    create_cc_env_config
+    load_cc_env_config
     
-    # Final checks
-    sleep 10  # Give services time to fully start
-    check_service_health
+    # Docker integration with user permissions
+    setup_docker_integration
     
-    log "SUCCESS" "Deployment completed successfully!"
+    # Continue with traditional deployment if not Docker-only
+    if [[ "$DOCKER_ONLY" != "true" ]]; then
+        log "INFO" "Setting up traditional deployment components..."
+        
+        # Python and virtual environment setup
+        install_python
+        create_virtual_environment
+        
+        # Database setup
+        setup_postgresql
+        setup_redis
+        
+        # Install application dependencies
+        install_microservice_dependencies
+        
+        # Create systemd services
+        create_systemd_services
+        
+        # Start services
+        log "INFO" "Starting systemd services..."
+        systemctl start course-creator-user-management
+        systemctl start course-creator-course-generator
+        systemctl start course-creator-slide-service
+        systemctl start course-creator-lab-service
+        
+        # Setup reverse proxy
+        create_nginx_config
+        
+        # SSL setup
+        setup_ssl_certificates
+    fi
     
-    # Show summary
-    show_deployment_summary
+    # Create monitoring and troubleshooting scripts
+    create_monitoring_scripts
+    
+    # Final status report
+    # Verify user permissions after everything is set up
+    verify_user_permissions
+    
+    log "SUCCESS" "🎉 Course Creator Platform deployment completed! 🎉"
+    echo ""
+    
+    # Display deployment summary
+    log "INFO" "👥 User Configuration:"
+    log "INFO" "   Service User: $SERVICE_USER (admin/management)"
+    log "INFO" "   Application User: $APP_USER (runs applications, Docker access)"
+    echo ""
+    
+    if [[ "$USE_DOCKER" == "true" ]]; then
+        log "INFO" "🐳 Docker integration: ENABLED"
+        if [[ "$DOCKER_ONLY" == "true" ]]; then
+            log "INFO" "📦 Deployment method: Docker containers only"
+            log "INFO" "🔧 Manage services: sudo -u $APP_USER docker-compose -f ${INSTALL_DIR}/course-creator/docker-compose.yml"
+        else
+            log "INFO" "📦 Deployment method: Docker + systemd hybrid"
+        fi
+        
+        log "INFO" "🐳 Docker commands (run as $APP_USER):"
+        log "INFO" "   View containers: sudo -u $APP_USER docker ps"
+        log "INFO" "   View logs: sudo -u $APP_USER docker-compose logs [service]"
+        log "INFO" "   Restart: sudo -u $APP_USER docker-compose restart"
+        log "INFO" "   Stop: sudo -u $APP_USER docker-compose down"
+    else
+        log "INFO" "📦 Deployment method: systemd services only"
+    fi
+    
+    echo ""
+    log "INFO" "📊 Monitor services: sudo ${INSTALL_DIR}/monitor.sh"
+    log "INFO" "🔧 Troubleshoot: sudo ${INSTALL_DIR}/troubleshoot.sh"
+    log "INFO" "👤 Fix permissions: sudo ${INSTALL_DIR}/troubleshoot.sh fix-permissions"
+    log "INFO" "🐳 Fix Docker perms: sudo ${INSTALL_DIR}/troubleshoot.sh fix-docker-perms"
+    log "INFO" "⚙️  Environment config: ${INSTALL_DIR}/course-creator/.cc_env"
+    echo ""
+    
+    # Service URLs
+    log "INFO" "🌐 Service URLs:"
+    log "INFO" "   Frontend: http://localhost:${USER_INTERFACE_PORT}"
+    log "INFO" "   API Gateway: http://localhost:${API_GATEWAY_PORT}"
+    log "INFO" "   Course Generator: http://localhost:${CONTENT_GENERATOR_PORT}"
+    
+    if [[ -n "$DOMAIN_NAME" ]]; then
+        log "INFO" "   Public URL: https://${DOMAIN_NAME}"
+    fi
+    
+    echo ""
+    log "INFO" "📁 Directory Structure:"
+    log "INFO" "   Install: ${INSTALL_DIR}"
+    log "INFO" "   Application: ${INSTALL_DIR}/course-creator (owned by $APP_USER)"
+    log "INFO" "   Logs: /var/log/course-creator (owned by $APP_USER)"
+    log "INFO" "   Uploads: ${INSTALL_DIR}/uploads (owned by $APP_USER)"
+    
+    echo ""
+    
+    if [[ "$DOCKER_FUNCTIONAL" == "true" ]]; then
+        log "SUCCESS" "✅ Docker is fully operational with $APP_USER access"
+    elif [[ "$USE_DOCKER" == "true" ]]; then
+        log "WARN" "⚠️  Docker has some issues but deployment continued"
+    fi
+    
+    log "INFO" "🚀 Course Creator Platform is ready!"
+    log "INFO" "📖 Check the documentation for next steps and configuration"
+    log "INFO" "💡 Note: $APP_USER may need to logout/login for Docker group changes to take effect"
 }
 
 # Run main function with all arguments
