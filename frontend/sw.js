@@ -78,12 +78,12 @@ const PRECACHE_ASSETS = [
     '/js/modules/config-manager.js',
     '/js/modules/asset-cache.js',
     
-    // UI assets
-    '/images/logo.svg',
-    '/images/favicon.ico',
+    // UI assets - commented out as images directory doesn't exist
+    // '/images/logo.svg',
+    // '/images/favicon.ico',
     
-    // Fonts
-    '/fonts/inter-var.woff2'
+    // Fonts - commented out as fonts directory doesn't exist
+    // '/fonts/inter-var.woff2'
 ];
 
 // Route patterns for different caching strategies
@@ -220,8 +220,9 @@ self.addEventListener('push', event => {
     
     const options = {
         body: event.data ? event.data.text() : 'New notification from Course Creator',
-        icon: '/images/icon-192.png',
-        badge: '/images/badge-72.png',
+        // Removed non-existent icon references to prevent 404 errors
+        // icon: '/images/icon-192.png',
+        // badge: '/images/badge-72.png',
         vibrate: [100, 50, 100],
         data: {
             dateOfArrival: Date.now(),
@@ -230,13 +231,13 @@ self.addEventListener('push', event => {
         actions: [
             {
                 action: 'explore',
-                title: 'View',
-                icon: '/images/checkmark.png'
+                title: 'View'
+                // icon: '/images/checkmark.png'  // Removed non-existent icon
             },
             {
                 action: 'close',
-                title: 'Close',
-                icon: '/images/xmark.png'
+                title: 'Close'
+                // icon: '/images/xmark.png'  // Removed non-existent icon
             }
         ]
     };

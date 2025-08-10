@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Organization Administration - Course Creator</title>
     <link rel="stylesheet" href="../css/main.css">
-    <link rel="stylesheet" href="../css/components.css">
     <style>
         .org-admin-container {
             display: flex;
@@ -276,6 +275,346 @@
             font-size: 0.75rem;
         }
 
+        /* Project Creation Step Styles */
+        .project-creation-steps {
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .step {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            background: var(--background-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+        }
+
+        .step.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .step.completed {
+            background: var(--success-color);
+            color: white;
+            border-color: var(--success-color);
+        }
+
+        .project-step {
+            display: none;
+        }
+
+        .project-step.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* AI Suggestions Styles */
+        .ai-suggestions {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .insights-container,
+        .tracks-container,
+        .objectives-container {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 1rem auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Track Templates Styles */
+        .track-templates-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+
+        .track-template-card {
+            background: var(--card-background);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .track-template-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-color: var(--primary-color);
+        }
+
+        .track-template-card.selected {
+            border-color: var(--primary-color);
+            background: linear-gradient(135deg, rgba(var(--primary-color-rgb), 0.05), rgba(var(--primary-color-rgb), 0.1));
+        }
+
+        .track-template-card.selected::after {
+            content: '✓';
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: var(--success-color);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            font-weight: bold;
+        }
+
+        .track-category {
+            display: inline-block;
+            background: var(--secondary-color);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .track-duration {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+
+        .selected-tracks {
+            background: var(--hover-color);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .selected-track-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* Enhanced Modal Styles */
+        .assignment-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 2rem;
+        }
+
+        .assignment-tab-content {
+            display: none;
+        }
+
+        .assignment-tab-content.active {
+            display: block;
+        }
+
+        .analytics-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 1rem;
+        }
+
+        .analytics-summary .stat-card {
+            background: linear-gradient(135deg, var(--card-background), var(--hover-color));
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .instructor-assignment-item {
+            background: var(--card-background);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .instructor-assignment-item h4 {
+            margin: 0 0 1rem 0;
+            color: var(--primary-color);
+        }
+
+        .instructor-selector {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 1rem;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .assigned-instructors {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .instructor-tag {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .instructor-tag .remove-btn {
+            background: rgba(255, 255, 255, 0.3);
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .student-item {
+            background: var(--card-background);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .student-item:hover {
+            background: var(--hover-color);
+            border-color: var(--primary-color);
+        }
+
+        .student-item.selected {
+            background: linear-gradient(135deg, rgba(var(--primary-color-rgb), 0.1), rgba(var(--primary-color-rgb), 0.2));
+            border-color: var(--primary-color);
+        }
+
+        .student-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .student-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .student-email {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .enrollment-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-enrolled {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .status-not-enrolled {
+            background: var(--text-muted);
+            color: white;
+        }
+
+        .ai-processing-section {
+            background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+            border-radius: 8px;
+            padding: 1.5rem;
+            border-left: 4px solid var(--info-color);
+        }
+
+        .project-details-summary {
+            background: var(--hover-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .project-details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .detail-value {
+            font-size: 1rem;
+            color: var(--text-color);
+        }
+
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
@@ -299,6 +638,15 @@
                 width: 95%;
                 margin: 10% auto;
                 padding: 1rem;
+            }
+
+            .step-indicator {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .track-templates-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -394,9 +742,17 @@
             <div id="projects" class="tab-content">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                     <h2>Training Projects</h2>
-                    <button class="btn btn-primary" onclick="showCreateProjectModal()">
-                        ➕ Create Project
-                    </button>
+                    <div style="display: flex; gap: 1rem;">
+                        <select id="projectStatusFilter" onchange="filterProjects()" style="padding: 0.5rem;">
+                            <option value="">All Status</option>
+                            <option value="draft">Draft</option>
+                            <option value="active">Active</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="showCreateProjectModal()">
+                            ➕ Create Project
+                        </button>
+                    </div>
                 </div>
 
                 <div id="projectsList">
@@ -556,50 +912,130 @@
 
     <!-- Create Project Modal -->
     <div id="createProjectModal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 800px;">
             <span class="close" onclick="closeModal('createProjectModal')">&times;</span>
-            <h2>Create New Project</h2>
-            <form id="createProjectForm">
-                <div class="form-group">
-                    <label for="projectName">Project Name *</label>
-                    <input type="text" id="projectName" name="name" required>
+            <h2>Create New Training Project</h2>
+            
+            <!-- Project Creation Steps -->
+            <div class="project-creation-steps" style="margin-bottom: 2rem;">
+                <div class="step-indicator">
+                    <span class="step active" data-step="1">1. Project Details</span>
+                    <span class="step" data-step="2">2. AI-Enhanced Planning</span>
+                    <span class="step" data-step="3">3. Track Templates</span>
                 </div>
-                <div class="form-group">
-                    <label for="projectSlug">URL Slug *</label>
-                    <input type="text" id="projectSlug" name="slug" required pattern="^[a-z0-9-]+$">
-                    <small>Only lowercase letters, numbers, and hyphens allowed</small>
-                </div>
-                <div class="form-group">
-                    <label for="projectDescription">Description</label>
-                    <textarea id="projectDescription" name="description"></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="projectTargetRoles">Target Roles (one per line)</label>
-                    <textarea id="projectTargetRoles" name="target_roles" placeholder="Application Developer&#10;Business Analyst&#10;Operations Engineer"></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="projectDuration">Duration (weeks)</label>
-                    <input type="number" id="projectDuration" name="duration_weeks" min="1" max="52">
-                </div>
-                <div class="form-group">
-                    <label for="projectMaxParticipants">Maximum Participants</label>
-                    <input type="number" id="projectMaxParticipants" name="max_participants" min="1">
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            </div>
+            
+            <!-- Step 1: Project Details -->
+            <div id="projectStep1" class="project-step active">
+                <h3>Project Information</h3>
+                <form id="createProjectForm">
                     <div class="form-group">
-                        <label for="projectStartDate">Start Date</label>
-                        <input type="date" id="projectStartDate" name="start_date">
+                        <label for="projectName">Project Name *</label>
+                        <input type="text" id="projectName" name="name" required>
                     </div>
                     <div class="form-group">
-                        <label for="projectEndDate">End Date</label>
-                        <input type="date" id="projectEndDate" name="end_date">
+                        <label for="projectSlug">URL Slug *</label>
+                        <input type="text" id="projectSlug" name="slug" required pattern="^[a-z0-9-]+$">
+                        <small>Only lowercase letters, numbers, and hyphens allowed</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="projectDescription">Project Description *</label>
+                        <textarea id="projectDescription" name="description" placeholder="Describe the goals and objectives of this training project..." required></textarea>
+                        <small>This description will be used by AI to suggest relevant tracks and content</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="projectTargetRoles">Target Roles (one per line)</label>
+                        <textarea id="projectTargetRoles" name="target_roles" placeholder="Application Developer&#10;Business Analyst&#10;Operations Engineer"></textarea>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label for="projectDuration">Duration (weeks)</label>
+                            <input type="number" id="projectDuration" name="duration_weeks" min="1" max="52">
+                        </div>
+                        <div class="form-group">
+                            <label for="projectMaxParticipants">Maximum Participants</label>
+                            <input type="number" id="projectMaxParticipants" name="max_participants" min="1">
+                        </div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div class="form-group">
+                            <label for="projectStartDate">Start Date</label>
+                            <input type="date" id="projectStartDate" name="start_date">
+                        </div>
+                        <div class="form-group">
+                            <label for="projectEndDate">End Date</label>
+                            <input type="date" id="projectEndDate" name="end_date">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('createProjectModal')">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="nextProjectStep()">Next: Get AI Suggestions</button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Step 2: AI-Enhanced Planning -->
+            <div id="projectStep2" class="project-step">
+                <h3>AI-Enhanced Project Planning</h3>
+                <div id="ragLoadingIndicator" style="display: none;">
+                    <p>🤖 Analyzing your project description with AI...</p>
+                    <div class="loading-spinner"></div>
+                </div>
+                <div id="ragSuggestions" style="display: none;">
+                    <div class="ai-suggestions">
+                        <h4>📊 AI-Generated Insights</h4>
+                        <div id="projectInsights" class="insights-container">
+                            <!-- AI insights will be populated here -->
+                        </div>
+                        
+                        <h4>🎯 Recommended Track Structure</h4>
+                        <div id="recommendedTracks" class="tracks-container">
+                            <!-- Recommended tracks will be populated here -->
+                        </div>
+                        
+                        <h4>📚 Suggested Learning Objectives</h4>
+                        <div id="suggestedObjectives" class="objectives-container">
+                            <!-- Learning objectives will be populated here -->
+                        </div>
                     </div>
                 </div>
-                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
-                    <button type="button" class="btn btn-secondary" onclick="closeModal('createProjectModal')">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Create Project</button>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                    <button type="button" class="btn btn-secondary" onclick="previousProjectStep()">Back</button>
+                    <button type="button" class="btn btn-info" onclick="regenerateAISuggestions()">🔄 Regenerate Suggestions</button>
+                    <button type="button" class="btn btn-primary" onclick="nextProjectStep()">Next: Select Tracks</button>
                 </div>
-            </form>
+            </div>
+            
+            <!-- Step 3: Track Templates -->
+            <div id="projectStep3" class="project-step">
+                <h3>Select Training Tracks</h3>
+                <p>Choose from existing track templates or create custom tracks for your project:</p>
+                
+                <div class="track-selection">
+                    <h4>Available Track Templates</h4>
+                    <div id="trackTemplates" class="track-templates-grid">
+                        <!-- Track templates will be loaded here -->
+                    </div>
+                    
+                    <div class="custom-track-section" style="margin-top: 2rem;">
+                        <h4>Create Custom Track</h4>
+                        <button type="button" class="btn btn-outline btn-primary" onclick="showCustomTrackForm()">
+                            ➕ Add Custom Track
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="selectedTracks" class="selected-tracks" style="margin-top: 2rem; display: none;">
+                    <h4>Selected Tracks</h4>
+                    <div id="selectedTracksList"></div>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                    <button type="button" class="btn btn-secondary" onclick="previousProjectStep()">Back</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('createProjectModal')">Save as Draft</button>
+                    <button type="submit" class="btn btn-primary" onclick="finalizeProjectCreation()">Create Project</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -627,6 +1063,233 @@
                     <button type="submit" class="btn btn-primary">Add Member</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Project Instantiation Modal -->
+    <div id="instantiateProjectModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <span class="close" onclick="closeModal('instantiateProjectModal')">&times;</span>
+            <h2>Instantiate Project</h2>
+            <p>This will make the project active and available to students. Default tracks and modules will be created if none exist.</p>
+            
+            <div id="projectInstantiationDetails">
+                <!-- Project details will be populated here -->
+            </div>
+            
+            <div class="ai-processing-section" style="margin: 2rem 0;">
+                <h4>🤖 AI Processing Options</h4>
+                <label>
+                    <input type="checkbox" id="processWithAI" checked> Process project description with AI for enhanced content generation
+                </label>
+                <p style="font-size: 0.875rem; color: var(--text-muted); margin-top: 0.5rem;">
+                    AI will analyze the project description and suggest optimized tracks, modules, and learning paths.
+                </p>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('instantiateProjectModal')">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="confirmProjectInstantiation()">🚀 Instantiate Project</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructor Assignment Modal -->
+    <div id="instructorAssignmentModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <span class="close" onclick="closeModal('instructorAssignmentModal')">&times;</span>
+            <h2>Assign Instructors</h2>
+            
+            <div class="assignment-tabs">
+                <button class="tab-btn active" onclick="switchAssignmentTab('tracks')">Track Assignments</button>
+                <button class="tab-btn" onclick="switchAssignmentTab('modules')">Module Assignments</button>
+            </div>
+            
+            <!-- Track Assignment Tab -->
+            <div id="trackAssignmentTab" class="assignment-tab-content active">
+                <h3>Assign Instructors to Tracks</h3>
+                <div id="trackAssignmentList">
+                    <!-- Track assignment interface will be populated here -->
+                </div>
+            </div>
+            
+            <!-- Module Assignment Tab -->
+            <div id="moduleAssignmentTab" class="assignment-tab-content">
+                <h3>Assign Instructors to Modules (Minimum 2 per module)</h3>
+                <div id="moduleAssignmentList">
+                    <!-- Module assignment interface will be populated here -->
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('instructorAssignmentModal')">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveInstructorAssignments()">Save Assignments</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Enrollment Modal -->
+    <div id="studentEnrollmentModal" class="modal">
+        <div class="modal-content" style="max-width: 1000px;">
+            <span class="close" onclick="closeModal('studentEnrollmentModal')">&times;</span>
+            <h2>Manage Student Enrollments</h2>
+            
+            <div style="display: flex; gap: 2rem;">
+                <!-- Available Students -->
+                <div style="flex: 1;">
+                    <h3>Available Students</h3>
+                    <div style="margin-bottom: 1rem;">
+                        <input type="text" id="studentSearchInput" placeholder="Search students..." 
+                               onkeyup="searchStudents()" style="width: 100%; padding: 0.5rem;">
+                    </div>
+                    <div id="availableStudentsList" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); padding: 1rem;">
+                        <!-- Available students will be populated here -->
+                    </div>
+                </div>
+                
+                <!-- Track Assignment -->
+                <div style="flex: 1;">
+                    <h3>Enroll in Track</h3>
+                    <div style="margin-bottom: 1rem;">
+                        <select id="enrollmentTrackSelect" style="width: 100%; padding: 0.5rem;">
+                            <option value="">Select Track...</option>
+                            <!-- Track options will be populated here -->
+                        </select>
+                    </div>
+                    
+                    <div id="enrolledStudentsList" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); padding: 1rem;">
+                        <!-- Enrolled students will be populated here -->
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('studentEnrollmentModal')">Close</button>
+                <button type="button" class="btn btn-primary" onclick="bulkEnrollStudents()">Enroll Selected Students</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Analytics Modal -->
+    <div id="projectAnalyticsModal" class="modal">
+        <div class="modal-content" style="max-width: 1200px;">
+            <span class="close" onclick="closeModal('projectAnalyticsModal')">&times;</span>
+            <h2>Project Analytics Dashboard</h2>
+            
+            <div class="analytics-summary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                <div class="stat-card">
+                    <span class="stat-number" id="analyticsEnrolledStudents">0</span>
+                    <span>Enrolled Students</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" id="analyticsActiveStudents">0</span>
+                    <span>Active Students</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" id="analyticsCompletedStudents">0</span>
+                    <span>Completed</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" id="analyticsAverageProgress">0%</span>
+                    <span>Average Progress</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" id="analyticsAverageScore">0%</span>
+                    <span>Average Quiz Score</span>
+                </div>
+            </div>
+            
+            <div class="analytics-tabs">
+                <button class="tab-btn active" onclick="switchAnalyticsTab('overview')">Overview</button>
+                <button class="tab-btn" onclick="switchAnalyticsTab('progress')">Progress Tracking</button>
+                <button class="tab-btn" onclick="switchAnalyticsTab('performance')">Performance</button>
+                <button class="tab-btn" onclick="switchAnalyticsTab('engagement')">Engagement</button>
+            </div>
+            
+            <div id="analyticsTabContent" style="margin-top: 2rem;">
+                <!-- Analytics tab content will be populated here -->
+            </div>
+            
+            <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+                <button type="button" class="btn btn-outline" onclick="exportAnalytics()">📊 Export Report</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('projectAnalyticsModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Unenrollment Modal -->
+    <div id="studentUnenrollmentModal" class="modal student-unenrollment-modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('studentUnenrollmentModal')">&times;</span>
+            <h2>Unenroll Students from Project</h2>
+            <p>Select students to unenroll from this project. Their progress will be preserved for audit purposes.</p>
+            
+            <div class="unenrollment-options">
+                <h4>🔧 Unenrollment Options</h4>
+                <div>
+                    <label>
+                        <input type="checkbox" id="unenrollFromProject" checked> 
+                        Unenroll from entire project (removes from all tracks)
+                    </label>
+                    <label>
+                        <input type="checkbox" id="preserveProgress" checked> 
+                        Preserve student progress data for audit purposes
+                    </label>
+                </div>
+            </div>
+            
+            <div id="enrolledStudentsList" class="students-list">
+                <!-- Enrolled students will be loaded here -->
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('studentUnenrollmentModal')">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmStudentUnenrollment()" disabled>
+                    ❌ Unenroll Selected Students
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructor Removal Modal -->
+    <div id="instructorRemovalModal" class="modal instructor-removal-modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('instructorRemovalModal')">&times;</span>
+            <h2>Remove Instructors</h2>
+            <p>Select instructors to remove from project or organization. You can transfer their assignments to avoid disruption.</p>
+            
+            <div class="removal-options">
+                <h4>🔧 Removal Options</h4>
+                <div>
+                    <label>
+                        <input type="checkbox" id="removeFromOrganization"> 
+                        Remove from entire organization (removes from all projects)
+                    </label>
+                    <label>
+                        <input type="checkbox" id="transferAssignments"> 
+                        Transfer assignments to another instructor
+                    </label>
+                </div>
+                
+                <div id="replacementInstructorSection" class="replacement-instructor-section" style="display: none;">
+                    <label for="replacementInstructorSelect">Select Replacement Instructor:</label>
+                    <select id="replacementInstructorSelect" class="form-input">
+                        <option value="">-- Select Replacement --</option>
+                        <!-- Options populated dynamically -->
+                    </select>
+                </div>
+            </div>
+            
+            <div id="assignedInstructorsList" class="instructors-list">
+                <!-- Assigned instructors will be loaded here -->
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('instructorRemovalModal')">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmInstructorRemoval()" disabled>
+                    🗑️ Remove Selected Instructors
+                </button>
+            </div>
         </div>
     </div>
 

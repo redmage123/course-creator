@@ -107,8 +107,8 @@ class OrgAdminDashboard {
     }
 
     async loadCurrentUser() {
-        """
-        COMPREHENSIVE SESSION VALIDATION ON PAGE LOAD - ORG ADMIN DASHBOARD
+        /*
+         * COMPREHENSIVE SESSION VALIDATION ON PAGE LOAD - ORG ADMIN DASHBOARD
         
         BUSINESS REQUIREMENT:
         When an org admin refreshes the dashboard page after session expiry,
@@ -121,7 +121,7 @@ class OrgAdminDashboard {
         4. Verify user has correct role (org_admin)
         5. Redirect to home page if any validation fails
         6. Prevent dashboard initialization for expired sessions
-        """
+         */
         
         // Validate session before making API calls
         if (!this.validateSession()) {

@@ -105,9 +105,28 @@ class AssetCacheManager {
     }
     
     /**
-     * SERVICEWORKER REGISTRATION WITH INTELLIGENT FALLBACK
+     * SERVICEWORKER REGISTRATION DISABLED FOR DEVELOPMENT
+     * PURPOSE: Avoid SSL certificate issues with self-signed certificates
      */
     async _registerServiceWorker() {
+        console.log('ServiceWorker disabled for development - using fallback caching');
+        
+        // Unregister any existing ServiceWorkers to avoid SSL issues
+        if ('serviceWorker' in navigator) {
+            try {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (let registration of registrations) {
+                    await registration.unregister();
+                    console.log('Unregistered existing ServiceWorker');
+                }
+            } catch (error) {
+                console.log('No existing ServiceWorkers to unregister');
+            }
+        }
+        
+        return;
+        
+        /* ServiceWorker registration disabled for development
         if (!('serviceWorker' in navigator)) {
             console.warn('ServiceWorker not supported - using fallback caching');
             return;
@@ -138,6 +157,7 @@ class AssetCacheManager {
         } catch (error) {
             console.warn('ServiceWorker registration failed:', error);
         }
+        */
     }
     
     /**
@@ -157,14 +177,7 @@ class AssetCacheManager {
             '/js/modules/navigation.js',
             '/js/modules/notifications.js',
             
-            // Critical UI assets
-            '/images/logo.svg',
-            '/images/icons/dashboard.svg',
-            '/images/icons/courses.svg',
-            
-            // Font files
-            '/fonts/inter-var.woff2',
-            '/fonts/source-code-pro.woff2'
+            // Note: No images/fonts directory exists, so removed references to prevent 404s
         ];
         
         criticalAssets.forEach(asset => this._criticalAssets.add(asset));
@@ -185,9 +198,9 @@ class AssetCacheManager {
      */
     async _setupAssetVersioning() {
         try {
-            // Get asset versions from configuration or manifest
+            // Use default asset versions (no remote fetch to avoid 404s)
             const assetVersions = await configManager.getConfig('assets.versions', {
-                sources: ['remote', 'localStorage', 'default']
+                sources: ['localStorage', 'default']
             });
             
             if (assetVersions && typeof assetVersions === 'object') {
@@ -200,7 +213,8 @@ class AssetCacheManager {
             this._criticalAssets.forEach(asset => {
                 if (!this._versionedAssets.has(asset)) {
                     this._versionedAssets.set(asset, this._cacheVersion);
-                }\n            });
+                }
+            });
             
         } catch (error) {
             console.warn('Failed to setup asset versioning:', error);
@@ -263,7 +277,8 @@ class AssetCacheManager {
             this._recordAssetLoadTime(url, loadTime, true);
             
             return result;
-            \n        } catch (error) {
+            
+        } catch (error) {
             this._loadingAssets.delete(url);
             const loadTime = performance.now() - startTime;
             this._recordAssetLoadTime(url, loadTime, false);
@@ -464,6 +479,43 @@ class AssetCacheManager {
             
         } catch (error) {
             console.warn('Error setting up role-based preloading:', error);
+        }
+    }
+    
+    /**
+     * PATTERN-BASED ASSET PRELOADING
+     * PURPOSE: Preload assets based on usage patterns and time of day
+     * WHY: Intelligent prediction improves user experience
+     */
+    _setupPatternBasedPreloading() {
+        try {
+            // Get usage patterns from localStorage
+            const patterns = JSON.parse(localStorage.getItem('usagePatterns') || '{}');
+            
+            // Simple pattern-based preloading based on time of day
+            const hour = new Date().getHours();
+            let patternAssets = [];
+            
+            // Business hours (9-17): Preload admin and course management assets  
+            if (hour >= 9 && hour <= 17) {
+                patternAssets = [
+                    '/js/components/course-manager.js',
+                    '/css/components/admin-panel.css'
+                ];
+            }
+            // Evening/weekend: Preload student learning assets
+            else {
+                patternAssets = [
+                    '/js/student-dashboard.js',
+                    '/css/pages/learning.css'
+                ];
+            }
+            
+            // Add pattern-based assets to preload set
+            patternAssets.forEach(asset => this._preloadAssets.add(asset));
+            
+        } catch (error) {
+            console.warn('Error setting up pattern-based preloading:', error);
         }
     }
     

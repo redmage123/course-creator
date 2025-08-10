@@ -123,9 +123,10 @@ header {
 /* ===== HERO SECTION ===== */
 
 .hero-section {
-    background: var(--white);
+    background: var(--surface-color);
     padding: 4rem 0 6rem;
     position: relative;
+    z-index: 5;
 }
 
 .hero-content {
@@ -135,7 +136,8 @@ header {
     align-items: center;
 }
 
-.hero-title {
+.hero-title,
+.hero.title {
     font-size: var(--font-size-3xl);
     font-weight: var(--font-weight-bold);
     color: var(--text-primary);
@@ -144,11 +146,88 @@ header {
 }
 
 .gradient-text {
-    background: linear-gradient(135deg, var(--primary-color), var(--info-color));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    /* Fallback: regular text color for browsers that don't support background-clip */
+    color: var(--primary-color);
+    
+    /* Default state: no background for unsupported browsers */
+    background: none;
+    
+    /* Ensure no box shadows or pseudo elements */
+    position: relative;
+    z-index: 10;
+    
+    /* Create new stacking context */
+    isolation: isolate;
+    
+    /* Hide any background artifacts */
+    overflow: visible;
+    
+    /* Force transparent background - this should remove the blue box */
+    background-color: transparent !important;
+    
+    /* Ensure no border or outline creates blue box */
+    border: none !important;
+    outline: none !important;
 }
+
+/* Only apply gradient effect if background-clip is supported */
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+    .gradient-text {
+        background: linear-gradient(135deg, var(--primary-color), var(--info-color));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        color: transparent; /* Hide fallback color when gradient works */
+    }
+}
+
+.gradient-text::before,
+.gradient-text::after {
+    display: none !important;
+    content: none !important;
+}
+
+.hero-title .gradient-text,
+.hero.title .gradient-text {
+    /* Remove any potential background boxes */
+    box-shadow: none !important;
+    outline: none !important;
+    /* Ensure text is always visible */
+    z-index: 20;
+    /* Force stacking context and visibility */
+    transform: translateZ(0);
+    will-change: transform;
+}
+
+/* DEBUG: Highlight potential overlapping elements */
+.hero-title .gradient-text *,
+.hero.title .gradient-text * {
+    background: transparent !important;
+    border: none !important;
+}
+
+/* Ensure no child elements can overlay the text */
+.hero-title,
+.hero.title,
+.hero-section,
+.hero-content {
+    position: relative;
+    z-index: 10;
+}
+
+/* Remove any potential pseudo-elements from parent containers */
+.hero-title::before,
+.hero-title::after,
+.hero.title::before,
+.hero.title::after,
+.hero-section::before,
+.hero-section::after,
+.hero-content::before,
+.hero-content::after {
+    display: none !important;
+    content: none !important;
+}
+
 
 .hero-subtitle {
     font-size: var(--font-size-lg);
@@ -279,7 +358,7 @@ header {
 
 .features-section {
     padding: 6rem 0;
-    background: var(--white);
+    background: var(--background-color);
 }
 
 .section-header {

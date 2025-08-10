@@ -419,6 +419,12 @@ services:
       - .cc_env
     ports:
       - "3000:3000"
+    volumes:
+      # Enable live reloading for development
+      - ./frontend/js:/usr/share/nginx/html/js:ro
+      - ./frontend/css:/usr/share/nginx/html/css:ro
+      - ./frontend/html:/usr/share/nginx/html/html:ro
+      - ./logs:/var/log/nginx
     networks:
       - course-creator-network
     depends_on:

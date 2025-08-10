@@ -41,6 +41,9 @@ class OrganizationRegistration {
             const slug = this.generateSlug(name);
             slugInput.value = slug;
             this.validateField(slugInput);
+            
+            // Show generated ID preview
+            this.updateSlugPreview(slug);
         });
 
         // Phone number formatting
@@ -51,6 +54,12 @@ class OrganizationRegistration {
                 input.addEventListener('input', (e) => this.formatPhoneNumber(e));
             }
         });
+        
+        // Set default country codes to US
+        const orgCountrySelect = document.getElementById('orgPhoneCountry');
+        const adminCountrySelect = document.getElementById('adminPhoneCountry');
+        if (orgCountrySelect) orgCountrySelect.value = '+1';
+        if (adminCountrySelect) adminCountrySelect.value = '+1';
     }
 
     initializeRealTimeValidation() {
@@ -238,24 +247,51 @@ class OrganizationRegistration {
             .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
     }
 
-    formatPhoneNumber(event) {
-        let value = event.target.value.replace(/\D/g, ''); // Remove non-digits
+    updateSlugPreview(slug) {
+        const preview = document.getElementById('slug-preview');
+        const previewText = document.getElementById('slug-preview-text');
         
-        if (value.length > 0) {
-            // Add + prefix if not present
-            if (!event.target.value.startsWith('+')) {
-                value = '1' + value; // Assume US if no country code
-            }
-            
-            // Format as +1-XXX-XXX-XXXX for US numbers
-            if (value.length <= 11 && value.startsWith('1')) {
-                if (value.length > 1) value = '+1-' + value.substring(1);
-                if (value.length > 6) value = value.substring(0, 6) + '-' + value.substring(6);
-                if (value.length > 10) value = value.substring(0, 10) + '-' + value.substring(10, 14);
-            }
+        if (slug && slug.length >= 2) {
+            previewText.textContent = slug;
+            preview.style.display = 'block';
+        } else {
+            preview.style.display = 'none';
         }
+    }
+
+    formatPhoneNumber(event) {
+        // Only keep digits, hyphens, spaces, and parentheses
+        let value = event.target.value.replace(/[^\d\-\(\)\s]/g, '');
         
-        event.target.value = value;
+        // Get the country code from the corresponding select
+        const inputId = event.target.id;
+        const countrySelectId = inputId.replace('Phone', 'PhoneCountry');
+        const countrySelect = document.getElementById(countrySelectId);
+        const countryCode = countrySelect ? countrySelect.value : '+1';
+        
+        // Remove any formatting and get digits only
+        const digitsOnly = value.replace(/\D/g, '');
+        
+        // Format based on country code
+        if (countryCode === '+1') {
+            // US/Canada formatting
+            if (digitsOnly.length === 10) {
+                // Format as XXX-XXX-XXXX
+                const formatted = digitsOnly.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
+                event.target.value = formatted;
+            } else if (digitsOnly.length === 7) {
+                // Format as XXX-XXXX for 7-digit numbers
+                const formatted = digitsOnly.replace(/(\d{3})(\d{4})/, '$1-$2');
+                event.target.value = formatted;
+            } else {
+                // Don't format if not the right length
+                event.target.value = value;
+            }
+        } else {
+            // For other countries, just clean the input but don't auto-format
+            // Different countries have different formats
+            event.target.value = value;
+        }
     }
 
     validateProfessionalEmail(input) {
@@ -314,7 +350,7 @@ class OrganizationRegistration {
             return false;
         }
 
-        if (input.maxLength && value.length > input.maxLength) {
+        if (input.maxLength && input.maxLength > 0 && value.length > input.maxLength) {
             this.showFieldError(input, errorElement, 
                 `${this.getFieldLabel(input)} must not exceed ${input.maxLength} characters`);
             return false;
@@ -413,6 +449,20 @@ class OrganizationRegistration {
         try {
             // Collect form data
             const formData = new FormData(this.form);
+            
+            // Combine country codes with phone numbers
+            const orgCountryCode = document.getElementById('orgPhoneCountry').value;
+            const orgPhoneNumber = document.getElementById('orgPhone').value;
+            const adminCountryCode = document.getElementById('adminPhoneCountry').value;
+            const adminPhoneNumber = document.getElementById('adminPhone').value;
+            
+            // Set complete phone numbers
+            if (orgCountryCode && orgPhoneNumber) {
+                formData.set('contact_phone', `${orgCountryCode}${orgPhoneNumber.replace(/\D/g, '')}`);
+            }
+            if (adminCountryCode && adminPhoneNumber) {
+                formData.set('admin_phone', `${adminCountryCode}${adminPhoneNumber.replace(/\D/g, '')}`);
+            }
             
             let response;
             

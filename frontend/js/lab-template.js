@@ -40,9 +40,11 @@ let totalLabTime = 0;
 // File system simulation with sandbox restrictions
 const fileSystem = {
     '/home/student': {
-        'readme.txt': 'Welcome to the lab environment!\nThis is a simulated file system.',
+        'readme.txt': 'Welcome to the lab environment!
+This is a simulated file system.',
         'examples': {
-            'hello.sh': '#!/bin/bash\necho "Hello from the lab!"',
+            'hello.sh': '#!/bin/bash
+echo "Hello from the lab!"',
             'test.py': 'print("Python in the lab!")',
             'sample.js': 'console.log("JavaScript in the lab!");'
         }
@@ -160,7 +162,8 @@ async function initializeLab() {
     }
     
     const welcomeMessage = isLabSandboxed 
-        ? `Welcome to your secure lab environment! Session ID: ${sessionId || 'Unknown'}\nYou are in a sandboxed terminal with restricted access for security.`
+        ? `Welcome to your secure lab environment! Session ID: ${sessionId || 'Unknown'}
+You are in a sandboxed terminal with restricted access for security.`
         : 'Welcome! Toggle panels using the controls above, select exercises, or ask me anything!';
     
     addMessage(welcomeMessage, 'system');
@@ -193,18 +196,28 @@ function initializeSandbox() {
     
     // Add sandbox-specific files
     if (!restrictedFS[sandboxRoot]['.sandbox_info']) {
-        restrictedFS[sandboxRoot]['.sandbox_info'] = `Sandbox Environment\nStudent ID: ${studentId}\nSession ID: ${sessionId}\nRestricted to: ${sandboxRoot}\n`;
+        restrictedFS[sandboxRoot]['.sandbox_info'] = `Sandbox Environment
+Student ID: ${studentId}
+Session ID: ${sessionId}
+Restricted to: ${sandboxRoot}
+`;
     }
     
     // Add security notice
     if (!restrictedFS[sandboxRoot]['security_notice.txt']) {
         restrictedFS[sandboxRoot]['security_notice.txt'] = 
-            'SECURITY NOTICE:\n' +
-            '================\n' +
-            'This is a sandboxed environment for educational purposes.\n' +
-            'You have restricted access to system commands and files.\n' +
-            'All activities are logged for security and assessment purposes.\n' +
-            'Do not attempt to bypass security restrictions.\n';
+            'SECURITY NOTICE:
+' +
+            '================
+' +
+            'This is a sandboxed environment for educational purposes.
+' +
+            'You have restricted access to system commands and files.
+' +
+            'All activities are logged for security and assessment purposes.
+' +
+            'Do not attempt to bypass security restrictions.
+';
     }
     
     // Update file system to restricted version
@@ -293,16 +306,38 @@ async function loadFallbackExercises() {
                 title: "Basic Linux Commands",
                 description: "Practice fundamental Linux commands like ls, cd, pwd, and mkdir.",
                 difficulty: "easy",
-                starterCode: "# Basic Linux Commands Practice\\n# 1. List files in current directory\\n# 2. Create a new directory\\n# 3. Navigate to different directories\\n# 4. Check current working directory\\n\\n# Your commands here:",
-                solution: "ls -la\\nmkdir test_directory\\ncd test_directory\\npwd\\ncd ..\\nrmdir test_directory"
+                starterCode: "# Basic Linux Commands Practice\
+# 1. List files in current directory\
+# 2. Create a new directory\
+# 3. Navigate to different directories\
+# 4. Check current working directory\
+\
+# Your commands here:",
+                solution: "ls -la\
+mkdir test_directory\
+cd test_directory\
+pwd\
+cd ..\
+rmdir test_directory"
             },
             {
                 id: 2,
                 title: "File Permissions",
                 description: "Learn to manage file permissions using chmod and understand permission modes.",
                 difficulty: "medium",
-                starterCode: "# File Permissions Exercise\\n# 1. Create a file\\n# 2. Check its permissions\\n# 3. Change permissions\\n# 4. Verify changes\\n\\n# Your commands here:",
-                solution: "touch myfile.txt\\nls -l myfile.txt\\nchmod 755 myfile.txt\\nls -l myfile.txt\\nchmod u+x,g-w,o-r myfile.txt\\nls -l myfile.txt"
+                starterCode: "# File Permissions Exercise\
+# 1. Create a file\
+# 2. Check its permissions\
+# 3. Change permissions\
+# 4. Verify changes\
+\
+# Your commands here:",
+                solution: "touch myfile.txt\
+ls -l myfile.txt\
+chmod 755 myfile.txt\
+ls -l myfile.txt\
+chmod u+x,g-w,o-r myfile.txt\
+ls -l myfile.txt"
             }
         ];
     } else if (courseTitle && courseTitle.toLowerCase().includes('python')) {
@@ -312,16 +347,45 @@ async function loadFallbackExercises() {
                 title: "Python Variables and Types",
                 description: "Practice with Python variables, data types, and basic operations.",
                 difficulty: "easy",
-                starterCode: "# Python Variables and Types\\n# 1. Create variables of different types\\n# 2. Perform operations\\n# 3. Print results\\n\\n# Your code here:",
-                solution: "name = 'Python Student'\\nage = 25\\nis_learning = True\\nheight = 5.8\\n\\nprint(f'Name: {name}')\\nprint(f'Age: {age}')\\nprint(f'Learning: {is_learning}')\\nprint(f'Height: {height}ft')"
+                starterCode: "# Python Variables and Types\
+# 1. Create variables of different types\
+# 2. Perform operations\
+# 3. Print results\
+\
+# Your code here:",
+                solution: "name = 'Python Student'\
+age = 25\
+is_learning = True\
+height = 5.8\
+\
+print(f'Name: {name}')\
+print(f'Age: {age}')\
+print(f'Learning: {is_learning}')\
+print(f'Height: {height}ft')"
             },
             {
                 id: 2,
                 title: "Python Functions",
                 description: "Create and use functions with parameters and return values.",
                 difficulty: "medium",
-                starterCode: "# Python Functions Exercise\\n# 1. Define a function with parameters\\n# 2. Use return values\\n# 3. Call the function\\n\\n# Your code here:",
-                solution: "def calculate_area(length, width):\\n    return length * width\\n\\ndef greet_user(name):\\n    return f'Hello, {name}!'\\n\\n# Test the functions\\narea = calculate_area(10, 5)\\ngreeting = greet_user('Python Student')\\n\\nprint(f'Area: {area}')\\nprint(greeting)"
+                starterCode: "# Python Functions Exercise\
+# 1. Define a function with parameters\
+# 2. Use return values\
+# 3. Call the function\
+\
+# Your code here:",
+                solution: "def calculate_area(length, width):\
+    return length * width\
+\
+def greet_user(name):\
+    return f'Hello, {name}!'\
+\
+# Test the functions\
+area = calculate_area(10, 5)\
+greeting = greet_user('Python Student')\
+\
+print(f'Area: {area}')\
+print(greeting)"
             }
         ];
     } else {
@@ -332,7 +396,10 @@ async function loadFallbackExercises() {
                 title: "Getting Started",
                 description: "Basic programming concepts and syntax for this course.",
                 difficulty: "easy",
-                starterCode: "// Getting Started Exercise\\n// Follow the instructions provided by your instructor\\n\\n// Your code here:",
+                starterCode: "// Getting Started Exercise\
+// Follow the instructions provided by your instructor\
+\
+// Your code here:",
                 solution: "// Solution will be provided by instructor"
             }
         ];
@@ -410,8 +477,11 @@ function selectExercise(exerciseId) {
     // Load exercise code (always start with starter code)
     const editor = document.getElementById('codeEditor');
     if (editor) {
-        const starterCode = currentExercise.starterCode || currentExercise.starter_code || '// Write your code here\n';
-        editor.value = starterCode.replace(/\\n/g, '\n');
+        const starterCode = currentExercise.starterCode || currentExercise.starter_code || '// Write your code here
+';
+        editor.value = starterCode.replace(/\
+/g, '
+');
         // Reset solution toggle state
         showingSolution[exerciseId] = false;
         const button = document.getElementById('solutionBtn' + exerciseId);
@@ -422,7 +492,8 @@ function selectExercise(exerciseId) {
     }
     
     // Update terminal with exercise info
-    addToTerminal(`Exercise loaded: ${currentExercise.title}\nRun your code to see the output.`, 'output');
+    addToTerminal(`Exercise loaded: ${currentExercise.title}
+Run your code to see the output.`, 'output');
     
     // Show lab notes popup instead of auto-messaging AI
     showLabNotesModal(currentExercise);
@@ -693,10 +764,13 @@ Let me provide some guidance:
 
 ${exercise.hints && exercise.hints.length > 0 ? 
     `Here are some hints to get you started:
-• ${exercise.hints.join('\n• ')}
+• ${exercise.hints.join('
+• ')}
 
 ` : 
-    'Feel free to ask specific questions about the requirements or share your code if you need help debugging.\n\n'
+    'Feel free to ask specific questions about the requirements or share your code if you need help debugging.
+
+'
 }What specific part would you like help with?`;
         
         addMessage(aiResponse, 'assistant');
@@ -722,16 +796,22 @@ function toggleSolution(exerciseId) {
     
     if (showingSolution[exerciseId]) {
         // Hide solution - show starter code
-        const starterCode = exercise.starterCode || exercise.starter_code || '// Write your code here\n';
-        editor.value = starterCode.replace(/\\n/g, '\n');
+        const starterCode = exercise.starterCode || exercise.starter_code || '// Write your code here
+';
+        editor.value = starterCode.replace(/\
+/g, '
+');
         button.textContent = '👁️ Show Solution';
         button.classList.remove('active');
         showingSolution[exerciseId] = false;
         addToTerminal('Switched back to starter code', 'output');
     } else {
         // Show solution
-        const solution = exercise.solution || exercise.expected_output || '// Solution not available\n';
-        editor.value = solution.replace(/\\n/g, '\n');
+        const solution = exercise.solution || exercise.expected_output || '// Solution not available
+';
+        editor.value = solution.replace(/\
+/g, '
+');
         button.textContent = '🚫 Hide Solution';
         button.classList.add('active');
         showingSolution[exerciseId] = true;
@@ -753,34 +833,87 @@ function changeLanguage() {
         if (currentExercise) {
             // If showing solution, keep showing solution, otherwise show starter code
             if (showingSolution[currentExercise.id]) {
-                editor.value = currentExercise.solution.replace(/\\n/g, '\n');
+                editor.value = currentExercise.solution.replace(/\
+/g, '
+');
             } else {
-                editor.value = currentExercise.starterCode.replace(/\\n/g, '\n');
+                editor.value = currentExercise.starterCode.replace(/\
+/g, '
+');
             }
         } else {
             // Default starter code for each language
             if (currentLanguage === 'python') {
-                editor.value = '# Python code\nprint("Hello, World!")';
+                editor.value = '# Python code
+print("Hello, World!")';
             } else if (currentLanguage === 'shell') {
-                editor.value = '#!/bin/bash\n# Bash script\necho "Hello, World!"';
+                editor.value = '#!/bin/bash
+# Bash script
+echo "Hello, World!"';
             } else if (currentLanguage === 'html') {
-                editor.value = '<!DOCTYPE html>\n<html>\n<head>\n    <title>My Page</title>\n</head>\n<body>\n    <h1>Hello, World!</h1>\n</body>\n</html>';
+                editor.value = '<!DOCTYPE html>
+<html>
+<head>
+    <title>My Page</title>
+</head>
+<body>
+    <h1>Hello, World!</h1>
+</body>
+</html>';
             } else if (currentLanguage === 'css') {
-                editor.value = '/* CSS Styles */\nbody {\n    font-family: Arial, sans-serif;\n    background-color: #f0f0f0;\n}\n\nh1 {\n    color: #333;\n}';
+                editor.value = '/* CSS Styles */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+}
+
+h1 {
+    color: #333;
+}';
             } else if (currentLanguage === 'java') {
-                editor.value = '// Java code\npublic class HelloWorld {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}';
+                editor.value = '// Java code
+public class HelloWorld {
+    public static void main(String[] args) {
+        System.out.println("Hello, World!");
+    }
+}';
             } else if (currentLanguage === 'cpp') {
-                editor.value = '// C++ code\n#include <iostream>\n\nint main() {\n    std::cout << "Hello, World!" << std::endl;\n    return 0;\n}';
+                editor.value = '// C++ code
+#include <iostream>
+
+int main() {
+    std::cout << "Hello, World!" << std::endl;
+    return 0;
+}';
             } else if (currentLanguage === 'c') {
-                editor.value = '// C code\n#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}';
+                editor.value = '// C code
+#include <stdio.h>
+
+int main() {
+    printf("Hello, World!\
+");
+    return 0;
+}';
             } else if (currentLanguage === 'go') {
-                editor.value = '// Go code\npackage main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("Hello, World!")\n}';
+                editor.value = '// Go code
+package main
+
+import "fmt"
+
+func main() {
+    fmt.Println("Hello, World!")
+}';
             } else if (currentLanguage === 'rust') {
-                editor.value = '// Rust code\nfn main() {\n    println!("Hello, World!");\n}';
+                editor.value = '// Rust code
+fn main() {
+    println!("Hello, World!");
+}';
             } else if (currentLanguage === 'javascript') {
-                editor.value = '// JavaScript code\nconsole.log("Hello, World!");';
+                editor.value = '// JavaScript code
+console.log("Hello, World!");';
             } else {
-                editor.value = '// Code\nconsole.log("Hello, World!");';
+                editor.value = '// Code
+console.log("Hello, World!");';
             }
         }
     }
@@ -855,7 +988,8 @@ function runCode() {
             
             // Show output
             if (logs.length > 0) {
-                addToTerminal(logs.join('\n'), 'output');
+                addToTerminal(logs.join('
+'), 'output');
             } else {
                 addToTerminal('Code executed successfully (no console output)', 'output');
             }
@@ -890,26 +1024,61 @@ function clearCode() {
     const editor = document.getElementById('codeEditor');
     if (editor) {
         if (currentExercise) {
-            editor.value = currentExercise.starterCode.replace(/\\n/g, '\n');
+            editor.value = currentExercise.starterCode.replace(/\
+/g, '
+');
         } else {
             if (currentLanguage === 'python') {
-                editor.value = '# Write your Python code here...\nprint("Hello, World!")';
+                editor.value = '# Write your Python code here...
+print("Hello, World!")';
             } else if (currentLanguage === 'shell') {
-                editor.value = '#!/bin/bash\n# Write your bash script here...\necho "Hello, World!"';
+                editor.value = '#!/bin/bash
+# Write your bash script here...
+echo "Hello, World!"';
             } else if (currentLanguage === 'java') {
-                editor.value = '// Write your Java code here...\npublic class HelloWorld {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}';
+                editor.value = '// Write your Java code here...
+public class HelloWorld {
+    public static void main(String[] args) {
+        System.out.println("Hello, World!");
+    }
+}';
             } else if (currentLanguage === 'cpp') {
-                editor.value = '// Write your C++ code here...\n#include <iostream>\n\nint main() {\n    std::cout << "Hello, World!" << std::endl;\n    return 0;\n}';
+                editor.value = '// Write your C++ code here...
+#include <iostream>
+
+int main() {
+    std::cout << "Hello, World!" << std::endl;
+    return 0;
+}';
             } else if (currentLanguage === 'c') {
-                editor.value = '// Write your C code here...\n#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}';
+                editor.value = '// Write your C code here...
+#include <stdio.h>
+
+int main() {
+    printf("Hello, World!\
+");
+    return 0;
+}';
             } else if (currentLanguage === 'go') {
-                editor.value = '// Write your Go code here...\npackage main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("Hello, World!")\n}';
+                editor.value = '// Write your Go code here...
+package main
+
+import "fmt"
+
+func main() {
+    fmt.Println("Hello, World!")
+}';
             } else if (currentLanguage === 'rust') {
-                editor.value = '// Write your Rust code here...\nfn main() {\n    println!("Hello, World!");\n}';
+                editor.value = '// Write your Rust code here...
+fn main() {
+    println!("Hello, World!");
+}';
             } else if (currentLanguage === 'javascript') {
-                editor.value = '// JavaScript code\nconsole.log("Hello, World!");';
+                editor.value = '// JavaScript code
+console.log("Hello, World!");';
             } else {
-                editor.value = '// Code\nconsole.log("Hello, World!");';
+                editor.value = '// Code
+console.log("Hello, World!");';
             }
         }
     }
@@ -960,8 +1129,11 @@ function formatAssistantMessage(message) {
     formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
     
     // Handle line breaks and paragraphs
-    formatted = formatted.replace(/\n\n/g, '</p><p>');
-    formatted = formatted.replace(/\n/g, '<br>');
+    formatted = formatted.replace(/
+
+/g, '</p><p>');
+    formatted = formatted.replace(/
+/g, '<br>');
     
     // Wrap in paragraph tags if not already wrapped
     if (!formatted.includes('<p>') && !formatted.includes('<pre>')) {
@@ -1116,7 +1288,8 @@ function executeTerminalCommand(command) {
         logCommandExecution(command);
     }
     
-    const promptLine = `student@lab:${currentDirectory.replace(sandboxRoot, '~')}$ ${command}\n`;
+    const promptLine = `student@lab:${currentDirectory.replace(sandboxRoot, '~')}$ ${command}
+`;
     
     terminalOutput.textContent += promptLine;
     
@@ -1126,7 +1299,9 @@ function executeTerminalCommand(command) {
     
     // Security check: validate command is allowed
     if (isLabSandboxed && !isCommandAllowed(cmd)) {
-        const output = `Permission denied: Command '${cmd}' is not allowed in this sandboxed environment.\nType 'help' to see available commands.\n`;
+        const output = `Permission denied: Command '${cmd}' is not allowed in this sandboxed environment.
+Type 'help' to see available commands.
+`;
         terminalOutput.textContent += output;
         addPrompt();
         scrollToBottom();
@@ -1137,18 +1312,30 @@ function executeTerminalCommand(command) {
     
     switch (cmd) {
         case 'help':
-            output = 'Available commands:\n' +
-                   'ls [path]          - List directory contents\n' +
-                   'cd <path>          - Change directory\n' +
-                   'pwd                - Print working directory\n' +
-                   'cat <file>         - Display file contents\n' +
-                   'echo <text>        - Display text\n' +
-                   'mkdir <dir>        - Create directory\n' +
-                   'touch <file>       - Create empty file\n' +
-                   'clear              - Clear terminal\n' +
-                   'whoami             - Display current user\n' +
-                   'date               - Display current date\n' +
-                   'help               - Show this help\n';
+            output = 'Available commands:
+' +
+                   'ls [path]          - List directory contents
+' +
+                   'cd <path>          - Change directory
+' +
+                   'pwd                - Print working directory
+' +
+                   'cat <file>         - Display file contents
+' +
+                   'echo <text>        - Display text
+' +
+                   'mkdir <dir>        - Create directory
+' +
+                   'touch <file>       - Create empty file
+' +
+                   'clear              - Clear terminal
+' +
+                   'whoami             - Display current user
+' +
+                   'date               - Display current date
+' +
+                   'help               - Show this help
+';
             break;
         
         case 'ls':
@@ -1156,7 +1343,8 @@ function executeTerminalCommand(command) {
             break;
         
         case 'pwd':
-            output = currentDirectory + '\n';
+            output = currentDirectory + '
+';
             break;
         
         case 'cd':
@@ -1168,15 +1356,18 @@ function executeTerminalCommand(command) {
             break;
         
         case 'echo':
-            output = args.join(' ') + '\n';
+            output = args.join(' ') + '
+';
             break;
         
         case 'whoami':
-            output = 'student\n';
+            output = 'student
+';
             break;
         
         case 'date':
-            output = new Date().toString() + '\n';
+            output = new Date().toString() + '
+';
             break;
         
         case 'clear':
@@ -1192,7 +1383,8 @@ function executeTerminalCommand(command) {
             break;
         
         default:
-            output = `bash: ${cmd}: command not found\n`;
+            output = `bash: ${cmd}: command not found
+`;
             break;
     }
     
@@ -1204,11 +1396,14 @@ function executeTerminalCommand(command) {
 function simulateLS(path) {
     // Simplified file listing
     if (path === '.' || path === currentDirectory || !path) {
-        return 'readme.txt  examples/\n';
+        return 'readme.txt  examples/
+';
     } else if (path === 'examples') {
-        return 'hello.sh  test.py  sample.js\n';
+        return 'hello.sh  test.py  sample.js
+';
     } else {
-        return `ls: cannot access '${path}': No such file or directory\n`;
+        return `ls: cannot access '${path}': No such file or directory
+`;
     }
 }
 
@@ -1234,7 +1429,8 @@ function simulateCD(path) {
     // Validate sandbox access
     const accessCheck = validateSandboxAccess(targetPath);
     if (!accessCheck.allowed) {
-        return accessCheck.message + '\n';
+        return accessCheck.message + '
+';
     }
     
     // Check if directory exists in our simulated file system
@@ -1244,36 +1440,47 @@ function simulateCD(path) {
         currentDirectory = targetPath;
         return '';
     } else {
-        return `bash: cd: ${path}: No such file or directory\n`;
+        return `bash: cd: ${path}: No such file or directory
+`;
     }
 }
 
 function simulateCAT(filename) {
     if (!filename) {
-        return 'cat: missing file operand\n';
+        return 'cat: missing file operand
+';
     }
     
     if (filename === 'readme.txt' && currentDirectory === '/home/student') {
-        return 'Welcome to the lab environment!\nThis is a simulated file system.\n';
+        return 'Welcome to the lab environment!
+This is a simulated file system.
+';
     } else if (filename === 'hello.sh' && currentDirectory.includes('examples')) {
-        return '#!/bin/bash\necho "Hello from the lab!"\n';
+        return '#!/bin/bash
+echo "Hello from the lab!"
+';
     } else {
-        return `cat: ${filename}: No such file or directory\n`;
+        return `cat: ${filename}: No such file or directory
+`;
     }
 }
 
 function simulateMKDIR(dirname) {
     if (!dirname) {
-        return 'mkdir: missing operand\n';
+        return 'mkdir: missing operand
+';
     }
-    return `Directory '${dirname}' created (simulated)\n`;
+    return `Directory '${dirname}' created (simulated)
+`;
 }
 
 function simulateTOUCH(filename) {
     if (!filename) {
-        return 'touch: missing file operand\n';
+        return 'touch: missing file operand
+';
     }
-    return `File '${filename}' created (simulated)\n`;
+    return `File '${filename}' created (simulated)
+`;
 }
 
 // Security and sandboxing functions
@@ -1560,7 +1767,8 @@ function checkForExerciseCompletion(exerciseId, code) {
         isCompleted = matchingKeywords.length >= completionThreshold;
     } else {
         // Fallback: check for basic completion indicators
-        const codeLines = code.split('\n').filter(line => line.trim().length > 0);
+        const codeLines = code.split('
+').filter(line => line.trim().length > 0);
         isCompleted = codeLines.length >= 3; // At least 3 non-empty lines
     }
     

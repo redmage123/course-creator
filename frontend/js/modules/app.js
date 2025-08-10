@@ -55,6 +55,7 @@ class App {
         this.handleUnhandledRejection = this.handleUnhandledRejection.bind(this);
         this.setupGlobalHandlers = this.setupGlobalHandlers.bind(this);
         this.setupGlobalExports = this.setupGlobalExports.bind(this);
+        this.setupAuthEventListeners = this.setupAuthEventListeners.bind(this);
     }
 
     /**
@@ -119,6 +120,13 @@ class App {
             // STEP 6: Setup legacy compatibility layer
             // WHY: Support older HTML pages that expect global functions
             this.setupGlobalExports();
+            
+            // STEP 6.5: Setup event listeners for auth buttons
+            // WHY: Avoid timing issues with ES6 module loading and onclick handlers
+            // Use setTimeout to ensure DOM elements exist
+            setTimeout(() => {
+                this.setupAuthEventListeners();
+            }, 100);
             
             // STEP 7: Initialize page-specific functionality
             // WHY: Different pages have different requirements and components
@@ -308,6 +316,127 @@ class App {
     }
 
     /**
+     * AUTHENTICATION EVENT LISTENERS SETUP
+     * PURPOSE: Attach event listeners to auth buttons to avoid timing issues
+     * WHY: ES6 modules load asynchronously, onclick handlers need immediate functions
+     */
+    setupAuthEventListeners() {
+        // Wait for DOM to be ready and retry if elements not found
+        const attachListeners = () => {
+            // LOGIN BUTTON: Attach click handler
+            const loginBtn = document.getElementById('loginBtn');
+            if (loginBtn) {
+                // Remove any existing listeners first
+                loginBtn.removeEventListener('click', this.handleLoginClick);
+                loginBtn.addEventListener('click', this.handleLoginClick);
+                console.log('✅ Login button event listener attached');
+            } else {
+                console.log('⚠️ Login button not found');
+            }
+            
+            // REGISTER BUTTON: Attach click handler  
+            const registerBtn = document.getElementById('registerBtn');
+            if (registerBtn) {
+                // Remove any existing listeners first
+                registerBtn.removeEventListener('click', this.handleRegisterClick);
+                registerBtn.addEventListener('click', this.handleRegisterClick);
+                console.log('✅ Register button event listener attached');
+            } else {
+                console.log('⚠️ Register button not found');
+            }
+            
+            // Return whether both buttons were found
+            return loginBtn && registerBtn;
+        };
+
+        // Try to attach listeners immediately
+        const success = attachListeners();
+        
+        if (!success) {
+            // If elements not found, retry after DOM is loaded
+            console.log('🔄 Elements not found, waiting for DOM...');
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', attachListeners);
+            } else {
+                // DOM already loaded, try again after a short delay
+                setTimeout(attachListeners, 100);
+            }
+        }
+    }
+
+    handleLoginClick = () => {
+        console.log('🔐 Login button clicked');
+        if (Navigation && Navigation.showLogin) {
+            Navigation.showLogin();
+        } else {
+            console.error('❌ Navigation.showLogin not available');
+        }
+    }
+
+    handleRegisterClick = () => {
+        console.log('📝 Register button clicked');
+        console.log('🔍 Checking Navigation availability...');
+        console.log('   - Navigation object:', Navigation);
+        console.log('   - Navigation.showRegister:', Navigation?.showRegister);
+        console.log('   - window.Navigation:', window.Navigation);
+        console.log('   - window.Navigation.showRegister:', window.Navigation?.showRegister);
+        
+        // Try multiple ways to call showRegister
+        let success = false;
+        
+        // Method 1: Direct import
+        if (Navigation && Navigation.showRegister) {
+            console.log('✅ Calling Navigation.showRegister() via import');
+            try {
+                Navigation.showRegister();
+                success = true;
+            } catch (error) {
+                console.error('❌ Error calling Navigation.showRegister():', error);
+            }
+        }
+        
+        // Method 2: Global window object
+        else if (window.Navigation && window.Navigation.showRegister) {
+            console.log('✅ Calling window.Navigation.showRegister()');
+            try {
+                window.Navigation.showRegister();
+                success = true;
+            } catch (error) {
+                console.error('❌ Error calling window.Navigation.showRegister():', error);
+            }
+        }
+        
+        // Method 3: Try global showRegister function
+        else if (typeof window.showRegister === 'function') {
+            console.log('✅ Calling window.showRegister()');
+            try {
+                window.showRegister();
+                success = true;
+            } catch (error) {
+                console.error('❌ Error calling window.showRegister():', error);
+            }
+        }
+        
+        else {
+            console.error('❌ No Navigation.showRegister method found');
+            console.log('Available window properties:', Object.keys(window).filter(key => 
+                key.includes('Navigation') || key.includes('show') || key.includes('register')
+            ));
+        }
+        
+        if (success) {
+            console.log('✅ showRegister() called successfully');
+        } else {
+            console.error('❌ Failed to call showRegister() - trying fallback');
+            // Fallback: manually update content
+            const main = document.getElementById('main-content');
+            if (main) {
+                main.innerHTML = '<div style="padding: 20px; color: red;">Registration functionality temporarily unavailable. Navigation module not properly loaded.</div>';
+            }
+        }
+    }
+
+    /**
      * GLOBAL FUNCTION EXPORTS FOR LEGACY COMPATIBILITY
      * PURPOSE: Export modern module functions as global window functions
      * WHY: Older HTML pages and inline scripts expect global functions to exist
@@ -350,6 +479,7 @@ class App {
         window.showHome = () => Navigation.showHome();
         window.showLogin = () => Navigation.showLogin();
         window.showRegister = () => Navigation.showRegister();
+        window.showInstructorRegistration = () => Navigation.showInstructorRegistration();
         window.showProfile = () => Navigation.showProfile();
         window.showSettings = () => Navigation.showSettings();
         window.showHelp = () => Navigation.showHelp();
@@ -726,12 +856,7 @@ class App {
 // Create singleton instance
 const app = new App();
 
-// Auto-initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', app.init);
-} else {
-    app.init();
-}
+// Auto-initialization removed - main.js handles initialization to prevent duplicate calls
 
 export { app as App };
 export default app;

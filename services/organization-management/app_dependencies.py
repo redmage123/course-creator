@@ -58,6 +58,23 @@ async def require_project_manager(
     return auth_service.require_project_manager(current_user)
 
 
+async def require_instructor_or_admin(
+    current_user: Dict[str, Any] = Depends(get_current_user),
+    auth_service: AuthService = Depends(get_auth_service)
+) -> Dict[str, Any]:
+    """Require instructor role or higher (instructor, project_manager, org_admin, super_admin)"""
+    user_roles = current_user.get('roles', [])
+    allowed_roles = ['instructor', 'project_manager', 'org_admin', 'super_admin']
+    
+    if not any(role in allowed_roles for role in user_roles):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Instructor, project manager, or administrator access required"
+        )
+    
+    return current_user
+
+
 async def get_membership_service() -> MembershipService:
     """Get membership service for FastAPI dependency injection"""
     container = get_container()

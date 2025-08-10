@@ -287,21 +287,21 @@ class SiteAdminDashboard {
      * - Updates UI based on successful authentication
      */
     async loadCurrentUser() {
-        """
-        COMPREHENSIVE SESSION VALIDATION ON PAGE LOAD - SITE ADMIN DASHBOARD
-        
-        BUSINESS REQUIREMENT:
-        When a site admin refreshes the dashboard page after session expiry,
-        they should be redirected to the home page with proper validation.
-        
-        TECHNICAL IMPLEMENTATION:
-        1. Check if user data exists in localStorage
-        2. Validate session timestamps against timeout thresholds  
-        3. Check if authentication token is present and valid
-        4. Verify user has correct role (site_admin)
-        5. Redirect to home page if any validation fails
-        6. Prevent dashboard initialization for expired sessions
-        """
+        /*
+         * COMPREHENSIVE SESSION VALIDATION ON PAGE LOAD - SITE ADMIN DASHBOARD
+         * 
+         * BUSINESS REQUIREMENT:
+         * When a site admin refreshes the dashboard page after session expiry,
+         * they should be redirected to the home page with proper validation.
+         * 
+         * TECHNICAL IMPLEMENTATION:
+         * 1. Check if user data exists in localStorage
+         * 2. Validate session timestamps against timeout thresholds  
+         * 3. Check if authentication token is present and valid
+         * 4. Verify user has correct role (site_admin)
+         * 5. Redirect to home page if any validation fails
+         * 6. Prevent dashboard initialization for expired sessions
+         */
         
         // Validate session before making API calls
         if (!this.validateSession()) {

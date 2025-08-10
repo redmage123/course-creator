@@ -60,28 +60,28 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeDashboard() {
-    """
-    COMPREHENSIVE SESSION VALIDATION ON PAGE LOAD - STUDENT DASHBOARD
-    
-    BUSINESS REQUIREMENT:
-    When a student refreshes the dashboard page after session expiry,
-    they should be redirected to the home page, not stay on the dashboard
-    with default 'student' name display.
-    
-    TECHNICAL IMPLEMENTATION:
-    1. Check if user data exists in localStorage
-    2. Validate session timestamps against timeout thresholds  
-    3. Check if authentication token is present and valid
-    4. Verify user has correct role (student)
-    5. Redirect to home page if any validation fails
-    6. Prevent dashboard initialization for expired sessions
-    
-    WHY THIS PREVENTS THE BUG:
-    - Previous code only checked if currentUser existed, not if session was valid
-    - Expired sessions could still have currentUser data in localStorage
-    - This led to dashboard loading with fallback 'student' name
-    - Now we validate the complete session state before allowing access
-    """
+    /*
+     * COMPREHENSIVE SESSION VALIDATION ON PAGE LOAD - STUDENT DASHBOARD
+     * 
+     * BUSINESS REQUIREMENT:
+     * When a student refreshes the dashboard page after session expiry,
+     * they should be redirected to the home page, not stay on the dashboard
+     * with default 'student' name display.
+     * 
+     * TECHNICAL IMPLEMENTATION:
+     * 1. Check if user data exists in localStorage
+     * 2. Validate session timestamps against timeout thresholds  
+     * 3. Check if authentication token is present and valid
+     * 4. Verify user has correct role (student)
+     * 5. Redirect to home page if any validation fails
+     * 6. Prevent dashboard initialization for expired sessions
+     * 
+     * WHY THIS PREVENTS THE BUG:
+     * - Previous code only checked if currentUser existed, not if session was valid
+     * - Expired sessions could still have currentUser data in localStorage
+     * - This led to dashboard loading with fallback 'student' name
+     * - Now we validate the complete session state before allowing access
+     */
     
     // Check if user is logged in and session is valid
     currentUser = getCurrentUser();
@@ -1034,7 +1034,11 @@ function displayAIResponse(question, response) {
 function viewLabDetails(labId) {
     const labAccess = labEnvironments.find(lab => lab.lab_id === labId);
     if (labAccess) {
-        alert(`Lab Details:\n\nName: ${labAccess.lab.name}\nDescription: ${labAccess.lab.description}\nType: ${labAccess.lab.environment_type}`);
+        alert(`Lab Details:
+
+Name: ${labAccess.lab.name}
+Description: ${labAccess.lab.description}
+Type: ${labAccess.lab.environment_type}`);
     }
 }
 

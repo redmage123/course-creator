@@ -94,8 +94,8 @@ function handleAuthError(response) {
     return false;  // No auth error detected
 }
 
-"""
-COMPREHENSIVE SESSION VALIDATION ON PAGE LOAD - ADMIN DASHBOARD
+/*
+ * COMPREHENSIVE SESSION VALIDATION ON PAGE LOAD - ADMIN DASHBOARD
 
 BUSINESS REQUIREMENT:
 When an admin refreshes the dashboard page after session expiry,
@@ -108,7 +108,7 @@ TECHNICAL IMPLEMENTATION:
 4. Verify user has correct role (admin)
 5. Redirect to home page if any validation fails
 6. Prevent dashboard initialization for expired sessions
-"""
+ */
 
 /**
  * CURRENT USER RETRIEVAL WITH ERROR HANDLING

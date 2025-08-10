@@ -59,7 +59,7 @@
 .nav-left h1 {
     font-size: 1.5rem;
     font-weight: 600;
-    color: var(--primary-color, #2c3e50);
+    color: var(--primary-color);
     margin: 0;
 }
 
@@ -69,13 +69,13 @@
     padding: 8px;
     cursor: pointer;
     border-radius: 4px;
-    color: var(--text-color, #6c757d);
+    color: var(--text-secondary);
     transition: all 0.2s ease;
 }
 
 .sidebar-toggle:hover {
-    background-color: var(--hover-bg, #f8f9fa);
-    color: var(--primary-color, #2c3e50);
+    background-color: var(--surface-hover);
+    color: var(--primary-color);
 }
 
 .nav-links {
@@ -85,13 +85,13 @@
 
 .nav-links .nav-link {
     text-decoration: none;
-    color: var(--text-color, #6c757d);
+    color: var(--text-secondary);
     font-weight: 500;
     transition: color 0.2s ease;
 }
 
 .nav-links .nav-link:hover {
-    color: var(--primary-color, #2c3e50);
+    color: var(--primary-color);
 }
 
 .account-section {
@@ -110,7 +110,7 @@
 
 .user-profile i {
     font-size: 1.5rem;
-    color: var(--primary-color, #2c3e50);
+    color: var(--primary-color);
 }
 
 .user-details {
@@ -168,7 +168,7 @@
 .sidebar-header h2 {
     font-size: 1.1rem;
     font-weight: 600;
-    color: var(--primary-color, #2c3e50);
+    color: var(--primary-color);
     margin: 0;
 }
 
@@ -193,19 +193,19 @@
     gap: 12px;
     padding: 12px 20px;
     text-decoration: none;
-    color: var(--text-color, #6c757d);
+    color: var(--text-secondary);
     transition: all 0.2s ease;
     border-left: 3px solid transparent;
 }
 
 .nav-link:hover {
-    background-color: var(--hover-bg, #f8f9fa);
-    color: var(--primary-color, #2c3e50);
+    background-color: var(--surface-hover);
+    color: var(--primary-color);
 }
 
 .nav-link.active {
     background-color: var(--primary-light, #e3f2fd);
-    color: var(--primary-color, #2c3e50);
+    color: var(--primary-color);
     border-left-color: var(--primary-color, #2c3e50);
     font-weight: 600;
 }
@@ -245,7 +245,7 @@
 .section-header h2 {
     font-size: 1.8rem;
     font-weight: 600;
-    color: var(--primary-color, #2c3e50);
+    color: var(--primary-color);
     margin: 0 0 10px 0;
 }
 
@@ -293,14 +293,14 @@
     align-items: center;
     justify-content: center;
     background: var(--primary-light, #e3f2fd);
-    color: var(--primary-color, #2c3e50);
+    color: var(--primary-color);
     font-size: 1.5rem;
 }
 
 .stat-content h3 {
     font-size: 1.8rem;
     font-weight: 700;
-    color: var(--primary-color, #2c3e50);
+    color: var(--primary-color);
     margin: 0 0 5px 0;
 }
 
@@ -317,7 +317,7 @@
 .quick-actions h3 {
     font-size: 1.3rem;
     font-weight: 600;
-    color: var(--primary-color, #2c3e50);
+    color: var(--primary-color);
     margin-bottom: 20px;
 }
 
@@ -330,7 +330,7 @@
 .recent-activity h3 {
     font-size: 1.3rem;
     font-weight: 600;
-    color: var(--primary-color, #2c3e50);
+    color: var(--primary-color);
     margin-bottom: 20px;
 }
 
@@ -353,7 +353,7 @@
 }
 
 .activity-item i {
-    color: var(--primary-color, #2c3e50);
+    color: var(--primary-color);
     font-size: 1.2rem;
 }
 
@@ -419,7 +419,7 @@
 .course-title {
     font-size: 1.2rem;
     font-weight: 600;
-    color: var(--primary-color, #2c3e50);
+    color: var(--primary-color);
     margin: 0;
     flex: 1;
 }
@@ -560,12 +560,12 @@
 .empty-state i {
     font-size: 3rem;
     margin-bottom: 20px;
-    color: var(--primary-color, #2c3e50);
+    color: var(--primary-color);
 }
 
 .empty-state h3 {
     font-size: 1.5rem;
-    color: var(--primary-color, #2c3e50);
+    color: var(--primary-color);
     margin-bottom: 15px;
 }
 
@@ -588,7 +588,7 @@
 }
 
 .tab-button.active {
-    color: var(--primary-color, #2c3e50);
+    color: var(--primary-color);
     border-bottom-color: var(--primary-color, #2c3e50);
 }
 
@@ -639,7 +639,7 @@
     align-items: center;
     justify-content: center;
     background: var(--primary-light, #e3f2fd);
-    color: var(--primary-color, #2c3e50);
+    color: var(--primary-color);
     font-size: 1.5rem;
 }
 
@@ -659,7 +659,7 @@
 
 .chart-container h3 {
     margin-bottom: 20px;
-    color: var(--primary-color, #2c3e50);
+    color: var(--primary-color);
 }
 
 /* Responsive Design */
@@ -714,5 +714,77 @@
     to {
         transform: translateX(0);
         opacity: 1;
+    }
+}
+
+/* Phone Input Group Component */
+.phone-input-group {
+    display: flex;
+    gap: 0;
+    align-items: stretch;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.country-select {
+    min-width: 120px;
+    max-width: 150px;
+    flex-shrink: 0;
+    border-radius: 0;
+    border-right: none;
+    background-color: var(--surface-color, #f8f9fa);
+    font-size: 0.9rem;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color, #ddd);
+}
+
+.phone-number-input {
+    flex: 1;
+    border-radius: 0;
+    border-left: none;
+    min-width: 0;
+    border: 1px solid var(--border-color, #ddd);
+}
+
+.country-select:focus {
+    border-color: var(--primary-color, #007bff);
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    z-index: 2;
+    position: relative;
+}
+
+.phone-number-input:focus {
+    border-color: var(--primary-color, #007bff);
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+    z-index: 2;
+    position: relative;
+}
+
+.country-select option {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+}
+
+/* Ensure consistent height alignment */
+.phone-input-group .form-input,
+.phone-input-group .form-select {
+    margin: 0;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .country-select {
+        background-color: var(--surface-color, #2d3748);
+        color: var(--text-primary, #fff);
+        border-color: var(--border-color, #4a5568);
+    }
+    
+    .phone-number-input {
+        background-color: var(--background-color, #1a202c);
+        color: var(--text-primary, #fff);
+        border-color: var(--border-color, #4a5568);
     }
 }

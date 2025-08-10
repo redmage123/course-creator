@@ -23,7 +23,8 @@
  * - Dynamic cache warming for critical configuration values
  */
 
-import { showNotification } from './notifications.js';\nimport { CONFIG } from '../config.js';
+import { showNotification } from './notifications.js';
+import { CONFIG } from '../config.js';
 
 class ConfigManager {
     constructor() {
@@ -51,7 +52,7 @@ class ConfigManager {
         this._criticalAssets = new Set();
         
         // Configuration sources
-        this._configSources = ['localStorage', 'memory', 'remote', 'default'];
+        this._configSources = ['localStorage', 'memory', 'default']; // Removed 'remote' to prevent 404 API calls
         this._currentEnvironment = this._detectEnvironment();
         
         // Event listeners for configuration changes
@@ -211,7 +212,8 @@ class ConfigManager {
                 return this._fetchFromMemory(key);
                 
             case 'remote':
-                return await this._fetchFromRemote(key, options);
+                console.log('Remote config fetch disabled for development');
+                return null;
                 
             case 'default':
                 return this._getDefaultConfig(key);
@@ -567,8 +569,7 @@ class ConfigManager {
         // Define critical assets for preloading
         const criticalAssets = [
             { url: '/css/main.css', type: 'text' },
-            { url: '/js/config.js', type: 'text' },
-            { url: '/api/config/ui.theme', type: 'json' }
+            { url: '/js/config.js', type: 'text' }
         ];
         
         // Preload critical assets

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Binding Test</title>
+    <style>
+        .test-container {
+            padding: 20px;
+            font-family: monospace;
+        }
+        .log {
+            background: #f0f0f0;
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 3px solid #333;
+        }
+        .success { border-color: green; }
+        .error { border-color: red; }
+        .warning { border-color: orange; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Registration Button Event Binding Test</h1>
+        <div id="logs"></div>
+        
+        <h3>Direct Test:</h3>
+        <button class="btn-auth btn-register" id="testRegisterBtn">Test Register Button</button>
+        <div id="testResult"></div>
+    </div>
+
+    <script>
+        const logs = document.getElementById('logs');
+        const testResult = document.getElementById('testResult');
+        
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logs.appendChild(div);
+        }
+
+        // Test 1: Check if we can load and access the main page elements
+        log('=== TESTING EVENT BINDING ===');
+        
+        // Create an iframe to load the actual main page
+        const iframe = document.createElement('iframe');
+        iframe.src = '/html/index.html';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+        
+        iframe.onload = function() {
+            log('Main page loaded in iframe');
+            
+            setTimeout(() => {
+                try {
+                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                    const registerBtn = iframeDoc.getElementById('registerBtn');
+                    const mainContent = iframeDoc.getElementById('main-content');
+                    
+                    if (!registerBtn) {
+                        log('❌ Register button not found in main page', 'error');
+                        return;
+                    }
+                    
+                    if (!mainContent) {
+                        log('❌ Main content not found in main page', 'error');
+                        return;
+                    }
+                    
+                    log('✅ Both register button and main content found', 'success');
+                    
+                    // Check if button has event listeners (this is tricky to detect)
+                    // We'll check by attempting to inspect the button's properties
+                    
+                    const initialContent = mainContent.innerHTML;
+                    log(`Initial content length: ${initialContent.length}`);
+                    
+                    // Method 1: Check if window objects exist
+                    const iframeWindow = iframe.contentWindow;
+                    const hasApp = typeof iframeWindow.App !== 'undefined';
+                    const hasNavigation = typeof iframeWindow.Navigation !== 'undefined';
+                    const hasShowRegister = typeof iframeWindow.Navigation?.showRegister === 'function';
+                    
+                    log(`window.App exists: ${hasApp ? '✅' : '❌'}`, hasApp ? 'success' : 'error');
+                    log(`window.Navigation exists: ${hasNavigation ? '✅' : '❌'}`, hasNavigation ? 'success' : 'error');
+                    log(`Navigation.showRegister exists: ${hasShowRegister ? '✅' : '❌'}`, hasShowRegister ? 'success' : 'error');
+                    
+                    if (hasShowRegister) {
+                        // Test calling showRegister directly
+                        try {
+                            iframeWindow.Navigation.showRegister();
+                            log('✅ Navigation.showRegister() called successfully', 'success');
+                            
+                            setTimeout(() => {
+                                const newContent = mainContent.innerHTML;
+                                const contentChanged = newContent !== initialContent;
+                                const hasRegContent = newContent.includes('registration-options') || 
+                                                    newContent.includes('Register New Organization');
+                                
+                                log(`Content changed: ${contentChanged ? '✅' : '❌'}`, contentChanged ? 'success' : 'error');
+                                log(`Has registration content: ${hasRegContent ? '✅' : '❌'}`, hasRegContent ? 'success' : 'error');
+                                
+                                if (hasRegContent) {
+                                    log('✅ Navigation.showRegister() works correctly!', 'success');
+                                } else if (contentChanged) {
+                                    log('⚠️ Content changed but no registration content found', 'warning');
+                                    log(`New content preview: ${newContent.substring(0, 200)}...`);
+                                } else {
+                                    log('❌ Navigation.showRegister() did not change content', 'error');
+                                }
+                                
+                                // Now test the actual button click
+                                log('=== TESTING BUTTON CLICK ===');
+                                
+                                // Reset content
+                                mainContent.innerHTML = initialContent;
+                                
+                                // Click the button
+                                registerBtn.click();
+                                log('Button click event dispatched');
+                                
+                                setTimeout(() => {
+                                    const clickContent = mainContent.innerHTML;
+                                    const clickWorked = clickContent !== initialContent;
+                                    const clickHasRegContent = clickContent.includes('registration-options') || 
+                                                             clickContent.includes('Register New Organization');
+                                    
+                                    log(`Button click changed content: ${clickWorked ? '✅' : '❌'}`, clickWorked ? 'success' : 'error');
+                                    log(`Button click shows registration: ${clickHasRegContent ? '✅' : '❌'}`, clickHasRegContent ? 'success' : 'error');
+                                    
+                                    if (!clickWorked) {
+                                        log('❌ PROBLEM: Button click does not trigger event handler', 'error');
+                                        log('This confirms the event handler is NOT properly bound to the button', 'error');
+                                    } else if (!clickHasRegContent) {
+                                        log('⚠️ Button click triggers something but not registration', 'warning');
+                                    } else {
+                                        log('✅ Button click works perfectly!', 'success');
+                                    }
+                                }, 500);
+                            }, 500);
+                        } catch (error) {
+                            log(`❌ Error calling Navigation.showRegister(): ${error.message}`, 'error');
+                        }
+                    } else {
+                        log('❌ Navigation.showRegister not available - modules not loaded properly', 'error');
+                    }
+                    
+                } catch (error) {
+                    log(`❌ Error accessing iframe content: ${error.message}`, 'error');
+                    log('This might be due to same-origin policy', 'warning');
+                }
+            }, 2000); // Wait 2 seconds for modules to load
+        };
+        
+        // Test our own button to verify basic click handling works
+        document.getElementById('testRegisterBtn').addEventListener('click', function() {
+            testResult.innerHTML = '<span style="color: green;">✅ Test button click works!</span>';
+            log('✅ Test button event handler works correctly', 'success');
+        });
+        
+        log('Test initialized. Waiting for iframe to load...');
+    </script>
+</body>
+</html>

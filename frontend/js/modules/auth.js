@@ -56,35 +56,35 @@ class AuthManager {
         // API CONFIGURATION: Authentication service endpoint
         this.authApiBase = CONFIG.API_URLS.USER_MANAGEMENT;
         
-        """
-        Session Management Configuration and Business Requirements
-        
-        SECURITY TIMEOUT CONFIGURATION:
-        - SESSION_TIMEOUT: 8 hours (28,800,000 ms) - Maximum session duration
-        - INACTIVITY_TIMEOUT: 2 hours (7,200,000 ms) - Inactivity threshold
-        - AUTO_LOGOUT_WARNING: 5 minutes (300,000 ms) - Warning before expiry
-        
-        WHY THESE SPECIFIC TIMEOUTS:
-        
-        8-Hour Absolute Session Timeout:
-        - Aligns with standard work day expectations
-        - Balances security with user convenience
-        - Prevents indefinite session persistence
-        - Meets educational platform security requirements
-        - Reduces risk of session hijacking over time
-        
-        2-Hour Inactivity Timeout:
-        - Prevents sessions from remaining active when users step away
-        - Common industry standard for educational platforms
-        - Allows for lunch breaks and meetings without forced logout
-        - Protects against unauthorized access on unattended devices
-        
-        5-Minute Warning Period:
-        - Provides sufficient time for users to save work
-        - Allows users to extend session through activity
-        - Prevents unexpected data loss from automatic logout
-        - User-friendly approach to session management
-        """
+        /*
+         * Session Management Configuration and Business Requirements
+         *
+         * SECURITY TIMEOUT CONFIGURATION:
+         * - SESSION_TIMEOUT: 8 hours (28,800,000 ms) - Maximum session duration
+         * - INACTIVITY_TIMEOUT: 2 hours (7,200,000 ms) - Inactivity threshold
+         * - AUTO_LOGOUT_WARNING: 5 minutes (300,000 ms) - Warning before expiry
+         *
+         * WHY THESE SPECIFIC TIMEOUTS:
+         *
+         * 8-Hour Absolute Session Timeout:
+         * - Aligns with standard work day expectations
+         * - Balances security with user convenience
+         * - Prevents indefinite session persistence
+         * - Meets educational platform security requirements
+         * - Reduces risk of session hijacking over time
+         *
+         * 2-Hour Inactivity Timeout:
+         * - Prevents sessions from remaining active when users step away
+         * - Common industry standard for educational platforms
+         * - Allows for lunch breaks and meetings without forced logout
+         * - Protects against unauthorized access on unattended devices
+         *
+         * 5-Minute Warning Period:
+         * - Provides sufficient time for users to save work
+         * - Allows users to extend session through activity
+         * - Prevents unexpected data loss from automatic logout
+         * - User-friendly approach to session management
+         */
         this.SESSION_TIMEOUT = 8 * 60 * 60 * 1000; // 8 hours absolute maximum
         this.INACTIVITY_TIMEOUT = 2 * 60 * 60 * 1000; // 2 hours of inactivity
         this.AUTO_LOGOUT_WARNING = 5 * 60 * 1000; // 5 minutes warning period

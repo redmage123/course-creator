@@ -95,7 +95,7 @@ parse_compose_config() {
             if [[ $line =~ ^[[:space:]]{2}([a-zA-Z0-9_-]+):[[:space:]]*$ ]]; then
                 current_service="${BASH_REMATCH[1]}"
                 SERVICE_NAMES["$current_service"]="$current_service"
-                SERVICE_CONTAINERS["$current_service"]="${DOCKER_PROJECT_NAME}_${current_service}_1"
+                SERVICE_CONTAINERS["$current_service"]="${DOCKER_PROJECT_NAME}-${current_service}-1"
             # Match port mappings
             elif [[ $line =~ ^[[:space:]]*-[[:space:]]*\"([0-9]+):([0-9]+)\"[[:space:]]*$ ]] && [[ -n "$current_service" ]]; then
                 host_port="${BASH_REMATCH[1]}"
@@ -149,7 +149,11 @@ check_docker() {
 
 # Get the appropriate Docker Compose command
 get_compose_cmd() {
-    if command -v docker-compose &> /dev/null; then
+    # Prefer Docker Compose V2 (docker compose) over legacy V1 (docker-compose)
+    # V2 has better compatibility with newer Docker versions
+    if docker compose version &> /dev/null; then
+        echo "docker compose"
+    elif command -v docker-compose &> /dev/null; then
         echo "docker-compose"
     else
         echo "docker compose"
@@ -253,9 +257,15 @@ wait_for_service_health() {
     return 0
 }
 
-# Start all services using Docker Compose
+# Start services using Docker Compose (all services or specific service)
 start_docker() {
-    log_info "Starting Course Creator Platform with Docker..."
+    local service_name="${1:-}"
+    
+    if [ -n "$service_name" ]; then
+        log_info "Starting service: $service_name with Docker..."
+    else
+        log_info "Starting Course Creator Platform with Docker..."
+    fi
     
     # Check if Docker command is available
     if ! command -v docker &> /dev/null; then
@@ -292,19 +302,31 @@ EOF
         log_info "Base image already exists, skipping build"
     fi
     
-    log_info "Building and starting services..."
-    sg docker -c "$compose_cmd --env-file \"$PROJECT_ROOT/.cc_env\" -f \"$COMPOSE_FILE\" -p \"$DOCKER_PROJECT_NAME\" up -d --build"
+    if [ -n "$service_name" ]; then
+        log_info "Building and starting service: $service_name"
+        sg docker -c "$compose_cmd --env-file \"$PROJECT_ROOT/.cc_env\" -f \"$COMPOSE_FILE\" -p \"$DOCKER_PROJECT_NAME\" up -d --build \"$service_name\""
+    else
+        log_info "Building and starting services..."
+        sg docker -c "$compose_cmd --env-file \"$PROJECT_ROOT/.cc_env\" -f \"$COMPOSE_FILE\" -p \"$DOCKER_PROJECT_NAME\" up -d --build"
+    fi
 
     # Wait for services to reach final state and show status
-    log_info "Waiting for services to start and checking health status..."
-    if wait_for_service_health; then
-        log_success "Course Creator Platform started successfully!"
-        show_service_urls
+    if [ -n "$service_name" ]; then
+        log_info "Checking status of service: $service_name"
+        log_success "Service $service_name started successfully!"
+        log_info "Check status with: $0 status $service_name"
+        log_info "View logs with: $0 logs $service_name"
     else
-        log_warning "Some services failed to start properly. Check logs for details."
-        log_info "You can check service status with: $0 status"
-        log_info "You can view logs with: $0 logs [service-name]"
-        return 1
+        log_info "Waiting for services to start and checking health status..."
+        if wait_for_service_health; then
+            log_success "Course Creator Platform started successfully!"
+            show_service_urls
+        else
+            log_warning "Some services failed to start properly. Check logs for details."
+            log_info "You can check service status with: $0 status"
+            log_info "You can view logs with: $0 logs [service-name]"
+            return 1
+        fi
     fi
 }
 
@@ -336,9 +358,15 @@ show_service_urls() {
     echo "  Stop: $0 stop"
 }
 
-# Stop all Docker services
+# Stop Docker services (all services or specific service)
 stop_docker() {
-    log_info "Stopping Course Creator Platform Docker services..."
+    local service_name="${1:-}"
+    
+    if [ -n "$service_name" ]; then
+        log_info "Stopping service: $service_name"
+    else
+        log_info "Stopping Course Creator Platform Docker services..."
+    fi
     
     # Check if Docker is available (but don't fail completely if not)
     if ! command -v docker &> /dev/null; then
@@ -349,21 +377,36 @@ stop_docker() {
     local compose_cmd=$(get_compose_cmd)
     
     # Use sg docker for permissions
-    sg docker -c "$compose_cmd --env-file \"$PROJECT_ROOT/.cc_env\" -f \"$COMPOSE_FILE\" -p \"$DOCKER_PROJECT_NAME\" down"
-    
-    log_success "Docker services stopped"
+    if [ -n "$service_name" ]; then
+        sg docker -c "$compose_cmd --env-file \"$PROJECT_ROOT/.cc_env\" -f \"$COMPOSE_FILE\" -p \"$DOCKER_PROJECT_NAME\" stop \"$service_name\""
+        log_success "Service $service_name stopped"
+    else
+        sg docker -c "$compose_cmd --env-file \"$PROJECT_ROOT/.cc_env\" -f \"$COMPOSE_FILE\" -p \"$DOCKER_PROJECT_NAME\" down"
+        log_success "Docker services stopped"
+    fi
 }
 
-# Restart all Docker services
+# Restart Docker services (all services or specific service)
 restart_docker() {
-    log_info "Restarting Course Creator Platform with Docker..."
-    stop_docker
-    sleep 2
-    start_docker
+    local service_name="${1:-}"
+    
+    if [ -n "$service_name" ]; then
+        log_info "Restarting service: $service_name"
+        stop_docker "$service_name"
+        sleep 2
+        start_docker "$service_name"
+    else
+        log_info "Restarting Course Creator Platform with Docker..."
+        stop_docker
+        sleep 2
+        start_docker
+    fi
 }
 
-# Show status of all Docker containers
+# Show status of Docker containers (all containers or specific service)
 docker_status() {
+    local service_name="${1:-}"
+    
     # Try to check Docker, but continue with limited functionality if it fails
     if ! command -v docker &> /dev/null; then
         log_error "Docker is not installed or not in PATH"
@@ -373,20 +416,35 @@ docker_status() {
     # Assume Docker is accessible and handle errors gracefully
     local docker_accessible=true
     
-    echo "Course Creator Platform - Docker Status"
-    echo "======================================"
+    if [ -n "$service_name" ]; then
+        echo "Course Creator Platform - Service Status: $service_name"
+        echo "======================================================"
+    else
+        echo "Course Creator Platform - Docker Status"
+        echo "======================================"
+    fi
     echo
     
     if [ "$docker_accessible" = true ]; then
         local compose_cmd=$(get_compose_cmd)
         
         # Show compose services status
-        if sg docker -c "$compose_cmd --env-file \"$PROJECT_ROOT/.cc_env\" -f \"$COMPOSE_FILE\" -p \"$DOCKER_PROJECT_NAME\" ps --format table" 2>/dev/null; then
-            echo
+        if [ -n "$service_name" ]; then
+            if sg docker -c "$compose_cmd --env-file \"$PROJECT_ROOT/.cc_env\" -f \"$COMPOSE_FILE\" -p \"$DOCKER_PROJECT_NAME\" ps --format table \"$service_name\"" 2>/dev/null; then
+                echo
+            else
+                log_warning "Service $service_name not found or Docker Compose not available"
+                echo "Container Status:"
+                sg docker -c "docker ps --filter \"name=${DOCKER_PROJECT_NAME}_${service_name}\" --format \"table {{.Names}}\t{{.Status}}\t{{.Ports}}\"" 2>/dev/null || log_error "Cannot access Docker container for $service_name"
+            fi
         else
-            log_warning "No services found or Docker Compose not available"
-            echo "Container Status:"
-            sg docker -c "docker ps --filter \"name=${DOCKER_PROJECT_NAME}\" --format \"table {{.Names}}\t{{.Status}}\t{{.Ports}}\"" 2>/dev/null || log_error "Cannot access Docker containers"
+            if sg docker -c "$compose_cmd --env-file \"$PROJECT_ROOT/.cc_env\" -f \"$COMPOSE_FILE\" -p \"$DOCKER_PROJECT_NAME\" ps --format table" 2>/dev/null; then
+                echo
+            else
+                log_warning "No services found or Docker Compose not available"
+                echo "Container Status:"
+                sg docker -c "docker ps --filter \"name=${DOCKER_PROJECT_NAME}\" --format \"table {{.Names}}\t{{.Status}}\t{{.Ports}}\"" 2>/dev/null || log_error "Cannot access Docker containers"
+            fi
         fi
         
         echo
@@ -409,49 +467,86 @@ docker_status() {
         total_count=$(echo "$docker_info" | wc -l)
         echo "  Containers: $running_count/$total_count running"
         
-        # Check health of all services from parsed configuration
-        for service in "${!SERVICE_CONTAINERS[@]}"; do
-            # Skip base-image service (it's not meant to run)
-            if [ "$service" = "base-image" ]; then
-                continue
-            fi
-            
-            container_name="${SERVICE_CONTAINERS[$service]}"
-            display_name="${SERVICE_NAMES[$service]:-$service}"
-            
-            # Debug: Show what we're looking for
-            # echo "  Looking for: ${container_name}"
-            
-            # Find matching container from batch query (much faster)
-            container_line=$(echo "$docker_info" | grep "${container_name}" | head -1)
-            
-            if [ -n "$container_line" ]; then
-                # Extract container name and status from batch query
-                actual_container_name=$(echo "$container_line" | cut -f1)
-                container_status=$(echo "$container_line" | cut -f2)
+        # Check health of services from parsed configuration
+        if [ -n "$service_name" ]; then
+            # Check specific service only
+            if [[ -n "${SERVICE_CONTAINERS[$service_name]:-}" ]]; then
+                container_name="${SERVICE_CONTAINERS[$service_name]}"
+                display_name="${SERVICE_NAMES[$service_name]:-$service_name}"
                 
-                # Quick health check - only inspect if needed
-                if [[ "$container_status" == *"healthy"* ]]; then
-                    echo -e "  ✅ ${display_name} - Healthy"
-                elif [[ "$container_status" == *"unhealthy"* ]]; then
-                    echo -e "  ❌ ${display_name} - Unhealthy"
-                elif [[ "$container_status" == *"starting"* ]] || [[ "$container_status" == *"health: starting"* ]]; then
-                    echo -e "  🔄 ${display_name} - Starting"
-                elif [[ "$container_status" == *"Up"* ]]; then
-                    echo -e "  ✅ ${display_name} - Running"
-                elif [[ "$container_status" == *"Restarting"* ]]; then
-                    echo -e "  🔄 ${display_name} - Restarting"
-                elif [[ "$container_status" == *"Created"* ]]; then
-                    echo -e "  ⏸️  ${display_name} - Created (not started)"
-                elif [[ "$container_status" == *"Exited"* ]]; then
-                    echo -e "  ❌ ${display_name} - Stopped"
+                # Find matching container from batch query
+                container_line=$(echo "$docker_info" | grep "${container_name}" | head -1)
+                
+                if [ -n "$container_line" ]; then
+                    actual_container_name=$(echo "$container_line" | cut -f1)
+                    container_status=$(echo "$container_line" | cut -f2)
+                    
+                    if [[ "$container_status" == *"healthy"* ]]; then
+                        echo -e "  ✅ ${display_name} - Healthy"
+                    elif [[ "$container_status" == *"unhealthy"* ]]; then
+                        echo -e "  ❌ ${display_name} - Unhealthy"
+                    elif [[ "$container_status" == *"starting"* ]] || [[ "$container_status" == *"health: starting"* ]]; then
+                        echo -e "  🔄 ${display_name} - Starting"
+                    elif [[ "$container_status" == *"Up"* ]]; then
+                        echo -e "  ✅ ${display_name} - Running"
+                    elif [[ "$container_status" == *"Restarting"* ]]; then
+                        echo -e "  🔄 ${display_name} - Restarting"
+                    elif [[ "$container_status" == *"Created"* ]]; then
+                        echo -e "  ⏸️  ${display_name} - Created (not started)"
+                    elif [[ "$container_status" == *"Exited"* ]]; then
+                        echo -e "  ❌ ${display_name} - Stopped"
+                    else
+                        echo -e "  ❓ ${display_name} - ${container_status}"
+                    fi
                 else
-                    echo -e "  ❓ ${display_name} - ${container_status}"
+                    echo -e "  ❌ ${display_name} (${container_name}) - Not Running"
                 fi
             else
-                echo -e "  ❌ ${display_name} (${container_name}) - Not Running"
+                log_error "Service '$service_name' not found in configuration"
+                return 1
             fi
-        done
+        else
+            # Check all services
+            for service in "${!SERVICE_CONTAINERS[@]}"; do
+                # Skip base-image service (it's not meant to run)
+                if [ "$service" = "base-image" ]; then
+                    continue
+                fi
+                
+                container_name="${SERVICE_CONTAINERS[$service]}"
+                display_name="${SERVICE_NAMES[$service]:-$service}"
+                
+                # Find matching container from batch query (much faster)
+                container_line=$(echo "$docker_info" | grep "${container_name}" | head -1)
+            
+                if [ -n "$container_line" ]; then
+                    # Extract container name and status from batch query
+                    actual_container_name=$(echo "$container_line" | cut -f1)
+                    container_status=$(echo "$container_line" | cut -f2)
+                    
+                    # Quick health check - only inspect if needed
+                    if [[ "$container_status" == *"healthy"* ]]; then
+                        echo -e "  ✅ ${display_name} - Healthy"
+                    elif [[ "$container_status" == *"unhealthy"* ]]; then
+                        echo -e "  ❌ ${display_name} - Unhealthy"
+                    elif [[ "$container_status" == *"starting"* ]] || [[ "$container_status" == *"health: starting"* ]]; then
+                        echo -e "  🔄 ${display_name} - Starting"
+                    elif [[ "$container_status" == *"Up"* ]]; then
+                        echo -e "  ✅ ${display_name} - Running"
+                    elif [[ "$container_status" == *"Restarting"* ]]; then
+                        echo -e "  🔄 ${display_name} - Restarting"
+                    elif [[ "$container_status" == *"Created"* ]]; then
+                        echo -e "  ⏸️  ${display_name} - Created (not started)"
+                    elif [[ "$container_status" == *"Exited"* ]]; then
+                        echo -e "  ❌ ${display_name} - Stopped"
+                    else
+                        echo -e "  ❓ ${display_name} - ${container_status}"
+                    fi
+                else
+                    echo -e "  ❌ ${display_name} (${container_name}) - Not Running"
+                fi
+            done
+        fi
         
         echo
         echo "🔗 Quick Links:"
@@ -495,9 +590,15 @@ docker_logs() {
     fi
 }
 
-# Build Docker images from scratch
+# Build Docker images from scratch (all images or specific service)
 docker_build() {
-    log_info "Building Course Creator Platform Docker images..."
+    local service_name="${1:-}"
+    
+    if [ -n "$service_name" ]; then
+        log_info "Building Docker image for service: $service_name"
+    else
+        log_info "Building Course Creator Platform Docker images..."
+    fi
     
     if ! check_docker; then
         log_error "Docker environment not ready"
@@ -506,9 +607,13 @@ docker_build() {
     
     local compose_cmd=$(get_compose_cmd)
     
-    $compose_cmd --env-file "$PROJECT_ROOT/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" build --no-cache
-    
-    log_success "Docker images built successfully"
+    if [ -n "$service_name" ]; then
+        $compose_cmd --env-file "$PROJECT_ROOT/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" build --no-cache "$service_name"
+        log_success "Docker image for $service_name built successfully"
+    else
+        $compose_cmd --env-file "$PROJECT_ROOT/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" build --no-cache
+        log_success "Docker images built successfully"
+    fi
 }
 
 # Pull latest base Docker images
@@ -630,22 +735,22 @@ docker_rebuild() {
 # Main command handler
 case "${1:-}" in
     start)
-        start_docker
+        start_docker "$2"
         ;;
     stop)
-        stop_docker
+        stop_docker "$2"
         ;;
     restart)
-        restart_docker
+        restart_docker "$2"
         ;;
     status)
-        docker_status
+        docker_status "$2"
         ;;
     logs)
         docker_logs "$2" "$3"
         ;;
     build)
-        docker_build
+        docker_build "$2"
         ;;
     pull)
         docker_pull
@@ -673,7 +778,7 @@ case "${1:-}" in
         docker_logs "$2" "$3"
         ;;
     docker-build)
-        docker_build
+        docker_build "$2"
         ;;
     docker-pull)
         docker_pull
@@ -687,16 +792,16 @@ case "${1:-}" in
     *)
         echo "Course Creator Platform Control Script (Docker Only)"
         echo
-        echo "Usage: $0 {start|stop|restart|status|logs|build|pull|clean|rebuild}"
+        echo "Usage: $0 {start|stop|restart|status|logs|build|pull|clean|rebuild} [service]"
         echo
         echo "Commands:"
-        echo "  start              Start all services using Docker Compose"
-        echo "  stop               Stop all Docker containers"
-        echo "  restart            Restart all services using Docker Compose"
-        echo "  status             Show status of all Docker containers"
+        echo "  start [service]    Start all services or specific service using Docker Compose"
+        echo "  stop [service]     Stop all Docker containers or specific service"
+        echo "  restart [service]  Restart all services or specific service using Docker Compose"
+        echo "  status [service]   Show status of all Docker containers or specific service"
         echo "  logs [service]     Show logs for all services or specific service"
         echo "                     Add 'follow' or '-f' to follow logs in real-time"
-        echo "  build              Build Docker images from scratch"
+        echo "  build [service]    Build Docker images from scratch (all images or specific service)"
         echo "  pull               Pull latest base Docker images"
         echo "  clean              Clean up Docker resources (containers, volumes, images)"
         echo "  rebuild [service]  Force rebuild with no-cache (all services or specific service)"
@@ -730,10 +835,16 @@ case "${1:-}" in
         echo
         echo "Examples:"
         echo "  $0 start"
+        echo "  $0 start frontend"
         echo "  $0 status"
+        echo "  $0 status frontend"
         echo "  $0 logs user-management"
         echo "  $0 logs analytics follow"
         echo "  $0 restart"
+        echo "  $0 restart frontend"
+        echo "  $0 stop user-management"
+        echo "  $0 build frontend"
+        echo "  $0 build"
         echo
         echo "Environment:"
         echo "  Create .cc_env file with DB_PASSWORD and other secrets"

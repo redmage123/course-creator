@@ -14,13 +14,13 @@
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1000;
+    z-index: var(--z-modal-backdrop);
     display: flex;
     align-items: center;
     justify-content: center;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
+    transition: opacity var(--transition-normal), visibility var(--transition-normal);
 }
 
 .feedback-overlay.active {
@@ -30,16 +30,17 @@
 
 /* Feedback Modal */
 .feedback-modal {
-    background: white;
-    border-radius: 8px;
-    padding: 2rem;
+    background: var(--surface-color);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-2xl);
     max-width: 600px;
     width: 90%;
     max-height: 80vh;
     overflow-y: auto;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow-xl);
     transform: translateY(-20px);
-    transition: transform 0.3s ease;
+    transition: transform var(--transition-normal);
+    z-index: var(--z-modal);
 }
 
 .feedback-overlay.active .feedback-modal {
@@ -50,14 +51,14 @@
 .feedback-form {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: var(--spacing-lg);
 }
 
 .feedback-form h3 {
-    margin: 0 0 1rem 0;
-    color: var(--color-text-primary, #333);
-    font-size: 1.5rem;
-    font-weight: 600;
+    margin: 0 0 var(--spacing-md) 0;
+    color: var(--text-primary);
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-semibold);
 }
 
 .feedback-form .form-group {
@@ -68,14 +69,14 @@
 
 .feedback-form label {
     font-weight: 500;
-    color: var(--color-text-primary, #333);
+    color: var(--text-primary);
     font-size: 0.9rem;
 }
 
 .feedback-form textarea {
     padding: 0.75rem;
-    border: 1px solid var(--color-border, #ddd);
-    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
     resize: vertical;
     min-height: 100px;
     font-family: inherit;
@@ -96,7 +97,7 @@
 }
 
 .star-rating .star {
-    font-size: 1.5rem;
+    font-size: var(--font-size-xl);
     color: var(--color-border, #ddd);
     cursor: pointer;
     transition: color 0.2s ease, transform 0.1s ease;
@@ -181,7 +182,7 @@
     top: 20px;
     right: 20px;
     padding: 1rem 1.5rem;
-    border-radius: 4px;
+    border-radius: var(--radius-md);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     z-index: 1100;
     transform: translateX(100%);
@@ -239,12 +240,12 @@
 
 .feedback-item .feedback-content {
     line-height: 1.6;
-    color: var(--color-text-primary, #333);
+    color: var(--text-primary);
 }
 
 .feedback-item .feedback-content h4 {
     margin: 0 0 0.5rem 0;
-    color: var(--color-text-primary, #333);
+    color: var(--text-primary);
     font-size: 1.1rem;
 }
 

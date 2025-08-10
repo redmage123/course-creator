@@ -22,14 +22,64 @@ import { Auth } from './modules/auth.js';                  // Authentication sys
 import { Navigation } from './modules/navigation.js';      // Site navigation and routing logic
 import { showNotification } from './modules/notifications.js'; // User notification system
 import UIComponents from './modules/ui-components.js';     // Reusable UI component library
+import Slideshow from './modules/slideshow.js';           // Homepage feature slideshow component
 
 /**
  * APPLICATION INITIALIZATION
  * PURPOSE: Start the main application with proper initialization sequence
  * WHY: App.init() handles startup tasks like DOM ready checks, service connections, etc.
- * TIMING: Executed immediately when this module loads
+ * TIMING: Wait for DOM to be ready before initializing
  */
-App.init();
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => App.init());
+} else {
+    App.init();
+}
+
+/**
+ * SLIDESHOW INITIALIZATION
+ * PURPOSE: Initialize the homepage feature slideshow if container exists
+ * WHY: Slideshow is page-specific and should only initialize on pages that contain it
+ * TIMING: Wait for both DOM and CSS to be fully loaded to prevent display issues
+ */
+function initializeSlideshow() {
+    try {
+        const slideshowContainer = document.querySelector('.hero-slideshow');
+        if (slideshowContainer) {
+            // Ensure CSS is fully loaded before initializing slideshow
+            const checkCSSLoaded = () => {
+                const slideshowWrapper = slideshowContainer.querySelector('.slideshow-wrapper');
+                if (slideshowWrapper && getComputedStyle(slideshowWrapper).display !== 'none') {
+                    window.slideshow = new Slideshow('.hero-slideshow');
+                    console.log('Hero slideshow initialized');
+                } else {
+                    // Retry after a short delay if CSS isn't loaded yet
+                    setTimeout(checkCSSLoaded, 50);
+                }
+            };
+            checkCSSLoaded();
+        } else {
+            console.log('No slideshow container found - skipping slideshow initialization');
+        }
+    } catch (error) {
+        console.error('Error initializing slideshow:', error);
+    }
+}
+
+// Wait for both DOM content and window load to ensure CSS is ready
+function waitForFullLoad() {
+    if (document.readyState === 'complete') {
+        initializeSlideshow();
+    } else {
+        window.addEventListener('load', initializeSlideshow);
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', waitForFullLoad);
+} else {
+    waitForFullLoad();
+}
 
 /**
  * MODULE RE-EXPORTS
@@ -37,7 +87,7 @@ App.init();
  * WHY: Allows other modules to import from main.js instead of individual files
  * PATTERN: Re-export pattern creates a unified public API
  */
-export { App, Auth, Navigation, showNotification, UIComponents };
+export { App, Auth, Navigation, showNotification, UIComponents, Slideshow };
 
 /**
  * GLOBAL DEBUGGING INTERFACE
@@ -56,5 +106,6 @@ if (typeof window !== 'undefined') {
     window.Navigation = Navigation;
     window.showNotification = showNotification;
     window.UIComponents = UIComponents;
+    window.Slideshow = Slideshow;
 }
 

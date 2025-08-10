@@ -6,24 +6,25 @@ all Course Creator Platform features with realistic sample data.
 No real data is stored - everything is generated on-demand.
 """
 
-from fastapi import FastAPI, HTTPException, Depends, Query
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
 import json
 import random
 import uuid
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
+
+from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 # Demo data generators
 from demo_data_generator import (
-    generate_demo_courses,
-    generate_demo_students, 
+    DemoUser,
     generate_demo_analytics,
-    generate_demo_labs,
+    generate_demo_courses,
     generate_demo_feedback,
-    DemoUser
+    generate_demo_labs,
+    generate_demo_students,
 )
 
 app = FastAPI(

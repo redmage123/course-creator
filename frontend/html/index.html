@@ -38,14 +38,69 @@
                         </div>
                     </div>
                     <div class="auth-buttons" id="authButtons">
-                        <button class="btn-auth btn-login" onclick="showLoginModal()">Login</button>
-                        <button class="btn-auth btn-register" onclick="showRegisterModal()">Register</button>
+                        <button class="btn-auth btn-login" id="loginBtn">Login</button>
+                        <button class="btn-auth btn-register" id="registerBtn">Register</button>
                     </div>
                 </div>
             </div>
         </div>
     </header>
     
+    <!-- Hero Slideshow - First Thing Users See -->
+    <section class="hero-slideshow">
+        <div class="slideshow-container">
+            <div class="slideshow-wrapper">
+                <!-- Slide 1: AI Course Generation -->
+                <div class="slide">
+                    <div class="slide-background">
+                        <div class="slide-overlay"></div>
+                        <div class="slide-content">
+                            <h2>AI-Powered Course Creation</h2>
+                            <p>Generate complete courses in minutes with our advanced AI technology</p>
+                            <button class="slide-btn">Try AI Course Generation</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 2: Interactive Labs -->
+                <div class="slide">
+                    <div class="slide-background">
+                        <div class="slide-overlay"></div>
+                        <div class="slide-content">
+                            <h2>Hands-On Learning Environments</h2>
+                            <p>Professional coding environments directly in the browser - no setup required</p>
+                            <button class="slide-btn">Explore Lab Environment</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 3: Analytics Dashboard -->
+                <div class="slide">
+                    <div class="slide-background">
+                        <div class="slide-overlay"></div>
+                        <div class="slide-content">
+                            <h2>Comprehensive Learning Analytics</h2>
+                            <p>Track student progress with detailed insights and data-driven decision making</p>
+                            <button class="slide-btn">View Analytics Demo</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 4: Enterprise Management -->
+                <div class="slide">
+                    <div class="slide-background">
+                        <div class="slide-overlay"></div>
+                        <div class="slide-content">
+                            <h2>Enterprise Organization Management</h2>
+                            <p>Multi-tenant architecture with role-based access control for institutions</p>
+                            <button class="slide-btn">Setup Organization</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <main id="main-content">
         <!-- Hero Section -->
         <section class="hero-section">
@@ -53,7 +108,7 @@
                 <div class="hero-content">
                     <div class="hero-text">
                         <h1 class="hero-title">
-                            Transform Learning with <span class="gradient-text">AI-Powered</span> Course Creation
+                            Transform Learning with AI-Powered Course Creation
                         </h1>
                         <p class="hero-subtitle">
                             Build engaging, personalized online courses with cutting-edge AI assistance. 
@@ -151,6 +206,6 @@
     </main>
     
     <!-- Modern ES6 module system -->
-    <script type="module" src="../js/main.js?v=3.1"></script>
+    <script type="module" src="../js/main.js?v=3.2"></script>
 </body>
 </html>

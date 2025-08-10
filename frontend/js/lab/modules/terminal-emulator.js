@@ -90,7 +90,10 @@ export class TerminalEmulator {
 
     helpCommand() {
         const commands = this.config.config.security.allowedCommands;
-        return `Available commands:\n${commands.join(', ')}\n\nType 'man <command>' for more information about a specific command.`;
+        return `Available commands:
+${commands.join(', ')}
+
+Type 'man <command>' for more information about a specific command.`;
     }
 
     lsCommand(args) {
@@ -109,7 +112,8 @@ export class TerminalEmulator {
                 const size = item.size.toString().padStart(8);
                 const name = item.type === 'directory' ? `\x1b[34m${item.name}\x1b[0m` : item.name;
                 return `${prefix}${permissions} 1 student student ${size} ${name}`;
-            }).join('\n');
+            }).join('
+');
         } catch (error) {
             return `ls: ${error.message}`;
         }
@@ -206,13 +210,16 @@ export class TerminalEmulator {
 
     pythonCommand(args) {
         if (args.length === 0) {
-            return 'Python 3.9.0 (simulated)\nType "help", "copyright", "credits" or "license" for more information.\n>>> (Interactive mode not available in this environment)';
+            return 'Python 3.9.0 (simulated)
+Type "help", "copyright", "credits" or "license" for more information.
+>>> (Interactive mode not available in this environment)';
         }
         
         // Simulate running Python file
         try {
             const content = this.fileSystem.readFile(args[0]);
-            return `Executing Python file: ${args[0]}\n[Simulated execution - Python runtime not available]`;
+            return `Executing Python file: ${args[0]}
+[Simulated execution - Python runtime not available]`;
         } catch (error) {
             return `python: ${error.message}`;
         }
@@ -220,13 +227,16 @@ export class TerminalEmulator {
 
     nodeCommand(args) {
         if (args.length === 0) {
-            return 'Welcome to Node.js v16.0.0 (simulated)\nType ".help" for more information.\n> (Interactive mode not available in this environment)';
+            return 'Welcome to Node.js v16.0.0 (simulated)
+Type ".help" for more information.
+> (Interactive mode not available in this environment)';
         }
         
         // Simulate running Node.js file
         try {
             const content = this.fileSystem.readFile(args[0]);
-            return `Executing Node.js file: ${args[0]}\n[Simulated execution - Node.js runtime not available]`;
+            return `Executing Node.js file: ${args[0]}
+[Simulated execution - Node.js runtime not available]`;
         } catch (error) {
             return `node: ${error.message}`;
         }
@@ -241,7 +251,9 @@ export class TerminalEmulator {
         try {
             const content = this.fileSystem.readFile(args[0]);
             const outputFile = args[0].replace(/\\.c$/, '') || 'a.out';
-            return `Compiling ${args[0]}...\n[Simulated compilation - GCC not available]\nOutput would be: ${outputFile}`;
+            return `Compiling ${args[0]}...
+[Simulated compilation - GCC not available]
+Output would be: ${outputFile}`;
         } catch (error) {
             return `gcc: ${error.message}`;
         }

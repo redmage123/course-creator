@@ -88,20 +88,33 @@ export class NavigationManager {
 
     /**
      * Handle hash-based navigation
+     * PURPOSE: Route to different sections while preserving home page content
      */
     handleHashNavigation() {
         const hash = window.location.hash;
         
-        // Only handle hash navigation on main index page
+        // Only handle hash navigation on main index page with specific hashes
         if (this.currentPage === 'index.html' && document.getElementById('main-content')) {
+            // Don't route if no hash or if slideshow exists (preserve home page)
+            const slideshowExists = document.querySelector('.slideshow-section');
+            if (slideshowExists && (!hash || hash === '#' || hash === '')) {
+                console.log('Preserving home page content with slideshow');
+                return;
+            }
             this.routeToSection(hash);
         }
     }
 
     /**
      * Route to specific section based on hash
+     * PURPOSE: Handle hash-based routing while preserving home page content
      */
     routeToSection(hash) {
+        // If no hash or empty hash, preserve the existing home page content
+        if (!hash || hash === '#' || hash === '') {
+            return;
+        }
+        
         switch (hash) {
             case '#login':
                 this.showLogin();
@@ -252,8 +265,19 @@ export class NavigationManager {
      * Show home page
      */
     showHome() {
+        // Check if we're already on the home page with rich content
         const main = document.getElementById('main-content');
         if (!main) return;
+        
+        // If the page already has rich home page content (slideshow, features, etc.)
+        // don't replace it - this preserves the rich home page layout
+        const slideshowExists = document.querySelector('.hero-slideshow');
+        const featuresExist = main.querySelector('.features-section') || main.querySelector('.hero-section');
+        
+        if (slideshowExists || featuresExist) {
+            // We're already showing the rich home page content, don't replace it
+            return;
+        }
 
         const user = Auth.getCurrentUser();
         
@@ -352,88 +376,403 @@ export class NavigationManager {
     /**
      * Show register page
      */
+    /**
+     * Show registration options page
+     * PURPOSE: Present users with clear choice between organization and instructor registration
+     * WHY: Different registration flows require different information and permissions
+     */
     showRegister() {
+        try {
+            const main = document.getElementById('main-content');
+            if (!main) {
+                console.error('❌ main-content element not found');
+                return;
+            }
+
+            main.innerHTML = `
+            <section class="registration-options">
+                <div class="registration-header">
+                    <h2>Join the Course Creator Platform</h2>
+                    <p>Choose your registration path to get started with course creation and management.</p>
+                </div>
+
+                <div class="registration-cards">
+                    <div class="registration-card" id="org-registration-card">
+                        <div class="card-icon">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <h3>Register New Organization</h3>
+                        <p>Set up a new organization account with full administrative controls. Perfect for companies, schools, or training institutions starting fresh.</p>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check"></i> Create organization admin account</li>
+                            <li><i class="fas fa-check"></i> Full organization management</li>
+                            <li><i class="fas fa-check"></i> User role management</li>
+                            <li><i class="fas fa-check"></i> Custom branding options</li>
+                        </ul>
+                        <button class="btn btn-primary" onclick="window.location.href='organization-registration.html'">
+                            <i class="fas fa-building"></i> Register Organization
+                        </button>
+                    </div>
+
+                    <div class="registration-card" id="instructor-registration-card">
+                        <div class="card-icon">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                        </div>
+                        <h3>Join Existing Organization</h3>
+                        <p>Register as an instructor within an existing organization. Get access to course creation tools and student management features.</p>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check"></i> Course creation & management</li>
+                            <li><i class="fas fa-check"></i> Student progress tracking</li>
+                            <li><i class="fas fa-check"></i> Lab environment access</li>
+                            <li><i class="fas fa-check"></i> Organization collaboration</li>
+                        </ul>
+                        <button class="btn btn-secondary" onclick="Navigation.showInstructorRegistration()">
+                            <i class="fas fa-user-plus"></i> Join as Instructor
+                        </button>
+                    </div>
+                </div>
+
+                <div class="registration-help">
+                    <div class="help-section">
+                        <h4><i class="fas fa-question-circle"></i> Need Help Choosing?</h4>
+                        <p><strong>Choose "Register Organization"</strong> if you're setting up courses for your company, school, or institution for the first time.</p>
+                        <p><strong>Choose "Join Existing Organization"</strong> if someone from your organization has already registered and you need instructor access.</p>
+                    </div>
+                    <div class="back-option">
+                        <button type="button" onclick="window.location.hash='#home'" class="btn btn-text">
+                            <i class="fas fa-arrow-left"></i> Back to Home
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <style>
+                .registration-options {
+                    max-width: 1200px;
+                    margin: 0 auto;
+                    padding: 2rem;
+                }
+
+                .registration-header {
+                    text-align: center;
+                    margin-bottom: 3rem;
+                }
+
+                .registration-header h2 {
+                    color: var(--primary-color);
+                    font-size: 2.5rem;
+                    margin-bottom: 1rem;
+                }
+
+                .registration-cards {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 2rem;
+                    margin-bottom: 3rem;
+                }
+
+                .registration-card {
+                    background: var(--card-background);
+                    border: 2px solid var(--border-color);
+                    border-radius: 16px;
+                    padding: 2rem;
+                    text-align: center;
+                    transition: all 0.3s ease;
+                    position: relative;
+                    overflow: hidden;
+                }
+
+                .registration-card::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    height: 4px;
+                    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+                }
+
+                .registration-card:hover {
+                    transform: translateY(-5px);
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+                    border-color: var(--primary-color);
+                }
+
+                .card-icon {
+                    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+                    color: white;
+                    width: 80px;
+                    height: 80px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0 auto 1.5rem;
+                    font-size: 2rem;
+                }
+
+                .registration-card h3 {
+                    color: var(--primary-color);
+                    font-size: 1.5rem;
+                    margin-bottom: 1rem;
+                }
+
+                .registration-card p {
+                    color: var(--text-secondary);
+                    margin-bottom: 1.5rem;
+                    line-height: 1.6;
+                }
+
+                .feature-list {
+                    list-style: none;
+                    padding: 0;
+                    margin: 1.5rem 0;
+                    text-align: left;
+                }
+
+                .feature-list li {
+                    display: flex;
+                    align-items: center;
+                    margin-bottom: 0.75rem;
+                    color: var(--text-secondary);
+                }
+
+                .feature-list i {
+                    color: var(--success-color);
+                    margin-right: 0.75rem;
+                    font-size: 0.875rem;
+                }
+
+                .registration-help {
+                    background: var(--surface-color);
+                    border-radius: 12px;
+                    padding: 2rem;
+                    border: 1px solid var(--border-color);
+                }
+
+                .help-section h4 {
+                    color: var(--primary-color);
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    margin-bottom: 1rem;
+                }
+
+                .help-section p {
+                    margin-bottom: 0.75rem;
+                    color: var(--text-secondary);
+                }
+
+                .back-option {
+                    text-align: center;
+                    margin-top: 2rem;
+                }
+
+                @media (max-width: 768px) {
+                    .registration-cards {
+                        grid-template-columns: 1fr;
+                    }
+                    
+                    .registration-header h2 {
+                        font-size: 2rem;
+                    }
+                }
+            </style>
+        `;
+        
+        } catch (error) {
+            console.error('❌ Navigation.showRegister() error:', error);
+            
+            // Show a fallback error message to the user
+            const main = document.getElementById('main-content');
+            if (main) {
+                main.innerHTML = '<div class="error-message">Unable to load registration page. Please try again later.</div>';
+            }
+        }
+    }
+
+    /**
+     * Show instructor registration form for existing organization
+     * PURPOSE: Allow instructors to join existing organizations
+     * WHY: Not all users need to create organizations, many join existing ones
+     */
+    showInstructorRegistration() {
         const main = document.getElementById('main-content');
         if (!main) return;
 
         main.innerHTML = `
-            <section>
-                <h2>Instructor Registration</h2>
-                <p>Create your instructor account to start building and managing courses.</p>
-                <form id="register-form">
-                    <div class="form-row">
-                        <div class="form-group half-width">
-                            <label for="register-first-name">First Name: <span class="required">*</span></label>
-                            <input type="text" id="register-first-name" name="first_name" required 
-                                   placeholder="Enter your first name">
+            <section class="instructor-registration">
+                <div class="registration-header">
+                    <h2>Join as Instructor</h2>
+                    <p>Register to join an existing organization as an instructor.</p>
+                </div>
+
+                <form id="instructor-register-form" class="registration-form">
+                    <div class="form-section">
+                        <h3><i class="fas fa-user"></i> Personal Information</h3>
+                        
+                        <div class="form-row">
+                            <div class="form-group half-width">
+                                <label for="register-first-name">First Name: <span class="required">*</span></label>
+                                <input type="text" id="register-first-name" name="first_name" required 
+                                       placeholder="Enter your first name">
+                            </div>
+                            <div class="form-group half-width">
+                                <label for="register-last-name">Last Name: <span class="required">*</span></label>
+                                <input type="text" id="register-last-name" name="last_name" required 
+                                       placeholder="Enter your last name">
+                            </div>
                         </div>
-                        <div class="form-group half-width">
-                            <label for="register-last-name">Last Name: <span class="required">*</span></label>
-                            <input type="text" id="register-last-name" name="last_name" required 
-                                   placeholder="Enter your last name">
+
+                        <div class="form-group">
+                            <label for="register-email">Email Address: <span class="required">*</span></label>
+                            <input type="email" id="register-email" name="email" required 
+                                   placeholder="Enter your professional email address">
+                            <div class="form-help">Use your organization's email domain if available</div>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label for="register-email">Email Address: <span class="required">*</span></label>
-                        <input type="email" id="register-email" name="email" required 
-                               placeholder="Enter your email address">
-                    </div>
-                    <div class="form-group">
-                        <label for="register-organization">Organization:</label>
-                        <input type="text" id="register-organization" name="organization" 
-                               placeholder="Enter your organization or institution (optional)">
-                    </div>
-                    <div class="form-group">
-                        <label for="register-password">Password: <span class="required">*</span></label>
-                        <div class="password-input-container">
-                            <input type="password" id="register-password" name="password" required 
-                                   placeholder="Create a secure password">
-                            <button type="button" class="password-toggle" 
-                                    onclick="togglePasswordVisibility('register-password', 'password-toggle-1')" 
-                                    id="password-toggle-1" 
-                                    title="Show password">
-                                <i class="fas fa-eye"></i>
+
+                    <div class="form-section">
+                        <h3><i class="fas fa-building"></i> Organization Information</h3>
+                        
+                        <div class="form-group">
+                            <label for="organization-select">Select Organization: <span class="required">*</span></label>
+                            <select id="organization-select" name="organization_id" required>
+                                <option value="">Select your organization...</option>
+                                <option value="lookup">🔍 Look up organization by domain</option>
+                            </select>
+                            <div class="form-help">Choose the organization you want to join</div>
+                        </div>
+
+                        <div class="form-group" id="organization-lookup" style="display: none;">
+                            <label for="organization-domain">Organization Domain:</label>
+                            <input type="text" id="organization-domain" name="organization_domain" 
+                                   placeholder="e.g., company.com">
+                            <div class="form-help">Enter your organization's domain to find them</div>
+                            <button type="button" id="lookup-org-btn" class="btn btn-secondary">
+                                <i class="fas fa-search"></i> Find Organization
                             </button>
                         </div>
-                        <div class="password-requirements">
-                            <small>Password must be at least 8 characters long</small>
+
+                        <div id="organization-info" style="display: none;" class="organization-preview">
+                            <div class="org-card">
+                                <div class="org-details">
+                                    <h4 id="selected-org-name">Organization Name</h4>
+                                    <p id="selected-org-description">Organization description</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label for="register-password-confirm">Confirm Password: <span class="required">*</span></label>
-                        <div class="password-input-container">
-                            <input type="password" id="register-password-confirm" name="password_confirm" required 
-                                   placeholder="Confirm your password">
-                            <button type="button" class="password-toggle" 
-                                    onclick="togglePasswordVisibility('register-password-confirm', 'password-toggle-2')" 
-                                    id="password-toggle-2" 
-                                    title="Show password">
-                                <i class="fas fa-eye"></i>
-                            </button>
+
+                    <div class="form-section">
+                        <h3><i class="fas fa-lock"></i> Account Security</h3>
+                        
+                        <div class="form-group">
+                            <label for="register-password">Password: <span class="required">*</span></label>
+                            <div class="password-input-container">
+                                <input type="password" id="register-password" name="password" required 
+                                       placeholder="Create a secure password">
+                                <button type="button" class="password-toggle" 
+                                        onclick="togglePasswordVisibility('register-password', 'password-toggle-1')" 
+                                        id="password-toggle-1" 
+                                        title="Show password">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="password-requirements">
+                                <small>Password must be at least 8 characters long</small>
+                            </div>
                         </div>
+                        
+                        <div class="form-group">
+                            <label for="register-password-confirm">Confirm Password: <span class="required">*</span></label>
+                            <div class="password-input-container">
+                                <input type="password" id="register-password-confirm" name="password_confirm" required 
+                                       placeholder="Confirm your password">
+                                <button type="button" class="password-toggle" 
+                                        onclick="togglePasswordVisibility('register-password-confirm', 'password-toggle-2')" 
+                                        id="password-toggle-2" 
+                                        title="Show password">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="password-match-indicator"></div>
                     </div>
-                    <div id="password-match-indicator"></div>
+                    
                     <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">Create Instructor Account</button>
-                        <button type="button" onclick="window.location.hash='#home'" class="btn btn-secondary">Cancel</button>
-                    </div>
-                    <div class="form-footer">
-                        <p><span class="required">*</span> Required fields</p>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-user-plus"></i> Join Organization
+                        </button>
+                        <button type="button" onclick="Navigation.showRegister()" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Options
+                        </button>
                     </div>
                 </form>
             </section>
+
+            <style>
+                .instructor-registration {
+                    max-width: 800px;
+                    margin: 0 auto;
+                    padding: 2rem;
+                }
+
+                .registration-form {
+                    background: var(--card-background);
+                    border-radius: 16px;
+                    padding: 2rem;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+                }
+
+                .form-section {
+                    margin-bottom: 2rem;
+                    padding: 1.5rem;
+                    border: 1px solid var(--border-color);
+                    border-radius: 12px;
+                    background: var(--surface-color);
+                }
+
+                .form-section h3 {
+                    color: var(--primary-color);
+                    display: flex;
+                    align-items: center;
+                    gap: 0.75rem;
+                    margin-bottom: 1.5rem;
+                    padding-bottom: 0.75rem;
+                    border-bottom: 2px solid var(--border-color);
+                }
+
+                .organization-preview {
+                    margin-top: 1rem;
+                }
+
+                .org-card {
+                    background: var(--background-color);
+                    border: 2px solid var(--primary-color);
+                    border-radius: 8px;
+                    padding: 1rem;
+                }
+
+                .org-details h4 {
+                    color: var(--primary-color);
+                    margin-bottom: 0.5rem;
+                }
+
+                .org-details p {
+                    color: var(--text-secondary);
+                    margin: 0;
+                }
+
+                .form-help {
+                    font-size: 0.875rem;
+                    color: var(--text-secondary);
+                    margin-top: 0.25rem;
+                }
+            </style>
         `;
 
-        // Add password toggles
-        const passwordContainers = main.querySelectorAll('.password-input-container');
-        passwordContainers.forEach((container, index) => {
-            const input = container.querySelector('input');
-            const toggle = UIComponents.createPasswordToggle(input.id);
-            container.appendChild(toggle);
-        });
-
-        // Setup form handler
-        this.setupRegisterForm();
+        this.setupInstructorRegistrationForm();
     }
 
     /**
@@ -503,6 +842,152 @@ export class NavigationManager {
                 alert('Registration failed: ' + result.error);
             }
         });
+    }
+
+    /**
+     * Setup instructor registration form handler
+     * PURPOSE: Handle organization lookup and instructor registration 
+     * WHY: Instructors need to associate with existing organizations
+     */
+    setupInstructorRegistrationForm() {
+        const form = document.getElementById('instructor-register-form');
+        if (!form) return;
+
+        // Organization selection and lookup
+        const orgSelect = document.getElementById('organization-select');
+        const orgLookup = document.getElementById('organization-lookup');
+        const domainInput = document.getElementById('organization-domain');
+        const lookupBtn = document.getElementById('lookup-org-btn');
+        const orgInfo = document.getElementById('organization-info');
+
+        orgSelect.addEventListener('change', function() {
+            if (this.value === 'lookup') {
+                orgLookup.style.display = 'block';
+                orgInfo.style.display = 'none';
+            } else {
+                orgLookup.style.display = 'none';
+                if (this.value) {
+                    // Show selected organization info
+                    orgInfo.style.display = 'block';
+                }
+            }
+        });
+
+        // Load available organizations when form loads
+        this.loadAvailableOrganizations();
+
+        // Organization lookup functionality
+        lookupBtn.addEventListener('click', async () => {
+            const domain = domainInput.value.trim();
+            if (!domain) {
+                alert('Please enter a domain name');
+                return;
+            }
+
+            alert('Domain-based organization lookup is not yet implemented. Please select from the dropdown above or contact your organization administrator.');
+        });
+
+        // Password matching validation
+        const passwordInput = document.getElementById('register-password');
+        const confirmInput = document.getElementById('register-password-confirm');
+        const indicator = document.getElementById('password-match-indicator');
+
+        const checkPasswordMatch = () => {
+            const password = passwordInput.value;
+            const confirmPassword = confirmInput.value;
+            
+            if (confirmPassword.length === 0) {
+                indicator.textContent = '';
+                indicator.className = '';
+            } else if (password === confirmPassword) {
+                indicator.textContent = '✅ Passwords match';
+                indicator.className = 'success';
+            } else {
+                indicator.textContent = '❌ Passwords do not match';
+                indicator.className = 'error';
+            }
+        };
+
+        passwordInput.addEventListener('input', checkPasswordMatch);
+        confirmInput.addEventListener('input', checkPasswordMatch);
+
+        // Form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const password = formData.get('password');
+            const passwordConfirm = formData.get('password_confirm');
+            
+            if (password !== passwordConfirm) {
+                alert('Passwords do not match. Please check your passwords and try again.');
+                return;
+            }
+
+            // Check if organization is selected
+            const orgId = formData.get('organization_id');
+            if (!orgId || orgId === 'lookup' || orgId === '') {
+                alert('Please select your organization from the dropdown.');
+                return;
+            }
+            
+            // Combine first and last name for full_name
+            const firstName = formData.get('first_name');
+            const lastName = formData.get('last_name');
+            const fullName = `${firstName} ${lastName}`.trim();
+            
+            const userData = {
+                email: formData.get('email'),
+                full_name: fullName,
+                first_name: firstName,
+                last_name: lastName,
+                username: formData.get('email'), // Use email as username
+                password: password,
+                role: 'instructor',
+                organization_id: orgId
+            };
+
+            const result = await Auth.register(userData);
+            
+            if (result.success) {
+                alert('Registration successful! Your account is pending approval by your organization admin. You will receive an email confirmation once approved.');
+                window.location.hash = '#login';
+            } else {
+                alert('Registration failed: ' + result.error);
+            }
+        });
+    }
+
+    /**
+     * Load available organizations for instructor registration
+     * PURPOSE: Populate organization dropdown with available organizations
+     * WHY: Allow instructors to select which organization to join
+     */
+    async loadAvailableOrganizations() {
+        try {
+            const response = await fetch(`${window.CONFIG?.PORTS?.ORGANIZATION_MANAGEMENT ? 
+                `http://localhost:${window.CONFIG.PORTS.ORGANIZATION_MANAGEMENT}` : 
+                'http://localhost:8008'}/api/v1/organizations`);
+            
+            if (response.ok) {
+                const organizations = await response.json();
+                const orgSelect = document.getElementById('organization-select');
+                
+                if (orgSelect && organizations && Array.isArray(organizations)) {
+                    // Add organizations to dropdown while keeping default options
+                    organizations.forEach(org => {
+                        const option = document.createElement('option');
+                        option.value = org.id;
+                        option.textContent = org.name;
+                        orgSelect.insertBefore(option, orgSelect.querySelector('option[value="lookup"]'));
+                    });
+                }
+            } else {
+                console.warn('Failed to load organizations for registration form');
+            }
+        } catch (error) {
+            console.error('Error loading organizations:', error);
+        }
     }
 
     /**

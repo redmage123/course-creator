@@ -2250,11 +2250,18 @@ export class InstructorDashboard {
      */
     async completeCourseInstance(instanceId, instanceName) {
         const confirmed = confirm(
-            `Are you sure you want to complete the course instance "${instanceName}"?\n\n` +
-            `This action will:\n` +
-            `• Mark the course as completed\n` +
-            `• Disable all student login URLs\n` +
-            `• Prevent further student access\n\n` +
+            `Are you sure you want to complete the course instance "${instanceName}"?
+
+` +
+            `This action will:
+` +
+            `• Mark the course as completed
+` +
+            `• Disable all student login URLs
+` +
+            `• Prevent further student access
+
+` +
             `This action cannot be undone.`
         );
 

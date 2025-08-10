@@ -5,10 +5,11 @@ Generates comprehensive, realistic data that showcases all platform
 features without storing any actual user information.
 """
 
-from typing import List, Dict, Any, Optional
-from datetime import datetime, timedelta
 import random
 import uuid
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
+
 from faker import Faker
 from pydantic import BaseModel
 
@@ -368,6 +369,6 @@ def generate_demo_feedback(course_id: Optional[str] = None, instructor_context: 
         feedback.append(feedback_item)
     
     # Sort by date (newest first)
-    feedback.sort(key=lambda x: x["date"], reverse=True)
+    feedback.sort(key=lambda x: str(x["date"]), reverse=True)
     
     return feedback
