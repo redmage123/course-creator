@@ -46,7 +46,7 @@
 // PURPOSE: Initialize API endpoints and authentication state for admin operations
 // WHY: Centralized configuration ensures consistent API access across all admin functions
 
-const API_BASE = CONFIG.API_URLS.USER_MANAGEMENT;  // User management service endpoint
+const API_BASE = (CONFIG?.API_URLS?.USER_MANAGEMENT) || (window.CONFIG?.API_URLS?.USER_MANAGEMENT) || 'http://localhost:8000';  // User management service endpoint
 const authToken = localStorage.getItem('authToken');  // JWT token for authenticated requests
 
 // NOTIFICATION CONFIGURATION

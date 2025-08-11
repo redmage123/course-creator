@@ -55,11 +55,180 @@ class OrganizationRegistration {
             }
         });
         
+        // Initialize enhanced country dropdowns with keyboard navigation
+        this.initializeCountryDropdowns();
+        
         // Set default country codes to US
         const orgCountrySelect = document.getElementById('orgPhoneCountry');
         const adminCountrySelect = document.getElementById('adminPhoneCountry');
         if (orgCountrySelect) orgCountrySelect.value = '+1';
         if (adminCountrySelect) adminCountrySelect.value = '+1';
+    }
+
+    initializeCountryDropdowns() {
+        /**
+         * Initialize enhanced country dropdowns with keyboard navigation
+         * 
+         * PURPOSE: Provide accessible keyboard navigation for country selection
+         * WHY: Improves user experience and accessibility for users who prefer keyboard navigation
+         * FEATURES: 
+         * - Type to search country names
+         * - Arrow key navigation
+         * - Enter to select
+         * - Escape to close suggestions
+         */
+        const countrySelects = ['orgPhoneCountry', 'adminPhoneCountry'];
+        
+        countrySelects.forEach(selectId => {
+            const selectElement = document.getElementById(selectId);
+            if (selectElement) {
+                this.enhanceCountrySelect(selectElement);
+            }
+        });
+    }
+
+    enhanceCountrySelect(selectElement) {
+        /**
+         * Enhance a country select element with keyboard navigation and search
+         * 
+         * PURPOSE: Convert standard select to searchable dropdown with keyboard support
+         * WHY: Standard selects have limited keyboard navigation for long lists
+         */
+        // Store original options
+        const originalOptions = Array.from(selectElement.options).slice(1); // Skip "Select Country"
+        
+        // Add keyboard search functionality
+        let searchString = '';
+        let searchTimeout;
+        
+        selectElement.addEventListener('keydown', (e) => {
+            // Handle different key presses
+            switch(e.key) {
+                case 'ArrowDown':
+                case 'ArrowUp':
+                    // Let browser handle arrow navigation
+                    break;
+                    
+                case 'Enter':
+                    // Prevent form submission when selecting country
+                    e.preventDefault();
+                    break;
+                    
+                case 'Escape':
+                    // Clear search and close dropdown
+                    searchString = '';
+                    selectElement.blur();
+                    break;
+                    
+                default:
+                    // Handle typing for search
+                    if (e.key.length === 1) {
+                        this.handleCountrySearch(e.key, selectElement, originalOptions);
+                    }
+            }
+        });
+
+        // Add visual feedback for keyboard navigation
+        selectElement.addEventListener('focus', () => {
+            selectElement.classList.add('keyboard-focused');
+        });
+
+        selectElement.addEventListener('blur', () => {
+            selectElement.classList.remove('keyboard-focused');
+        });
+
+        // Store search state
+        selectElement._searchString = '';
+        selectElement._originalOptions = originalOptions;
+    }
+
+    handleCountrySearch(key, selectElement, originalOptions) {
+        /**
+         * Handle typing in country dropdown for search functionality
+         * 
+         * PURPOSE: Allow users to type country names to quickly find them
+         * WHY: Much faster than scrolling through 195+ countries
+         */
+        // Clear previous search timeout
+        if (selectElement._searchTimeout) {
+            clearTimeout(selectElement._searchTimeout);
+        }
+
+        // Add to search string
+        selectElement._searchString = (selectElement._searchString || '') + key.toLowerCase();
+
+        // Find matching countries
+        const matchingOptions = originalOptions.filter(option => {
+            const countryName = option.textContent.toLowerCase();
+            return countryName.includes(selectElement._searchString);
+        });
+
+        // Select first match if any
+        if (matchingOptions.length > 0) {
+            const firstMatch = matchingOptions[0];
+            selectElement.value = firstMatch.value;
+            
+            // Highlight the selected option visually
+            this.highlightSelectedCountry(selectElement);
+            
+            // Show search feedback
+            this.showCountrySearchFeedback(selectElement, selectElement._searchString, matchingOptions.length);
+        }
+
+        // Clear search string after delay
+        selectElement._searchTimeout = setTimeout(() => {
+            selectElement._searchString = '';
+            this.hideCountrySearchFeedback(selectElement);
+        }, 1000);
+    }
+
+    highlightSelectedCountry(selectElement) {
+        /**
+         * Visual feedback when country is selected via keyboard
+         */
+        selectElement.style.backgroundColor = '#e6f3ff';
+        setTimeout(() => {
+            selectElement.style.backgroundColor = '';
+        }, 200);
+    }
+
+    showCountrySearchFeedback(selectElement, searchString, matchCount) {
+        /**
+         * Show search feedback to user
+         */
+        // Find or create feedback element
+        let feedbackElement = selectElement.parentNode.querySelector('.country-search-feedback');
+        if (!feedbackElement) {
+            feedbackElement = document.createElement('div');
+            feedbackElement.className = 'country-search-feedback';
+            feedbackElement.style.cssText = `
+                position: absolute;
+                top: 100%;
+                left: 0;
+                background: #333;
+                color: white;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 12px;
+                z-index: 1000;
+                white-space: nowrap;
+            `;
+            selectElement.parentNode.style.position = 'relative';
+            selectElement.parentNode.appendChild(feedbackElement);
+        }
+        
+        feedbackElement.textContent = `Searching: "${searchString}" (${matchCount} matches)`;
+        feedbackElement.style.display = 'block';
+    }
+
+    hideCountrySearchFeedback(selectElement) {
+        /**
+         * Hide search feedback
+         */
+        const feedbackElement = selectElement.parentNode.querySelector('.country-search-feedback');
+        if (feedbackElement) {
+            feedbackElement.style.display = 'none';
+        }
     }
 
     initializeRealTimeValidation() {
@@ -298,6 +467,9 @@ class OrganizationRegistration {
         const email = input.value.trim().toLowerCase();
         const errorElement = document.getElementById(`${input.id}-error`);
         
+        // Debug logging
+        console.log(`🔍 Validating email: ${email} (field: ${input.id})`);
+        
         if (!email) {
             if (input.required) {
                 this.showFieldError(input, errorElement, 'Email address is required');
@@ -316,13 +488,17 @@ class OrganizationRegistration {
 
         // Professional email validation
         const domain = email.split('@')[1];
+        console.log(`📧 Email domain: ${domain}, blocked domains:`, this.blockedEmailDomains);
+        
         if (this.blockedEmailDomains.has(domain)) {
+            console.log(`❌ Domain ${domain} is blocked`);
             this.showFieldError(input, errorElement, 
                 `Personal email provider ${domain} not allowed. Please use a professional business email address.`);
             return false;
         }
 
         // Success
+        console.log(`✅ Email ${email} validated successfully`);
         this.showFieldSuccess(input, errorElement, 'Professional email address verified');
         return true;
     }
@@ -366,7 +542,7 @@ class OrganizationRegistration {
                 if (input.id === 'orgSlug') {
                     message = 'Organization ID can only contain lowercase letters, numbers, and hyphens';
                 } else if (input.id === 'orgDomain') {
-                    message = 'Please enter a valid domain (e.g., example.com)';
+                    message = 'Please enter a valid URL (e.g., https://example.com or example.com)';
                 }
                 
                 this.showFieldError(input, errorElement, message);
@@ -379,6 +555,32 @@ class OrganizationRegistration {
             const phoneRegex = /^\+?[\d\s\-()]{10,}$/;
             if (!phoneRegex.test(value)) {
                 this.showFieldError(input, errorElement, 'Please enter a valid phone number');
+                return false;
+            }
+        }
+
+        // URL validation
+        if (input.type === 'url') {
+            // Allow URLs with or without protocol
+            const urlWithProtocol = /^https?:\/\/[^\s$.?#].[^\s]*$/i.test(value);
+            const urlWithoutProtocol = /^[a-zA-Z0-9][a-zA-Z0-9-]{0,61}[a-zA-Z0-9]?\.[a-zA-Z]{2,}(\/[^\s]*)?$/i.test(value);
+            
+            // Also check for common invalid patterns
+            const startsWithProtocolOnly = /^https?:\/\/\s*$/i.test(value);
+            const hasSpaces = /\s/.test(value.trim());
+            
+            if (startsWithProtocolOnly) {
+                this.showFieldError(input, errorElement, 'Please enter a complete URL after the protocol');
+                return false;
+            }
+            
+            if (hasSpaces) {
+                this.showFieldError(input, errorElement, 'URL cannot contain spaces');
+                return false;
+            }
+            
+            if (!urlWithProtocol && !urlWithoutProtocol) {
+                this.showFieldError(input, errorElement, 'Please enter a valid URL (e.g., https://example.com or example.com)');
                 return false;
             }
         }
@@ -421,16 +623,22 @@ class OrganizationRegistration {
         let isValid = true;
         const inputs = this.form.querySelectorAll('input[required], input[pattern], input[type="email"]');
         
+        console.log(`🔍 Validating ${inputs.length} form fields`);
+        
         inputs.forEach(input => {
             const fieldValid = input.type === 'email' ? 
                 this.validateProfessionalEmail(input) : 
                 this.validateField(input);
             
             if (!fieldValid) {
+                console.log(`❌ Field validation failed: ${input.id} (${input.name}) - value: "${input.value}"`);
                 isValid = false;
+            } else {
+                console.log(`✅ Field validation passed: ${input.id}`);
             }
         });
 
+        console.log(`📋 Overall form validation: ${isValid ? 'PASSED' : 'FAILED'}`);
         return isValid;
     }
 
@@ -462,6 +670,12 @@ class OrganizationRegistration {
             }
             if (adminCountryCode && adminPhoneNumber) {
                 formData.set('admin_phone', `${adminCountryCode}${adminPhoneNumber.replace(/\D/g, '')}`);
+            }
+            
+            // Normalize URL (add https:// if no protocol specified)
+            const domain = formData.get('domain');
+            if (domain && !domain.match(/^https?:\/\//i)) {
+                formData.set('domain', `https://${domain}`);
             }
             
             let response;
@@ -513,13 +727,20 @@ class OrganizationRegistration {
             }
 
             if (response.success) {
+                console.log('🎉 Registration successful!', response.data);
                 this.showSuccess(response.data);
             } else {
+                console.log('❌ Registration failed:', response.error);
                 throw new Error(response.error || 'Registration failed');
             }
 
         } catch (error) {
             console.error('Registration error:', error);
+            console.log('Error details:', {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            });
             this.showGeneralError(error.message || 'Registration failed. Please try again.');
         } finally {
             this.setSubmitLoading(false);
@@ -528,7 +749,9 @@ class OrganizationRegistration {
 
     async submitOrganization(data) {
         try {
-            const response = await fetch(`${CONFIG.API_URLS.ORGANIZATION}/api/v1/organizations`, {
+            // Ensure CONFIG is available
+            const orgApiUrl = (CONFIG?.API_URLS?.ORGANIZATION) || (window.CONFIG?.API_URLS?.ORGANIZATION) || 'http://localhost:8008';
+            const response = await fetch(`${orgApiUrl}/api/v1/organizations`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -562,7 +785,9 @@ class OrganizationRegistration {
 
     async submitOrganizationWithFile(formData) {
         try {
-            const response = await fetch(`${CONFIG.API_URLS.ORGANIZATION}/api/v1/organizations/upload`, {
+            // Ensure CONFIG is available
+            const orgApiUrl = (CONFIG?.API_URLS?.ORGANIZATION) || (window.CONFIG?.API_URLS?.ORGANIZATION) || 'http://localhost:8008';
+            const response = await fetch(`${orgApiUrl}/api/v1/organizations/upload`, {
                 method: 'POST',
                 body: formData // No Content-Type header - browser sets it with boundary for multipart
             });
@@ -630,6 +855,31 @@ class OrganizationRegistration {
         this.form.style.display = 'none';
         this.successMessage.classList.add('show');
         
+        // Update success message with organization and admin details
+        const messageElement = this.successMessage.querySelector('.success-content');
+        if (messageElement) {
+            const orgName = data.name || 'Your organization';
+            const adminEmail = document.getElementById('adminEmail').value;
+            
+            messageElement.innerHTML = `
+                <h2>🎉 Registration Successful!</h2>
+                <p><strong>${orgName}</strong> has been successfully registered.</p>
+                <div class="admin-info">
+                    <h3>Administrator Account Created</h3>
+                    <p>An administrator account has been created for <strong>${adminEmail}</strong></p>
+                    <p>⚠️ <strong>Important:</strong> Check your email for login credentials and setup instructions.</p>
+                </div>
+                <div class="next-steps">
+                    <h3>Next Steps:</h3>
+                    <ul>
+                        <li>Check your email for administrator account credentials</li>
+                        <li>Log in to set up your organization profile</li>
+                        <li>Begin creating courses and managing users</li>
+                    </ul>
+                </div>
+            `;
+        }
+        
         // Scroll to success message
         this.successMessage.scrollIntoView({ behavior: 'smooth' });
     }
@@ -658,9 +908,18 @@ class OrganizationRegistration {
     }
 }
 
-// Initialize when DOM is loaded
+// Initialize when DOM is loaded and CONFIG is available
 document.addEventListener('DOMContentLoaded', () => {
-    new OrganizationRegistration();
+    // Wait for CONFIG to be available
+    const initializeRegistration = () => {
+        if (typeof CONFIG !== 'undefined' || typeof window.CONFIG !== 'undefined') {
+            new OrganizationRegistration();
+        } else {
+            // Retry after a short delay if CONFIG isn't ready yet
+            setTimeout(initializeRegistration, 50);
+        }
+    };
+    initializeRegistration();
 });
 
 // Export for testing

@@ -175,34 +175,50 @@ async def create_organization(
     - All fields validated according to business rules
     """
     try:
-        # For now: Create a mock organization response with the provided data
-        # This validates that all the professional requirements are working
+        # Create organization with automatic admin user registration
+        logging.info(f"Creating organization: {request.name} with administrator: {request.admin_email}")
         
-        # Validate that request data passed validation (Pydantic will handle this)
-        # If we get here, the professional email validation has already passed
-        
-        # Create a mock organization ID for testing
-        mock_org_id = uuid4()
-        current_time = datetime.utcnow()
-        
-        logging.info(f"Creating organization: {request.name} with professional requirements validated")
-        
-        return OrganizationResponse(
-            id=mock_org_id,
+        # Use enhanced organization service to create both organization and admin user
+        result = await organization_service.create_organization(
             name=request.name,
             slug=request.slug,
-            description=request.description,
             address=request.address,
             contact_phone=request.contact_phone,
             contact_email=request.contact_email,
+            description=request.description,
             logo_url=request.logo_url,
-            logo_file_path=None,
             domain=request.domain,
-            is_active=True,
-            member_count=0,
+            # Admin user parameters
+            admin_full_name=request.admin_full_name,
+            admin_email=request.admin_email,
+            admin_phone=request.admin_phone,
+            admin_roles=request.admin_roles or [request.admin_role]
+        )
+        
+        # Extract organization data from result
+        org_data = result["organization"]
+        admin_data = result["admin_user"]
+        
+        logging.info(f"Organization and admin user created successfully: {request.name}")
+        logging.info(f"Admin user: {admin_data['email']} (temp password generated)")
+        
+        # Return organization response (admin user info is logged but not returned for security)
+        return OrganizationResponse(
+            id=org_data["id"],
+            name=org_data["name"],
+            slug=org_data["slug"],
+            description=org_data["description"],
+            address=org_data["address"],
+            contact_phone=org_data["contact_phone"],
+            contact_email=org_data["contact_email"],
+            logo_url=org_data["logo_url"],
+            logo_file_path=None,
+            domain=org_data["domain"],
+            is_active=org_data["is_active"],
+            member_count=1,  # Admin user created
             project_count=0,
-            created_at=current_time,
-            updated_at=current_time
+            created_at=datetime.fromisoformat(org_data["created_at"]) if org_data["created_at"] else datetime.utcnow(),
+            updated_at=datetime.fromisoformat(org_data["updated_at"]) if org_data["updated_at"] else datetime.utcnow()
         )
     except ValueError as e:
         # This catches Pydantic validation errors from our custom validators
@@ -331,37 +347,60 @@ async def create_organization_with_logo(
             
             logging.info(f"Logo file uploaded: {logo.filename}, size: {len(file_content)} bytes")
 
-        # For now: Create a mock organization response with the provided data
-        # This validates that all the professional requirements are working
-        mock_org_id = uuid4()
-        current_time = datetime.utcnow()
-        
-        logging.info(f"Creating organization with logo: {organization_data.name}")
-        
-        # Create response with logo information if provided
+        # Handle logo file upload if provided
         logo_url = None
         logo_file_path = None
         if logo:
             # In production, this would save the file and return actual paths
-            logo_file_path = f"/uploads/organizations/{mock_org_id}/logo_{logo.filename}"
+            # For now, we'll create placeholder paths
+            temp_org_id = uuid4()
+            logo_file_path = f"/uploads/organizations/{temp_org_id}/logo_{logo.filename}"
             logo_url = f"https://api.coursecreat.com/files{logo_file_path}"
+            logging.info(f"Logo file processed: {logo.filename}")
         
-        return OrganizationResponse(
-            id=mock_org_id,
+        # Create organization with automatic admin user registration
+        logging.info(f"Creating organization with logo: {organization_data.name} and administrator: {organization_data.admin_email}")
+        
+        # Use enhanced organization service to create both organization and admin user
+        result = await organization_service.create_organization(
             name=organization_data.name,
             slug=organization_data.slug,
-            description=organization_data.description,
             address=organization_data.address,
             contact_phone=organization_data.contact_phone,
             contact_email=organization_data.contact_email,
+            description=organization_data.description,
             logo_url=logo_url,
-            logo_file_path=logo_file_path,
             domain=organization_data.domain,
-            is_active=True,
-            member_count=1,  # Admin user
+            # Admin user parameters
+            admin_full_name=organization_data.admin_full_name,
+            admin_email=organization_data.admin_email,
+            admin_phone=organization_data.admin_phone,
+            admin_roles=organization_data.admin_roles or [organization_data.admin_role]
+        )
+        
+        # Extract organization data from result
+        org_data = result["organization"]
+        admin_data = result["admin_user"]
+        
+        logging.info(f"Organization and admin user created successfully: {organization_data.name}")
+        logging.info(f"Admin user: {admin_data['email']} (temp password generated)")
+        
+        return OrganizationResponse(
+            id=org_data["id"],
+            name=org_data["name"],
+            slug=org_data["slug"],
+            description=org_data["description"],
+            address=org_data["address"],
+            contact_phone=org_data["contact_phone"],
+            contact_email=org_data["contact_email"],
+            logo_url=org_data["logo_url"] or logo_url,
+            logo_file_path=logo_file_path,
+            domain=org_data["domain"],
+            is_active=org_data["is_active"],
+            member_count=1,  # Admin user created
             project_count=0,
-            created_at=current_time,
-            updated_at=current_time
+            created_at=datetime.fromisoformat(org_data["created_at"]) if org_data["created_at"] else datetime.utcnow(),
+            updated_at=datetime.fromisoformat(org_data["updated_at"]) if org_data["updated_at"] else datetime.utcnow()
         )
         
     except HTTPException:

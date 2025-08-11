@@ -418,7 +418,8 @@ services:
     env_file:
       - .cc_env
     ports:
-      - "3000:3000"
+      - "3000:3000"  # HTTPS
+      - "3001:80"    # HTTP (redirects to HTTPS)
     volumes:
       # Enable live reloading for development
       - ./frontend/js:/usr/share/nginx/html/js:ro

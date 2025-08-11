@@ -218,3 +218,9 @@ export default CONFIG;
 if (typeof window !== 'undefined') {
     window.CONFIG = CONFIG;
 }
+
+// CommonJS support for Node.js environments
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = CONFIG;
+    module.exports.CONFIG = CONFIG;
+}
