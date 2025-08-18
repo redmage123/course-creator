@@ -67,9 +67,7 @@ class UserResponse(UserBase, BaseSchema):
     id: UUID
     roles: List[Role]
 
-class UserLogin(BaseModel):
-    email: EmailStr
-    password: str
+# UserLogin model removed - use models/auth.py LoginRequest instead
 
 # User Session Schemas
 class UserSessionBase(BaseModel):

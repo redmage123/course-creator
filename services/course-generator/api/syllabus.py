@@ -8,14 +8,25 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Dict, Any, List, Optional
 import logging
 
-from services.syllabus_service import SyllabusService
-from app.dependencies import get_container, get_syllabus_service
+# from services.syllabus_service import SyllabusService
+from app.dependencies import get_container
+# from app.dependencies import get_syllabus_service
 from models.syllabus import SyllabusRequest, SyllabusFeedback, SyllabusResponse
 
 # Custom exceptions
 from exceptions import (
-    CourseGeneratorException, ContentGenerationException, DatabaseException,
-    ValidationException, FileProcessingException
+    CourseCreatorBaseException,
+    ContentException,
+    ContentNotFoundException,
+    ContentValidationException,
+    FileStorageException,
+    ValidationException,
+    DatabaseException,
+    AuthenticationException,
+    AuthorizationException,
+    ConfigurationException,
+    APIException,
+    BusinessRuleException
 )
 
 logger = logging.getLogger(__name__)
@@ -61,7 +72,7 @@ async def refine_syllabus() -> Dict[str, Any]:
 @router.get("/{course_id}")
 async def get_syllabus(
     course_id: str,
-    syllabus_service: SyllabusService = Depends(get_syllabus_service)
+    # syllabus_service: SyllabusService = Depends(get_syllabus_service)
 ) -> Dict[str, Any]:
     """
     Retrieve syllabus data for a course.
@@ -109,7 +120,7 @@ async def get_syllabus(
 async def update_syllabus(
     course_id: str,
     updates: Dict[str, Any],
-    syllabus_service: SyllabusService = Depends(get_syllabus_service)
+    # syllabus_service: SyllabusService = Depends(get_syllabus_service)
 ) -> Dict[str, Any]:
     """
     Update specific fields in syllabus data.
@@ -163,7 +174,7 @@ async def update_syllabus(
 @router.delete("/{course_id}", response_model=Dict[str, Any])
 async def delete_syllabus(
     course_id: str,
-    syllabus_service: SyllabusService = Depends(get_syllabus_service)
+    # syllabus_service: SyllabusService = Depends(get_syllabus_service)
 ) -> Dict[str, Any]:
     """
     Delete syllabus data for a course.
@@ -212,7 +223,7 @@ async def list_syllabi(
     limit: int = 100,
     offset: int = 0,
     search: Optional[str] = None,
-    syllabus_service: SyllabusService = Depends(get_syllabus_service)
+    # syllabus_service: SyllabusService = Depends(get_syllabus_service)
 ) -> Dict[str, Any]:
     """
     List all syllabi with optional search and pagination.
@@ -259,7 +270,7 @@ async def list_syllabi(
 @router.post("/{course_id}/validate", response_model=Dict[str, Any])
 async def validate_syllabus(
     course_id: str,
-    syllabus_service: SyllabusService = Depends(get_syllabus_service)
+    # syllabus_service: SyllabusService = Depends(get_syllabus_service)
 ) -> Dict[str, Any]:
     """
     Validate syllabus data structure and content.
@@ -305,7 +316,7 @@ async def validate_syllabus(
 async def save_syllabus(
     course_id: str,
     syllabus_data: Dict[str, Any],
-    syllabus_service: SyllabusService = Depends(get_syllabus_service)
+    # syllabus_service: SyllabusService = Depends(get_syllabus_service)
 ) -> Dict[str, Any]:
     """
     Save syllabus data for a course.

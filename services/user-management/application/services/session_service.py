@@ -4,7 +4,7 @@ Single Responsibility: Manages user sessions and tokens
 Dependency Inversion: Depends on abstractions for session data and token operations
 """
 from typing import List, Optional, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import secrets
 import jwt
 from jose import JWTError
@@ -222,8 +222,8 @@ class TokenService(ITokenService):
             'user_id': user_id,
             'session_id': session_id,
             'type': 'access',
-            'exp': datetime.utcnow() + timedelta(hours=1),
-            'iat': datetime.utcnow(),
+            'exp': datetime.now(timezone.utc) + timedelta(hours=1),
+            'iat': datetime.now(timezone.utc),
             'jti': secrets.token_urlsafe(16)  # JWT ID for revocation
         }
         
@@ -235,8 +235,8 @@ class TokenService(ITokenService):
             'user_id': user_id,
             'session_id': session_id,
             'type': 'refresh',
-            'exp': datetime.utcnow() + timedelta(days=7),
-            'iat': datetime.utcnow(),
+            'exp': datetime.now(timezone.utc) + timedelta(days=7),
+            'iat': datetime.now(timezone.utc),
             'jti': secrets.token_urlsafe(16)
         }
         

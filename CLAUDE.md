@@ -2,8 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Version**: 2.9.0 - Demo Service Test Suite Completion and App Control Path Fix  
-**Last Updated**: 2025-08-06
+**Version**: 3.0.0 - Password Management & Enhanced UI Features  
+**Last Updated**: 2025-08-11
 
 ## 📁 Documentation Structure
 
@@ -58,6 +58,8 @@ The Course Creator Platform is a comprehensive educational technology system wit
 - **RAG-Enhanced AI** for progressive learning and content generation
 - **Demo Service** with realistic data generation for platform demonstration (port 8010)
 - **Comprehensive Testing** with 102 RBAC tests achieving 100% success rate plus 70+ demo service tests
+- **Advanced Password Management** with secure admin account creation and self-service password changes
+- **Enhanced UI/UX** with keyboard navigation, accessibility features, and responsive design
 
 ## 📖 How to Read This Documentation
 

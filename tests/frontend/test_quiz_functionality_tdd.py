@@ -310,11 +310,11 @@ class TestQuizErrorCases:
             
             # This will fail if quizzes is not an array
             try:
-                # Simulate JavaScript map() behavior
-                if hasattr(quizzes, '__iter__') and not isinstance(quizzes, str):
+                # Simulate JavaScript map() behavior - only lists have map() in JS
+                if isinstance(quizzes, list):
                     return list(quizzes)
                 else:
-                    # This is what causes the error - trying to iterate over non-iterable
+                    # This is what causes the error - trying to use map() on non-array
                     raise TypeError("quizzes.map is not a function")
             except TypeError as e:
                 return str(e)

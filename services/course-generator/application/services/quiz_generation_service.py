@@ -8,7 +8,8 @@ from datetime import datetime
 from typing import Dict, Any, List, Optional
 from domain.entities.quiz import Quiz, QuizQuestion, QuizAttempt, QuizGenerationRequest, QuestionType, DifficultyLevel
 from domain.interfaces.content_generation_service import IQuizGenerationService
-from domain.interfaces.content_repository import IQuizRepository, IQuizAttemptRepository
+# Repository pattern removed - using DAO
+from data_access.course_generator_dao import CourseGeneratorDAO
 from domain.interfaces.ai_service import IAIService, ContentGenerationType, IPromptTemplateService
 
 class QuizGenerationService(IQuizGenerationService):
@@ -17,12 +18,10 @@ class QuizGenerationService(IQuizGenerationService):
     """
     
     def __init__(self, 
-                 quiz_repository: IQuizRepository,
-                 quiz_attempt_repository: IQuizAttemptRepository,
+                 dao: CourseGeneratorDAO,
                  ai_service: IAIService,
                  prompt_service: IPromptTemplateService):
-        self._quiz_repository = quiz_repository
-        self._quiz_attempt_repository = quiz_attempt_repository
+        self._dao = dao
         self._ai_service = ai_service
         self._prompt_service = prompt_service
     
@@ -57,7 +56,7 @@ class QuizGenerationService(IQuizGenerationService):
         )
         
         # Save to repository
-        return await self._quiz_repository.create(quiz)
+        return await self._dao.create_quiz(quiz)
     
     async def generate_quiz_questions(self, topic: str, difficulty: str, 
                                      question_count: int, context: Dict[str, Any] = None) -> List[QuizQuestion]:
@@ -151,7 +150,7 @@ class QuizGenerationService(IQuizGenerationService):
             max_attempts=quiz_params['max_attempts']
         )
         
-        return await self._quiz_repository.create(quiz)
+        return await self._dao.create_quiz(quiz)
     
     async def validate_quiz_answers(self, quiz: Quiz, answers: List[int]) -> Dict[str, Any]:
         """Validate quiz answers and calculate score"""

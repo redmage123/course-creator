@@ -42,7 +42,7 @@
  * PURPOSE: Import configuration and utility modules
  * WHY: Centralized configuration and consistent notification system
  */
-import { CONFIG } from './config.js';
+import { CONFIG } from './config-global.js';
 import { showNotification } from './modules/notifications.js';
 
 class SiteAdminDashboard {

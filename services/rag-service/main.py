@@ -1,3 +1,17 @@
+#!/usr/bin/env python3
+
+# Load environment variables from .cc_env file if present
+import os
+if os.path.exists('/app/shared/.cc_env'):
+    with open('/app/shared/.cc_env', 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                key, value = line.split('=', 1)
+                # Remove quotes if present
+                value = value.strip('"\'')
+                os.environ[key] = value
+
 """
 RAG Service - Retrieval-Augmented Generation for Educational AI Enhancement
 
@@ -61,6 +75,19 @@ except ImportError:
     SENTENCE_TRANSFORMERS_AVAILABLE = False
 
 from logging_setup import setup_logging
+
+# Import shared exceptions from platform-wide exception hierarchy
+import sys
+sys.path.append('/app/shared')
+from exceptions import (
+    CourseCreatorBaseException,
+    DatabaseException,
+    ValidationException,
+    ContentException,
+    ContentNotFoundException,
+    RAGException,
+    EmbeddingException
+)
 
 # Setup logging with syslog format
 logger = setup_logging(__name__)
@@ -130,7 +157,7 @@ async def startup_event():
     - Reduced ChromaDB load for repeated similarity searches
     - Faster context enhancement for AI generation workflows
     """
-    import sys
+    # Use already imported sys module
     sys.path.append('/home/bbrelin/course-creator')
     from shared.cache import initialize_cache_manager
     
@@ -527,6 +554,7 @@ class RAGService:
                 return response['data'][0]['embedding']
         except Exception as e:
             logger.warning(f"OpenAI embedding failed: {str(e)}")
+            # Don't raise here, continue to fallback options
         
         # Try SentenceTransformers if available
         if embedding_model is not None:
@@ -536,10 +564,16 @@ class RAGService:
             except Exception as e:
                 logger.warning(f"SentenceTransformers embedding failed: {str(e)}")
         
-        # Final fallback: Simple hash-based vector for basic functionality
-        logger.warning("Using fallback hash-based embedding")
-        text_hash = hash(text) % (2**32)
-        return [float((text_hash >> i) & 1) for i in range(384)]
+        # Final fallback: Raise exception if all embedding methods fail
+        raise EmbeddingException(
+            message="All embedding generation methods failed",
+            error_code="EMBEDDING_GENERATION_FAILED",
+            details={
+                "text_length": len(text),
+                "openai_available": bool(os.getenv("OPENAI_API_KEY")),
+                "sentence_transformers_available": embedding_model is not None
+            }
+        )
     
     async def add_document(self, document: RAGDocument) -> bool:
         """
@@ -557,11 +591,24 @@ class RAGService:
         """
         try:
             if document.domain not in self.collections:
-                raise ValueError(f"Unknown domain: {document.domain}")
+                raise ValidationException(
+                    message=f"Invalid document domain specified",
+                    error_code="INVALID_DOMAIN",
+                    validation_errors={"domain": f"Domain '{document.domain}' not supported"},
+                    details={"supported_domains": list(self.collections.keys())}
+                )
             
             # Generate embedding if not provided
             if document.embedding is None:
-                document.embedding = await self.generate_embedding(document.content)
+                try:
+                    document.embedding = await self.generate_embedding(document.content)
+                except EmbeddingException as e:
+                    raise RAGException(
+                        message=f"Failed to add document due to embedding generation failure",
+                        error_code="DOCUMENT_EMBEDDING_FAILED",
+                        details={"document_id": document.id, "domain": document.domain},
+                        original_exception=e
+                    )
             
             collection = self.collections[document.domain]
             
@@ -574,19 +621,38 @@ class RAGService:
             })
             
             # Add document to collection
-            collection.add(
-                embeddings=[document.embedding],
-                documents=[document.content],
-                metadatas=[metadata],
-                ids=[document.id]
-            )
+            try:
+                collection.add(
+                    embeddings=[document.embedding],
+                    documents=[document.content],
+                    metadatas=[metadata],
+                    ids=[document.id]
+                )
+            except Exception as e:
+                raise RAGException(
+                    message=f"Failed to add document to ChromaDB collection",
+                    error_code="CHROMADB_ADD_FAILED",
+                    details={
+                        "document_id": document.id,
+                        "domain": document.domain,
+                        "collection": document.domain
+                    },
+                    original_exception=e
+                )
             
             logger.info(f"Added document {document.id} to {document.domain} collection")
             return True
             
+        except (ValidationException, RAGException, EmbeddingException):
+            # Re-raise structured exceptions
+            raise
         except Exception as e:
-            logger.error(f"Failed to add document {document.id}: {str(e)}")
-            return False
+            raise RAGException(
+                message=f"Unexpected error adding document to RAG system",
+                error_code="DOCUMENT_ADD_ERROR",
+                details={"document_id": document.id, "domain": document.domain},
+                original_exception=e
+            )
     
     async def query_rag(
         self,
@@ -615,7 +681,12 @@ class RAGService:
         """
         try:
             if domain not in self.collections:
-                raise ValueError(f"Unknown domain: {domain}")
+                raise ValidationException(
+                    message=f"Invalid query domain specified",
+                    error_code="INVALID_QUERY_DOMAIN",
+                    validation_errors={"domain": f"Domain '{domain}' not supported"},
+                    details={"supported_domains": list(self.collections.keys())}
+                )
             
             # SEMANTIC LAYER 1: Extract query intent and educational concepts
             intent_data = self.semantic_processor.extract_query_intent(query)
@@ -637,7 +708,15 @@ class RAGService:
             logger.info(f"Query expanded from '{query}' to include semantic context")
             
             # SEMANTIC LAYER 4: Generate enhanced embedding
-            query_embedding = await self.generate_embedding(expanded_query)
+            try:
+                query_embedding = await self.generate_embedding(expanded_query)
+            except EmbeddingException as e:
+                raise RAGException(
+                    message=f"Failed to generate query embedding for RAG search",
+                    error_code="QUERY_EMBEDDING_FAILED",
+                    details={"query": query, "domain": domain, "expanded_query": expanded_query},
+                    original_exception=e
+                )
             
             collection = self.collections[domain]
             
@@ -646,12 +725,25 @@ class RAGService:
             expanded_n_results = min(n_results * search_multiplier, 50)  # Cap at 50
             
             # Perform vector search on semantically filtered corpus
-            results = collection.query(
-                query_embeddings=[query_embedding],
-                n_results=expanded_n_results,
-                where=combined_filters if combined_filters else None,
-                include=["documents", "metadatas", "distances"]
-            )
+            try:
+                results = collection.query(
+                    query_embeddings=[query_embedding],
+                    n_results=expanded_n_results,
+                    where=combined_filters if combined_filters else None,
+                    include=["documents", "metadatas", "distances"]
+                )
+            except Exception as e:
+                raise RAGException(
+                    message=f"ChromaDB query failed during vector search",
+                    error_code="CHROMADB_QUERY_FAILED",
+                    details={
+                        "query": query,
+                        "domain": domain,
+                        "n_results": expanded_n_results,
+                        "filters_applied": bool(combined_filters)
+                    },
+                    original_exception=e
+                )
             
             # SEMANTIC LAYER 5: Process results with semantic relevance scoring
             candidate_documents = []
@@ -732,15 +824,15 @@ class RAGService:
             logger.info(f"RAG query completed: {len(retrieved_documents)} documents retrieved for domain {domain}")
             return result
             
+        except (ValidationException, RAGException, EmbeddingException):
+            # Re-raise structured exceptions
+            raise
         except Exception as e:
-            logger.error(f"RAG query failed: {str(e)}")
-            # Return empty result on failure
-            return RAGQueryResult(
-                query=query,
-                retrieved_documents=[],
-                similarity_scores=[],
-                enhanced_context="",
-                metadata={"error": str(e)}
+            raise RAGException(
+                message=f"Unexpected error during RAG query processing",
+                error_code="RAG_QUERY_ERROR",
+                details={"query": query, "domain": domain, "n_results": n_results},
+                original_exception=e
             )
     
     def _generate_enhanced_context(self, query: str, documents: List[RAGDocument], 
@@ -852,15 +944,22 @@ class RAGService:
             )
             
             # Add to RAG system
-            success = await self.add_document(interaction_doc)
-            if success:
+            try:
+                await self.add_document(interaction_doc)
                 logger.info(f"Learned from interaction: {interaction_data.get('type', 'unknown')}")
-            
-            return success
+                return True
+            except (ValidationException, RAGException, EmbeddingException) as e:
+                # Log structured exception but don't fail completely for learning
+                logger.warning(f"Failed to learn from interaction: {e.message}")
+                return False
             
         except Exception as e:
-            logger.error(f"Failed to learn from interaction: {str(e)}")
-            return False
+            raise RAGException(
+                message=f"Unexpected error during interaction learning",
+                error_code="INTERACTION_LEARNING_ERROR",
+                details={"interaction_type": interaction_data.get('type', 'unknown')},
+                original_exception=e
+            )
 
 # Initialize RAG service
 rag_service = RAGService()
@@ -906,16 +1005,18 @@ async def add_document_endpoint(request: AddDocumentRequest):
             timestamp=datetime.now(timezone.utc)
         )
         
-        success = await rag_service.add_document(document)
-        
-        if success:
-            return {"status": "success", "document_id": document.id}
-        else:
-            raise HTTPException(status_code=500, detail="Failed to add document")
+        await rag_service.add_document(document)
+        return {"status": "success", "document_id": document.id}
             
+    except ValidationException as e:
+        logger.warning(f"Add document validation error: {e.message}")
+        raise HTTPException(status_code=400, detail=e.message)
+    except (RAGException, EmbeddingException) as e:
+        logger.error(f"Add document RAG error: {e.message}")
+        raise HTTPException(status_code=500, detail=e.message)
     except Exception as e:
-        logger.error(f"Add document endpoint error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Add document unexpected error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/api/v1/rag/query")
 async def query_rag_endpoint(request: QueryRAGRequest):
@@ -942,9 +1043,15 @@ async def query_rag_endpoint(request: QueryRAGRequest):
             "metadata": result.metadata
         }
         
+    except ValidationException as e:
+        logger.warning(f"Query RAG validation error: {e.message}")
+        raise HTTPException(status_code=400, detail=e.message)
+    except (RAGException, EmbeddingException) as e:
+        logger.error(f"Query RAG error: {e.message}")
+        raise HTTPException(status_code=500, detail=e.message)
     except Exception as e:
-        logger.error(f"Query RAG endpoint error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Query RAG unexpected error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.post("/api/v1/rag/learn")
 async def learn_from_interaction_endpoint(request: InteractionLearningRequest):
@@ -970,11 +1077,14 @@ async def learn_from_interaction_endpoint(request: InteractionLearningRequest):
         if success:
             return {"status": "success", "message": "Interaction learning completed"}
         else:
-            raise HTTPException(status_code=500, detail="Failed to learn from interaction")
+            return {"status": "warning", "message": "Interaction learning failed but service continues"}
             
+    except RAGException as e:
+        logger.error(f"Learn from interaction RAG error: {e.message}")
+        raise HTTPException(status_code=500, detail=e.message)
     except Exception as e:
-        logger.error(f"Learn from interaction endpoint error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Learn from interaction unexpected error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/api/v1/rag/health")
 async def health_check():
@@ -1034,5 +1144,7 @@ if __name__ == "__main__":
         host=host,
         port=port,
         reload=False,
-        log_level="info"
+        log_level="info",
+        ssl_keyfile="/app/ssl/nginx-selfsigned.key",
+        ssl_certfile="/app/ssl/nginx-selfsigned.crt"
     )

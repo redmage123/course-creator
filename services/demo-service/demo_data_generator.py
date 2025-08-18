@@ -1,8 +1,31 @@
 """
-Demo Data Generator - Realistic Sample Data for Platform Demonstration
+Demo Data Generator - Realistic Educational Data Simulation for Platform Demonstrations
 
-Generates comprehensive, realistic data that showcases all platform
-features without storing any actual user information.
+BUSINESS REQUIREMENT:
+Generates comprehensive, realistic educational data that authentically showcases all Course Creator
+Platform features without storing actual user information. This module provides the core data
+generation algorithms that power sales demonstrations, user training sessions, stakeholder
+presentations, and development testing environments.
+
+TECHNICAL ARCHITECTURE:
+The data generator implements sophisticated algorithms to create realistic educational patterns
+including student performance distributions, engagement metrics, course content structures,
+and learning analytics that mirror real-world educational data while maintaining complete
+privacy and security compliance.
+
+KEY GENERATION FEATURES:
+1. **Authentic Educational Patterns**: Realistic student progress curves, engagement distributions, and performance metrics
+2. **Role-Specific Data**: Customized data sets for instructor, student, and administrator experiences  
+3. **Temporal Consistency**: Realistic time-based patterns for enrollment, progress, and completion data
+4. **Statistical Accuracy**: Proper statistical distributions for grades, engagement, and usage metrics
+5. **Content Variety**: Diverse course topics, difficulty levels, and educational content types
+6. **Scalable Generation**: Efficient algorithms for generating large datasets for enterprise demos
+
+PRIVACY AND SECURITY:
+- No real user data is ever stored or transmitted
+- All generated data is clearly marked as demonstration content
+- Synthetic data patterns protect privacy while providing authentic experiences
+- Automatic data cleanup ensures no persistent storage of demonstration content
 """
 
 import random

@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+
+# Load environment variables from .cc_env file if present
+import os
+if os.path.exists('/app/shared/.cc_env'):
+    with open('/app/shared/.cc_env', 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                key, value = line.split('=', 1)
+                # Remove quotes if present
+                value = value.strip('"\'')
+                os.environ[key] = value
+
 """
 Organization Management Service - Project-Based Multi-Tenant System
 Single Responsibility: API layer only - business logic delegated to services
@@ -37,11 +50,29 @@ from api.project_endpoints import router as project_router
 # from api import rbac_endpoints, site_admin_endpoints, track_endpoints
 
 # Custom exceptions
+# Import shared exceptions from platform-wide exception hierarchy
+import sys
+sys.path.append('/app/shared')
 from exceptions import (
-    OrganizationManagementException, OrganizationException, ProjectException,
-    MembershipException, AuthenticationException, AuthorizationException,
-    ValidationException, OrganizationNotFoundException, ProjectNotFoundException,
-    DatabaseException, InstructorManagementException, DuplicateResourceException
+    CourseCreatorBaseException,
+    ContentException,
+    ContentNotFoundException,
+    ContentValidationException,
+    FileStorageException,
+    ValidationException,
+    DatabaseException,
+    AuthenticationException,
+    AuthorizationException,
+    ConfigurationException,
+    APIException,
+    BusinessRuleException,
+    OrganizationException,
+    OrganizationNotFoundException,
+    OrganizationValidationException,
+    DuplicateUserException,
+    UserValidationException,
+    UserManagementException,
+    UserNotFoundException
 )
 
 # Pydantic models for API (Data Transfer Objects)
@@ -355,18 +386,18 @@ def create_app(config: DictConfig = None) -> FastAPI:
         AuthenticationException: 401,
         AuthorizationException: 403,
         OrganizationNotFoundException: 404,
-        ProjectNotFoundException: 404,
-        DuplicateResourceException: 409,
+        ContentNotFoundException: 404,
+        DuplicateUserException: 409,
         OrganizationException: 422,
-        ProjectException: 422,
-        MembershipException: 422,
-        InstructorManagementException: 422,
+        OrganizationValidationException: 422,
+        UserValidationException: 422,
+        UserManagementException: 422,
         DatabaseException: 500,
     }
     
     # Custom exception handler
-    @app.exception_handler(OrganizationManagementException)
-    async def organization_management_exception_handler(request, exc: OrganizationManagementException):
+    @app.exception_handler(OrganizationException)
+    async def organization_management_exception_handler(request, exc: OrganizationException):
         """Handle custom organization management exceptions."""
         # Use mapping to determine status code (extensible design)
         status_code = next(
@@ -438,13 +469,15 @@ def main(cfg: DictConfig) -> None:
     global app
     app = create_app(cfg)
 
-    # Run server
+    # Run server with HTTPS/SSL configuration
     uvicorn.run(
         app,
         host=host,
         port=port,
         log_level="warning",  # Reduce uvicorn log level
-        access_log=False      # Disable uvicorn access log
+        access_log=False,     # Disable uvicorn access log
+        ssl_keyfile="/app/ssl/nginx-selfsigned.key",
+        ssl_certfile="/app/ssl/nginx-selfsigned.crt"
     )
 
 if __name__ == "__main__":

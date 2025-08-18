@@ -317,8 +317,8 @@ export class NavigationManager {
                 <h2>Login</h2>
                 <form id="login-form">
                     <div class="form-group">
-                        <label for="login-email">Email:</label>
-                        <input type="email" id="login-email" name="username" required>
+                        <label for="login-username">Username/ID:</label>
+                        <input type="text" id="login-username" name="username" required placeholder="Enter your username or ID">
                     </div>
                     <div class="form-group">
                         <label for="login-password">Password:</label>
@@ -409,7 +409,7 @@ export class NavigationManager {
                             <li><i class="fas fa-check"></i> User role management</li>
                             <li><i class="fas fa-check"></i> Custom branding options</li>
                         </ul>
-                        <button class="btn btn-primary" onclick="window.location.href='organization-registration.html'">
+                        <button class="btn btn-primary" onclick="window.location.href='/html/organization-registration.html'">
                             <i class="fas fa-building"></i> Register Organization
                         </button>
                     </div>

@@ -11,11 +11,7 @@ import logging
 # Cache infrastructure
 from shared.cache.redis_cache import initialize_cache_manager, get_cache_manager
 
-# Domain interfaces
-from domain.interfaces.content_repository import (
-    ISyllabusRepository, ISlideRepository, IQuizRepository,
-    IExerciseRepository, ILabEnvironmentRepository, IContentSearchRepository
-)
+# Repository pattern removed - using DAO pattern
 from domain.interfaces.content_service import (
     ISyllabusService, ISlideService, IQuizService, IExerciseService,
     ILabEnvironmentService, IContentSearchService, IContentValidationService,
@@ -27,8 +23,8 @@ from application.services.syllabus_service import SyllabusService
 from application.services.content_validation_service import ContentValidationService
 from application.services.content_search_service import ContentSearchService
 
-# Infrastructure implementations
-from repositories.content_repository import ContentRepository
+# DAO implementation (replaces repository pattern)
+from data_access.content_management_dao import ContentManagementDAO
 
 
 class ContentManagementContainer:
@@ -40,13 +36,8 @@ class ContentManagementContainer:
         self._config = config
         self._connection_pool: Optional[asyncpg.Pool] = None
         
-        # Repository instances (singletons)
-        self._syllabus_repository: Optional[ISyllabusRepository] = None
-        self._slide_repository: Optional[ISlideRepository] = None
-        self._quiz_repository: Optional[IQuizRepository] = None
-        self._exercise_repository: Optional[IExerciseRepository] = None
-        self._lab_environment_repository: Optional[ILabEnvironmentRepository] = None
-        self._content_search_repository: Optional[IContentSearchRepository] = None
+        # DAO instance (replaces repository pattern)
+        self._content_dao: Optional[ContentManagementDAO] = None
         
         # Service instances (singletons)
         self._syllabus_service: Optional[ISyllabusService] = None

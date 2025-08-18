@@ -1083,7 +1083,8 @@ class TestProjectManagementJavaScriptFunctions:
             ]
             
             for input_val, expected in progress_tests:
-                result = self.driver.execute_script(f"return formatProgress({input_val if isinstance(input_val, (int, float)) else f\"'{input_val}'\"});")
+                js_val = input_val if isinstance(input_val, (int, float)) else f"'{input_val}'"
+                result = self.driver.execute_script(f"return formatProgress({js_val});")
                 assert result == expected, f"Progress formatting failed for {input_val}"
             
             # Test duration formatting

@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Creator Platform - Comprehensive Frontend Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; }
+        .test-section { margin-bottom: 30px; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .test-header { background-color: #f8f9fa; margin: -20px -20px 20px -20px; padding: 15px; border-radius: 8px 8px 0 0; }
+        button { background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background-color: #0056b3; }
+        .success { background-color: #d4edda; color: #155724; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .error { background-color: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .loading { background-color: #d1ecf1; color: #0c5460; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .info { background-color: #e2e3e5; color: #383d41; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        pre { background-color: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 12px; }
+        .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
+        .service-status { padding: 10px; border-radius: 4px; text-align: center; }
+        .healthy { background-color: #d4edda; color: #155724; }
+        .unhealthy { background-color: #f8d7da; color: #721c24; }
+        .test-result { padding: 15px; margin: 10px 0; border-radius: 4px; border-left: 4px solid; }
+        .test-pass { background-color: #d4edda; border-left-color: #155724; color: #155724; }
+        .test-fail { background-color: #f8d7da; border-left-color: #721c24; color: #721c24; }
+        .test-stats { background-color: #e9ecef; padding: 15px; border-radius: 4px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>🎓 Course Creator Platform - Comprehensive Frontend Test</h1>
+    <div class="info">
+        <strong>Test Suite Version:</strong> 3.0.0 - Password Management & Enhanced UI Features<br>
+        <strong>Purpose:</strong> Validate complete platform functionality including HTTPS services, organization registration, and country dropdown features
+    </div>
+
+    <!-- Test Statistics -->
+    <div id="testStats" class="test-stats">
+        <strong>Test Statistics:</strong> <span id="statsContent">Initializing...</span>
+    </div>
+
+    <!-- Service Health Check -->
+    <div class="test-section">
+        <div class="test-header">
+            <h2>🏥 Service Health Check</h2>
+            <p>Validate all microservices are healthy and responding via HTTPS</p>
+        </div>
+        <button onclick="runServiceHealthTests()">Run Service Health Tests</button>
+        <div id="serviceResults" class="status-grid"></div>
+    </div>
+
+    <!-- Organization Registration Test -->
+    <div class="test-section">
+        <div class="test-header">
+            <h2>🏢 Organization Registration API Test</h2>
+            <p>Test complete organization registration flow with HTTPS API calls</p>
+        </div>
+        <button onclick="runOrganizationRegistrationTests()">Run Registration Tests</button>
+        <div id="orgResults"></div>
+    </div>
+
+    <!-- Country Dropdown Functionality Test -->
+    <div class="test-section">
+        <div class="test-header">
+            <h2>🌍 Country Dropdown Test</h2>
+            <p>Validate country dropdown default selection and keyboard navigation</p>
+        </div>
+        <button onclick="runCountryDropdownTests()">Run Country Dropdown Tests</button>
+        <button onclick="window.open('https://localhost:3000/html/organization-registration.html', '_blank')">Open Registration Form (Manual Test)</button>
+        <div id="countryResults"></div>
+        <div class="info">
+            <strong>Manual Test Instructions:</strong>
+            <ol>
+                <li>Click "Open Registration Form" above</li>
+                <li>Scroll to phone number fields and click country dropdown</li>
+                <li>Verify default selection is "🇺🇸 United States (+1)" (not Canada)</li>
+                <li>Type "u" in dropdown to test keyboard navigation</li>
+                <li>Verify it jumps to first "U" country (Uganda, Ukraine, etc.)</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- Frontend Access Test -->
+    <div class="test-section">
+        <div class="test-header">
+            <h2>🌐 Frontend HTTPS Access Test</h2>
+            <p>Validate frontend accessibility and NGINX HTTPS configuration</p>
+        </div>
+        <button onclick="runFrontendAccessTests()">Run Frontend Access Tests</button>
+        <div id="frontendResults"></div>
+    </div>
+
+    <!-- API Integration Test -->
+    <div class="test-section">
+        <div class="test-header">
+            <h2>🔌 API Integration Test</h2>
+            <p>Test HTTPS API endpoints and cross-service communication</p>
+        </div>
+        <button onclick="runAPIIntegrationTests()">Run API Integration Tests</button>
+        <div id="apiResults"></div>
+    </div>
+
+    <!-- Run All Tests -->
+    <div class="test-section">
+        <div class="test-header">
+            <h2>🚀 Complete Test Suite</h2>
+            <p>Run all automated tests in sequence</p>
+        </div>
+        <button onclick="runAllTests()" style="background-color: #28a745;">Run All Tests</button>
+        <button onclick="exportTestResults()" style="background-color: #6c757d;">Export Results</button>
+        <div id="allTestsResults"></div>
+    </div>
+
+    <script>
+        // Global test state
+        let testResults = {
+            services: [],
+            organization: [],
+            country: [],
+            frontend: [],
+            api: [],
+            startTime: null,
+            endTime: null
+        };
+
+        // Service endpoints configuration
+        const services = [
+            { name: 'User Management', url: 'https://localhost:8000/health', required: true },
+            { name: 'Organization Management', url: 'https://localhost:8008/health', required: true },
+            { name: 'Course Generator', url: 'https://localhost:8001/health', required: false },
+            { name: 'Content Storage', url: 'https://localhost:8003/health', required: false },
+            { name: 'Course Management', url: 'https://localhost:8004/health', required: false },
+            { name: 'Content Management', url: 'https://localhost:8005/health', required: false },
+            { name: 'Lab Manager', url: 'https://localhost:8006/health', required: false },
+            { name: 'Analytics', url: 'https://localhost:8007/health', required: false },
+            { name: 'RAG Service', url: 'https://localhost:8009/api/v1/rag/health', required: false },
+            { name: 'Demo Service', url: 'https://localhost:8010/api/v1/demo/health', required: false }
+        ];
+
+        function updateTestStats() {
+            const totalTests = Object.values(testResults).flat().length;
+            const passedTests = Object.values(testResults).flat().filter(t => t.passed).length;
+            const failedTests = totalTests - passedTests;
+            
+            const duration = testResults.endTime && testResults.startTime ? 
+                `${((testResults.endTime - testResults.startTime) / 1000).toFixed(2)}s` : 'Running...';
+            
+            document.getElementById('statsContent').innerHTML = `
+                Total: ${totalTests} | Passed: ${passedTests} | Failed: ${failedTests} | Duration: ${duration}
+            `;
+        }
+
+        async function runServiceHealthTests() {
+            const resultsDiv = document.getElementById('serviceResults');
+            resultsDiv.innerHTML = '<div class="loading">Testing service health...</div>';
+            testResults.services = [];
+            
+            for (const service of services) {
+                try {
+                    const response = await fetch(service.url);
+                    const isHealthy = response.ok;
+                    const result = {
+                        name: `Service Health: ${service.name}`,
+                        passed: isHealthy,
+                        details: isHealthy ? 'Healthy' : `Error ${response.status}`,
+                        required: service.required
+                    };
+                    testResults.services.push(result);
+                } catch (error) {
+                    testResults.services.push({
+                        name: `Service Health: ${service.name}`,
+                        passed: false,
+                        details: error.message,
+                        required: service.required
+                    });
+                }
+            }
+            
+            const healthyCount = testResults.services.filter(r => r.passed).length;
+            const requiredHealthy = testResults.services.filter(r => r.required && r.passed).length;
+            const requiredTotal = testResults.services.filter(r => r.required).length;
+            
+            resultsDiv.innerHTML = `
+                <div class="service-status ${requiredHealthy === requiredTotal ? 'healthy' : 'unhealthy'}">
+                    <strong>Overall Status: ${healthyCount}/${services.length} Services Healthy</strong><br>
+                    <small>Required Services: ${requiredHealthy}/${requiredTotal}</small>
+                </div>
+                ${testResults.services.map(result => `
+                    <div class="service-status ${result.passed ? 'healthy' : 'unhealthy'}">
+                        <strong>${result.name.replace('Service Health: ', '')}</strong>
+                        ${result.required ? '<br><small>(Required)</small>' : ''}<br>
+                        Status: ${result.passed ? 'Healthy' : 'Unhealthy'}<br>
+                        <small>${result.details}</small>
+                    </div>
+                `).join('')}
+            `;
+            updateTestStats();
+        }
+
+        async function runOrganizationRegistrationTests() {
+            const resultsDiv = document.getElementById('orgResults');
+            resultsDiv.innerHTML = '<div class="loading">Testing organization registration...</div>';
+            testResults.organization = [];
+            
+            // Test 1: Organization Registration API
+            const testData = {
+                name: `Test Organization ${Date.now()}`,
+                slug: `test-org-${Date.now()}`,
+                address: "123 Test Street, Test City, TC 12345",
+                contact_phone: "+15551234567",
+                contact_email: `test${Date.now()}@testdomain.com`,
+                admin_full_name: "Test Admin User",
+                admin_email: `admin${Date.now()}@testdomain.com`,
+                admin_phone: "+15551234568",
+                admin_role: "organization_admin",
+                admin_password: "SecureTestPassword123",
+                description: "Automated test organization for comprehensive testing"
+            };
+            
+            try {
+                const response = await fetch('https://localhost:8008/api/v1/organizations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testData)
+                });
+                
+                const result = {
+                    name: 'Organization Registration API',
+                    passed: response.ok,
+                    details: response.ok ? 'Registration successful' : `HTTP ${response.status}`
+                };
+                
+                if (response.ok) {
+                    const orgData = await response.json();
+                    result.details += ` - Org ID: ${orgData.id}`;
+                }
+                
+                testResults.organization.push(result);
+            } catch (error) {
+                testResults.organization.push({
+                    name: 'Organization Registration API',
+                    passed: false,
+                    details: `Network error: ${error.message}`
+                });
+            }
+            
+            // Test 2: List Organizations
+            try {
+                const response = await fetch('https://localhost:8008/api/v1/organizations');
+                testResults.organization.push({
+                    name: 'List Organizations API',
+                    passed: response.ok,
+                    details: response.ok ? 'API accessible' : `HTTP ${response.status}`
+                });
+            } catch (error) {
+                testResults.organization.push({
+                    name: 'List Organizations API',
+                    passed: false,
+                    details: `Network error: ${error.message}`
+                });
+            }
+            
+            resultsDiv.innerHTML = testResults.organization.map(result => `
+                <div class="test-result ${result.passed ? 'test-pass' : 'test-fail'}">
+                    <h4>${result.passed ? '✅' : '❌'} ${result.name}</h4>
+                    <p>${result.details}</p>
+                </div>
+            `).join('');
+            updateTestStats();
+        }
+
+        async function runCountryDropdownTests() {
+            const resultsDiv = document.getElementById('countryResults');
+            resultsDiv.innerHTML = '<div class="loading">Testing country dropdown functionality...</div>';
+            testResults.country = [];
+            
+            // Test 1: Registration page accessibility
+            try {
+                const response = await fetch('https://localhost:3000/html/organization-registration.html');
+                const pageContent = await response.text();
+                
+                testResults.country.push({
+                    name: 'Registration Page Access',
+                    passed: response.ok,
+                    details: response.ok ? 'Page accessible via HTTPS' : `HTTP ${response.status}`
+                });
+                
+                // Test 2: Country dropdown structure
+                if (response.ok) {
+                    const hasCountrySelect = pageContent.includes('class="form-select country-select"');
+                    const hasUSOption = pageContent.includes('data-country="US"') && pageContent.includes('United States');
+                    const hasCanadaOption = pageContent.includes('data-country="CA"') && pageContent.includes('Canada');
+                    
+                    testResults.country.push({
+                        name: 'Country Dropdown Structure',
+                        passed: hasCountrySelect && hasUSOption && hasCanadaOption,
+                        details: `Country select: ${hasCountrySelect}, US option: ${hasUSOption}, CA option: ${hasCanadaOption}`
+                    });
+                    
+                    // Test 3: JavaScript version
+                    const jsVersionMatch = pageContent.match(/organization-registration\.js\?v=([0-9.]+)/);
+                    const jsVersion = jsVersionMatch ? jsVersionMatch[1] : 'unknown';
+                    
+                    testResults.country.push({
+                        name: 'JavaScript Version Check',
+                        passed: jsVersion === '9.0',
+                        details: `Current version: ${jsVersion}, Expected: 9.0`
+                    });
+                }
+            } catch (error) {
+                testResults.country.push({
+                    name: 'Registration Page Access',
+                    passed: false,
+                    details: `Network error: ${error.message}`
+                });
+            }
+            
+            resultsDiv.innerHTML = testResults.country.map(result => `
+                <div class="test-result ${result.passed ? 'test-pass' : 'test-fail'}">
+                    <h4>${result.passed ? '✅' : '❌'} ${result.name}</h4>
+                    <p>${result.details}</p>
+                </div>
+            `).join('');
+            updateTestStats();
+        }
+
+        async function runFrontendAccessTests() {
+            const resultsDiv = document.getElementById('frontendResults');
+            resultsDiv.innerHTML = '<div class="loading">Testing frontend access...</div>';
+            testResults.frontend = [];
+            
+            const frontendTests = [
+                { name: 'Main Frontend (Port 3000)', url: 'https://localhost:3000' },
+                { name: 'Main Frontend (Port 3001)', url: 'https://localhost:3001' },
+                { name: 'Registration Form', url: 'https://localhost:3000/html/organization-registration.html' }
+            ];
+            
+            for (const test of frontendTests) {
+                try {
+                    const response = await fetch(test.url);
+                    testResults.frontend.push({
+                        name: test.name,
+                        passed: response.ok,
+                        details: response.ok ? 'HTTPS accessible' : `HTTP ${response.status}`
+                    });
+                } catch (error) {
+                    testResults.frontend.push({
+                        name: test.name,
+                        passed: false,
+                        details: `Network error: ${error.message}`
+                    });
+                }
+            }
+            
+            resultsDiv.innerHTML = testResults.frontend.map(result => `
+                <div class="test-result ${result.passed ? 'test-pass' : 'test-fail'}">
+                    <h4>${result.passed ? '✅' : '❌'} ${result.name}</h4>
+                    <p>${result.details}</p>
+                </div>
+            `).join('');
+            updateTestStats();
+        }
+
+        async function runAPIIntegrationTests() {
+            const resultsDiv = document.getElementById('apiResults');
+            resultsDiv.innerHTML = '<div class="loading">Testing API integration...</div>';
+            testResults.api = [];
+            
+            const apiTests = [
+                { name: 'User Management Health', url: 'https://localhost:8000/health', method: 'GET' },
+                { name: 'Organization Management Health', url: 'https://localhost:8008/health', method: 'GET' },
+                { name: 'Organizations List API', url: 'https://localhost:8008/api/v1/organizations', method: 'GET' },
+                { name: 'Organization Test Endpoint', url: 'https://localhost:8008/api/v1/test', method: 'GET' }
+            ];
+            
+            for (const test of apiTests) {
+                try {
+                    const response = await fetch(test.url, { method: test.method });
+                    testResults.api.push({
+                        name: test.name,
+                        passed: response.ok,
+                        details: response.ok ? `HTTP ${response.status}` : `HTTP ${response.status}`
+                    });
+                } catch (error) {
+                    testResults.api.push({
+                        name: test.name,
+                        passed: false,
+                        details: `Network error: ${error.message}`
+                    });
+                }
+            }
+            
+            resultsDiv.innerHTML = testResults.api.map(result => `
+                <div class="test-result ${result.passed ? 'test-pass' : 'test-fail'}">
+                    <h4>${result.passed ? '✅' : '❌'} ${result.name}</h4>
+                    <p>${result.details}</p>
+                </div>
+            `).join('');
+            updateTestStats();
+        }
+
+        async function runAllTests() {
+            const resultsDiv = document.getElementById('allTestsResults');
+            resultsDiv.innerHTML = '<div class="loading">Running complete test suite...</div>';
+            
+            testResults.startTime = Date.now();
+            
+            await runServiceHealthTests();
+            await runOrganizationRegistrationTests();
+            await runCountryDropdownTests();
+            await runFrontendAccessTests();
+            await runAPIIntegrationTests();
+            
+            testResults.endTime = Date.now();
+            
+            const allTests = Object.values(testResults).flat().filter(t => t.name);
+            const passedTests = allTests.filter(t => t.passed);
+            const failedTests = allTests.filter(t => !t.passed);
+            const requiredTests = testResults.services.filter(t => t.required);
+            const requiredPassed = requiredTests.filter(t => t.passed);
+            
+            const overallStatus = requiredPassed.length === requiredTests.length && failedTests.length === 0;
+            
+            resultsDiv.innerHTML = `
+                <div class="test-result ${overallStatus ? 'test-pass' : 'test-fail'}">
+                    <h3>${overallStatus ? '✅ ALL TESTS PASSED' : '❌ SOME TESTS FAILED'}</h3>
+                    <p><strong>Summary:</strong> ${passedTests.length}/${allTests.length} tests passed</p>
+                    <p><strong>Required Services:</strong> ${requiredPassed.length}/${requiredTests.length} healthy</p>
+                    <p><strong>Duration:</strong> ${((testResults.endTime - testResults.startTime) / 1000).toFixed(2)} seconds</p>
+                </div>
+                ${failedTests.length > 0 ? `
+                    <div class="test-result test-fail">
+                        <h4>Failed Tests:</h4>
+                        <ul>
+                            ${failedTests.map(t => `<li>${t.name}: ${t.details}</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+            `;
+            updateTestStats();
+        }
+
+        function exportTestResults() {
+            const report = {
+                timestamp: new Date().toISOString(),
+                platform: 'Course Creator Platform',
+                version: '3.0.0 - Password Management & Enhanced UI Features',
+                testResults: testResults,
+                summary: {
+                    totalTests: Object.values(testResults).flat().filter(t => t.name).length,
+                    passedTests: Object.values(testResults).flat().filter(t => t.passed).length,
+                    failedTests: Object.values(testResults).flat().filter(t => !t.passed).length,
+                    duration: testResults.endTime && testResults.startTime ? 
+                        (testResults.endTime - testResults.startTime) / 1000 : null
+                }
+            };
+            
+            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `course-creator-test-results-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Initialize page
+        window.addEventListener('load', () => {
+            updateTestStats();
+            // Auto-run service health check on page load
+            setTimeout(runServiceHealthTests, 1000);
+        });
+    </script>
+</body>
+</html>

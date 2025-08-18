@@ -25,13 +25,15 @@ class OrganizationService:
         self._organization_repository = organization_repository
         self._logger = logging.getLogger(__name__)
         
-        # HTTP client configuration for user management service
-        self._user_management_url = os.getenv('USER_MANAGEMENT_URL', 'http://localhost:8000')
-        self._http_client = httpx.AsyncClient(timeout=30.0)
+        # HTTP client configuration for user management service with SSL certificate handling
+        self._user_management_url = os.getenv('USER_MANAGEMENT_URL') or os.getenv('USER_SERVICE_URL', 'http://user-management:8000')
+        # Configure client to accept self-signed certificates for inter-service communication
+        self._http_client = httpx.AsyncClient(timeout=30.0, verify=False)
 
     async def _create_organization_admin_user(self, admin_full_name: str, admin_email: str, 
                                               admin_phone: str = None, admin_roles: List[str] = None,
-                                              organization_slug: str = None) -> Dict[str, Any]:
+                                              organization_slug: str = None, admin_password: str = None,
+                                              admin_username: str = None) -> Dict[str, Any]:
         """
         Create organization administrator user in user management service
         
@@ -45,6 +47,8 @@ class OrganizationService:
             admin_phone: Phone number (optional)
             admin_roles: List of roles to assign to the admin
             organization_slug: Organization identifier for linking
+            admin_password: Password set by admin during registration
+            admin_username: Username/ID provided during registration (optional)
             
         Returns:
             Dict containing the created user information
@@ -53,13 +57,39 @@ class OrganizationService:
             Exception: If user creation fails
         """
         try:
-            # Generate username from email (simple approach)
-            username = admin_email.split('@')[0].lower()
+            # Use provided username or generate from email as fallback
+            if admin_username:
+                # Use provided admin username/ID
+                username = admin_username.lower().strip()
+                # Validate username format (letters, numbers, underscore, hyphen only)
+                if not username or not all(c.isalnum() or c in '_-' for c in username):
+                    raise ValueError("Invalid username format. Only letters, numbers, underscores, and hyphens are allowed.")
+                if len(username) < 3 or len(username) > 30:
+                    raise ValueError("Username must be between 3 and 30 characters.")
+            else:
+                # Fallback: Generate valid username from email by sanitizing special characters
+                # Extract local part of email and replace invalid characters with underscores
+                email_local = admin_email.split('@')[0].lower()
+                # Replace dots, hyphens, and other invalid characters with underscores
+                username = ''.join(c if c.isalnum() else '_' for c in email_local)
+                # Ensure no consecutive underscores and trim to valid length
+                username = '_'.join(filter(None, username.split('_')))[:30]
+                # Ensure minimum length of 3 characters
+                if len(username) < 3:
+                    username = username + '_user'
             
-            # Generate a temporary password (should be reset by admin on first login)
-            import secrets
-            import string
-            temp_password = ''.join(secrets.choice(string.ascii_letters + string.digits + '!@#$%^&*') for _ in range(12))
+            # Use provided password or generate temporary one
+            if admin_password:
+                password_to_use = admin_password
+                is_temp_password = False
+                self._logger.info(f"Using admin-provided password for user: {admin_email}")
+            else:
+                # Generate a temporary password (should be reset by admin on first login)
+                import secrets
+                import string
+                password_to_use = ''.join(secrets.choice(string.ascii_letters + string.digits + '!@#$%^&*') for _ in range(12))
+                is_temp_password = True
+                self._logger.info(f"Generated temporary password for user: {admin_email}")
             
             # Default role is organization admin
             primary_role = "org_admin" if "org_admin" in (admin_roles or []) else "instructor"
@@ -69,7 +99,7 @@ class OrganizationService:
                 "email": admin_email,
                 "username": username,
                 "full_name": admin_full_name,
-                "password": temp_password,
+                "password": password_to_use,
                 "role": primary_role,
                 "organization": organization_slug,
                 "phone": admin_phone,
@@ -87,14 +117,15 @@ class OrganizationService:
                 user_data = response.json()
                 self._logger.info(f"Organization admin user created successfully: {admin_email}")
                 
-                # Return user info including temporary password for organization setup
+                # Return user info including password status for organization setup
                 return {
                     "user_id": user_data.get("id"),
                     "username": user_data.get("username"),
                     "email": user_data.get("email"),
                     "full_name": user_data.get("full_name"),
                     "role": user_data.get("role"),
-                    "temp_password": temp_password,  # Include for organization setup notification
+                    "password_status": "temporary" if is_temp_password else "user_provided",
+                    "temp_password": password_to_use if is_temp_password else None,  # Only include temp password if generated
                     "organization": organization_slug
                 }
             else:
@@ -115,7 +146,8 @@ class OrganizationService:
                                   settings: Dict[str, Any] = None,
                                   # Organization admin parameters
                                   admin_full_name: str = None, admin_email: str = None,
-                                  admin_phone: str = None, admin_roles: List[str] = None) -> Dict[str, Any]:
+                                  admin_phone: str = None, admin_roles: List[str] = None,
+                                  admin_password: str = None, admin_username: str = None) -> Dict[str, Any]:
         """
         Create a new organization with automatic administrator user creation
         
@@ -146,7 +178,9 @@ class OrganizationService:
                 admin_email=admin_email,
                 admin_phone=admin_phone,
                 admin_roles=admin_roles,
-                organization_slug=slug
+                organization_slug=slug,
+                admin_password=admin_password,
+                admin_username=admin_username
             )
 
             # Step 2: Create organization entity

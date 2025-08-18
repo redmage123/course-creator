@@ -58,10 +58,12 @@ class OrganizationCreateRequest(BaseModel):
     
     # Organization admin information  
     admin_full_name: str = Field(..., min_length=2, max_length=100, description="Full name of organization administrator")
+    admin_username: str = Field(None, min_length=3, max_length=30, pattern=r'^[a-zA-Z0-9_-]+$', description="Administrator username/ID for login (optional)")
     admin_email: EmailStr = Field(..., description="Administrator email address (professional domain required)")
     admin_phone: str = Field(None, min_length=10, max_length=20, description="Administrator phone number")
     admin_role: str = Field(..., description="Primary role of the administrator", pattern=r'^(organization_admin|instructor|student)$')
     admin_roles: Optional[List[str]] = Field(None, description="All roles assigned to the administrator")
+    admin_password: str = Field(..., min_length=8, description="Administrator password for account")
     
     # Optional fields
     description: str = Field(None, max_length=1000, description="Organization description")
@@ -162,8 +164,7 @@ class ValidationException(Exception):
 @router.post("/organizations", response_model=OrganizationResponse)
 async def create_organization(
     request: OrganizationCreateRequest,
-    organization_service: OrganizationService = Depends(get_organization_service),
-    current_user: Dict[str, Any] = Depends(get_current_user)
+    organization_service: OrganizationService = Depends(get_organization_service)
 ):
     """
     Create a new organization with professional requirements and admin user.
@@ -190,9 +191,11 @@ async def create_organization(
             domain=request.domain,
             # Admin user parameters
             admin_full_name=request.admin_full_name,
+            admin_username=request.admin_username,
             admin_email=request.admin_email,
             admin_phone=request.admin_phone,
-            admin_roles=request.admin_roles or [request.admin_role]
+            admin_roles=request.admin_roles or [request.admin_role],
+            admin_password=request.admin_password
         )
         
         # Extract organization data from result
@@ -276,15 +279,16 @@ async def create_organization_with_logo(
     contact_phone: str = Form(...),
     contact_email: str = Form(...),
     admin_full_name: str = Form(...),
+    admin_username: Optional[str] = Form(None),
     admin_email: str = Form(...),
     admin_phone: Optional[str] = Form(None),
     admin_role: str = Form(...),
     admin_roles: Optional[str] = Form(None),  # JSON string of roles array
+    admin_password: str = Form(...),
     description: Optional[str] = Form(None),
     domain: Optional[str] = Form(None),
     logo: Optional[UploadFile] = File(None),
-    organization_service: OrganizationService = Depends(get_organization_service),
-    current_user: Dict[str, Any] = Depends(get_current_user)
+    organization_service: OrganizationService = Depends(get_organization_service)
 ):
     """
     Create a new organization with optional logo upload using multipart form data.
@@ -315,12 +319,14 @@ async def create_organization_with_logo(
             contact_phone=contact_phone,
             contact_email=contact_email,
             admin_full_name=admin_full_name,
+            admin_username=admin_username,
             admin_email=admin_email,
             admin_phone=admin_phone,
             admin_role=admin_role,
             admin_roles=parsed_admin_roles,
             description=description,
-            domain=domain
+            domain=domain,
+            admin_password=admin_password
         )
         
         # Validate logo file if provided

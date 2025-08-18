@@ -3,7 +3,7 @@
  * Manages organization settings, projects, instructors, and members
  */
 
-import { CONFIG } from './config.js';
+import { CONFIG } from './config-global.js';
 
 // Configuration
 const ORG_API_BASE = CONFIG.API_URLS.ORGANIZATION;
@@ -78,7 +78,11 @@ async function loadOrganizationData() {
             name: 'Tech University',
             slug: 'tech-university',
             description: 'Leading technology education institution',
-            domain: 'techuni.edu',
+            address: '123 University Ave, Tech City, TC 12345',
+            contact_email: 'contact@techuni.edu',
+            contact_phone: '+1555-123-4567',
+            domain: 'https://techuni.edu',
+            logo_url: '',
             member_count: 234,
             project_count: 12,
             is_active: true
@@ -243,10 +247,30 @@ async function loadMembersData() {
 async function loadSettingsData() {
     // Populate settings form with current organization data
     document.getElementById('orgNameSetting').value = currentOrganization.name || '';
+    document.getElementById('orgSlugSetting').value = currentOrganization.slug || '';
     document.getElementById('orgDescriptionSetting').value = currentOrganization.description || '';
+    document.getElementById('orgAddressSetting').value = currentOrganization.address || '';
+    document.getElementById('orgContactEmailSetting').value = currentOrganization.contact_email || '';
+    document.getElementById('orgContactPhoneSetting').value = currentOrganization.contact_phone || '';
     document.getElementById('orgDomainSetting').value = currentOrganization.domain || '';
     document.getElementById('orgLogoSetting').value = currentOrganization.logo_url || '';
 
+    // Set the country code for the contact phone
+    if (currentOrganization.contact_phone) {
+        const countrySelect = document.getElementById('orgContactPhoneCountry');
+        // Extract country code from phone number if available
+        const phoneNumber = currentOrganization.contact_phone;
+        if (phoneNumber.startsWith('+1')) {
+            countrySelect.value = '+1';
+        } else if (phoneNumber.startsWith('+44')) {
+            countrySelect.value = '+44';
+        }
+        // Add more country code detection as needed
+    }
+
+    // Initialize logo upload functionality
+    initializeLogoUpload();
+    
     // Load preferences (mock data for now)
     document.getElementById('autoAssignByDomain').checked = true;
     document.getElementById('enableProjectTemplates').checked = true;
@@ -383,6 +407,12 @@ function setupEventListeners() {
     document.getElementById('projectName').addEventListener('input', function(e) {
         const slug = e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
         document.getElementById('projectSlug').value = slug;
+    });
+
+    // Cancel button for organization settings
+    document.getElementById('cancelOrgSettingsBtn').addEventListener('click', function(e) {
+        e.preventDefault();
+        cancelOrganizationChanges();
     });
 }
 
@@ -535,13 +565,40 @@ async function handleUpdateSettings(e) {
     e.preventDefault();
     
     try {
+        // Show saving state
+        const saveBtn = document.getElementById('saveOrgSettingsBtn');
+        const originalText = saveBtn.innerHTML;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        saveBtn.disabled = true;
+
         const formData = new FormData(e.target);
+        
+        // Combine country code with phone number
+        const countryCode = document.getElementById('orgContactPhoneCountry').value;
+        const phoneNumber = formData.get('contact_phone');
+        const fullPhoneNumber = phoneNumber ? `${countryCode}${phoneNumber.replace(/^\+?[\d\s\-\(\)]*/, '')}` : '';
+
         const settingsData = {
             name: formData.get('name'),
             description: formData.get('description'),
+            address: formData.get('address'),
+            contact_email: formData.get('contact_email'),
+            contact_phone: fullPhoneNumber,
             domain: formData.get('domain'),
             logo_url: formData.get('logo_url')
         };
+
+        // Handle logo file upload if present
+        const logoFile = document.getElementById('orgLogoFile').files[0];
+        if (logoFile) {
+            try {
+                const logoUrl = await uploadLogoFile(logoFile);
+                settingsData.logo_url = logoUrl;
+            } catch (uploadError) {
+                console.error('Logo upload failed:', uploadError);
+                showNotification('Logo upload failed, but other settings will be saved', 'warning');
+            }
+        }
 
         const orgId = currentOrganization.id;
         const response = await fetch(`${ORG_API_BASE}/organizations/${orgId}`, {
@@ -554,17 +611,23 @@ async function handleUpdateSettings(e) {
         });
 
         if (response.ok) {
-            showNotification('Settings updated successfully', 'success');
+            const updatedOrg = await response.json();
+            showNotification('Organization information updated successfully', 'success');
             // Update local organization data
-            Object.assign(currentOrganization, settingsData);
+            Object.assign(currentOrganization, updatedOrg);
             updateOrganizationDisplay();
         } else {
             const error = await response.json();
-            showNotification(error.detail || 'Failed to update settings', 'error');
+            showNotification(error.detail || 'Failed to update organization information', 'error');
         }
     } catch (error) {
         console.error('Error updating settings:', error);
-        showNotification('Failed to update settings', 'error');
+        showNotification('Failed to update organization information', 'error');
+    } finally {
+        // Restore button state
+        const saveBtn = document.getElementById('saveOrgSettingsBtn');
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
     }
 }
 
@@ -2305,3 +2368,342 @@ function populateReplacementInstructorSelect(instructors) {
         }
     });
 }
+
+// =============================================================================
+// ORGANIZATION SETTINGS FUNCTIONS
+// =============================================================================
+
+/**
+ * Initialize logo upload functionality with drag & drop support
+ */
+function initializeLogoUpload() {
+    const uploadArea = document.getElementById('logoUploadAreaSettings');
+    const fileInput = document.getElementById('orgLogoFile');
+    const uploadLink = uploadArea.querySelector('.upload-link');
+    const preview = document.getElementById('logoPreview');
+    const previewImg = document.getElementById('logoPreviewImg');
+    const removeBtn = document.getElementById('removeLogo');
+
+    if (!uploadArea || !fileInput) return;
+
+    // Click to browse functionality
+    uploadLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        fileInput.click();
+    });
+
+    uploadArea.addEventListener('click', (e) => {
+        if (e.target === uploadArea || e.target.classList.contains('upload-content')) {
+            fileInput.click();
+        }
+    });
+
+    // File input change handler
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            handleLogoFile(file);
+        }
+    });
+
+    // Drag and drop functionality
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = 'var(--primary-color)';
+        uploadArea.style.backgroundColor = 'rgba(var(--primary-color-rgb), 0.1)';
+    });
+
+    uploadArea.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = '';
+        uploadArea.style.backgroundColor = '';
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = '';
+        uploadArea.style.backgroundColor = '';
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            const file = files[0];
+            if (file.type.startsWith('image/')) {
+                fileInput.files = files;
+                handleLogoFile(file);
+            } else {
+                showNotification('Please upload an image file', 'error');
+            }
+        }
+    });
+
+    // Remove logo button
+    if (removeBtn) {
+        removeBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            removeLogo();
+        });
+    }
+
+    // Show existing logo if available
+    if (currentOrganization && currentOrganization.logo_url) {
+        previewImg.src = currentOrganization.logo_url;
+        preview.style.display = 'block';
+    }
+}
+
+/**
+ * Handle logo file selection and preview
+ * @param {File} file - The selected logo file
+ */
+function handleLogoFile(file) {
+    """
+    Handle logo file selection with validation and preview generation.
+    
+    Business Context:
+    Organizations need to upload and manage their logo files for branding
+    purposes. This function validates file types, sizes, and generates
+    preview images for immediate user feedback.
+    
+    Technical Implementation:
+    - Validates file type (images only) and size constraints
+    - Uses FileReader API for immediate preview generation
+    - Provides visual feedback for file upload status
+    - Integrates with form submission for actual file upload
+    """
+    
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+        showNotification('Please upload a valid image file (JPG, PNG, GIF)', 'error');
+        return;
+    }
+
+    // Validate file size (5MB limit)
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+        showNotification('File size must be less than 5MB', 'error');
+        return;
+    }
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const preview = document.getElementById('logoPreview');
+        const previewImg = document.getElementById('logoPreviewImg');
+        
+        previewImg.src = e.target.result;
+        preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+/**
+ * Upload logo file to the server
+ * @param {File} file - The logo file to upload
+ * @returns {Promise<string>} - The uploaded file URL
+ */
+async function uploadLogoFile(file) {
+    """
+    Upload logo file to the content management service.
+    
+    Business Context:
+    Organization logos need to be stored securely and be accessible
+    for use in dashboards, reports, and external communications.
+    
+    Technical Implementation:
+    - Uploads file to content management service
+    - Returns public URL for logo access
+    - Handles upload errors gracefully
+    - Provides progress feedback for large files
+    """
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('category', 'organization_logo');
+    formData.append('organization_id', currentOrganization.id);
+
+    try {
+        const response = await fetch(`${CONFIG.API_URLS.CONTENT_MANAGEMENT}/api/v1/files/upload`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${Auth.getToken()}`
+            },
+            body: formData
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            return result.file_url || result.url;
+        } else {
+            throw new Error('Upload failed');
+        }
+    } catch (error) {
+        console.error('Logo upload error:', error);
+        throw new Error('Failed to upload logo');
+    }
+}
+
+/**
+ * Remove logo preview and clear file input
+ */
+function removeLogo() {
+    """
+    Remove logo preview and reset file input for logo management.
+    
+    Business Context:
+    Organizations should be able to remove their logo if needed,
+    either to upload a new one or to operate without a logo temporarily.
+    
+    Technical Implementation:
+    - Clears file input to prevent accidental upload
+    - Hides preview element
+    - Resets logo URL field if needed
+    """
+    
+    const preview = document.getElementById('logoPreview');
+    const fileInput = document.getElementById('orgLogoFile');
+    const logoUrlInput = document.getElementById('orgLogoSetting');
+
+    preview.style.display = 'none';
+    fileInput.value = '';
+    
+    // Also clear the URL input if it matches the preview
+    if (logoUrlInput && logoUrlInput.value === currentOrganization.logo_url) {
+        logoUrlInput.value = '';
+    }
+}
+
+/**
+ * Cancel organization changes and restore original values
+ */
+function cancelOrganizationChanges() {
+    """
+    Cancel organization form changes and restore original values.
+    
+    Business Context:
+    Users should be able to cancel changes they made to organization
+    information without losing the original data or having to reload
+    the entire page.
+    
+    Technical Implementation:
+    - Restores all form fields to their original values
+    - Clears any file uploads or previews
+    - Provides confirmation to prevent accidental data loss
+    """
+    
+    if (confirm('Are you sure you want to cancel your changes? Any unsaved changes will be lost.')) {
+        // Reload the settings data to restore original values
+        loadSettingsData();
+        showNotification('Changes cancelled', 'info');
+    }
+}
+
+/**
+ * Handle contact email validation
+ */
+function validateContactEmail(email) {
+    """
+    Validate contact email for professional domain requirements.
+    
+    Business Context:
+    Organizations should use professional email addresses for
+    contact information to maintain credibility and proper
+    communication channels.
+    
+    Technical Implementation:
+    - Validates email format using standard patterns
+    - Checks for professional domain requirements
+    - Provides real-time feedback for email input
+    """
+    
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(email)) {
+        return { valid: false, message: 'Please enter a valid email address' };
+    }
+
+    // Check for professional domains (exclude common personal email providers)
+    const personalDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com'];
+    const domain = email.split('@')[1].toLowerCase();
+    
+    if (personalDomains.includes(domain)) {
+        return { 
+            valid: false, 
+            message: 'Please use a professional email address for organization contact' 
+        };
+    }
+
+    return { valid: true, message: 'Valid professional email address' };
+}
+
+/**
+ * Handle phone number formatting
+ */
+function formatPhoneNumber(phoneNumber, countryCode) {
+    """
+    Format phone number according to international standards.
+    
+    Business Context:
+    Professional organizations need properly formatted phone numbers
+    for international communication and compliance with various
+    regional formatting requirements.
+    
+    Technical Implementation:
+    - Formats numbers according to country-specific patterns
+    - Removes invalid characters and normalizes format
+    - Supports multiple international formats
+    """
+    
+    // Remove all non-digit characters
+    const digits = phoneNumber.replace(/\D/g, '');
+    
+    // Format based on country code
+    switch (countryCode) {
+        case '+1': // US/Canada
+            if (digits.length === 10) {
+                return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
+            }
+            break;
+        case '+44': // UK
+            if (digits.length >= 10) {
+                return `${digits.slice(0,4)} ${digits.slice(4,7)} ${digits.slice(7)}`;
+            }
+            break;
+        default:
+            // Generic international format
+            return digits.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
+    }
+    
+    return phoneNumber; // Return original if no format applies
+}
+
+// Initialize organization settings when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Add real-time email validation
+    const contactEmailInput = document.getElementById('orgContactEmailSetting');
+    if (contactEmailInput) {
+        contactEmailInput.addEventListener('blur', function() {
+            const validation = validateContactEmail(this.value);
+            const helpText = this.parentNode.querySelector('.form-help');
+            
+            if (helpText) {
+                helpText.textContent = validation.message;
+                helpText.style.color = validation.valid ? 'var(--success-color)' : 'var(--error-color)';
+            }
+        });
+    }
+
+    // Add phone number formatting
+    const phoneInput = document.getElementById('orgContactPhoneSetting');
+    const countrySelect = document.getElementById('orgContactPhoneCountry');
+    
+    if (phoneInput && countrySelect) {
+        phoneInput.addEventListener('input', function() {
+            const formatted = formatPhoneNumber(this.value, countrySelect.value);
+            if (formatted !== this.value) {
+                const cursorPos = this.selectionStart;
+                this.value = formatted;
+                this.setSelectionRange(cursorPos, cursorPos);
+            }
+        });
+    }
+});

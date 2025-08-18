@@ -1,21 +1,30 @@
 # Course Creator Platform - API Documentation
 
+**Version**: 3.0.0 - Password Management & Enhanced UI Features  
+**Last Updated**: 2025-08-11
+
 ## Overview
 
 The Course Creator Platform provides a comprehensive RESTful API for managing courses, users, and content. The API is built using FastAPI and follows REST conventions with a microservices architecture.
+
+**Version 3.0 Highlights:**
+- ✨ **Password Management System**: Self-service password changes with JWT authentication
+- 🏢 **Enhanced Organization Registration**: Automatic admin account creation with password setup
+- 🔐 **Professional Email Validation**: Business-only email enforcement with detailed error handling
+- 📝 **Comprehensive Form Validation**: Real-time validation with specific error messages
 
 ## Microservices Architecture
 
 The platform consists of 8 core backend services including the Enhanced RBAC System:
 
-1. **User Management Service** (Port 8000) - Authentication, user profiles, basic RBAC
+1. **User Management Service** (Port 8000) - Authentication, user profiles, basic RBAC, **password management system**
 2. **Course Generator Service** (Port 8001) - AI-powered content generation
 3. **Content Storage Service** (Port 8003) - File storage and versioning
 4. **Course Management Service** (Port 8004) - Course CRUD operations and bi-directional feedback
 5. **Content Management Service** (Port 8005) - Upload/download and multi-format export
 6. **Lab Container Manager Service** (Port 8006) - Individual student Docker container management with multi-IDE support
 7. **Analytics Service** (Port 8007) - Student analytics, progress tracking, and learning insights
-8. **Organization Management Service** (Port 8008) - Enhanced RBAC System with multi-tenant organization management
+8. **Organization Management Service** (Port 8008) - Enhanced RBAC System with multi-tenant organization management and **automatic admin account creation with password management**
 
 ## Base URLs
 
@@ -62,6 +71,27 @@ Response:
   }
 }
 ```
+
+## Security Considerations (v3.0)
+
+### Password Security
+- **Minimum Requirements**: 8 characters minimum, complexity scoring based on character types
+- **Professional Email Enforcement**: Business-only emails required for organization registration (blocks Gmail, Yahoo, etc.)
+- **Current Password Verification**: Password changes require current password validation
+- **JWT Token Authentication**: All password operations require valid JWT tokens
+- **Secure Transmission**: Use HTTPS in production for all password-related operations
+
+### Professional Organization Validation
+- **Email Domain Filtering**: Automatic rejection of personal email providers
+- **Phone Number Validation**: Professional contact numbers required with international format support
+- **Address Requirements**: Complete physical addresses required (minimum 10 characters)
+- **Slug Uniqueness**: Organization identifiers must be unique across the platform
+
+### Rate Limiting and Security Headers
+- **Rate Limiting**: Password change attempts are rate-limited per user
+- **CORS Headers**: Proper CORS configuration for browser-based clients
+- **Content Security Policy**: Strict CSP headers for frontend security
+- **Authentication Timeouts**: JWT tokens have configurable expiration times
 
 ## Core Endpoints
 
@@ -153,6 +183,70 @@ Response:
   "full_name": "John Doe",
   "role": "student",
   "created_at": "2025-07-16T10:30:00Z"
+}
+```
+
+### Password Management (v3.0)
+
+Change the current user's password. Requires authentication.
+
+```http
+POST http://localhost:8000/auth/password/change
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "old_password": "current-password",
+  "new_password": "new-secure-password"
+}
+```
+
+**Request Parameters:**
+- `old_password` (string, required): Current password for verification
+- `new_password` (string, required): New password (minimum 8 characters)
+
+**Success Response:**
+```json
+{
+  "message": "Password changed successfully"
+}
+```
+
+**Error Responses:**
+```json
+// Invalid old password
+{
+  "detail": "Invalid old password"
+}
+
+// Validation error
+{
+  "detail": "New password must be at least 8 characters long"
+}
+
+// Authentication required
+{
+  "detail": "Authentication required"
+}
+```
+
+### Password Reset
+
+Request a password reset (sends reset email).
+
+```http
+POST http://localhost:8000/auth/password/reset
+Content-Type: application/json
+
+{
+  "email": "user@example.com"
+}
+```
+
+**Success Response:**
+```json
+{
+  "message": "Password reset email sent"
 }
 ```
 
@@ -840,9 +934,117 @@ Response:
 }
 ```
 
-#### Create Organization
+#### Create Organization with Admin Account (v3.0)
 
-Create a new organization (Site Admin only).
+Create a new organization with automatic administrator account creation. This endpoint allows professional organizations to register with complete admin user setup.
+
+```http
+POST http://localhost:8008/api/v1/organizations
+Content-Type: application/json
+
+{
+  "name": "Tech Training Institute",
+  "slug": "tech-training",
+  "address": "123 Innovation Drive, Silicon Valley, CA 94043",
+  "contact_phone": "+14155551234",
+  "contact_email": "contact@techtraining.com",
+  "description": "Professional technology training and certification",
+  "domain": "https://techtraining.com",
+  "logo_url": "https://techtraining.com/logo.png",
+  "admin_full_name": "Sarah Johnson",
+  "admin_email": "sarah.johnson@techtraining.com",
+  "admin_phone": "+14155551235",
+  "admin_role": "organization_admin",
+  "admin_roles": ["organization_admin", "instructor"],
+  "admin_password": "SecureAdminPassword123!"
+}
+```
+
+**Request Parameters:**
+- `name` (string, required): Official organization name
+- `slug` (string, required): URL-friendly identifier (lowercase, hyphens only)
+- `address` (string, required): Complete physical address (min 10 chars)
+- `contact_phone` (string, required): Professional contact phone number
+- `contact_email` (string, required): Professional email (no personal providers like Gmail)
+- `admin_full_name` (string, required): Full name of organization administrator
+- `admin_email` (string, required): Administrator email (professional domain required)
+- `admin_password` (string, required): Administrator password (min 8 chars)
+- `admin_role` (string, required): Primary role (`organization_admin`, `instructor`, or `student`)
+- `description` (string, optional): Organization description
+- `domain` (string, optional): Organization website domain
+- `logo_url` (string, optional): URL to organization logo
+- `admin_phone` (string, optional): Administrator phone number
+- `admin_roles` (array, optional): All roles assigned to the administrator
+
+**Success Response:**
+```json
+{
+  "id": "org-789",
+  "name": "Tech Training Institute",
+  "slug": "tech-training",
+  "description": "Professional technology training and certification",
+  "address": "123 Innovation Drive, Silicon Valley, CA 94043",
+  "contact_phone": "+14155551234",
+  "contact_email": "contact@techtraining.com",
+  "logo_url": "https://techtraining.com/logo.png",
+  "domain": "https://techtraining.com",
+  "is_active": true,
+  "member_count": 1,
+  "project_count": 0,
+  "created_at": "2025-08-11T16:00:00Z",
+  "updated_at": "2025-08-11T16:00:00Z"
+}
+```
+
+**Error Responses:**
+```json
+// Professional email validation error
+{
+  "detail": "Invalid organization data: Personal email provider gmail.com not allowed. Please use a professional business email address."
+}
+
+// Password validation error  
+{
+  "detail": "Invalid organization data: Password must be at least 8 characters long"
+}
+
+// Duplicate organization
+{
+  "detail": "Organization with slug 'tech-training' already exists"
+}
+```
+
+#### Create Organization with Logo Upload (v3.0)
+
+Create an organization with logo file upload (multipart form data).
+
+```http
+POST http://localhost:8008/api/v1/organizations/upload
+Content-Type: multipart/form-data
+
+name=Tech Training Institute
+slug=tech-training
+address=123 Innovation Drive, Silicon Valley, CA 94043
+contact_phone=+14155551234
+contact_email=contact@techtraining.com
+description=Professional technology training
+domain=techtraining.com
+admin_full_name=Sarah Johnson
+admin_email=sarah.johnson@techtraining.com
+admin_phone=+14155551235
+admin_role=organization_admin
+admin_password=SecureAdminPassword123!
+logo=@/path/to/logo.png
+```
+
+**File Requirements:**
+- Logo file: JPG, PNG, or GIF format
+- Maximum size: 5MB
+- Recommended dimensions: 200x200px or larger
+
+#### Create Organization (RBAC - Site Admin Only)
+
+Create a new organization via RBAC system (Site Admin only).
 
 ```http
 POST http://localhost:8008/api/v1/rbac/organizations
@@ -851,7 +1053,7 @@ Content-Type: application/json
 
 {
   "name": "New Educational Institute",
-  "slug": "new-edu-institute",
+  "slug": "new-edu-institute", 
   "description": "Innovative education platform",
   "settings": {
     "max_members": 500,
@@ -869,7 +1071,7 @@ Response:
   "id": "org-456",
   "name": "New Educational Institute",
   "slug": "new-edu-institute",
-  "description": "Innovative education platform",
+  "description": "Innovative education platform", 
   "is_active": true,
   "settings": {
     "max_members": 500,

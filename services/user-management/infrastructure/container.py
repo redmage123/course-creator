@@ -75,9 +75,6 @@ from omegaconf import DictConfig
 import logging
 
 # Domain interfaces
-from domain.interfaces.user_repository import IUserRepository
-from domain.interfaces.session_repository import ISessionRepository
-from domain.interfaces.role_repository import IRoleRepository
 from domain.interfaces.user_service import IUserService, IAuthenticationService
 from domain.interfaces.session_service import ISessionService, ITokenService
 
@@ -90,8 +87,9 @@ from application.services.authentication_service import AuthenticationService
 from application.services.session_service import SessionService, TokenService
 
 # Infrastructure implementations
-from infrastructure.repositories.postgresql_user_repository import PostgreSQLUserRepository
-from infrastructure.repositories.postgresql_session_repository import PostgreSQLSessionRepository
+
+# DAO implementations  
+from data_access.user_dao import UserManagementDAO
 
 class UserManagementContainer:
     """
@@ -207,8 +205,13 @@ class UserManagementContainer:
         # Initialize Redis cache manager for authentication caching
         logger.info("Initializing Redis cache manager for authentication performance optimization...")
         try:
-            # Get Redis URL from config or use default
-            redis_url = getattr(self._config, 'redis', {}).get('url', 'redis://localhost:6379')
+            # FIXED: Manually resolve environment variables since Hydra interpolation not working
+            import os
+            redis_host = os.getenv('REDIS_HOST', 'localhost')
+            redis_port = os.getenv('REDIS_PORT', '6379')
+            redis_url = f'redis://{redis_host}:{redis_port}'
+            
+            logger.info(f"Connecting to Redis at: {redis_url}")
             
             # Initialize global cache manager for memoization decorators
             cache_manager = await initialize_cache_manager(redis_url)
@@ -223,8 +226,20 @@ class UserManagementContainer:
         
         # Create optimized database connection pool for production workloads
         logger.info("Initializing PostgreSQL connection pool...")
+        
+        # FIXED: Manually resolve database URL environment variables
+        import os
+        db_user = os.getenv('DB_USER', 'postgres')
+        db_password = os.getenv('DB_PASSWORD', 'postgres_password')
+        db_host = os.getenv('DB_HOST', 'postgres')
+        db_port = os.getenv('DB_PORT', '5432')
+        db_name = os.getenv('DB_NAME', 'course_creator')
+        
+        database_url = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}?options=-csearch_path=course_creator,public"
+        logger.info(f"Connecting to database at: postgresql://{db_user}:***@{db_host}:{db_port}/{db_name}")
+        
         self._connection_pool = await asyncpg.create_pool(
-            self._config.database.url,
+            database_url,
             min_size=5,      # Always have connections available
             max_size=20,     # Scale up for concurrent requests
             command_timeout=60  # Prevent hanging operations
@@ -254,59 +269,19 @@ class UserManagementContainer:
             await self._connection_pool.close()
             logger.info("Database connection pool closed successfully")
     
-    # Repository factories (following Dependency Inversion)
-    def get_user_repository(self) -> IUserRepository:
-        """
-        Get user repository instance with lazy initialization.
-        
-        Returns a singleton instance of the user repository configured
-        with the database connection pool. Uses lazy initialization
-        to create the repository only when first requested.
-        
-        Returns:
-            IUserRepository: Configured PostgreSQL user repository instance
-        
-        Raises:
-            RuntimeError: If container not initialized before use
-        
-        Design Pattern:
-            Singleton pattern ensures single repository instance
-            for connection pool efficiency and state consistency.
-        """
-        if not self._user_repository:
-            if not self._connection_pool:
-                raise RuntimeError("Container not initialized - call initialize() first")
-            
-            self._user_repository = PostgreSQLUserRepository(self._connection_pool)
-        
-        return self._user_repository
     
-    def get_session_repository(self) -> ISessionRepository:
-        """Get session repository instance"""
-        if not self._session_repository:
-            if not self._connection_pool:
-                raise RuntimeError("Container not initialized - call initialize() first")
-            
-            self._session_repository = PostgreSQLSessionRepository(self._connection_pool)
-        
-        return self._session_repository
-    
-    def get_role_repository(self) -> IRoleRepository:
-        """Get role repository instance"""
-        if not self._role_repository:
-            # For now, return a mock implementation
-            # In a complete implementation, this would be:
-            # self._role_repository = PostgreSQLRoleRepository(self._connection_pool)
-            self._role_repository = MockRoleRepository()
-        
-        return self._role_repository
+    def get_user_dao(self) -> UserManagementDAO:
+        """Get user DAO instance"""
+        if not hasattr(self, '_user_dao') or not self._user_dao:
+            self._user_dao = UserManagementDAO(self._connection_pool)
+        return self._user_dao
     
     # Service factories (following Dependency Inversion)
     def get_authentication_service(self) -> IAuthenticationService:
         """Get authentication service instance"""
         if not self._authentication_service:
             self._authentication_service = AuthenticationService(
-                user_repository=self.get_user_repository()
+                user_dao=self.get_user_dao()
             )
         
         return self._authentication_service
@@ -332,13 +307,8 @@ class UserManagementContainer:
     
     def get_session_service(self) -> ISessionService:
         """Get session service instance"""
-        if not self._session_service:
-            self._session_service = SessionService(
-                session_repository=self.get_session_repository(),
-                token_service=self.get_token_service()
-            )
-        
-        return self._session_service
+        # Temporary mock for DAO migration
+        return None
 
 
 # Mock implementation for demonstration (would be replaced with real PostgreSQL implementation)

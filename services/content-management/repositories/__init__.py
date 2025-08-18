@@ -1,1 +1,0 @@
-# Repositories module for Content Management Service

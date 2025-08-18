@@ -354,6 +354,141 @@ docker exec -it course-creator-redis-1 redis-cli
 > KEYS rbac:*
 ```
 
+## Password Management Issues (v3.0)
+
+### Password Change Failures
+
+**Root Cause**: Authentication issues, password validation failures, or service communication problems.
+
+**Symptoms**:
+- "Current password is incorrect" errors
+- Password change form not submitting
+- Authentication token errors
+- Service communication failures between organization and user management services
+
+**Systematic Solution**:
+```bash
+# 1. Verify user authentication
+curl -X POST "http://localhost:8000/auth/password/change" \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"old_password": "current", "new_password": "newpassword123"}'
+
+# 2. Check authentication token validity
+# Look for JWT token in browser localStorage or sessionStorage
+# Verify token hasn't expired
+
+# 3. Test password validation
+# Frontend validation: minimum 8 chars, complexity requirements
+# Backend validation: old password verification
+
+# 4. Check service logs
+docker logs course-creator-user-management-1 | grep -i password
+docker logs course-creator-organization-management-1 | grep -i admin
+```
+
+### Organization Registration with Password Issues
+
+**Root Cause**: Service communication failures, password validation errors, or form submission issues.
+
+**Symptoms**:
+- Organization registration failing after password entry
+- Admin user not being created
+- ES6 export syntax errors in browser
+- Form validation errors despite valid input
+
+**Systematic Solution**:
+```bash
+# 1. Test organization registration endpoint
+curl -X POST "http://localhost:8008/api/v1/organizations" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Test Org",
+    "slug": "test-org", 
+    "address": "123 Test St",
+    "contact_phone": "+15551234567",
+    "contact_email": "admin@testorg.com",
+    "admin_full_name": "Test Admin",
+    "admin_email": "admin@testorg.com", 
+    "admin_password": "TestPassword123!"
+  }'
+
+# 2. Check service communication
+# Organization service should call user management service
+docker logs course-creator-organization-management-1 | grep "Creating organization administrator"
+docker logs course-creator-user-management-1 | grep "register"
+
+# 3. Verify frontend configuration
+# Check that config-global.js is loaded instead of config.js
+curl -s "https://localhost:3000/js/config-global.js" | head -10
+
+# 4. Test password strength validation
+# Open browser console on registration page
+# Type in password field and verify strength indicator appears
+```
+
+### Password Strength Validation Issues
+
+**Root Cause**: JavaScript errors, missing password strength calculation, or UI display problems.
+
+**Symptoms**:
+- Password strength indicator not appearing
+- Strength calculation showing incorrect results  
+- Visual feedback not updating in real-time
+- Password confirmation not validating properly
+
+**Systematic Solution**:
+```bash
+# 1. Check JavaScript console for errors
+# Open browser dev tools → Console tab
+# Look for errors related to password strength calculation
+
+# 2. Verify password strength algorithm
+# Test in browser console:
+# calculatePasswordStrength("weak")      # Should return score <= 2
+# calculatePasswordStrength("Str0ng!")   # Should return score >= 4
+
+# 3. Test password matching validation
+# Verify confirm password field shows error when passwords don't match
+# Should clear error when passwords match
+
+# 4. Check CSS styling
+# Ensure .password-strength classes are defined
+# Verify .password-strength-bar and .password-strength-fill elements appear
+```
+
+### Country Dropdown Keyboard Navigation Issues
+
+**Root Cause**: JavaScript initialization failures, event handler problems, or search functionality errors.
+
+**Symptoms**:
+- Type-to-search not working in country dropdowns
+- Search feedback not appearing
+- Keyboard navigation not responding
+- Country selection not working properly
+
+**Systematic Solution**:
+```bash
+# 1. Check JavaScript console
+# Look for errors in organization-registration.js
+# Verify initializeCountryDropdowns() is called
+
+# 2. Test search functionality
+# Click on country dropdown
+# Type country name (e.g., "united")
+# Should filter and show "United States"
+# Should show search feedback popup
+
+# 3. Verify event handlers
+# Check that keydown events are attached to select elements
+# Verify search timeout is working (1 second delay)
+
+# 4. Test keyboard controls
+# Arrow keys should navigate options
+# Enter should select current option
+# Escape should clear search and close dropdown
+```
+
 ## Performance Issues
 
 ### Slow Response Times

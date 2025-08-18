@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """
 User Management Service - Main Entry Point
 
@@ -35,8 +36,21 @@ Author: Course Creator Platform Team
 Version: 2.3.0
 Last Updated: 2025-08-02
 """
-import logging
+
+# CRITICAL: Load environment variables BEFORE importing hydra
+# This ensures Hydra can resolve ${oc.env:VAR} interpolations when loading config
 import os
+if os.path.exists('/app/shared/.cc_env'):
+    with open('/app/shared/.cc_env', 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                key, value = line.split('=', 1)
+                # Remove quotes if present
+                value = value.strip('"\'')
+                os.environ[key] = value
+
+import logging
 import hydra
 from omegaconf import DictConfig
 import uvicorn
@@ -210,7 +224,7 @@ def main(cfg: DictConfig) -> None:
         # - Route registration
         user_app = ApplicationFactory.create_app(cfg)
         
-        # Start uvicorn server with optimized logging configuration
+        # Start uvicorn server with HTTPS/SSL configuration
         # We reduce uvicorn's logging since we handle logging through middleware
         # and centralized logging system to avoid duplicate log entries
         uvicorn.run(
@@ -219,14 +233,29 @@ def main(cfg: DictConfig) -> None:
             port=getattr(cfg, 'server', {}).get('port', 8000),
             log_level="warning",  # Reduce uvicorn verbosity (we handle app logging)
             access_log=False,     # Disable uvicorn access log (handled by middleware)
-            reload=getattr(cfg, 'server', {}).get('debug', False)  # Auto-reload in dev
+            reload=getattr(cfg, 'server', {}).get('debug', False),  # Auto-reload in dev
+            ssl_keyfile="/app/ssl/nginx-selfsigned.key",
+            ssl_certfile="/app/ssl/nginx-selfsigned.crt"
         )
 
     except Exception as e:
         # Log startup failures for debugging and monitoring
         # Re-raise to ensure container health checks fail appropriately
         service_logger.error("Failed to start service: %s", e)
-        raise e
+        # Import shared exceptions
+        import sys
+        sys.path.append('/app/shared')
+        from exceptions import ConfigurationException
+        raise ConfigurationException(
+            message="User Management Service failed to start",
+            error_code="SERVICE_STARTUP_ERROR",
+            details={
+                "service": "user-management",
+                "port": 8000,
+                "common_causes": ["database connectivity", "configuration issues", "port conflicts"]
+            },
+            original_exception=e
+        )
 
 # Entry point for direct Python execution
 # When run as 'python main.py', this will invoke the Hydra-decorated main function

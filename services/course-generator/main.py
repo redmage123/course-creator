@@ -1,3 +1,17 @@
+#!/usr/bin/env python3
+
+# Load environment variables from .cc_env file if present
+import os
+if os.path.exists('/app/shared/.cc_env'):
+    with open('/app/shared/.cc_env', 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                key, value = line.split('=', 1)
+                # Remove quotes if present
+                value = value.strip('"\'')
+                os.environ[key] = value
+
 """
 Course Generator Service - AI-Powered Educational Content Creation Platform
 
@@ -80,9 +94,15 @@ import logging
 import os
 # Removed unused imports: sys, Path
 
-import hydra
+try:
+    import hydra
+    HYDRA_AVAILABLE = True
+except ImportError:
+    HYDRA_AVAILABLE = False
+    hydra = None
+
 import uvicorn
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 
 from app.factory import ApplicationFactory
 
@@ -182,8 +202,7 @@ def create_app_instance(config_dict: dict = None):
 # Create app instance for uvicorn to find
 app = create_app_instance()
 
-@hydra.main(version_base=None, config_path="conf", config_name="config")
-def main(config: DictConfig) -> None:
+def main(config: DictConfig = None) -> None:
     """
     Main entry point for the AI-powered Course Generator Service.
     
@@ -280,6 +299,10 @@ def main(config: DictConfig) -> None:
         This function should only be called directly for production deployments.
         For development and testing, use create_app_instance() instead.
     """
+    # If no config provided (hydra not available), create default config
+    if config is None:
+        config = OmegaConf.create(_default_config)
+    
     # Setup centralized logging with syslog format for production monitoring
     service_name = os.environ.get('SERVICE_NAME', 'course-generator')
     log_level = os.environ.get('LOG_LEVEL', getattr(config, 'log', {}).get('level', 'INFO'))
@@ -310,7 +333,7 @@ def main(config: DictConfig) -> None:
         
         service_logger.info(f"Starting Course Generator Service on {host}:{port} (debug: {debug_mode})")
         
-        # Start server with optimized settings for AI content generation workloads
+        # Start server with HTTPS/SSL configuration and optimized settings for AI content generation workloads
         uvicorn.run(
             course_app,
             host=host,
@@ -319,6 +342,9 @@ def main(config: DictConfig) -> None:
             access_log=False,     # Disable uvicorn access log to prevent log duplication
             reload=debug_mode,    # Enable hot reload only in debug mode
             workers=1 if debug_mode else None,  # Single worker in debug, auto-detect in production
+            # SSL configuration for HTTPS
+            ssl_keyfile="/app/ssl/nginx-selfsigned.key",
+            ssl_certfile="/app/ssl/nginx-selfsigned.crt",
             # Optimize for AI content generation workloads
             loop="asyncio",       # Use asyncio for optimal async performance
             http="httptools",     # Use httptools for better HTTP parsing performance
@@ -328,7 +354,26 @@ def main(config: DictConfig) -> None:
     except Exception as e:
         service_logger.error(f"Failed to start Course Generator Service: {e}")
         service_logger.error("This may be due to missing AI API keys, database connectivity, or port conflicts")
-        raise e
+        # Import shared exceptions
+        import sys
+        from exceptions import ConfigurationException
+        raise ConfigurationException(
+            message="Course Generator Service failed to start",
+            error_code="SERVICE_STARTUP_ERROR",
+            details={
+                "service": "course-generator",
+                "common_causes": ["missing AI API keys", "database connectivity", "port conflicts"]
+            },
+            original_exception=e
+        )
 
 if __name__ == "__main__":
-    main()
+    if HYDRA_AVAILABLE:
+        # Use hydra configuration if available
+        @hydra.main(version_base=None, config_path="conf", config_name="config")
+        def main_with_config(config: DictConfig) -> None:
+            main(config)
+        main_with_config()
+    else:
+        # Use default configuration if hydra not available
+        main()

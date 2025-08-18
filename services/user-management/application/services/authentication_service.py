@@ -61,7 +61,7 @@ import secrets
 import string
 from passlib.context import CryptContext
 
-from domain.interfaces.user_repository import IUserRepository
+from data_access.user_dao import UserManagementDAO
 from domain.interfaces.user_service import IAuthenticationService
 from domain.entities.user import User
 
@@ -112,15 +112,15 @@ class AuthenticationService(IAuthenticationService):
         temp_password = await auth_service.reset_password("user@example.com")
     """
     
-    def __init__(self, user_repository: IUserRepository):
+    def __init__(self, user_dao: UserManagementDAO):
         """
         Initialize the authentication service with required dependencies.
         
         Sets up the authentication service with secure password hashing configuration
-        and user data access through the repository pattern.
+        and user data access through the DAO pattern.
         
         Args:
-            user_repository (IUserRepository): Repository for user data access
+            user_dao (UserDAO): DAO for user data access
         
         Security Configuration:
             - bcrypt hashing algorithm for password security
@@ -133,7 +133,7 @@ class AuthenticationService(IAuthenticationService):
             - Configured for production security requirements
             - Extensible for additional hashing algorithms
         """
-        self._user_repository = user_repository
+        self._user_dao = user_dao
         """
         Configure password hashing context with bcrypt algorithm.
         
@@ -150,17 +150,17 @@ class AuthenticationService(IAuthenticationService):
         """
         self._pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     
-    async def authenticate_user(self, email: str, password: str) -> Optional[User]:
+    async def authenticate_user(self, username_or_email: str, password: str) -> Optional[User]:
         """
-        Authenticate user with email and password credentials.
+        Authenticate user with username/email and password credentials.
         
         This is the primary authentication method used for user login. It performs
         comprehensive validation including credential verification, account status
         checks, and login activity tracking.
         
         Authentication Flow:
-            1. Input validation (email and password provided)
-            2. User lookup by email address
+            1. Input validation (username/email and password provided)
+            2. User lookup by username or email address
             3. Account status verification (must be active)
             4. Password verification with secure hashing
             5. Login activity recording and timestamp update
@@ -174,7 +174,7 @@ class AuthenticationService(IAuthenticationService):
             - Failed authentication returns None (no error details)
         
         Args:
-            email (str): User's email address for identification
+            username_or_email (str): User's username or email address for identification
             password (str): Plain text password for verification
         
         Returns:
@@ -194,20 +194,44 @@ class AuthenticationService(IAuthenticationService):
                 # Authentication failed, deny access
         """
         """
-        Input validation: Ensure both email and password are provided.
+        Input validation: Ensure both username/email and password are provided.
         Early return prevents unnecessary database queries and provides
         consistent timing for invalid inputs.
         """
-        if not email or not password:
+        if not username_or_email or not password:
             return None
         
         """
-        User lookup: Find user by email address.
-        Using email as primary identifier for authentication.
+        User lookup: Find user by username or email address.
+        Try username first (for admin users), then fall back to email.
         """
-        user = await self._user_repository.get_by_email(email)
-        if not user:
+        # First try to find by username
+        user_data = await self._user_dao.get_user_by_username(username_or_email)
+        
+        # If not found by username, try by email
+        if not user_data:
+            user_data = await self._user_dao.get_user_by_email(username_or_email)
+        
+        if not user_data:
             return None
+        
+        # Convert user_data dict to User entity
+        from domain.entities.user import UserRole, UserStatus
+        user = User(
+            id=str(user_data['id']),
+            email=user_data['email'],
+            username=user_data['username'],
+            full_name=user_data['full_name'],
+            role=UserRole(user_data['role']),
+            status=UserStatus(user_data['status']),
+            first_name=user_data.get('first_name'),
+            last_name=user_data.get('last_name'),
+            organization=user_data.get('organization'),
+            created_at=user_data.get('created_at'),
+            updated_at=user_data.get('updated_at'),
+            last_login=user_data.get('last_login'),
+            metadata={'hashed_password': user_data['hashed_password']}
+        )
         
         """
         Account status verification: Only active users can authenticate.
@@ -218,23 +242,26 @@ class AuthenticationService(IAuthenticationService):
         
         """
         Password verification: Use secure bcrypt verification.
-        In production, passwords should be stored in separate secure storage,
-        but for this implementation we use user metadata.
         """
-        if await self.verify_password(user.id, password):
-            """
-            Successful authentication: Record login activity and update user.
-            This provides audit trail and login timestamp tracking.
-            """
-            user.record_login()
-            await self._user_repository.update(user)
-            return user
+        hashed_password = user_data['hashed_password']
+        
+        if hashed_password:
+            try:
+                is_valid = self._pwd_context.verify(password, hashed_password)
+                if is_valid:
+                    """
+                    Successful authentication: Record login activity.
+                    """
+                    user.record_login()
+                    return user
+            except Exception:
+                pass
         
         return None
     
     async def change_password(self, user_id: str, old_password: str, new_password: str) -> bool:
         """Change user password"""
-        user = await self._user_repository.get_by_id(user_id)
+        user = await self._user_dao.get_by_id(user_id)
         if not user:
             return False
         
@@ -252,13 +279,13 @@ class AuthenticationService(IAuthenticationService):
         # In real implementation, store password in separate secure storage
         # For now, we'll add it to user metadata (not recommended for production)
         user.add_metadata('password_hash', hashed_password)
-        await self._user_repository.update(user)
+        await self._user_dao.update(user)
         
         return True
     
     async def reset_password(self, email: str) -> str:
         """Reset password and return temporary password"""
-        user = await self._user_repository.get_by_email(email)
+        user = await self._user_dao.get_by_email(email)
         if not user:
             raise ValueError("User not found")
         
@@ -270,13 +297,13 @@ class AuthenticationService(IAuthenticationService):
         user.add_metadata('password_hash', hashed_password)
         user.add_metadata('password_reset', True)
         
-        await self._user_repository.update(user)
+        await self._user_dao.update(user)
         
         return temp_password
     
     async def verify_password(self, user_id: str, password: str) -> bool:
         """Verify user password"""
-        user = await self._user_repository.get_by_id(user_id)
+        user = await self._user_dao.get_by_id(user_id)
         if not user:
             return False
         
@@ -285,7 +312,10 @@ class AuthenticationService(IAuthenticationService):
         if not stored_hash:
             return False
         
-        return self._pwd_context.verify(password, stored_hash)
+        try:
+            return self._pwd_context.verify(password, stored_hash)
+        except Exception as e:
+            return False
     
     async def hash_password(self, password: str) -> str:
         """
@@ -378,23 +408,23 @@ class AuthenticationService(IAuthenticationService):
     
     async def require_password_change(self, user_id: str) -> bool:
         """Mark user as requiring password change"""
-        user = await self._user_repository.get_by_id(user_id)
+        user = await self._user_dao.get_by_id(user_id)
         if not user:
             return False
         
         user.add_metadata('require_password_change', True)
-        await self._user_repository.update(user)
+        await self._user_dao.update(user)
         
         return True
     
     async def clear_password_reset_flag(self, user_id: str) -> bool:
         """Clear password reset flag after successful password change"""
-        user = await self._user_repository.get_by_id(user_id)
+        user = await self._user_dao.get_by_id(user_id)
         if not user:
             return False
         
         user.remove_metadata('password_reset')
         user.remove_metadata('require_password_change')
-        await self._user_repository.update(user)
+        await self._user_dao.update(user)
         
         return True

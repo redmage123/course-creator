@@ -22,13 +22,35 @@ class UserService(IUserService):
         self._user_repository = user_repository
         self._auth_service = auth_service
     
+    async def validate_user_id_available(self, user_id: str) -> bool:
+        """
+        Check if custom user ID is available.
+        
+        Business Context:
+        User ID uniqueness validation ensures data integrity when users
+        specify custom IDs during registration, preventing conflicts.
+        """
+        return not await self._user_repository.exists_by_id(user_id)
+
     async def create_user(self, user_data: Dict[str, Any], password: str) -> User:
-        """Create a new user with password"""
+        """
+        Create a new user with password and optional custom user ID validation.
+        
+        Business Context:
+        User creation supports both auto-generated and custom user IDs. When a custom
+        user ID is provided, the system validates its uniqueness before proceeding
+        with account creation to maintain data integrity.
+        """
         # Validate required fields
         required_fields = ['email', 'username', 'full_name']
         for field in required_fields:
             if field not in user_data or not user_data[field]:
                 raise ValueError(f"{field} is required")
+        
+        # Check if custom user ID is provided and validate uniqueness
+        if 'user_id' in user_data and user_data['user_id']:
+            if not await self.validate_user_id_available(user_data['user_id']):
+                raise ValueError("User ID already exists")
         
         # Check if email is available
         if not await self.validate_email_available(user_data['email']):
@@ -38,8 +60,9 @@ class UserService(IUserService):
         if not await self.validate_username_available(user_data['username']):
             raise ValueError("Username already exists")
         
-        # Create user entity
+        # Create user entity with optional custom ID
         user = User(
+            id=user_data.get('user_id'),  # Pass custom ID if provided
             email=user_data['email'],
             username=user_data['username'],
             full_name=user_data['full_name'],
@@ -52,11 +75,14 @@ class UserService(IUserService):
             language=user_data.get('language', 'en')
         )
         
+        # Hash password before creating user
+        hashed_password = await self._auth_service.hash_password(password)
+        
+        # Store hashed password in user metadata or add to user entity
+        user.add_metadata('hashed_password', hashed_password)
+        
         # Create user in repository
         created_user = await self._user_repository.create(user)
-        
-        # Hash and store password separately
-        await self._auth_service.hash_password(password)
         
         return created_user
     

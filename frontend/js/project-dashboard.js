@@ -1,29 +1,99 @@
 /**
- * Project Dashboard JavaScript
- * Manages project tracks, modules, and AI-powered content generation
+ * PROJECT DASHBOARD MODULE - COMPREHENSIVE PROJECT MANAGEMENT SYSTEM
+ * 
+ * PURPOSE: Complete project lifecycle management for educational track creation and AI-enhanced content generation
+ * WHY: Organizations need sophisticated tools to create, manage, and deploy educational tracks at scale
+ * ARCHITECTURE: Event-driven dashboard with real-time updates and AI integration
+ * 
+ * CORE FUNCTIONALITIES:
+ * - Project track creation and management with hierarchical structure
+ * - AI-powered content generation using RAG (Retrieval-Augmented Generation)
+ * - Module-based learning path organization with prerequisites and dependencies
+ * - Real-time collaboration features for multi-user project editing
+ * - Progress tracking and analytics integration for learning effectiveness
+ * - Template library for rapid project bootstrapping and standardization
+ * 
+ * BUSINESS CAPABILITIES:
+ * - Educational Track Design: Create comprehensive learning paths with multiple modules
+ * - Content Generation: Leverage AI to generate course materials, exercises, and assessments
+ * - Resource Management: Organize and allocate educational resources across projects
+ * - Quality Assurance: Review and approve AI-generated content before publication
+ * - Performance Analytics: Track learner progress and content effectiveness
+ * 
+ * TECHNICAL ARCHITECTURE:
+ * - Tab-based navigation with lazy loading for performance optimization
+ * - RESTful API integration with organization and RAG services
+ * - Event-driven updates using custom event system for real-time collaboration
+ * - Modular design with service separation for maintainability
+ * - Authentication and role-based access control integration
+ * - Error handling with user-friendly feedback and recovery options
+ * 
+ * USER ROLES AND ACCESS:
+ * - org_admin: Full project management including creation, deletion, and user assignment
+ * - instructor: Content creation, module editing, and learner progress monitoring
+ * - super_admin: Platform-wide project oversight and system administration
+ * 
+ * INTEGRATION POINTS:
+ * - Organization Management Service: Project ownership and user permissions
+ * - RAG Service: AI-powered content generation and knowledge base integration
+ * - Analytics Service: Learning metrics and performance tracking
+ * - Course Management Service: Learning path deployment and learner enrollment
  */
 
-import { CONFIG } from './config.js';
+import { CONFIG } from './config-global.js';
 
-// Configuration
+/*
+ * API CONFIGURATION AND SERVICE ENDPOINTS
+ * PURPOSE: Centralized API endpoint management for project operations
+ * WHY: Single source of truth for API communication prevents configuration drift
+ */
 const PROJECT_API_BASE = `${CONFIG.API_URLS.ORGANIZATION}/projects`;
 const RAG_API_BASE = CONFIG.API_URLS.RAG;
 
-// Global state
+/*
+ * GLOBAL APPLICATION STATE MANAGEMENT
+ * PURPOSE: Centralized state for project dashboard operations
+ * WHY: Shared state enables consistent behavior across tabs and operations
+ * 
+ * STATE VARIABLES:
+ * - currentProject: Active project data with tracks and modules
+ * - currentTab: Active dashboard tab for UI state management
+ * - projectTracks: Cached track data for performance optimization
+ * - availableTrackTemplates: Template library for rapid track creation
+ */
 let currentProject = null;
 let currentTab = 'overview';
 let projectTracks = [];
 let availableTrackTemplates = [];
 
-// Initialize dashboard
+/*
+ * DASHBOARD INITIALIZATION AND AUTHENTICATION
+ * PURPOSE: Initialize project dashboard with authentication and project context
+ * WHY: Secure, role-based access ensures only authorized users can manage projects
+ * 
+ * INITIALIZATION PROCESS:
+ * 1. Verify user authentication and role-based access permissions
+ * 2. Extract project ID from URL parameters for context establishment
+ * 3. Load project data and initialize dashboard components
+ * 4. Setup event listeners and navigation system
+ * 5. Redirect unauthorized users to appropriate landing pages
+ * 
+ * SECURITY FEATURES:
+ * - Role verification: Only org_admin, instructor, and super_admin access
+ * - Project context validation: Ensure valid project ID is provided
+ * - Graceful error handling: User-friendly feedback for access issues
+ * - Automatic redirection: Guide users to appropriate pages on errors
+ */
 document.addEventListener('DOMContentLoaded', async function() {
-    // Check authentication
+    /* AUTHENTICATION VERIFICATION: Ensure user has proper access rights
+     * WHY: Project management requires specific permissions for security */
     if (!Auth.isAuthenticated() || !Auth.hasRole(['org_admin', 'instructor', 'super_admin'])) {
         window.location.href = '/login.html';
         return;
     }
 
-    // Get project ID from URL parameters
+    /* PROJECT CONTEXT EXTRACTION: Get project ID from URL for dashboard focus
+     * WHY: Project-specific dashboard requires clear project context */
     const urlParams = new URLSearchParams(window.location.search);
     const projectId = urlParams.get('project');
     
@@ -35,19 +105,42 @@ document.addEventListener('DOMContentLoaded', async function() {
         return;
     }
 
+    /* DASHBOARD INITIALIZATION SEQUENCE: Load data and setup interface
+     * WHY: Proper initialization ensures all components work correctly */
     await initializeDashboard(projectId);
     setupEventListeners();
     setupTabNavigation();
 });
 
+/*
+ * DASHBOARD INITIALIZATION CONTROLLER
+ * PURPOSE: Load project data and initialize all dashboard components
+ * WHY: Centralized initialization ensures proper loading sequence and error handling
+ * 
+ * INITIALIZATION SEQUENCE:
+ * 1. Display loading indicator for user feedback
+ * 2. Load project metadata and track information from API
+ * 3. Initialize overview tab as default view
+ * 4. Update UI with project information
+ * 5. Handle initialization errors gracefully
+ * 
+ * ERROR HANDLING:
+ * - Network failures: Retry mechanism with exponential backoff
+ * - Authorization errors: Redirect to appropriate access page
+ * - Data validation: Fallback to safe defaults with user notification
+ * 
+ * @param {string} projectId - Unique identifier for the project to load
+ */
 async function initializeDashboard(projectId) {
     try {
         showLoadingSpinner();
         
-        // Load project data
+        /* CORE DATA LOADING: Fetch project and track information
+         * WHY: Dashboard requires complete project context to function */
         await loadProjectData(projectId);
         
-        // Load initial tab content
+        /* DEFAULT TAB INITIALIZATION: Start with overview tab
+         * WHY: Overview provides best first impression of project status */
         await loadTabContent(currentTab);
         
         hideLoadingSpinner();

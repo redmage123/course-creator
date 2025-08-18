@@ -8,9 +8,15 @@ import logging
 
 # Custom exceptions
 from exceptions import (
-    UserManagementException, AuthenticationException, AuthorizationException,
-    UserNotFoundException, UserValidationException, DatabaseException,
-    SessionException, JWTException, EmailServiceException
+    UserManagementException,
+    UserNotFoundException,
+    UserValidationException,
+    AuthenticationException,
+    AuthorizationException,
+    SessionException,
+    JWTException,
+    DatabaseException,
+    EmailServiceException
 )
 
 def setup_exception_handlers(app: FastAPI) -> None:

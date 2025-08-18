@@ -24,7 +24,7 @@
  */
 
 import { showNotification } from './notifications.js';
-import { CONFIG } from '../config.js';
+import { CONFIG } from '../config-global.js';
 
 class ConfigManager {
     constructor() {

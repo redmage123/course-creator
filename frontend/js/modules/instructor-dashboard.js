@@ -33,7 +33,7 @@
  */
 
 import { Auth } from './auth.js';
-import { CONFIG } from '../config.js';
+import { CONFIG } from '../config-global.js';
 import { showNotification } from './notifications.js';
 import UIComponents from './ui-components.js';
 

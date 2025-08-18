@@ -1,5 +1,33 @@
 # Version History
 
+## Version 3.0.0 - Password Management & Enhanced UI Features
+
+### Advanced Password Management System (v3.0)
+- **Organization Admin Password Creation**: Administrators can now set their own passwords during organization registration
+- **Self-Service Password Changes**: Dedicated password change interface for all user roles (org admin, site admin, instructor)
+- **Password Strength Validation**: Real-time password strength checking with visual feedback and security recommendations
+- **Secure Authentication Flow**: Integration with existing JWT authentication system for secure password changes
+- **Password Visibility Toggle**: User-friendly password input with show/hide functionality for all password fields
+
+### Enhanced User Interface & Accessibility (v3.0)
+- **Keyboard Navigation for Country Dropdowns**: Type-to-search functionality for 195+ countries in phone number fields
+- **Enhanced Form Validation**: Real-time validation with specific error messages and visual feedback
+- **Responsive Design**: Mobile-optimized layouts for password management and registration forms
+- **Accessibility Improvements**: ARIA labels, keyboard navigation support, and screen reader compatibility
+- **Professional Email Validation**: Continued enforcement of business email requirements for organization registration
+
+### Organization Registration Enhancements (v3.0)
+- **Complete Admin Setup**: Organization registration now creates both organization entity and admin user account
+- **Password Integration**: Admin passwords are securely handled during registration process
+- **Enhanced Success Messaging**: Clear feedback about account creation and next steps for administrators
+- **Form UX Improvements**: Better field organization, inline help text, and progressive disclosure
+
+### Technical Infrastructure Updates (v3.0)
+- **HTTP Client Integration**: Added httpx dependency for secure service-to-service communication
+- **API Model Updates**: Enhanced Pydantic models to support password fields with validation
+- **Service Communication**: Improved organization service to user management service integration
+- **Configuration Management**: Support for both ES6 modules and script tag loading contexts
+
 ## Version 2.9.0 - Demo Service Test Suite Completion and App Control Path Fix
 
 ### Comprehensive Demo Service Test Suite (v2.9)

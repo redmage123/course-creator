@@ -3,7 +3,7 @@
  * Handles file downloads and workspace management for students
  */
 
-import { CONFIG } from '../config.js';
+import { CONFIG } from '../config-global.js';
 
 export class StudentFileManager {
     constructor() {

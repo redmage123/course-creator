@@ -3,7 +3,7 @@
  * Provides comprehensive student analytics visualization and reporting
  */
 
-import { CONFIG } from '../config.js';
+import { CONFIG } from '../config-global.js';
 
 class AnalyticsDashboard {
     constructor() {

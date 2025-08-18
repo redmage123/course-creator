@@ -1,3 +1,17 @@
+#!/usr/bin/env python3
+
+# Load environment variables from .cc_env file if present
+import os
+if os.path.exists('/app/shared/.cc_env'):
+    with open('/app/shared/.cc_env', 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                key, value = line.split('=', 1)
+                # Remove quotes if present
+                value = value.strip('"\'')
+                os.environ[key] = value
+
 """
 Lab Container Management Service - Refactored using SOLID principles
 Single Responsibility: API layer only - business logic delegated to services
@@ -46,10 +60,18 @@ from rag_lab_assistant import (
 
 # Custom exceptions
 from exceptions import (
-    LabContainerException, DockerServiceException, LabCreationException,
-    LabNotFoundException, LabLifecycleException, IDEServiceException,
-    ResourceLimitException, ValidationException, ServiceInitializationException,
-    ContainerImageException, NetworkException
+    CourseCreatorBaseException,
+    ContentException,
+    ContentNotFoundException,
+    ContentValidationException,
+    FileStorageException,
+    ValidationException,
+    DatabaseException,
+    AuthenticationException,
+    AuthorizationException,
+    ConfigurationException,
+    APIException,
+    BusinessRuleException
 )
 
 # Global services (initialized at startup)
@@ -67,20 +89,17 @@ app = FastAPI(
 # Exception type to HTTP status code mapping (Open/Closed Principle)
 EXCEPTION_STATUS_MAPPING = {
     ValidationException: 400,
-    LabNotFoundException: 404,
-    ResourceLimitException: 409,
-    LabCreationException: 422,
-    LabLifecycleException: 422,
-    IDEServiceException: 422,
-    ContainerImageException: 422,
-    NetworkException: 422,
-    DockerServiceException: 500,
-    ServiceInitializationException: 500,
+    ContentNotFoundException: 404,
+    APIException: 409,
+    APIException: 422,
+    ContentException: 422,
+    ValidationException: 400,
+    ConfigurationException: 500,
 }
 
 # Custom exception handler
-@app.exception_handler(LabContainerException)
-async def lab_container_exception_handler(request, exc: LabContainerException):
+@app.exception_handler(ContentException)
+async def lab_container_exception_handler(request, exc: ContentException):
     """Handle custom lab container exceptions."""
     # Use mapping to determine status code (extensible design)
     status_code = next(
@@ -129,20 +148,20 @@ class AssistantStatsResponse(BaseModel):
 def get_docker_service() -> DockerService:
     """Get Docker service instance"""
     if not docker_service:
-        raise ServiceInitializationException(
+        raise ConfigurationException(
             message="Docker service not initialized",
-            service_name="docker_service",
-            initialization_stage="startup"
+            error_code="SERVICE_INIT_ERROR",
+            details={"service_name": "docker_service", "initialization_stage": "startup"}
         )
     return docker_service
 
 def get_lab_lifecycle_service() -> LabLifecycleService:
     """Get Lab lifecycle service instance"""
     if not lab_lifecycle_service:
-        raise ServiceInitializationException(
+        raise ConfigurationException(
             message="Lab lifecycle service not initialized",
-            service_name="lab_lifecycle_service",
-            initialization_stage="startup"
+            error_code="SERVICE_INIT_ERROR",
+            details={"service_name": "lab_lifecycle_service", "initialization_stage": "startup"}
         )
     return lab_lifecycle_service
 
@@ -185,14 +204,14 @@ async def create_lab(
         
         return result
         
-    except LabContainerException:
+    except ContentException:
         # Re-raise custom exceptions (they will be handled by the global handler)
         raise
     except Exception as e:
-        raise LabCreationException(
+        raise ContentException(
             message="Failed to create lab container",
-            course_id=request.course_id,
-            lab_type="instructor_lab",
+            error_code="LAB_CREATION_ERROR",
+            details={"course_id": request.course_id, "lab_type": "instructor_lab"},
             original_exception=e
         )
 
@@ -207,15 +226,14 @@ async def create_student_lab(
         result = await lifecycle_service.create_student_lab(user_id, request)
         return result
         
-    except LabContainerException:
+    except ContentException:
         # Re-raise custom exceptions (they will be handled by the global handler)
         raise
     except Exception as e:
-        raise LabCreationException(
+        raise ContentException(
             message="Failed to create student lab container",
-            student_id=user_id,
-            course_id=request.course_id,
-            lab_type="student_lab",
+            error_code="LAB_CREATION_ERROR",
+            details={"student_id": user_id, "course_id": request.course_id, "lab_type": "student_lab"},
             original_exception=e
         )
 
@@ -231,13 +249,14 @@ async def list_labs():
             total_count=len(labs)
         )
         
-    except LabContainerException:
+    except ContentException:
         # Re-raise custom exceptions (they will be handled by the global handler)
         raise
     except Exception as e:
-        raise LabLifecycleException(
+        raise ContentException(
             message="Failed to list lab containers",
-            operation="list_labs",
+            error_code="LAB_LIFECYCLE_ERROR",
+            details={"operation": "list_labs"},
             original_exception=e
         )
 
@@ -249,9 +268,10 @@ async def get_lab_status(lab_id: str):
         lab = lifecycle_service.get_lab_status(lab_id)
         
         if not lab:
-            raise LabNotFoundException(
+            raise ContentNotFoundException(
                 message="Lab container not found",
-                lab_id=lab_id
+                error_code="LAB_NOT_FOUND",
+                details={"lab_id": lab_id}
             )
         
         return LabStatusResponse(
@@ -262,14 +282,14 @@ async def get_lab_status(lab_id: str):
             last_accessed=lab.last_accessed
         )
         
-    except LabContainerException:
+    except ContentException:
         # Re-raise custom exceptions (they will be handled by the global handler)
         raise
     except Exception as e:
-        raise LabLifecycleException(
+        raise ContentException(
             message="Failed to retrieve lab status",
-            lab_id=lab_id,
-            operation="get_lab_status",
+            error_code="LAB_LIFECYCLE_ERROR",
+            details={"lab_id": lab_id, "operation": "get_lab_status"},
             original_exception=e
         )
 
@@ -281,15 +301,14 @@ async def pause_lab(lab_id: str):
         result = await lifecycle_service.pause_lab(lab_id)
         return result
         
-    except LabContainerException:
+    except ContentException:
         # Re-raise custom exceptions (they will be handled by the global handler)
         raise
     except Exception as e:
-        raise LabLifecycleException(
+        raise ContentException(
             message="Failed to pause lab container",
-            lab_id=lab_id,
-            operation="pause_lab",
-            target_status="paused",
+            error_code="LAB_LIFECYCLE_ERROR",
+            details={"lab_id": lab_id, "operation": "pause_lab", "target_status": "paused"},
             original_exception=e
         )
 
@@ -301,15 +320,14 @@ async def resume_lab(lab_id: str):
         result = await lifecycle_service.resume_lab(lab_id)
         return result
         
-    except LabContainerException:
+    except ContentException:
         # Re-raise custom exceptions (they will be handled by the global handler)
         raise
     except Exception as e:
-        raise LabLifecycleException(
+        raise ContentException(
             message="Failed to resume lab container",
-            lab_id=lab_id,
-            operation="resume_lab",
-            target_status="running",
+            error_code="LAB_LIFECYCLE_ERROR",
+            details={"lab_id": lab_id, "operation": "resume_lab", "target_status": "running"},
             original_exception=e
         )
 
@@ -321,15 +339,14 @@ async def delete_lab(lab_id: str):
         result = await lifecycle_service.delete_lab(lab_id)
         return result
         
-    except LabContainerException:
+    except ContentException:
         # Re-raise custom exceptions (they will be handled by the global handler)
         raise
     except Exception as e:
-        raise LabLifecycleException(
+        raise ContentException(
             message="Failed to delete lab container",
-            lab_id=lab_id,
-            operation="delete_lab",
-            target_status="deleted",
+            error_code="LAB_LIFECYCLE_ERROR",
+            details={"lab_id": lab_id, "operation": "delete_lab", "target_status": "deleted"},
             original_exception=e
         )
 
@@ -361,14 +378,14 @@ async def get_instructor_lab_overview(course_id: str):
             ]
         }
         
-    except LabContainerException:
+    except ContentException:
         # Re-raise custom exceptions (they will be handled by the global handler)
         raise
     except Exception as e:
-        raise LabLifecycleException(
+        raise ContentException(
             message="Failed to retrieve instructor lab overview",
-            course_id=course_id,
-            operation="get_instructor_overview",
+            error_code="LAB_LIFECYCLE_ERROR",
+            details={"course_id": course_id, "operation": "get_instructor_overview"},
             original_exception=e
         )
 
@@ -385,13 +402,14 @@ async def cleanup_idle_labs(max_idle_hours: int = Query(24, description="Max idl
             "cleaned_count": cleaned_count
         }
         
-    except LabContainerException:
+    except ContentException:
         # Re-raise custom exceptions (they will be handled by the global handler)
         raise
     except Exception as e:
-        raise LabLifecycleException(
+        raise ContentException(
             message="Failed to cleanup idle lab containers",
-            operation="cleanup_idle_labs",
+            error_code="LAB_LIFECYCLE_ERROR",
+            details={"operation": "cleanup_idle_labs"},
             original_exception=e
         )
 
@@ -467,9 +485,10 @@ async def startup_event():
         
     except Exception as e:
         logger.error("Failed to initialize services: %s", e)
-        raise ServiceInitializationException(
+        raise ConfigurationException(
             message="Failed to initialize lab container services",
-            initialization_stage="startup",
+            error_code="SERVICE_INIT_ERROR",
+            details={"initialization_stage": "startup"},
             original_exception=e
         )
 
@@ -514,14 +533,16 @@ def main(cfg: DictConfig) -> None:
     docker_service = DockerService(logger, cfg.docker)
     lab_lifecycle_service = LabLifecycleService(docker_service, logger, cfg.lab)
     
-    # Run server with configuration
+    # Run server with HTTPS/SSL configuration
     import uvicorn
     uvicorn.run(
         app,
         host=cfg.host,
         port=cfg.port,
         log_level="warning",  # Reduce uvicorn log level since we have our own logging
-        access_log=False      # Disable uvicorn access log since we log via middleware
+        access_log=False,     # Disable uvicorn access log since we log via middleware
+        ssl_keyfile="/app/ssl/nginx-selfsigned.key",
+        ssl_certfile="/app/ssl/nginx-selfsigned.crt"
     )
 
 if __name__ == "__main__":

@@ -134,7 +134,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run comprehensive test suite")
     parser.add_argument(
         "--suite", 
-        choices=["unit", "integration", "frontend", "e2e", "security", "content", "lab", "analytics", "rbac", "organization"],
+        choices=["unit", "integration", "frontend", "e2e", "security", "content", "lint", "lab", "analytics", "rbac", "organization", "student_login"],
         help="Run specific test suite (default: all)"
     )
     parser.add_argument(
@@ -199,6 +199,12 @@ def main():
                 "command": "python -m pytest tests/unit/organization_management/ -v --tb=short",
                 "description": "Unit Tests - Organization Management",
                 "timeout": 300
+            },
+            "user_management": {
+                "path": "tests/unit/user_management/",
+                "command": "python -m pytest tests/unit/user_management/ -v --tb=short",
+                "description": "Unit Tests - User Management & Student Login",
+                "timeout": 300
             }
         },
         "integration": {
@@ -225,6 +231,12 @@ def main():
                 "command": "python -m pytest tests/integration/test_organization_api_integration.py -v --tb=short",
                 "description": "Integration Tests - Organization API",
                 "timeout": 600
+            },
+            "student_login_gdpr": {
+                "path": "tests/integration/test_student_login_gdpr.py",
+                "command": "python -m pytest tests/integration/test_student_login_gdpr.py -v --tb=short",
+                "description": "Integration Tests - Student Login GDPR Compliance",
+                "timeout": 600
             }
         },
         "frontend": {
@@ -245,6 +257,18 @@ def main():
                 "command": "npx jest tests/frontend/test_organization_registration_frontend.js --verbose",
                 "description": "Frontend Tests - Organization Registration JavaScript",
                 "timeout": 300
+            },
+            "platform_comprehensive": {
+                "path": "tests/frontend/test_platform_comprehensive.py",
+                "command": "python -m pytest tests/frontend/test_platform_comprehensive.py -v --tb=short",
+                "description": "Frontend Tests - Comprehensive Platform Validation (HTTPS, Country Dropdowns, Organization Registration)",
+                "timeout": 900
+            },
+            "student_login_ui": {
+                "path": "tests/frontend/test_student_login_ui.py",
+                "command": "python -m pytest tests/frontend/test_student_login_ui.py -v --tb=short",
+                "description": "Frontend Tests - Student Login UI & GDPR Compliance",
+                "timeout": 600
             }
         },
         "e2e": {
@@ -265,6 +289,12 @@ def main():
                 "command": "python -m pytest tests/e2e/test_organization_registration_e2e.py -v --tb=short -s",
                 "description": "End-to-End Tests - Organization Registration Flow",
                 "timeout": 900
+            },
+            "student_login_e2e": {
+                "path": "tests/e2e/test_student_login_e2e.py",
+                "command": "python -m pytest tests/e2e/test_student_login_e2e.py -v --tb=short -s",
+                "description": "End-to-End Tests - Student Login Complete Workflows",
+                "timeout": 900
             }
         },
         "security": {
@@ -281,6 +311,14 @@ def main():
                 "command": "python -m pytest tests/content/ -v --tb=short",
                 "description": "Content Tests - File Processing and Management",
                 "timeout": 600
+            }
+        },
+        "lint": {
+            "student_login": {
+                "path": "tests/lint/test_student_login_lint.py",
+                "command": "python -m pytest tests/lint/test_student_login_lint.py -v --tb=short",
+                "description": "Lint Tests - Student Login Code Quality & GDPR Compliance",
+                "timeout": 300
             }
         }
     }
@@ -306,6 +344,11 @@ def main():
             "path": "tests/runners/run_organization_tests.py",
             "command": "python tests/runners/run_organization_tests.py",
             "description": "Organization Management Comprehensive Tests (Unit, Integration, E2E, Frontend)"
+        },
+        "student_login": {
+            "path": "tests/runners/run_student_login_tests.py",
+            "command": "python tests/runners/run_student_login_tests.py",
+            "description": "Student Login System Comprehensive Tests (GDPR-Compliant Authentication, Privacy Controls)"
         }
     }
     

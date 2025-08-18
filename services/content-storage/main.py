@@ -1,4 +1,16 @@
 #!/usr/bin/env python3
+
+# Load environment variables from .cc_env file if present
+import os
+if os.path.exists('/app/shared/.cc_env'):
+    with open('/app/shared/.cc_env', 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                key, value = line.split('=', 1)
+                # Remove quotes if present
+                value = value.strip('"\'')
+                os.environ[key] = value
 """
 Content Storage Service - Advanced File Management & Storage Architecture
 
@@ -64,6 +76,10 @@ from omegaconf import DictConfig
 import hydra
 import uvicorn
 
+# Import service classes
+from services.content_service import ContentService
+from services.storage_service import StorageService
+
 try:
     from logging_setup import setup_docker_logging
 except ImportError:
@@ -76,15 +92,14 @@ except ImportError:
         return logging.getLogger(service_name)
 
 from config.database import DatabaseManager
-from repositories.content_repository import ContentRepository
+# Legacy repository removed
 from exceptions import (
     ContentStorageException,
     DatabaseException,
     ConfigurationException
 )
-from repositories.storage_repository import StorageRepository
-from services.content_service import ContentService
-from services.storage_service import StorageService
+# Legacy repository removed
+# Legacy services removed - using DAO pattern
 from api.content_api import router as content_router
 from api.storage_api import router as storage_router
 
@@ -159,9 +174,10 @@ async def lifespan(app: FastAPI):
         await db_manager.connect()
         await db_manager.create_tables()
         
-        # Initialize repositories
-        content_repo = ContentRepository(db_manager.pool)
-        storage_repo = StorageRepository(db_manager.pool)
+        # Initialize DAO
+        from dao import ContentQueries, StorageQueries
+        content_dao = ContentQueries()
+        storage_dao = StorageQueries()
         
         # Initialize services
         storage_config = {
@@ -173,8 +189,8 @@ async def lifespan(app: FastAPI):
             "retention_days": app.state.config.storage.get("retention_days", 30)
         }
         
-        content_service = ContentService(content_repo, storage_repo, storage_config)
-        storage_service = StorageService(storage_repo, storage_config)
+        content_service = ContentService(db_manager.pool, storage_config)
+        storage_service = StorageService(db_manager.pool, storage_config)
         
         logger.info("Content Storage Service initialized successfully")
         

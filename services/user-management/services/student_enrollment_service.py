@@ -48,7 +48,7 @@ class StudentEnrollmentService:
         """
         # Check if student already exists
         existing_user = await self.db_pool.fetch(
-            "SELECT id, email, role FROM users WHERE email = $1",
+            "SELECT id, email, role FROM course_creator.users WHERE email = $1",
             student_email
         )
         
@@ -66,7 +66,7 @@ class StudentEnrollmentService:
             
             await self.db_pool.execute(
                 """
-                INSERT INTO users (id, email, password_hash, role, created_at)
+                INSERT INTO course_creator.users (id, email, password_hash, role, created_at)
                 VALUES ($1, $2, $3, $4, $5)
                 """,
                 user_id, student_email, password_hash, 'student', datetime.now()

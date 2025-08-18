@@ -156,7 +156,8 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 from domain.entities.course_content import Syllabus, DifficultyLevel
 from domain.interfaces.content_generation_service import ISyllabusGenerationService
-from domain.interfaces.content_repository import ISyllabusRepository
+# Repository pattern removed - using DAO
+from data_access.course_generator_dao import CourseGeneratorDAO
 from domain.interfaces.ai_service import IAIService, ContentGenerationType, IPromptTemplateService
 
 class SyllabusGenerationService(ISyllabusGenerationService):
@@ -165,10 +166,10 @@ class SyllabusGenerationService(ISyllabusGenerationService):
     """
     
     def __init__(self, 
-                 syllabus_repository: ISyllabusRepository,
+                 dao: CourseGeneratorDAO,
                  ai_service: IAIService,
                  prompt_service: IPromptTemplateService):
-        self._syllabus_repository = syllabus_repository
+        self._dao = dao
         self._ai_service = ai_service
         self._prompt_service = prompt_service
     
@@ -186,7 +187,7 @@ class SyllabusGenerationService(ISyllabusGenerationService):
             raise ValueError("Description is required")
         
         # Check if syllabus already exists for this course
-        existing_syllabus = await self._syllabus_repository.get_by_course_id(course_id)
+        existing_syllabus = await self._dao.get_syllabus_by_course_id(course_id)
         if existing_syllabus:
             raise ValueError(f"Syllabus already exists for course {course_id}")
         
@@ -237,7 +238,7 @@ class SyllabusGenerationService(ISyllabusGenerationService):
         self._populate_syllabus_from_ai_content(syllabus, generated_content)
         
         # Save to repository
-        return await self._syllabus_repository.create(syllabus)
+        return await self._dao.create_syllabus(syllabus)
     
     async def update_syllabus(self, syllabus: Syllabus, updates: Dict[str, Any]) -> Syllabus:
         """Update an existing syllabus"""
@@ -245,7 +246,7 @@ class SyllabusGenerationService(ISyllabusGenerationService):
             raise ValueError("Syllabus ID is required for update")
         
         # Check if syllabus exists
-        existing_syllabus = await self._syllabus_repository.get_by_id(syllabus.id)
+        existing_syllabus = await self._dao.get_syllabus_by_id(syllabus.id)
         if not existing_syllabus:
             raise ValueError(f"Syllabus with ID {syllabus.id} not found")
         
@@ -275,7 +276,7 @@ class SyllabusGenerationService(ISyllabusGenerationService):
         syllabus.validate()
         
         # Save changes
-        return await self._syllabus_repository.update(syllabus)
+        return await self._dao.update_syllabus(syllabus)
     
     async def analyze_syllabus_content(self, content: str) -> Dict[str, Any]:
         """Analyze uploaded syllabus content and extract structured data"""

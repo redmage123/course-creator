@@ -27,7 +27,7 @@
  * PURPOSE: Import all systems that authentication integrates with
  * WHY: Authentication is a cross-cutting concern that affects all platform areas
  */
-import { CONFIG } from '../config.js';                  // Centralized configuration system
+import { CONFIG } from '../config-global.js';                  // Centralized configuration system
 import { showNotification } from './notifications.js';  // User feedback system
 import { ActivityTracker } from './activity-tracker.js'; // Session activity monitoring
 import { labLifecycleManager } from './lab-lifecycle.js'; // Lab container integration
@@ -215,15 +215,25 @@ class AuthManager {
      */
     async login(credentials) {
         try {
+            // DEBUG: Log credentials being sent
+            console.log('🔐 Sending login credentials:', {
+                username: credentials.username,
+                password: credentials.password ? '***' + credentials.password.slice(-2) : 'undefined'
+            });
+            console.log('🌐 API endpoint:', `${this.authApiBase}/auth/login`);
+            
             // AUTHENTICATION API REQUEST: Send credentials to authentication service
             // WHY: Centralized authentication service provides consistent security across platform
             const response = await fetch(`${this.authApiBase}/auth/login`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',  // Standard form encoding
+                    'Content-Type': 'application/json',
                 },
-                body: new URLSearchParams(credentials)  // Secure credential encoding
+                body: JSON.stringify(credentials)
             });
+            
+            // DEBUG: Log response status
+            console.log('📡 Response status:', response.status, response.statusText);
             
             // SUCCESSFUL AUTHENTICATION PROCESSING
             if (response.ok) {
@@ -279,7 +289,9 @@ class AuthManager {
                 return { success: true, user: this.currentUser };
             } else {
                 // AUTHENTICATION FAILURE: Handle failed login attempts
-                return { success: false, error: 'Login failed' };
+                const errorData = await response.text();
+                console.log('❌ Authentication failed:', response.status, errorData);
+                return { success: false, error: 'Login failed: ' + (errorData || 'Invalid credentials') };
             }
         } catch (error) {
             // ERROR HANDLING: Network or processing errors during login

@@ -157,7 +157,7 @@ class ContentBase(BaseModel):
     
     VALIDATION RULES:
     - Filename cannot be empty or whitespace-only
-    - Dangerous characters are prohibited (/, \, .., <, >, etc.)
+    - Dangerous characters are prohibited (/, \\, .., <, >, etc.)
     - File size must be non-negative
     - Content type must be valid MIME type format
     

@@ -4,7 +4,7 @@ Authentication Models
 Pydantic models for authentication operations.
 """
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime
 
@@ -17,9 +17,14 @@ class Token(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    """Login request model."""
-    username: str  # Can be email or username
-    password: str
+    """
+    Single source of truth for login requests.
+    
+    CONSOLIDATED MODEL: This replaces all other login models in the codebase.
+    Accepts both username and email for backward compatibility.
+    """
+    username: str = Field(..., description="Username or email address for authentication")
+    password: str = Field(..., description="User password")
 
 
 class PasswordResetRequest(BaseModel):

@@ -58,11 +58,22 @@ class OrganizationRegistration {
         // Initialize enhanced country dropdowns with keyboard navigation
         this.initializeCountryDropdowns();
         
-        // Set default country codes to US
+        // Initialize password functionality
+        this.initializePasswordFields();
+        
+        // Set default country codes to US (not Canada)
         const orgCountrySelect = document.getElementById('orgPhoneCountry');
         const adminCountrySelect = document.getElementById('adminPhoneCountry');
-        if (orgCountrySelect) orgCountrySelect.value = '+1';
-        if (adminCountrySelect) adminCountrySelect.value = '+1';
+        if (orgCountrySelect) {
+            // Select United States specifically, not just +1 (which would select Canada first)
+            const usOption = orgCountrySelect.querySelector('option[data-country="US"]');
+            if (usOption) orgCountrySelect.value = usOption.value;
+        }
+        if (adminCountrySelect) {
+            // Select United States specifically, not just +1 (which would select Canada first)
+            const usOption = adminCountrySelect.querySelector('option[data-country="US"]');
+            if (usOption) adminCountrySelect.value = usOption.value;
+        }
     }
 
     initializeCountryDropdowns() {
@@ -116,13 +127,15 @@ class OrganizationRegistration {
                     
                 case 'Escape':
                     // Clear search and close dropdown
-                    searchString = '';
+                    selectElement._searchString = '';
+                    this.hideCountrySearchFeedback(selectElement);
                     selectElement.blur();
                     break;
                     
                 default:
                     // Handle typing for search
-                    if (e.key.length === 1) {
+                    if (e.key.length === 1 && /[a-zA-Z\s]/.test(e.key)) {
+                        e.preventDefault(); // Prevent default select behavior
                         this.handleCountrySearch(e.key, selectElement, originalOptions);
                     }
             }
@@ -144,10 +157,10 @@ class OrganizationRegistration {
 
     handleCountrySearch(key, selectElement, originalOptions) {
         /**
-         * Handle typing in country dropdown for search functionality
+         * Handle typing in country dropdown for type-ahead functionality
          * 
-         * PURPOSE: Allow users to type country names to quickly find them
-         * WHY: Much faster than scrolling through 195+ countries
+         * PURPOSE: Jump to first country that starts with typed letters (standard dropdown behavior)
+         * WHY: Provides intuitive navigation - typing 'U' jumps to first U country (Uganda, Ukraine, etc.)
          */
         // Clear previous search timeout
         if (selectElement._searchTimeout) {
@@ -157,10 +170,15 @@ class OrganizationRegistration {
         // Add to search string
         selectElement._searchString = (selectElement._searchString || '') + key.toLowerCase();
 
-        // Find matching countries
+        // Find countries that START WITH the typed letters (not contains)
         const matchingOptions = originalOptions.filter(option => {
-            const countryName = option.textContent.toLowerCase();
-            return countryName.includes(selectElement._searchString);
+            // Extract country name from text like "🇺🇸 United States (+1)"
+            const countryText = option.textContent.toLowerCase();
+            // Get just the country name part (after the flag emoji and space)
+            const countryName = countryText.substring(countryText.indexOf(' ') + 1);
+            
+            // Check if country name starts with search string
+            return countryName.startsWith(selectElement._searchString);
         });
 
         // Select first match if any
@@ -171,15 +189,18 @@ class OrganizationRegistration {
             // Highlight the selected option visually
             this.highlightSelectedCountry(selectElement);
             
-            // Show search feedback
-            this.showCountrySearchFeedback(selectElement, selectElement._searchString, matchingOptions.length);
+            // Show search feedback with "starts with" indicator
+            this.showCountrySearchFeedback(selectElement, selectElement._searchString, matchingOptions.length, 'starts_with');
+        } else {
+            // No matches found - show feedback
+            this.showCountrySearchFeedback(selectElement, selectElement._searchString, 0, 'no_match');
         }
 
         // Clear search string after delay
         selectElement._searchTimeout = setTimeout(() => {
             selectElement._searchString = '';
             this.hideCountrySearchFeedback(selectElement);
-        }, 1000);
+        }, 1500);
     }
 
     highlightSelectedCountry(selectElement) {
@@ -192,9 +213,9 @@ class OrganizationRegistration {
         }, 200);
     }
 
-    showCountrySearchFeedback(selectElement, searchString, matchCount) {
+    showCountrySearchFeedback(selectElement, searchString, matchCount, searchType = 'starts_with') {
         /**
-         * Show search feedback to user
+         * Show search feedback to user with enhanced messaging
          */
         // Find or create feedback element
         let feedbackElement = selectElement.parentNode.querySelector('.country-search-feedback');
@@ -212,12 +233,27 @@ class OrganizationRegistration {
                 font-size: 12px;
                 z-index: 1000;
                 white-space: nowrap;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
             `;
             selectElement.parentNode.style.position = 'relative';
             selectElement.parentNode.appendChild(feedbackElement);
         }
         
-        feedbackElement.textContent = `Searching: "${searchString}" (${matchCount} matches)`;
+        // Set message based on search results
+        let message, backgroundColor;
+        if (searchType === 'no_match') {
+            message = `No countries start with "${searchString}"`;
+            backgroundColor = '#d73502'; // Red for no matches
+        } else if (matchCount === 1) {
+            message = `Found: "${searchString}" (1 match)`;
+            backgroundColor = '#28a745'; // Green for single match
+        } else {
+            message = `Type ahead: "${searchString}" (${matchCount} countries)`;
+            backgroundColor = '#007bff'; // Blue for multiple matches
+        }
+        
+        feedbackElement.textContent = message;
+        feedbackElement.style.backgroundColor = backgroundColor;
         feedbackElement.style.display = 'block';
     }
 
@@ -228,6 +264,143 @@ class OrganizationRegistration {
         const feedbackElement = selectElement.parentNode.querySelector('.country-search-feedback');
         if (feedbackElement) {
             feedbackElement.style.display = 'none';
+        }
+    }
+
+    initializePasswordFields() {
+        /**
+         * Initialize password functionality including strength checking and toggle visibility
+         * 
+         * PURPOSE: Provide secure password input with user feedback
+         * WHY: Help users create strong passwords and improve UX with visibility toggle
+         */
+        const passwordField = document.getElementById('adminPassword');
+        const confirmField = document.getElementById('adminPasswordConfirm');
+        
+        if (passwordField) {
+            // Add strength checking
+            passwordField.addEventListener('input', (e) => {
+                this.checkPasswordStrength(e.target.value);
+                this.validatePasswordMatch();
+            });
+        }
+        
+        if (confirmField) {
+            // Add confirmation checking
+            confirmField.addEventListener('input', () => {
+                this.validatePasswordMatch();
+            });
+        }
+    }
+
+    checkPasswordStrength(password) {
+        /**
+         * Check and display password strength
+         */
+        const strengthElement = document.getElementById('adminPassword-strength');
+        if (!strengthElement) return;
+
+        const strength = this.calculatePasswordStrength(password);
+        
+        // Clear previous content
+        strengthElement.innerHTML = '';
+        
+        if (password.length === 0) {
+            return;
+        }
+
+        // Create strength indicator
+        const strengthText = document.createElement('div');
+        const strengthBar = document.createElement('div');
+        const strengthFill = document.createElement('div');
+        
+        strengthBar.className = 'password-strength-bar';
+        strengthFill.className = 'password-strength-fill';
+        strengthBar.appendChild(strengthFill);
+        
+        let strengthClass, strengthLabel;
+        
+        if (strength.score <= 2) {
+            strengthClass = 'weak';
+            strengthLabel = 'Weak';
+        } else if (strength.score <= 3) {
+            strengthClass = 'medium';
+            strengthLabel = 'Medium';
+        } else {
+            strengthClass = 'strong';
+            strengthLabel = 'Strong';
+        }
+        
+        strengthElement.className = `password-strength ${strengthClass}`;
+        strengthFill.className = `password-strength-fill ${strengthClass}`;
+        
+        strengthText.textContent = `Password strength: ${strengthLabel}`;
+        if (strength.feedback.length > 0) {
+            strengthText.textContent += ` - ${strength.feedback[0]}`;
+        }
+        
+        strengthElement.appendChild(strengthText);
+        strengthElement.appendChild(strengthBar);
+    }
+
+    calculatePasswordStrength(password) {
+        /**
+         * Calculate password strength score and provide feedback
+         */
+        let score = 0;
+        const feedback = [];
+        
+        if (password.length < 8) {
+            feedback.push('Use at least 8 characters');
+            return { score: 0, feedback };
+        }
+        
+        score += 1;
+        
+        // Check for different character types
+        const hasLower = /[a-z]/.test(password);
+        const hasUpper = /[A-Z]/.test(password);
+        const hasNumbers = /\d/.test(password);
+        const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+        
+        const typesUsed = [hasLower, hasUpper, hasNumbers, hasSpecial].filter(Boolean).length;
+        score += typesUsed;
+        
+        if (password.length >= 12) score += 1;
+        
+        // Feedback
+        if (!hasLower || !hasUpper) feedback.push('Use both upper and lower case letters');
+        if (!hasNumbers) feedback.push('Include numbers');
+        if (!hasSpecial) feedback.push('Add special characters');
+        if (password.length < 12) feedback.push('Consider using 12+ characters');
+        
+        return { score, feedback };
+    }
+
+    validatePasswordMatch() {
+        /**
+         * Validate that passwords match
+         */
+        const password = document.getElementById('adminPassword');
+        const confirm = document.getElementById('adminPasswordConfirm');
+        const errorElement = document.getElementById('adminPasswordConfirm-error');
+        
+        if (!password || !confirm || !errorElement) return;
+        
+        if (confirm.value === '') {
+            errorElement.textContent = '';
+            errorElement.classList.remove('show');
+            return;
+        }
+        
+        if (password.value !== confirm.value) {
+            errorElement.textContent = 'Passwords do not match';
+            errorElement.classList.add('show');
+            return false;
+        } else {
+            errorElement.textContent = '';
+            errorElement.classList.remove('show');
+            return true;
         }
     }
 
@@ -543,6 +716,8 @@ class OrganizationRegistration {
                     message = 'Organization ID can only contain lowercase letters, numbers, and hyphens';
                 } else if (input.id === 'orgDomain') {
                     message = 'Please enter a valid URL (e.g., https://example.com or example.com)';
+                } else if (input.id === 'adminUsername') {
+                    message = 'Administrator ID can only contain letters, numbers, underscores, and hyphens';
                 }
                 
                 this.showFieldError(input, errorElement, message);
@@ -638,8 +813,77 @@ class OrganizationRegistration {
             }
         });
 
+        // Additional password validation
+        const passwordValid = this.validatePasswords();
+        if (!passwordValid) {
+            console.log(`❌ Password validation failed`);
+            isValid = false;
+        } else {
+            console.log(`✅ Password validation passed`);
+        }
+
         console.log(`📋 Overall form validation: ${isValid ? 'PASSED' : 'FAILED'}`);
         return isValid;
+    }
+
+    validatePasswords() {
+        /**
+         * Comprehensive password validation for admin user
+         */
+        const passwordField = document.getElementById('adminPassword');
+        const confirmField = document.getElementById('adminPasswordConfirm');
+        
+        if (!passwordField || !confirmField) return false;
+        
+        const password = passwordField.value;
+        const confirm = confirmField.value;
+        
+        // Check password meets minimum requirements
+        if (password.length < 8) {
+            this.showFieldError('adminPassword', 'Password must be at least 8 characters long');
+            return false;
+        }
+        
+        // Check password strength
+        const strength = this.calculatePasswordStrength(password);
+        if (strength.score < 2) {
+            this.showFieldError('adminPassword', 'Password is too weak. Use a combination of letters, numbers, and special characters.');
+            return false;
+        }
+        
+        // Check passwords match
+        if (password !== confirm) {
+            this.showFieldError('adminPasswordConfirm', 'Passwords do not match');
+            return false;
+        }
+        
+        // Clear any existing errors
+        this.clearFieldError('adminPassword');
+        this.clearFieldError('adminPasswordConfirm');
+        
+        return true;
+    }
+
+    showFieldError(fieldId, message) {
+        /**
+         * Show error message for a specific field
+         */
+        const errorElement = document.getElementById(fieldId + '-error');
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.classList.add('show');
+        }
+    }
+
+    clearFieldError(fieldId) {
+        /**
+         * Clear error message for a specific field
+         */
+        const errorElement = document.getElementById(fieldId + '-error');
+        if (errorElement) {
+            errorElement.textContent = '';
+            errorElement.classList.remove('show');
+        }
     }
 
     async handleSubmit(event) {
@@ -672,10 +916,12 @@ class OrganizationRegistration {
                 formData.set('admin_phone', `${adminCountryCode}${adminPhoneNumber.replace(/\D/g, '')}`);
             }
             
-            // Normalize URL (add https:// if no protocol specified)
+            // Normalize domain (remove protocol, keep just domain name for API)
             const domain = formData.get('domain');
-            if (domain && !domain.match(/^https?:\/\//i)) {
-                formData.set('domain', `https://${domain}`);
+            if (domain) {
+                // Extract just the domain name without protocol
+                const domainOnly = domain.replace(/^https?:\/\//, '').split('/')[0];
+                formData.set('domain', domainOnly);
             }
             
             let response;
@@ -718,6 +964,7 @@ class OrganizationRegistration {
                     admin_phone: formData.get('admin_phone') || undefined,
                     admin_role: primaryRole,
                     admin_roles: uniqueRoles,
+                    admin_password: formData.get('admin_password'),
                     description: formData.get('description') || undefined,
                     domain: formData.get('domain') || undefined
                 };
@@ -749,8 +996,10 @@ class OrganizationRegistration {
 
     async submitOrganization(data) {
         try {
-            // Ensure CONFIG is available
-            const orgApiUrl = (CONFIG?.API_URLS?.ORGANIZATION) || (window.CONFIG?.API_URLS?.ORGANIZATION) || 'http://localhost:8008';
+            // Use HTTPS for all backend API calls
+            const orgApiUrl = 'https://localhost:8008';
+            console.log('Making API request to:', `${orgApiUrl}/api/v1/organizations`);
+            console.log('CONFIG check:', CONFIG?.API_URLS?.ORGANIZATION, window.CONFIG?.API_URLS?.ORGANIZATION);
             const response = await fetch(`${orgApiUrl}/api/v1/organizations`, {
                 method: 'POST',
                 headers: {
@@ -785,8 +1034,9 @@ class OrganizationRegistration {
 
     async submitOrganizationWithFile(formData) {
         try {
-            // Ensure CONFIG is available
-            const orgApiUrl = (CONFIG?.API_URLS?.ORGANIZATION) || (window.CONFIG?.API_URLS?.ORGANIZATION) || 'http://localhost:8008';
+            // Use HTTPS for all backend API calls (consistent with submitOrganization)
+            const orgApiUrl = 'https://localhost:8008';
+            console.log('Making multipart API request to:', `${orgApiUrl}/api/v1/organizations/upload`);
             const response = await fetch(`${orgApiUrl}/api/v1/organizations/upload`, {
                 method: 'POST',
                 body: formData // No Content-Type header - browser sets it with boundary for multipart
@@ -852,7 +1102,12 @@ class OrganizationRegistration {
     }
 
     showSuccess(data) {
+        console.log('🎉 Showing success message with data:', data);
+        
+        // Hide the form completely
         this.form.style.display = 'none';
+        
+        // Show the success message
         this.successMessage.classList.add('show');
         
         // Update success message with organization and admin details
@@ -862,26 +1117,54 @@ class OrganizationRegistration {
             const adminEmail = document.getElementById('adminEmail').value;
             
             messageElement.innerHTML = `
-                <h2>🎉 Registration Successful!</h2>
-                <p><strong>${orgName}</strong> has been successfully registered.</p>
-                <div class="admin-info">
-                    <h3>Administrator Account Created</h3>
-                    <p>An administrator account has been created for <strong>${adminEmail}</strong></p>
-                    <p>⚠️ <strong>Important:</strong> Check your email for login credentials and setup instructions.</p>
+                <h2><i class="fas fa-check-circle" style="color: #10b981; margin-right: 0.5rem;"></i>Registration Successful!</h2>
+                <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0;">
+                    <p style="font-size: 1.1rem; margin-bottom: 1rem;"><strong>${orgName}</strong> has been successfully registered with the Course Creator Platform!</p>
+                    
+                    <div class="admin-info" style="margin-bottom: 1.5rem;">
+                        <h3><i class="fas fa-user-shield" style="margin-right: 0.5rem;"></i>Administrator Account Created</h3>
+                        <p>✅ Administrator account created for: <strong>${adminEmail}</strong></p>
+                        <p>✅ Password configured successfully - you can now log in!</p>
+                    </div>
+                    
+                    <div class="next-steps">
+                        <h3><i class="fas fa-rocket" style="margin-right: 0.5rem;"></i>Next Steps:</h3>
+                        <ul style="text-align: left; margin: 1rem 0;">
+                            <li>✅ Log in with your administrator credentials</li>
+                            <li>🏢 Complete your organization profile setup</li>
+                            <li>📚 Begin creating courses and managing users</li>
+                            <li>⚙️ Access password change options in your profile settings</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="margin-top: 1.5rem; padding: 1rem; background: rgba(59, 130, 246, 0.1); border-left: 3px solid #3b82f6; border-radius: 4px;">
+                        <p style="margin: 0;"><strong>🎯 Quick Tip:</strong> You can now access the platform using your administrator credentials to start building your educational content.</p>
+                    </div>
                 </div>
-                <div class="next-steps">
-                    <h3>Next Steps:</h3>
-                    <ul>
-                        <li>Check your email for administrator account credentials</li>
-                        <li>Log in to set up your organization profile</li>
-                        <li>Begin creating courses and managing users</li>
-                    </ul>
+            `;
+        } else {
+            console.warn('Success message element not found, using fallback');
+            // Fallback if the element structure is different
+            this.successMessage.innerHTML = `
+                <div class="success-content">
+                    <h2><i class="fas fa-check-circle" style="color: #10b981; margin-right: 0.5rem;"></i>Registration Successful!</h2>
+                    <p>Your organization registration has been completed successfully!</p>
+                    <p>You can now log in with your administrator credentials.</p>
                 </div>
             `;
         }
         
-        // Scroll to success message
-        this.successMessage.scrollIntoView({ behavior: 'smooth' });
+        // Scroll to success message and ensure it's visible
+        setTimeout(() => {
+            this.successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+        
+        // Also scroll to top to ensure user sees the message
+        setTimeout(() => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 500);
+        
+        console.log('Success message displayed successfully');
     }
 
     showGeneralError(message) {

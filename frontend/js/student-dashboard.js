@@ -19,7 +19,7 @@
  * PURPOSE: Import all required modules for comprehensive student functionality
  * WHY: Modular imports enable clean separation of concerns and better maintainability
  */
-import { CONFIG } from './config.js';                      // Configuration system for API endpoints
+import { CONFIG } from './config-global.js';                      // Configuration system for API endpoints
 import { authManager } from './modules/auth.js';           // Authentication and session management
 import { labLifecycleManager } from './modules/lab-lifecycle.js'; // Lab container lifecycle management
 import StudentFileManager from './modules/student-file-manager.js'; // Student file operations

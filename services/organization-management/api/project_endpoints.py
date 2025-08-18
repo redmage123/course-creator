@@ -1083,7 +1083,7 @@ async def remove_instructor_from_organization(
                 notes = COALESCE(notes || ' | ', '') || 'Transferred from instructor ' || $3 || ' on ' || CURRENT_TIMESTAMP
             WHERE instructor_id = $3
             AND track_id IN (
-                SELECT t.id FROM tracks t
+                SELECT t.id FROM course_creator.tracks t
                 JOIN projects p ON t.project_id = p.id
                 WHERE p.organization_id = $4
             )
@@ -1115,7 +1115,7 @@ async def remove_instructor_from_organization(
                 is_active = false,
                 removed_by = $1,
                 removed_at = CURRENT_TIMESTAMP
-            FROM tracks t
+            FROM course_creator.tracks t
             JOIN projects p ON t.project_id = p.id
             WHERE ti.track_id = t.id
             AND ti.instructor_id = $2

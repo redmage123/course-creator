@@ -181,8 +181,8 @@ wait_for_service_health() {
         local total_count=0
         local failed_count=0
         
-        # Get current container status
-        local docker_info=$(sg docker -c "docker ps -a --format '{{.Names}}\t{{.Status}}' --filter \"name=${DOCKER_PROJECT_NAME}\"" 2>/dev/null)
+        # Get current container status (simplified without sg)
+        local docker_info=$(docker ps -a --format '{{.Names}}\t{{.Status}}' --filter "name=${DOCKER_PROJECT_NAME}" 2>/dev/null || echo "")
         
         echo "  ⏰ Check at ${elapsed}s:"
         
@@ -294,9 +294,9 @@ EOF
 
     # Build base image first for system package caching
     log_info "Building base image for system package caching..."
-    if ! sg docker -c "docker image inspect course-creator-base:latest" >/dev/null 2>&1; then
+    if ! docker image inspect course-creator-base:latest >/dev/null 2>&1; then
         log_info "Base image not found, building..."
-        sg docker -c "docker build -f \"$PROJECT_ROOT/Dockerfile.base\" -t course-creator-base:latest \"$PROJECT_ROOT\""
+        docker build -f "$PROJECT_ROOT/Dockerfile.base" -t course-creator-base:latest "$PROJECT_ROOT"
         log_success "Base image built successfully"
     else
         log_info "Base image already exists, skipping build"
@@ -304,10 +304,10 @@ EOF
     
     if [ -n "$service_name" ]; then
         log_info "Building and starting service: $service_name"
-        sg docker -c "$compose_cmd --env-file \"$PROJECT_ROOT/.cc_env\" -f \"$COMPOSE_FILE\" -p \"$DOCKER_PROJECT_NAME\" up -d --build \"$service_name\""
+        VENV_MOUNT_PATH="$PROJECT_ROOT/.venv" VENV_PATH="$PROJECT_ROOT/.venv" $compose_cmd --env-file "$PROJECT_ROOT/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" up -d --build "$service_name"
     else
         log_info "Building and starting services..."
-        sg docker -c "$compose_cmd --env-file \"$PROJECT_ROOT/.cc_env\" -f \"$COMPOSE_FILE\" -p \"$DOCKER_PROJECT_NAME\" up -d --build"
+        VENV_MOUNT_PATH="$PROJECT_ROOT/.venv" VENV_PATH="$PROJECT_ROOT/.venv" $compose_cmd --env-file "$PROJECT_ROOT/.cc_env" -f "$COMPOSE_FILE" -p "$DOCKER_PROJECT_NAME" up -d --build
     fi
 
     # Wait for services to reach final state and show status

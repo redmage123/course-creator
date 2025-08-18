@@ -56,8 +56,10 @@ services:
       dockerfile: Dockerfile
       cache_from:
         - course-creator-user-management:latest
+    env_file:
+      - .cc_env
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
+      - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator?options=-csearch_path=course_creator,public
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET_KEY=your-secret-key-change-in-production
       - DB_HOST=postgres
@@ -75,6 +77,7 @@ services:
       - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
       - ./shared:/app/shared:ro
       - ./logs:/var/log/course-creator
+      - ./ssl:/app/ssl:ro
     ports:
       - "8000:8000"
     networks:
@@ -85,7 +88,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8000/health'); exit(0 if r.status_code == 200 else 1)"]
+      test: ["CMD", "python", "-c", "import requests; r = requests.get('https://localhost:8000/health', verify=False); exit(0 if r.status_code == 200 else 1)"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -98,11 +101,13 @@ services:
       dockerfile: Dockerfile
       cache_from:
         - course-creator-course-generator:latest
+    env_file:
+      - .cc_env
     environment:
       - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
       - REDIS_URL=redis://redis:6379
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - RAG_SERVICE_URL=http://rag-service:8009
+      - RAG_SERVICE_URL=https://rag-service:8009
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=postgres
@@ -118,6 +123,7 @@ services:
       - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
       - ./shared:/app/shared:ro
       - ./logs:/var/log/course-creator
+      - ./ssl:/app/ssl:ro
     networks:
       - course-creator-network
     depends_on:
@@ -128,7 +134,7 @@ services:
       rag-service:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8001/health'); exit(0 if r.status_code == 200 else 1)"]
+      test: ["CMD", "python", "-c", "import requests; r = requests.get('https://localhost:8001/health', verify=False); exit(0 if r.status_code == 200 else 1)"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -141,6 +147,8 @@ services:
       dockerfile: Dockerfile
       cache_from:
         - course-creator-content-storage:latest
+    env_file:
+      - .cc_env
     environment:
       - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
       - REDIS_URL=redis://redis:6379
@@ -158,6 +166,7 @@ services:
       - content_files:/app/content_files
       - content_storage:/app/storage
       - ./logs:/var/log/course-creator
+      - ./ssl:/app/ssl:ro
     networks:
       - course-creator-network
     depends_on:
@@ -166,7 +175,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8003/health'); exit(0 if r.status_code == 200 else 1)"]
+      test: ["CMD", "python", "-c", "import requests; r = requests.get('https://localhost:8003/health', verify=False); exit(0 if r.status_code == 200 else 1)"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -179,12 +188,14 @@ services:
       dockerfile: Dockerfile
       cache_from:
         - course-creator-course-management:latest
+    env_file:
+      - .cc_env
     environment:
       - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
       - REDIS_URL=redis://redis:6379
-      - USER_SERVICE_URL=http://user-management:8000
-      - COURSE_GENERATOR_URL=http://course-generator:8001
-      - CONTENT_STORAGE_URL=http://content-storage:8003
+      - USER_SERVICE_URL=https://user-management:8000
+      - COURSE_GENERATOR_URL=https://course-generator:8001
+      - CONTENT_STORAGE_URL=https://content-storage:8003
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=postgres
@@ -209,6 +220,7 @@ services:
       - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
       - ./shared:/app/shared:ro
       - ./logs:/var/log/course-creator
+      - ./ssl:/app/ssl:ro
     networks:
       - course-creator-network
     depends_on:
@@ -219,7 +231,7 @@ services:
       user-management:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8004/health'); exit(0 if r.status_code == 200 else 1)"]
+      test: ["CMD", "python", "-c", "import requests; r = requests.get('https://localhost:8004/health', verify=False); exit(0 if r.status_code == 200 else 1)"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -232,11 +244,13 @@ services:
       dockerfile: Dockerfile
       cache_from:
         - course-creator-content-management:latest
+    env_file:
+      - .cc_env
     environment:
-      - USER_SERVICE_URL=http://user-management:8000
-      - COURSE_GENERATOR_URL=http://course-generator:8001
-      - CONTENT_STORAGE_URL=http://content-storage:8003
-      - COURSE_MANAGEMENT_URL=http://course-management:8004
+      - USER_SERVICE_URL=https://user-management:8000
+      - COURSE_GENERATOR_URL=https://course-generator:8001
+      - CONTENT_STORAGE_URL=https://content-storage:8003
+      - COURSE_MANAGEMENT_URL=https://course-management:8004
       - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
       - REDIS_URL=redis://redis:6379
       - DB_HOST=postgres
@@ -260,6 +274,7 @@ services:
       - content_exports:/app/exports
       - template_storage:/app/storage
       - ./logs:/var/log/course-creator
+      - ./ssl:/app/ssl:ro
     networks:
       - course-creator-network
     depends_on:
@@ -268,7 +283,7 @@ services:
       course-generator:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8005/health'); exit(0 if r.status_code == 200 else 1)"]
+      test: ["CMD", "python", "-c", "import requests; r = requests.get('https://localhost:8005/health', verify=False); exit(0 if r.status_code == 200 else 1)"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -282,6 +297,8 @@ services:
       dockerfile: Dockerfile
       cache_from:
         - course-creator-rag-service:latest
+    env_file:
+      - .cc_env
     environment:
       - ENVIRONMENT=docker
       - DOCKER_CONTAINER=true
@@ -301,10 +318,11 @@ services:
       - rag_chromadb_data:/app/chromadb_data
       - rag_huggingface_cache:/app/.cache/huggingface
       - ./logs:/var/log/course-creator
+      - ./ssl:/app/ssl:ro
     networks:
       - course-creator-network
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8009/api/v1/rag/health'); exit(0 if r.status_code == 200 else 1)"]
+      test: ["CMD", "python", "-c", "import requests; r = requests.get('https://localhost:8009/api/v1/rag/health', verify=False); exit(0 if r.status_code == 200 else 1)"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -318,13 +336,15 @@ services:
       dockerfile: Dockerfile
       cache_from:
         - course-creator-analytics:latest
+    env_file:
+      - .cc_env
     environment:
       - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
       - REDIS_URL=redis://redis:6379
-      - USER_SERVICE_URL=http://user-management:8000
-      - COURSE_SERVICE_URL=http://course-management:8004
-      - LAB_SERVICE_URL=http://lab-manager:8006
-      - RAG_SERVICE_URL=http://rag-service:8009
+      - USER_SERVICE_URL=https://user-management:8000
+      - COURSE_SERVICE_URL=https://course-management:8004
+      - LAB_SERVICE_URL=https://lab-manager:8006
+      - RAG_SERVICE_URL=https://rag-service:8009
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=postgres
@@ -342,6 +362,7 @@ services:
       - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
       - ./shared:/app/shared:ro
       - ./logs:/var/log/course-creator
+      - ./ssl:/app/ssl:ro
     networks:
       - course-creator-network
     depends_on:
@@ -354,7 +375,7 @@ services:
       rag-service:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8007/health'); exit(0 if r.status_code == 200 else 1)"]
+      test: ["CMD", "python", "-c", "import requests; r = requests.get('https://localhost:8007/health', verify=False); exit(0 if r.status_code == 200 else 1)"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -368,11 +389,13 @@ services:
       dockerfile: Dockerfile
       cache_from:
         - course-creator-organization-management:latest
+    env_file:
+      - .cc_env
     environment:
       - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
       - REDIS_URL=redis://redis:6379
-      - USER_SERVICE_URL=http://user-management:8000
-      - COURSE_SERVICE_URL=http://course-management:8004
+      - USER_MANAGEMENT_URL=https://user-management:8000
+      - COURSE_SERVICE_URL=https://course-management:8004
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=postgres
@@ -391,6 +414,7 @@ services:
       - ${VENV_PATH}:${VENV_MOUNT_PATH}:ro
       - ./shared:/app/shared:ro
       - ./logs:/var/log/course-creator
+      - ./ssl:/app/ssl:ro
     networks:
       - course-creator-network
     depends_on:
@@ -401,7 +425,7 @@ services:
       user-management:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8008/health'); exit(0 if r.status_code == 200 else 1)"]
+      test: ["CMD", "python", "-c", "import requests; r = requests.get('https://localhost:8008/health', verify=False); exit(0 if r.status_code == 200 else 1)"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -452,10 +476,12 @@ services:
       - .cc_env
     ports:
       - "8010:8010"
+    volumes:
+      - ./ssl:/app/ssl:ro
     networks:
       - course-creator-network
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8010/api/v1/demo/health'); exit(0 if r.status_code == 200 else 1)"]
+      test: ["CMD", "python", "-c", "import requests; r = requests.get('https://localhost:8010/api/v1/demo/health', verify=False); exit(0 if r.status_code == 200 else 1)"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -471,13 +497,15 @@ services:
         - course-creator-lab-manager:latest
     # Run as root initially to setup Docker permissions, then su to appuser
     user: "0:0"
+    env_file:
+      - .cc_env
     environment:
       - LAB_IMAGE_REGISTRY=course-creator/labs
       - MAX_CONCURRENT_LABS=10
       - LAB_SESSION_TIMEOUT=3600
       - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
       - REDIS_URL=redis://redis:6379
-      - RAG_SERVICE_URL=http://rag-service:8009
+      - RAG_SERVICE_URL=https://rag-service:8009
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=postgres
@@ -497,6 +525,7 @@ services:
       - ./lab-storage:/home/bbrelin/course-creator/lab-storage
       - ./logs:/var/log/course-creator
       - ./config:/home/bbrelin/course-creator/config:ro
+      - ./ssl:/app/ssl:ro
     ports:
       - "8006:8006"
     networks:
@@ -532,7 +561,7 @@ services:
         exec su appuser -c 'cd /app && python main.py'
       "
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8006/health'); exit(0 if r.status_code == 200 else 1)"]
+      test: ["CMD", "python", "-c", "import requests; r = requests.get('https://localhost:8006/health', verify=False); exit(0 if r.status_code == 200 else 1)"]
       interval: 30s
       timeout: 10s
       retries: 3

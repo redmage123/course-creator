@@ -25,8 +25,9 @@ docker-compose down               # Stop all services
 # - Redis cache (port 6379)
 # - All microservices (ports 8000-8010)
 # - Demo service (port 8010)
-# - Frontend (port 3000)
+# - Frontend with HTTPS (port 3000) and HTTP redirect (port 3001)
 # - Lab container manager (port 8006)
+# - Enhanced password management and UI features
 # - Centralized syslog format logging to /var/log/course-creator/
 
 # App Control Script Path Fix (v2.9)
@@ -157,6 +158,37 @@ python scripts/create-test-users.py
 
 # Setup development data
 python scripts/setup-dev-data.py
+```
+
+### Password Management Operations (v3.0)
+```bash
+# Test password management endpoints
+curl -X POST "http://localhost:8000/auth/password/change" \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"old_password": "current", "new_password": "newpassword123"}'
+
+# Test organization registration with admin password
+curl -X POST "http://localhost:8008/api/v1/organizations" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Test Organization",
+    "slug": "test-org",
+    "address": "123 Business St",
+    "contact_phone": "+15551234567",
+    "contact_email": "admin@testorg.com",
+    "admin_full_name": "Test Admin",
+    "admin_email": "admin@testorg.com",
+    "admin_password": "SecurePassword123!"
+  }'
+
+# Validate password strength (frontend testing)
+# Access: https://localhost:3000/html/password-change.html
+# Access: https://localhost:3000/html/organization-registration.html
+
+# Check password management logs
+docker logs course-creator-user-management-1 | grep password
+docker logs course-creator-organization-management-1 | grep admin
 ```
 
 ### Database Maintenance

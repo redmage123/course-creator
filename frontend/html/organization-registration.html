@@ -245,15 +245,43 @@
         .success-message {
             display: none;
             text-align: center;
-            padding: 2rem;
-            background: var(--success-color);
+            padding: 3rem;
+            background: linear-gradient(135deg, #10b981, #059669);
             color: white;
-            border-radius: 12px;
+            border-radius: 16px;
             margin-top: 2rem;
+            box-shadow: 0 20px 40px rgba(16, 185, 129, 0.3);
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            animation: successSlideIn 0.8s ease-out;
         }
 
         .success-message.show {
             display: block;
+        }
+        
+        @keyframes successSlideIn {
+            0% {
+                opacity: 0;
+                transform: translateY(-30px) scale(0.9);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .success-message h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .success-message .success-content {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 2rem;
+            margin: 1rem 0;
+            backdrop-filter: blur(10px);
         }
         
         .admin-info, .next-steps {
@@ -318,6 +346,83 @@
         
         .country-select:hover {
             border-color: var(--primary-color);
+        }
+
+        /* Password Input Styling */
+        .password-input-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .password-input-container .form-input {
+            padding-right: 3rem;
+            flex: 1;
+        }
+
+        .password-toggle-btn {
+            position: absolute;
+            right: 0.75rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #6b7280;
+            font-size: 1rem;
+            padding: 0.25rem;
+            border-radius: 4px;
+            transition: color 0.2s ease;
+        }
+
+        .password-toggle-btn:hover {
+            color: var(--primary-color);
+            background-color: rgba(99, 102, 241, 0.1);
+        }
+
+        .password-strength {
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .password-strength.weak {
+            color: #ef4444;
+        }
+
+        .password-strength.medium {
+            color: #f59e0b;
+        }
+
+        .password-strength.strong {
+            color: #10b981;
+        }
+
+        .password-strength-bar {
+            width: 100%;
+            height: 4px;
+            background-color: #e5e7eb;
+            border-radius: 2px;
+            margin-top: 0.25rem;
+            overflow: hidden;
+        }
+
+        .password-strength-fill {
+            height: 100%;
+            transition: width 0.3s ease, background-color 0.3s ease;
+        }
+
+        .password-strength-fill.weak {
+            background-color: #ef4444;
+            width: 33%;
+        }
+
+        .password-strength-fill.medium {
+            background-color: #f59e0b;
+            width: 66%;
+        }
+
+        .password-strength-fill.strong {
+            background-color: #10b981;
+            width: 100%;
         }
 
         .slug-preview {
@@ -773,6 +878,23 @@
                         </div>
 
                         <div class="form-group">
+                            <label for="adminUsername" class="form-label required">Administrator ID/Username</label>
+                            <input 
+                                type="text" 
+                                id="adminUsername" 
+                                name="admin_username" 
+                                class="form-input" 
+                                required 
+                                minlength="3" 
+                                maxlength="30"
+                                pattern="[a-zA-Z0-9_-]+"
+                                placeholder="e.g., jsmith_admin"
+                            >
+                            <div class="form-help">Unique ID for administrator login (letters, numbers, underscore, hyphen only)</div>
+                            <div class="form-error" id="adminUsername-error"></div>
+                        </div>
+
+                        <div class="form-group">
                             <label for="adminEmail" class="form-label required">Email Address</label>
                             <input 
                                 type="email" 
@@ -784,6 +906,45 @@
                             >
                             <div class="form-help">Professional email for administrator</div>
                             <div class="form-error" id="adminEmail-error"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="adminPassword" class="form-label required">Administrator Password</label>
+                            <div class="password-input-container">
+                                <input 
+                                    type="password" 
+                                    id="adminPassword" 
+                                    name="admin_password" 
+                                    class="form-input" 
+                                    required
+                                    minlength="8"
+                                    placeholder="Enter secure password"
+                                >
+                                <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('adminPassword')" tabindex="-1">
+                                    <i class="fas fa-eye" id="adminPassword-toggle-icon"></i>
+                                </button>
+                            </div>
+                            <div class="password-strength" id="adminPassword-strength"></div>
+                            <div class="form-help">Minimum 8 characters with letters, numbers, and special characters recommended</div>
+                            <div class="form-error" id="adminPassword-error"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="adminPasswordConfirm" class="form-label required">Confirm Password</label>
+                            <div class="password-input-container">
+                                <input 
+                                    type="password" 
+                                    id="adminPasswordConfirm" 
+                                    name="admin_password_confirm" 
+                                    class="form-input" 
+                                    required
+                                    placeholder="Confirm password"
+                                >
+                                <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('adminPasswordConfirm')" tabindex="-1">
+                                    <i class="fas fa-eye" id="adminPasswordConfirm-toggle-icon"></i>
+                                </button>
+                            </div>
+                            <div class="form-error" id="adminPasswordConfirm-error"></div>
                         </div>
                     </div>
 
@@ -1092,7 +1253,28 @@
         </div>
     </div>
 
-    <script src="../js/config-global.js?v=2.0"></script>
-    <script src="../js/organization-registration.js?v=2.0"></script>
+    <script src="../js/config-global.js?v=8.0"></script>
+    <script src="../js/organization-registration.js?v=9.0"></script>
+    
+    <script>
+        // Debug browser environment
+        console.log('Page protocol:', window.location.protocol);
+        console.log('Page hostname:', window.location.hostname);
+        console.log('Page origin:', window.location.origin);
+        
+        // Global function for password visibility toggle
+        function togglePasswordVisibility(fieldId) {
+            const field = document.getElementById(fieldId);
+            const toggleIcon = document.getElementById(fieldId + '-toggle-icon');
+            
+            if (field.type === 'password') {
+                field.type = 'text';
+                toggleIcon.className = 'fas fa-eye-slash';
+            } else {
+                field.type = 'password';
+                toggleIcon.className = 'fas fa-eye';
+            }
+        }
+    </script>
 </body>
 </html>

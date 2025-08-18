@@ -6,11 +6,11 @@ from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import Dict, Any, Optional
 
 from app.dependencies import get_container, DependencyContainer
-from services.job_service import JobService, JobStatus
+# from services.job_service import JobService, JobStatus
 
 router = APIRouter()
 
-def get_job_service(request: Request) -> JobService:
+def get_job_service(request: Request):
     """Dependency to get job service."""
     container: DependencyContainer = request.app.state.container
     return container.get_job_service()

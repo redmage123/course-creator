@@ -1,344 +1,570 @@
 """
-Custom exceptions for Lab Container Management Service following SOLID principles.
-Single Responsibility: Each exception handles a specific error type.
+Common Exception Classes for Course Creator Platform
+
+This module provides a comprehensive hierarchy of custom exceptions that all services
+should use instead of generic exception handling. This design follows the SOLID principles
+and ensures consistent error handling across the entire platform.
+
+Business Context:
+- Provides structured error information for debugging and monitoring
+- Enables specific error handling strategies based on exception type
+- Supports detailed logging and error reporting requirements
+- Facilitates API error response standardization
+
+Technical Rationale:
+- Replaces all generic 'except Exception as e' patterns with specific exceptions
+- Provides context-rich error information including error codes and details
+- Supports nested exception handling for error tracing
+- Enables different handling strategies for different error categories
 """
-import logging
+
 from typing import Dict, Any, Optional
 from datetime import datetime
 
-class LabContainerException(Exception):
-    """Base exception for all Lab Container Management service errors."""
+
+class CourseCreatorBaseException(Exception):
+    """
+    Base exception class for all Course Creator Platform exceptions.
+    
+    Business Context:
+    All platform exceptions inherit from this base class to ensure consistent
+    error handling and logging across all microservices. This supports the
+    platform's requirement for comprehensive error tracking and debugging.
+    
+    Technical Rationale:
+    - Provides common error structure with error codes and context details
+    - Supports exception chaining for root cause analysis
+    - Enables platform-wide error handling middleware
+    - Facilitates structured logging and monitoring integration
+    """
     
     def __init__(
-        self,
-        message: str,
-        error_code: str = "LAB_CONTAINER_ERROR",
-        details: Optional[Dict[str, Any]] = None,
-        original_exception: Optional[Exception] = None
+        self, 
+        message: str, 
+        error_code: str = None, 
+        details: Dict[str, Any] = None,
+        original_exception: Exception = None
     ):
+        super().__init__(message)
         self.message = message
-        self.error_code = error_code
+        self.error_code = error_code or self.__class__.__name__.upper()
         self.details = details or {}
         self.original_exception = original_exception
         self.timestamp = datetime.utcnow()
-        
-        # Log the exception with proper context
-        self._log_exception()
-        
-        super().__init__(self.message)
-    
-    def _log_exception(self):
-        """Log the exception with proper formatting and context."""
-        logger = logging.getLogger(__name__)
-        
-        log_context = {
-            "error_code": self.error_code,
-            "message": self.message,
-            "details": self.details,
-            "timestamp": self.timestamp.isoformat(),
-            "service": "lab-containers"
-        }
-        
-        if self.original_exception:
-            log_context["original_error"] = str(self.original_exception)
-            log_context["original_type"] = type(self.original_exception).__name__
-        
-        logger.error(
-            f"LabContainer Exception: {self.error_code} - {self.message}",
-            extra=log_context,
-            exc_info=self.original_exception if self.original_exception else None
-        )
     
     def to_dict(self) -> Dict[str, Any]:
-        """Convert exception to dictionary for API responses."""
+        """
+        Convert exception to dictionary for API responses and logging.
+        
+        Returns structured error information suitable for JSON serialization
+        and consistent error reporting across all platform services.
+        """
         return {
+            "error_type": self.__class__.__name__,
             "error_code": self.error_code,
             "message": self.message,
             "details": self.details,
             "timestamp": self.timestamp.isoformat(),
-            "service": "lab-containers"
+            "original_error": str(self.original_exception) if self.original_exception else None
         }
 
-class DockerServiceException(LabContainerException):
-    """Exception raised when Docker service operations fail."""
-    
-    def __init__(
-        self,
-        message: str = "Docker service operation failed",
-        container_id: Optional[str] = None,
-        image_name: Optional[str] = None,
-        operation: Optional[str] = None,
-        docker_error: Optional[str] = None,
-        original_exception: Optional[Exception] = None
-    ):
-        details = {}
-        if container_id:
-            details["container_id"] = container_id
-        if image_name:
-            details["image_name"] = image_name
-        if operation:
-            details["operation"] = operation
-        if docker_error:
-            details["docker_error"] = docker_error
-            
-        super().__init__(
-            message=message,
-            error_code="DOCKER_SERVICE_ERROR",
-            details=details,
-            original_exception=original_exception
-        )
 
-class LabCreationException(LabContainerException):
-    """Exception raised when lab creation fails."""
+# Authentication and Authorization Exceptions
+class AuthenticationException(CourseCreatorBaseException):
+    """
+    Authentication-related exceptions for login, token validation, and session management.
     
-    def __init__(
-        self,
-        message: str = "Lab creation failed",
-        student_id: Optional[str] = None,
-        course_id: Optional[str] = None,
-        lab_type: Optional[str] = None,
-        resource_requirements: Optional[Dict[str, str]] = None,
-        original_exception: Optional[Exception] = None
-    ):
-        details = {}
-        if student_id:
-            details["student_id"] = student_id
-        if course_id:
-            details["course_id"] = course_id
-        if lab_type:
-            details["lab_type"] = lab_type
-        if resource_requirements:
-            details["resource_requirements"] = resource_requirements
-            
-        super().__init__(
-            message=message,
-            error_code="LAB_CREATION_ERROR",
-            details=details,
-            original_exception=original_exception
-        )
+    Business Context:
+    Handles all authentication failures across the platform including login attempts,
+    session validation, and token-based authentication. Critical for security monitoring
+    and user access management.
+    """
+    pass
 
-class LabNotFoundException(LabContainerException):
-    """Exception raised when lab is not found."""
-    
-    def __init__(
-        self,
-        message: str = "Lab not found",
-        lab_id: Optional[str] = None,
-        student_id: Optional[str] = None,
-        course_id: Optional[str] = None,
-        search_criteria: Optional[str] = None,
-        original_exception: Optional[Exception] = None
-    ):
-        details = {}
-        if lab_id:
-            details["lab_id"] = lab_id
-        if student_id:
-            details["student_id"] = student_id
-        if course_id:
-            details["course_id"] = course_id
-        if search_criteria:
-            details["search_criteria"] = search_criteria
-            
-        super().__init__(
-            message=message,
-            error_code="LAB_NOT_FOUND",
-            details=details,
-            original_exception=original_exception
-        )
 
-class LabLifecycleException(LabContainerException):
-    """Exception raised when lab lifecycle operations fail."""
+class AuthorizationException(CourseCreatorBaseException):
+    """
+    Authorization-related exceptions for role-based access control and permissions.
     
-    def __init__(
-        self,
-        message: str = "Lab lifecycle operation failed",
-        lab_id: Optional[str] = None,
-        current_status: Optional[str] = None,
-        target_status: Optional[str] = None,
-        operation: Optional[str] = None,
-        original_exception: Optional[Exception] = None
-    ):
-        details = {}
-        if lab_id:
-            details["lab_id"] = lab_id
-        if current_status:
-            details["current_status"] = current_status
-        if target_status:
-            details["target_status"] = target_status
-        if operation:
-            details["operation"] = operation
-            
-        super().__init__(
-            message=message,
-            error_code="LAB_LIFECYCLE_ERROR",
-            details=details,
-            original_exception=original_exception
-        )
+    Business Context:
+    Manages access control violations and permission denials. Essential for the
+    platform's RBAC system and multi-tenant organization security.
+    """
+    pass
 
-class IDEServiceException(LabContainerException):
-    """Exception raised when IDE service operations fail."""
-    
-    def __init__(
-        self,
-        message: str = "IDE service operation failed",
-        lab_id: Optional[str] = None,
-        ide_type: Optional[str] = None,
-        port: Optional[int] = None,
-        operation: Optional[str] = None,
-        original_exception: Optional[Exception] = None
-    ):
-        details = {}
-        if lab_id:
-            details["lab_id"] = lab_id
-        if ide_type:
-            details["ide_type"] = ide_type
-        if port is not None:
-            details["port"] = port
-        if operation:
-            details["operation"] = operation
-            
-        super().__init__(
-            message=message,
-            error_code="IDE_SERVICE_ERROR",
-            details=details,
-            original_exception=original_exception
-        )
 
-class ResourceLimitException(LabContainerException):
-    """Exception raised when resource limits are exceeded."""
+class SessionException(CourseCreatorBaseException):
+    """
+    Session management exceptions for session creation, validation, and expiration.
     
-    def __init__(
-        self,
-        message: str = "Resource limit exceeded",
-        resource_type: Optional[str] = None,
-        current_usage: Optional[str] = None,
-        limit: Optional[str] = None,
-        requested_amount: Optional[str] = None,
-        original_exception: Optional[Exception] = None
-    ):
-        details = {}
-        if resource_type:
-            details["resource_type"] = resource_type
-        if current_usage:
-            details["current_usage"] = current_usage
-        if limit:
-            details["limit"] = limit
-        if requested_amount:
-            details["requested_amount"] = requested_amount
-            
-        super().__init__(
-            message=message,
-            error_code="RESOURCE_LIMIT_ERROR",
-            details=details,
-            original_exception=original_exception
-        )
+    Business Context:
+    Handles session lifecycle issues critical for user experience and security.
+    Supports the platform's requirement for secure session management.
+    """
+    pass
 
-class ValidationException(LabContainerException):
-    """Exception raised when input validation fails."""
-    
-    def __init__(
-        self,
-        message: str = "Input validation failed",
-        validation_errors: Optional[Dict[str, str]] = None,
-        field_name: Optional[str] = None,
-        input_value: Optional[str] = None,
-        original_exception: Optional[Exception] = None
-    ):
-        details = {}
-        if validation_errors:
-            details["validation_errors"] = validation_errors
-        if field_name:
-            details["field_name"] = field_name
-        if input_value:
-            details["input_value"] = input_value
-            
-        super().__init__(
-            message=message,
-            error_code="VALIDATION_ERROR",
-            details=details,
-            original_exception=original_exception
-        )
 
-class ServiceInitializationException(LabContainerException):
-    """Exception raised when service initialization fails."""
+class JWTException(CourseCreatorBaseException):
+    """
+    JWT token-related exceptions for token creation, validation, and parsing.
     
-    def __init__(
-        self,
-        message: str = "Service initialization failed",
-        service_name: Optional[str] = None,
-        initialization_stage: Optional[str] = None,
-        configuration_error: Optional[str] = None,
-        original_exception: Optional[Exception] = None
-    ):
-        details = {}
-        if service_name:
-            details["service_name"] = service_name
-        if initialization_stage:
-            details["initialization_stage"] = initialization_stage
-        if configuration_error:
-            details["configuration_error"] = configuration_error
-            
-        super().__init__(
-            message=message,
-            error_code="SERVICE_INITIALIZATION_ERROR",
-            details=details,
-            original_exception=original_exception
-        )
+    Business Context:
+    Manages JWT token issues critical for API authentication and inter-service
+    communication security across the microservices architecture.
+    """
+    pass
 
-class ContainerImageException(LabContainerException):
-    """Exception raised when container image operations fail."""
-    
-    def __init__(
-        self,
-        message: str = "Container image operation failed",
-        image_name: Optional[str] = None,
-        image_tag: Optional[str] = None,
-        operation: Optional[str] = None,
-        registry_url: Optional[str] = None,
-        original_exception: Optional[Exception] = None
-    ):
-        details = {}
-        if image_name:
-            details["image_name"] = image_name
-        if image_tag:
-            details["image_tag"] = image_tag
-        if operation:
-            details["operation"] = operation
-        if registry_url:
-            details["registry_url"] = registry_url
-            
-        super().__init__(
-            message=message,
-            error_code="CONTAINER_IMAGE_ERROR",
-            details=details,
-            original_exception=original_exception
-        )
 
-class NetworkException(LabContainerException):
-    """Exception raised when network operations fail."""
+# User Management Exceptions
+class UserManagementException(CourseCreatorBaseException):
+    """
+    General user management exceptions for user operations and profile management.
     
-    def __init__(
-        self,
-        message: str = "Network operation failed",
-        container_id: Optional[str] = None,
-        network_name: Optional[str] = None,
-        port_mapping: Optional[str] = None,
-        operation: Optional[str] = None,
-        original_exception: Optional[Exception] = None
-    ):
-        details = {}
-        if container_id:
-            details["container_id"] = container_id
-        if network_name:
-            details["network_name"] = network_name
-        if port_mapping:
-            details["port_mapping"] = port_mapping
-        if operation:
-            details["operation"] = operation
-            
-        super().__init__(
-            message=message,
-            error_code="NETWORK_ERROR",
-            details=details,
-            original_exception=original_exception
-        )
+    Business Context:
+    Handles user lifecycle operations including registration, profile updates,
+    and account management. Core to the platform's user management capabilities.
+    """
+    pass
+
+
+class UserNotFoundException(CourseCreatorBaseException):
+    """
+    Exception for when a requested user cannot be found in the system.
+    
+    Business Context:
+    Critical for user lookup operations and API responses. Helps distinguish
+    between user not found vs. system errors for proper error handling.
+    """
+    pass
+
+
+class UserValidationException(CourseCreatorBaseException):
+    """
+    User data validation exceptions for registration and profile update operations.
+    
+    Business Context:
+    Handles validation errors for user input including email format, username
+    constraints, and profile data validation. Essential for data integrity.
+    """
+    
+    def __init__(self, message: str, validation_errors: Dict[str, str] = None, **kwargs):
+        super().__init__(message, **kwargs)
+        self.validation_errors = validation_errors or {}
+        self.details["validation_errors"] = self.validation_errors
+
+
+class DuplicateUserException(CourseCreatorBaseException):
+    """
+    Exception for duplicate user registration attempts (email/username conflicts).
+    
+    Business Context:
+    Prevents duplicate user accounts and provides clear feedback for registration
+    conflicts. Critical for user account uniqueness and system integrity.
+    """
+    pass
+
+
+# Organization Management Exceptions
+class OrganizationException(CourseCreatorBaseException):
+    """
+    Organization management exceptions for multi-tenant operations.
+    
+    Business Context:
+    Handles organization lifecycle, RBAC operations, and tenant management.
+    Core to the platform's multi-tenant architecture and organization features.
+    """
+    pass
+
+
+class OrganizationNotFoundException(CourseCreatorBaseException):
+    """
+    Exception for when a requested organization cannot be found.
+    
+    Business Context:
+    Critical for organization lookup operations and tenant validation.
+    Essential for multi-tenant security and access control.
+    """
+    pass
+
+
+class OrganizationValidationException(CourseCreatorBaseException):
+    """
+    Organization data validation exceptions for registration and updates.
+    
+    Business Context:
+    Ensures organization data integrity and validates business rules for
+    organization creation and management operations.
+    """
+    pass
+
+
+# Content Management Exceptions
+class ContentException(CourseCreatorBaseException):
+    """
+    Content management exceptions for content operations and lifecycle.
+    
+    Business Context:
+    Handles content creation, storage, retrieval, and management operations.
+    Critical for the platform's content management and course delivery capabilities.
+    """
+    pass
+
+
+class ContentNotFoundException(CourseCreatorBaseException):
+    """
+    Exception for when requested content cannot be found.
+    
+    Business Context:
+    Handles content lookup failures and helps distinguish between missing
+    content vs. access permission issues for proper error handling.
+    """
+    pass
+
+
+class ContentValidationException(CourseCreatorBaseException):
+    """
+    Content validation exceptions for content creation and update operations.
+    
+    Business Context:
+    Ensures content meets platform standards and business rules. Critical
+    for content quality and platform content management requirements.
+    """
+    pass
+
+
+class FileStorageException(CourseCreatorBaseException):
+    """
+    File storage and upload exceptions for content storage operations.
+    
+    Business Context:
+    Handles file upload, storage, and retrieval issues. Essential for the
+    platform's content storage capabilities and user file management.
+    """
+    pass
+
+
+# Course Management Exceptions
+class CourseException(CourseCreatorBaseException):
+    """
+    Course management exceptions for course operations and lifecycle.
+    
+    Business Context:
+    Handles course creation, publishing, enrollment, and management operations.
+    Core to the platform's educational course delivery capabilities.
+    """
+    pass
+
+
+class CourseNotFoundException(CourseCreatorBaseException):
+    """
+    Exception for when a requested course cannot be found.
+    
+    Business Context:
+    Critical for course lookup operations and enrollment management.
+    Helps provide clear feedback for course access attempts.
+    """
+    pass
+
+
+class CourseValidationException(CourseCreatorBaseException):
+    """
+    Course validation exceptions for course creation and update operations.
+    
+    Business Context:
+    Ensures courses meet educational standards and platform requirements.
+    Critical for course quality and educational content validation.
+    """
+    pass
+
+
+class EnrollmentException(CourseCreatorBaseException):
+    """
+    Course enrollment exceptions for student enrollment operations.
+    
+    Business Context:
+    Handles enrollment processes, capacity limits, and access control.
+    Essential for the platform's course enrollment and access management.
+    """
+    pass
+
+
+# Database and Infrastructure Exceptions
+class DatabaseException(CourseCreatorBaseException):
+    """
+    Database operation exceptions for SQL operations and connection issues.
+    
+    Business Context:
+    Handles database connectivity, query execution, and data persistence issues.
+    Critical for platform reliability and data integrity across all services.
+    """
+    pass
+
+
+class DatabaseConnectionException(CourseCreatorBaseException):
+    """
+    Database connection exceptions for connection pool and connectivity issues.
+    
+    Business Context:
+    Handles database connectivity problems that could affect platform availability.
+    Essential for infrastructure monitoring and service reliability.
+    """
+    pass
+
+
+class DatabaseQueryException(CourseCreatorBaseException):
+    """
+    Database query execution exceptions for SQL execution and constraint violations.
+    
+    Business Context:
+    Handles SQL execution errors, constraint violations, and data integrity issues.
+    Critical for data consistency and platform reliability.
+    """
+    pass
+
+
+# External Service Exceptions
+class ExternalServiceException(CourseCreatorBaseException):
+    """
+    External service integration exceptions for third-party service interactions.
+    
+    Business Context:
+    Handles communication issues with external APIs and service dependencies.
+    Important for platform integration reliability and service monitoring.
+    """
+    pass
+
+
+class EmailServiceException(CourseCreatorBaseException):
+    """
+    Email service exceptions for email delivery and notification operations.
+    
+    Business Context:
+    Handles email delivery issues for user notifications, password resets,
+    and platform communications. Critical for user engagement features.
+    """
+    pass
+
+
+class AIServiceException(CourseCreatorBaseException):
+    """
+    AI service exceptions for course generation and RAG operations.
+    
+    Business Context:
+    Handles AI service failures for course generation, content analysis,
+    and RAG-enhanced features. Critical for platform's AI capabilities.
+    """
+    pass
+
+
+# Lab and Container Management Exceptions
+class LabException(CourseCreatorBaseException):
+    """
+    Lab container management exceptions for Docker operations and lab lifecycle.
+    
+    Business Context:
+    Handles lab container creation, management, and lifecycle operations.
+    Critical for the platform's hands-on learning lab capabilities.
+    """
+    pass
+
+
+class ContainerException(CourseCreatorBaseException):
+    """
+    Docker container exceptions for container operations and resource management.
+    
+    Business Context:
+    Handles Docker container lifecycle, resource allocation, and networking issues.
+    Essential for the platform's containerized lab environment.
+    """
+    pass
+
+
+class LabResourceException(CourseCreatorBaseException):
+    """
+    Lab resource management exceptions for resource allocation and limits.
+    
+    Business Context:
+    Handles resource allocation, capacity limits, and lab environment constraints.
+    Critical for platform resource management and lab scalability.
+    """
+    pass
+
+
+# API and HTTP Exceptions
+class APIException(CourseCreatorBaseException):
+    """
+    API operation exceptions for HTTP operations and service communication.
+    
+    Business Context:
+    Handles API communication issues between microservices and external clients.
+    Essential for platform service reliability and API error handling.
+    """
+    pass
+
+
+class ValidationException(CourseCreatorBaseException):
+    """
+    Data validation exceptions for input validation and business rule enforcement.
+    
+    Business Context:
+    Handles input validation across all platform operations. Critical for
+    data integrity, security, and user experience consistency.
+    """
+    
+    def __init__(self, message: str, field_errors: Dict[str, str] = None, **kwargs):
+        super().__init__(message, **kwargs)
+        self.field_errors = field_errors or {}
+        self.details["field_errors"] = self.field_errors
+
+
+class ConfigurationException(CourseCreatorBaseException):
+    """
+    Configuration and environment exceptions for service configuration issues.
+    
+    Business Context:
+    Handles configuration problems that could affect service startup and operation.
+    Critical for deployment reliability and environment management.
+    """
+    pass
+
+
+# Rate Limiting and Security Exceptions
+class RateLimitException(CourseCreatorBaseException):
+    """
+    Rate limiting exceptions for API throttling and abuse prevention.
+    
+    Business Context:
+    Handles rate limiting enforcement for API protection and resource management.
+    Important for platform security and service quality protection.
+    """
+    pass
+
+
+class SecurityException(CourseCreatorBaseException):
+    """
+    Security-related exceptions for security policy violations and threats.
+    
+    Business Context:
+    Handles security policy violations, suspicious activity, and threat detection.
+    Critical for platform security and compliance requirements.
+    """
+    pass
+
+
+# Business Logic Exceptions
+class BusinessRuleException(CourseCreatorBaseException):
+    """
+    Business rule violations for domain-specific business logic enforcement.
+    
+    Business Context:
+    Handles violations of business rules and domain constraints. Essential for
+    maintaining business logic integrity across platform operations.
+    """
+    pass
+
+
+class QuotaExceededException(CourseCreatorBaseException):
+    """
+    Resource quota exceptions for usage limits and capacity constraints.
+    
+    Business Context:
+    Handles resource usage limits, storage quotas, and capacity constraints.
+    Important for resource management and service level compliance.
+    """
+    pass
+
+
+class RAGException(CourseCreatorBaseException):
+    """
+    Exception raised for Retrieval-Augmented Generation operations.
+    
+    Business Context:
+    RAG service failures impact AI-powered features across the platform including content
+    generation quality, lab assistance effectiveness, and personalized learning recommendations.
+    These exceptions help identify vector database issues, embedding failures, and context
+    retrieval problems that degrade AI performance.
+    
+    Technical Context:
+    - ChromaDB connection and query failures
+    - Vector embedding generation errors
+    - Context retrieval and ranking issues
+    - Knowledge base ingestion problems
+    """
+    pass
+
+
+class EmbeddingException(RAGException):
+    """
+    Exception raised for text embedding generation failures.
+    
+    Business Context:
+    Embedding generation failures prevent effective semantic search and context retrieval,
+    directly impacting the quality of AI-generated educational content and assistance.
+    These exceptions help identify API failures, model issues, and text processing problems.
+    
+    Technical Context:
+    - OpenAI API embedding failures
+    - Local embedding model errors
+    - Text preprocessing issues
+    - Token limit exceeded errors
+    """
+    pass
+
+
+# Factory functions for common exception patterns
+def create_not_found_exception(resource_type: str, resource_id: str, **kwargs) -> CourseCreatorBaseException:
+    """
+    Factory function for creating standardized not found exceptions.
+    
+    Business Context:
+    Provides consistent not found error messages across all platform services.
+    Improves user experience and debugging capabilities.
+    
+    Args:
+        resource_type: Type of resource (e.g., 'User', 'Course', 'Organization')
+        resource_id: Identifier of the missing resource
+        **kwargs: Additional exception parameters
+    
+    Returns:
+        Appropriate not found exception for the resource type
+    """
+    message = f"{resource_type} with ID '{resource_id}' not found"
+    error_code = f"{resource_type.upper()}_NOT_FOUND"
+    
+    # Map resource types to specific exception classes
+    exception_map = {
+        'user': UserNotFoundException,
+        'course': CourseNotFoundException,
+        'organization': OrganizationNotFoundException,
+        'content': ContentNotFoundException,
+    }
+    
+    exception_class = exception_map.get(resource_type.lower(), CourseCreatorBaseException)
+    return exception_class(message, error_code=error_code, **kwargs)
+
+
+def create_validation_exception(resource_type: str, validation_errors: Dict[str, str], **kwargs) -> ValidationException:
+    """
+    Factory function for creating standardized validation exceptions.
+    
+    Business Context:
+    Provides consistent validation error handling across all platform services.
+    Ensures uniform validation feedback for user experience consistency.
+    
+    Args:
+        resource_type: Type of resource being validated
+        validation_errors: Dictionary of field-specific validation errors
+        **kwargs: Additional exception parameters
+    
+    Returns:
+        ValidationException with structured error information
+    """
+    message = f"Validation failed for {resource_type}"
+    error_code = f"{resource_type.upper()}_VALIDATION_ERROR"
+    
+    return ValidationException(
+        message, 
+        field_errors=validation_errors,
+        error_code=error_code,
+        **kwargs
+    )

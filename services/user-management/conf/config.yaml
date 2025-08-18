@@ -17,7 +17,7 @@ server:
 
 # Database configuration
 database:
-  url: postgresql://${oc.env:DB_USER,postgres}:${oc.env:DB_PASSWORD,postgres_password}@${oc.env:DB_HOST,postgres}:${oc.env:DB_PORT,5432}/${oc.env:DB_NAME,course_creator}
+  url: postgresql://${oc.env:DB_USER,postgres}:${oc.env:DB_PASSWORD,postgres_password}@${oc.env:DB_HOST,postgres}:${oc.env:DB_PORT,5432}/${oc.env:DB_NAME,course_creator}?options=-csearch_path=course_creator,public
 
 # Redis configuration
 redis:
@@ -25,17 +25,17 @@ redis:
   port: ${oc.env:REDIS_PORT,6379}
   db: ${oc.env:REDIS_DB,0}
 
-# CORS configuration
+# CORS configuration - HTTPS only
 cors:
   origins:
-    - "http://localhost:3000"
-    - "http://localhost:8000"
-    - "http://localhost:8001"
-    - "http://localhost:8004"
-    - "http://176.9.99.103:3000"
-    - "http://176.9.99.103:8000"
-    - "http://176.9.99.103:8001"
-    - "http://176.9.99.103:8004"
+    - "https://localhost:3000"
+    - "https://localhost:8000"
+    - "https://localhost:8001"
+    - "https://localhost:8004"
+    - "https://176.9.99.103:3000"
+    - "https://176.9.99.103:8000"
+    - "https://176.9.99.103:8001"
+    - "https://176.9.99.103:8004"
 
 # Logging configuration
 log:

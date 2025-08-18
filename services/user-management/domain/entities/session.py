@@ -44,7 +44,7 @@ Version: 2.3.0
 Last Updated: 2025-08-02
 """
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 from enum import Enum
 import uuid
@@ -142,9 +142,9 @@ class Session:
     session_type: str = "web"  # web, mobile, api
     status: SessionStatus = SessionStatus.ACTIVE
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    created_at: datetime = field(default_factory=datetime.utcnow)
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     expires_at: Optional[datetime] = None
-    last_accessed: datetime = field(default_factory=datetime.utcnow)
+    last_accessed: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     ip_address: Optional[str] = None
     user_agent: Optional[str] = None
     device_info: Dict[str, Any] = field(default_factory=dict)
@@ -249,14 +249,14 @@ class Session:
         if self.status != SessionStatus.ACTIVE:
             return False
         
-        if self.expires_at and datetime.utcnow() > self.expires_at:
+        if self.expires_at and datetime.now(timezone.utc) > self.expires_at:
             return False
         
         return True
     
     def is_expired(self) -> bool:
         """Check if session is expired"""
-        if self.expires_at and datetime.utcnow() > self.expires_at:
+        if self.expires_at and datetime.now(timezone.utc) > self.expires_at:
             return True
         return False
     
@@ -305,22 +305,22 @@ class Session:
             else:
                 duration = timedelta(days=7)
         
-        self.expires_at = datetime.utcnow() + duration
-        self.last_accessed = datetime.utcnow()
+        self.expires_at = datetime.now(timezone.utc) + duration
+        self.last_accessed = datetime.now(timezone.utc)
     
     def revoke(self) -> None:
         """Revoke the session"""
         self.status = SessionStatus.REVOKED
-        self.last_accessed = datetime.utcnow()
+        self.last_accessed = datetime.now(timezone.utc)
     
     def mark_expired(self) -> None:
         """Mark session as expired"""
         self.status = SessionStatus.EXPIRED
-        self.last_accessed = datetime.utcnow()
+        self.last_accessed = datetime.now(timezone.utc)
     
     def update_access(self, ip_address: str = None, user_agent: str = None) -> None:
         """Update session access information"""
-        self.last_accessed = datetime.utcnow()
+        self.last_accessed = datetime.now(timezone.utc)
         
         if ip_address:
             self.ip_address = ip_address
@@ -341,7 +341,7 @@ class Session:
         if not self.expires_at:
             return None
         
-        remaining = self.expires_at - datetime.utcnow()
+        remaining = self.expires_at - datetime.now(timezone.utc)
         return remaining if remaining.total_seconds() > 0 else timedelta(0)
     
     def is_long_lived(self) -> bool:
@@ -354,7 +354,7 @@ class Session:
             return False
         
         threshold = timedelta(hours=threshold_hours)
-        time_until_expiry = self.expires_at - datetime.utcnow()
+        time_until_expiry = self.expires_at - datetime.now(timezone.utc)
         
         return time_until_expiry < threshold
     

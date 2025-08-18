@@ -3,7 +3,7 @@
  * Handles automatic lab container lifecycle management based on user authentication events
  */
 
-import { CONFIG } from '../config.js';
+import { CONFIG } from '../config-global.js';
 import { showNotification } from './notifications.js';
 
 class LabLifecycleManager {

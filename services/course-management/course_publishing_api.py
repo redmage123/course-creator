@@ -558,7 +558,7 @@ class CoursePublishingService:
             
             # Check if user exists
             user = await conn.fetchrow(
-                "SELECT id FROM users WHERE email = $1", 
+                "SELECT id FROM course_creator.users WHERE email = $1", 
                 enrollment_request.student_email
             )
             user_id = user['id'] if user else None
@@ -588,7 +588,7 @@ class CoursePublishingService:
             # Get instructor information for email
             instructor = await conn.fetchrow("""
                 SELECT first_name, last_name, full_name, organization
-                FROM users 
+                FROM course_creator.users 
                 WHERE id = $1
             """, instructor_id)
             
@@ -925,34 +925,9 @@ class CoursePublishingService:
                 'quizzes': [dict(quiz) for quiz in quizzes]
             }
 
-    async def update_student_password(self, access_token: str, current_password: str, new_password: str) -> bool:
-        """Update student password."""
-        async with self.db_pool.acquire() as conn:
-            # Find enrollment
-            enrollment = await conn.fetchrow("""
-                SELECT id, temporary_password 
-                FROM student_course_enrollments 
-                WHERE access_token = $1
-            """, access_token)
-            
-            if not enrollment:
-                raise HTTPException(status_code=404, detail="Enrollment not found")
-            
-            # Verify current password
-            if not self.verify_password(current_password, enrollment['temporary_password']):
-                raise HTTPException(status_code=401, detail="Current password is incorrect")
-            
-            # Update password
-            hashed_new_password = self.hash_password(new_password)
-            await conn.execute("""
-                UPDATE student_course_enrollments 
-                SET temporary_password = $1, 
-                    password_reset_required = false,
-                    updated_at = CURRENT_TIMESTAMP
-                WHERE access_token = $2
-            """, hashed_new_password, access_token)
-            
-            return True
+    # NOTE: update_student_password method removed - authentication logic moved to user-management service
+    # This follows the single responsibility principle and microservice architecture patterns
+    # Password operations should be handled by the dedicated authentication service
 
 
 def setup_course_publishing_routes(app, db_pool, get_current_user, config: Optional[DictConfig] = None):
@@ -1138,30 +1113,9 @@ def setup_course_publishing_routes(app, db_pool, get_current_user, config: Optio
             logger.error(f"Error publishing quiz: {e}")
             raise HTTPException(status_code=500, detail="Internal server error")
     
-    # Student Authentication Routes (No authentication required)
-    @app.post("/student/auth/login")
-    async def student_login(
-        request: Dict[str, str]
-    ):
-        """Authenticate student with access token and password."""
-        try:
-            access_token = request.get('access_token')
-            password = request.get('password')
-            
-            if not access_token or not password:
-                raise HTTPException(status_code=400, detail="Access token and password required")
-            
-            student_data = await service.authenticate_student_with_token(access_token, password)
-            return {
-                "success": True,
-                "student": student_data,
-                "message": "Authentication successful"
-            }
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"Error authenticating student: {e}")
-            raise HTTPException(status_code=500, detail="Internal server error")
+    # NOTE: Authentication endpoints removed from course-management service.
+    # All authentication now handled by user-management service at port 8000.
+    # Frontend should use: https://user-management:8000/auth/login
     
     @app.get("/student/course-data")
     async def get_student_course_data(
@@ -1180,29 +1134,9 @@ def setup_course_publishing_routes(app, db_pool, get_current_user, config: Optio
             logger.error(f"Error getting student course data: {e}")
             raise HTTPException(status_code=500, detail="Internal server error")
     
-    @app.post("/student/password/update")
-    async def update_student_password(
-        request: Dict[str, str]
-    ):
-        """Update student password."""
-        try:
-            access_token = request.get('access_token')
-            current_password = request.get('current_password')
-            new_password = request.get('new_password')
-            
-            if not access_token or not current_password or not new_password:
-                raise HTTPException(status_code=400, detail="All password fields required")
-            
-            success = await service.update_student_password(access_token, current_password, new_password)
-            return {
-                "success": success,
-                "message": "Password updated successfully"
-            }
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"Error updating student password: {e}")
-            raise HTTPException(status_code=500, detail="Internal server error")
+    # NOTE: Password update endpoints removed from course-management service.
+    # All authentication operations now handled by user-management service.
+    # Frontend should use: https://user-management:8000/auth/password/change
     
     # Course Completion and Cleanup Routes
     @app.post("/course-instances/{instance_id}/complete")

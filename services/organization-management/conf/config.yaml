@@ -7,27 +7,27 @@ server:
   reload: false
 
 database:
-  host: "${DATABASE_HOST:localhost}"
-  port: "${DATABASE_PORT:5433}"
-  name: "${DATABASE_NAME:course_creator}"
-  user: "${DATABASE_USER:postgres}"
-  password: "${DATABASE_PASSWORD:password}"
+  host: ${oc.env:DB_HOST,localhost}
+  port: ${oc.env:DB_PORT,5433}
+  name: ${oc.env:DB_NAME,course_creator}
+  user: ${oc.env:DB_USER,postgres}
+  password: ${oc.env:DB_PASSWORD,password}
   pool_size: 10
   max_overflow: 15
 
 redis:
-  host: "${REDIS_HOST:localhost}"
-  port: "${REDIS_PORT:6379}"
-  db: "${REDIS_DB:2}"
-  password: "${REDIS_PASSWORD:}"
+  host: ${oc.env:REDIS_HOST,redis}
+  port: ${oc.env:REDIS_PORT,6379}
+  db: ${oc.env:REDIS_DB,2}
+  password: ${oc.env:REDIS_PASSWORD,}
 
 logging:
-  level: "${LOG_LEVEL:INFO}"
+  level: ${oc.env:LOG_LEVEL,INFO}
   service_name: "organization-management"
   format: "json"
 
 auth:
-  jwt_secret: "${JWT_SECRET:your-secret-key}"
+  jwt_secret: ${oc.env:JWT_SECRET,your-secret-key-change-in-production}
   jwt_algorithm: "HS256"
   jwt_expiration_hours: 24
 
@@ -71,11 +71,11 @@ notifications:
   enabled: true
   email:
     enabled: true
-    smtp_host: "${SMTP_HOST:localhost}"
-    smtp_port: "${SMTP_PORT:587}"
-    smtp_user: "${SMTP_USER:}"
-    smtp_password: "${SMTP_PASSWORD:}"
-    from_email: "${FROM_EMAIL:noreply@courseportal.com}"
+    smtp_host: ${oc.env:SMTP_HOST,localhost}
+    smtp_port: ${oc.env:SMTP_PORT,587}
+    smtp_user: ${oc.env:SMTP_USER,}
+    smtp_password: ${oc.env:SMTP_PASSWORD,}
+    from_email: ${oc.env:FROM_EMAIL,noreply@courseportal.com}
   
   templates:
     welcome_instructor: "Welcome to your organization! You've been added as an instructor."
@@ -85,7 +85,9 @@ notifications:
 cors:
   origins:
     - "http://localhost:3000"
+    - "https://localhost:3000"
     - "http://localhost:8080" 
+    - "https://localhost:8080"
     - "https://*.courseportal.com"
   allow_credentials: true
   allow_methods: ["*"]

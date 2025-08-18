@@ -3,14 +3,14 @@
 ## Microservices Structure
 The platform uses a microservices architecture with 8 core backend services:
 
-1. **User Management Service** (Port 8000) - Authentication, user profiles, basic RBAC
+1. **User Management Service** (Port 8000) - Authentication, user profiles, basic RBAC, **password management system**
 2. **Course Generator Service** (Port 8001) - AI-powered content generation using Anthropic/OpenAI
 3. **Content Storage Service** (Port 8003) - File storage, content versioning
 4. **Course Management Service** (Port 8004) - CRUD operations for courses, enrollment, **bi-directional feedback system**
 5. **Content Management Service** (Port 8005) - File upload/download, multi-format export
 6. **Lab Container Manager Service** (Port 8006) - Individual student Docker container management with multi-IDE support
 7. **Analytics Service** (Port 8007) - Student analytics, progress tracking, learning insights, PDF report generation
-8. **Organization Management Service** (Port 8008) - **Enhanced RBAC system with multi-tenant organization management, granular permissions, track-based learning paths, and MS Teams/Zoom integration**
+8. **Organization Management Service** (Port 8008) - **Enhanced RBAC system with multi-tenant organization management, granular permissions, track-based learning paths, MS Teams/Zoom integration, and automatic admin account creation with password management**
 
 ## Service Dependencies
 Services must be started in dependency order:
@@ -27,6 +27,8 @@ Static HTML/CSS/JavaScript frontend with multiple dashboards:
 - `lab-multi-ide.html` - Multi-IDE lab environment with VSCode, Jupyter, IntelliJ, Terminal
 - `org-admin-enhanced.html` - **Enhanced RBAC organization administration dashboard**
 - `site-admin-dashboard.html` - **Site administrator dashboard with user management and platform analytics**
+- `organization-registration.html` - **Professional organization registration with enhanced UI, password management, and keyboard navigation**
+- `password-change.html` - **Self-service password management interface for all user roles**
 
 ## Data Layer
 - **PostgreSQL** - Primary database for all services

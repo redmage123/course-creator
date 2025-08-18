@@ -3,7 +3,7 @@
  * Handles both student course feedback and instructor student feedback
  */
 
-import { CONFIG } from '../config.js';
+import { CONFIG } from '../config-global.js';
 
 class FeedbackManager {
     constructor() {

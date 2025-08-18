@@ -295,7 +295,7 @@ class StudentDashboardService:
         rows = await self.db_pool.fetch(
             """
             SELECT id, email, full_name, role, created_at, last_login
-            FROM users
+            FROM course_creator.users
             WHERE id = $1 AND role = 'student'
             """,
             student_id

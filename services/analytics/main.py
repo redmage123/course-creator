@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+
+# Load environment variables from .cc_env file if present
+import os
+if os.path.exists('/app/shared/.cc_env'):
+    with open('/app/shared/.cc_env', 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and '=' in line:
+                key, value = line.split('=', 1)
+                # Remove quotes if present
+                value = value.strip('"\'')
+                os.environ[key] = value
+
 """
 Analytics Service - Educational Learning Analytics Platform
 
@@ -2548,13 +2561,15 @@ def main(cfg: DictConfig) -> None:
     global app
     app = create_app(cfg)
     
-    # Run server with reduced uvicorn logging to avoid duplicates
+    # Run server with HTTPS/SSL configuration and reduced uvicorn logging to avoid duplicates
     uvicorn.run(
         app,
         host=cfg.server.host,
         port=cfg.server.port,
         log_level="warning",  # Reduce uvicorn log level since we have our own logging
-        access_log=False      # Disable uvicorn access log since we log via middleware
+        access_log=False,     # Disable uvicorn access log since we log via middleware
+        ssl_keyfile="/app/ssl/nginx-selfsigned.key",
+        ssl_certfile="/app/ssl/nginx-selfsigned.crt"
     )
 
 # ========================================

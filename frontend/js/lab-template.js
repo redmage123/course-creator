@@ -1,7 +1,7 @@
 // Lab environment JavaScript functions (global scope)
 
 // Import CONFIG or use fallback
-import { CONFIG } from './config.js';
+import { CONFIG } from './config-global.js';
 
 // Ensure CONFIG is available globally for legacy compatibility
 if (typeof window.CONFIG === 'undefined') {

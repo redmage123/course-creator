@@ -43,7 +43,43 @@ async def test_database_connection_real(self, real_db_pool):
 
 ## 🔧 Test Categories
 
-### 0. Feedback System Testing (v2.1) 📝
+### 0. Password Management Testing (v3.0) 🔐
+**Purpose**: Comprehensive validation of password creation, validation, and change functionality
+**Location**: `test_password_management.py`, `test_organization_registration.py`
+**When to run**: Every commit affecting authentication or registration (critical)
+**Coverage Areas**:
+- Password strength validation algorithms
+- Password change API endpoints with authentication
+- Organization admin account creation flow
+- Frontend password validation and UI interactions
+- Security requirements enforcement (minimum length, complexity)
+- Password visibility toggle functionality
+- Real-time strength feedback systems
+- Cross-service communication (organization → user management)
+
+**Security Test Requirements**:
+```python
+# Password strength validation tests
+def test_password_strength_weak():
+    assert calculate_strength("weak") <= 2
+
+def test_password_strength_strong():
+    assert calculate_strength("Str0ng!Pass123") >= 4
+
+# API security tests  
+@pytest.mark.authenticated
+def test_password_change_requires_auth():
+    # Test that unauthenticated requests fail
+    
+def test_password_change_validates_current():
+    # Test that wrong current password is rejected
+    
+# Organization admin creation tests
+def test_org_registration_creates_admin():
+    # Test complete organization + admin creation flow
+```
+
+### 1. Feedback System Testing (v2.1) 📝
 **Purpose**: Comprehensive validation of the bi-directional feedback system
 **Location**: `test_feedback_final.py`, `test_feedback_system.py`
 **When to run**: Every commit (fast)

@@ -10,12 +10,22 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 # Custom exceptions - ABSOLUTE IMPORTS ONLY
 import sys
 from pathlib import Path
-sys.path.append(str(Path(__file__).parent.parent))
 
+# Import shared exceptions from platform-wide exception hierarchy
+import sys
 from exceptions import (
-    CourseGeneratorException, ContentGenerationException, AIServiceException,
-    FileProcessingException, ConfigurationException, ValidationException,
-    DatabaseException, TemplateException, ExportException
+    CourseCreatorBaseException,
+    ContentException,
+    ContentNotFoundException,
+    ContentValidationException,
+    FileStorageException,
+    ValidationException,
+    DatabaseException,
+    AuthenticationException,
+    AuthorizationException,
+    ConfigurationException,
+    APIException,
+    BusinessRuleException
 )
 
 logger = logging.getLogger(__name__)
@@ -27,16 +37,16 @@ def setup_error_handlers(app: FastAPI) -> None:
     EXCEPTION_STATUS_MAPPING = {
         ValidationException: 400,
         ConfigurationException: 500,
-        FileProcessingException: 422,
-        ContentGenerationException: 500,
-        AIServiceException: 503,
+        FileStorageException: 422,
+        ContentException: 500,
+        APIException: 503,
         DatabaseException: 500,
-        TemplateException: 422,
-        ExportException: 500,
+        ContentValidationException: 422,
+        BusinessRuleException: 500,
     }
     
-    @app.exception_handler(CourseGeneratorException)
-    async def course_generator_exception_handler(request: Request, exc: CourseGeneratorException):
+    @app.exception_handler(CourseCreatorBaseException)
+    async def course_generator_exception_handler(request: Request, exc: CourseCreatorBaseException):
         """Handle custom course generator exceptions."""
         # Use mapping to determine status code (extensible design)
         status_code = next(
