@@ -10,7 +10,8 @@ from typing import Dict, Any, List, Optional, Callable
 from enum import Enum
 from domain.entities.course_content import GenerationJob, JobStatus, ContentType
 from domain.interfaces.content_generation_service import IJobManagementService
-from domain.interfaces.content_repository import IGenerationJobRepository
+# Repository pattern removed - using DAO
+from data_access.course_generator_dao import CourseGeneratorDAO
 from domain.interfaces.ai_service import IAIService
 
 class JobPriority(Enum):
@@ -25,9 +26,9 @@ class JobManagementService(IJobManagementService):
     """
     
     def __init__(self, 
-                 job_repository: IGenerationJobRepository,
+                 dao: CourseGeneratorDAO,
                  ai_service: IAIService):
-        self._job_repository = job_repository
+        self._dao = dao
         self._ai_service = ai_service
         self._job_processors: Dict[ContentType, Callable] = {}
         self._running_jobs: Dict[str, asyncio.Task] = {}
@@ -67,7 +68,7 @@ class JobManagementService(IJobManagementService):
         job.metadata['max_retries'] = 3
         
         # Save job
-        created_job = await self._job_repository.create(job)
+        created_job = await self._dao.create(job)
         
         # If job should start immediately, queue it
         if not scheduled_time or scheduled_time <= datetime.utcnow():
@@ -80,7 +81,7 @@ class JobManagementService(IJobManagementService):
         if not job_id:
             raise ValueError("Job ID is required")
         
-        job = await self._job_repository.get_by_id(job_id)
+        job = await self._dao.get_by_id(job_id)
         if not job:
             raise ValueError(f"Job with ID {job_id} not found")
         
@@ -112,7 +113,7 @@ class JobManagementService(IJobManagementService):
         if not job_id:
             raise ValueError("Job ID is required")
         
-        job = await self._job_repository.get_by_id(job_id)
+        job = await self._dao.get_by_id(job_id)
         if not job:
             raise ValueError(f"Job with ID {job_id} not found")
         
@@ -131,7 +132,7 @@ class JobManagementService(IJobManagementService):
         job.completed_at = datetime.utcnow()
         job.error_message = reason or "Job cancelled by user"
         
-        await self._job_repository.update(job)
+        await self._dao.update(job)
         return True
     
     async def retry_failed_job(self, job_id: str) -> GenerationJob:
@@ -139,7 +140,7 @@ class JobManagementService(IJobManagementService):
         if not job_id:
             raise ValueError("Job ID is required")
         
-        job = await self._job_repository.get_by_id(job_id)
+        job = await self._dao.get_by_id(job_id)
         if not job:
             raise ValueError(f"Job with ID {job_id} not found")
         
@@ -163,7 +164,7 @@ class JobManagementService(IJobManagementService):
         job.metadata['last_retry_at'] = datetime.utcnow().isoformat()
         
         # Save and queue job
-        updated_job = await self._job_repository.update(job)
+        updated_job = await self._dao.update(job)
         await self._queue_job(updated_job)
         
         return updated_job
@@ -174,7 +175,7 @@ class JobManagementService(IJobManagementService):
         if not course_id:
             raise ValueError("Course ID is required")
         
-        jobs = await self._job_repository.get_by_course_id(course_id)
+        jobs = await self._dao.get_by_course_id(course_id)
         
         # Filter by status if specified
         if status_filter:
@@ -190,7 +191,7 @@ class JobManagementService(IJobManagementService):
     
     async def get_job_queue_status(self) -> Dict[str, Any]:
         """Get overall status of the job queue"""
-        pending_jobs = await self._job_repository.get_pending_jobs(limit=100)
+        pending_jobs = await self._dao.get_pending_jobs(limit=100)
         
         # Count jobs by priority
         priority_counts = {'low': 0, 'normal': 0, 'high': 0, 'urgent': 0}
@@ -236,14 +237,14 @@ class JobManagementService(IJobManagementService):
         if days_old <= 0:
             raise ValueError("Days old must be positive")
         
-        return await self._job_repository.cleanup_old_jobs(days_old)
+        return await self._dao.cleanup_old_jobs(days_old)
     
     async def get_job_statistics(self, time_period_days: int = 30) -> Dict[str, Any]:
         """Get comprehensive job statistics"""
         if time_period_days <= 0:
             raise ValueError("Time period must be positive")
         
-        return await self._job_repository.get_job_statistics(time_period_days)
+        return await self._dao.get_job_statistics(time_period_days)
     
     # Helper methods
     async def _queue_job(self, job: GenerationJob) -> None:
@@ -265,7 +266,7 @@ class JobManagementService(IJobManagementService):
             job.status = JobStatus.RUNNING
             job.started_at = datetime.utcnow()
             job.progress_percentage = 0
-            await self._job_repository.update(job)
+            await self._dao.update(job)
             
             # Set up timeout
             timeout_seconds = self._job_timeout_minutes * 60
@@ -297,7 +298,7 @@ class JobManagementService(IJobManagementService):
             
         finally:
             # Save final job state
-            await self._job_repository.update(job)
+            await self._dao.update(job)
     
     async def _execute_job(self, job: GenerationJob) -> Dict[str, Any]:
         """Execute the actual job processing"""
@@ -308,7 +309,7 @@ class JobManagementService(IJobManagementService):
         for progress in [25, 50, 75, 90]:
             await asyncio.sleep(1)  # Simulate work
             job.progress_percentage = progress
-            await self._job_repository.update(job)
+            await self._dao.update(job)
         
         # Simulate final result
         return {
@@ -326,7 +327,7 @@ class JobManagementService(IJobManagementService):
     
     async def _get_prioritized_pending_jobs(self) -> List[GenerationJob]:
         """Get pending jobs sorted by priority and creation time"""
-        pending_jobs = await self._job_repository.get_pending_jobs(limit=50)
+        pending_jobs = await self._dao.get_pending_jobs(limit=50)
         
         # Define priority order
         priority_order = {'urgent': 0, 'high': 1, 'normal': 2, 'low': 3}

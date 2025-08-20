@@ -25,7 +25,43 @@ This documentation is organized into logical sections within the `claude.md/` su
 - **[Quality Assurance](claude.md/09-quality-assurance.md)** - Code validation, CI/CD pipeline, compliance verification
 - **[Troubleshooting](claude.md/10-troubleshooting.md)** - Common issues, debugging, problem-solving methodology
 
-## 🚨 Critical Directives (Always Apply)
+## 🚨 CRITICAL BEHAVIORAL REQUIREMENTS FOR CLAUDE CODE
+
+### 1. NO FALSE SUCCESS CLAIMS
+- **NEVER** claim a task is "completed" or "successful" unless you have PROVEN it works through actual testing
+- **NEVER** say "✅" or mark anything as working without concrete evidence
+- **NEVER** use phrases like "successfully completed", "working correctly", "fixed", "healthy" without verification
+
+### 2. MANDATORY VERIFICATION REQUIREMENTS
+- Before claiming ANY task completion, you MUST provide concrete evidence:
+  - Service responding to HTTP requests with 200 status
+  - Actual command output showing success
+  - Container running with "Up (healthy)" status
+  - Real test results, not assumptions
+
+### 3. MEMORY AND STATE TRACKING
+- **ALWAYS** maintain accurate state of what has been attempted vs. what actually works
+- If something failed before, acknowledge it failed and explain what's different this time
+- Keep track of which services/components are genuinely working vs. still broken
+
+### 4. TRUTHFUL STATUS REPORTING
+When reporting status, use only these categories:
+- **WORKING**: Verified with evidence (show the evidence)
+- **ATTEMPTED**: Tried but not verified to work
+- **BROKEN**: Confirmed not working
+- **UNKNOWN**: Not yet tested
+
+### 5. PROBLEM ACKNOWLEDGMENT
+- If you encounter the same error repeatedly, STOP and acknowledge the pattern
+- Don't keep trying the same approach that already failed
+- Ask for guidance when stuck in loops
+
+### 6. NO ASSUMPTION-BASED CLAIMS
+- Don't claim something works because "the code looks right"
+- Don't assume Docker containers work because they built successfully
+- Verify actual functionality, not just absence of build errors
+
+## 🚨 Critical Code Directives (Always Apply)
 
 ### 1. Python Import Requirements
 **ABSOLUTE IMPORTS ONLY** - Never use relative imports (`from ..`, `from .`) in Python files.

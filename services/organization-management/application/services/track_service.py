@@ -2,14 +2,14 @@
 Track Service - Business Logic for Track Management and Auto-Enrollment
 Single Responsibility: Track business operations and student enrollment automation
 Open/Closed: Extensible through dependency injection
-Dependency Inversion: Depends on repository abstractions
+Dependency Inversion: Depends on DAO abstractions (converted from repository pattern)
 """
 from typing import List, Optional, Dict, Any
 from uuid import UUID
 import logging
 
 from domain.entities.track import Track, TrackStatus, TrackType
-from domain.interfaces.track_repository import ITrackRepository
+from data_access.organization_dao import OrganizationManagementDAO
 
 
 class TrackService:
@@ -17,8 +17,8 @@ class TrackService:
     Service class for track business operations including automatic enrollment
     """
 
-    def __init__(self, track_repository: ITrackRepository):
-        self._track_repository = track_repository
+    def __init__(self, organization_dao: OrganizationManagementDAO):
+        self._organization_dao = organization_dao
         self._logger = logging.getLogger(__name__)
 
     async def create_track(self, project_id: UUID, name: str, slug: str,
@@ -31,11 +31,11 @@ class TrackService:
         """Create a new track"""
         try:
             # Check if slug already exists within project
-            if await self._track_repository.exists_by_project_and_slug(project_id, slug):
+            if await self._organization_dao.exists_by_project_and_slug(project_id, slug):
                 raise ValueError(f"Track with slug '{slug}' already exists in this project")
 
             # Determine sequence order
-            existing_tracks = await self._track_repository.get_by_project(project_id)
+            existing_tracks = await self._organization_dao.get_by_project(project_id)
             sequence_order = len(existing_tracks) + 1
 
             # Create track entity
@@ -63,7 +63,7 @@ class TrackService:
                 raise ValueError("Invalid track data")
 
             # Persist track
-            created_track = await self._track_repository.create(track)
+            created_track = await self._organization_dao.create(track)
 
             self._logger.info(f"Track created successfully: {created_track.slug} in project {project_id}")
             return created_track
@@ -75,7 +75,7 @@ class TrackService:
     async def get_track(self, track_id: UUID) -> Optional[Track]:
         """Get track by ID"""
         try:
-            return await self._track_repository.get_by_id(track_id)
+            return await self._organization_dao.get_by_id(track_id)
         except Exception as e:
             self._logger.error(f"Error getting track {track_id}: {str(e)}")
             raise
@@ -83,7 +83,7 @@ class TrackService:
     async def get_track_by_project_and_slug(self, project_id: UUID, slug: str) -> Optional[Track]:
         """Get track by project and slug"""
         try:
-            return await self._track_repository.get_by_project_and_slug(project_id, slug)
+            return await self._organization_dao.get_by_project_and_slug(project_id, slug)
         except Exception as e:
             self._logger.error(f"Error getting track by project {project_id} and slug {slug}: {str(e)}")
             raise
@@ -97,7 +97,7 @@ class TrackService:
         """Update track"""
         try:
             # Get existing track
-            track = await self._track_repository.get_by_id(track_id)
+            track = await self._organization_dao.get_by_id(track_id)
             if not track:
                 raise ValueError(f"Track with ID {track_id} not found")
 
@@ -122,7 +122,7 @@ class TrackService:
                 raise ValueError("Invalid track data")
 
             # Persist changes
-            updated_track = await self._track_repository.update(track)
+            updated_track = await self._organization_dao.update(track)
 
             self._logger.info(f"Track updated successfully: {track.slug}")
             return updated_track
@@ -134,7 +134,7 @@ class TrackService:
     async def activate_track(self, track_id: UUID) -> Track:
         """Activate track for student enrollment"""
         try:
-            track = await self._track_repository.get_by_id(track_id)
+            track = await self._organization_dao.get_by_id(track_id)
             if not track:
                 raise ValueError(f"Track with ID {track_id} not found")
 
@@ -142,7 +142,7 @@ class TrackService:
                 raise ValueError("Track cannot be activated - check status and validation")
 
             track.activate()
-            updated_track = await self._track_repository.update(track)
+            updated_track = await self._organization_dao.update(track)
 
             self._logger.info(f"Track activated: {track.slug}")
             return updated_track
@@ -154,12 +154,12 @@ class TrackService:
     async def archive_track(self, track_id: UUID) -> Track:
         """Archive track"""
         try:
-            track = await self._track_repository.get_by_id(track_id)
+            track = await self._organization_dao.get_by_id(track_id)
             if not track:
                 raise ValueError(f"Track with ID {track_id} not found")
 
             track.archive()
-            updated_track = await self._track_repository.update(track)
+            updated_track = await self._organization_dao.update(track)
 
             self._logger.info(f"Track archived: {track.slug}")
             return updated_track
@@ -171,11 +171,11 @@ class TrackService:
     async def delete_track(self, track_id: UUID) -> bool:
         """Delete track"""
         try:
-            track = await self._track_repository.get_by_id(track_id)
+            track = await self._organization_dao.get_by_id(track_id)
             if not track:
                 raise ValueError(f"Track with ID {track_id} not found")
 
-            result = await self._track_repository.delete(track_id)
+            result = await self._organization_dao.delete(track_id)
 
             if result:
                 self._logger.info(f"Track deleted successfully: {track.slug}")
@@ -190,9 +190,9 @@ class TrackService:
         """Get tracks by project, optionally filtered by status"""
         try:
             if status:
-                return await self._track_repository.get_by_project_and_status(project_id, status)
+                return await self._organization_dao.get_by_project_and_status(project_id, status)
             else:
-                return await self._track_repository.get_by_project(project_id)
+                return await self._organization_dao.get_by_project(project_id)
         except Exception as e:
             self._logger.error(f"Error getting tracks for project {project_id}: {str(e)}")
             raise
@@ -200,7 +200,7 @@ class TrackService:
     async def get_active_tracks_by_project(self, project_id: UUID) -> List[Track]:
         """Get active tracks by project"""
         try:
-            return await self._track_repository.get_by_project_and_status(project_id, TrackStatus.ACTIVE)
+            return await self._organization_dao.get_by_project_and_status(project_id, TrackStatus.ACTIVE)
         except Exception as e:
             self._logger.error(f"Error getting active tracks for project {project_id}: {str(e)}")
             raise
@@ -208,7 +208,7 @@ class TrackService:
     async def get_tracks_for_auto_enrollment(self, project_id: UUID) -> List[Track]:
         """Get tracks that have auto-enrollment enabled"""
         try:
-            return await self._track_repository.get_active_tracks_with_auto_enroll(project_id)
+            return await self._organization_dao.get_active_tracks_with_auto_enroll(project_id)
         except Exception as e:
             self._logger.error(f"Error getting auto-enrollment tracks for project {project_id}: {str(e)}")
             raise
@@ -216,7 +216,7 @@ class TrackService:
     async def get_tracks_by_target_audience(self, target_audience: str, project_id: UUID = None) -> List[Track]:
         """Get tracks targeting specific audience"""
         try:
-            return await self._track_repository.get_by_target_audience(target_audience, project_id)
+            return await self._organization_dao.get_by_target_audience(target_audience, project_id)
         except Exception as e:
             self._logger.error(f"Error getting tracks for audience {target_audience}: {str(e)}")
             raise
@@ -224,7 +224,7 @@ class TrackService:
     async def get_tracks_by_difficulty(self, difficulty_level: str, project_id: UUID = None) -> List[Track]:
         """Get tracks by difficulty level"""
         try:
-            return await self._track_repository.get_by_difficulty_level(difficulty_level, project_id)
+            return await self._organization_dao.get_by_difficulty_level(difficulty_level, project_id)
         except Exception as e:
             self._logger.error(f"Error getting tracks for difficulty {difficulty_level}: {str(e)}")
             raise
@@ -232,7 +232,7 @@ class TrackService:
     async def search_tracks(self, project_id: UUID, query: str) -> List[Track]:
         """Search tracks within project"""
         try:
-            return await self._track_repository.search_by_project(project_id, query)
+            return await self._organization_dao.search_by_project(project_id, query)
         except Exception as e:
             self._logger.error(f"Error searching tracks in project {project_id}: {str(e)}")
             raise
@@ -246,10 +246,10 @@ class TrackService:
                 track_id = track_order.get('track_id')
                 new_order = track_order.get('sequence_order')
 
-                track = await self._track_repository.get_by_id(track_id)
+                track = await self._organization_dao.get_by_id(track_id)
                 if track and track.project_id == project_id:
                     track.sequence_order = new_order
-                    updated_track = await self._track_repository.update(track)
+                    updated_track = await self._organization_dao.update(track)
                     updated_tracks.append(updated_track)
 
             self._logger.info(f"Reordered {len(updated_tracks)} tracks in project {project_id}")
@@ -262,7 +262,7 @@ class TrackService:
     async def get_track_statistics(self, track_id: UUID) -> Dict[str, Any]:
         """Get track statistics"""
         try:
-            track = await self._track_repository.get_by_id(track_id)
+            track = await self._organization_dao.get_by_id(track_id)
             if not track:
                 raise ValueError(f"Track with ID {track_id} not found")
 
@@ -290,7 +290,7 @@ class TrackService:
     async def validate_track_prerequisites(self, track_id: UUID, student_background: List[str]) -> Dict[str, Any]:
         """Validate if student meets track prerequisites"""
         try:
-            track = await self._track_repository.get_by_id(track_id)
+            track = await self._organization_dao.get_by_id(track_id)
             if not track:
                 raise ValueError(f"Track with ID {track_id} not found")
 

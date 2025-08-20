@@ -11,18 +11,8 @@ from omegaconf import DictConfig
 # Cache infrastructure
 from shared.cache.redis_cache import initialize_cache_manager, get_cache_manager
 
-from domain.interfaces.organization_repository import IOrganizationRepository
-from domain.interfaces.project_repository import IProjectRepository
-from domain.interfaces.track_repository import ITrackRepository
-from domain.interfaces.membership_repository import IMembershipRepository, ITrackAssignmentRepository
-from domain.interfaces.meeting_room_repository import IMeetingRoomRepository
-from domain.interfaces.user_repository import IUserRepository
-from infrastructure.repositories.postgresql_organization_repository import PostgreSQLOrganizationRepository
-from infrastructure.repositories.postgresql_project_repository import PostgreSQLProjectRepository
-from infrastructure.repositories.postgresql_track_repository import PostgreSQLTrackRepository
-from infrastructure.repositories.postgresql_membership_repository import PostgreSQLMembershipRepository, PostgreSQLTrackAssignmentRepository
-from infrastructure.repositories.postgresql_meeting_room_repository import PostgreSQLMeetingRoomRepository
-from infrastructure.repositories.postgresql_user_repository import PostgreSQLUserRepository
+# Repository pattern removed - using DAO
+from data_access.organization_dao import OrganizationManagementDAO
 from application.services.organization_service import OrganizationService
 from application.services.track_service import TrackService
 from application.services.membership_service import MembershipService
@@ -45,14 +35,8 @@ class Container:
         # Connection pool (initialized lazily)
         self._connection_pool: Optional[asyncpg.Pool] = None
 
-        # Repositories (initialized lazily)
-        self._organization_repository: Optional[IOrganizationRepository] = None
-        self._project_repository: Optional[IProjectRepository] = None
-        self._track_repository: Optional[ITrackRepository] = None
-        self._membership_repository: Optional[IMembershipRepository] = None
-        self._track_assignment_repository: Optional[ITrackAssignmentRepository] = None
-        self._meeting_room_repository: Optional[IMeetingRoomRepository] = None
-        self._user_repository: Optional[IUserRepository] = None
+        # DAO instance (replaces repository pattern)
+        self._organization_dao: Optional[OrganizationManagementDAO] = None
 
         # Services (initialized lazily)
         self._organization_service: Optional[OrganizationService] = None
@@ -152,74 +136,21 @@ class Container:
 
         return self._connection_pool
 
-    async def get_organization_repository(self) -> IOrganizationRepository:
-        """Get organization repository"""
-        if self._organization_repository is None:
+    # DAO factory (replaces repository pattern)
+    async def get_organization_dao(self) -> OrganizationManagementDAO:
+        """Get organization DAO instance"""
+        if self._organization_dao is None:
             connection_pool = await self.get_connection_pool()
-            self._organization_repository = PostgreSQLOrganizationRepository(connection_pool)
-            self._logger.debug("Organization repository initialized")
+            self._organization_dao = OrganizationManagementDAO(connection_pool)
+            self._logger.debug("Organization DAO initialized")
 
-        return self._organization_repository
-
-    async def get_project_repository(self) -> IProjectRepository:
-        """Get project repository"""
-        if self._project_repository is None:
-            connection_pool = await self.get_connection_pool()
-            self._project_repository = PostgreSQLProjectRepository(connection_pool)
-            self._logger.debug("Project repository initialized")
-
-        return self._project_repository
-
-    async def get_track_repository(self) -> ITrackRepository:
-        """Get track repository"""
-        if self._track_repository is None:
-            connection_pool = await self.get_connection_pool()
-            self._track_repository = PostgreSQLTrackRepository(connection_pool)
-            self._logger.debug("Track repository initialized")
-
-        return self._track_repository
-
-    async def get_membership_repository(self) -> IMembershipRepository:
-        """Get membership repository"""
-        if self._membership_repository is None:
-            connection_pool = await self.get_connection_pool()
-            self._membership_repository = PostgreSQLMembershipRepository(connection_pool)
-            self._logger.debug("Membership repository initialized")
-
-        return self._membership_repository
-
-    async def get_track_assignment_repository(self) -> ITrackAssignmentRepository:
-        """Get track assignment repository"""
-        if self._track_assignment_repository is None:
-            connection_pool = await self.get_connection_pool()
-            self._track_assignment_repository = PostgreSQLTrackAssignmentRepository(connection_pool)
-            self._logger.debug("Track assignment repository initialized")
-
-        return self._track_assignment_repository
-
-    async def get_meeting_room_repository(self) -> IMeetingRoomRepository:
-        """Get meeting room repository"""
-        if self._meeting_room_repository is None:
-            connection_pool = await self.get_connection_pool()
-            self._meeting_room_repository = PostgreSQLMeetingRoomRepository(connection_pool)
-            self._logger.debug("Meeting room repository initialized")
-
-        return self._meeting_room_repository
-
-    async def get_user_repository(self) -> IUserRepository:
-        """Get user repository"""
-        if self._user_repository is None:
-            connection_pool = await self.get_connection_pool()
-            self._user_repository = PostgreSQLUserRepository(connection_pool)
-            self._logger.debug("User repository initialized")
-
-        return self._user_repository
+        return self._organization_dao
 
     async def get_organization_service(self) -> OrganizationService:
         """Get organization service"""
         if self._organization_service is None:
-            organization_repository = await self.get_organization_repository()
-            self._organization_service = OrganizationService(organization_repository)
+            organization_dao = await self.get_organization_dao()
+            self._organization_service = OrganizationService(organization_dao)
             self._logger.debug("Organization service initialized")
 
         return self._organization_service
@@ -227,8 +158,8 @@ class Container:
     async def get_track_service(self) -> TrackService:
         """Get track service"""
         if self._track_service is None:
-            track_repository = await self.get_track_repository()
-            self._track_service = TrackService(track_repository)
+            organization_dao = await self.get_organization_dao()
+            self._track_service = TrackService(organization_dao)
             self._logger.debug("Track service initialized")
 
         return self._track_service
@@ -236,14 +167,8 @@ class Container:
     async def get_membership_service(self) -> MembershipService:
         """Get membership service"""
         if self._membership_service is None:
-            membership_repository = await self.get_membership_repository()
-            track_assignment_repository = await self.get_track_assignment_repository()
-            user_repository = await self.get_user_repository()
-            self._membership_service = MembershipService(
-                membership_repository,
-                track_assignment_repository,
-                user_repository
-            )
+            organization_dao = await self.get_organization_dao()
+            self._membership_service = MembershipService(organization_dao)
             self._logger.debug("Membership service initialized")
 
         return self._membership_service
@@ -251,12 +176,12 @@ class Container:
     async def get_meeting_room_service(self) -> MeetingRoomService:
         """Get meeting room service"""
         if self._meeting_room_service is None:
-            meeting_room_repository = await self.get_meeting_room_repository()
+            organization_dao = await self.get_organization_dao()
             teams_credentials = self._get_teams_credentials()
             zoom_credentials = self._get_zoom_credentials()
 
             self._meeting_room_service = MeetingRoomService(
-                meeting_room_repository,
+                organization_dao,
                 teams_credentials,
                 zoom_credentials
             )

@@ -6,7 +6,8 @@ from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import Dict, Any, Optional
 
 from app.dependencies import get_container, DependencyContainer
-# from services.job_service import JobService, JobStatus
+from application.services.job_management_service import JobManagementService
+from domain.entities.course_content import JobStatus
 
 router = APIRouter()
 
@@ -18,7 +19,7 @@ def get_job_service(request: Request):
 @router.get("/{job_id}")
 async def get_job_status(
     job_id: str, 
-    job_service: JobService = Depends(get_job_service)
+    job_service: JobManagementService = Depends(get_job_service)
 ) -> Dict[str, Any]:
     """Get job status and details."""
     job = job_service.get_job(job_id)
@@ -41,7 +42,7 @@ async def get_job_status(
 @router.get("/{job_id}/result")
 async def get_job_result(
     job_id: str,
-    job_service: JobService = Depends(get_job_service)
+    job_service: JobManagementService = Depends(get_job_service)
 ) -> Dict[str, Any]:
     """Get job result."""
     job = job_service.get_job(job_id)
@@ -68,7 +69,7 @@ async def get_job_result(
 @router.delete("/{job_id}")
 async def cancel_job(
     job_id: str,
-    job_service: JobService = Depends(get_job_service)
+    job_service: JobManagementService = Depends(get_job_service)
 ) -> Dict[str, str]:
     """Cancel a running job."""
     job = job_service.get_job(job_id)
@@ -91,7 +92,7 @@ async def cancel_job(
 
 @router.get("")
 async def list_jobs(
-    job_service: JobService = Depends(get_job_service)
+    job_service: JobManagementService = Depends(get_job_service)
 ) -> Dict[str, Any]:
     """List all jobs (for debugging/monitoring)."""
     jobs = job_service.get_all_jobs()

@@ -15,7 +15,7 @@ from domain.interfaces.analytics_service import (
     ILearningAnalyticsService, IStudentActivityService, 
     ILabAnalyticsService, IQuizAnalyticsService, IProgressTrackingService
 )
-from domain.interfaces.analytics_repository import ILearningAnalyticsRepository
+from data_access.analytics_dao import AnalyticsDAO
 from shared.cache import get_cache_manager
 from shared.cache.redis_cache import memoize_async
 
@@ -79,12 +79,12 @@ class LearningAnalyticsService(ILearningAnalyticsService):
     """
     
     def __init__(self, 
-                 analytics_repository: ILearningAnalyticsRepository,
+                 analytics_dao: AnalyticsDAO,
                  activity_service: IStudentActivityService,
                  lab_service: ILabAnalyticsService,
                  quiz_service: IQuizAnalyticsService,
                  progress_service: IProgressTrackingService):
-        self._analytics_repository = analytics_repository
+        self._analytics_dao = analytics_dao
         self._activity_service = activity_service
         self._lab_service = lab_service
         self._quiz_service = quiz_service
@@ -180,7 +180,7 @@ class LearningAnalyticsService(ILearningAnalyticsService):
         analytics.generate_recommendations()
         
         # Save analytics and invalidate related cache entries
-        saved_analytics = await self._analytics_repository.create(analytics)
+        saved_analytics = await self._analytics_dao.create(analytics)
         
         # Invalidate analytics cache entries for this student and course
         await self._invalidate_student_analytics_cache(student_id, course_id)
@@ -193,7 +193,7 @@ class LearningAnalyticsService(ILearningAnalyticsService):
             raise ValueError("Analytics ID is required")
         
         # Get existing analytics
-        existing_analytics = await self._analytics_repository.get_by_id(analytics_id)
+        existing_analytics = await self._analytics_dao.get_by_id(analytics_id)
         if not existing_analytics:
             return None
         
@@ -207,7 +207,7 @@ class LearningAnalyticsService(ILearningAnalyticsService):
         updated_analytics.id = analytics_id
         updated_analytics.analysis_date = datetime.utcnow()
         
-        return await self._analytics_repository.update(updated_analytics)
+        return await self._analytics_dao.update(updated_analytics)
     
     @memoize_async("analytics", "course_summary", ttl_seconds=1800)  # 30 minutes TTL
     async def get_course_analytics_summary(self, course_id: str) -> Dict[str, Any]:
@@ -261,7 +261,7 @@ class LearningAnalyticsService(ILearningAnalyticsService):
             raise ValueError("Course ID is required")
         
         # Get all student analytics for the course
-        course_analytics = await self._analytics_repository.get_by_course(course_id)
+        course_analytics = await self._analytics_dao.get_by_course(course_id)
         
         if not course_analytics:
             return self._empty_course_summary()
@@ -322,7 +322,7 @@ class LearningAnalyticsService(ILearningAnalyticsService):
             raise ValueError("Student ID and Course ID are required")
         
         # Get student analytics
-        student_analytics = await self._analytics_repository.get_by_student_and_course(
+        student_analytics = await self._analytics_dao.get_by_student_and_course(
             student_id, course_id
         )
         
@@ -389,7 +389,7 @@ class LearningAnalyticsService(ILearningAnalyticsService):
             raise ValueError("Student ID and Course ID are required")
         
         # Get historical analytics
-        historical_analytics = await self._analytics_repository.get_historical_analytics(
+        historical_analytics = await self._analytics_dao.get_historical_analytics(
             student_id=student_id,
             course_id=course_id,
             days_back=90
@@ -468,7 +468,7 @@ class LearningAnalyticsService(ILearningAnalyticsService):
             raise ValueError("Time period must be positive")
         
         # Get recent analytics data
-        course_analytics = await self._analytics_repository.get_by_course(course_id)
+        course_analytics = await self._analytics_dao.get_by_course(course_id)
         
         # Filter for recent data
         recent_date = datetime.utcnow() - timedelta(days=time_period_days)

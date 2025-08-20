@@ -149,10 +149,7 @@ class UserManagementContainer:
         self._config = config
         self._connection_pool: Optional[asyncpg.Pool] = None
         
-        # Repository instances (singletons)
-        self._user_repository: Optional[IUserRepository] = None
-        self._session_repository: Optional[ISessionRepository] = None
-        self._role_repository: Optional[IRoleRepository] = None
+        # Repository pattern removed - using DAO
         
         # Service instances (singletons)
         self._user_service: Optional[IUserService] = None
@@ -290,7 +287,7 @@ class UserManagementContainer:
         """Get user service instance"""
         if not self._user_service:
             self._user_service = UserService(
-                user_repository=self.get_user_repository(),
+                user_dao=self.get_user_dao(),
                 auth_service=self.get_authentication_service()
             )
         

@@ -597,16 +597,39 @@ def main(cfg: DictConfig) -> None:
     
     logger.info("Starting Content Storage Service...")
     
-    # Run the server with reduced uvicorn logging to avoid duplicates
-    uvicorn.run(
-        app,
-        host=cfg.server.host,
-        port=cfg.server.port,
-        reload=cfg.server.reload,
-        log_level="warning",  # Reduce uvicorn log level since we have our own logging
-        access_log=False,     # Disable uvicorn access log since we log via middleware
-        log_config=None       # Use our logging configuration
-    )
+    # SSL configuration for HTTPS support
+    ssl_keyfile = os.environ.get('SSL_KEYFILE', '/app/ssl/nginx-selfsigned.key')
+    ssl_certfile = os.environ.get('SSL_CERTFILE', '/app/ssl/nginx-selfsigned.crt')
+    
+    # Check if SSL files exist, fallback to HTTP in development if not available
+    use_ssl = os.path.exists(ssl_keyfile) and os.path.exists(ssl_certfile)
+    
+    if use_ssl:
+        logger.info("Starting Content Storage Service with HTTPS enabled")
+        # Run the server with HTTPS enabled
+        uvicorn.run(
+            app,
+            host=cfg.server.host,
+            port=cfg.server.port,
+            reload=cfg.server.reload,
+            ssl_keyfile=ssl_keyfile,
+            ssl_certfile=ssl_certfile,
+            log_level="warning",  # Reduce uvicorn log level since we have our own logging
+            access_log=False,     # Disable uvicorn access log since we log via middleware
+            log_config=None       # Use our logging configuration
+        )
+    else:
+        logger.warning("SSL certificates not found, running with HTTP (development only)")
+        # Run the server with reduced uvicorn logging to avoid duplicates
+        uvicorn.run(
+            app,
+            host=cfg.server.host,
+            port=cfg.server.port,
+            reload=cfg.server.reload,
+            log_level="warning",  # Reduce uvicorn log level since we have our own logging
+            access_log=False,     # Disable uvicorn access log since we log via middleware
+            log_config=None       # Use our logging configuration
+        )
 
 
 if __name__ == "__main__":

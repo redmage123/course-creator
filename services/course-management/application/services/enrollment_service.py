@@ -68,18 +68,16 @@ import uuid
 from datetime import datetime
 from typing import List, Optional
 from domain.entities.enrollment import Enrollment, EnrollmentRequest, BulkEnrollmentRequest, EnrollmentStatus
-from domain.interfaces.enrollment_repository import IEnrollmentRepository
+from data_access.course_dao import CourseManagementDAO
 from domain.interfaces.enrollment_service import IEnrollmentService
-from domain.interfaces.course_repository import ICourseRepository
 
 class EnrollmentService(IEnrollmentService):
     """
     Enrollment service implementation with business logic
     """
     
-    def __init__(self, enrollment_repository: IEnrollmentRepository, course_repository: ICourseRepository):
-        self._enrollment_repository = enrollment_repository
-        self._course_repository = course_repository
+    def __init__(self, dao: CourseManagementDAO):
+        self._dao = dao
     
     async def enroll_student(self, enrollment_request: EnrollmentRequest) -> Enrollment:
         """Enroll a single student in a course with business validation"""
@@ -87,7 +85,7 @@ class EnrollmentService(IEnrollmentService):
         enrollment_request.validate()
         
         # Check if course exists and is published
-        course = await self._course_repository.get_by_id(enrollment_request.course_id)
+        course = await self._dao.get_by_id(enrollment_request.course_id)
         if not course:
             raise ValueError(f"Course with ID {enrollment_request.course_id} not found")
         
@@ -99,7 +97,7 @@ class EnrollmentService(IEnrollmentService):
         student_id = self._get_student_id_from_email(enrollment_request.student_email)
         
         # Check if student is already enrolled
-        existing_enrollment = await self._enrollment_repository.get_by_student_and_course(
+        existing_enrollment = await self._dao.get_by_student_and_course(
             student_id, enrollment_request.course_id
         )
         if existing_enrollment and existing_enrollment.can_access_course():
@@ -115,7 +113,7 @@ class EnrollmentService(IEnrollmentService):
             updated_at=datetime.utcnow()
         )
         
-        return await self._enrollment_repository.create(enrollment)
+        return await self._dao.create(enrollment)
     
     async def bulk_enroll_students(self, bulk_request: BulkEnrollmentRequest) -> List[Enrollment]:
         """Enroll multiple students in a course"""
@@ -123,7 +121,7 @@ class EnrollmentService(IEnrollmentService):
         bulk_request.validate()
         
         # Check if course exists and is published
-        course = await self._course_repository.get_by_id(bulk_request.course_id)
+        course = await self._dao.get_by_id(bulk_request.course_id)
         if not course:
             raise ValueError(f"Course with ID {bulk_request.course_id} not found")
         
@@ -154,28 +152,28 @@ class EnrollmentService(IEnrollmentService):
         if not enrollment_id:
             return None
         
-        return await self._enrollment_repository.get_by_id(enrollment_id)
+        return await self._dao.get_by_id(enrollment_id)
     
     async def get_student_enrollments(self, student_id: str) -> List[Enrollment]:
         """Get all enrollments for a student"""
         if not student_id:
             return []
         
-        return await self._enrollment_repository.get_by_student_id(student_id)
+        return await self._dao.get_by_student_id(student_id)
     
     async def get_course_enrollments(self, course_id: str) -> List[Enrollment]:
         """Get all enrollments for a course"""
         if not course_id:
             return []
         
-        return await self._enrollment_repository.get_by_course_id(course_id)
+        return await self._dao.get_by_course_id(course_id)
     
     async def get_instructor_enrollments(self, instructor_id: str) -> List[Enrollment]:
         """Get all enrollments for courses taught by an instructor"""
         if not instructor_id:
             return []
         
-        return await self._enrollment_repository.get_by_instructor_id(instructor_id)
+        return await self._dao.get_by_instructor_id(instructor_id)
     
     async def update_progress(self, enrollment_id: str, progress: float) -> Enrollment:
         """Update student progress in a course"""
@@ -183,14 +181,14 @@ class EnrollmentService(IEnrollmentService):
             raise ValueError("Enrollment ID is required")
         
         # Get enrollment
-        enrollment = await self._enrollment_repository.get_by_id(enrollment_id)
+        enrollment = await self._dao.get_by_id(enrollment_id)
         if not enrollment:
             raise ValueError(f"Enrollment with ID {enrollment_id} not found")
         
         # Use business logic from entity
         enrollment.update_progress(progress)
         
-        return await self._enrollment_repository.update(enrollment)
+        return await self._dao.update(enrollment)
     
     async def complete_enrollment(self, enrollment_id: str) -> Enrollment:
         """Mark enrollment as completed"""
@@ -198,14 +196,14 @@ class EnrollmentService(IEnrollmentService):
             raise ValueError("Enrollment ID is required")
         
         # Get enrollment
-        enrollment = await self._enrollment_repository.get_by_id(enrollment_id)
+        enrollment = await self._dao.get_by_id(enrollment_id)
         if not enrollment:
             raise ValueError(f"Enrollment with ID {enrollment_id} not found")
         
         # Use business logic from entity
         enrollment.complete()
         
-        return await self._enrollment_repository.update(enrollment)
+        return await self._dao.update(enrollment)
     
     async def suspend_enrollment(self, enrollment_id: str, reason: Optional[str] = None) -> Enrollment:
         """Suspend an enrollment"""
@@ -213,14 +211,14 @@ class EnrollmentService(IEnrollmentService):
             raise ValueError("Enrollment ID is required")
         
         # Get enrollment
-        enrollment = await self._enrollment_repository.get_by_id(enrollment_id)
+        enrollment = await self._dao.get_by_id(enrollment_id)
         if not enrollment:
             raise ValueError(f"Enrollment with ID {enrollment_id} not found")
         
         # Use business logic from entity
         enrollment.suspend(reason)
         
-        return await self._enrollment_repository.update(enrollment)
+        return await self._dao.update(enrollment)
     
     async def reactivate_enrollment(self, enrollment_id: str) -> Enrollment:
         """Reactivate a suspended enrollment"""
@@ -228,14 +226,14 @@ class EnrollmentService(IEnrollmentService):
             raise ValueError("Enrollment ID is required")
         
         # Get enrollment
-        enrollment = await self._enrollment_repository.get_by_id(enrollment_id)
+        enrollment = await self._dao.get_by_id(enrollment_id)
         if not enrollment:
             raise ValueError(f"Enrollment with ID {enrollment_id} not found")
         
         # Use business logic from entity
         enrollment.reactivate()
         
-        return await self._enrollment_repository.update(enrollment)
+        return await self._dao.update(enrollment)
     
     async def cancel_enrollment(self, enrollment_id: str) -> Enrollment:
         """Cancel an enrollment"""
@@ -243,14 +241,14 @@ class EnrollmentService(IEnrollmentService):
             raise ValueError("Enrollment ID is required")
         
         # Get enrollment
-        enrollment = await self._enrollment_repository.get_by_id(enrollment_id)
+        enrollment = await self._dao.get_by_id(enrollment_id)
         if not enrollment:
             raise ValueError(f"Enrollment with ID {enrollment_id} not found")
         
         # Use business logic from entity
         enrollment.cancel()
         
-        return await self._enrollment_repository.update(enrollment)
+        return await self._dao.update(enrollment)
     
     async def issue_certificate(self, enrollment_id: str) -> Enrollment:
         """Issue certificate for completed enrollment"""
@@ -258,7 +256,7 @@ class EnrollmentService(IEnrollmentService):
             raise ValueError("Enrollment ID is required")
         
         # Get enrollment
-        enrollment = await self._enrollment_repository.get_by_id(enrollment_id)
+        enrollment = await self._dao.get_by_id(enrollment_id)
         if not enrollment:
             raise ValueError(f"Enrollment with ID {enrollment_id} not found")
         
@@ -269,14 +267,14 @@ class EnrollmentService(IEnrollmentService):
         # Use business logic from entity
         enrollment.issue_certificate()
         
-        return await self._enrollment_repository.update(enrollment)
+        return await self._dao.update(enrollment)
     
     async def check_enrollment_exists(self, student_id: str, course_id: str) -> bool:
         """Check if student is already enrolled in course"""
         if not student_id or not course_id:
             return False
         
-        return await self._enrollment_repository.exists(student_id, course_id)
+        return await self._dao.exists(student_id, course_id)
     
     # Additional business methods
     async def get_active_enrollments(self, student_id: str) -> List[Enrollment]:
@@ -291,14 +289,14 @@ class EnrollmentService(IEnrollmentService):
     
     async def get_course_completion_rate(self, course_id: str) -> float:
         """Get completion rate for a course"""
-        return await self._enrollment_repository.get_completion_rate(course_id)
+        return await self._dao.get_completion_rate(course_id)
     
     async def get_enrollment_statistics(self, course_id: str) -> dict:
         """Get enrollment statistics for a course"""
-        total = await self._enrollment_repository.count_by_course(course_id)
-        active = await self._enrollment_repository.count_active_by_course(course_id)
-        completed = await self._enrollment_repository.count_completed_by_course(course_id)
-        completion_rate = await self._enrollment_repository.get_completion_rate(course_id)
+        total = await self._dao.count_by_course(course_id)
+        active = await self._dao.count_active_by_course(course_id)
+        completed = await self._dao.count_completed_by_course(course_id)
+        completion_rate = await self._dao.get_completion_rate(course_id)
         
         return {
             'total_enrollments': total,

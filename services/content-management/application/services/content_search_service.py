@@ -5,7 +5,7 @@ Single Responsibility: Handle content search and discovery operations
 from typing import List, Optional, Dict, Any
 
 from domain.interfaces.content_service import IContentSearchService
-from domain.interfaces.content_repository import IContentSearchRepository
+from data_access.content_management_dao import ContentManagementDAO
 from domain.entities.base_content import ContentType
 
 
@@ -14,8 +14,8 @@ class ContentSearchService(IContentSearchService):
     Application service for content search operations
     """
     
-    def __init__(self, search_repository: IContentSearchRepository):
-        self._search_repository = search_repository
+    def __init__(self, content_dao: ContentManagementDAO):
+        self._content_dao = content_dao
     
     async def search_content(
         self, 
@@ -44,7 +44,7 @@ class ContentSearchService(IContentSearchService):
             limit = filters.get("limit", 50) if filters else 50
             
             # Perform search
-            results = await self._search_repository.search_all_content(
+            results = await self._content_dao.search_all_content(
                 query=query.strip(),
                 content_types=content_types,
                 course_id=course_id,
@@ -88,7 +88,7 @@ class ContentSearchService(IContentSearchService):
                 raise ValueError("No valid tags provided")
             
             # Perform tag search
-            results = await self._search_repository.search_by_tags(
+            results = await self._content_dao.search_by_tags(
                 tags=clean_tags,
                 content_types=content_types,
                 course_id=course_id
@@ -121,7 +121,7 @@ class ContentSearchService(IContentSearchService):
             # In a real system, this would be much more sophisticated
             
             # Get recent content as placeholder recommendations
-            recommendations = await self._search_repository.get_recent_content(
+            recommendations = await self._content_dao.get_recent_content(
                 content_types=None,
                 days=30,
                 limit=limit
@@ -143,7 +143,7 @@ class ContentSearchService(IContentSearchService):
             # For now, return recent content as a placeholder
             content_types = [content_type] if content_type else None
             
-            trending_content = await self._search_repository.get_recent_content(
+            trending_content = await self._content_dao.get_recent_content(
                 content_types=content_types,
                 days=days,
                 limit=20
@@ -199,7 +199,7 @@ class ContentSearchService(IContentSearchService):
             }
             
             # Get some recent content as placeholders
-            recent_content = await self._search_repository.get_recent_content(
+            recent_content = await self._content_dao.get_recent_content(
                 content_types=None,
                 days=30,
                 limit=max_suggestions * 2

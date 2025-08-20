@@ -6,7 +6,37 @@ import logging
 from typing import Dict, Any, Optional
 from datetime import datetime
 
-class AnalyticsException(Exception):
+class CourseCreatorBaseException(Exception):
+    """Base exception for all Course Creator service errors."""
+    
+    def __init__(
+        self,
+        message: str,
+        error_code: str = "COURSE_CREATOR_ERROR",
+        details: Optional[Dict[str, Any]] = None,
+        original_exception: Optional[Exception] = None
+    ):
+        self.message = message
+        self.error_code = error_code
+        self.details = details or {}
+        self.original_exception = original_exception
+        self.timestamp = datetime.utcnow()
+        
+        super().__init__(self.message)
+        
+        # Log the exception with structured data
+        logger = logging.getLogger(__name__)
+        logger.error(
+            f"CourseCreatorBaseException: {message}",
+            extra={
+                "error_code": error_code,
+                "details": self.details,
+                "timestamp": self.timestamp.isoformat(),
+                "original_exception": str(original_exception) if original_exception else None
+            }
+        )
+
+class AnalyticsException(CourseCreatorBaseException):
     """Base exception for all Analytics service errors."""
     
     def __init__(
@@ -324,6 +354,69 @@ class PDFGenerationException(AnalyticsException):
         super().__init__(
             message=message,
             error_code="PDF_GENERATION_ERROR",
+            details=details,
+            original_exception=original_exception
+        )
+
+class DataNotFoundException(AnalyticsException):
+    """Exception raised when requested data is not found."""
+    
+    def __init__(
+        self,
+        message: str = "Requested data not found",
+        resource_type: Optional[str] = None,
+        resource_id: Optional[str] = None,
+        original_exception: Optional[Exception] = None
+    ):
+        details = {}
+        if resource_type:
+            details["resource_type"] = resource_type
+        if resource_id:
+            details["resource_id"] = resource_id
+            
+        super().__init__(
+            message=message,
+            error_code="DATA_NOT_FOUND",
+            details=details,
+            original_exception=original_exception
+        )
+
+class DataValidationException(AnalyticsException):
+    """Exception raised when data validation fails."""
+    
+    def __init__(
+        self,
+        message: str = "Data validation failed",
+        validation_errors: Optional[Dict[str, str]] = None,
+        original_exception: Optional[Exception] = None
+    ):
+        details = {}
+        if validation_errors:
+            details["validation_errors"] = validation_errors
+            
+        super().__init__(
+            message=message,
+            error_code="DATA_VALIDATION_ERROR",
+            details=details,
+            original_exception=original_exception
+        )
+
+class DatabaseOperationException(AnalyticsException):
+    """Exception raised when database operation fails."""
+    
+    def __init__(
+        self,
+        message: str = "Database operation failed",
+        operation: Optional[str] = None,
+        original_exception: Optional[Exception] = None
+    ):
+        details = {}
+        if operation:
+            details["operation"] = operation
+            
+        super().__init__(
+            message=message,
+            error_code="DATABASE_OPERATION_ERROR",
             details=details,
             original_exception=original_exception
         )

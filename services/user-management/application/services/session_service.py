@@ -9,7 +9,8 @@ import secrets
 import jwt
 from jose import JWTError
 
-from domain.interfaces.session_repository import ISessionRepository
+# Repository pattern removed - using DAO
+from data_access.user_dao import UserManagementDAO
 from domain.interfaces.session_service import ISessionService, ITokenService
 from domain.entities.session import Session, SessionStatus
 
@@ -19,9 +20,9 @@ class SessionService(ISessionService):
     """
     
     def __init__(self, 
-                 session_repository: ISessionRepository,
+                 session_dao: UserManagementDAO,
                  token_service: ITokenService):
-        self._session_repository = session_repository
+        self._session_dao = session_dao
         self._token_service = token_service
     
     async def create_session(self, user_id: str, session_type: str = "web", 
@@ -47,15 +48,15 @@ class SessionService(ISessionService):
             device_info = self._parse_user_agent(user_agent)
             session.add_device_info(device_info)
         
-        return await self._session_repository.create(session)
+        return await self._session_dao.create(session)
     
     async def get_session_by_token(self, token: str) -> Optional[Session]:
         """Get session by token"""
-        return await self._session_repository.get_by_token(token)
+        return await self._session_dao.get_by_token(token)
     
     async def validate_session(self, token: str) -> Optional[Session]:
         """Validate session and return if active"""
-        session = await self._session_repository.get_by_token(token)
+        session = await self._session_dao.get_by_token(token)
         
         if not session:
             return None
@@ -65,18 +66,18 @@ class SessionService(ISessionService):
             # Mark as expired if it's expired but not marked
             if session.is_expired() and session.status == SessionStatus.ACTIVE:
                 session.mark_expired()
-                await self._session_repository.update(session)
+                await self._session_dao.update(session)
             return None
         
         # Update last accessed time
         session.update_access()
-        await self._session_repository.update(session)
+        await self._session_dao.update(session)
         
         return session
     
     async def extend_session(self, token: str, duration: timedelta = None) -> Session:
         """Extend session expiration"""
-        session = await self._session_repository.get_by_token(token)
+        session = await self._session_dao.get_by_token(token)
         
         if not session:
             raise ValueError("Session not found")
@@ -87,18 +88,18 @@ class SessionService(ISessionService):
         # Use domain method to extend session
         session.extend_session(duration)
         
-        return await self._session_repository.update(session)
+        return await self._session_dao.update(session)
     
     async def revoke_session(self, token: str) -> bool:
         """Revoke a specific session"""
-        session = await self._session_repository.get_by_token(token)
+        session = await self._session_dao.get_by_token(token)
         
         if not session:
             return False
         
         # Use domain method to revoke
         session.revoke()
-        await self._session_repository.update(session)
+        await self._session_dao.update(session)
         
         # Also revoke the token
         await self._token_service.revoke_token(token)
@@ -107,12 +108,12 @@ class SessionService(ISessionService):
     
     async def revoke_all_user_sessions(self, user_id: str) -> int:
         """Revoke all sessions for a user"""
-        sessions = await self._session_repository.get_active_by_user_id(user_id)
+        sessions = await self._session_dao.get_active_by_user_id(user_id)
         
         count = 0
         for session in sessions:
             session.revoke()
-            await self._session_repository.update(session)
+            await self._session_dao.update(session)
             await self._token_service.revoke_token(session.token)
             count += 1
         
@@ -121,17 +122,17 @@ class SessionService(ISessionService):
     async def get_user_sessions(self, user_id: str, active_only: bool = True) -> List[Session]:
         """Get sessions for a user"""
         if active_only:
-            return await self._session_repository.get_active_by_user_id(user_id)
+            return await self._session_dao.get_active_by_user_id(user_id)
         else:
-            return await self._session_repository.get_by_user_id(user_id)
+            return await self._session_dao.get_by_user_id(user_id)
     
     async def cleanup_expired_sessions(self) -> int:
         """Clean up expired sessions"""
-        return await self._session_repository.cleanup_expired()
+        return await self._session_dao.cleanup_expired()
     
     async def get_session_info(self, token: str) -> Optional[Dict[str, Any]]:
         """Get session information"""
-        session = await self._session_repository.get_by_token(token)
+        session = await self._session_dao.get_by_token(token)
         
         if not session:
             return None
@@ -153,7 +154,7 @@ class SessionService(ISessionService):
     async def update_session_access(self, token: str, ip_address: str = None, 
                                   user_agent: str = None) -> bool:
         """Update session access information"""
-        session = await self._session_repository.get_by_token(token)
+        session = await self._session_dao.get_by_token(token)
         
         if not session:
             return False
@@ -165,7 +166,7 @@ class SessionService(ISessionService):
             device_info = self._parse_user_agent(user_agent)
             session.add_device_info(device_info)
         
-        await self._session_repository.update(session)
+        await self._session_dao.update(session)
         return True
     
     def _parse_user_agent(self, user_agent: str) -> Dict[str, Any]:

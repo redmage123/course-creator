@@ -69,11 +69,13 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> TokenData:
 
 # HTTP client dependencies
 async def get_user_service_client() -> httpx.AsyncClient:
-    async with httpx.AsyncClient(base_url=settings.USER_SERVICE_URL) as client:
+    # Disable SSL verification for self-signed certificates in development
+    async with httpx.AsyncClient(base_url=settings.USER_SERVICE_URL, verify=False) as client:
         yield client
 
 async def get_notification_service_client() -> httpx.AsyncClient:
-    async with httpx.AsyncClient(base_url=settings.NOTIFICATION_SERVICE_URL) as client:
+    # Disable SSL verification for self-signed certificates in development
+    async with httpx.AsyncClient(base_url=settings.NOTIFICATION_SERVICE_URL, verify=False) as client:
         yield client
 
 # Error handling utilities

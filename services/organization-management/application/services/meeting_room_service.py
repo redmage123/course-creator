@@ -9,7 +9,7 @@ from uuid import UUID
 
 from domain.entities.enhanced_role import EnhancedRole, Permission
 from domain.entities.meeting_room import MeetingPlatform, MeetingRoom, RoomType
-from domain.interfaces.meeting_room_repository import IMeetingRoomRepository
+from data_access.organization_dao import OrganizationManagementDAO
 from infrastructure.integrations.teams_integration import TeamsCredentials, TeamsIntegrationService
 from infrastructure.integrations.zoom_integration import ZoomCredentials, ZoomIntegrationService
 
@@ -19,11 +19,11 @@ class MeetingRoomService:
 
     def __init__(
         self,
-        meeting_room_repository: IMeetingRoomRepository,
+        organization_dao: OrganizationManagementDAO,
         teams_credentials: Optional[TeamsCredentials] = None,
         zoom_credentials: Optional[ZoomCredentials] = None
     ):
-        self._meeting_room_repository = meeting_room_repository
+        self._organization_dao = organization_dao
         self._teams_credentials = teams_credentials
         self._zoom_credentials = zoom_credentials
         self._logger = logging.getLogger(__name__)
@@ -74,7 +74,7 @@ class MeetingRoomService:
                 room.passcode = platform_data.get("passcode")
 
             # Save to database
-            created_room = await self._meeting_room_repository.create_room(room)
+            created_room = await self._organization_dao.create_room(room)
 
             self._logger.info(f"Created {platform.value} meeting room: {created_room.id}")
             return created_room
@@ -168,7 +168,7 @@ class MeetingRoomService:
         """Update existing meeting room"""
         try:
             # Get existing room
-            room = await self._meeting_room_repository.get_room_by_id(room_id)
+            room = await self._organization_dao.get_room_by_id(room_id)
             if not room:
                 raise ValueError(f"Room {room_id} not found")
 
@@ -187,7 +187,7 @@ class MeetingRoomService:
                 await self._update_zoom_room(room)
 
             # Save to database
-            updated_room = await self._meeting_room_repository.update_room(room)
+            updated_room = await self._organization_dao.update_room(room)
 
             self._logger.info(f"Updated meeting room: {room_id}")
             return updated_room
@@ -216,7 +216,7 @@ class MeetingRoomService:
         """Delete meeting room"""
         try:
             # Get room
-            room = await self._meeting_room_repository.get_room_by_id(room_id)
+            room = await self._organization_dao.get_room_by_id(room_id)
             if not room:
                 return False
 
@@ -228,7 +228,7 @@ class MeetingRoomService:
                     await self._delete_zoom_room(room.external_room_id)
 
             # Delete from database
-            db_success = await self._meeting_room_repository.delete_room(room_id)
+            db_success = await self._organization_dao.delete_room(room_id)
 
             if db_success:
                 self._logger.info(f"Deleted meeting room: {room_id}")
@@ -272,13 +272,13 @@ class MeetingRoomService:
         """Get all meeting rooms for organization"""
         try:
             if room_type:
-                rooms = await self._meeting_room_repository.get_rooms_by_type(
+                rooms = await self._organization_dao.get_rooms_by_type(
                     room_type, organization_id
                 )
                 if platform:
                     rooms = [r for r in rooms if r.platform == platform]
             else:
-                rooms = await self._meeting_room_repository.get_organization_rooms(
+                rooms = await self._organization_dao.get_organization_rooms(
                     organization_id, platform
                 )
 
@@ -291,7 +291,7 @@ class MeetingRoomService:
     async def get_track_rooms(self, track_id: UUID) -> List[MeetingRoom]:
         """Get all rooms for track"""
         try:
-            return await self._meeting_room_repository.get_track_rooms(track_id)
+            return await self._organization_dao.get_track_rooms(track_id)
         except Exception as e:
             self._logger.error(f"Failed to get track rooms: {e}")
             raise
@@ -299,7 +299,7 @@ class MeetingRoomService:
     async def get_instructor_rooms(self, instructor_id: UUID) -> List[MeetingRoom]:
         """Get all rooms for instructor"""
         try:
-            return await self._meeting_room_repository.get_instructor_rooms(instructor_id)
+            return await self._organization_dao.get_instructor_rooms(instructor_id)
         except Exception as e:
             self._logger.error(f"Failed to get instructor rooms: {e}")
             raise
@@ -312,7 +312,7 @@ class MeetingRoomService:
     ) -> List[MeetingRoom]:
         """Get rooms accessible by user based on their role"""
         try:
-            all_rooms = await self._meeting_room_repository.get_organization_rooms(organization_id)
+            all_rooms = await self._organization_dao.get_organization_rooms(organization_id)
 
             accessible_rooms = []
             for room in all_rooms:
@@ -333,7 +333,7 @@ class MeetingRoomService:
         """Send room invitation to users"""
         try:
             # Get room
-            room = await self._meeting_room_repository.get_room_by_id(room_id)
+            room = await self._organization_dao.get_room_by_id(room_id)
             if not room or not room.is_active():
                 return False
 
@@ -380,7 +380,7 @@ class MeetingRoomService:
     async def get_room_statistics(self, organization_id: UUID) -> Dict:
         """Get meeting room usage statistics"""
         try:
-            rooms = await self._meeting_room_repository.get_organization_rooms(organization_id)
+            rooms = await self._organization_dao.get_organization_rooms(organization_id)
 
             stats = {
                 "total_rooms": len(rooms),

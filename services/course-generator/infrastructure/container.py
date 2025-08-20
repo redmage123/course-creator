@@ -207,6 +207,16 @@ class Container:
             )
         
         return self._quiz_generation_service
+    
+    def get_job_service(self) -> 'JobManagementService':
+        """Get job management service instance"""
+        from application.services.job_management_service import JobManagementService
+        if not hasattr(self, '_job_service') or not self._job_service:
+            self._job_service = JobManagementService(
+                dao=self.get_course_generator_dao(),
+                ai_service=self.get_ai_service()
+            )
+        return self._job_service
 
 
 # Mock implementations for demonstration (would be replaced with real implementations)

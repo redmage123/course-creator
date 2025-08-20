@@ -66,7 +66,7 @@ ensuring pedagogical quality, institutional compliance, and educational effectiv
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
-from domain.interfaces.content_repository import ISyllabusRepository
+from data_access.content_management_dao import ContentManagementDAO
 from domain.interfaces.content_service import ISyllabusService, IContentValidationService
 from domain.entities.syllabus import Syllabus, SyllabusModule, GradingScheme
 from domain.entities.base_content import ContentStatus
@@ -106,7 +106,7 @@ class SyllabusService(ISyllabusService):
     
     def __init__(
         self, 
-        syllabus_repository: ISyllabusRepository,
+        dao: ContentManagementDAO,
         validation_service: IContentValidationService
     ):
         """
@@ -129,7 +129,7 @@ class SyllabusService(ISyllabusService):
             syllabus_repository: Educational syllabus data access abstraction
             validation_service: Educational content validation and quality service
         """
-        self._syllabus_repository = syllabus_repository
+        self._dao = syllabus_repository
         self._validation_service = validation_service
     
     async def create_syllabus(self, syllabus_data: Dict[str, Any], created_by: str) -> Syllabus:
@@ -228,7 +228,7 @@ class SyllabusService(ISyllabusService):
                 raise ValueError(f"Syllabus validation failed: {validation_result.get('errors', [])}")
             
             # Save to repository
-            created_syllabus = await self._syllabus_repository.create(syllabus)
+            created_syllabus = await self._dao.create(syllabus)
             
             return created_syllabus
             
@@ -237,13 +237,13 @@ class SyllabusService(ISyllabusService):
     
     async def get_syllabus(self, syllabus_id: str) -> Optional[Syllabus]:
         """Get syllabus by ID"""
-        return await self._syllabus_repository.get_by_id(syllabus_id)
+        return await self._dao.get_by_id(syllabus_id)
     
     async def update_syllabus(self, syllabus_id: str, updates: Dict[str, Any], updated_by: str) -> Optional[Syllabus]:
         """Update syllabus with validation"""
         try:
             # Get existing syllabus
-            existing_syllabus = await self._syllabus_repository.get_by_id(syllabus_id)
+            existing_syllabus = await self._dao.get_by_id(syllabus_id)
             if not existing_syllabus:
                 return None
             
@@ -281,7 +281,7 @@ class SyllabusService(ISyllabusService):
             update_data["updated_at"] = datetime.utcnow()
             
             # Update in repository
-            updated_syllabus = await self._syllabus_repository.update(syllabus_id, update_data)
+            updated_syllabus = await self._dao.update(syllabus_id, update_data)
             
             return updated_syllabus
             
@@ -299,7 +299,7 @@ class SyllabusService(ISyllabusService):
                 raise ValueError("Insufficient permissions to delete syllabus")
             
             # Check if syllabus exists
-            existing_syllabus = await self._syllabus_repository.get_by_id(syllabus_id)
+            existing_syllabus = await self._dao.get_by_id(syllabus_id)
             if not existing_syllabus:
                 return False
             
@@ -307,7 +307,7 @@ class SyllabusService(ISyllabusService):
             if existing_syllabus.is_published():
                 raise ValueError("Cannot delete published syllabus. Archive it first.")
             
-            return await self._syllabus_repository.delete(syllabus_id)
+            return await self._dao.delete(syllabus_id)
             
         except Exception as e:
             raise ValueError(f"Failed to delete syllabus: {str(e)}")
@@ -316,7 +316,7 @@ class SyllabusService(ISyllabusService):
         """Publish syllabus after validation"""
         try:
             # Get syllabus
-            syllabus = await self._syllabus_repository.get_by_id(syllabus_id)
+            syllabus = await self._dao.get_by_id(syllabus_id)
             if not syllabus:
                 return None
             
@@ -341,7 +341,7 @@ class SyllabusService(ISyllabusService):
                 "updated_at": datetime.utcnow()
             }
             
-            return await self._syllabus_repository.update(syllabus_id, update_data)
+            return await self._dao.update(syllabus_id, update_data)
             
         except Exception as e:
             raise ValueError(f"Failed to publish syllabus: {str(e)}")
@@ -350,7 +350,7 @@ class SyllabusService(ISyllabusService):
         """Archive published syllabus"""
         try:
             # Get syllabus
-            syllabus = await self._syllabus_repository.get_by_id(syllabus_id)
+            syllabus = await self._dao.get_by_id(syllabus_id)
             if not syllabus:
                 return None
             
@@ -370,7 +370,7 @@ class SyllabusService(ISyllabusService):
                 "updated_at": datetime.utcnow()
             }
             
-            return await self._syllabus_repository.update(syllabus_id, update_data)
+            return await self._dao.update(syllabus_id, update_data)
             
         except Exception as e:
             raise ValueError(f"Failed to archive syllabus: {str(e)}")
@@ -379,9 +379,9 @@ class SyllabusService(ISyllabusService):
         """Get all syllabi for a course"""
         try:
             if include_drafts:
-                return await self._syllabus_repository.get_by_course_id(course_id)
+                return await self._dao.get_by_course_id(course_id)
             else:
-                return await self._syllabus_repository.get_published_by_course_id(course_id)
+                return await self._dao.get_published_by_course_id(course_id)
         except Exception as e:
             raise ValueError(f"Failed to get course syllabi: {str(e)}")
     
@@ -441,7 +441,7 @@ class SyllabusService(ISyllabusService):
     async def search_syllabi_by_title(self, title: str, limit: int = 50) -> List[Syllabus]:
         """Search syllabi by title"""
         try:
-            return await self._syllabus_repository.search_by_title(title, limit)
+            return await self._dao.search_by_title(title, limit)
         except Exception as e:
             raise ValueError(f"Failed to search syllabi: {str(e)}")
     
@@ -449,9 +449,9 @@ class SyllabusService(ISyllabusService):
         """Get syllabus statistics"""
         try:
             if course_id:
-                syllabi = await self._syllabus_repository.get_by_course_id(course_id)
+                syllabi = await self._dao.get_by_course_id(course_id)
             else:
-                syllabi = await self._syllabus_repository.list_all(limit=1000)  # Get all for stats
+                syllabi = await self._dao.list_all(limit=1000)  # Get all for stats
             
             stats = {
                 "total_count": len(syllabi),

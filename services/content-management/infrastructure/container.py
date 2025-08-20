@@ -3,6 +3,9 @@ Content Management Dependency Injection Container
 Single Responsibility: Wire up dependencies and manage service lifetimes
 Dependency Inversion: Configure concrete implementations for abstract interfaces
 """
+import sys
+sys.path.append('/home/bbrelin/course-creator')
+
 import asyncpg
 from typing import Optional
 from omegaconf import DictConfig
@@ -155,75 +158,7 @@ class ContentManagementContainer:
             await self._connection_pool.close()
             logger.info("Content management database connection pool closed successfully")
     
-    # Repository factories (following Dependency Inversion)
-    def get_syllabus_repository(self) -> ISyllabusRepository:
-        """Get syllabus repository instance"""
-        if not self._syllabus_repository:
-            if not self._connection_pool:
-                raise RuntimeError("Container not initialized - call initialize() first")
-            
-            self._syllabus_repository = ContentRepository(self._connection_pool)
-        
-        return self._syllabus_repository
-    
-    def get_slide_repository(self) -> ISlideRepository:
-        """Get slide repository instance"""
-        if not self._slide_repository:
-            if not self._connection_pool:
-                raise RuntimeError("Container not initialized - call initialize() first")
-            
-            self._slide_repository = ContentRepository(self._connection_pool)
-        
-        return self._slide_repository
-    
-    def get_quiz_repository(self) -> IQuizRepository:
-        """Get quiz repository instance"""
-        if not self._quiz_repository:
-            if not self._connection_pool:
-                raise RuntimeError("Container not initialized - call initialize() first")
-            
-            self._quiz_repository = ContentRepository(self._connection_pool)
-        
-        return self._quiz_repository
-    
-    def get_exercise_repository(self) -> IExerciseRepository:
-        """Get exercise repository instance"""
-        if not self._exercise_repository:
-            if not self._connection_pool:
-                raise RuntimeError("Container not initialized - call initialize() first")
-            
-            self._exercise_repository = ContentRepository(self._connection_pool)
-        
-        return self._exercise_repository
-    
-    def get_lab_environment_repository(self) -> ILabEnvironmentRepository:
-        """Get lab environment repository instance"""
-        if not self._lab_environment_repository:
-            if not self._connection_pool:
-                raise RuntimeError("Container not initialized - call initialize() first")
-            
-            self._lab_environment_repository = ContentRepository(self._connection_pool)
-        
-        return self._lab_environment_repository
-    
-    def get_content_search_repository(self) -> IContentSearchRepository:
-        """
-        ENHANCED CONTENT SEARCH REPOSITORY WITH REDIS CACHING
-        
-        Get content search repository instance with Redis caching enabled for
-        optimal search performance. The repository includes comprehensive caching
-        for search operations, content filtering, and aggregation queries.
-        
-        Returns:
-            IContentSearchRepository: Content search repository with caching optimization
-        """
-        if not self._content_search_repository:
-            if not self._connection_pool:
-                raise RuntimeError("Container not initialized - call initialize() first")
-            
-            self._content_search_repository = ContentRepository(self._connection_pool)
-        
-        return self._content_search_repository
+    # Repository pattern removed - all services now use DAO pattern directly
     
     # Service factories (following Dependency Inversion)
     def get_content_validation_service(self) -> IContentValidationService:
@@ -237,7 +172,7 @@ class ContentManagementContainer:
         """Get syllabus service instance"""
         if not self._syllabus_service:
             self._syllabus_service = SyllabusService(
-                syllabus_repository=self.get_syllabus_repository(),
+                dao=self.get_content_dao(),
                 validation_service=self.get_content_validation_service()
             )
         
@@ -284,7 +219,7 @@ class ContentManagementContainer:
         """Get content search service instance"""
         if not self._content_search_service:
             self._content_search_service = ContentSearchService(
-                search_repository=self.get_content_search_repository()
+                content_dao=self.get_content_dao()
             )
         
         return self._content_search_service

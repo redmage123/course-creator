@@ -17,11 +17,8 @@ from domain.interfaces.analytics_service import (
     IProgressTrackingService, ILearningAnalyticsService, IReportingService,
     IRiskAssessmentService, IPersonalizationService, IPerformanceComparisonService
 )
-from domain.interfaces.analytics_repository import (
-    IStudentActivityRepository, ILabUsageRepository, IQuizPerformanceRepository,
-    IStudentProgressRepository, ILearningAnalyticsRepository, 
-    IAnalyticsAggregationRepository, IReportingRepository
-)
+# Repository pattern removed - using DAO
+from data_access.analytics_dao import AnalyticsDAO
 
 # Application services
 from application.services.student_activity_service import StudentActivityService
@@ -41,14 +38,8 @@ class AnalyticsContainer:
         self._config = config
         self._connection_pool: Optional[asyncpg.Pool] = None
         
-        # Repository instances
-        self._student_activity_repository: Optional[IStudentActivityRepository] = None
-        self._lab_usage_repository: Optional[ILabUsageRepository] = None
-        self._quiz_performance_repository: Optional[IQuizPerformanceRepository] = None
-        self._student_progress_repository: Optional[IStudentProgressRepository] = None
-        self._learning_analytics_repository: Optional[ILearningAnalyticsRepository] = None
-        self._analytics_aggregation_repository: Optional[IAnalyticsAggregationRepository] = None
-        self._reporting_repository: Optional[IReportingRepository] = None
+        # DAO instance (replaces repository pattern)
+        self._analytics_dao: Optional[AnalyticsDAO] = None
         
         # Service instances
         self._student_activity_service: Optional[IStudentActivityService] = None
@@ -154,92 +145,23 @@ class AnalyticsContainer:
             await self._connection_pool.close()
             logger.info("Analytics database connection pool closed successfully")
     
-    # Repository factories
-    def get_student_activity_repository(self) -> IStudentActivityRepository:
-        """Get student activity repository instance"""
-        if not self._student_activity_repository:
+    # DAO factory (replaces repository pattern)
+    def get_analytics_dao(self) -> AnalyticsDAO:
+        """Get analytics DAO instance"""
+        if not self._analytics_dao:
             if not self._connection_pool:
                 raise RuntimeError("Container not initialized - call initialize() first")
             
-            # For now, return a mock implementation
-            # In production, this would be:
-            # self._student_activity_repository = PostgreSQLStudentActivityRepository(self._connection_pool)
-            self._student_activity_repository = MockStudentActivityRepository()
+            self._analytics_dao = AnalyticsDAO(self._connection_pool)
         
-        return self._student_activity_repository
-    
-    def get_lab_usage_repository(self) -> ILabUsageRepository:
-        """Get lab usage repository instance"""
-        if not self._lab_usage_repository:
-            if not self._connection_pool:
-                raise RuntimeError("Container not initialized - call initialize() first")
-            
-            # For now, return a mock implementation
-            self._lab_usage_repository = MockLabUsageRepository()
-        
-        return self._lab_usage_repository
-    
-    def get_quiz_performance_repository(self) -> IQuizPerformanceRepository:
-        """Get quiz performance repository instance"""
-        if not self._quiz_performance_repository:
-            if not self._connection_pool:
-                raise RuntimeError("Container not initialized - call initialize() first")
-            
-            # For now, return a mock implementation
-            self._quiz_performance_repository = MockQuizPerformanceRepository()
-        
-        return self._quiz_performance_repository
-    
-    def get_student_progress_repository(self) -> IStudentProgressRepository:
-        """Get student progress repository instance"""
-        if not self._student_progress_repository:
-            if not self._connection_pool:
-                raise RuntimeError("Container not initialized - call initialize() first")
-            
-            # For now, return a mock implementation
-            self._student_progress_repository = MockStudentProgressRepository()
-        
-        return self._student_progress_repository
-    
-    def get_learning_analytics_repository(self) -> ILearningAnalyticsRepository:
-        """Get learning analytics repository instance"""
-        if not self._learning_analytics_repository:
-            if not self._connection_pool:
-                raise RuntimeError("Container not initialized - call initialize() first")
-            
-            # For now, return a mock implementation
-            self._learning_analytics_repository = MockLearningAnalyticsRepository()
-        
-        return self._learning_analytics_repository
-    
-    def get_analytics_aggregation_repository(self) -> IAnalyticsAggregationRepository:
-        """Get analytics aggregation repository instance"""
-        if not self._analytics_aggregation_repository:
-            if not self._connection_pool:
-                raise RuntimeError("Container not initialized - call initialize() first")
-            
-            # For now, return a mock implementation
-            self._analytics_aggregation_repository = MockAnalyticsAggregationRepository()
-        
-        return self._analytics_aggregation_repository
-    
-    def get_reporting_repository(self) -> IReportingRepository:
-        """Get reporting repository instance"""
-        if not self._reporting_repository:
-            if not self._connection_pool:
-                raise RuntimeError("Container not initialized - call initialize() first")
-            
-            # For now, return a mock implementation
-            self._reporting_repository = MockReportingRepository()
-        
-        return self._reporting_repository
+        return self._analytics_dao
     
     # Service factories
     def get_student_activity_service(self) -> IStudentActivityService:
         """Get student activity service instance"""
         if not self._student_activity_service:
             self._student_activity_service = StudentActivityService(
-                activity_repository=self.get_student_activity_repository()
+                analytics_dao=self.get_analytics_dao()
             )
         
         return self._student_activity_service
@@ -272,7 +194,7 @@ class AnalyticsContainer:
         """Get learning analytics service instance"""
         if not self._learning_analytics_service:
             self._learning_analytics_service = LearningAnalyticsService(
-                analytics_repository=self.get_learning_analytics_repository(),
+                analytics_dao=self.get_analytics_dao(),
                 activity_service=self.get_student_activity_service(),
                 lab_service=self.get_lab_analytics_service(),
                 quiz_service=self.get_quiz_analytics_service(),
@@ -322,7 +244,7 @@ from domain.entities.student_analytics import (
     StudentProgress, LearningAnalytics, ActivityType, ContentType, RiskLevel
 )
 
-class MockStudentActivityRepository(IStudentActivityRepository):
+class MockStudentActivityRepository:
     """Mock student activity repository for demonstration"""
     
     def __init__(self):
@@ -413,7 +335,7 @@ class MockStudentActivityRepository(IStudentActivityRepository):
         return len(old_activities)
 
 # Additional mock repository implementations
-class MockLabUsageRepository(ILabUsageRepository):
+class MockLabUsageRepository:
     """Mock lab usage repository"""
     def __init__(self):
         self._lab_metrics = {}
@@ -447,7 +369,7 @@ class MockLabUsageRepository(ILabUsageRepository):
     async def get_usage_trends(self, course_id: str, days_back: int = 30) -> Dict[str, Any]:
         return {"average_session_duration": 45, "completion_rate": 0.7}  # Mock data
 
-class MockQuizPerformanceRepository(IQuizPerformanceRepository):
+class MockQuizPerformanceRepository:
     """Mock quiz performance repository"""
     def __init__(self):
         self._performances = {}
@@ -481,7 +403,7 @@ class MockQuizPerformanceRepository(IQuizPerformanceRepository):
     async def get_performance_trends(self, student_id: str, course_id: str) -> List[Dict[str, Any]]:
         return [{"date": "2024-01-01", "average_score": 75.0}]  # Mock data
 
-class MockStudentProgressRepository(IStudentProgressRepository):
+class MockStudentProgressRepository:
     """Mock student progress repository"""
     def __init__(self):
         self._progress_records = {}
@@ -520,7 +442,7 @@ class MockStudentProgressRepository(IStudentProgressRepository):
             "total_time_spent_minutes": 450
         }  # Mock data
 
-class MockLearningAnalyticsRepository(ILearningAnalyticsRepository):
+class MockLearningAnalyticsRepository:
     """Mock learning analytics repository"""
     def __init__(self):
         self._analytics = {}
@@ -557,7 +479,7 @@ class MockLearningAnalyticsRepository(ILearningAnalyticsRepository):
     async def cleanup_old_analytics(self, days_old: int = 180) -> int:
         return 0  # Mock implementation
 
-class MockAnalyticsAggregationRepository(IAnalyticsAggregationRepository):
+class MockAnalyticsAggregationRepository:
     """Mock analytics aggregation repository"""
     
     async def get_engagement_trends(self, course_id: str, days_back: int = 30, granularity: str = "daily") -> List[Dict[str, Any]]:
@@ -584,7 +506,7 @@ class MockAnalyticsAggregationRepository(IAnalyticsAggregationRepository):
     async def generate_predictive_features(self, student_id: str, course_id: str) -> Dict[str, float]:
         return {"engagement_trend": 0.1, "completion_velocity": 2.5}  # Mock data
 
-class MockReportingRepository(IReportingRepository):
+class MockReportingRepository:
     """Mock reporting repository"""
     
     async def generate_student_report_data(self, student_id: str, course_id: str) -> Dict[str, Any]:

@@ -13,23 +13,15 @@ from domain.entities.enhanced_role import (
     OrganizationMembership, TrackAssignment, EnhancedRole,
     RoleType, Permission
 )
-from domain.interfaces.membership_repository import IMembershipRepository, ITrackAssignmentRepository
-from domain.interfaces.user_repository import IUserRepository
+from data_access.organization_dao import OrganizationManagementDAO
 from shared.cache.redis_cache import get_cache_manager
 
 
 class MembershipService:
     """Service for organization membership management"""
 
-    def __init__(
-        self,
-        membership_repository: IMembershipRepository,
-        track_assignment_repository: ITrackAssignmentRepository,
-        user_repository: IUserRepository
-    ):
-        self._membership_repository = membership_repository
-        self._track_assignment_repository = track_assignment_repository
-        self._user_repository = user_repository
+    def __init__(self, organization_dao: OrganizationManagementDAO):
+        self._organization_dao = organization_dao
         self._logger = logging.getLogger(__name__)
         
         # Initialize caching for performance optimization
@@ -44,13 +36,13 @@ class MembershipService:
         """Add organization admin to organization"""
         try:
             # Get or create user
-            user = await self._user_repository.get_by_email(user_email)
+            user = await self._organization_dao.get_by_email(user_email)
             if not user:
                 # Create pending user
-                user = await self._user_repository.create_pending_user(user_email)
+                user = await self._organization_dao.create_pending_user(user_email)
 
             # Check if membership already exists
-            existing = await self._membership_repository.get_user_membership(
+            existing = await self._organization_dao.get_user_membership(
                 user.id, organization_id
             )
             if existing and existing.is_active():
@@ -73,7 +65,7 @@ class MembershipService:
             if not membership.is_valid():
                 raise ValueError("Invalid membership data")
 
-            created_membership = await self._membership_repository.create_membership(membership)
+            created_membership = await self._organization_dao.create_membership(membership)
 
             # Invalidate any cached permissions for this user immediately
             await self._invalidate_user_cache(user.id, organization_id)
@@ -95,12 +87,12 @@ class MembershipService:
         """Add instructor to organization"""
         try:
             # Get or create user
-            user = await self._user_repository.get_by_email(user_email)
+            user = await self._organization_dao.get_by_email(user_email)
             if not user:
-                user = await self._user_repository.create_pending_user(user_email)
+                user = await self._organization_dao.create_pending_user(user_email)
 
             # Check if membership already exists
-            existing = await self._membership_repository.get_user_membership(
+            existing = await self._organization_dao.get_user_membership(
                 user.id, organization_id
             )
             if existing and existing.is_active():
@@ -124,7 +116,7 @@ class MembershipService:
             if not membership.is_valid():
                 raise ValueError("Invalid membership data")
 
-            created_membership = await self._membership_repository.create_membership(membership)
+            created_membership = await self._organization_dao.create_membership(membership)
 
             self._logger.info(f"Added instructor {user_email} to organization {organization_id}")
             return created_membership
@@ -144,12 +136,12 @@ class MembershipService:
         """Add student to project and assign to track"""
         try:
             # Get or create user
-            user = await self._user_repository.get_by_email(user_email)
+            user = await self._organization_dao.get_by_email(user_email)
             if not user:
-                user = await self._user_repository.create_pending_user(user_email)
+                user = await self._organization_dao.create_pending_user(user_email)
 
             # Check if organization membership exists
-            membership = await self._membership_repository.get_user_membership(
+            membership = await self._organization_dao.get_user_membership(
                 user.id, organization_id
             )
 
@@ -169,12 +161,12 @@ class MembershipService:
                     invited_by=assigned_by
                 )
 
-                membership = await self._membership_repository.create_membership(membership)
+                membership = await self._organization_dao.create_membership(membership)
             else:
                 # Update existing membership to add project and track access
                 membership.role.add_project_access(project_id)
                 membership.role.add_track_access(track_id)
-                membership = await self._membership_repository.update_membership(membership)
+                membership = await self._organization_dao.update_membership(membership)
 
             # Create track assignment
             assignment = TrackAssignment(
@@ -184,7 +176,7 @@ class MembershipService:
                 assigned_by=assigned_by
             )
 
-            created_assignment = await self._track_assignment_repository.create_assignment(assignment)
+            created_assignment = await self._organization_dao.create_assignment(assignment)
 
             self._logger.info(f"Added student {user_email} to project {project_id} and track {track_id}")
             return membership, created_assignment
@@ -202,7 +194,7 @@ class MembershipService:
         """Assign instructor to teach a track"""
         try:
             # Check if assignment already exists
-            exists = await self._track_assignment_repository.exists_assignment(
+            exists = await self._organization_dao.exists_assignment(
                 instructor_id, track_id, RoleType.INSTRUCTOR
             )
             if exists:
@@ -216,7 +208,7 @@ class MembershipService:
                 assigned_by=assigned_by
             )
 
-            created_assignment = await self._track_assignment_repository.create_assignment(assignment)
+            created_assignment = await self._organization_dao.create_assignment(assignment)
 
             # Update instructor's organization membership to include track access
             # This would require getting the instructor's membership and updating it
@@ -236,20 +228,20 @@ class MembershipService:
         """Remove member from organization"""
         try:
             # Get membership
-            membership = await self._membership_repository.get_membership_by_id(membership_id)
+            membership = await self._organization_dao.get_membership_by_id(membership_id)
             if not membership:
                 raise ValueError("Membership not found")
 
             # Deactivate membership
-            success = await self._membership_repository.deactivate_membership(membership_id)
+            success = await self._organization_dao.deactivate_membership(membership_id)
 
             # Deactivate all track assignments for this user in this organization
-            user_assignments = await self._track_assignment_repository.get_user_track_assignments(
+            user_assignments = await self._organization_dao.get_user_track_assignments(
                 membership.user_id
             )
 
             for assignment in user_assignments:
-                await self._track_assignment_repository.deactivate_assignment(assignment.id)
+                await self._organization_dao.deactivate_assignment(assignment.id)
 
             self._logger.info(f"Removed organization member {membership.user_id}")
             return success
@@ -265,13 +257,13 @@ class MembershipService:
     ) -> List[Dict]:
         """Get organization members with user details"""
         try:
-            memberships = await self._membership_repository.get_organization_memberships(
+            memberships = await self._organization_dao.get_organization_memberships(
                 organization_id, role_type
             )
 
             members = []
             for membership in memberships:
-                user = await self._user_repository.get_by_id(membership.user_id)
+                user = await self._organization_dao.get_by_id(membership.user_id)
                 if user:
                     members.append({
                         "membership_id": str(membership.id),
@@ -296,13 +288,13 @@ class MembershipService:
     async def get_track_instructors(self, track_id: UUID) -> List[Dict]:
         """Get instructors assigned to track"""
         try:
-            assignments = await self._track_assignment_repository.get_track_assignments(
+            assignments = await self._organization_dao.get_track_assignments(
                 track_id, RoleType.INSTRUCTOR
             )
 
             instructors = []
             for assignment in assignments:
-                user = await self._user_repository.get_by_id(assignment.user_id)
+                user = await self._organization_dao.get_by_id(assignment.user_id)
                 if user:
                     instructors.append({
                         "assignment_id": str(assignment.id),
@@ -322,13 +314,13 @@ class MembershipService:
     async def get_track_students(self, track_id: UUID) -> List[Dict]:
         """Get students assigned to track"""
         try:
-            assignments = await self._track_assignment_repository.get_track_assignments(
+            assignments = await self._organization_dao.get_track_assignments(
                 track_id, RoleType.STUDENT
             )
 
             students = []
             for assignment in assignments:
-                user = await self._user_repository.get_by_id(assignment.user_id)
+                user = await self._organization_dao.get_by_id(assignment.user_id)
                 if user:
                     students.append({
                         "assignment_id": str(assignment.id),
@@ -357,7 +349,7 @@ class MembershipService:
     async def accept_membership_invitation(self, membership_id: UUID) -> bool:
         """Accept membership invitation"""
         try:
-            success = await self._membership_repository.activate_membership(membership_id)
+            success = await self._organization_dao.activate_membership(membership_id)
 
             if success:
                 self._logger.info(f"Accepted membership invitation {membership_id}")
@@ -476,7 +468,7 @@ class MembershipService:
         check_user_permission to support the caching implementation.
         """
         try:
-            membership = await self._membership_repository.get_user_membership(
+            membership = await self._organization_dao.get_user_membership(
                 user_id, organization_id
             )
 

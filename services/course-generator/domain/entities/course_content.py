@@ -20,6 +20,13 @@ class ContentType(Enum):
     QUIZ = "quiz"
     LAB = "lab"
 
+class JobStatus(Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
 class SlideType(Enum):
     TITLE = "title"
     CONTENT = "content"
@@ -316,13 +323,16 @@ class GenerationJob:
     content_type: ContentType
     course_id: str
     parameters: Dict
-    status: str = "pending"
+    status: JobStatus = JobStatus.PENDING
     id: Optional[str] = None
     result: Optional[Dict] = None
     error_message: Optional[str] = None
     created_at: Optional[datetime] = None
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
+    progress_percentage: int = 0
+    scheduled_time: Optional[datetime] = None
+    metadata: Dict = field(default_factory=dict)
     
     def __post_init__(self):
         if not self.id:
@@ -339,43 +349,51 @@ class GenerationJob:
         if not isinstance(self.parameters, dict):
             raise ValueError("Parameters must be a dictionary")
         
-        valid_statuses = ["pending", "running", "completed", "failed"]
-        if self.status not in valid_statuses:
-            raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
+        if not isinstance(self.status, JobStatus):
+            raise ValueError(f"Status must be a JobStatus enum value")
     
     def start(self) -> None:
         """Mark job as started"""
-        if self.status != "pending":
+        if self.status != JobStatus.PENDING:
             raise ValueError("Can only start pending jobs")
         
-        self.status = "running"
+        self.status = JobStatus.RUNNING
         self.started_at = datetime.utcnow()
     
     def complete(self, result: Dict) -> None:
         """Mark job as completed with result"""
-        if self.status != "running":
+        if self.status != JobStatus.RUNNING:
             raise ValueError("Can only complete running jobs")
         
-        self.status = "completed"
+        self.status = JobStatus.COMPLETED
         self.result = result
         self.completed_at = datetime.utcnow()
+        self.progress_percentage = 100
     
     def fail(self, error_message: str) -> None:
         """Mark job as failed with error message"""
-        if self.status not in ["pending", "running"]:
+        if self.status not in [JobStatus.PENDING, JobStatus.RUNNING]:
             raise ValueError("Can only fail pending or running jobs")
         
-        self.status = "failed"
+        self.status = JobStatus.FAILED
         self.error_message = error_message
+        self.completed_at = datetime.utcnow()
+    
+    def cancel(self) -> None:
+        """Mark job as cancelled"""
+        if self.status not in [JobStatus.PENDING, JobStatus.RUNNING]:
+            raise ValueError("Can only cancel pending or running jobs")
+        
+        self.status = JobStatus.CANCELLED
         self.completed_at = datetime.utcnow()
     
     def is_completed(self) -> bool:
         """Check if job is completed"""
-        return self.status == "completed"
+        return self.status == JobStatus.COMPLETED
     
     def is_failed(self) -> bool:
         """Check if job failed"""
-        return self.status == "failed"
+        return self.status == JobStatus.FAILED
     
     def get_duration_seconds(self) -> Optional[int]:
         """Get job duration in seconds"""

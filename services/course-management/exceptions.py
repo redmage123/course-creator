@@ -84,7 +84,25 @@ import logging
 from typing import Dict, Any, Optional
 from datetime import datetime
 
-class CourseManagementException(Exception):
+class CourseCreatorBaseException(Exception):
+    """Base exception for all Course Creator service errors."""
+    
+    def __init__(
+        self,
+        message: str,
+        error_code: str = "COURSE_CREATOR_ERROR",
+        details: Optional[Dict[str, Any]] = None,
+        original_exception: Optional[Exception] = None
+    ):
+        self.message = message
+        self.error_code = error_code
+        self.details = details or {}
+        self.original_exception = original_exception
+        self.timestamp = datetime.utcnow()
+        
+        super().__init__(self.message)
+
+class CourseManagementException(CourseCreatorBaseException):
     """Base exception for all Course Management service errors."""
     
     def __init__(
@@ -387,3 +405,7 @@ class QuizManagementException(CourseManagementException):
             details=details,
             original_exception=original_exception
         )
+
+class ContentNotFoundException(CourseManagementException):
+    def __init__(self, message='Content not found', **kwargs):
+        super().__init__(message, error_code='CONTENT_NOT_FOUND', **kwargs)

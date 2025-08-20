@@ -1,14 +1,14 @@
 """
 Exercise Generation Service Implementation
 Single Responsibility: Implement exercise generation business logic
-Dependency Inversion: Depends on repository and AI service abstractions
+Dependency Inversion: Depends on DAO and AI service abstractions (converted from repository pattern)
 """
 import uuid
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 from domain.entities.course_content import Exercise, ExerciseType, DifficultyLevel
 from domain.interfaces.content_generation_service import IExerciseGenerationService
-from domain.interfaces.content_repository import IExerciseRepository, ISyllabusRepository
+from data_access.course_generator_dao import CourseGeneratorDAO
 from domain.interfaces.ai_service import IAIService, ContentGenerationType, IPromptTemplateService
 
 class ExerciseGenerationService(IExerciseGenerationService):
@@ -17,12 +17,10 @@ class ExerciseGenerationService(IExerciseGenerationService):
     """
     
     def __init__(self, 
-                 exercise_repository: IExerciseRepository,
-                 syllabus_repository: ISyllabusRepository,
+                 course_generator_dao: CourseGeneratorDAO,
                  ai_service: IAIService,
                  prompt_service: IPromptTemplateService):
-        self._exercise_repository = exercise_repository
-        self._syllabus_repository = syllabus_repository
+        self._course_generator_dao = course_generator_dao
         self._ai_service = ai_service
         self._prompt_service = prompt_service
     
@@ -49,7 +47,7 @@ class ExerciseGenerationService(IExerciseGenerationService):
             raise ValueError(f"Invalid exercise type: {exercise_type}")
         
         # Get course context
-        syllabus = await self._syllabus_repository.get_by_course_id(course_id)
+        syllabus = await self._course_generator_dao.get_by_course_id(course_id)
         course_context = self._extract_course_context(syllabus) if syllabus else {}
         
         # Prepare generation context
@@ -100,7 +98,7 @@ class ExerciseGenerationService(IExerciseGenerationService):
         self._add_type_specific_metadata(exercise, generated_content, exercise_type)
         
         # Save exercise
-        return await self._exercise_repository.create(exercise)
+        return await self._course_generator_dao.create(exercise)
     
     async def generate_exercise_series(self, course_id: str, topic: str, 
                                       difficulty_progression: List[str],
@@ -197,7 +195,7 @@ class ExerciseGenerationService(IExerciseGenerationService):
             raise ValueError("Student solution is required")
         
         # Get exercise
-        exercise = await self._exercise_repository.get_by_id(exercise_id)
+        exercise = await self._course_generator_dao.get_by_id(exercise_id)
         if not exercise:
             raise ValueError(f"Exercise with ID {exercise_id} not found")
         

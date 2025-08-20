@@ -111,11 +111,11 @@ dependent_services:
   course_management:
     host: localhost
     port: 8001
-    base_url: http://localhost:8001/api/v1
+    base_url: https://localhost:8001/api/v1
   course_generator:
     host: localhost
     port: 8002
-    base_url: http://localhost:8002/api/v1
+    base_url: https://localhost:8002/api/v1
 
 security:
   api_key: dev_api_key

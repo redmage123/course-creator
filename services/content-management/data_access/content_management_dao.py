@@ -26,13 +26,12 @@ from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime, timedelta
 import json
 import sys
-sys.path.append('/app/shared')
+sys.path.append('/home/bbrelin/course-creator')
 from exceptions import (
-    CourseCreatorBaseException,
+    ContentManagementException,
     DatabaseException,
     ValidationException,
-    ContentCreationException,
-    DataNotFoundException
+    ContentNotFoundException
 )
 
 
@@ -133,7 +132,7 @@ class ContentManagementDAO:
                 )
                 return str(content_id)
         except Exception as e:
-            raise ContentCreationException(
+            raise ContentManagementException(
                 message="Failed to create educational content",
                 error_code="CONTENT_CREATION_ERROR",
                 details={
@@ -439,7 +438,7 @@ class ContentManagementDAO:
                 )
                 
                 if not content_info:
-                    raise DataNotFoundException(
+                    raise ContentNotFoundException(
                         message="Content not found for analytics",
                         error_code="CONTENT_NOT_FOUND",
                         details={"content_id": content_id}
@@ -463,7 +462,7 @@ class ContentManagementDAO:
                 
                 return analytics
                 
-        except DataNotFoundException:
+        except ContentNotFoundException:
             # Re-raise data not found exceptions
             raise
         except Exception as e:
@@ -517,7 +516,7 @@ class ContentManagementDAO:
                     return str(version_id)
                     
         except Exception as e:
-            raise ContentCreationException(
+            raise ContentManagementException(
                 message="Failed to create content version",
                 error_code="CONTENT_VERSION_ERROR",
                 details={"content_id": content_id},

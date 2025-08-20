@@ -7,7 +7,7 @@ import hashlib
 
 from domain.entities.student_analytics import StudentActivity, ActivityType
 from domain.interfaces.analytics_service import IStudentActivityService
-from domain.interfaces.analytics_repository import IStudentActivityRepository
+from data_access.analytics_dao import AnalyticsDAO
 from shared.cache import get_cache_manager
 
 class StudentActivityService(IStudentActivityService):
@@ -33,7 +33,7 @@ class StudentActivityService(IStudentActivityService):
     - Performance optimization through Redis caching with automatic invalidation
     - Comprehensive activity summarization and reporting
     """
-    def __init__(self, activity_repository: IStudentActivityRepository):
+    def __init__(self, analytics_dao: AnalyticsDAO):
         """
         Initialize Student Activity Service with engagement weight configuration.
         
@@ -45,9 +45,9 @@ class StudentActivityService(IStudentActivityService):
         - EXERCISE_SUBMISSION: Highest engagement indicator (4.5 weight)
         
         Args:
-            activity_repository: Repository for student activity data access
+            analytics_dao: DAO for student analytics data access
         """
-        self._activity_repository = activity_repository
+        self._analytics_dao = analytics_dao
         self._engagement_weights = {
             ActivityType.LOGIN: 1.0,
             ActivityType.LOGOUT: 0.5,
@@ -95,7 +95,7 @@ class StudentActivityService(IStudentActivityService):
             await self._validate_activity_context(activity)
             
             # Record the activity
-            recorded_activity = await self._activity_repository.create(activity)
+            recorded_activity = await self._analytics_dao.create(activity)
             
             # Invalidate cached analytics for this student immediately
             await self._invalidate_student_analytics_cache(activity.student_id, activity.course_id)
@@ -164,7 +164,7 @@ class StudentActivityService(IStudentActivityService):
         if end_date > datetime.utcnow():
             raise ValueError("End date cannot be in the future")
         
-        activities = await self._activity_repository.get_by_student_and_course(
+        activities = await self._analytics_dao.get_by_student_and_course(
             student_id=student_id,
             course_id=course_id,
             start_date=start_date,
@@ -259,7 +259,7 @@ class StudentActivityService(IStudentActivityService):
         if not start_date:
             start_date = end_date - timedelta(days=7)
         
-        activities = await self._activity_repository.get_by_course(
+        activities = await self._analytics_dao.get_by_course(
             course_id=course_id,
             start_date=start_date,
             end_date=end_date
@@ -337,7 +337,7 @@ class StudentActivityService(IStudentActivityService):
     # Helper methods
     async def _validate_activity_context(self, activity: StudentActivity) -> None:
         # Check for suspicious activity patterns
-        recent_activities = await self._activity_repository.get_by_student_and_course(
+        recent_activities = await self._analytics_dao.get_by_student_and_course(
             student_id=activity.student_id,
             course_id=activity.course_id,
             start_date=datetime.utcnow() - timedelta(minutes=5),

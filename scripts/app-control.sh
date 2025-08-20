@@ -95,7 +95,7 @@ parse_compose_config() {
             if [[ $line =~ ^[[:space:]]{2}([a-zA-Z0-9_-]+):[[:space:]]*$ ]]; then
                 current_service="${BASH_REMATCH[1]}"
                 SERVICE_NAMES["$current_service"]="$current_service"
-                SERVICE_CONTAINERS["$current_service"]="${DOCKER_PROJECT_NAME}-${current_service}-1"
+                SERVICE_CONTAINERS["$current_service"]="${DOCKER_PROJECT_NAME}_${current_service}_1"
             # Match port mappings
             elif [[ $line =~ ^[[:space:]]*-[[:space:]]*\"([0-9]+):([0-9]+)\"[[:space:]]*$ ]] && [[ -n "$current_service" ]]; then
                 host_port="${BASH_REMATCH[1]}"
@@ -481,10 +481,10 @@ docker_status() {
                     actual_container_name=$(echo "$container_line" | cut -f1)
                     container_status=$(echo "$container_line" | cut -f2)
                     
-                    if [[ "$container_status" == *"healthy"* ]]; then
-                        echo -e "  ✅ ${display_name} - Healthy"
-                    elif [[ "$container_status" == *"unhealthy"* ]]; then
+                    if [[ "$container_status" == *"unhealthy"* ]]; then
                         echo -e "  ❌ ${display_name} - Unhealthy"
+                    elif [[ "$container_status" == *"healthy"* ]]; then
+                        echo -e "  ✅ ${display_name} - Healthy"
                     elif [[ "$container_status" == *"starting"* ]] || [[ "$container_status" == *"health: starting"* ]]; then
                         echo -e "  🔄 ${display_name} - Starting"
                     elif [[ "$container_status" == *"Up"* ]]; then
@@ -525,10 +525,10 @@ docker_status() {
                     container_status=$(echo "$container_line" | cut -f2)
                     
                     # Quick health check - only inspect if needed
-                    if [[ "$container_status" == *"healthy"* ]]; then
-                        echo -e "  ✅ ${display_name} - Healthy"
-                    elif [[ "$container_status" == *"unhealthy"* ]]; then
+                    if [[ "$container_status" == *"unhealthy"* ]]; then
                         echo -e "  ❌ ${display_name} - Unhealthy"
+                    elif [[ "$container_status" == *"healthy"* ]]; then
+                        echo -e "  ✅ ${display_name} - Healthy"
                     elif [[ "$container_status" == *"starting"* ]] || [[ "$container_status" == *"health: starting"* ]]; then
                         echo -e "  🔄 ${display_name} - Starting"
                     elif [[ "$container_status" == *"Up"* ]]; then
