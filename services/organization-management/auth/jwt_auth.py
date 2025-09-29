@@ -26,7 +26,7 @@ class JWTAuthenticator:
 
     async def validate_token(self, token: str) -> Dict[str, Any]:
         """
-        Validate JWT token and extract user information
+        Validate JWT token by calling user-management service
 
         Args:
             token: JWT token string
@@ -38,34 +38,55 @@ class JWTAuthenticator:
             HTTPException: If token is invalid or expired
         """
         try:
-            # Decode JWT token
-            payload = jwt.decode(token, self._secret_key, algorithms=[self._algorithm])
-
-            # Extract user information
-            user_id = payload.get('sub')
-            if not user_id:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid token: missing user ID"
+            # Validate token by calling user-management service /users/me endpoint
+            async with httpx.AsyncClient(verify=False) as client:
+                response = await client.get(
+                    f"{self._user_service_url}/users/me",
+                    headers={"Authorization": f"Bearer {token}"},
+                    timeout=5.0
                 )
+                
+                if response.status_code == 401:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Invalid or expired token"
+                    )
+                elif response.status_code != 200:
+                    self._logger.error(f"User service returned {response.status_code}: {response.text}")
+                    raise HTTPException(
+                        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                        detail="Authentication service unavailable"
+                    )
+                
+                user_data = response.json()
+                
+                # Convert user response to expected format
+                return {
+                    "sub": str(user_data["id"]),
+                    "email": user_data["email"],
+                    "username": user_data["username"],
+                    "full_name": user_data.get("full_name"),
+                    "role": user_data.get("role", "user"),
+                    "roles": [user_data.get("role", "user")],
+                    "organization": user_data.get("organization"),
+                    "organization_id": user_data.get("organization_id")
+                }
 
-            # Get additional user information from user service
-            user_info = await self._get_user_info(user_id)
-
-            return user_info
-
-        except jwt.ExpiredSignatureError:
-            self._logger.warning("Token expired for user")
+        except httpx.TimeoutException:
+            self._logger.error("Timeout connecting to user service")
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token expired"
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Authentication service timeout"
             )
-        except jwt.InvalidTokenError as e:
-            self._logger.warning("Invalid token: %s", str(e))
+        except httpx.RequestError as e:
+            self._logger.error("Error connecting to user service: %s", str(e))
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token"
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Authentication service unavailable"
             )
+        except HTTPException:
+            # Re-raise HTTP exceptions as-is
+            raise
         except Exception as e:
             self._logger.error("Error validating token: %s", str(e))
             raise HTTPException(

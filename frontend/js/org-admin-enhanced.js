@@ -955,19 +955,39 @@ class OrgAdminDashboard {
                 settings: {}
             };
 
+            const authToken = localStorage.getItem('authToken');
+            
             const orgApiBase = window.CONFIG?.API_URLS?.ORGANIZATION_MANAGEMENT || `https://${window.location.hostname}:8008`;
             const response = await fetch(`${orgApiBase}/api/v1/organizations/${this.currentOrganizationId}/projects`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                    'Authorization': `Bearer ${authToken}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(data)
             });
 
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.detail || 'Failed to create project');
+                let errorMessage = 'Failed to create project';
+                try {
+                    const error = await response.json();
+                    errorMessage = error.detail || error.message || `HTTP ${response.status}`;
+                } catch (e) {
+                    const errorText = await response.text();
+                    errorMessage = `HTTP ${response.status}: ${errorText}`;
+                }
+                
+                if (response.status === 401) {
+                    console.error('Authentication failed. Token may be expired.');
+                    // Check if we need to redirect to login
+                    if (!localStorage.getItem('authToken')) {
+                        window.location.href = '../index.html';
+                        return;
+                    }
+                    errorMessage = 'Authentication failed. Please refresh the page and try again.';
+                }
+                
+                throw new Error(errorMessage);
             }
 
             const newProject = await response.json();
