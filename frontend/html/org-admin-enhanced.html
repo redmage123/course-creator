@@ -31,6 +31,12 @@
                 <button class="nav-tab active" data-tab="overview">
                     <i class="fas fa-chart-line"></i> Overview
                 </button>
+                <button class="nav-tab" data-tab="projects">
+                    <i class="fas fa-folder-open"></i> Projects
+                </button>
+                <button class="nav-tab" data-tab="project-details" style="display: none;">
+                    <i class="fas fa-folder-open"></i> <span id="projectDetailsTabLabel">Project Details</span>
+                </button>
                 <button class="nav-tab" data-tab="members">
                     <i class="fas fa-users"></i> Members
                 </button>
@@ -53,65 +59,44 @@
         <main class="dashboard-main">
             <!-- Overview Tab -->
             <div class="tab-content active" id="overview-tab">
+                <!-- Organization Header -->
+                <div class="org-header" style="text-align: center; padding: 40px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white; margin-bottom: 30px;">
+                    <div class="org-icon" style="font-size: 48px; margin-bottom: 15px;">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <h1 id="orgName" style="margin: 0 0 10px 0; font-size: 32px; font-weight: 300;">Loading...</h1>
+                    <p style="margin: 0; font-size: 18px; opacity: 0.9;">Organization Administration Dashboard</p>
+                </div>
+
+                <!-- Organization Overview Stats -->
                 <div class="overview-grid">
-                    <!-- Organization Stats -->
                     <div class="stat-card">
                         <div class="stat-icon">
-                            <i class="fas fa-building"></i>
+                            <i class="fas fa-folder-open"></i>
                         </div>
                         <div class="stat-info">
-                            <h3 id="orgName">Loading...</h3>
-                            <p>Organization</p>
+                            <h3 id="totalProjects">0</h3>
+                            <p>Active Projects</p>
                         </div>
                     </div>
 
                     <div class="stat-card">
                         <div class="stat-icon">
-                            <i class="fas fa-users"></i>
+                            <i class="fas fa-calendar-check"></i>
                         </div>
                         <div class="stat-info">
-                            <h3 id="totalMembers">0</h3>
-                            <p>Total Members</p>
+                            <h3 id="orgCreatedDate">-</h3>
+                            <p>Organization Since</p>
                         </div>
                     </div>
 
                     <div class="stat-card">
                         <div class="stat-icon">
-                            <i class="fas fa-chalkboard-teacher"></i>
+                            <i class="fas fa-chart-line"></i>
                         </div>
                         <div class="stat-info">
-                            <h3 id="totalInstructors">0</h3>
-                            <p>Instructors</p>
-                        </div>
-                    </div>
-
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-user-graduate"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="totalStudents">0</h3>
-                            <p>Students</p>
-                        </div>
-                    </div>
-
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-road"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="totalTracks">0</h3>
-                            <p>Learning Tracks</p>
-                        </div>
-                    </div>
-
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-video"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="totalMeetingRooms">0</h3>
-                            <p>Meeting Rooms</p>
+                            <h3 id="orgStatus">Active</h3>
+                            <p>Status</p>
                         </div>
                     </div>
                 </div>
@@ -120,30 +105,182 @@
                 <div class="quick-actions">
                     <h2>Quick Actions</h2>
                     <div class="action-grid">
-                        <button class="action-btn" onclick="showAddMemberModal('organization_admin')">
+                        <button class="action-btn" onclick="orgAdmin.showCreateProjectModal()">
+                            <i class="fas fa-folder-plus"></i>
+                            <span>Create Project</span>
+                        </button>
+                        <button class="action-btn" onclick="orgAdmin.showAddMemberModal('organization_admin')">
                             <i class="fas fa-user-plus"></i>
                             <span>Add Admin</span>
                         </button>
-                        <button class="action-btn" onclick="showAddMemberModal('instructor')">
+                        <button class="action-btn" onclick="orgAdmin.showAddMemberModal('instructor')">
                             <i class="fas fa-chalkboard-teacher"></i>
                             <span>Add Instructor</span>
                         </button>
-                        <button class="action-btn" onclick="showAddStudentModal()">
-                            <i class="fas fa-user-graduate"></i>
-                            <span>Add Student</span>
-                        </button>
-                        <button class="action-btn" onclick="showCreateTrackModal()">
-                            <i class="fas fa-plus-circle"></i>
-                            <span>Create Track</span>
-                        </button>
-                        <button class="action-btn" onclick="showCreateMeetingRoomModal()">
+                        <button class="action-btn" onclick="orgAdmin.showCreateMeetingRoomModal()">
                             <i class="fas fa-video"></i>
                             <span>Create Meeting Room</span>
                         </button>
-                        <button class="action-btn" onclick="viewReports()">
+                        <button class="action-btn" onclick="orgAdmin.viewReports()">
                             <i class="fas fa-chart-bar"></i>
                             <span>View Reports</span>
                         </button>
+                        <button class="action-btn" onclick="orgAdmin.showTab('projects')">
+                            <i class="fas fa-folder-open"></i>
+                            <span>Manage Projects</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Projects Tab -->
+            <div class="tab-content" id="projects-tab">
+                <div class="tab-header">
+                    <h2>Organization Projects</h2>
+                    <div class="tab-actions">
+                        <div class="filter-group">
+                            <select id="projectStatusFilter" onchange="orgAdmin.filterProjects()">
+                                <option value="">All Statuses</option>
+                                <option value="draft">Draft</option>
+                                <option value="active">Active</option>
+                                <option value="completed">Completed</option>
+                                <option value="archived">Archived</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" onclick="orgAdmin.showCreateProjectModal()">
+                            <i class="fas fa-folder-plus"></i> Create Project
+                        </button>
+                    </div>
+                </div>
+
+                <div class="projects-grid">
+                    <div id="projectsContainer" class="loading">
+                        <div class="loading-spinner"></div>
+                        <p>Loading projects...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project Details Tab ---->
+            <div class="tab-content" id="project-details-tab">
+                <div class="project-details-header">
+                    <div class="project-title">
+                        <button class="btn btn-outline btn-sm" onclick="orgAdmin.backToProjects()">
+                            <i class="fas fa-arrow-left"></i> Back to Projects
+                        </button>
+                        <h2 id="selectedProjectName">Project Details</h2>
+                    </div>
+                    <div class="project-actions">
+                        <button class="btn btn-primary" onclick="orgAdmin.editSelectedProject()">
+                            <i class="fas fa-edit"></i> Edit Project
+                        </button>
+                        <button class="btn btn-success" onclick="orgAdmin.addProjectMember()">
+                            <i class="fas fa-user-plus"></i> Add Member
+                        </button>
+                    </div>
+                </div>
+
+                <div class="project-details-content">
+                    <!-- Project Info Card -->
+                    <div class="project-info-card">
+                        <h3>Project Information</h3>
+                        <div id="projectInfoDisplay">
+                            <div class="loading">Loading project details...</div>
+                        </div>
+                    </div>
+
+                    <!-- Project Stats -->
+                    <div class="project-stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="projectMemberCount">0</h3>
+                                <p>Members</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-road"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="projectTrackCount">0</h3>
+                                <p>Learning Tracks</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-video"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="projectMeetingRoomCount">0</h3>
+                                <p>Meeting Rooms</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-chalkboard-teacher"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="projectInstructorCount">0</h3>
+                                <p>Instructors</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Project Content Tabs -->
+                    <div class="project-content-tabs">
+                        <div class="tab-nav">
+                            <button class="tab-button active" data-content="project-members">
+                                <i class="fas fa-users"></i> Members
+                            </button>
+                            <button class="tab-button" data-content="project-tracks">
+                                <i class="fas fa-road"></i> Learning Tracks  
+                            </button>
+                            <button class="tab-button" data-content="project-rooms">
+                                <i class="fas fa-video"></i> Meeting Rooms
+                            </button>
+                        </div>
+
+                        <!-- Project Members -->
+                        <div class="tab-pane active" id="project-members">
+                            <div class="section-header">
+                                <h4>Project Members</h4>
+                                <button class="btn btn-primary btn-sm" onclick="orgAdmin.showAddProjectMemberModal()">
+                                    <i class="fas fa-user-plus"></i> Add Member
+                                </button>
+                            </div>
+                            <div id="projectMembersContainer" class="members-grid">
+                                <div class="loading">Loading project members...</div>
+                            </div>
+                        </div>
+
+                        <!-- Project Tracks -->
+                        <div class="tab-pane" id="project-tracks">
+                            <div class="section-header">
+                                <h4>Learning Tracks</h4>
+                                <button class="btn btn-primary btn-sm" onclick="orgAdmin.showCreateProjectTrackModal()">
+                                    <i class="fas fa-plus"></i> Create Track
+                                </button>
+                            </div>
+                            <div id="projectTracksContainer" class="tracks-grid">
+                                <div class="loading">Loading project tracks...</div>
+                            </div>
+                        </div>
+
+                        <!-- Project Meeting Rooms -->
+                        <div class="tab-pane" id="project-rooms">
+                            <div class="section-header">
+                                <h4>Meeting Rooms</h4>
+                                <button class="btn btn-primary btn-sm" onclick="orgAdmin.showCreateProjectRoomModal()">
+                                    <i class="fas fa-video"></i> Create Room
+                                </button>
+                            </div>
+                            <div id="projectMeetingRoomsContainer" class="meeting-rooms-grid">
+                                <div class="loading">Loading project meeting rooms...</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -499,6 +636,82 @@
         </div>
     </div>
 
+    <!-- Create Project Modal -->
+    <div id="createProjectModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h3>Create New Project</h3>
+                <button class="modal-close" onclick="orgAdmin.closeModal('createProjectModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="createProjectForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="projectName">Project Name *</label>
+                            <input type="text" id="projectName" name="name" class="form-control" required>
+                            <small class="form-help">A descriptive name for your project</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="projectSlug">Project Slug *</label>
+                            <input type="text" id="projectSlug" name="slug" class="form-control" required pattern="[a-z0-9-]+">
+                            <small class="form-help">URL-friendly identifier (lowercase, hyphens only)</small>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="projectDescription">Description</label>
+                        <textarea id="projectDescription" name="description" class="form-control" rows="3"></textarea>
+                        <small class="form-help">Brief description of the project goals and content</small>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="projectDurationWeeks">Duration (weeks)</label>
+                            <input type="number" id="projectDurationWeeks" name="duration_weeks" class="form-control" min="1" max="104">
+                            <small class="form-help">Expected project duration</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="projectMaxParticipants">Max Participants</label>
+                            <input type="number" id="projectMaxParticipants" name="max_participants" class="form-control" min="1">
+                            <small class="form-help">Maximum number of participants</small>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="projectStartDate">Start Date</label>
+                            <input type="date" id="projectStartDate" name="start_date" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="projectEndDate">End Date</label>
+                            <input type="date" id="projectEndDate" name="end_date" class="form-control">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="projectObjectives">Learning Objectives</label>
+                        <textarea id="projectObjectives" name="objectives" class="form-control" rows="3" placeholder="Enter learning objectives, one per line"></textarea>
+                        <small class="form-help">Key learning outcomes participants will achieve</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="projectTargetRoles">Target Roles</label>
+                        <input type="text" id="projectTargetRoles" name="target_roles" class="form-control" placeholder="e.g. developer, analyst, manager">
+                        <small class="form-help">Comma-separated list of target job roles</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="orgAdmin.closeModal('createProjectModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="orgAdmin.createProject()">
+                    <i class="fas fa-folder-plus"></i> Create Project
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Notification Toast -->
     <div id="notification" class="notification">
         <div class="notification-content">
@@ -514,8 +727,8 @@
     </div>
 
     <!-- Scripts -->
-    <script src="../js/modules/auth.js"></script>
-    <script src="../js/modules/notifications.js"></script>
-    <script src="../js/org-admin-enhanced.js"></script>
+    <script type="module" src="../js/modules/auth.js"></script>
+    <script type="module" src="../js/modules/notifications.js"></script>
+    <script type="module" src="../js/org-admin-enhanced.js"></script>
 </body>
 </html>
