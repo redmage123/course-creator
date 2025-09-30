@@ -113,7 +113,17 @@ class OrganizationManagementDAO:
             Created organization ID as string
         """
         try:
+            print(f"=== DAO DEBUG: Starting create_organization")
+            print(f"=== DAO DEBUG: Received org_data keys: {list(org_data.keys())}")
+            print(f"=== DAO DEBUG: org_data values: name='{org_data.get('name')}', slug='{org_data.get('slug')}', id='{org_data.get('id')}'")
+            self.logger.info(f"DAO DEBUG: Starting create_organization for slug: {org_data.get('slug')}")
+            
+            print(f"=== DAO DEBUG: About to acquire database connection")
             async with self.db_pool.acquire() as conn:
+                print(f"=== DAO DEBUG: Database connection acquired successfully")
+                print(f"=== DAO DEBUG: About to execute INSERT query")
+                print(f"=== DAO DEBUG: Query parameters - id: {org_data['id']}, name: {org_data['name']}, slug: {org_data['slug']}")
+                
                 org_id = await conn.fetchval(
                     """INSERT INTO course_creator.organizations (
                         id, name, slug, description, domain, contact_email, 
@@ -132,9 +142,13 @@ class OrganizationManagementDAO:
                     datetime.utcnow(),
                     datetime.utcnow()
                 )
+                print(f"=== DAO DEBUG: INSERT query completed successfully, returned ID: {org_id}")
+                self.logger.info(f"DAO DEBUG: Organization created successfully with ID: {org_id}")
                 return str(org_id)
         except asyncpg.UniqueViolationError as e:
             # Handle duplicate organization slug gracefully
+            print(f"=== DAO ERROR: UniqueViolationError - {str(e)}")
+            self.logger.error(f"DAO ERROR: UniqueViolationError - {str(e)}")
             raise ValidationException(
                 message="Organization with this slug already exists",
                 error_code="DUPLICATE_ORGANIZATION_SLUG",
@@ -142,6 +156,11 @@ class OrganizationManagementDAO:
                 original_exception=e
             )
         except Exception as e:
+            print(f"=== DAO ERROR: Exception in create_organization: {type(e).__name__}: {str(e)}")
+            self.logger.error(f"DAO ERROR: Exception in create_organization: {type(e).__name__}: {str(e)}")
+            import traceback
+            print(f"=== DAO ERROR TRACEBACK: {traceback.format_exc()}")
+            self.logger.error(f"DAO ERROR TRACEBACK: {traceback.format_exc()}")
             raise DatabaseException(
                 message="Failed to create organization",
                 error_code="ORGANIZATION_CREATION_ERROR",
@@ -213,6 +232,56 @@ class OrganizationManagementDAO:
                 message=f"Failed to retrieve organization by slug",
                 error_code="ORGANIZATION_LOOKUP_ERROR",
                 details={"slug": slug},
+                original_exception=e
+            )
+    
+    async def exists_by_slug(self, slug: str) -> bool:
+        """
+        Check if an organization exists with the given slug.
+        
+        Args:
+            slug: Organization slug to check
+            
+        Returns:
+            bool: True if organization exists, False otherwise
+        """
+        try:
+            async with self.db_pool.acquire() as connection:
+                result = await connection.fetchval(
+                    "SELECT EXISTS(SELECT 1 FROM course_creator.organizations WHERE slug = $1)",
+                    slug
+                )
+                return bool(result)
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to check organization existence by slug",
+                error_code="ORGANIZATION_EXISTS_CHECK_ERROR",
+                details={"slug": slug},
+                original_exception=e
+            )
+    
+    async def exists_by_domain(self, domain: str) -> bool:
+        """
+        Check if an organization exists with the given domain.
+        
+        Args:
+            domain: Organization domain to check
+            
+        Returns:
+            bool: True if organization exists, False otherwise
+        """
+        try:
+            async with self.db_pool.acquire() as connection:
+                result = await connection.fetchval(
+                    "SELECT EXISTS(SELECT 1 FROM course_creator.organizations WHERE domain = $1)",
+                    domain
+                )
+                return bool(result)
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to check organization existence by domain",
+                error_code="ORGANIZATION_EXISTS_CHECK_ERROR",
+                details={"domain": domain},
                 original_exception=e
             )
     

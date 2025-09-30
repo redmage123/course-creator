@@ -3,12 +3,12 @@
  * Handles automatic lab container lifecycle management based on user authentication events
  */
 
-import { CONFIG } from '../config-global.js';
 import { showNotification } from './notifications.js';
 
 class LabLifecycleManager {
     constructor() {
-        this.labApiBase = CONFIG.API_URLS.LAB_MANAGER;
+        // Use global CONFIG (loaded via script tag in HTML)
+        this.labApiBase = window.CONFIG?.API_URLS?.LAB_MANAGER || 'http://localhost:8006';
         this.currentUser = null;
         this.enrolledCourses = [];
         this.activeLabs = {};

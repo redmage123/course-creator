@@ -3,7 +3,7 @@
  * Single Responsibility: Manage lab environment configuration
  */
 
-import { CONFIG } from '../../config.js';
+// Use global CONFIG (loaded via script tag in HTML)
 
 export class LabConfig {
     constructor() {
@@ -31,7 +31,7 @@ export class LabConfig {
 
     getBaseUrl() {
         // Use CONFIG system for consistent API endpoints
-        return CONFIG.API_URLS.COURSE_GENERATOR;
+        return window.CONFIG?.API_URLS.COURSE_GENERATOR;
     }
 
     getEndpoint(name, ...args) {

@@ -40,15 +40,15 @@
  * - Course Management Service: Learning path deployment and learner enrollment
  */
 
-import { CONFIG } from './config-global.js';
+
 
 /*
  * API CONFIGURATION AND SERVICE ENDPOINTS
  * PURPOSE: Centralized API endpoint management for project operations
  * WHY: Single source of truth for API communication prevents configuration drift
  */
-const PROJECT_API_BASE = `${CONFIG.API_URLS.ORGANIZATION}/projects`;
-const RAG_API_BASE = CONFIG.API_URLS.RAG;
+const PROJECT_API_BASE = `${window.CONFIG?.API_URLS.ORGANIZATION}/projects`;
+const RAG_API_BASE = window.CONFIG?.API_URLS.RAG;
 
 /*
  * GLOBAL APPLICATION STATE MANAGEMENT

@@ -29,6 +29,8 @@ from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime, timedelta
 # Use local service exceptions
 from exceptions import UserManagementException as CourseCreatorBaseException
+# Import domain entities
+from domain.entities.user import User, UserRole, UserStatus
 
 
 class UserManagementDAO:
@@ -68,6 +70,44 @@ class UserManagementDAO:
         """
         self.db_pool = db_pool
         self.logger = logging.getLogger(__name__)
+    
+    def _row_to_user(self, row: Dict[str, Any]) -> User:
+        """
+        Convert database row to User domain object.
+        
+        Business Context:
+        This method encapsulates the conversion from database representation to
+        domain objects, ensuring consistent object creation across all DAO methods.
+        
+        Args:
+            row: Database row as dictionary
+            
+        Returns:
+            User domain object
+        """
+        if not row:
+            return None
+            
+        return User(
+            id=str(row['id']),
+            email=row['email'],
+            username=row['username'],
+            full_name=row['full_name'],
+            first_name=row.get('first_name'),
+            last_name=row.get('last_name'),
+            role=UserRole(row['role']),
+            status=UserStatus(row.get('status', 'active')),
+            organization=row.get('organization'),
+            phone=row.get('phone'),
+            timezone=row.get('timezone'),
+            language=row.get('language', 'en'),
+            profile_picture_url=row.get('profile_picture_url'),
+            bio=row.get('bio'),
+            last_login=row.get('last_login'),
+            created_at=row.get('created_at'),
+            updated_at=row.get('updated_at'),
+            metadata={'hashed_password': row.get('hashed_password')} if row.get('hashed_password') else {}
+        )
     
     # ================================================================
     # USER REGISTRATION AND AUTHENTICATION QUERIES
@@ -132,7 +172,7 @@ class UserManagementDAO:
                 - user_id: Optional custom user ID (will be validated for uniqueness)
                 
         Returns:
-            Created user ID as string
+            Created User object
         """
         try:
             async with self.db_pool.acquire() as conn:
@@ -149,12 +189,12 @@ class UserManagementDAO:
                         )
                     
                     # Use custom ID in INSERT
-                    user_id = await conn.fetchval(
+                    user_row = await conn.fetchrow(
                         """INSERT INTO course_creator.users (
                             id, email, username, full_name, hashed_password, role, 
                             organization, status, created_at, updated_at
                         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
-                        RETURNING id""",
+                        RETURNING id, email, username, full_name, role, organization, status, created_at, updated_at""",
                         custom_id,
                         user_data['email'],
                         user_data['username'],
@@ -168,12 +208,12 @@ class UserManagementDAO:
                     )
                 else:
                     # Use auto-generated ID
-                    user_id = await conn.fetchval(
+                    user_row = await conn.fetchrow(
                         """INSERT INTO course_creator.users (
                             email, username, full_name, hashed_password, role, 
                             organization, status, created_at, updated_at
                         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
-                        RETURNING id""",
+                        RETURNING id, email, username, full_name, role, organization, status, created_at, updated_at""",
                         user_data['email'],
                         user_data['username'],
                         user_data['full_name'],
@@ -184,7 +224,11 @@ class UserManagementDAO:
                         datetime.utcnow(),
                         datetime.utcnow()
                     )
-                return str(user_id)
+                
+                # Convert row to User object and include hashed password in metadata
+                user_dict = dict(user_row)
+                user_dict['hashed_password'] = user_data['hashed_password']
+                return self._row_to_user(user_dict)
         except CourseCreatorBaseException:
             # Re-raise validation exceptions
             raise
@@ -208,7 +252,7 @@ class UserManagementDAO:
                 original_exception=e
             )
     
-    async def get_user_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+    async def get_user_by_email(self, email: str) -> Optional[User]:
         """
         Retrieve user information by email address for authentication.
         
@@ -221,7 +265,7 @@ class UserManagementDAO:
             email: User's email address
             
         Returns:
-            Complete user record or None if not found
+            User object or None if not found
         """
         try:
             async with self.db_pool.acquire() as conn:
@@ -231,7 +275,7 @@ class UserManagementDAO:
                        FROM course_creator.users WHERE email = $1""",
                     email
                 )
-                return dict(user) if user else None
+                return self._row_to_user(dict(user)) if user else None
         except Exception as e:
             raise CourseCreatorBaseException(
                 message=f"Failed to retrieve user by email",
@@ -240,7 +284,36 @@ class UserManagementDAO:
                 original_exception=e
             )
     
-    async def get_user_by_username(self, username: str) -> Optional[Dict[str, Any]]:
+    async def exists_by_email(self, email: str) -> bool:
+        """
+        Check if a user exists with the given email address.
+        
+        Business Context:
+        Email existence checking is crucial for user registration validation
+        and preventing duplicate account creation.
+        
+        Args:
+            email: Email address to check
+            
+        Returns:
+            bool: True if user exists, False otherwise
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                result = await conn.fetchval(
+                    "SELECT EXISTS(SELECT 1 FROM course_creator.users WHERE email = $1)",
+                    email
+                )
+                return bool(result)
+        except Exception as e:
+            raise CourseCreatorBaseException(
+                message=f"Failed to check user existence by email",
+                error_code="USER_EXISTS_CHECK_ERROR",
+                details={"has_email": bool(email)},  # Don't log actual email for privacy
+                original_exception=e
+            )
+    
+    async def get_user_by_username(self, username: str) -> Optional[User]:
         """
         Retrieve user information by username for authentication.
         
@@ -252,7 +325,7 @@ class UserManagementDAO:
             username: User's platform username
             
         Returns:
-            Complete user record or None if not found
+            User object or None if not found
         """
         try:
             async with self.db_pool.acquire() as conn:
@@ -262,7 +335,7 @@ class UserManagementDAO:
                        FROM course_creator.users WHERE username = $1""",
                     username
                 )
-                return dict(user) if user else None
+                return self._row_to_user(dict(user)) if user else None
         except Exception as e:
             raise CourseCreatorBaseException(
                 message=f"Failed to retrieve user by username",
@@ -271,7 +344,7 @@ class UserManagementDAO:
                 original_exception=e
             )
     
-    async def get_user_by_id(self, user_id: str) -> Optional[Dict[str, Any]]:
+    async def get_user_by_id(self, user_id: str) -> Optional[User]:
         """
         Retrieve user information by unique user ID.
         
@@ -283,7 +356,7 @@ class UserManagementDAO:
             user_id: Unique user identifier
             
         Returns:
-            Complete user record or None if not found
+            User object or None if not found
         """
         try:
             async with self.db_pool.acquire() as conn:
@@ -293,7 +366,7 @@ class UserManagementDAO:
                        FROM course_creator.users WHERE id = $1""",
                     user_id
                 )
-                return dict(user) if user else None
+                return self._row_to_user(dict(user)) if user else None
         except Exception as e:
             raise CourseCreatorBaseException(
                 message=f"Failed to retrieve user by ID",
@@ -776,5 +849,204 @@ class UserManagementDAO:
                 message="Failed to execute user transaction operations",
                 error_code="USER_TRANSACTION_ERROR",
                 details={"operation_count": len(operations)},
+                original_exception=e
+            )
+
+    # ================================================================
+    # ALIAS METHODS FOR SERVICE COMPATIBILITY
+    # ================================================================
+    
+    async def exists_by_username(self, username: str) -> bool:
+        """Check if a user exists with the given username."""
+        try:
+            async with self.db_pool.acquire() as conn:
+                result = await conn.fetchval(
+                    "SELECT EXISTS(SELECT 1 FROM course_creator.users WHERE username = $1)",
+                    username
+                )
+                return bool(result)
+        except Exception as e:
+            raise CourseCreatorBaseException(
+                message=f"Failed to check user existence by username",
+                error_code="USER_EXISTS_CHECK_ERROR",
+                details={"has_username": bool(username)},
+                original_exception=e
+            )
+    
+    async def exists_by_id(self, user_id: str) -> bool:
+        """Alias for check_user_id_exists"""
+        return await self.check_user_id_exists(user_id)
+    
+    async def get_by_id(self, user_id: str):
+        """Alias for get_user_by_id"""
+        return await self.get_user_by_id(user_id)
+    
+    async def get_by_email(self, email: str):
+        """Alias for get_user_by_email"""
+        return await self.get_user_by_email(email)
+    
+    async def get_by_username(self, username: str):
+        """Alias for get_user_by_username"""
+        return await self.get_user_by_username(username)
+    
+    async def get_by_role(self, role: str):
+        """Alias for get_users_by_role"""
+        return await self.get_users_by_role(role)
+    
+    async def create(self, user_data):
+        """Alias for create_user"""
+        return await self.create_user(user_data)
+    
+    async def get_user_id_by_prefix(self, prefix: str) -> Optional[str]:
+        """Get full user ID by matching prefix"""
+        async with self.db_pool.acquire() as connection:
+            try:
+                result = await connection.fetchval(
+                    "SELECT id FROM users WHERE id::text LIKE $1 LIMIT 1",
+                    f"{prefix}%"
+                )
+                return result
+            except Exception as e:
+                self.logger.error(f"Error fetching user by prefix: {e}")
+                return None
+    
+    async def update(self, user_data):
+        """Update user with new data"""
+        try:
+            async with self.db_pool.acquire() as conn:
+                result = await conn.execute(
+                    """UPDATE course_creator.users 
+                       SET email = $2, username = $3, full_name = $4, role = $5, 
+                           organization = $6, status = $7, updated_at = CURRENT_TIMESTAMP
+                       WHERE id = $1""",
+                    user_data['id'], user_data.get('email'), user_data.get('username'),
+                    user_data.get('full_name'), user_data.get('role'), 
+                    user_data.get('organization'), user_data.get('status')
+                )
+                return user_data
+        except Exception as e:
+            raise CourseCreatorBaseException(
+                message="Failed to update user",
+                error_code="USER_UPDATE_ERROR",
+                details={"user_id": user_data.get('id')},
+                original_exception=e
+            )
+    
+    async def delete(self, user_id: str) -> bool:
+        """Delete user by ID"""
+        try:
+            async with self.db_pool.acquire() as conn:
+                result = await conn.execute(
+                    "DELETE FROM course_creator.users WHERE id = $1",
+                    user_id
+                )
+                return True
+        except Exception as e:
+            raise CourseCreatorBaseException(
+                message="Failed to delete user",
+                error_code="USER_DELETE_ERROR",
+                details={"user_id": user_id},
+                original_exception=e
+            )
+    
+    async def get_all(self):
+        """Get all users"""
+        try:
+            async with self.db_pool.acquire() as conn:
+                users = await conn.fetch("SELECT * FROM course_creator.users")
+                return [dict(user) for user in users]
+        except Exception as e:
+            raise CourseCreatorBaseException(
+                message="Failed to get all users",
+                error_code="USER_LIST_ERROR",
+                original_exception=e
+            )
+    
+    async def count_by_role(self, role: str) -> int:
+        """Count users by role"""
+        try:
+            async with self.db_pool.acquire() as conn:
+                count = await conn.fetchval(
+                    "SELECT COUNT(*) FROM course_creator.users WHERE role = $1",
+                    role
+                )
+                return int(count)
+        except Exception as e:
+            raise CourseCreatorBaseException(
+                message="Failed to count users by role",
+                error_code="USER_COUNT_ERROR",
+                details={"role": role},
+                original_exception=e
+            )
+    
+    async def count_by_status(self, status: str) -> int:
+        """Count users by status"""
+        try:
+            async with self.db_pool.acquire() as conn:
+                count = await conn.fetchval(
+                    "SELECT COUNT(*) FROM course_creator.users WHERE status = $1",
+                    status
+                )
+                return int(count)
+        except Exception as e:
+            raise CourseCreatorBaseException(
+                message="Failed to count users by status",
+                error_code="USER_COUNT_ERROR",
+                details={"status": status},
+                original_exception=e
+            )
+    
+    async def get_inactive_users(self, days: int):
+        """Get users inactive for specified days"""
+        try:
+            async with self.db_pool.acquire() as conn:
+                users = await conn.fetch(
+                    """SELECT * FROM course_creator.users 
+                       WHERE last_login < CURRENT_TIMESTAMP - INTERVAL '%s days'""",
+                    days
+                )
+                return [dict(user) for user in users]
+        except Exception as e:
+            raise CourseCreatorBaseException(
+                message="Failed to get inactive users",
+                error_code="USER_QUERY_ERROR",
+                details={"days": days},
+                original_exception=e
+            )
+    
+    async def get_recently_created(self, days: int):
+        """Get users created within specified days"""
+        try:
+            async with self.db_pool.acquire() as conn:
+                users = await conn.fetch(
+                    """SELECT * FROM course_creator.users 
+                       WHERE created_at > CURRENT_TIMESTAMP - INTERVAL '%s days'""",
+                    days
+                )
+                return [dict(user) for user in users]
+        except Exception as e:
+            raise CourseCreatorBaseException(
+                message="Failed to get recently created users",
+                error_code="USER_QUERY_ERROR",
+                details={"days": days},
+                original_exception=e
+            )
+    
+    async def search(self, query: str, limit: int = 50):
+        """Search users by name or email"""
+        try:
+            async with self.db_pool.acquire() as conn:
+                users = await conn.fetch(
+                    """SELECT * FROM course_creator.users 
+                       WHERE full_name ILIKE $1 OR email ILIKE $1 OR username ILIKE $1
+                       LIMIT $2""",
+                    f"%{query}%", limit
+                )
+                return [dict(user) for user in users]
+        except Exception as e:
+            raise CourseCreatorBaseException(
+                message="Failed to search users",
+                error_code="USER_SEARCH_ERROR",
+                details={"query": query, "limit": limit},
                 original_exception=e
             )

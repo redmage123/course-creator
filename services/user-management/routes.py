@@ -48,7 +48,7 @@ class UserCreateRequest(BaseModel):
     user_id: Optional[str] = Field(None, min_length=1, max_length=50, description="Optional custom user ID. Must be unique if provided.")
     first_name: Optional[str] = None
     last_name: Optional[str] = None
-    role: str = Field(default="student", pattern="^(student|instructor|admin)$")
+    role: str = Field(default="student", pattern="^(student|instructor|admin|organization_admin)$")
     organization: Optional[str] = None
     phone: Optional[str] = None
     timezone: Optional[str] = None

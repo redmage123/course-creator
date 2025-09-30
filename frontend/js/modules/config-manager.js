@@ -24,7 +24,7 @@
  */
 
 import { showNotification } from './notifications.js';
-import { CONFIG } from '../config-global.js';
+
 
 class ConfigManager {
     constructor() {
@@ -569,7 +569,7 @@ class ConfigManager {
         // Define critical assets for preloading
         const criticalAssets = [
             { url: '/css/main.css', type: 'text' },
-            { url: '/js/config.js', type: 'text' }
+            { url: '/js/config-global.js', type: 'text' }
         ];
         
         // Preload critical assets

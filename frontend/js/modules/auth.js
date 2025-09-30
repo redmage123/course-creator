@@ -1,5 +1,6 @@
 /**
  * AUTHENTICATION MODULE - COMPREHENSIVE USER SESSION MANAGEMENT
+ * CACHE BUSTER: 2025-09-29-16:35:00
  * 
  * PURPOSE: Complete authentication system for Course Creator Platform
  * WHY: Secure user management is critical for educational platform integrity
@@ -27,10 +28,12 @@
  * PURPOSE: Import all systems that authentication integrates with
  * WHY: Authentication is a cross-cutting concern that affects all platform areas
  */
-import { CONFIG } from '../config-global.js';                  // Centralized configuration system
+// Use global CONFIG (loaded via script tag in HTML)
 import { showNotification } from './notifications.js';  // User feedback system
 import { ActivityTracker } from './activity-tracker.js'; // Session activity monitoring
 import { labLifecycleManager } from './lab-lifecycle.js'; // Lab container integration
+
+console.log('🚀 AUTH MODULE LOADED - VERSION 2025-09-29-16:35:00');
 
 /**
  * AUTHENTICATION MANAGER CLASS
@@ -54,7 +57,23 @@ class AuthManager {
         this.activityTracker = new ActivityTracker();
         
         // API CONFIGURATION: Authentication service endpoint
-        this.authApiBase = CONFIG.API_URLS.USER_MANAGEMENT;
+        // Use getter to ensure CONFIG is available when accessed
+        this.getAuthApiBase = () => {
+            console.log('🔍 DEBUG - window.CONFIG:', window.CONFIG);
+            console.log('🔍 DEBUG - window.location.hostname:', window.location.hostname);
+            const configUrl = window.CONFIG?.API_URLS?.USER_MANAGEMENT;
+            const fallbackUrl = `https://${window.location.hostname}:8000`;
+            console.log('🔍 DEBUG - CONFIG URL:', configUrl);
+            console.log('🔍 DEBUG - Fallback URL:', fallbackUrl);
+            
+            // TEMPORARY FIX: Force the correct URL based on hostname
+            if (window.location.hostname === '176.9.99.103') {
+                console.log('🔧 TEMPORARY FIX - Using hardcoded URL for this hostname');
+                return 'https://176.9.99.103:8000';
+            }
+            
+            return configUrl || fallbackUrl;
+        };
         
         /*
          * Session Management Configuration and Business Requirements
@@ -220,11 +239,13 @@ class AuthManager {
                 username: credentials.username,
                 password: credentials.password ? '***' + credentials.password.slice(-2) : 'undefined'
             });
-            console.log('🌐 API endpoint:', `${this.authApiBase}/auth/login`);
+            
+            const apiBase = this.getAuthApiBase();
+            console.log('🌐 API endpoint (UPDATED):', `${apiBase}/auth/login`);
             
             // AUTHENTICATION API REQUEST: Send credentials to authentication service
             // WHY: Centralized authentication service provides consistent security across platform
-            const response = await fetch(`${this.authApiBase}/auth/login`, {
+            const response = await fetch(`${this.getAuthApiBase()}/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -258,18 +279,19 @@ class AuthManager {
                 // START SESSION MONITORING: Automatic logout system for expired sessions
                 this.startSessionMonitoring();
                 
-                // USER PROFILE ENRICHMENT: Get complete user information from server
-                // WHY: Role-based functionality requires complete user profile data
-                const profile = await this.getUserProfile();
-                if (profile) {
-                    // COMPLETE PROFILE: Use full server profile data
-                    this.currentUser = profile;
+                // USER PROFILE: Use user data from login response (contains all needed info)
+                // WHY: Login response already includes complete user profile data
+                if (data.user) {
+                    // USE LOGIN RESPONSE DATA: Complete user profile from authentication
+                    this.currentUser = data.user;
                     localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+                    console.log('✅ User profile loaded from login response:', this.currentUser.role);
                 } else {
                     // FALLBACK PROFILE: Create minimal profile from login credentials
-                    // WHY: Graceful degradation ensures login succeeds even if profile fails
-                    this.currentUser = { email: credentials.username, id: credentials.username };
+                    // WHY: Graceful degradation ensures login succeeds even if user data missing
+                    this.currentUser = { email: credentials.username, id: credentials.username, role: 'student' };
                     localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+                    console.log('⚠️ Using fallback user profile');
                 }
                 
                 // ROLE-SPECIFIC SERVICE INITIALIZATION: Initialize services based on user role
@@ -334,7 +356,7 @@ class AuthManager {
         try {
             // REGISTRATION API REQUEST: Send user data to registration service
             // WHY: Centralized registration ensures consistent validation and user creation
-            const response = await fetch(`${this.authApiBase}/auth/register`, {
+            const response = await fetch(`${this.getAuthApiBase()}/auth/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',  // JSON for structured data
@@ -397,7 +419,7 @@ class AuthManager {
         try {
             // PASSWORD RESET API REQUEST: Send reset request to authentication service
             // WHY: Centralized password management ensures consistent security policies
-            const response = await fetch(CONFIG.ENDPOINTS.RESET_PASSWORD, {
+            const response = await fetch(window.CONFIG?.ENDPOINTS?.RESET_PASSWORD || `${this.getAuthApiBase()}/auth/reset-password`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',  // JSON for structured data
@@ -462,7 +484,7 @@ class AuthManager {
         try {
             // PROFILE API REQUEST: Fetch complete user profile using authentication token
             // WHY: Server-side user data is authoritative source for user information
-            const response = await fetch(`${this.authApiBase}/users/profile`, {
+            const response = await fetch(`${this.getAuthApiBase()}/users/profile`, {
                 headers: {
                     'Authorization': `Bearer ${this.authToken}`  // JWT token for authenticated access
                 }
@@ -523,7 +545,7 @@ class AuthManager {
             // SERVER-SIDE SESSION INVALIDATION: Invalidate JWT token on server
             // WHY: Server-side invalidation prevents token reuse and ensures complete security
             if (this.authToken) {
-                const response = await fetch(`${this.authApiBase}/auth/logout`, {
+                const response = await fetch(`${this.getAuthApiBase()}/auth/logout`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${this.authToken}`,  // Authenticate logout request
@@ -753,6 +775,7 @@ class AuthManager {
             'student': ['student-dashboard.html', 'lab.html', 'index.html'],
             'instructor': ['instructor-dashboard.html', 'lab.html', 'index.html'],
             'org_admin': ['org-admin-enhanced.html', 'instructor-dashboard.html', 'student-dashboard.html', 'lab.html', 'index.html'],
+            'organization_admin': ['org-admin-enhanced.html', 'instructor-dashboard.html', 'student-dashboard.html', 'lab.html', 'index.html'], // Same as org_admin
             'admin': ['admin.html', 'site-admin-dashboard.html', 'org-admin-enhanced.html', 'instructor-dashboard.html', 'student-dashboard.html', 'lab.html', 'index.html']
         };
         
@@ -782,17 +805,29 @@ class AuthManager {
     getRedirectUrl() {
         const userRole = this.getUserRole();
         
+        // Determine if we're already in the html/ directory
+        const isInHtmlDir = window.location.pathname.includes('/html/');
+        const pathPrefix = isInHtmlDir ? '' : 'html/';
+        
+        console.log('🔍 REDIRECT DEBUG - Current path:', window.location.pathname);
+        console.log('🔍 REDIRECT DEBUG - Is in HTML dir:', isInHtmlDir);
+        console.log('🔍 REDIRECT DEBUG - Path prefix:', pathPrefix);
+        console.log('🔍 REDIRECT DEBUG - User role:', userRole);
+        
         switch (userRole) {
             case 'admin':
-                return 'site-admin-dashboard.html';  // Site admin gets the comprehensive admin dashboard
+                return `${pathPrefix}site-admin-dashboard.html`;  // Site admin gets the comprehensive admin dashboard
             case 'org_admin':
-                return 'org-admin-enhanced.html';    // Organization admin gets the RBAC management dashboard
+            case 'organization_admin':  // Handle both role names
+                const redirectUrl = `${pathPrefix}org-admin-enhanced.html`;
+                console.log('🔍 REDIRECT DEBUG - Final URL:', redirectUrl);
+                return redirectUrl;
             case 'instructor':
-                return 'instructor-dashboard.html';
+                return `${pathPrefix}instructor-dashboard.html`;
             case 'student':
-                return 'student-dashboard.html';
+                return `${pathPrefix}student-dashboard.html`;
             default:
-                return 'index.html';
+                return isInHtmlDir ? '../index.html' : 'index.html';
         }
     }
 

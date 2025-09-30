@@ -8,98 +8,196 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
+    <!-- Skip Links for Keyboard Users -->
+    <div class="skip-links">
+        <a href="#main-content" class="skip-link">Skip to main content</a>
+        <a href="#navigation" class="skip-link">Skip to navigation</a>
+        <a href="#user-menu" class="skip-link">Skip to user menu</a>
+    </div>
+    
+    <!-- Live Region for Screen Reader Announcements -->
+    <div id="live-region" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+    <div id="live-region-assertive" aria-live="assertive" aria-atomic="true" class="sr-only"></div>
     <div class="dashboard-container">
         <!-- Header -->
-        <header class="dashboard-header">
+        <header role="banner" class="dashboard-header">
             <div class="header-content">
-                <h1><i class="fas fa-users-cog"></i> Organization Admin Dashboard</h1>
-                <div class="header-actions">
-                    <div class="user-info">
-                        <span id="currentUserName">Loading...</span>
-                        <span class="user-role">Organization Admin</span>
+                <h1><i class="fas fa-users-cog" aria-hidden="true"></i> Organization Admin Dashboard</h1>
+                <nav role="navigation" aria-label="User account menu" id="user-menu">
+                    <div class="header-actions">
+                        <div class="user-info" role="status" aria-live="polite">
+                            <div class="user-avatar" id="userAvatar">
+                                <span id="userInitials">?</span>
+                            </div>
+                            <div class="user-details">
+                                <span id="currentUserName" aria-label="Current user name">Loading...</span>
+                                <span class="user-role status-badge active" aria-label="User role">Organization Admin</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-outline" onclick="logout()" aria-label="Logout of dashboard">
+                            <i class="fas fa-sign-out-alt" aria-hidden="true"></i> Logout
+                        </button>
                     </div>
-                    <button class="btn btn-outline" onclick="logout()">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </button>
-                </div>
+                </nav>
             </div>
         </header>
 
-        <!-- Navigation Tabs -->
-        <nav class="dashboard-nav">
-            <div class="nav-tabs">
-                <button class="nav-tab active" data-tab="overview">
-                    <i class="fas fa-chart-line"></i> Overview
+        <!-- Main Navigation -->
+        <nav role="navigation" aria-label="Dashboard navigation" id="navigation" class="dashboard-nav">
+            <div class="nav-tabs" role="tablist" aria-label="Dashboard sections">
+                <button class="nav-tab active" 
+                        role="tab" 
+                        data-tab="overview" 
+                        aria-selected="true" 
+                        aria-controls="overview-panel"
+                        id="overview-tab"
+                        tabindex="0">
+                    <i class="fas fa-chart-line" aria-hidden="true"></i> 
+                    <span>Overview</span>
+                    <span class="sr-only">- Currently selected</span>
                 </button>
-                <button class="nav-tab" data-tab="projects">
-                    <i class="fas fa-folder-open"></i> Projects
+                <button class="nav-tab" 
+                        role="tab" 
+                        data-tab="projects" 
+                        aria-selected="false" 
+                        aria-controls="projects-panel"
+                        id="projects-tab"
+                        tabindex="-1">
+                    <i class="fas fa-folder-open" aria-hidden="true"></i> 
+                    <span>Projects</span>
                 </button>
-                <button class="nav-tab" data-tab="project-details" style="display: none;">
-                    <i class="fas fa-folder-open"></i> <span id="projectDetailsTabLabel">Project Details</span>
+                <button class="nav-tab" 
+                        role="tab" 
+                        data-tab="project-details" 
+                        aria-selected="false" 
+                        aria-controls="project-details-panel"
+                        id="project-details-tab"
+                        tabindex="-1"
+                        style="display: none;">
+                    <i class="fas fa-folder-open" aria-hidden="true"></i> 
+                    <span id="projectDetailsTabLabel">Project Details</span>
                 </button>
-                <button class="nav-tab" data-tab="members">
-                    <i class="fas fa-users"></i> Members
+                <button class="nav-tab" 
+                        role="tab" 
+                        data-tab="members" 
+                        aria-selected="false" 
+                        aria-controls="members-panel"
+                        id="members-tab"
+                        tabindex="-1">
+                    <i class="fas fa-users" aria-hidden="true"></i> 
+                    <span>Members</span>
                 </button>
-                <button class="nav-tab" data-tab="tracks">
-                    <i class="fas fa-road"></i> Tracks
+                <button class="nav-tab" 
+                        role="tab" 
+                        data-tab="tracks" 
+                        aria-selected="false" 
+                        aria-controls="tracks-panel"
+                        id="tracks-tab"
+                        tabindex="-1">
+                    <i class="fas fa-road" aria-hidden="true"></i> 
+                    <span>Tracks</span>
                 </button>
-                <button class="nav-tab" data-tab="assignments">
-                    <i class="fas fa-user-tag"></i> Assignments
+                <button class="nav-tab" 
+                        role="tab" 
+                        data-tab="assignments" 
+                        aria-selected="false" 
+                        aria-controls="assignments-panel"
+                        id="assignments-tab"
+                        tabindex="-1">
+                    <i class="fas fa-user-tag" aria-hidden="true"></i> 
+                    <span>Assignments</span>
                 </button>
-                <button class="nav-tab" data-tab="meeting-rooms">
-                    <i class="fas fa-video"></i> Meeting Rooms
+                <button class="nav-tab" 
+                        role="tab" 
+                        data-tab="meeting-rooms" 
+                        aria-selected="false" 
+                        aria-controls="meeting-rooms-panel"
+                        id="meeting-rooms-tab"
+                        tabindex="-1">
+                    <i class="fas fa-video" aria-hidden="true"></i> 
+                    <span>Meeting Rooms</span>
                 </button>
-                <button class="nav-tab" data-tab="settings">
-                    <i class="fas fa-cog"></i> Settings
+                <button class="nav-tab" 
+                        role="tab" 
+                        data-tab="settings" 
+                        aria-selected="false" 
+                        aria-controls="settings-panel"
+                        id="settings-tab"
+                        tabindex="-1">
+                    <i class="fas fa-cog" aria-hidden="true"></i> 
+                    <span>Settings</span>
                 </button>
+                
+                <!-- Navigation Search -->
+                <div class="nav-search">
+                    <i class="fas fa-search nav-search-icon" aria-hidden="true"></i>
+                    <input type="text" 
+                           class="nav-search-input" 
+                           placeholder="Search sections..." 
+                           aria-label="Search dashboard sections"
+                           id="navSearchInput">
+                </div>
+            </div>
+        </nav>
+        
+        <!-- Breadcrumb Navigation -->
+        <nav class="breadcrumb-nav" id="breadcrumbNav" aria-label="Breadcrumb navigation">
+            <div class="breadcrumb" id="breadcrumbContent">
+                <div class="breadcrumb-item">
+                    <a href="#" data-tab="overview">Dashboard</a>
+                </div>
+                <div class="breadcrumb-item current">
+                    <span id="currentBreadcrumb">Overview</span>
+                </div>
             </div>
         </nav>
 
         <!-- Main Content -->
-        <main class="dashboard-main">
-            <!-- Overview Tab -->
-            <div class="tab-content active" id="overview-tab">
+        <main role="main" id="main-content" class="dashboard-main">
+            <!-- Overview Tab Panel -->
+            <section class="tab-content active" 
+                     id="overview-panel" 
+                     role="tabpanel" 
+                     aria-labelledby="overview-tab"
+                     tabindex="0">
                 <!-- Organization Header -->
-                <div class="org-header" style="text-align: center; padding: 40px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white; margin-bottom: 30px;">
-                    <div class="org-icon" style="font-size: 48px; margin-bottom: 15px;">
+                <header class="org-header" role="banner" aria-labelledby="orgName" style="text-align: center; padding: 40px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white; margin-bottom: 30px;">
+                    <div class="org-icon" style="font-size: 48px; margin-bottom: 15px;" aria-hidden="true">
                         <i class="fas fa-building"></i>
                     </div>
-                    <h1 id="orgName" style="margin: 0 0 10px 0; font-size: 32px; font-weight: 300;">Loading...</h1>
-                    <p style="margin: 0; font-size: 18px; opacity: 0.9;">Organization Administration Dashboard</p>
-                </div>
+                    <h2 id="orgName" style="margin: 0 0 10px 0; font-size: 32px; font-weight: 300;" aria-live="polite">Loading...</h2>
+                    <p style="margin: 0; font-size: 18px; opacity: 0.9;" role="text">Organization Administration Dashboard</p>
+                </header>
 
-                <!-- Organization Overview Stats -->
-                <div class="overview-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-folder-open"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="totalProjects">0</h3>
-                            <p>Active Projects</p>
-                        </div>
-                    </div>
+                <!-- Enhanced Statistics Dashboard -->
+                <section class="stat-cards-grid" role="region" aria-labelledby="stats-heading">
+                    <h3 id="stats-heading" class="sr-only">Organization Statistics</h3>
+                    
+                    <div id="projects-stat-card"></div>
+                    <div id="members-stat-card"></div>
+                    <div id="activity-stat-card"></div>
+                    <div id="completion-stat-card"></div>
+                </section>
 
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-calendar-check"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="orgCreatedDate">-</h3>
-                            <p>Organization Since</p>
-                        </div>
+                <!-- Analytics Charts Section -->
+                <section class="analytics-section" role="region" aria-labelledby="analytics-heading">
+                    <h3 id="analytics-heading" class="sr-only">Analytics and Charts</h3>
+                    
+                    <div class="analytics-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); margin-bottom: var(--space-xl);">
+                        <div id="activity-chart"></div>
+                        <div id="progress-overview"></div>
                     </div>
+                    
+                    <div id="projects-table"></div>
+                </section>
 
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-chart-line"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="orgStatus">Active</h3>
-                            <p>Status</p>
-                        </div>
-                    </div>
-                </div>
+                <!-- Recent Activity Timeline -->
+                <section class="activity-section" role="region" aria-labelledby="activity-heading">
+                    <h3 id="activity-heading" style="font-size: var(--font-size-xl); margin-bottom: var(--space-md); color: var(--text-primary);">
+                        <i class="fas fa-clock" aria-hidden="true"></i> Recent Activity
+                    </h3>
+                    <div id="activity-timeline"></div>
+                </section>
 
                 <!-- Quick Actions -->
                 <div class="quick-actions">
@@ -133,8 +231,14 @@
                 </div>
             </div>
 
-            <!-- Projects Tab -->
-            <div class="tab-content" id="projects-tab">
+            <!-- Projects Tab Panel -->
+            <section class="tab-content" 
+                     id="projects-panel" 
+                     role="tabpanel" 
+                     aria-labelledby="projects-tab"
+                     aria-hidden="true"
+                     tabindex="0"
+                     style="display: none;">
                 <div class="tab-header">
                     <h2>Organization Projects</h2>
                     <div class="tab-actions">
@@ -162,7 +266,14 @@
             </div>
 
             <!-- Project Details Tab ---->
-            <div class="tab-content" id="project-details-tab">
+            <!-- Project Details Tab Panel -->
+            <section class="tab-content" 
+                     id="project-details-panel" 
+                     role="tabpanel" 
+                     aria-labelledby="project-details-tab"
+                     aria-hidden="true"
+                     tabindex="0"
+                     style="display: none;">
                 <div class="project-details-header">
                     <div class="project-title">
                         <button class="btn btn-outline btn-sm" onclick="orgAdmin.backToProjects()">
@@ -285,8 +396,14 @@
                 </div>
             </div>
 
-            <!-- Members Tab -->
-            <div class="tab-content" id="members-tab">
+            <!-- Members Tab Panel -->
+            <section class="tab-content" 
+                     id="members-panel" 
+                     role="tabpanel" 
+                     aria-labelledby="members-tab"
+                     aria-hidden="true"
+                     tabindex="0"
+                     style="display: none;">
                 <div class="tab-header">
                     <h2>Organization Members</h2>
                     <div class="tab-actions">
@@ -313,7 +430,14 @@
             </div>
 
             <!-- Tracks Tab -->
-            <div class="tab-content" id="tracks-tab">
+            <!-- Tracks Tab Panel -->
+            <section class="tab-content" 
+                     id="tracks-panel" 
+                     role="tabpanel" 
+                     aria-labelledby="tracks-tab"
+                     aria-hidden="true"
+                     tabindex="0"
+                     style="display: none;">
                 <div class="tab-header">
                     <h2>Learning Tracks</h2>
                     <div class="tab-actions">
@@ -332,7 +456,14 @@
             </div>
 
             <!-- Assignments Tab -->
-            <div class="tab-content" id="assignments-tab">
+            <!-- Assignments Tab Panel -->
+            <section class="tab-content" 
+                     id="assignments-panel" 
+                     role="tabpanel" 
+                     aria-labelledby="assignments-tab"
+                     aria-hidden="true"
+                     tabindex="0"
+                     style="display: none;">
                 <div class="assignments-section">
                     <h2>Track Assignments</h2>
                     
@@ -365,7 +496,14 @@
             </div>
 
             <!-- Meeting Rooms Tab -->
-            <div class="tab-content" id="meeting-rooms-tab">
+            <!-- Meeting Rooms Tab Panel -->
+            <section class="tab-content" 
+                     id="meeting-rooms-panel" 
+                     role="tabpanel" 
+                     aria-labelledby="meeting-rooms-tab"
+                     aria-hidden="true"
+                     tabindex="0"
+                     style="display: none;">
                 <div class="tab-header">
                     <h2>Meeting Rooms</h2>
                     <div class="tab-actions">
@@ -397,8 +535,14 @@
                 </div>
             </div>
 
-            <!-- Settings Tab -->
-            <div class="tab-content" id="settings-tab">
+            <!-- Settings Tab Panel -->
+            <section class="tab-content" 
+                     id="settings-panel" 
+                     role="tabpanel" 
+                     aria-labelledby="settings-tab"
+                     aria-hidden="true"
+                     tabindex="0"
+                     style="display: none;">
                 <div class="settings-section">
                     <h2>Organization Settings</h2>
                     
@@ -457,33 +601,61 @@
 
     <!-- Modals -->
     <!-- Add Member Modal -->
-    <div id="addMemberModal" class="modal">
+    <div id="addMemberModal" 
+         class="modal" 
+         role="dialog" 
+         aria-modal="true" 
+         aria-labelledby="addMemberTitle"
+         aria-hidden="true">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Add Organization Member</h3>
-                <button class="modal-close" onclick="closeModal('addMemberModal')">
-                    <i class="fas fa-times"></i>
+                <h3 id="addMemberTitle" class="modal-title">Add Organization Member</h3>
+                <button class="modal-close" 
+                        onclick="closeModal('addMemberModal')"
+                        aria-label="Close dialog">
+                    <i class="fas fa-times" aria-hidden="true"></i>
                 </button>
             </div>
             <div class="modal-body">
-                <form id="addMemberForm">
+                <form id="addMemberForm" role="form" aria-labelledby="addMemberTitle">
                     <div class="form-group">
-                        <label for="memberEmail">Email Address</label>
-                        <input type="email" id="memberEmail" name="user_email" class="form-control" required>
+                        <label for="memberEmail" class="required">Email Address</label>
+                        <input type="email" 
+                               id="memberEmail" 
+                               name="user_email" 
+                               class="form-control" 
+                               required
+                               aria-describedby="memberEmail-help memberEmail-error"
+                               aria-invalid="false">
+                        <div id="memberEmail-help" class="form-help">Enter the email address of the person to invite</div>
+                        <div id="memberEmail-error" class="form-error" role="alert" aria-live="polite"></div>
                     </div>
                     <div class="form-group">
-                        <label for="memberRole">Role</label>
-                        <select id="memberRole" name="role_type" class="form-control" required>
+                        <label for="memberRole" class="required">Role</label>
+                        <select id="memberRole" 
+                                name="role_type" 
+                                class="form-control" 
+                                required
+                                aria-describedby="memberRole-help memberRole-error"
+                                aria-invalid="false">
+                            <option value="" disabled selected>Select a role...</option>
                             <option value="instructor">Instructor</option>
                             <option value="organization_admin">Organization Admin</option>
                         </select>
+                        <div id="memberRole-help" class="form-help">Choose the role and permissions for this member</div>
+                        <div id="memberRole-error" class="form-error" role="alert" aria-live="polite"></div>
                     </div>
                     <div class="form-group" id="projectAccessGroup" style="display: none;">
                         <label for="projectAccess">Project Access</label>
-                        <select id="projectAccess" name="project_ids" class="form-control" multiple>
+                        <select id="projectAccess" 
+                                name="project_ids" 
+                                class="form-control" 
+                                multiple
+                                aria-describedby="projectAccess-help"
+                                aria-label="Select projects for instructor access">
                             <!-- Projects loaded dynamically -->
                         </select>
-                        <small class="form-help">Hold Ctrl to select multiple projects</small>
+                        <div id="projectAccess-help" class="form-help">Hold Ctrl (Windows) or Cmd (Mac) to select multiple projects. Use arrow keys to navigate options.</div>
                     </div>
                 </form>
             </div>
@@ -637,26 +809,48 @@
     </div>
 
     <!-- Create Project Modal -->
-    <div id="createProjectModal" class="modal">
+    <div id="createProjectModal" 
+         class="modal" 
+         role="dialog" 
+         aria-modal="true" 
+         aria-labelledby="createProjectTitle"
+         aria-hidden="true">
         <div class="modal-content large">
             <div class="modal-header">
-                <h3>Create New Project</h3>
-                <button class="modal-close" onclick="orgAdmin.closeModal('createProjectModal')">
-                    <i class="fas fa-times"></i>
+                <h3 id="createProjectTitle" class="modal-title">Create New Project</h3>
+                <button class="modal-close" 
+                        onclick="orgAdmin.closeModal('createProjectModal')"
+                        aria-label="Close dialog">
+                    <i class="fas fa-times" aria-hidden="true"></i>
                 </button>
             </div>
             <div class="modal-body">
-                <form id="createProjectForm">
+                <form id="createProjectForm" role="form" aria-labelledby="createProjectTitle">
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="projectName">Project Name *</label>
-                            <input type="text" id="projectName" name="name" class="form-control" required>
-                            <small class="form-help">A descriptive name for your project</small>
+                            <label for="projectName" class="required">Project Name</label>
+                            <input type="text" 
+                                   id="projectName" 
+                                   name="name" 
+                                   class="form-control" 
+                                   required
+                                   aria-describedby="projectName-help projectName-error"
+                                   aria-invalid="false">
+                            <div id="projectName-help" class="form-help">A descriptive name for your project</div>
+                            <div id="projectName-error" class="form-error" role="alert" aria-live="polite"></div>
                         </div>
                         <div class="form-group">
-                            <label for="projectSlug">Project Slug *</label>
-                            <input type="text" id="projectSlug" name="slug" class="form-control" required pattern="[a-z0-9-]+">
-                            <small class="form-help">URL-friendly identifier (lowercase, hyphens only)</small>
+                            <label for="projectSlug" class="required">Project Slug</label>
+                            <input type="text" 
+                                   id="projectSlug" 
+                                   name="slug" 
+                                   class="form-control" 
+                                   required 
+                                   pattern="[a-z0-9\-]+"
+                                   aria-describedby="projectSlug-help projectSlug-error"
+                                   aria-invalid="false">
+                            <div id="projectSlug-help" class="form-help">URL-friendly identifier (lowercase, hyphens only). This will be used in URLs and cannot be changed later.</div>
+                            <div id="projectSlug-error" class="form-error" role="alert" aria-live="polite"></div>
                         </div>
                     </div>
                     

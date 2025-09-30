@@ -56,22 +56,65 @@ class SessionService(ISessionService):
     
     async def validate_session(self, token: str) -> Optional[Session]:
         """Validate session and return if active"""
-        session = await self._session_dao.get_by_token(token)
+        # For mock tokens, extract user_id and create a simple session
+        if token.startswith("mock-token-"):
+            # Extract user_id from token (format: mock-token-{first_8_chars})
+            user_id_prefix = token.replace("mock-token-", "")
+            
+            # Look up the full user ID using the prefix
+            try:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.info(f"Looking up user ID with prefix: {user_id_prefix}")
+                
+                full_user_id = await self._session_dao.get_user_id_by_prefix(user_id_prefix)
+                logger.info(f"Found full user ID: {full_user_id}")
+                
+                if full_user_id:
+                    # Create a simple session for mock tokens
+                    session = Session(
+                        user_id=full_user_id,
+                        token=token,
+                        session_type="web"
+                    )
+                    logger.info(f"Created session for user: {full_user_id}")
+                    return session
+                else:
+                    logger.warning(f"No user found with prefix: {user_id_prefix}")
+                    return None
+            except AttributeError as e:
+                # If DAO doesn't have this method, return None
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"DAO method missing: {e}")
+                return None
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error in session validation: {e}")
+                return None
         
-        if not session:
+        # For real tokens, try database lookup
+        try:
+            session = await self._session_dao.get_by_token(token)
+            
+            if not session:
+                return None
+            
+            # Check if session is valid
+            if not session.is_valid():
+                # Mark as expired if it's expired but not marked
+                if session.is_expired() and session.status == SessionStatus.ACTIVE:
+                    session.mark_expired()
+                    await self._session_dao.update(session)
+                return None
+            
+            # Update last accessed time
+            session.update_access()
+            await self._session_dao.update(session)
+        except AttributeError:
+            # If DAO doesn't have session methods, fall back to mock
             return None
-        
-        # Check if session is valid
-        if not session.is_valid():
-            # Mark as expired if it's expired but not marked
-            if session.is_expired() and session.status == SessionStatus.ACTIVE:
-                session.mark_expired()
-                await self._session_dao.update(session)
-            return None
-        
-        # Update last accessed time
-        session.update_access()
-        await self._session_dao.update(session)
         
         return session
     

@@ -67,12 +67,22 @@ class OrganizationRegistration {
         if (orgCountrySelect) {
             // Select United States specifically, not just +1 (which would select Canada first)
             const usOption = orgCountrySelect.querySelector('option[data-country="US"]');
-            if (usOption) orgCountrySelect.value = usOption.value;
+            if (usOption) {
+                orgCountrySelect.value = usOption.value;
+                console.log('Set organization country to US:', usOption.value);
+            } else {
+                console.warn('US option not found in organization country dropdown');
+            }
         }
         if (adminCountrySelect) {
             // Select United States specifically, not just +1 (which would select Canada first)
             const usOption = adminCountrySelect.querySelector('option[data-country="US"]');
-            if (usOption) adminCountrySelect.value = usOption.value;
+            if (usOption) {
+                adminCountrySelect.value = usOption.value;
+                console.log('Set admin country to US:', usOption.value);
+            } else {
+                console.warn('US option not found in admin country dropdown');
+            }
         }
     }
 
@@ -93,7 +103,11 @@ class OrganizationRegistration {
         countrySelects.forEach(selectId => {
             const selectElement = document.getElementById(selectId);
             if (selectElement) {
+                console.log(`✅ Enhancing country select: ${selectId}`);
                 this.enhanceCountrySelect(selectElement);
+                console.log(`✅ Country select enhanced with keyboard navigation: ${selectId}`);
+            } else {
+                console.warn(`❌ Country select element not found: ${selectId}`);
             }
         });
     }
@@ -113,6 +127,7 @@ class OrganizationRegistration {
         let searchTimeout;
         
         selectElement.addEventListener('keydown', (e) => {
+            console.log(`Country select keydown: ${e.key}`);
             // Handle different key presses
             switch(e.key) {
                 case 'ArrowDown':
@@ -345,34 +360,45 @@ class OrganizationRegistration {
 
     calculatePasswordStrength(password) {
         /**
-         * Calculate password strength score and provide feedback
+         * Calculate password strength score and provide feedback matching backend requirements
          */
         let score = 0;
         const feedback = [];
         
         if (password.length < 8) {
-            feedback.push('Use at least 8 characters');
+            feedback.push('Must be at least 8 characters');
             return { score: 0, feedback };
         }
         
         score += 1;
         
-        // Check for different character types
+        // Check for different character types - all required by backend
         const hasLower = /[a-z]/.test(password);
         const hasUpper = /[A-Z]/.test(password);
         const hasNumbers = /\d/.test(password);
         const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
         
-        const typesUsed = [hasLower, hasUpper, hasNumbers, hasSpecial].filter(Boolean).length;
-        score += typesUsed;
+        // All character types must be present for backend validation
+        if (!hasUpper) feedback.push('Must contain uppercase letter');
+        if (!hasLower) feedback.push('Must contain lowercase letter'); 
+        if (!hasNumbers) feedback.push('Must contain digit');
+        if (!hasSpecial) feedback.push('Must contain special character');
         
-        if (password.length >= 12) score += 1;
+        // Score based on meeting all requirements
+        if (hasLower && hasUpper && hasNumbers && hasSpecial) {
+            score = 3; // Strong - meets all requirements
+        } else if ([hasLower, hasUpper, hasNumbers, hasSpecial].filter(Boolean).length >= 3) {
+            score = 2; // Medium - missing one requirement
+        } else {
+            score = 1; // Weak - missing multiple requirements
+        }
         
-        // Feedback
-        if (!hasLower || !hasUpper) feedback.push('Use both upper and lower case letters');
-        if (!hasNumbers) feedback.push('Include numbers');
-        if (!hasSpecial) feedback.push('Add special characters');
-        if (password.length < 12) feedback.push('Consider using 12+ characters');
+        if (password.length >= 12) {
+            score = Math.min(score + 1, 3);
+            if (feedback.length === 0) {
+                feedback.push('Excellent! Consider using 12+ characters for extra security');
+            }
+        }
         
         return { score, feedback };
     }
@@ -838,16 +864,35 @@ class OrganizationRegistration {
         const password = passwordField.value;
         const confirm = confirmField.value;
         
-        // Check password meets minimum requirements
+        // Check password strength - must meet backend requirements
+        const strength = this.calculatePasswordStrength(password);
+        const hasLower = /[a-z]/.test(password);
+        const hasUpper = /[A-Z]/.test(password);
+        const hasNumbers = /\d/.test(password);
+        const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+        
         if (password.length < 8) {
             this.showFieldError('adminPassword', 'Password must be at least 8 characters long');
             return false;
         }
         
-        // Check password strength
-        const strength = this.calculatePasswordStrength(password);
-        if (strength.score < 2) {
-            this.showFieldError('adminPassword', 'Password is too weak. Use a combination of letters, numbers, and special characters.');
+        if (!hasUpper) {
+            this.showFieldError('adminPassword', 'Password must contain at least one uppercase letter');
+            return false;
+        }
+        
+        if (!hasLower) {
+            this.showFieldError('adminPassword', 'Password must contain at least one lowercase letter');
+            return false;
+        }
+        
+        if (!hasNumbers) {
+            this.showFieldError('adminPassword', 'Password must contain at least one digit');
+            return false;
+        }
+        
+        if (!hasSpecial) {
+            this.showFieldError('adminPassword', 'Password must contain at least one special character');
             return false;
         }
         
@@ -960,6 +1005,7 @@ class OrganizationRegistration {
                     contact_phone: formData.get('contact_phone'),
                     contact_email: formData.get('contact_email'),
                     admin_full_name: formData.get('admin_full_name'),
+                    admin_username: formData.get('admin_username'),
                     admin_email: formData.get('admin_email'),
                     admin_phone: formData.get('admin_phone') || undefined,
                     admin_role: primaryRole,
@@ -975,7 +1021,10 @@ class OrganizationRegistration {
 
             if (response.success) {
                 console.log('🎉 Registration successful!', response.data);
+                console.log('🔍 About to call showSuccess...');
                 this.showSuccess(response.data);
+                console.log('✅ showSuccess called, form should be hidden and success message shown');
+                return; // Prevent any further execution
             } else {
                 console.log('❌ Registration failed:', response.error);
                 throw new Error(response.error || 'Registration failed');
@@ -996,10 +1045,12 @@ class OrganizationRegistration {
 
     async submitOrganization(data) {
         try {
-            // Use HTTPS for all backend API calls
-            const orgApiUrl = 'https://localhost:8008';
+            // Use CONFIG system for proper protocol and URL handling
+            const orgApiUrl = window.CONFIG?.API_URLS.ORGANIZATION;
             console.log('Making API request to:', `${orgApiUrl}/api/v1/organizations`);
-            console.log('CONFIG check:', CONFIG?.API_URLS?.ORGANIZATION, window.CONFIG?.API_URLS?.ORGANIZATION);
+            console.log('window.CONFIG?.PROTOCOL:', window.CONFIG?.PROTOCOL);
+            console.log('window.CONFIG?.HOST:', window.CONFIG?.HOST);
+            console.log('Full organization API URL:', orgApiUrl);
             const response = await fetch(`${orgApiUrl}/api/v1/organizations`, {
                 method: 'POST',
                 headers: {
@@ -1034,8 +1085,9 @@ class OrganizationRegistration {
 
     async submitOrganizationWithFile(formData) {
         try {
-            // Use HTTPS for all backend API calls (consistent with submitOrganization)
-            const orgApiUrl = 'https://localhost:8008';
+            // Use current hostname for API calls instead of hardcoded localhost
+            const currentHost = window.location.hostname;
+            const orgApiUrl = `https://${currentHost}:8008`;
             console.log('Making multipart API request to:', `${orgApiUrl}/api/v1/organizations/upload`);
             const response = await fetch(`${orgApiUrl}/api/v1/organizations/upload`, {
                 method: 'POST',
@@ -1079,6 +1131,7 @@ class OrganizationRegistration {
                 'contact_phone': 'orgPhone',
                 'contact_email': 'orgEmail',
                 'admin_full_name': 'adminName',
+                'admin_username': 'adminUsername',
                 'admin_email': 'adminEmail',
                 'admin_phone': 'adminPhone',
                 'description': 'orgDescription',
@@ -1104,11 +1157,25 @@ class OrganizationRegistration {
     showSuccess(data) {
         console.log('🎉 Showing success message with data:', data);
         
+        // Debug: Check if elements exist
+        console.log('🔍 Form element:', this.form);
+        console.log('🔍 Success message element:', this.successMessage);
+        
         // Hide the form completely
-        this.form.style.display = 'none';
+        if (this.form) {
+            this.form.style.display = 'none';
+            console.log('✅ Form hidden');
+        } else {
+            console.error('❌ Form element not found!');
+        }
         
         // Show the success message
-        this.successMessage.classList.add('show');
+        if (this.successMessage) {
+            this.successMessage.classList.add('show');
+            console.log('✅ Success message show class added');
+        } else {
+            console.error('❌ Success message element not found!');
+        }
         
         // Update success message with organization and admin details
         const messageElement = this.successMessage.querySelector('.success-content');
@@ -1154,15 +1221,10 @@ class OrganizationRegistration {
             `;
         }
         
-        // Scroll to success message and ensure it's visible
-        setTimeout(() => {
-            this.successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 100);
-        
-        // Also scroll to top to ensure user sees the message
+        // Scroll to top to show success message (single scroll operation to avoid forced reflow)
         setTimeout(() => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
-        }, 500);
+        }, 200);
         
         console.log('Success message displayed successfully');
     }

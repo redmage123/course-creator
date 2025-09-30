@@ -61,6 +61,52 @@ When reporting status, use only these categories:
 - Don't assume Docker containers work because they built successfully
 - Verify actual functionality, not just absence of build errors
 
+### 7. SYSTEMATIC VERIFICATION PROTOCOL
+**Before claiming ANY fix works, you MUST:**
+- **Test the exact failing case** - Copy/paste the exact error scenario and reproduce it
+- **Test in the actual environment** - Not just isolated unit tests, but in the real deployment context
+- **Provide evidence** - Show the before/after comparison with actual output
+- **Wait for user confirmation** - Never declare success, only "attempted fix - please verify"
+
+### 8. LANGUAGE RESTRICTIONS
+**FORBIDDEN phrases (never use these without concrete proof):**
+- ✅ "PROVEN: [anything] is working"
+- ✅ "The error should now be resolved"
+- ✅ "Pattern/code compiles successfully!"
+- ✅ "Both fixes are working"
+- ✅ "Successfully completed"
+- ✅ "Working correctly"
+
+**REQUIRED language (always use these instead):**
+- 🔄 "I've made a change that might fix this. Please test it."
+- 🔄 "Here's what I changed and why. Can you verify if it works?"
+- 🔄 "The pattern works in my test, but please confirm in your browser."
+- 🔄 "Attempted fix deployed - needs user verification"
+
+### 9. ROOT CAUSE ANALYSIS REQUIREMENT
+**When debugging, you MUST:**
+- **Understand the problem** (not just pattern-match visual symptoms)
+- **Research the root cause** (don't guess based on superficial similarities)
+- **Test exact scenario** (reproduce the exact failure first)
+- **Make minimal changes** (one thing at a time)
+- **Document uncertainty** (what you're not sure about)
+
+### 10. ANTI-PATTERN RECOGNITION
+**Recognize and STOP these harmful patterns:**
+- Visual pattern recognition → quick fix instinct → biased testing
+- "This looks wrong" → make change → assume it's fixed
+- Deployment success → claim functional success
+- Isolated test passes → claim real-world functionality
+- Speed/confidence prioritized over accuracy/verification
+
+### 11. EPISTEMOLOGICAL HUMILITY
+**Acknowledge the limits of what you can know:**
+- You cannot directly interact with user browsers
+- You cannot see actual user experience
+- Your tests are simulations, not reality
+- Deployment ≠ functionality
+- Code compilation ≠ runtime success
+
 ## 🚨 Critical Code Directives (Always Apply)
 
 ### 1. Python Import Requirements

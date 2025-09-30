@@ -1,0 +1,496 @@
+/**
+ * Accessibility Enhancement Styles
+ * Comprehensive accessibility improvements for Course Creator Platform
+ */
+
+/* ===== SKIP LINKS ===== */
+.skip-links {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    z-index: 1000;
+}
+
+.skip-links a {
+    position: absolute;
+    left: -10000px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    background: var(--primary-color);
+    color: white;
+    padding: 8px 16px;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: 600;
+    border: 2px solid transparent;
+}
+
+.skip-links a:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    left: 0;
+    top: 0;
+    overflow: visible;
+    border-color: var(--focus-color);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.3);
+}
+
+/* ===== SCREEN READER ONLY CONTENT ===== */
+.sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+.sr-only-focusable:focus,
+.sr-only-focusable:active {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    padding: inherit !important;
+    margin: inherit !important;
+    overflow: visible !important;
+    clip: auto !important;
+    white-space: inherit !important;
+}
+
+/* ===== FOCUS MANAGEMENT ===== */
+:root {
+    --focus-color: #2563eb;
+    --focus-width: 3px;
+    --focus-offset: 2px;
+    --focus-shadow: 0 0 0 6px rgba(37, 99, 235, 0.2);
+}
+
+/* Enhanced focus indicators */
+*:focus-visible {
+    outline: var(--focus-width) solid var(--focus-color) !important;
+    outline-offset: var(--focus-offset) !important;
+    box-shadow: var(--focus-shadow) !important;
+    position: relative;
+    z-index: 10;
+}
+
+/* Remove outline for non-keyboard focus */
+*:focus:not(:focus-visible) {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* Special focus for interactive elements */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible,
+[role="button"]:focus-visible,
+[role="tab"]:focus-visible {
+    outline: var(--focus-width) solid var(--focus-color) !important;
+    outline-offset: var(--focus-offset) !important;
+    box-shadow: var(--focus-shadow) !important;
+    border-radius: 4px;
+}
+
+/* Focus trap for modals */
+.focus-trap {
+    position: relative;
+}
+
+.focus-trap-active {
+    overflow: hidden;
+}
+
+/* ===== HIGH CONTRAST SUPPORT ===== */
+@media (prefers-contrast: high) {
+    :root {
+        --primary-color: #000000;
+        --background-color: #ffffff;
+        --text-primary: #000000;
+        --border-color: #000000;
+        --focus-color: #ff0000;
+        --focus-shadow: 0 0 0 6px rgba(255, 0, 0, 0.5);
+    }
+    
+    /* Remove gradients and complex backgrounds */
+    .org-header,
+    .dashboard-container,
+    .gradient-bg {
+        background: white !important;
+        color: black !important;
+        border: 2px solid black !important;
+    }
+    
+    /* Ensure all text is black */
+    * {
+        color: black !important;
+        background-color: white !important;
+    }
+    
+    /* High contrast buttons */
+    .btn {
+        background: white !important;
+        color: black !important;
+        border: 3px solid black !important;
+    }
+    
+    .btn:hover,
+    .btn:focus {
+        background: black !important;
+        color: white !important;
+    }
+}
+
+/* ===== REDUCED MOTION SUPPORT ===== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    /* Remove transforms that can cause motion sickness */
+    .slide,
+    .modal,
+    .dropdown {
+        transform: none !important;
+    }
+}
+
+/* ===== COLOR CONTRAST IMPROVEMENTS ===== */
+/* Ensure minimum 4.5:1 contrast ratio for normal text */
+.dashboard-header {
+    background: rgba(255, 255, 255, 0.98) !important;
+    color: #1a202c !important;
+}
+
+.nav-tab {
+    color: #2d3748 !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+}
+
+.nav-tab.active {
+    background: var(--primary-color) !important;
+    color: white !important;
+}
+
+.stat-card {
+    border: 1px solid var(--border-color);
+    background: white;
+}
+
+/* ===== KEYBOARD NAVIGATION ENHANCEMENTS ===== */
+/* Tab navigation improvements */
+.nav-tabs {
+    display: flex;
+    role: tablist;
+}
+
+.nav-tab[role="tab"] {
+    cursor: pointer;
+    border: none;
+    background: none;
+    padding: 12px 16px;
+    margin: 0 2px;
+    border-radius: 4px 4px 0 0;
+    transition: all 0.2s ease;
+}
+
+.nav-tab[role="tab"]:hover {
+    background: rgba(37, 99, 235, 0.1);
+}
+
+.nav-tab[role="tab"][aria-selected="true"] {
+    background: var(--primary-color);
+    color: white;
+    font-weight: 600;
+}
+
+.nav-tab[role="tab"][aria-selected="false"] {
+    background: rgba(255, 255, 255, 0.8);
+    color: var(--text-primary);
+}
+
+/* ===== STATUS INDICATORS WITH ACCESSIBILITY ===== */
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    border: 1px solid;
+}
+
+.status-indicator::before {
+    content: attr(data-status);
+    font-weight: bold;
+}
+
+.status-active {
+    background: rgba(16, 185, 129, 0.1);
+    color: #047857;
+    border-color: #047857;
+}
+
+.status-active::before { content: "✓ Active"; }
+
+.status-inactive {
+    background: rgba(107, 114, 128, 0.1);
+    color: #374151;
+    border-color: #374151;
+}
+
+.status-inactive::before { content: "○ Inactive"; }
+
+.status-pending {
+    background: rgba(245, 158, 11, 0.1);
+    color: #92400e;
+    border-color: #92400e;
+}
+
+.status-pending::before { content: "◐ Pending"; }
+
+/* ===== FORM ACCESSIBILITY ENHANCEMENTS ===== */
+.form-group {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.form-group label.required::after {
+    content: " *";
+    color: var(--danger-color);
+    font-weight: bold;
+    margin-left: 0.25rem;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 1rem;
+    line-height: 1.5;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-control:focus {
+    border-color: var(--focus-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.form-control[aria-invalid="true"] {
+    border-color: var(--danger-color);
+    background: rgba(239, 68, 68, 0.05);
+}
+
+.form-help {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+.form-error {
+    font-size: 0.875rem;
+    color: var(--danger-color);
+    margin-top: 0.25rem;
+    font-weight: 500;
+}
+
+.form-error:empty {
+    display: none;
+}
+
+/* ===== BUTTON ACCESSIBILITY ===== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 12px 24px;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 44px; /* Minimum touch target */
+    min-width: 44px;
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+.btn-outline {
+    background: transparent;
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-outline:hover:not(:disabled) {
+    background: var(--primary-color);
+    color: white;
+}
+
+/* Loading state for buttons */
+.btn-loading {
+    position: relative;
+    color: transparent;
+}
+
+.btn-loading::after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ===== MODAL ACCESSIBILITY ===== */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: var(--z-modal);
+}
+
+.modal[aria-hidden="true"] {
+    display: none;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 8px;
+    padding: 24px;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    box-shadow: var(--shadow-xl);
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    color: var(--text-secondary);
+}
+
+.modal-close:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: var(--text-primary);
+}
+
+/* ===== RESPONSIVE ACCESSIBILITY ===== */
+@media (max-width: 768px) {
+    /* Larger touch targets on mobile */
+    .btn {
+        min-height: 48px;
+        min-width: 48px;
+        padding: 16px 24px;
+    }
+    
+    .nav-tab {
+        min-height: 48px;
+        padding: 16px 12px;
+    }
+    
+    /* Improved form spacing on mobile */
+    .form-group {
+        margin-bottom: 2rem;
+    }
+    
+    .form-control {
+        padding: 16px;
+        font-size: 1.1rem;
+    }
+}
+
+/* ===== PRINT ACCESSIBILITY ===== */
+@media print {
+    .skip-links,
+    .btn,
+    .nav-tabs,
+    .modal {
+        display: none !important;
+    }
+    
+    .tab-content {
+        display: block !important;
+    }
+    
+    * {
+        color: black !important;
+        background: white !important;
+    }
+}

@@ -19,7 +19,7 @@
  * PURPOSE: Import all required modules for comprehensive student functionality
  * WHY: Modular imports enable clean separation of concerns and better maintainability
  */
-import { CONFIG } from './config-global.js';                      // Configuration system for API endpoints
+                      // Configuration system for API endpoints
 import { authManager } from './modules/auth.js';           // Authentication and session management
 import { labLifecycleManager } from './modules/lab-lifecycle.js'; // Lab container lifecycle management
 import StudentFileManager from './modules/student-file-manager.js'; // Student file operations
@@ -244,7 +244,7 @@ async function loadStudentData() {
 // Data loading functions
 async function loadEnrolledCourses() {
     try {
-        const response = await fetch(`${CONFIG.ENDPOINTS.COURSE_STUDENTS(currentUser.id)}`);
+        const response = await fetch(`${window.CONFIG?.ENDPOINTS.COURSE_STUDENTS(currentUser.id)}`);
         
         if (response.ok) {
             const result = await response.json();
@@ -263,7 +263,7 @@ async function loadEnrolledCourses() {
 async function loadStudentProgress() {
     try {
         // This would come from a dedicated progress tracking endpoint
-        const response = await fetch(`${CONFIG.API_URLS.COURSE_MANAGEMENT}/student/${currentUser.id}/progress`);
+        const response = await fetch(`${window.CONFIG?.API_URLS.COURSE_MANAGEMENT}/student/${currentUser.id}/progress`);
         
         if (response.ok) {
             const result = await response.json();
@@ -530,7 +530,7 @@ function launchSandboxedLab(labAccess, courseId) {
 async function launchStandardLab(courseId) {
     // First, try to launch the lab to ensure exercises are generated
     try {
-        const launchResponse = await fetch(CONFIG.ENDPOINTS.LAB_LAUNCH, {
+        const launchResponse = await fetch(window.CONFIG?.ENDPOINTS.LAB_LAUNCH, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -686,7 +686,7 @@ async function loadLabEnvironments() {
     try {
         // Get lab environments for all enrolled courses
         const labPromises = enrolledCourses.map(enrollment => 
-            fetch(`${CONFIG.API_URLS.COURSE_GENERATOR}/student/lab-access/${enrollment.course_id}/${currentUser.id}`)
+            fetch(`${window.CONFIG?.API_URLS.COURSE_GENERATOR}/student/lab-access/${enrollment.course_id}/${currentUser.id}`)
                 .then(response => response.ok ? response.json() : null)
                 .catch(() => null)
         );
@@ -750,9 +750,9 @@ function displayLabEnvironments(labs) {
 async function viewCourseDetails(courseId) {
     try {
         // Get course details
-        const courseResponse = await fetch(`${CONFIG.API_URLS.COURSE_MANAGEMENT}/courses/${courseId}`);
-        const slidesResponse = await fetch(`${CONFIG.API_URLS.COURSE_GENERATOR}/slides/${courseId}`);
-        const exercisesResponse = await fetch(`${CONFIG.API_URLS.COURSE_GENERATOR}/exercises/${courseId}`);
+        const courseResponse = await fetch(`${window.CONFIG?.API_URLS.COURSE_MANAGEMENT}/courses/${courseId}`);
+        const slidesResponse = await fetch(`${window.CONFIG?.API_URLS.COURSE_GENERATOR}/slides/${courseId}`);
+        const exercisesResponse = await fetch(`${window.CONFIG?.API_URLS.COURSE_GENERATOR}/exercises/${courseId}`);
         
         const course = courseResponse.ok ? await courseResponse.json() : null;
         const slides = slidesResponse.ok ? await slidesResponse.json() : null;
@@ -827,7 +827,7 @@ function displayCourseModal(course, slides, exercises) {
 // eslint-disable-next-line no-unused-vars
 async function accessLabEnvironment(courseId) {
     try {
-        const response = await fetch(`${CONFIG.API_URLS.COURSE_GENERATOR}/student/lab-access/${courseId}/${currentUser.id}`);
+        const response = await fetch(`${window.CONFIG?.API_URLS.COURSE_GENERATOR}/student/lab-access/${courseId}/${currentUser.id}`);
         
         if (response.ok) {
             const labAccess = await response.json();
@@ -932,7 +932,7 @@ function displayLabModal(lab, courseId) {
 
 async function loadLabExercises(courseId) {
     try {
-        const response = await fetch(`${CONFIG.API_URLS.COURSE_GENERATOR}/exercises/${courseId}`);
+        const response = await fetch(`${window.CONFIG?.API_URLS.COURSE_GENERATOR}/exercises/${courseId}`);
         if (response.ok) {
             const exercises = await response.json();
             displayLabExercises(exercises.exercises);
@@ -983,7 +983,7 @@ async function askAI(courseId) {
     if (!question) return;
     
     try {
-        const response = await fetch(`${CONFIG.API_URLS.COURSE_GENERATOR}/ai-assistant/help`, {
+        const response = await fetch(`${window.CONFIG?.API_URLS.COURSE_GENERATOR}/ai-assistant/help`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1241,7 +1241,7 @@ async function refreshLabFiles() {
     showLabFileLoading();
     
     try {
-        const response = await fetch(`${CONFIG.API_URLS.LAB_MANAGER}/labs/${labId}/files`);
+        const response = await fetch(`${window.CONFIG?.API_URLS.LAB_MANAGER}/labs/${labId}/files`);
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
         }
@@ -1297,7 +1297,7 @@ async function downloadLabFile(filename) {
     }
     
     try {
-        const response = await fetch(`${CONFIG.API_URLS.LAB_MANAGER}/labs/${labId}/download/${encodeURIComponent(filename)}`);
+        const response = await fetch(`${window.CONFIG?.API_URLS.LAB_MANAGER}/labs/${labId}/download/${encodeURIComponent(filename)}`);
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
         }
@@ -1327,7 +1327,7 @@ async function downloadAllFiles() {
     }
     
     try {
-        const response = await fetch(`${CONFIG.API_URLS.LAB_MANAGER}/labs/${labId}/download-workspace`);
+        const response = await fetch(`${window.CONFIG?.API_URLS.LAB_MANAGER}/labs/${labId}/download-workspace`);
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
         }

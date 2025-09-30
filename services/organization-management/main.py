@@ -47,7 +47,8 @@ from auth.jwt_auth import JWTAuthenticator
 # Import API route modules
 from api.organization_endpoints import router as organization_router
 from api.project_endpoints import router as project_router
-# from api import rbac_endpoints, site_admin_endpoints, track_endpoints
+from api.rbac_endpoints import router as rbac_router
+# from api import site_admin_endpoints, track_endpoints
 
 # Custom exceptions
 # Import shared exceptions from platform-wide exception hierarchy
@@ -353,7 +354,7 @@ async def lifespan(app: FastAPI):
     
     # Cleanup container
     if container:
-        cleanup_container(container)
+        await cleanup_container()
         logging.info("Dependency injection container cleaned up")
     
     logging.info("Organization Management Service shutdown complete")
@@ -416,7 +417,7 @@ def create_app(config: DictConfig = None) -> FastAPI:
     # Include API routers
     app.include_router(organization_router)
     app.include_router(project_router)
-    # app.include_router(rbac_endpoints.router)
+    app.include_router(rbac_router)
     # app.include_router(site_admin_endpoints.router)
     # app.include_router(track_endpoints.router)
 

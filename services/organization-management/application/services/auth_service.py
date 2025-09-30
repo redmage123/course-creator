@@ -49,8 +49,18 @@ class AuthService:
         Raises:
             HTTPException: If user doesn't have required role
         """
-        required_roles = ["super_admin", "org_admin"]
-        return self._jwt_authenticator.require_role(required_roles)(user)
+        from fastapi import HTTPException, status
+        
+        required_roles = ["super_admin", "org_admin", "organization_admin"]
+        user_roles = user.get('roles', [])
+        
+        if not any(role in required_roles for role in user_roles):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Insufficient permissions. Required roles: {required_roles}"
+            )
+        
+        return user
 
     def require_project_manager(self, user: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -62,8 +72,18 @@ class AuthService:
         Returns:
             User information if authorized
         """
-        required_roles = ["super_admin", "org_admin", "project_manager"]
-        return self._jwt_authenticator.require_role(required_roles)(user)
+        from fastapi import HTTPException, status
+        
+        required_roles = ["super_admin", "org_admin", "organization_admin", "project_manager"]
+        user_roles = user.get('roles', [])
+        
+        if not any(role in required_roles for role in user_roles):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Insufficient permissions. Required roles: {required_roles}"
+            )
+        
+        return user
 
     def check_organization_access(self, user: Dict[str, Any], organization_id: UUID) -> bool:
         """

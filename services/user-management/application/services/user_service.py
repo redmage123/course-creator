@@ -62,28 +62,47 @@ class UserService(IUserService):
             raise ValueError("Username already exists")
         
         # Create user entity with optional custom ID
-        user = User(
-            id=user_data.get('user_id'),  # Pass custom ID if provided
-            email=user_data['email'],
-            username=user_data['username'],
-            full_name=user_data['full_name'],
-            first_name=user_data.get('first_name'),
-            last_name=user_data.get('last_name'),
-            role=UserRole(user_data.get('role', 'student')),
-            organization=user_data.get('organization'),
-            phone=user_data.get('phone'),
-            timezone=user_data.get('timezone'),
-            language=user_data.get('language', 'en')
-        )
+        user_init_data = {
+            'email': user_data['email'],
+            'username': user_data['username'],
+            'full_name': user_data['full_name'],
+            'first_name': user_data.get('first_name'),
+            'last_name': user_data.get('last_name'),
+            'role': UserRole(user_data.get('role', 'student')),
+            'organization': user_data.get('organization'),
+            'phone': user_data.get('phone'),
+            'timezone': user_data.get('timezone'),
+            'language': user_data.get('language', 'en')
+        }
+        
+        # Only pass ID if it's provided
+        if user_data.get('user_id'):
+            user_init_data['id'] = user_data['user_id']
+            
+        user = User(**user_init_data)
         
         # Hash password before creating user
         hashed_password = await self._auth_service.hash_password(password)
         
-        # Store hashed password in user metadata or add to user entity
-        user.add_metadata('hashed_password', hashed_password)
+        # Prepare user data dictionary for DAO
+        user_data_for_dao = {
+            'user_id': user.id,  # Custom user ID if provided
+            'email': user.email,
+            'username': user.username,
+            'full_name': user.full_name,
+            'hashed_password': hashed_password,
+            'role': user.role.value,  # Extract enum value
+            'organization': user.organization,
+            'phone': user.phone,
+            'timezone': user.timezone,
+            'language': user.language,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'status': user.status.value  # Extract enum value
+        }
         
-        # Create user in repository
-        created_user = await self._user_dao.create(user)
+        # Create user in DAO and get the User object
+        created_user = await self._user_dao.create(user_data_for_dao)
         
         return created_user
     

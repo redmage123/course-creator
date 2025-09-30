@@ -58,9 +58,9 @@ class OrganizationCreateRequest(BaseModel):
     
     # Organization admin information  
     admin_full_name: str = Field(..., min_length=2, max_length=100, description="Full name of organization administrator")
-    admin_username: str = Field(None, min_length=3, max_length=30, pattern=r'^[a-zA-Z0-9_-]+$', description="Administrator username/ID for login (optional)")
+    admin_username: Optional[str] = Field(None, min_length=3, max_length=30, pattern=r'^[a-zA-Z0-9_-]+$', description="Administrator username/ID for login (optional)")
     admin_email: EmailStr = Field(..., description="Administrator email address (professional domain required)")
-    admin_phone: str = Field(None, min_length=10, max_length=20, description="Administrator phone number")
+    admin_phone: Optional[str] = Field(None, min_length=10, max_length=20, description="Administrator phone number")
     admin_role: str = Field(..., description="Primary role of the administrator", pattern=r'^(organization_admin|instructor|student)$')
     admin_roles: Optional[List[str]] = Field(None, description="All roles assigned to the administrator")
     admin_password: str = Field(..., min_length=8, description="Administrator password for account")
@@ -176,8 +176,14 @@ async def create_organization(
     - All fields validated according to business rules
     """
     try:
+        print(f"=== API ENDPOINT DEBUG: Received organization registration request")
+        print(f"=== API REQUEST DATA: name='{request.name}', slug='{request.slug}', admin_email='{request.admin_email}'")
+        logging.info(f"API ENDPOINT DEBUG: Received organization registration request")
+        logging.info(f"API REQUEST DATA: name='{request.name}', slug='{request.slug}', admin_email='{request.admin_email}'")
+        
         # Create organization with automatic admin user registration
         logging.info(f"Creating organization: {request.name} with administrator: {request.admin_email}")
+        print(f"=== API DEBUG: About to call organization_service.create_organization")
         
         # Use enhanced organization service to create both organization and admin user
         result = await organization_service.create_organization(
@@ -198,13 +204,18 @@ async def create_organization(
             admin_password=request.admin_password
         )
         
+        print(f"=== API DEBUG: Service call completed successfully")
+        logging.info(f"API DEBUG: Service call completed successfully")
+        
         # Extract organization data from result
         org_data = result["organization"]
         admin_data = result["admin_user"]
         
+        print(f"=== API DEBUG: Extracted organization and admin data")
         logging.info(f"Organization and admin user created successfully: {request.name}")
         logging.info(f"Admin user: {admin_data['email']} (temp password generated)")
         
+        print(f"=== API DEBUG: About to create OrganizationResponse")
         # Return organization response (admin user info is logged but not returned for security)
         return OrganizationResponse(
             id=org_data["id"],
@@ -225,12 +236,18 @@ async def create_organization(
         )
     except ValueError as e:
         # This catches Pydantic validation errors from our custom validators
+        print(f"=== API ERROR: ValueError occurred: {str(e)}")
+        logging.error(f"API ERROR: ValueError occurred: {str(e)}")
         raise HTTPException(
             status_code=400,
             detail=f"Invalid organization data: {str(e)}"
         )
     except Exception as e:
-        logging.error(f"Error creating organization: {str(e)}")
+        print(f"=== API ERROR: Exception occurred: {type(e).__name__}: {str(e)}")
+        logging.error(f"API ERROR: Exception occurred: {type(e).__name__}: {str(e)}")
+        import traceback
+        print(f"=== API ERROR TRACEBACK: {traceback.format_exc()}")
+        logging.error(f"API ERROR TRACEBACK: {traceback.format_exc()}")
         raise HTTPException(
             status_code=500,
             detail="Failed to create organization"

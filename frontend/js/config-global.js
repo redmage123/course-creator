@@ -102,7 +102,7 @@ const CONFIG = {
      * DYNAMIC API URL GENERATION
      * PURPOSE: Generates complete API URLs for each microservice dynamically
      * WHY: Getter pattern ensures URLs are always current if protocol/host/ports change
-     * USAGE: Accessed as CONFIG.API_URLS.USER_MANAGEMENT
+     * USAGE: Accessed as window.CONFIG?.API_URLS.USER_MANAGEMENT
      */
     get API_URLS() {
         const protocol = this.PROTOCOL;
@@ -208,5 +208,13 @@ if (typeof window !== 'undefined') {
     window.CONFIG = CONFIG;
 }
 
-// Export for ES6 module usage
-export { CONFIG };
+// Export for ES6 module usage (commented out for script tag compatibility)
+// export { CONFIG };
+
+// Also export as default for flexibility  
+// export default CONFIG;
+
+// Export for CommonJS module usage (only if module context)
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { CONFIG };
+}

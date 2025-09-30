@@ -6,7 +6,6 @@ Dependency Inversion: Uses configuration abstractions
 import logging
 from typing import Dict, Any, Optional
 from datetime import datetime
-import jwt
 import httpx
 from fastapi import HTTPException, status
 from omegaconf import DictConfig
@@ -22,7 +21,7 @@ class JWTAuthenticator:
         self._logger = logging.getLogger(__name__)
         self._secret_key = config.get('jwt', {}).get('secret_key', 'your-secret-key-change-in-production')
         self._algorithm = config.get('jwt', {}).get('algorithm', 'HS256')
-        self._user_service_url = config.get('services', {}).get('user_management_url', 'http://user-management:8000')
+        self._user_service_url = config.get('services', {}).get('user_management_url', 'https://176.9.99.103:8000')
 
     async def validate_token(self, token: str) -> Dict[str, Any]:
         """
@@ -37,7 +36,18 @@ class JWTAuthenticator:
         Raises:
             HTTPException: If token is invalid or expired
         """
+        # Debug token format
+        if not token:
+            self._logger.warning("Empty token provided")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="No token provided"
+            )
+        
+        # Allow both JWT tokens and mock tokens - let user-management service validate
+        
         try:
+            self._logger.info(f"Validating token via user-management service")
             # Validate token by calling user-management service /users/me endpoint
             async with httpx.AsyncClient(verify=False) as client:
                 response = await client.get(
@@ -63,6 +73,7 @@ class JWTAuthenticator:
                 # Convert user response to expected format
                 return {
                     "sub": str(user_data["id"]),
+                    "user_id": str(user_data["id"]),  # Add for backward compatibility
                     "email": user_data["email"],
                     "username": user_data["username"],
                     "full_name": user_data.get("full_name"),

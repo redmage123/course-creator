@@ -3,10 +3,10 @@
  * Manages organization settings, projects, instructors, and members
  */
 
-import { CONFIG } from './config-global.js';
+
 
 // Configuration
-const ORG_API_BASE = CONFIG.API_URLS.ORGANIZATION;
+const ORG_API_BASE = window.CONFIG?.API_URLS.ORGANIZATION;
 
 // Global state
 let currentOrganization = null;
@@ -885,7 +885,7 @@ async function generateRAGSuggestions() {
         // Query RAG service for project planning assistance
         const ragQuery = `Create training project for: ${projectDescription}. Target roles: ${targetRoles || 'General'}`;
         
-        const response = await fetch(`${CONFIG.API_URLS.RAG}/api/v1/rag/query`, {
+        const response = await fetch(`${window.CONFIG?.API_URLS.RAG}/api/v1/rag/query`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${Auth.getToken()}`,
@@ -2523,7 +2523,7 @@ async function uploadLogoFile(file) {
     formData.append('organization_id', currentOrganization.id);
 
     try {
-        const response = await fetch(`${CONFIG.API_URLS.CONTENT_MANAGEMENT}/api/v1/files/upload`, {
+        const response = await fetch(`${window.CONFIG?.API_URLS.CONTENT_MANAGEMENT}/api/v1/files/upload`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${Auth.getToken()}`

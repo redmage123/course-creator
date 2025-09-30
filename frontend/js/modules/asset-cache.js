@@ -171,7 +171,7 @@ class AssetCacheManager {
             '/css/layout/dashboard.css',
             
             // Core JavaScript modules
-            '/js/config.js',
+            '/js/config-global.js',
             '/js/modules/app.js',
             '/js/modules/auth.js',
             '/js/modules/navigation.js',

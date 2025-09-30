@@ -50,13 +50,14 @@ class UserRole(Enum):
     """
     User Role Enumeration - Defines Role-Based Access Control Levels
     
-    This enumeration defines the three primary roles within the Course Creator
+    This enumeration defines the primary roles within the Course Creator
     Platform, establishing a clear hierarchy of permissions and capabilities.
     
     Role Hierarchy (ascending privilege order):
         1. STUDENT: Basic user with course consumption privileges
         2. INSTRUCTOR: Content creator with course management privileges  
-        3. ADMIN: System administrator with platform management privileges
+        3. ORGANIZATION_ADMIN: Organization-level administrator with org management privileges
+        4. ADMIN: System administrator with platform management privileges
     
     Design Rationale:
         - Enum provides type safety and prevents invalid role values
@@ -75,9 +76,10 @@ class UserRole(Enum):
         if user.role == UserRole.ADMIN:
             # Admin-specific operations
     """
-    STUDENT = "student"      # Basic users who consume course content
-    INSTRUCTOR = "instructor"  # Content creators and course managers
-    ADMIN = "admin"          # Platform administrators
+    STUDENT = "student"                    # Basic users who consume course content
+    INSTRUCTOR = "instructor"              # Content creators and course managers
+    ORGANIZATION_ADMIN = "organization_admin"  # Organization-level administrators
+    ADMIN = "admin"                        # Platform administrators
 
 class UserStatus(Enum):
     """
@@ -713,12 +715,13 @@ class User:
         
         Role Hierarchy Logic:
             - INSTRUCTOR role: Has instructor privileges
-            - ADMIN role: Has instructor privileges (plus admin privileges)
+            - ORGANIZATION_ADMIN role: Has instructor privileges (plus org admin privileges)
+            - ADMIN role: Has instructor privileges (plus system admin privileges)
             - STUDENT role: Does not have instructor privileges
         
         Business Rationale:
-            - Admins can perform all instructor functions
-            - Instructors are a subset of admin capabilities
+            - Admins and Organization Admins can perform all instructor functions
+            - Instructors focus on content creation and delivery
             - Clear separation between content consumers and creators
         
         Returns:
@@ -735,7 +738,7 @@ class User:
             - UI components conditionally render based on this check
             - API endpoints protect instructor features with this validation
         """
-        return self.role in [UserRole.INSTRUCTOR, UserRole.ADMIN]
+        return self.role in [UserRole.INSTRUCTOR, UserRole.ORGANIZATION_ADMIN, UserRole.ADMIN]
     
     def is_admin(self) -> bool:
         """
@@ -962,6 +965,81 @@ class User:
             del self.metadata[key]
             self.updated_at = datetime.utcnow()
     
+    def get(self, key: str, default=None):
+        """
+        Dictionary-style access to user attributes for backward compatibility.
+        
+        This method allows the User object to be used like a dictionary,
+        maintaining compatibility with existing code that expects dictionary access.
+        
+        Args:
+            key: Attribute name to retrieve
+            default: Default value if attribute doesn't exist
+            
+        Returns:
+            Attribute value or default
+        """
+        # Special handling for hashed_password which is stored in metadata
+        if key == 'hashed_password':
+            return self.metadata.get('hashed_password', default)
+            
+        if hasattr(self, key):
+            value = getattr(self, key)
+            # Convert enum values to strings for compatibility
+            if hasattr(value, 'value'):
+                return value.value
+            return value
+        return default
+    
+    def __getitem__(self, key: str):
+        """
+        Dictionary-style bracket access for backward compatibility.
+        
+        Args:
+            key: Attribute name to retrieve
+            
+        Returns:
+            Attribute value
+            
+        Raises:
+            KeyError: If attribute doesn't exist
+        """
+        # Special handling for hashed_password which is stored in metadata
+        if key == 'hashed_password':
+            if 'hashed_password' in self.metadata:
+                return self.metadata['hashed_password']
+            raise KeyError(key)
+            
+        if hasattr(self, key):
+            value = getattr(self, key)
+            # Convert enum values to strings for compatibility
+            if hasattr(value, 'value'):
+                return value.value
+            return value
+        raise KeyError(key)
+    
+    def __setitem__(self, key: str, value):
+        """
+        Dictionary-style bracket assignment for backward compatibility.
+        
+        Args:
+            key: Attribute name to set
+            value: Value to set
+        """
+        setattr(self, key, value)
+    
+    def __contains__(self, key: str) -> bool:
+        """
+        Dictionary-style 'in' operator support.
+        
+        Args:
+            key: Attribute name to check
+            
+        Returns:
+            True if attribute exists, False otherwise
+        """
+        return hasattr(self, key)
+
     def to_dict(self) -> Dict[str, Any]:
         """
         Convert user entity to dictionary for serialization and API responses.

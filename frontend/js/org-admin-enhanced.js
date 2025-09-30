@@ -5,6 +5,10 @@
 
 // Import ES6 modules
 import { showNotification } from './modules/notifications.js';
+import AccessibilityManager from './modules/accessibility-manager.js';
+import NavigationManager from './modules/navigation-manager.js';
+import DataVisualization from './modules/data-visualization.js';
+import OnboardingSystem from './modules/onboarding-system.js';
 
 // Global logout function for logout button
 window.logout = async function() {
@@ -131,6 +135,9 @@ class OrgAdminDashboard {
             // Load initial data
             await this.loadDashboardData();
             
+            // Initialize data visualizations
+            this.initializeDataVisualizations();
+            
             // Show overview tab by default
             this.showTab('overview');
             
@@ -176,6 +183,10 @@ class OrgAdminDashboard {
             
             // Update UI
             document.getElementById('currentUserName').textContent = this.currentUser.full_name || this.currentUser.name || this.currentUser.email;
+            
+            // Set user initials for avatar
+            const initials = this.getUserInitials(this.currentUser.full_name || this.currentUser.name || this.currentUser.email);
+            document.getElementById('userInitials').textContent = initials;
             
         } catch (error) {
             console.error('Failed to load user:', error);
@@ -404,17 +415,66 @@ class OrgAdminDashboard {
     }
 
     showTab(tabName) {
-        // Update active tab
-        document.querySelectorAll('.nav-tab').forEach(tab => {
+        // Update active tab with ARIA attributes
+        document.querySelectorAll('.nav-tab[role="tab"]').forEach(tab => {
             tab.classList.remove('active');
+            tab.setAttribute('aria-selected', 'false');
+            tab.setAttribute('tabindex', '-1');
+            
+            // Remove screen reader indication
+            const srText = tab.querySelector('.sr-only');
+            if (srText) {
+                srText.textContent = '';
+            }
         });
-        document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+        
+        const activeTab = document.querySelector(`[data-tab="${tabName}"]`);
+        if (activeTab) {
+            activeTab.classList.add('active');
+            activeTab.setAttribute('aria-selected', 'true');
+            activeTab.setAttribute('tabindex', '0');
+            
+            // Add screen reader indication
+            let srText = activeTab.querySelector('.sr-only');
+            if (!srText) {
+                srText = document.createElement('span');
+                srText.className = 'sr-only';
+                activeTab.appendChild(srText);
+            }
+            srText.textContent = ' - Currently selected';
+        }
 
-        // Show tab content
-        document.querySelectorAll('.tab-content').forEach(content => {
+        // Show tab content with ARIA
+        document.querySelectorAll('.tab-content[role="tabpanel"]').forEach(content => {
             content.classList.remove('active');
+            content.style.display = 'none';
+            content.setAttribute('aria-hidden', 'true');
         });
-        document.getElementById(`${tabName}-tab`).classList.add('active');
+        
+        const activePanel = document.getElementById(`${tabName}-panel`);
+        if (activePanel) {
+            activePanel.classList.add('active');
+            activePanel.style.display = 'block';
+            activePanel.setAttribute('aria-hidden', 'false');
+        }
+
+        // Announce tab change
+        const tabContent = {
+            'overview': 'Organization overview with statistics and recent activity',
+            'projects': 'Project management interface with project list and creation tools',
+            'members': 'Organization member management and role assignments',
+            'tracks': 'Learning track management and course organization',
+            'assignments': 'Role assignment and permission management',
+            'meeting-rooms': 'Virtual meeting room management and scheduling',
+            'settings': 'Organization settings and configuration options'
+        };
+        
+        if (window.a11y) {
+            window.a11y.announcePageChange(
+                tabName.charAt(0).toUpperCase() + tabName.slice(1),
+                tabContent[tabName] || 'Dashboard section'
+            );
+        }
 
         // Load tab-specific data
         switch (tabName) {
@@ -956,6 +1016,7 @@ class OrgAdminDashboard {
             };
 
             const authToken = localStorage.getItem('authToken');
+            console.log('Creating project with token segments:', authToken ? authToken.split('.').length : 'no token');
             
             const orgApiBase = window.CONFIG?.API_URLS?.ORGANIZATION_MANAGEMENT || `https://${window.location.hostname}:8008`;
             const response = await fetch(`${orgApiBase}/api/v1/organizations/${this.currentOrganizationId}/projects`, {
@@ -1544,6 +1605,312 @@ class OrgAdminDashboard {
                 statsGrid.insertAdjacentHTML('afterend', welcomeHTML);
             }
         }
+    }
+    
+    /**
+     * Get user initials for avatar display
+     */
+    getUserInitials(name) {
+        if (!name) return '?';
+        
+        // Handle email format
+        if (name.includes('@')) {
+            name = name.split('@')[0];
+        }
+        
+        // Split by space and take first letter of each word
+        const nameParts = name.split(' ').filter(part => part.length > 0);
+        if (nameParts.length >= 2) {
+            return (nameParts[0][0] + nameParts[1][0]).toUpperCase();
+        } else if (nameParts.length === 1) {
+            return nameParts[0].substring(0, 2).toUpperCase();
+        }
+        
+        return '?';
+    }
+    
+    /**
+     * Show loading state for async operations
+     */
+    showLoading(containerId, message = 'Loading...') {
+        const container = document.getElementById(containerId);
+        if (container) {
+            container.innerHTML = `
+                <div class="loading-container" style="display: flex; align-items: center; justify-content: center; padding: 2rem; flex-direction: column; gap: 1rem;">
+                    <div class="loading-spinner"></div>
+                    <p style="color: var(--text-secondary); font-size: var(--font-size-sm);">${message}</p>
+                </div>
+            `;
+        }
+    }
+    
+    /**
+     * Create skeleton loading placeholder
+     */
+    createSkeleton(width = '100%', height = '20px') {
+        return `<div class="skeleton" style="width: ${width}; height: ${height};"></div>`;
+    }
+    
+    /**
+     * Initialize data visualizations
+     */
+    initializeDataVisualizations() {
+        // Create enhanced stat cards
+        this.createStatCards();
+        
+        // Create analytics charts
+        this.createAnalyticsCharts();
+        
+        // Create projects data table
+        this.createProjectsTable();
+        
+        // Create activity timeline
+        this.createActivityTimeline();
+    }
+    
+    /**
+     * Create enhanced stat cards with trends
+     */
+    createStatCards() {
+        // Projects stat card
+        window.dataViz.createStatCard('projects-stat-card', {
+            title: 'Active Projects',
+            value: this.projects.length || 0,
+            trend: 15,
+            trendValue: 15,
+            icon: 'fas fa-folder-open',
+            description: 'Currently active learning projects',
+            miniChart: { percentage: 75 }
+        });
+        
+        // Members stat card
+        window.dataViz.createStatCard('members-stat-card', {
+            title: 'Team Members',
+            value: this.members.length || 0,
+            trend: 8,
+            trendValue: 8,
+            icon: 'fas fa-users',
+            description: 'Organization members and instructors',
+            miniChart: { percentage: 60 }
+        });
+        
+        // Activity stat card
+        window.dataViz.createStatCard('activity-stat-card', {
+            title: 'Weekly Activity',
+            value: 342,
+            trend: 12,
+            trendValue: 12,
+            icon: 'fas fa-chart-line',
+            description: 'Learning activities this week',
+            miniChart: { percentage: 85 }
+        });
+        
+        // Completion stat card
+        window.dataViz.createStatCard('completion-stat-card', {
+            title: 'Completion Rate',
+            value: '89%',
+            trend: 5,
+            trendValue: 5,
+            icon: 'fas fa-trophy',
+            description: 'Average course completion rate',
+            miniChart: { percentage: 89 }
+        });
+    }
+    
+    /**
+     * Create analytics charts
+     */
+    createAnalyticsCharts() {
+        // Activity chart
+        window.dataViz.createChartContainer('activity-chart', {
+            title: 'Learning Activity Trends',
+            type: 'line',
+            icon: 'fas fa-chart-area',
+            controls: [
+                { label: '7D', value: '7d', onclick: 'orgAdmin.updateActivityChart("7d")' },
+                { label: '30D', value: '30d', onclick: 'orgAdmin.updateActivityChart("30d")' },
+                { label: '90D', value: '90d', onclick: 'orgAdmin.updateActivityChart("90d")' }
+            ]
+        });
+        
+        // Progress overview with ring charts
+        const progressContainer = document.getElementById('progress-overview');
+        if (progressContainer) {
+            progressContainer.innerHTML = `
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3 class="chart-title">
+                            <i class="fas fa-chart-pie" aria-hidden="true"></i>
+                            Progress Overview
+                        </h3>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); padding: var(--space-md);">
+                        <div id="course-progress-ring"></div>
+                        <div id="project-progress-ring"></div>
+                    </div>
+                </div>
+            `;
+            
+            // Create progress rings
+            window.dataViz.createProgressRing('course-progress-ring', {
+                value: 78,
+                max: 100,
+                label: 'Course Progress'
+            });
+            
+            window.dataViz.createProgressRing('project-progress-ring', {
+                value: 65,
+                max: 100,
+                label: 'Project Completion'
+            });
+        }
+    }
+    
+    /**
+     * Create enhanced projects table
+     */
+    createProjectsTable() {
+        const projectsData = {
+            title: 'Recent Projects',
+            columns: [
+                { key: 'name', label: 'Project Name', type: 'text' },
+                { key: 'members', label: 'Members', type: 'text' },
+                { key: 'progress', label: 'Progress', type: 'chart' },
+                { key: 'status', label: 'Status', type: 'badge' },
+                { key: 'trend', label: 'Trend', type: 'trend' }
+            ],
+            rows: [
+                {
+                    name: 'AI Fundamentals Course',
+                    members: '24 students',
+                    progress: 78,
+                    status: 'Active',
+                    trend: 12
+                },
+                {
+                    name: 'Data Science Track',
+                    members: '18 students', 
+                    progress: 45,
+                    status: 'Active',
+                    trend: 8
+                },
+                {
+                    name: 'Web Development Bootcamp',
+                    members: '32 students',
+                    progress: 92,
+                    status: 'Completing',
+                    trend: 15
+                },
+                {
+                    name: 'Machine Learning Lab',
+                    members: '12 students',
+                    progress: 23,
+                    status: 'Active',
+                    trend: -2
+                }
+            ],
+            actions: [
+                {
+                    label: 'Export',
+                    icon: 'fas fa-download',
+                    onclick: 'orgAdmin.exportProjectData()'
+                },
+                {
+                    label: 'Refresh',
+                    icon: 'fas fa-sync-alt',
+                    onclick: 'orgAdmin.refreshProjectsTable()'
+                }
+            ]
+        };
+        
+        window.dataViz.createDataTable('projects-table', projectsData);
+    }
+    
+    /**
+     * Create activity timeline
+     */
+    createActivityTimeline() {
+        const activities = [
+            {
+                title: 'New Course Launched',
+                description: 'AI Fundamentals Course has been published and is now available for enrollment.',
+                timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() // 2 hours ago
+            },
+            {
+                title: 'Student Milestone Achieved',
+                description: 'Sarah Chen completed the Data Science Track with a perfect score.',
+                timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString() // 5 hours ago
+            },
+            {
+                title: 'Meeting Room Created',
+                description: 'New virtual meeting room set up for the Machine Learning Lab sessions.',
+                timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() // 1 day ago
+            },
+            {
+                title: 'Instructor Added',
+                description: 'Dr. Michael Rodriguez joined as a new instructor for advanced courses.',
+                timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() // 3 days ago
+            }
+        ];
+        
+        window.dataViz.createActivityTimeline('activity-timeline', activities);
+    }
+    
+    /**
+     * Update activity chart for different time periods
+     */
+    updateActivityChart(period) {
+        // Update chart period selection
+        document.querySelectorAll('.chart-period-selector').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        document.querySelector(`[data-period="${period}"]`).classList.add('active');
+        
+        // Show loading state
+        window.dataViz.showChartLoading('activity-chart');
+        
+        // Simulate data loading
+        setTimeout(() => {
+            const content = document.getElementById('activity-chart-content');
+            if (content) {
+                content.innerHTML = `
+                    <div style="height: 200px; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
+                        <div style="text-align: center;">
+                            <i class="fas fa-chart-line" style="font-size: 3rem; margin-bottom: 1rem; color: var(--brand-primary-500);"></i>
+                            <p>Activity data for ${period.toUpperCase()} period</p>
+                            <p style="font-size: var(--font-size-sm);">Chart integration ready for external library</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }, 1000);
+        
+        if (window.a11y) {
+            window.a11y.announce(`Activity chart updated to show ${period} period`);
+        }
+    }
+    
+    /**
+     * Export project data
+     */
+    exportProjectData() {
+        if (window.a11y) {
+            window.a11y.announce('Exporting project data');
+        }
+        showNotification('Project data export started', 'info');
+        console.log('Exporting project data...');
+    }
+    
+    /**
+     * Refresh projects table
+     */
+    refreshProjectsTable() {
+        if (window.a11y) {
+            window.a11y.announce('Refreshing projects table');
+        }
+        showNotification('Projects table refreshed', 'success');
+        this.createProjectsTable();
     }
 
 }

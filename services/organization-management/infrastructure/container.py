@@ -125,7 +125,8 @@ class Container:
                     database=database_config.name,
                     min_size=database_config.get('min_connections', 5),
                     max_size=database_config.get('max_connections', 20),
-                    command_timeout=database_config.get('command_timeout', 60)
+                    command_timeout=database_config.get('command_timeout', 60),
+                    server_settings={'search_path': 'course_creator,public'}
                 )
 
                 self._logger.info("RBAC database connection pool created successfully")

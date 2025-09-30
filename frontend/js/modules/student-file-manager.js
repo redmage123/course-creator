@@ -3,11 +3,11 @@
  * Handles file downloads and workspace management for students
  */
 
-import { CONFIG } from '../config-global.js';
+
 
 export class StudentFileManager {
     constructor() {
-        this.labManagerURL = CONFIG.API_URLS.LAB_MANAGER;
+        this.labManagerURL = window.CONFIG?.API_URLS.LAB_MANAGER;
         this.currentLabId = null;
         this.fileList = [];
         this.isLoading = false;

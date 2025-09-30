@@ -318,12 +318,12 @@ export class NavigationManager {
                 <form id="login-form">
                     <div class="form-group">
                         <label for="login-username">Username/ID:</label>
-                        <input type="text" id="login-username" name="username" required placeholder="Enter your username or ID">
+                        <input type="text" id="login-username" name="username" required placeholder="Enter your username or ID" autocomplete="username">
                     </div>
                     <div class="form-group">
                         <label for="login-password">Password:</label>
                         <div class="password-input-container">
-                            <input type="password" id="login-password" name="password" required>
+                            <input type="password" id="login-password" name="password" required autocomplete="current-password">
                         </div>
                     </div>
                     <div class="form-actions">
@@ -409,7 +409,7 @@ export class NavigationManager {
                             <li><i class="fas fa-check"></i> User role management</li>
                             <li><i class="fas fa-check"></i> Custom branding options</li>
                         </ul>
-                        <button class="btn btn-primary" onclick="window.location.href='/html/organization-registration.html'">
+                        <button class="btn btn-primary" onclick="window.location.href='html/organization-registration.html'">
                             <i class="fas fa-building"></i> Register Organization
                         </button>
                     </div>
@@ -966,7 +966,7 @@ export class NavigationManager {
     async loadAvailableOrganizations() {
         try {
             const response = await fetch(`${window.CONFIG?.PORTS?.ORGANIZATION_MANAGEMENT ? 
-                `http://localhost:${window.CONFIG.PORTS.ORGANIZATION_MANAGEMENT}` : 
+                `http://localhost:${window.window.CONFIG?.PORTS.ORGANIZATION_MANAGEMENT}` : 
                 'http://localhost:8008'}/api/v1/organizations`);
             
             if (response.ok) {

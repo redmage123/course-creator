@@ -64,7 +64,7 @@ async def require_instructor_or_admin(
 ) -> Dict[str, Any]:
     """Require instructor role or higher (instructor, project_manager, org_admin, super_admin)"""
     user_roles = current_user.get('roles', [])
-    allowed_roles = ['instructor', 'project_manager', 'org_admin', 'super_admin']
+    allowed_roles = ['instructor', 'project_manager', 'org_admin', 'organization_admin', 'super_admin']
     
     if not any(role in allowed_roles for role in user_roles):
         raise HTTPException(

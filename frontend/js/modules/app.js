@@ -375,53 +375,49 @@ class App {
 
     handleRegisterClick = () => {
         console.log('📝 Register button clicked');
-        console.log('🔍 Checking Navigation availability...');
-        console.log('   - Navigation object:', Navigation);
-        console.log('   - Navigation.showRegister:', Navigation?.showRegister);
-        console.log('   - window.Navigation:', window.Navigation);
-        console.log('   - window.Navigation.showRegister:', window.Navigation?.showRegister);
+        console.log('🔄 Redirecting to organization registration page...');
         
-        // Try multiple ways to call showRegister
-        let success = false;
-        
-        // Method 1: Direct import
-        if (Navigation && Navigation.showRegister) {
-            console.log('✅ Calling Navigation.showRegister() via import');
-            try {
-                Navigation.showRegister();
-                success = true;
-            } catch (error) {
-                console.error('❌ Error calling Navigation.showRegister():', error);
+        // Redirect directly to organization registration form
+        try {
+            window.location.href = 'html/organization-registration.html';
+            console.log('✅ Redirecting to organization registration');
+        } catch (error) {
+            console.error('❌ Error redirecting to organization registration:', error);
+            
+            // Fallback: Try the original showRegister function
+            console.log('🔄 Falling back to Navigation.showRegister()...');
+            
+            if (Navigation && Navigation.showRegister) {
+                console.log('✅ Calling Navigation.showRegister() via import');
+                try {
+                    Navigation.showRegister();
+                } catch (fallbackError) {
+                    console.error('❌ Error calling Navigation.showRegister():', fallbackError);
+                }
             }
-        }
-        
-        // Method 2: Global window object
-        else if (window.Navigation && window.Navigation.showRegister) {
-            console.log('✅ Calling window.Navigation.showRegister()');
-            try {
-                window.Navigation.showRegister();
-                success = true;
-            } catch (error) {
-                console.error('❌ Error calling window.Navigation.showRegister():', error);
+            else if (window.Navigation && window.Navigation.showRegister) {
+                console.log('✅ Calling window.Navigation.showRegister()');
+                try {
+                    window.Navigation.showRegister();
+                } catch (fallbackError) {
+                    console.error('❌ Error calling window.Navigation.showRegister():', fallbackError);
+                }
             }
-        }
-        
-        // Method 3: Try global showRegister function
-        else if (typeof window.showRegister === 'function') {
-            console.log('✅ Calling window.showRegister()');
-            try {
-                window.showRegister();
-                success = true;
-            } catch (error) {
-                console.error('❌ Error calling window.showRegister():', error);
+            else if (typeof window.showRegister === 'function') {
+                console.log('✅ Calling window.showRegister()');
+                try {
+                    window.showRegister();
+                    success = true;
+                } catch (error) {
+                    console.error('❌ Error calling window.showRegister():', error);
+                }
             }
-        }
-        
-        else {
-            console.error('❌ No Navigation.showRegister method found');
-            console.log('Available window properties:', Object.keys(window).filter(key => 
-                key.includes('Navigation') || key.includes('show') || key.includes('register')
-            ));
+            else {
+                console.error('❌ No Navigation.showRegister method found');
+                console.log('Available window properties:', Object.keys(window).filter(key => 
+                    key.includes('Navigation') || key.includes('show') || key.includes('register')
+                ));
+            }
         }
         
         if (success) {

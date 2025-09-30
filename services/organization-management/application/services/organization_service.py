@@ -57,26 +57,44 @@ class OrganizationService:
             Exception: If user creation fails
         """
         try:
+            # Debug admin_username parameter
+            print(f"=== DEBUG admin_username: '{admin_username}' (type: {type(admin_username)}, is None: {admin_username is None})")
+            self._logger.info(f"DEBUG admin_username: '{admin_username}' (type: {type(admin_username)}, is None: {admin_username is None})")
+            
             # Use provided username or generate from email as fallback
-            if admin_username:
+            if admin_username and admin_username.strip():
                 # Use provided admin username/ID
                 username = admin_username.lower().strip()
+                self._logger.info(f"Using provided admin username: '{username}'")
                 # Validate username format (letters, numbers, underscore, hyphen only)
                 if not username or not all(c.isalnum() or c in '_-' for c in username):
                     raise ValueError("Invalid username format. Only letters, numbers, underscores, and hyphens are allowed.")
                 if len(username) < 3 or len(username) > 30:
                     raise ValueError("Username must be between 3 and 30 characters.")
             else:
+                self._logger.info(f"No admin username provided (value: '{admin_username}'), generating from email: '{admin_email}'")
                 # Fallback: Generate valid username from email by sanitizing special characters
                 # Extract local part of email and replace invalid characters with underscores
                 email_local = admin_email.split('@')[0].lower()
                 # Replace dots, hyphens, and other invalid characters with underscores
                 username = ''.join(c if c.isalnum() else '_' for c in email_local)
                 # Ensure no consecutive underscores and trim to valid length
-                username = '_'.join(filter(None, username.split('_')))[:30]
+                username = '_'.join(filter(None, username.split('_')))[:24]  # Leave room for suffix
                 # Ensure minimum length of 3 characters
                 if len(username) < 3:
                     username = username + '_user'
+                
+                # Add timestamp suffix to ensure global uniqueness
+                import time
+                timestamp_suffix = str(int(time.time()))[-4:]  # Last 4 digits of timestamp
+                # Combine with org prefix for readability and uniqueness (sanitize org slug)
+                org_prefix = organization_slug[:6] if len(organization_slug) >= 3 else organization_slug
+                org_prefix = ''.join(c if c.isalnum() else '_' for c in org_prefix)  # Sanitize org prefix
+                username = f"{username}_{org_prefix}_{timestamp_suffix}"[:30]
+                # Final cleanup to ensure only valid characters
+                username = ''.join(c if (c.isalnum() or c == '_') else '_' for c in username)
+                
+                self._logger.info(f"Generated unique username: '{username}' from email: '{admin_email}' and org: '{organization_slug}'")
             
             # Use provided password or generate temporary one
             if admin_password:
@@ -91,8 +109,8 @@ class OrganizationService:
                 is_temp_password = True
                 self._logger.info(f"Generated temporary password for user: {admin_email}")
             
-            # Default role is organization admin
-            primary_role = "org_admin" if "org_admin" in (admin_roles or []) else "instructor"
+            # Default role is organization admin (using org_admin to match frontend expectations)
+            primary_role = "org_admin" if "org_admin" in (admin_roles or []) else "org_admin"
             
             # Prepare user registration request
             user_registration_data = {
@@ -159,19 +177,35 @@ class OrganizationService:
             Dict containing organization and admin user information
         """
         try:
+            print(f"=== SERVICE DEBUG: Starting create_organization")
+            print(f"=== SERVICE PARAMS: name='{name}', slug='{slug}', admin_email='{admin_email}'")
+            self._logger.info(f"SERVICE DEBUG: Starting create_organization with name='{name}', slug='{slug}'")
+            
             # Validate admin information is provided
+            print(f"=== SERVICE DEBUG: Validating admin information")
             if not admin_full_name or not admin_email:
+                print(f"=== SERVICE ERROR: Missing admin info - admin_full_name: {admin_full_name}, admin_email: {admin_email}")
                 raise ValueError("Organization administrator information (full name and email) is required")
             
             # Check if slug already exists
-            if await self._dao.exists_by_slug(slug):
+            print(f"=== SERVICE DEBUG: Checking if slug exists: {slug}")
+            slug_exists = await self._dao.exists_by_slug(slug)
+            print(f"=== SERVICE DEBUG: Slug exists result: {slug_exists}")
+            if slug_exists:
+                print(f"=== SERVICE ERROR: Slug already exists: {slug}")
                 raise ValueError(f"Organization with slug '{slug}' already exists")
 
             # Check if domain already exists (if provided)
-            if domain and await self._dao.exists_by_domain(domain):
-                raise ValueError(f"Organization with domain '{domain}' already exists")
+            if domain:
+                print(f"=== SERVICE DEBUG: Checking if domain exists: {domain}")
+                domain_exists = await self._dao.exists_by_domain(domain)
+                print(f"=== SERVICE DEBUG: Domain exists result: {domain_exists}")
+                if domain_exists:
+                    print(f"=== SERVICE ERROR: Domain already exists: {domain}")
+                    raise ValueError(f"Organization with domain '{domain}' already exists")
 
             # Step 1: Create organization administrator user first
+            print(f"=== SERVICE DEBUG: About to create organization administrator")
             self._logger.info(f"Creating organization administrator: {admin_email}")
             admin_user_info = await self._create_organization_admin_user(
                 admin_full_name=admin_full_name,
@@ -182,30 +216,122 @@ class OrganizationService:
                 admin_password=admin_password,
                 admin_username=admin_username
             )
+            
+            print(f"=== SERVICE DEBUG: Admin user creation completed successfully")
+            self._logger.info(f"SERVICE DEBUG: Admin user creation completed successfully")
 
             # Step 2: Create organization entity
-            organization = Organization(
-                name=name,
-                slug=slug,
-                address=address,
-                contact_phone=contact_phone,
-                contact_email=contact_email,
-                description=description,
-                logo_url=logo_url,
-                domain=domain,
-                settings=settings or {}
-            )
+            print(f"=== SERVICE DEBUG: About to create organization entity")
+            print(f"=== CREATING ORGANIZATION ENTITY with name='{name}', slug='{slug}', domain='{domain}'")
+            self._logger.info(f"CREATING ORGANIZATION ENTITY with name='{name}', slug='{slug}', domain='{domain}'")
+            try:
+                organization = Organization(
+                    name=name,
+                    slug=slug,
+                    address=address,
+                    contact_phone=contact_phone,
+                    contact_email=contact_email,
+                    description=description,
+                    logo_url=logo_url,
+                    domain=domain,
+                    settings=settings or {}
+                )
+                print(f"=== ORGANIZATION ENTITY CREATED SUCCESSFULLY")
+                self._logger.info("ORGANIZATION ENTITY CREATED SUCCESSFULLY")
+            except Exception as org_creation_error:
+                print(f"=== ERROR CREATING ORGANIZATION ENTITY: {org_creation_error}")
+                self._logger.error(f"ERROR CREATING ORGANIZATION ENTITY: {org_creation_error}")
+                raise
 
-            # Validate organization
-            if not organization.is_valid():
+            # Validate organization with detailed debugging
+            try:
+                print(f"=== VALIDATION DEBUG: Starting validation for organization: {organization.name}")
+                self._logger.info(f"VALIDATION DEBUG: Starting validation for organization: {organization.name}")
+                
+                required_fields = organization.validate_required_fields()
+                print(f"=== VALIDATION DEBUG: Required fields valid: {required_fields}")
+                self._logger.info(f"VALIDATION DEBUG: Required fields valid: {required_fields}")
+                
+                slug_valid = organization.validate_slug()
+                print(f"=== VALIDATION DEBUG: Slug valid: {slug_valid}")
+                self._logger.info(f"VALIDATION DEBUG: Slug valid: {slug_valid}")
+                
+                domain_valid = organization.validate_domain()
+                print(f"=== VALIDATION DEBUG: Domain valid: {domain_valid}")
+                self._logger.info(f"VALIDATION DEBUG: Domain valid: {domain_valid}")
+                
+                email_valid = organization.validate_contact_email()
+                print(f"=== VALIDATION DEBUG: Email valid: {email_valid}")
+                self._logger.info(f"VALIDATION DEBUG: Email valid: {email_valid}")
+                
+                is_valid = organization.is_valid()
+                print(f"=== VALIDATION DEBUG: Overall valid: {is_valid}")
+                self._logger.info(f"VALIDATION DEBUG: Overall valid: {is_valid}")
+                
+                if not is_valid:
+                    # Create detailed error message with validation results
+                    failed_validations = []
+                    if not required_fields:
+                        failed_validations.append("required_fields")
+                    if not slug_valid:
+                        failed_validations.append("slug")
+                    if not domain_valid:
+                        failed_validations.append("domain")
+                    if not email_valid:
+                        failed_validations.append("email")
+                    
+                    error_details = f"Failed validations: {', '.join(failed_validations)}"
+                    # Force detailed error message to appear
+                    print(f"=== RAISING DETAILED ERROR: Invalid organization data - {error_details}")
+                    self._logger.error(f"RAISING DETAILED ERROR: Invalid organization data - {error_details}")
+                    raise ValueError(f"Invalid organization data - {error_details}")
+            except Exception as e:
+                # Debug which validation is failing with exception details
+                try:
+                    required_fields = organization.validate_required_fields()
+                    slug_valid = organization.validate_slug()
+                    domain_valid = organization.validate_domain()
+                    email_valid = organization.validate_contact_email()
+                    
+                    print(f"=== EXCEPTION VALIDATION DEBUG - Required: {required_fields}, Slug: {slug_valid}, Domain: {domain_valid}, Email: {email_valid}")
+                    print(f"=== EXCEPTION ORG DATA - Name: '{organization.name}', Slug: '{organization.slug}', Address len: {len(organization.address) if organization.address else 0}, Email: '{organization.contact_email}', Domain: '{organization.domain}'")
+                except Exception as validation_error:
+                    print(f"=== ERROR DURING VALIDATION DEBUG: {validation_error}")
+                
+                self._logger.error(f"EXCEPTION during validation: {type(e).__name__}: {e}")
+                import traceback
+                self._logger.error(f"TRACEBACK: {traceback.format_exc()}")
                 raise ValueError("Invalid organization data")
 
             # Persist organization
-            created_organization = await self._dao.create(organization)
+            print(f"=== SERVICE DEBUG: About to persist organization to database")
+            print(f"=== SERVICE DEBUG: Preparing organization data dictionary")
+            org_data = {
+                'id': organization.id,
+                'name': organization.name,
+                'slug': organization.slug,
+                'description': organization.description,
+                'domain': organization.domain,
+                'address': organization.address,
+                'contact_email': organization.contact_email,
+                'contact_phone': organization.contact_phone,
+                'logo_url': organization.logo_url,
+                'settings': organization.settings,
+                'is_active': organization.is_active
+            }
+            print(f"=== SERVICE DEBUG: Organization data prepared, calling DAO.create_organization")
+            self._logger.info(f"SERVICE DEBUG: About to call DAO.create_organization")
+            org_id = await self._dao.create_organization(org_data)
+            print(f"=== SERVICE DEBUG: DAO.create_organization completed, returned ID: {org_id}")
+            self._logger.info(f"SERVICE DEBUG: DAO.create_organization completed, returned ID: {org_id}")
+            # Get the created organization back
+            created_organization = organization  # We already have the entity
 
+            print(f"=== SERVICE DEBUG: About to build return data")
             self._logger.info(f"Organization created successfully: {created_organization.slug}")
             
             # Return comprehensive information including admin user details
+            print(f"=== SERVICE DEBUG: Building final return dictionary")
             return {
                 "organization": {
                     "id": str(created_organization.id),
@@ -227,8 +353,16 @@ class OrganizationService:
             }
 
         except Exception as e:
+            print(f"=== SERVICE ERROR: Exception in create_organization: {type(e).__name__}: {str(e)}")
             self._logger.error(f"Error creating organization: {str(e)}")
-            raise
+            import traceback
+            print(f"=== SERVICE ERROR TRACEBACK: {traceback.format_exc()}")
+            self._logger.error(f"SERVICE ERROR TRACEBACK: {traceback.format_exc()}")
+            # Re-raise with original message to preserve details
+            if isinstance(e, ValueError):
+                raise e
+            else:
+                raise
     
     async def __aenter__(self):
         """Async context manager entry"""

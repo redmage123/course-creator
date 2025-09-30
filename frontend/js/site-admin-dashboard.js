@@ -42,7 +42,7 @@
  * PURPOSE: Import configuration and utility modules
  * WHY: Centralized configuration and consistent notification system
  */
-import { CONFIG } from './config-global.js';
+
 import { showNotification } from './modules/notifications.js';
 
 class SiteAdminDashboard {
@@ -82,13 +82,13 @@ class SiteAdminDashboard {
         
         // CONFIGURATION: Centralized timeout and API settings
         // WHY: Configurable values enable easy maintenance and environment adaptation
-        this.SESSION_TIMEOUT = CONFIG.SECURITY.SESSION_TIMEOUT || 8 * 60 * 60 * 1000; // 8 hours
-        this.INACTIVITY_TIMEOUT = CONFIG.SECURITY.INACTIVITY_TIMEOUT || 2 * 60 * 60 * 1000; // 2 hours
-        this.NOTIFICATION_TIMEOUT = CONFIG.UI.NOTIFICATION_TIMEOUT || 5000; // 5 seconds
-        this.INTEGRATION_TEST_DELAY = CONFIG.TESTING.INTEGRATION_DELAY || 2000; // 2 seconds
+        this.SESSION_TIMEOUT = window.CONFIG?.SECURITY.SESSION_TIMEOUT || 8 * 60 * 60 * 1000; // 8 hours
+        this.INACTIVITY_TIMEOUT = window.CONFIG?.SECURITY.INACTIVITY_TIMEOUT || 2 * 60 * 60 * 1000; // 2 hours
+        this.NOTIFICATION_TIMEOUT = window.CONFIG?.UI.NOTIFICATION_TIMEOUT || 5000; // 5 seconds
+        this.INTEGRATION_TEST_DELAY = window.CONFIG?.TESTING.INTEGRATION_DELAY || 2000; // 2 seconds
         
         // API ENDPOINTS: Centralized endpoint configuration
-        this.API_BASE = CONFIG.API_URLS.RBAC_SERVICE || '/api/v1';
+        this.API_BASE = window.CONFIG?.API_URLS.RBAC_SERVICE || '/api/v1';
         
         // AUTOMATIC INITIALIZATION: Set up dashboard immediately
         // WHY: Constructor should establish fully functional dashboard system

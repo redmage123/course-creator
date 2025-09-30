@@ -33,7 +33,7 @@
  */
 
 import { Auth } from './auth.js';
-import { CONFIG } from '../config-global.js';
+
 import { showNotification } from './notifications.js';
 import UIComponents from './ui-components.js';
 
@@ -157,7 +157,7 @@ export class InstructorDashboard {
     async showQuizManagement(courseId) {
         try {
             // Get course instances for the course
-            const instancesResponse = await fetch(`${CONFIG.BASE_URL}/courses/${courseId}/instances`, {
+            const instancesResponse = await fetch(`${window.CONFIG?.BASE_URL}/courses/${courseId}/instances`, {
                 headers: {
                     'Authorization': `Bearer ${Auth.getToken()}`
                 }
@@ -327,7 +327,7 @@ export class InstructorDashboard {
      */
     async loadCourses() {
         try {
-            const response = await Auth.authenticatedFetch(CONFIG.ENDPOINTS.COURSES);
+            const response = await Auth.authenticatedFetch(window.CONFIG?.ENDPOINTS.COURSES);
             
             if (response.ok) {
                 const data = await response.json();
@@ -1265,7 +1265,7 @@ export class InstructorDashboard {
                 category: formData.get('category')
             };
 
-            const response = await Auth.authenticatedFetch(CONFIG.ENDPOINTS.COURSES, {
+            const response = await Auth.authenticatedFetch(window.CONFIG?.ENDPOINTS.COURSES, {
                 method: 'POST',
                 body: JSON.stringify(courseData)
             });
@@ -1358,7 +1358,7 @@ export class InstructorDashboard {
             async () => {
                 try {
                     const response = await Auth.authenticatedFetch(
-                        CONFIG.ENDPOINTS.COURSE_BY_ID(courseId),
+                        window.CONFIG?.ENDPOINTS.COURSE_BY_ID(courseId),
                         { method: 'DELETE' }
                     );
 
@@ -1486,7 +1486,7 @@ export class InstructorDashboard {
                 course_id: formData.get('course_id')
             };
 
-            const response = await Auth.authenticatedFetch(CONFIG.ENDPOINTS.ENROLL_STUDENT, {
+            const response = await Auth.authenticatedFetch(window.CONFIG?.ENDPOINTS.ENROLL_STUDENT, {
                 method: 'POST',
                 body: JSON.stringify(studentData)
             });
@@ -1516,7 +1516,7 @@ export class InstructorDashboard {
             async () => {
                 try {
                     const response = await Auth.authenticatedFetch(
-                        CONFIG.ENDPOINTS.REMOVE_ENROLLMENT(studentId),
+                        window.CONFIG?.ENDPOINTS.REMOVE_ENROLLMENT(studentId),
                         { method: 'DELETE' }
                     );
 
@@ -1806,7 +1806,7 @@ export class InstructorDashboard {
      */
     async loadPublishedCourses() {
         try {
-            const response = await fetch(`${CONFIG.ENDPOINTS.COURSE_SERVICE}/courses/published`, {
+            const response = await fetch(`${window.CONFIG?.ENDPOINTS.COURSE_SERVICE}/courses/published`, {
                 headers: {
                     'Authorization': `Bearer ${Auth.getToken()}`
                 }
@@ -1873,7 +1873,7 @@ export class InstructorDashboard {
      */
     async loadCourseInstances() {
         try {
-            const response = await fetch(`${CONFIG.ENDPOINTS.COURSE_SERVICE}/course-instances`, {
+            const response = await fetch(`${window.CONFIG?.ENDPOINTS.COURSE_SERVICE}/course-instances`, {
                 headers: {
                     'Authorization': `Bearer ${Auth.getToken()}`
                 }
@@ -1986,7 +1986,7 @@ export class InstructorDashboard {
     async showCreateInstanceModal() {
         // Load published courses for the dropdown
         try {
-            const response = await fetch(`${CONFIG.ENDPOINTS.COURSE_SERVICE}/courses/published`, {
+            const response = await fetch(`${window.CONFIG?.ENDPOINTS.COURSE_SERVICE}/courses/published`, {
                 headers: {
                     'Authorization': `Bearer ${Auth.getToken()}`
                 }
@@ -2042,7 +2042,7 @@ export class InstructorDashboard {
         };
 
         try {
-            const response = await fetch(`${CONFIG.ENDPOINTS.COURSE_SERVICE}/course-instances`, {
+            const response = await fetch(`${window.CONFIG?.ENDPOINTS.COURSE_SERVICE}/course-instances`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2095,7 +2095,7 @@ export class InstructorDashboard {
         const instanceId = formData.get('instance_id');
 
         try {
-            const response = await fetch(`${CONFIG.ENDPOINTS.COURSE_SERVICE}/course-instances/${instanceId}/enroll`, {
+            const response = await fetch(`${window.CONFIG?.ENDPOINTS.COURSE_SERVICE}/course-instances/${instanceId}/enroll`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2158,7 +2158,7 @@ export class InstructorDashboard {
         }
 
         try {
-            const response = await fetch(`${CONFIG.ENDPOINTS.COURSE_SERVICE}/courses/${courseId}/unpublish`, {
+            const response = await fetch(`${window.CONFIG?.ENDPOINTS.COURSE_SERVICE}/courses/${courseId}/unpublish`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${Auth.getToken()}`
@@ -2184,7 +2184,7 @@ export class InstructorDashboard {
         }
 
         try {
-            const response = await fetch(`${CONFIG.ENDPOINTS.COURSE_SERVICE}/course-instances/${instanceId}/cancel`, {
+            const response = await fetch(`${window.CONFIG?.ENDPOINTS.COURSE_SERVICE}/course-instances/${instanceId}/cancel`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${Auth.getToken()}`
@@ -2268,7 +2268,7 @@ export class InstructorDashboard {
         if (!confirmed) return;
 
         try {
-            const response = await fetch(`${CONFIG.ENDPOINTS.COURSE_SERVICE}/course-instances/${instanceId}/complete`, {
+            const response = await fetch(`${window.CONFIG?.ENDPOINTS.COURSE_SERVICE}/course-instances/${instanceId}/complete`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${Auth.getToken()}`,

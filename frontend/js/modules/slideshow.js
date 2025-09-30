@@ -35,6 +35,9 @@ class Slideshow {
         this.touchEndX = 0;
         this.minSwipeDistance = 50;
         
+        // Viewport visibility tracking (performance optimization)
+        this.isInViewport = true; // Default to true for initial load
+        
         this.init();
     }
 
@@ -52,6 +55,7 @@ class Slideshow {
         console.log('Slideshow wrapper:', this.slidesWrapper);
         
         this.setupEventListeners();
+        this.setupIntersectionObserver();
         this.startAutoplay();
         this.updateSlideshow();
         
@@ -87,6 +91,35 @@ class Slideshow {
                 this.resumeAutoplay();
             }
         });
+    }
+
+    /**
+     * INTERSECTION OBSERVER SETUP
+     * PURPOSE: Track viewport visibility without causing forced reflows
+     */
+    setupIntersectionObserver() {
+        if (!('IntersectionObserver' in window)) {
+            // Fallback for older browsers - assume always visible
+            this.isInViewport = true;
+            return;
+        }
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                this.isInViewport = entry.isIntersecting;
+                // Pause/resume based on visibility for better performance
+                if (entry.isIntersecting) {
+                    this.resumeAutoplay();
+                } else {
+                    this.pauseAutoplay();
+                }
+            });
+        }, {
+            // Trigger when 10% of the slideshow is visible
+            threshold: 0.1
+        });
+
+        observer.observe(this.container);
     }
 
     /**
@@ -190,10 +223,8 @@ class Slideshow {
      */
     handleKeydown(e) {
         // Only handle keyboard navigation if slideshow is visible
-        const rect = this.container.getBoundingClientRect();
-        const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
-        
-        if (!isVisible) return;
+        // Use Intersection Observer API instead of getBoundingClientRect for better performance
+        if (!this.isInViewport) return;
 
         switch (e.key) {
             case 'ArrowLeft':

@@ -206,32 +206,14 @@ class AuthenticationService(IAuthenticationService):
         Try username first (for admin users), then fall back to email.
         """
         # First try to find by username
-        user_data = await self._user_dao.get_user_by_username(username_or_email)
+        user = await self._user_dao.get_user_by_username(username_or_email)
         
         # If not found by username, try by email
-        if not user_data:
-            user_data = await self._user_dao.get_user_by_email(username_or_email)
+        if not user:
+            user = await self._user_dao.get_user_by_email(username_or_email)
         
-        if not user_data:
+        if not user:
             return None
-        
-        # Convert user_data dict to User entity
-        from domain.entities.user import UserRole, UserStatus
-        user = User(
-            id=str(user_data['id']),
-            email=user_data['email'],
-            username=user_data['username'],
-            full_name=user_data['full_name'],
-            role=UserRole(user_data['role']),
-            status=UserStatus(user_data['status']),
-            first_name=user_data.get('first_name'),
-            last_name=user_data.get('last_name'),
-            organization=user_data.get('organization'),
-            created_at=user_data.get('created_at'),
-            updated_at=user_data.get('updated_at'),
-            last_login=user_data.get('last_login'),
-            metadata={'hashed_password': user_data['hashed_password']}
-        )
         
         """
         Account status verification: Only active users can authenticate.
@@ -243,7 +225,7 @@ class AuthenticationService(IAuthenticationService):
         """
         Password verification: Use secure bcrypt verification.
         """
-        hashed_password = user_data['hashed_password']
+        hashed_password = user.metadata.get('hashed_password')
         
         if hashed_password:
             try:

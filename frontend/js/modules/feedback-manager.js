@@ -3,11 +3,11 @@
  * Handles both student course feedback and instructor student feedback
  */
 
-import { CONFIG } from '../config-global.js';
+
 
 class FeedbackManager {
     constructor() {
-        this.courseManagementURL = CONFIG.API_URLS.COURSE_MANAGEMENT;
+        this.courseManagementURL = window.CONFIG?.API_URLS.COURSE_MANAGEMENT;
         this.currentUser = null;
         this.currentUserRole = null;
     }

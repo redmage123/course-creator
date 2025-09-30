@@ -23,6 +23,7 @@ services:
       POSTGRES_PASSWORD: postgres_password
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./data:/docker-entrypoint-initdb.d:ro
     ports:
       - "5433:5432"
     networks:
@@ -392,7 +393,7 @@ services:
     env_file:
       - .cc_env
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
+      - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator?options=-csearch_path=course_creator,public
       - REDIS_URL=redis://redis:6379
       - USER_MANAGEMENT_URL=https://user-management:8000
       - COURSE_SERVICE_URL=https://course-management:8004

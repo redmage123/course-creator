@@ -47,6 +47,26 @@
 @import url('./utilities/spacing.css');
 @import url('./utilities/layout.css');
 
+/* ===== ACCESSIBILITY LAYER ===== */
+/* Comprehensive accessibility enhancements */
+@import url('./accessibility.css');
+
+/* ===== MODERN DESIGN SYSTEM ===== */
+/* Contemporary visual design enhancements */
+@import url('./design-system/modern-design.css');
+
+/* ===== ENHANCED NAVIGATION ===== */
+/* Advanced navigation UX and patterns */
+@import url('./navigation/enhanced-navigation.css');
+
+/* ===== DATA VISUALIZATION ===== */
+/* Modern charts and analytics displays */
+@import url('./visualization/charts.css');
+
+/* ===== ONBOARDING & HELP SYSTEM ===== */
+/* Interactive tutorials and user guidance */
+@import url('./onboarding/help-system.css');
+
 /* ===== LEGACY COMPATIBILITY ===== */
 /* Temporary compatibility styles for existing HTML */
 /* TODO: Remove these as HTML is updated to use modular classes */

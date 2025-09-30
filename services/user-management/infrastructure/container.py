@@ -304,8 +304,13 @@ class UserManagementContainer:
     
     def get_session_service(self) -> ISessionService:
         """Get session service instance"""
-        # Temporary mock for DAO migration
-        return None
+        if not self._session_service:
+            self._session_service = SessionService(
+                session_dao=self.get_user_dao(),
+                token_service=self.get_token_service()
+            )
+        
+        return self._session_service
 
 
 # Mock implementation for demonstration (would be replaced with real PostgreSQL implementation)

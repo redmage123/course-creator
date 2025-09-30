@@ -1,7 +1,7 @@
 // Lab environment JavaScript functions (global scope)
 
 // Import CONFIG or use fallback
-import { CONFIG } from './config-global.js';
+
 
 // Ensure CONFIG is available globally for legacy compatibility
 if (typeof window.CONFIG === 'undefined') {
@@ -233,7 +233,7 @@ Restricted to: ${sandboxRoot}
 async function loadExercises() {
     
     try {
-        const response = await fetch(`${CONFIG.ENDPOINTS.EXERCISES(courseId)}`);
+        const response = await fetch(`${window.CONFIG?.ENDPOINTS.EXERCISES(courseId)}`);
         
         if (response.ok) {
             const data = await response.json();
@@ -262,13 +262,13 @@ async function generateExercisesOnDemand() {
     
     try {
         // First try to get the syllabus for this course
-        const syllabusResponse = await fetch(`${CONFIG.ENDPOINTS.SYLLABUS(courseId)}`);
+        const syllabusResponse = await fetch(`${window.CONFIG?.ENDPOINTS.SYLLABUS(courseId)}`);
         
         if (syllabusResponse.ok) {
             const syllabusData = await syllabusResponse.json();
             
             // Use the lab refresh endpoint to generate exercises from syllabus
-            const generateResponse = await fetch(`${CONFIG.ENDPOINTS.REFRESH_LAB_EXERCISES}`, {
+            const generateResponse = await fetch(`${window.CONFIG?.ENDPOINTS.REFRESH_LAB_EXERCISES}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1177,7 +1177,7 @@ async function sendMessage() {
             // Debug logging
             
             // Call the real AI chat API with exercise context
-            const response = await fetch(CONFIG.ENDPOINTS.LAB_CHAT, {
+            const response = await fetch(window.CONFIG?.ENDPOINTS.LAB_CHAT, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
