@@ -70,9 +70,32 @@
 
         <div class="form-group">
             <label for="course-tags">Tags</label>
-            <input type="text" id="course-tags" name="tags" 
+            <input type="text" id="course-tags" name="tags"
                    placeholder="programming, javascript, web development (comma separated)">
             <small class="form-help">Enter keywords separated by commas</small>
+        </div>
+
+        <!-- Course Videos Section -->
+        <div class="form-group">
+            <label>Course Videos</label>
+            <p class="form-help" style="margin-bottom: 15px;">
+                Add videos to your course. You can upload video files or link to YouTube, Vimeo, or other platforms.
+            </p>
+
+            <!-- Video Type Selector -->
+            <div class="video-type-selector" style="margin-bottom: 15px;">
+                <button type="button" class="btn btn-secondary" id="add-upload-video-btn">
+                    <i class="fas fa-upload"></i> Upload Video
+                </button>
+                <button type="button" class="btn btn-secondary" id="add-link-video-btn">
+                    <i class="fas fa-link"></i> Add Video Link
+                </button>
+            </div>
+
+            <!-- Videos List Container -->
+            <div id="course-videos-container" class="videos-list">
+                <!-- Videos will be added here dynamically -->
+            </div>
         </div>
 
         <div class="form-actions">
@@ -87,3 +110,244 @@
         </div>
     </form>
 </section>
+
+<!-- Video Upload Modal -->
+<div id="video-upload-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Upload Video</h3>
+            <span class="close" onclick="closeVideoModal('video-upload-modal')">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="upload-video-title">Video Title *</label>
+                <input type="text" id="upload-video-title" class="form-control" required
+                       placeholder="Introduction to Course">
+            </div>
+
+            <div class="form-group">
+                <label for="upload-video-description">Video Description</label>
+                <textarea id="upload-video-description" class="form-control" rows="3"
+                          placeholder="Brief description of video content"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="upload-video-file">Select Video File *</label>
+                <input type="file" id="upload-video-file" accept="video/*" required>
+                <small class="form-help">Supported formats: MP4, AVI, MOV, WebM (Max: 2GB)</small>
+            </div>
+
+            <!-- Upload Progress Bar -->
+            <div id="upload-progress-container" style="display: none; margin-top: 15px;">
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="upload-progress-bar" style="width: 0%"></div>
+                </div>
+                <p id="upload-progress-text" style="text-align: center; margin-top: 5px;">0%</p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeVideoModal('video-upload-modal')">Cancel</button>
+            <button type="button" class="btn btn-primary" id="confirm-video-upload-btn">Upload Video</button>
+        </div>
+    </div>
+</div>
+
+<!-- Video Link Modal -->
+<div id="video-link-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Add Video Link</h3>
+            <span class="close" onclick="closeVideoModal('video-link-modal')">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="link-video-title">Video Title *</label>
+                <input type="text" id="link-video-title" class="form-control" required
+                       placeholder="Introduction to Course">
+            </div>
+
+            <div class="form-group">
+                <label for="link-video-description">Video Description</label>
+                <textarea id="link-video-description" class="form-control" rows="3"
+                          placeholder="Brief description of video content"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="link-video-type">Video Platform *</label>
+                <select id="link-video-type" class="form-control" required>
+                    <option value="youtube">YouTube</option>
+                    <option value="vimeo">Vimeo</option>
+                    <option value="link">Other URL</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="link-video-url">Video URL *</label>
+                <input type="url" id="link-video-url" class="form-control" required
+                       placeholder="https://www.youtube.com/watch?v=...">
+                <small class="form-help">Enter the full URL to the video</small>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeVideoModal('video-link-modal')">Cancel</button>
+            <button type="button" class="btn btn-primary" id="confirm-video-link-btn">Add Video</button>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Video Management Styles */
+.videos-list {
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 15px;
+    min-height: 100px;
+    background-color: #fafafa;
+}
+
+.video-item {
+    background-color: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 12px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.video-item-info {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.video-item-icon {
+    font-size: 24px;
+    color: #667eea;
+}
+
+.video-item-details {
+    flex: 1;
+}
+
+.video-item-title {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 4px;
+}
+
+.video-item-meta {
+    font-size: 12px;
+    color: #666;
+}
+
+.video-item-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.video-item-actions button {
+    padding: 6px 12px;
+    font-size: 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.video-item-actions .btn-danger {
+    background-color: #f44336;
+    color: white;
+}
+
+.video-item-actions .btn-danger:hover {
+    background-color: #d32f2f;
+}
+
+.videos-list-empty {
+    text-align: center;
+    color: #999;
+    padding: 20px;
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 24px;
+    background-color: #e0e0e0;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    transition: width 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background-color: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #333;
+}
+
+.modal-header .close {
+    font-size: 28px;
+    font-weight: bold;
+    color: #999;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.modal-header .close:hover {
+    color: #333;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+</style>

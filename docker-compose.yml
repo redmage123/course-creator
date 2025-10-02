@@ -215,10 +215,13 @@ services:
       - SMTP_USER=${SMTP_USER:-}
       - SMTP_PASSWORD=${SMTP_PASSWORD:-}
       - SMTP_USE_TLS=${SMTP_USE_TLS:-true}
+      # Video Storage Configuration
+      - VIDEO_STORAGE_PATH=/app/storage/videos
     ports:
       - "8004:8004"
     volumes:
       - ./.venv:/app/.venv:ro
+      - ./storage/videos:/app/storage/videos
       - ./shared:/app/shared:ro
       - ./logs:/var/log/course-creator
       - ./ssl:/app/ssl:ro

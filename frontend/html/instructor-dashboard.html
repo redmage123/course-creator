@@ -1197,7 +1197,8 @@
     <!-- Modern ES6 module system -->
     <!-- <script type="module" src="../js/main.js"></script> -->
     <script src="../js/lab-template.js"></script>
-    
+    <script src="../js/modules/course-video-manager.js"></script>
+
     <!-- Temporary fix: Load a simplified version that works with existing functionality -->
     <script type="module">
         // Import the configuration
@@ -1318,14 +1319,32 @@
                             },
                             body: JSON.stringify(courseData)
                         });
-                        
+
                         if (response.ok) {
                             const result = await response.json();
-                            showNotification('Course created successfully!', 'success');
-                            
+                            const courseId = result.course?.id || result.id;
+
+                            // Upload videos if any were added
+                            if (typeof window.uploadCourseVideos === 'function') {
+                                try {
+                                    await window.uploadCourseVideos(courseId);
+                                    showNotification('Course and videos created successfully!', 'success');
+                                } catch (videoError) {
+                                    console.error('Error uploading videos:', videoError);
+                                    showNotification('Course created but some videos failed to upload', 'warning');
+                                }
+                            } else {
+                                showNotification('Course created successfully!', 'success');
+                            }
+
+                            // Clear videos list
+                            if (typeof window.clearCourseVideos === 'function') {
+                                window.clearCourseVideos();
+                            }
+
                             // Reset form
                             courseForm.reset();
-                            
+
                             // Reload courses and show courses section
                             await loadUserCourses();
                             showSection('courses');

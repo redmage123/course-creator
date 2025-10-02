@@ -686,7 +686,15 @@ async function removeInstructor(userId) {
 
 // Utility functions
 function getCurrentUserOrgId() {
-    // In production, extract from JWT token or user context
+    // Extract organization_id from current user data
+    const user = Auth.getCurrentUser();
+    if (user && user.organization_id) {
+        console.log('📋 Using organization_id from user:', user.organization_id);
+        return user.organization_id;
+    }
+
+    // Fallback to hardcoded value for development
+    console.warn('⚠️ No organization_id found in user data, using fallback');
     return 'org-123';
 }
 

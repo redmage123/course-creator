@@ -384,7 +384,11 @@ def create_app(config: DictConfig) -> FastAPI:
     async def health_check():
         """Health check endpoint"""
         return {"status": "healthy", "service": "course-management", "version": "2.0.0"}
-    
+
+    # Include video API router
+    from api.video_endpoints import router as video_router
+    app.include_router(video_router, tags=["videos"])
+
     return app
 
 app = create_app(current_config or {})
@@ -408,12 +412,27 @@ def get_feedback_service() -> IFeedbackService:
         raise HTTPException(status_code=500, detail="Service not initialized")
     return container.get_feedback_service()
 
+def get_db_pool():
+    """Get database connection pool"""
+    if not container or not container._connection_pool:
+        raise HTTPException(status_code=500, detail="Database not initialized")
+    return container._connection_pool
+
 def get_current_user_id() -> str:
     """
     Extract user ID from JWT token
     For now, return a mock user ID - in production, this would validate JWT
     """
     return "instructor_123"  # Mock implementation
+
+# Initialize video DAO after app startup
+from data_access.course_video_dao import CourseVideoDAO
+from api import video_endpoints
+
+@app.on_event("startup")
+async def initialize_video_dao():
+    """Initialize video DAO with database pool"""
+    video_endpoints.video_dao = CourseVideoDAO(get_db_pool())
 
 # Course Management Endpoints
 @app.post("/courses", response_model=CourseResponse)
