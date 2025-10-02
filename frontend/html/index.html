@@ -6,6 +6,13 @@
     <title>Course Creator Platform</title>
     <link rel="stylesheet" href="../css/main.css?v=3.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .quick-login-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary-color);
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -19,6 +26,7 @@
                     <a href="html/instructor-dashboard.html" id="instructor-link" style="display: none;">Instructor Dashboard</a>
                     <a href="html/student-dashboard.html" id="student-link" style="display: none;">Student Dashboard</a>
                     <a href="html/admin.html" id="admin-link" style="display: none;">Admin Dashboard</a>
+                    <a href="html/org-admin-dashboard.html" id="org-admin-link" style="display: none;">Organization Dashboard</a>
                 </nav>
                 <div class="account-section">
                     <div class="account-dropdown" id="accountDropdown" style="display: none;">
@@ -160,6 +168,28 @@
                             <p>Foster student engagement with interactive features</p>
                         </div>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Login Section -->
+        <section class="quick-login-section" style="background: var(--surface-color); padding: 2rem 0; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+            <div class="container">
+                <div style="text-align: center; margin-bottom: 1.5rem;">
+                    <h3 style="color: var(--text-primary); font-size: 1.25rem; margin: 0 0 0.5rem 0;">Quick Access</h3>
+                    <p style="color: var(--text-secondary); font-size: 0.875rem; margin: 0;">Already have an account? Choose your login portal</p>
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; max-width: 700px; margin: 0 auto;">
+                    <a href="html/org-admin-login.html" class="quick-login-card" style="flex: 1; min-width: 200px; background: var(--background-color); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; text-align: center; text-decoration: none; transition: all 0.2s;">
+                        <i class="fas fa-building" style="font-size: 2rem; color: #9b59b6; display: block; margin-bottom: 0.5rem;"></i>
+                        <strong style="display: block; color: var(--text-primary); margin-bottom: 0.25rem;">Organization Admin</strong>
+                        <span style="font-size: 0.75rem; color: var(--text-secondary);">Manage your organization</span>
+                    </a>
+                    <a href="html/student-login.html" class="quick-login-card" style="flex: 1; min-width: 200px; background: var(--background-color); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem; text-align: center; text-decoration: none; transition: all 0.2s;">
+                        <i class="fas fa-graduation-cap" style="font-size: 2rem; color: #3498db; display: block; margin-bottom: 0.5rem;"></i>
+                        <strong style="display: block; color: var(--text-primary); margin-bottom: 0.25rem;">Student Portal</strong>
+                        <span style="font-size: 0.75rem; color: var(--text-secondary);">Access your courses</span>
+                    </a>
                 </div>
             </div>
         </section>

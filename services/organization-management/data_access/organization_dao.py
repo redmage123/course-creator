@@ -31,6 +31,7 @@ from uuid import UUID
 import json
 import sys
 sys.path.append('/app/shared')
+from domain.entities.enhanced_role import RoleType
 from exceptions import (
     CourseCreatorBaseException,
     DatabaseException,
@@ -320,9 +321,125 @@ class OrganizationManagementDAO:
             )
     
     # ================================================================
+    # USER LOOKUP QUERIES (for membership operations)
+    # ================================================================
+
+    async def get_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+        """
+        Get user by email address from user-management service
+
+        Business Context:
+        When adding members to organizations, we need to lookup users by email.
+        This queries the users table to find existing user records.
+
+        Args:
+            email: Email address to lookup
+
+        Returns:
+            User record if found, None otherwise
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                user = await conn.fetchrow(
+                    """SELECT id, email, username, full_name, role, status
+                       FROM course_creator.users
+                       WHERE email = $1 AND status = 'active'""",
+                    email
+                )
+                return dict(user) if user else None
+        except Exception as e:
+            self._logger.error(f"Failed to lookup user by email {email}: {e}")
+            return None
+
+    async def create_pending_user(self, email: str) -> Dict[str, Any]:
+        """
+        Create a pending user record for invitation workflows
+
+        Business Context:
+        When adding instructors/admins who don't have accounts yet,
+        create a pending user record that will be activated when they register.
+
+        Args:
+            email: Email address for the pending user
+
+        Returns:
+            Created user record
+        """
+        try:
+            import uuid
+            user_id = uuid.uuid4()
+            username = email.split('@')[0]  # Generate username from email
+
+            async with self.db_pool.acquire() as conn:
+                user_id = await conn.fetchval(
+                    """INSERT INTO course_creator.users (
+                        id, email, username, full_name, role, status,
+                        password, created_at, updated_at
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                    RETURNING id""",
+                    user_id,
+                    email,
+                    username,
+                    email.split('@')[0].title(),  # Use email prefix as name
+                    'instructor',  # Default role
+                    'pending',  # Pending activation
+                    '',  # Empty password - will be set on activation
+                    datetime.utcnow(),
+                    datetime.utcnow()
+                )
+
+                return {
+                    'id': str(user_id),
+                    'email': email,
+                    'username': username,
+                    'full_name': email.split('@')[0].title(),
+                    'role': 'instructor',
+                    'status': 'pending'
+                }
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to create pending user",
+                error_code="PENDING_USER_CREATION_ERROR",
+                details={"email": email},
+                original_exception=e
+            )
+
+    async def get_user_membership(
+        self,
+        user_id: UUID,
+        organization_id: UUID
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Get specific user membership in an organization
+
+        Business Context:
+        Check if a user is already a member of an organization before
+        adding them, to prevent duplicate memberships.
+
+        Args:
+            user_id: User to check
+            organization_id: Organization to check
+
+        Returns:
+            Membership record if exists, None otherwise
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                membership = await conn.fetchrow(
+                    """SELECT id, user_id, organization_id, role, is_active, joined_at, updated_at
+                       FROM course_creator.organization_memberships
+                       WHERE user_id = $1 AND organization_id = $2""",
+                    user_id, organization_id
+                )
+                return dict(membership) if membership else None
+        except Exception as e:
+            self._logger.error(f"Failed to get user membership: {e}")
+            return None
+
+    # ================================================================
     # MEMBERSHIP MANAGEMENT QUERIES
     # ================================================================
-    
+
     async def create_membership(self, membership_data: Dict[str, Any]) -> str:
         """
         Create a new organizational membership with role assignment.
@@ -344,16 +461,15 @@ class OrganizationManagementDAO:
         try:
             async with self.db_pool.acquire() as conn:
                 membership_id = await conn.fetchval(
-                    """INSERT INTO course_creator.memberships (
-                        id, user_id, organization_id, role, permissions,
-                        is_active, created_at, updated_at
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+                    """INSERT INTO course_creator.organization_memberships (
+                        id, user_id, organization_id, role,
+                        is_active, joined_at, updated_at
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7)
                     RETURNING id""",
                     membership_data['id'],
                     UUID(membership_data['user_id']),
                     UUID(membership_data['organization_id']),
                     membership_data['role'],
-                    json.dumps(membership_data.get('permissions', {})),
                     membership_data.get('is_active', True),
                     datetime.utcnow(),
                     datetime.utcnow()
@@ -392,10 +508,10 @@ class OrganizationManagementDAO:
         try:
             async with self.db_pool.acquire() as conn:
                 memberships = await conn.fetch(
-                    """SELECT m.id, m.role, m.permissions, m.is_active, m.created_at,
+                    """SELECT m.id, m.role, m.is_active, m.joined_at as created_at,
                               o.id as org_id, o.name as org_name, o.slug as org_slug,
                               o.logo_url as org_logo
-                       FROM course_creator.memberships m
+                       FROM course_creator.organization_memberships m
                        JOIN course_creator.organizations o ON m.organization_id = o.id
                        WHERE m.user_id = $1 AND m.is_active = true
                        ORDER BY o.name""",
@@ -429,12 +545,12 @@ class OrganizationManagementDAO:
         try:
             async with self.db_pool.acquire() as conn:
                 members = await conn.fetch(
-                    """SELECT m.id, m.role, m.permissions, m.is_active, m.created_at,
+                    """SELECT m.id, m.role, m.is_active, m.joined_at as created_at,
                               u.id as user_id, u.email, u.username, u.full_name
-                       FROM course_creator.memberships m
-                       JOIN users u ON m.user_id = u.id
+                       FROM course_creator.organization_memberships m
+                       JOIN course_creator.users u ON m.user_id = u.id
                        WHERE m.organization_id = $1 AND m.is_active = true
-                       ORDER BY m.created_at DESC
+                       ORDER BY m.joined_at DESC
                        LIMIT $2 OFFSET $3""",
                     UUID(org_id), limit, offset
                 )
@@ -465,8 +581,8 @@ class OrganizationManagementDAO:
         try:
             async with self.db_pool.acquire() as conn:
                 result = await conn.execute(
-                    """UPDATE course_creator.memberships 
-                       SET role = $1, updated_at = $2 
+                    """UPDATE course_creator.organization_memberships
+                       SET role = $1, updated_at = $2
                        WHERE id = $3""",
                     new_role,
                     datetime.utcnow(),
@@ -671,23 +787,23 @@ class OrganizationManagementDAO:
             async with self.db_pool.acquire() as conn:
                 # Get member count
                 member_count = await conn.fetchval(
-                    """SELECT COUNT(*) FROM course_creator.memberships 
+                    """SELECT COUNT(*) FROM course_creator.organization_memberships
                        WHERE organization_id = $1 AND is_active = true""",
                     UUID(org_id)
                 )
-                
+
                 # Get project count
                 project_count = await conn.fetchval(
-                    """SELECT COUNT(*) FROM course_creator.projects 
+                    """SELECT COUNT(*) FROM course_creator.projects
                        WHERE organization_id = $1 AND is_active = true""",
                     UUID(org_id)
                 )
-                
+
                 # Get role distribution
                 role_distribution = await conn.fetch(
-                    """SELECT role, COUNT(*) as count 
-                       FROM course_creator.memberships 
-                       WHERE organization_id = $1 AND is_active = true 
+                    """SELECT role, COUNT(*) as count
+                       FROM course_creator.organization_memberships
+                       WHERE organization_id = $1 AND is_active = true
                        GROUP BY role""",
                     UUID(org_id)
                 )
@@ -749,3 +865,28 @@ class OrganizationManagementDAO:
                 details={"operation_count": len(operations)},
                 original_exception=e
             )
+
+    async def get_track_assignments(
+        self,
+        track_id: UUID,
+        role_type: Optional[RoleType] = None
+    ) -> List[Dict[str, Any]]:
+        """Get all assignments for a track, optionally filtered by role"""
+        try:
+            async with self.db_pool.acquire() as conn:
+                if role_type:
+                    assignments = await conn.fetch(
+                        """SELECT * FROM course_creator.track_assignments
+                           WHERE track_id = $1 AND role_type = $2 AND is_active = true""",
+                        track_id, role_type.value if hasattr(role_type, 'value') else str(role_type)
+                    )
+                else:
+                    assignments = await conn.fetch(
+                        """SELECT * FROM course_creator.track_assignments
+                           WHERE track_id = $1 AND is_active = true""",
+                        track_id
+                    )
+                return [dict(a) for a in assignments] if assignments else []
+        except Exception as e:
+            logging.error(f"Failed to get track assignments for track {track_id}: {e}")
+            return []

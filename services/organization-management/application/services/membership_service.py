@@ -41,9 +41,12 @@ class MembershipService:
                 # Create pending user
                 user = await self._organization_dao.create_pending_user(user_email)
 
+            # Extract user_id (user is a dict from DAO)
+            user_id = user['id'] if isinstance(user, dict) else user.id
+
             # Check if membership already exists
             existing = await self._organization_dao.get_user_membership(
-                user.id, organization_id
+                user_id, organization_id
             )
             if existing and existing.is_active():
                 raise ValueError(f"User {user_email} is already a member of this organization")
@@ -56,7 +59,7 @@ class MembershipService:
 
             # Create membership
             membership = OrganizationMembership(
-                user_id=user.id,
+                user_id=user_id,
                 organization_id=organization_id,
                 role=admin_role,
                 invited_by=invited_by
@@ -68,7 +71,7 @@ class MembershipService:
             created_membership = await self._organization_dao.create_membership(membership)
 
             # Invalidate any cached permissions for this user immediately
-            await self._invalidate_user_cache(user.id, organization_id)
+            await self._invalidate_user_cache(user_id, organization_id)
 
             self._logger.info(f"Added organization admin {user_email} to organization {organization_id}")
             return created_membership
@@ -91,9 +94,12 @@ class MembershipService:
             if not user:
                 user = await self._organization_dao.create_pending_user(user_email)
 
+            # Extract user_id (user is a dict from DAO)
+            user_id = user['id'] if isinstance(user, dict) else user.id
+
             # Check if membership already exists
             existing = await self._organization_dao.get_user_membership(
-                user.id, organization_id
+                user_id, organization_id
             )
             if existing and existing.is_active():
                 raise ValueError(f"User {user_email} is already a member of this organization")
@@ -107,7 +113,7 @@ class MembershipService:
 
             # Create membership
             membership = OrganizationMembership(
-                user_id=user.id,
+                user_id=user_id,
                 organization_id=organization_id,
                 role=instructor_role,
                 invited_by=invited_by
@@ -140,9 +146,12 @@ class MembershipService:
             if not user:
                 user = await self._organization_dao.create_pending_user(user_email)
 
+            # Extract user_id (user is a dict from DAO)
+            user_id = user['id'] if isinstance(user, dict) else user.id
+
             # Check if organization membership exists
             membership = await self._organization_dao.get_user_membership(
-                user.id, organization_id
+                user_id, organization_id
             )
 
             if not membership:
@@ -155,7 +164,7 @@ class MembershipService:
                 )
 
                 membership = OrganizationMembership(
-                    user_id=user.id,
+                    user_id=user_id,
                     organization_id=organization_id,
                     role=student_role,
                     invited_by=assigned_by
@@ -170,7 +179,7 @@ class MembershipService:
 
             # Create track assignment
             assignment = TrackAssignment(
-                user_id=user.id,
+                user_id=user_id,
                 track_id=track_id,
                 role_type=RoleType.STUDENT,
                 assigned_by=assigned_by

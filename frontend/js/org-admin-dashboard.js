@@ -25,12 +25,26 @@ let currentAnalyticsProject = null;
 
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', async function() {
-    // Check authentication
-    if (!Auth.isAuthenticated() || !Auth.hasRole(['org_admin', 'super_admin'])) {
-        window.location.href = '/login.html';
+    console.log('🚀 ORG ADMIN DASHBOARD - Starting initialization');
+
+    if (!Auth.isAuthenticated()) {
+        console.log('❌ Not authenticated - redirecting to home');
+        window.location.href = '../index.html';
         return;
     }
 
+    const userRole = Auth.getUserRole();
+    const allowedRoles = ['org_admin', 'organization_admin', 'super_admin', 'admin'];
+
+    console.log('🔍 User role:', userRole);
+
+    if (!allowedRoles.includes(userRole)) {
+        console.log('❌ Role check failed - redirecting to home');
+        window.location.href = '../index.html';
+        return;
+    }
+
+    console.log('✅ Auth check passed - initializing dashboard');
     await initializeDashboard();
     setupEventListeners();
     setupTabNavigation();
@@ -418,7 +432,15 @@ function setupEventListeners() {
 
 // Modal functions
 function showCreateProjectModal() {
-    document.getElementById('createProjectModal').style.display = 'block';
+    const modal = document.getElementById('createProjectModal');
+    const modalContent = modal.querySelector('.draggable-modal');
+
+    // Reset position
+    if (modalContent) {
+        modalContent.style.transform = 'translate(0px, 0px)';
+    }
+
+    modal.style.display = 'block';
 }
 
 function showAddInstructorModal() {
@@ -483,9 +505,8 @@ async function handleCreateProject(e) {
     
     try {
         const formData = new FormData(e.target);
-        const targetRoles = formData.get('target_roles') 
-            ? formData.get('target_roles').split('
-').map(role => role.trim()).filter(role => role)
+        const targetRoles = formData.get('target_roles')
+            ? formData.get('target_roles').split('\n').map(role => role.trim()).filter(role => role)
             : [];
 
         const projectData = {
@@ -2456,20 +2477,6 @@ function initializeLogoUpload() {
  * @param {File} file - The selected logo file
  */
 function handleLogoFile(file) {
-    """
-    Handle logo file selection with validation and preview generation.
-    
-    Business Context:
-    Organizations need to upload and manage their logo files for branding
-    purposes. This function validates file types, sizes, and generates
-    preview images for immediate user feedback.
-    
-    Technical Implementation:
-    - Validates file type (images only) and size constraints
-    - Uses FileReader API for immediate preview generation
-    - Provides visual feedback for file upload status
-    - Integrates with form submission for actual file upload
-    """
     
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
@@ -2503,19 +2510,6 @@ function handleLogoFile(file) {
  * @returns {Promise<string>} - The uploaded file URL
  */
 async function uploadLogoFile(file) {
-    """
-    Upload logo file to the content management service.
-    
-    Business Context:
-    Organization logos need to be stored securely and be accessible
-    for use in dashboards, reports, and external communications.
-    
-    Technical Implementation:
-    - Uploads file to content management service
-    - Returns public URL for logo access
-    - Handles upload errors gracefully
-    - Provides progress feedback for large files
-    """
     
     const formData = new FormData();
     formData.append('file', file);
@@ -2547,18 +2541,6 @@ async function uploadLogoFile(file) {
  * Remove logo preview and clear file input
  */
 function removeLogo() {
-    """
-    Remove logo preview and reset file input for logo management.
-    
-    Business Context:
-    Organizations should be able to remove their logo if needed,
-    either to upload a new one or to operate without a logo temporarily.
-    
-    Technical Implementation:
-    - Clears file input to prevent accidental upload
-    - Hides preview element
-    - Resets logo URL field if needed
-    """
     
     const preview = document.getElementById('logoPreview');
     const fileInput = document.getElementById('orgLogoFile');
@@ -2577,19 +2559,6 @@ function removeLogo() {
  * Cancel organization changes and restore original values
  */
 function cancelOrganizationChanges() {
-    """
-    Cancel organization form changes and restore original values.
-    
-    Business Context:
-    Users should be able to cancel changes they made to organization
-    information without losing the original data or having to reload
-    the entire page.
-    
-    Technical Implementation:
-    - Restores all form fields to their original values
-    - Clears any file uploads or previews
-    - Provides confirmation to prevent accidental data loss
-    """
     
     if (confirm('Are you sure you want to cancel your changes? Any unsaved changes will be lost.')) {
         // Reload the settings data to restore original values
@@ -2602,19 +2571,6 @@ function cancelOrganizationChanges() {
  * Handle contact email validation
  */
 function validateContactEmail(email) {
-    """
-    Validate contact email for professional domain requirements.
-    
-    Business Context:
-    Organizations should use professional email addresses for
-    contact information to maintain credibility and proper
-    communication channels.
-    
-    Technical Implementation:
-    - Validates email format using standard patterns
-    - Checks for professional domain requirements
-    - Provides real-time feedback for email input
-    """
     
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailPattern.test(email)) {
@@ -2639,19 +2595,6 @@ function validateContactEmail(email) {
  * Handle phone number formatting
  */
 function formatPhoneNumber(phoneNumber, countryCode) {
-    """
-    Format phone number according to international standards.
-    
-    Business Context:
-    Professional organizations need properly formatted phone numbers
-    for international communication and compliance with various
-    regional formatting requirements.
-    
-    Technical Implementation:
-    - Formats numbers according to country-specific patterns
-    - Removes invalid characters and normalizes format
-    - Supports multiple international formats
-    """
     
     // Remove all non-digit characters
     const digits = phoneNumber.replace(/\D/g, '');
@@ -2705,5 +2648,118 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.setSelectionRange(cursorPos, cursorPos);
             }
         });
+    }
+
+    // Initialize draggable modals
+    initDraggableModals();
+});
+
+// Make modals draggable
+function initDraggableModals() {
+    const modals = document.querySelectorAll('.draggable-modal');
+
+    modals.forEach(modal => {
+        const handle = modal.querySelector('.draggable-handle');
+        if (!handle) return;
+
+        let isDragging = false;
+        let currentX;
+        let currentY;
+        let initialX;
+        let initialY;
+        let xOffset = 0;
+        let yOffset = 0;
+
+        handle.addEventListener('mousedown', dragStart);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', dragEnd);
+
+        function dragStart(e) {
+            // Don't drag if clicking the close button
+            if (e.target.classList.contains('close')) return;
+
+            initialX = e.clientX - xOffset;
+            initialY = e.clientY - yOffset;
+
+            if (e.target === handle || handle.contains(e.target)) {
+                isDragging = true;
+            }
+        }
+
+        function drag(e) {
+            if (isDragging) {
+                e.preventDefault();
+
+                currentX = e.clientX - initialX;
+                currentY = e.clientY - initialY;
+
+                xOffset = currentX;
+                yOffset = currentY;
+
+                setTranslate(currentX, currentY, modal);
+            }
+        }
+
+        function dragEnd(e) {
+            initialX = currentX;
+            initialY = currentY;
+            isDragging = false;
+        }
+
+        function setTranslate(xPos, yPos, el) {
+            el.style.transform = `translate(${xPos}px, ${yPos}px)`;
+        }
+    });
+}
+// Floating Action Button (FAB) functionality
+function toggleFabMenu() {
+    const fabMenu = document.getElementById('fabMenu');
+    const fabIcon = document.getElementById('fabIcon');
+
+    fabMenu.classList.toggle('active');
+
+    // Rotate icon when menu is open
+    if (fabMenu.classList.contains('active')) {
+        fabIcon.style.transform = 'rotate(45deg)';
+    } else {
+        fabIcon.style.transform = 'rotate(0deg)';
+    }
+}
+
+function fabAction(action) {
+    // Close the menu
+    const fabMenu = document.getElementById('fabMenu');
+    const fabIcon = document.getElementById('fabIcon');
+    fabMenu.classList.remove('active');
+    fabIcon.style.transform = 'rotate(0deg)';
+
+    // Execute the action
+    switch(action) {
+        case 'project':
+            showCreateProjectModal();
+            break;
+        case 'instructor':
+            showAddInstructorModal();
+            break;
+        case 'member':
+            showAddMemberModal();
+            break;
+        case 'settings':
+            document.querySelector('[data-tab="settings"]').click();
+            break;
+    }
+}
+
+// Close FAB menu when clicking outside
+document.addEventListener('click', function(event) {
+    const fabButton = document.getElementById('fabButton');
+    const fabMenu = document.getElementById('fabMenu');
+    const fabIcon = document.getElementById('fabIcon');
+
+    if (fabButton && fabMenu && fabIcon) {
+        if (!fabButton.contains(event.target) && !fabMenu.contains(event.target)) {
+            fabMenu.classList.remove('active');
+            fabIcon.style.transform = 'rotate(0deg)';
+        }
     }
 });

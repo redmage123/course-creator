@@ -37,13 +37,15 @@ class LabLifecycleService:
         self.base_storage_path = Path(storage_path)
         self.base_storage_path.mkdir(exist_ok=True)
     
-    async def create_student_lab(self, 
-                               student_id: str, 
+    async def create_student_lab(self,
+                               student_id: str,
                                request: StudentLabRequest) -> LabResponse:
         """Create or retrieve student lab environment."""
         try:
+            print(f"[DEBUG] create_student_lab called for student {student_id}, course {request.course_id}", flush=True)
             # Check if student already has a lab for this course
             existing_lab_id = self._get_student_lab(student_id, request.course_id)
+            print(f"[DEBUG] existing_lab_id: {existing_lab_id}", flush=True)
             if existing_lab_id:
                 lab = self.active_labs.get(existing_lab_id)
                 if lab and lab.status == LabStatus.RUNNING:
@@ -56,13 +58,18 @@ class LabLifecycleService:
                     )
             
             # Create new lab
+            print(f"[DEBUG] Creating new lab...", flush=True)
             lab_config = request.config or LabConfig()
+            print(f"[DEBUG] lab_config created: {lab_config}", flush=True)
             lab_env = await self._create_lab_environment(
                 student_id, request.course_id, lab_config
             )
-            
+            print(f"[DEBUG] lab_env created: {lab_env.id}", flush=True)
+
             # Start the container
+            print(f"[DEBUG] About to call _start_lab_container...", flush=True)
             await self._start_lab_container(lab_env)
+            print(f"[DEBUG] _start_lab_container completed", flush=True)
             
             # Register lab
             self.active_labs[lab_env.id] = lab_env
@@ -127,18 +134,26 @@ class LabLifecycleService:
                     success=False,
                     message="Lab not found"
                 )
-            
-            # Start the container
-            await self._start_lab_container(lab)
-            
-            return LabResponse(
-                success=True,
-                message="Lab resumed successfully",
-                lab_id=lab_id,
-                urls=lab.ide_urls,
-                status=lab.status
-            )
-            
+
+            # Start the existing container (don't recreate)
+            success = self.docker_service.start_container(lab.container_name)
+            if success:
+                lab.status = LabStatus.RUNNING
+                lab.last_accessed = datetime.utcnow()
+
+                return LabResponse(
+                    success=True,
+                    message="Lab resumed successfully",
+                    lab_id=lab_id,
+                    urls=lab.ide_urls,
+                    status=lab.status
+                )
+            else:
+                return LabResponse(
+                    success=False,
+                    message="Failed to start container"
+                )
+
         except Exception as e:
             self.logger.error(f"Failed to resume lab {lab_id}: {e}")
             return LabResponse(
@@ -263,23 +278,30 @@ class LabLifecycleService:
         """Start the lab container."""
         try:
             lab.status = LabStatus.STARTING
-            
+
             # Select appropriate image
             image_name = self._get_lab_image(lab.config)
+            print(f"[DEBUG LIFECYCLE] Starting lab {lab.id} with image {image_name}", flush=True)
+            self.logger.info(f"DEBUG LIFECYCLE: Starting lab {lab.id} with image {image_name}")
             
             # Prepare volumes
             volumes = {
                 lab.persistent_storage_path: {"bind": "/home/student", "mode": "rw"}
             }
-            
+            self.logger.info(f"DEBUG LIFECYCLE: Volumes prepared: {volumes}")
+
             # Prepare environment
+            self.logger.info(f"DEBUG LIFECYCLE: lab.config.environment_vars type: {type(lab.config.environment_vars)}, value: {lab.config.environment_vars}")
             environment = {
                 "STUDENT_ID": lab.student_id,
                 "COURSE_ID": lab.course_id,
                 "LAB_ID": lab.id,
                 **lab.config.environment_vars
             }
-            
+            self.logger.info(f"DEBUG LIFECYCLE: Environment prepared: {environment}")
+            self.logger.info(f"DEBUG LIFECYCLE: lab.ports type: {type(lab.ports)}, value: {lab.ports}")
+            self.logger.info(f"DEBUG LIFECYCLE: Now calling docker_service.create_container...")
+
             # Create container
             container_id = self.docker_service.create_container(
                 image_name=image_name,
@@ -300,7 +322,9 @@ class LabLifecycleService:
             
         except Exception as e:
             lab.status = LabStatus.ERROR
+            import traceback
             self.logger.error(f"Failed to start container for lab {lab.id}: {e}")
+            self.logger.error(f"Full traceback: {traceback.format_exc()}")
             raise
     
     def _get_student_lab(self, student_id: str, course_id: str) -> Optional[str]:

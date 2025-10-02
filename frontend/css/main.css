@@ -275,3 +275,27 @@ textarea:not([class*="form"]) {
  * - Accessible: Built-in accessibility considerations
  * - Responsive: Mobile-first design with consistent breakpoints
  */
+/* Fix cursor for text inputs - should be text cursor, not pointer */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+input[type="tel"],
+input[type="url"],
+input[type="search"],
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+textarea {
+    cursor: text !important;
+}
+
+/* Keep pointer cursor for clickable inputs */
+input[type="checkbox"],
+input[type="radio"],
+input[type="submit"],
+input[type="button"],
+input[type="file"],
+button {
+    cursor: pointer !important;
+}

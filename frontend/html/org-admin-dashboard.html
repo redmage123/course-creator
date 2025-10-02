@@ -6,6 +6,23 @@
     <title>Organization Administration - Course Creator</title>
     <link rel="stylesheet" href="../css/main.css">
     <style>
+        /* Anti-blur fixes for all text and animations */
+        * {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Prevent blur on transformed/animated elements */
+        .tab-btn,
+        .stat-card,
+        .card,
+        .project-card,
+        .modal,
+        .notification {
+            backface-visibility: hidden;
+            transform-style: preserve-3d;
+        }
+
         .org-admin-container {
             display: flex;
             min-height: 100vh;
@@ -373,7 +390,7 @@
         }
 
         .track-template-card:hover {
-            transform: translateY(-2px);
+            transform: translateY(-2px) translateZ(0);
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             border-color: var(--primary-color);
         }
@@ -617,12 +634,12 @@
 
         @media (max-width: 768px) {
             .sidebar {
-                transform: translateX(-100%);
+                transform: translateX(-100%) translateZ(0);
                 transition: transform 0.3s ease;
             }
 
             .sidebar.open {
-                transform: translateX(0);
+                transform: translateX(0) translateZ(0);
             }
 
             .main-content {
@@ -732,9 +749,130 @@
         .country-select {
             flex-shrink: 0;
         }
+
+        /* Quick Actions Cards */
+        .action-card {
+            background: var(--card-background);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .action-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary-color);
+        }
+
+        .action-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .action-content h4 {
+            margin: 0 0 0.5rem 0;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .action-content p {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            line-height: 1.4;
+        }
+
+        /* Floating Action Button (FAB) */
+        .fab {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+            z-index: 999;
+        }
+
+        .fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .fab:active {
+            transform: scale(0.95);
+        }
+
+        /* FAB Menu */
+        .fab-menu {
+            position: fixed;
+            bottom: 5rem;
+            right: 2rem;
+            display: none;
+            flex-direction: column;
+            gap: 0.75rem;
+            z-index: 998;
+        }
+
+        .fab-menu.active {
+            display: flex;
+        }
+
+        .fab-menu-item {
+            background: var(--card-background);
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            white-space: nowrap;
+        }
+
+        .fab-menu-item:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateX(-5px);
+        }
+
+        .fab-menu-item i {
+            width: 20px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 2rem; border-radius: 8px; text-align: center;">
+            <div class="loading-spinner" style="margin: 0 auto 1rem auto;"></div>
+            <p>Loading dashboard...</p>
+        </div>
+    </div>
+
     <div class="org-admin-container">
         <!-- Sidebar -->
         <nav class="sidebar">
@@ -802,6 +940,52 @@
                     <div class="stat-card">
                         <span class="stat-number" id="totalCourses">0</span>
                         <span>Courses</span>
+                    </div>
+                </div>
+
+                <!-- Quick Actions Section -->
+                <div class="quick-actions-section" style="margin: 2rem 0;">
+                    <h3 style="margin-bottom: 1rem;">Quick Actions</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                        <div class="action-card" onclick="showCreateProjectModal()" style="cursor: pointer;">
+                            <div class="action-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                <i class="fas fa-project-diagram"></i>
+                            </div>
+                            <div class="action-content">
+                                <h4>Create New Project</h4>
+                                <p>Start a new training project for your organization</p>
+                            </div>
+                        </div>
+
+                        <div class="action-card" onclick="showAddInstructorModal()" style="cursor: pointer;">
+                            <div class="action-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                <i class="fas fa-chalkboard-teacher"></i>
+                            </div>
+                            <div class="action-content">
+                                <h4>Add Instructor</h4>
+                                <p>Invite instructors to your organization</p>
+                            </div>
+                        </div>
+
+                        <div class="action-card" onclick="showAddMemberModal()" style="cursor: pointer;">
+                            <div class="action-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                                <i class="fas fa-user-plus"></i>
+                            </div>
+                            <div class="action-content">
+                                <h4>Add Member</h4>
+                                <p>Add new members to your organization</p>
+                            </div>
+                        </div>
+
+                        <div class="action-card" onclick="document.querySelector('[data-tab=settings]').click()" style="cursor: pointer;">
+                            <div class="action-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                                <i class="fas fa-cog"></i>
+                            </div>
+                            <div class="action-content">
+                                <h4>Organization Settings</h4>
+                                <p>Manage organization configuration and preferences</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1056,9 +1240,11 @@
 
     <!-- Create Project Modal -->
     <div id="createProjectModal" class="modal">
-        <div class="modal-content" style="max-width: 800px;">
-            <span class="close" onclick="closeModal('createProjectModal')">&times;</span>
-            <h2>Create New Training Project</h2>
+        <div class="modal-content draggable-modal" style="max-width: 800px;">
+            <div class="modal-header draggable-handle" style="cursor: move; padding: 1rem; background: var(--primary-color); color: white; margin: -1.5rem -1.5rem 1rem -1.5rem; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; color: white;">Create New Training Project</h2>
+                <span class="close" onclick="closeModal('createProjectModal')" style="color: white; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
+            </div>
             
             <!-- Project Creation Steps -->
             <div class="project-creation-steps" style="margin-bottom: 2rem;">
@@ -1437,9 +1623,43 @@
         </div>
     </div>
 
+    <!-- Floating Action Button (FAB) -->
+    <button class="fab" id="fabButton" onclick="toggleFabMenu()" title="Quick Actions">
+        <i class="fas fa-plus" id="fabIcon"></i>
+    </button>
+
+    <!-- FAB Menu -->
+    <div class="fab-menu" id="fabMenu">
+        <div class="fab-menu-item" onclick="fabAction('project')">
+            <i class="fas fa-project-diagram"></i>
+            <span>New Project</span>
+        </div>
+        <div class="fab-menu-item" onclick="fabAction('instructor')">
+            <i class="fas fa-chalkboard-teacher"></i>
+            <span>Add Instructor</span>
+        </div>
+        <div class="fab-menu-item" onclick="fabAction('member')">
+            <i class="fas fa-user-plus"></i>
+            <span>Add Member</span>
+        </div>
+        <div class="fab-menu-item" onclick="fabAction('settings')">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+        </div>
+    </div>
+
     <script src="../js/config-global.js"></script>
-    <script src="../js/modules/auth.js"></script>
-    <script src="../js/modules/notifications.js"></script>
+    <script type="module">
+        // Import Auth module
+        import { Auth } from '../js/modules/auth.js';
+        import { showNotification } from '../js/modules/notifications.js';
+
+        // Make Auth available globally for the dashboard script
+        window.Auth = Auth;
+        window.showNotification = showNotification;
+
+        console.log('✅ Auth module loaded and made global');
+    </script>
     <script src="../js/org-admin-dashboard.js"></script>
 </body>
 </html>

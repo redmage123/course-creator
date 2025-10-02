@@ -176,36 +176,47 @@ export class NavigationManager {
      */
     updateNavigation() {
         const user = Auth.getCurrentUser();
-        
+
         // Update role-specific navigation links
         const adminLink = document.getElementById('admin-link');
         const instructorLink = document.getElementById('instructor-link');
         const studentLink = document.getElementById('student-link');
-        
+        const orgAdminLink = document.getElementById('org-admin-link');
+
         if (user && Auth.isAuthenticated()) {
             if (user.role === 'admin') {
                 if (adminLink) adminLink.style.display = 'inline';
                 if (instructorLink) instructorLink.style.display = 'none';
                 if (studentLink) studentLink.style.display = 'none';
+                if (orgAdminLink) orgAdminLink.style.display = 'none';
+            } else if (user.role === 'organization_admin') {
+                if (adminLink) adminLink.style.display = 'none';
+                if (instructorLink) instructorLink.style.display = 'none';
+                if (studentLink) studentLink.style.display = 'none';
+                if (orgAdminLink) orgAdminLink.style.display = 'inline';
             } else if (user.role === 'instructor') {
                 if (adminLink) adminLink.style.display = 'none';
                 if (instructorLink) instructorLink.style.display = 'inline';
                 if (studentLink) studentLink.style.display = 'none';
+                if (orgAdminLink) orgAdminLink.style.display = 'none';
             } else if (user.role === 'student') {
                 if (adminLink) adminLink.style.display = 'none';
                 if (instructorLink) instructorLink.style.display = 'none';
                 if (studentLink) studentLink.style.display = 'inline';
+                if (orgAdminLink) orgAdminLink.style.display = 'none';
             } else {
                 // Default to instructor dashboard for users without specific roles
                 if (adminLink) adminLink.style.display = 'none';
                 if (instructorLink) instructorLink.style.display = 'inline';
                 if (studentLink) studentLink.style.display = 'none';
+                if (orgAdminLink) orgAdminLink.style.display = 'none';
             }
         } else {
             // No user logged in - hide all dashboard links
             if (adminLink) adminLink.style.display = 'none';
             if (instructorLink) instructorLink.style.display = 'none';
             if (studentLink) studentLink.style.display = 'none';
+            if (orgAdminLink) orgAdminLink.style.display = 'none';
         }
     }
 
@@ -253,6 +264,8 @@ export class NavigationManager {
         if (userAvatar && user) {
             if (user.role === 'admin') {
                 userAvatar.style.background = 'linear-gradient(45deg, #e74c3c, #c0392b)';
+            } else if (user.role === 'organization_admin') {
+                userAvatar.style.background = 'linear-gradient(45deg, #9b59b6, #8e44ad)';
             } else if (user.role === 'instructor') {
                 userAvatar.style.background = 'linear-gradient(45deg, #f39c12, #e67e22)';
             } else {
@@ -1220,6 +1233,20 @@ export class NavigationManager {
         Auth.initializeAuth();
         this.updateNavigation();
         this.updateAccountSection();
+
+        // Listen for auth state changes to update navigation
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'authToken' || e.key === 'currentUser') {
+                this.updateNavigation();
+                this.updateAccountSection();
+            }
+        });
+
+        // Listen for custom login event
+        window.addEventListener('userLoggedIn', () => {
+            this.updateNavigation();
+            this.updateAccountSection();
+        });
     }
 }
 

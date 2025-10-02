@@ -274,33 +274,21 @@ async def list_projects(
 @router.get("/projects/{project_id}", response_model=ProjectResponse)
 async def get_project(
     project_id: UUID,
-    current_user: Dict[str, Any] = Depends(require_instructor_or_admin)
+    current_user: Dict[str, Any] = Depends(require_instructor_or_admin),
+    organization_service: OrganizationService = Depends(get_organization_service)
 ):
     """Get project details"""
     try:
-        # Return mock project for now
-        return ProjectResponse(
-            id=project_id,
-            organization_id=uuid4(),
-            name="Graduate Developer Training Program",
-            slug="grad-dev-program",
-            description="Comprehensive training program for new graduate developers with hands-on projects and mentorship",
-            target_roles=["Application Developer", "DevOps Engineer"],
-            duration_weeks=16,
-            max_participants=50,
-            current_participants=32,
-            start_date=date(2024, 1, 15),
-            end_date=date(2024, 5, 15),
-            status="active",
-            created_by=UUID(current_user['user_id']),
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
-            ai_planning_applied=True
-        )
-    
+        project = await organization_service.get_project(project_id)
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
+        return project
+
+    except HTTPException:
+        raise
     except Exception as e:
         logging.error(f"Error getting project {project_id}: {str(e)}")
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve project: {str(e)}")
 
 @router.post("/projects/{project_id}/publish")
 async def publish_project(
@@ -361,44 +349,12 @@ async def list_project_tracks(
 ):
     """List tracks for a project with modules"""
     try:
-        # Return mock tracks with modules
-        mock_tracks = [
-            TrackResponse(
-                id=uuid4(),
-                project_id=project_id,
-                organization_id=uuid4(),
-                name="Foundation Track",
-                description="Core programming fundamentals and development environment setup",
-                difficulty_level="beginner",
-                estimated_duration_hours=80,
-                prerequisites=[],
-                learning_objectives=["Master programming basics", "Set up development environment"],
-                is_active=True,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
-                module_count=2,
-                modules=[
-                    {
-                        "id": str(uuid4()),
-                        "name": "Development Environment Setup",
-                        "content_generation_status": "completed",
-                        "approval_status": "approved"
-                    },
-                    {
-                        "id": str(uuid4()),
-                        "name": "Programming Fundamentals",
-                        "content_generation_status": "generating",
-                        "approval_status": "draft"
-                    }
-                ]
-            )
-        ]
-        
-        return mock_tracks
-    
+        # Return empty list for now - tracks list functionality needs implementation
+        return []
+
     except Exception as e:
         logging.error(f"Error listing tracks for project {project_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to list tracks")
+        raise HTTPException(status_code=500, detail=f"Failed to list tracks: {str(e)}")
 
 @router.get("/organizations/{org_id}/track-templates", response_model=List[TrackResponse])
 async def get_track_templates(

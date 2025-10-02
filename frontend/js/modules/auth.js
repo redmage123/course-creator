@@ -306,7 +306,10 @@ class AuthManager {
                         // WHY: User should be able to access other platform features even if labs fail
                     }
                 }
-                
+
+                // Dispatch custom event to notify other modules of login
+                window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: { user: this.currentUser } }));
+
                 // SUCCESSFUL LOGIN RESULT: Return success with user data
                 return { success: true, user: this.currentUser };
             } else {
@@ -819,7 +822,7 @@ class AuthManager {
                 return `${pathPrefix}site-admin-dashboard.html`;  // Site admin gets the comprehensive admin dashboard
             case 'org_admin':
             case 'organization_admin':  // Handle both role names
-                const redirectUrl = `${pathPrefix}org-admin-enhanced.html`;
+                const redirectUrl = `${pathPrefix}org-admin-dashboard.html`;
                 console.log('🔍 REDIRECT DEBUG - Final URL:', redirectUrl);
                 return redirectUrl;
             case 'instructor':

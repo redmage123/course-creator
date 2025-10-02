@@ -82,26 +82,32 @@ class DockerService:
         """
         try:
             # Build port configuration
+            # Docker API expects port_bindings as dict or list format
             port_bindings = {}
-            exposed_ports = {}
-            
+            exposed_ports = []
+
             for internal_port, external_port in ports.items():
                 if self._is_port_available(external_port):
                     port_bindings[internal_port] = external_port
-                    exposed_ports[internal_port] = {}
+                    exposed_ports.append(internal_port)
                 else:
                     # Find alternative port
                     alt_port = self._find_available_port(external_port)
                     port_bindings[internal_port] = alt_port
-                    exposed_ports[internal_port] = {}
+                    exposed_ports.append(internal_port)
                     self.logger.warning(f"Port {external_port} unavailable, using {alt_port}")
             
-            # Prepare volumes with host paths (important for main VM access)
+            # Prepare volumes - Keep it simple using the high-level API format
+            # The high-level client expects: {host_path: {'bind': container_path, 'mode': 'rw'}}
             volume_mounts = {}
-            for container_path, host_path in volumes.items():
-                # Ensure host paths are accessible from main VM
-                volume_mounts[host_path] = {'bind': container_path, 'mode': 'rw'}
-            
+            for host_path, volume_config in volumes.items():
+                if isinstance(volume_config, dict):
+                    container_bind_path = volume_config.get('bind', '/home/student')
+                    mode = volume_config.get('mode', 'rw')
+                    volume_mounts[host_path] = {'bind': container_bind_path, 'mode': mode}
+                else:
+                    volume_mounts[host_path] = {'bind': volume_config, 'mode': 'rw'}
+
             # Add environment variables for student containers
             student_env = {
                 **environment,
@@ -109,30 +115,182 @@ class DockerService:
                 'LAB_MANAGER_HOST': 'lab-manager:8006',
                 'CREATED_BY': 'course-creator-lab-manager'
             }
-            
-            # Create container with specific configuration for main VM deployment
-            container = self.client.containers.create(
-                image=image_name,
-                name=container_name,
-                ports=port_bindings,
-                volumes=volume_mounts,
-                environment=student_env,
-                detach=True,
-                network_mode='bridge',  # Use bridge network for main VM access
-                cpu_period=100000,
-                cpu_quota=int(float(cpu_limit) * 100000),
-                mem_limit=memory_limit,
-                restart_policy={"Name": "unless-stopped"},
-                labels={
-                    'created_by': 'course-creator-lab-manager',
-                    'container_type': 'student_lab',
-                    'lab_session': container_name
-                },
-                # Security options for lab containers
-                security_opt=['no-new-privileges:true'],
-                # Prevent container from accessing Docker socket
-                tmpfs={'/tmp': 'rw,noexec,nosuid,size=100m'}
-            )
+
+            # DEBUG: Test container creation with minimal parameters first
+            # to isolate which parameter causes "unhashable type: 'dict'" error
+            self.logger.info(f"DEBUG: Starting container creation for {container_name}")
+            self.logger.info(f"DEBUG: image_name type: {type(image_name)}, value: {image_name}")
+            self.logger.info(f"DEBUG: port_bindings type: {type(port_bindings)}, value: {port_bindings}")
+            self.logger.info(f"DEBUG: volume_mounts type: {type(volume_mounts)}, value: {volume_mounts}")
+
+            try:
+                # TEST 1: Absolute minimum - just image and name
+                self.logger.info("DEBUG: TEST 1 - Creating with just image and name...")
+                container = self.client.containers.create(
+                    image=image_name,
+                    name=container_name,
+                    detach=True
+                )
+                self.logger.info("DEBUG: TEST 1 PASSED - Basic creation works")
+
+                # If we get here, basic creation works. Now test with each parameter.
+                # Remove the test container
+                container.remove(force=True)
+                self.logger.info("DEBUG: Test container removed, now testing with parameters...")
+
+                # TEST 2: Add environment
+                self.logger.info("DEBUG: TEST 2 - Adding environment variables...")
+                container = self.client.containers.create(
+                    image=image_name,
+                    name=container_name,
+                    environment=student_env,
+                    detach=True
+                )
+                self.logger.info("DEBUG: TEST 2 PASSED - Environment works")
+                container.remove(force=True)
+
+                # TEST 3: Add ports
+                self.logger.info("DEBUG: TEST 3 - Adding ports...")
+                container = self.client.containers.create(
+                    image=image_name,
+                    name=container_name,
+                    environment=student_env,
+                    ports=port_bindings,
+                    detach=True
+                )
+                self.logger.info("DEBUG: TEST 3 PASSED - Ports work")
+                container.remove(force=True)
+
+                # TEST 4: Add volumes
+                self.logger.info("DEBUG: TEST 4 - Adding volumes...")
+                container = self.client.containers.create(
+                    image=image_name,
+                    name=container_name,
+                    environment=student_env,
+                    ports=port_bindings,
+                    volumes=volume_mounts,
+                    detach=True
+                )
+                self.logger.info("DEBUG: TEST 4 PASSED - Volumes work")
+                container.remove(force=True)
+
+                # TEST 5: Add network_mode
+                self.logger.info("DEBUG: TEST 5 - Adding network_mode...")
+                container = self.client.containers.create(
+                    image=image_name,
+                    name=container_name,
+                    environment=student_env,
+                    ports=port_bindings,
+                    volumes=volume_mounts,
+                    network_mode='bridge',
+                    detach=True
+                )
+                self.logger.info("DEBUG: TEST 5 PASSED - network_mode works")
+                container.remove(force=True)
+
+                # TEST 6: Add CPU/memory limits
+                self.logger.info("DEBUG: TEST 6 - Adding CPU/memory limits...")
+                container = self.client.containers.create(
+                    image=image_name,
+                    name=container_name,
+                    environment=student_env,
+                    ports=port_bindings,
+                    volumes=volume_mounts,
+                    network_mode='bridge',
+                    cpu_period=100000,
+                    cpu_quota=int(float(cpu_limit) * 100000),
+                    mem_limit=memory_limit,
+                    detach=True
+                )
+                self.logger.info("DEBUG: TEST 6 PASSED - CPU/memory limits work")
+                container.remove(force=True)
+
+                # TEST 7: Add restart_policy
+                self.logger.info("DEBUG: TEST 7 - Adding restart_policy...")
+                container = self.client.containers.create(
+                    image=image_name,
+                    name=container_name,
+                    environment=student_env,
+                    ports=port_bindings,
+                    volumes=volume_mounts,
+                    network_mode='bridge',
+                    cpu_period=100000,
+                    cpu_quota=int(float(cpu_limit) * 100000),
+                    mem_limit=memory_limit,
+                    restart_policy={"Name": "unless-stopped"},
+                    detach=True
+                )
+                self.logger.info("DEBUG: TEST 7 PASSED - restart_policy works")
+                container.remove(force=True)
+
+                # TEST 8: Add security_opt
+                self.logger.info("DEBUG: TEST 8 - Adding security_opt...")
+                container = self.client.containers.create(
+                    image=image_name,
+                    name=container_name,
+                    environment=student_env,
+                    ports=port_bindings,
+                    volumes=volume_mounts,
+                    network_mode='bridge',
+                    cpu_period=100000,
+                    cpu_quota=int(float(cpu_limit) * 100000),
+                    mem_limit=memory_limit,
+                    restart_policy={"Name": "unless-stopped"},
+                    security_opt=['no-new-privileges:true'],
+                    detach=True
+                )
+                self.logger.info("DEBUG: TEST 8 PASSED - security_opt works")
+                container.remove(force=True)
+
+                # TEST 9: Add tmpfs
+                self.logger.info("DEBUG: TEST 9 - Adding tmpfs...")
+                container = self.client.containers.create(
+                    image=image_name,
+                    name=container_name,
+                    environment=student_env,
+                    ports=port_bindings,
+                    volumes=volume_mounts,
+                    network_mode='bridge',
+                    cpu_period=100000,
+                    cpu_quota=int(float(cpu_limit) * 100000),
+                    mem_limit=memory_limit,
+                    restart_policy={"Name": "unless-stopped"},
+                    security_opt=['no-new-privileges:true'],
+                    tmpfs={'/tmp': 'rw,noexec,nosuid,size=100m'},
+                    detach=True
+                )
+                self.logger.info("DEBUG: TEST 9 PASSED - tmpfs works")
+                container.remove(force=True)
+
+                # TEST 10: Add labels - FINAL TEST
+                self.logger.info("DEBUG: TEST 10 - Adding labels (final)...")
+                container = self.client.containers.create(
+                    image=image_name,
+                    name=container_name,
+                    environment=student_env,
+                    ports=port_bindings,
+                    volumes=volume_mounts,
+                    network_mode='bridge',
+                    cpu_period=100000,
+                    cpu_quota=int(float(cpu_limit) * 100000),
+                    mem_limit=memory_limit,
+                    restart_policy={"Name": "unless-stopped"},
+                    security_opt=['no-new-privileges:true'],
+                    tmpfs={'/tmp': 'rw,noexec,nosuid,size=100m'},
+                    labels={
+                        'created_by': 'course-creator-lab-manager',
+                        'container_type': 'student_lab',
+                        'lab_session': container_name
+                    },
+                    detach=True
+                )
+                self.logger.info("DEBUG: TEST 10 PASSED - All parameters work!")
+
+            except Exception as test_error:
+                self.logger.error(f"DEBUG: Test failed with error: {test_error}")
+                import traceback
+                self.logger.error(f"DEBUG: Full traceback: {traceback.format_exc()}")
+                raise
             
             container.start()
             
@@ -152,8 +310,29 @@ class DockerService:
             
         except APIError as e:
             self.logger.error(f"Failed to create student lab container {container_name}: {e}")
+            import traceback
+            self.logger.error(f"Traceback: {traceback.format_exc()}")
             raise Exception(f"Container creation failed: {e}")
+        except Exception as e:
+            self.logger.error(f"Unexpected error creating container {container_name}: {e}")
+            import traceback
+            self.logger.error(f"Traceback: {traceback.format_exc()}")
+            raise
     
+    def start_container(self, container_name: str) -> bool:
+        """Start an existing Docker container."""
+        try:
+            container = self.client.containers.get(container_name)
+            container.start()
+            self.logger.info(f"Container {container_name} started")
+            return True
+        except NotFound:
+            self.logger.warning(f"Container {container_name} not found")
+            return False
+        except APIError as e:
+            self.logger.error(f"Failed to start container {container_name}: {e}")
+            return False
+
     def stop_container(self, container_name: str, timeout: int = 10) -> bool:
         """Stop a Docker container."""
         try:
@@ -250,12 +429,37 @@ class DockerService:
             return f"Error retrieving logs: {e}"
     
     def _is_port_available(self, port: int) -> bool:
-        """Check if a port is available."""
-        import socket
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.settimeout(1)
-            result = sock.connect_ex(('localhost', port))
-            return result != 0
+        """
+        Check if a port is available by querying Docker's actual port bindings.
+
+        This method queries all running containers to check if any are using the specified
+        host port. This is more reliable than socket checks because:
+        1. It works from within containers (no network isolation issues)
+        2. It detects ports bound by Docker containers on the host
+        3. It avoids false positives from network namespace separation
+        """
+        try:
+            # Get all running containers
+            containers = self.client.containers.list()
+
+            for container in containers:
+                # Check if container has any port bindings
+                if container.ports:
+                    for container_port, host_bindings in container.ports.items():
+                        if host_bindings:
+                            for binding in host_bindings:
+                                # Check if this container is using our target host port
+                                host_port = binding.get('HostPort')
+                                if host_port and int(host_port) == port:
+                                    self.logger.debug(f"Port {port} is in use by container {container.name} ({container.id[:12]})")
+                                    return False
+
+            # Port is not used by any container
+            return True
+
+        except Exception as e:
+            self.logger.warning(f"Error checking port availability for {port}: {e}. Assuming unavailable for safety.")
+            return False
     
     def _find_available_port(self, start_port: int, max_attempts: int = 100) -> int:
         """Find an available port starting from start_port."""

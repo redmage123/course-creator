@@ -3,7 +3,7 @@ FastAPI endpoints for Enhanced RBAC operations
 Organization membership, track assignments, and role management
 """
 from fastapi import APIRouter, Depends, HTTPException, status
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from uuid import UUID
 from pydantic import BaseModel, EmailStr
 
@@ -14,6 +14,15 @@ from domain.entities.meeting_room import MeetingPlatform, RoomType
 from app_dependencies import get_container, get_current_user, verify_permission, get_membership_service, get_meeting_room_service
 
 router = APIRouter(prefix="/api/v1/rbac", tags=["RBAC"])
+
+
+def get_user_id(user: Dict[str, Any]) -> UUID:
+    """Extract user ID from user dict or object"""
+    if isinstance(user, dict):
+        user_id = user.get('id') or user.get('user_id')
+        return UUID(user_id) if isinstance(user_id, str) else user_id
+    return user.id
+
 
 # Pydantic models for requests/responses
 
@@ -94,19 +103,20 @@ async def add_organization_member(
     """Add member (admin or instructor) to organization"""
     try:
         # Verify permissions
+        user_id = get_user_id(current_user)
         await verify_permission(
-            current_user.id,
+            user_id,
             organization_id,
             Permission.ADD_ORGANIZATION_ADMINS if request.role_type == "organization_admin" else Permission.ADD_INSTRUCTORS_TO_ORG
         )
 
         if request.role_type == "organization_admin":
             membership = await membership_service.add_organization_admin(
-                organization_id, request.user_email, current_user.id
+                organization_id, request.user_email, user_id
             )
         elif request.role_type == "instructor":
             membership = await membership_service.add_instructor_to_organization(
-                organization_id, request.user_email, current_user.id, request.project_ids
+                organization_id, request.user_email, user_id, request.project_ids
             )
         else:
             raise HTTPException(
@@ -139,7 +149,7 @@ async def get_organization_members(
     """Get organization members"""
     try:
         # Verify permissions
-        await verify_permission(current_user.id, organization_id, Permission.MANAGE_ORGANIZATION)
+        await verify_permission(get_user_id(current_user), organization_id, Permission.MANAGE_ORGANIZATION)
 
         role_filter = None
         if role_type:
@@ -162,9 +172,9 @@ async def remove_organization_member(
     """Remove member from organization"""
     try:
         # Verify permissions
-        await verify_permission(current_user.id, organization_id, Permission.REMOVE_ORGANIZATION_ADMINS)
+        await verify_permission(get_user_id(current_user), organization_id, Permission.REMOVE_ORGANIZATION_ADMINS)
 
-        success = await membership_service.remove_organization_member(membership_id, current_user.id)
+        success = await membership_service.remove_organization_member(membership_id, get_user_id(current_user))
 
         if not success:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Member not found")
@@ -193,10 +203,10 @@ async def assign_student_to_project(
         organization_id = current_user.organization_id  # This would need proper implementation
 
         # Verify permissions
-        await verify_permission(current_user.id, organization_id, Permission.ADD_STUDENTS_TO_PROJECT)
+        await verify_permission(get_user_id(current_user), organization_id, Permission.ADD_STUDENTS_TO_PROJECT)
 
         membership, assignment = await membership_service.add_student_to_project(
-            project_id, organization_id, request.user_email, request.track_id, current_user.id
+            project_id, organization_id, request.user_email, request.track_id, get_user_id(current_user)
         )
 
         return {
@@ -223,10 +233,10 @@ async def assign_instructor_to_track(
     """Assign instructor to teach track"""
     try:
         # Verify permissions (would need to get organization from track)
-        # await verify_permission(current_user.id, organization_id, Permission.ASSIGN_INSTRUCTORS_TO_TRACKS)
+        # await verify_permission(get_user_id(current_user), organization_id, Permission.ASSIGN_INSTRUCTORS_TO_TRACKS)
 
         assignment = await membership_service.assign_instructor_to_track(
-            request.instructor_id, track_id, current_user.id
+            request.instructor_id, track_id, get_user_id(current_user)
         )
 
         return {
@@ -282,8 +292,9 @@ async def create_meeting_room(
     """Create meeting room"""
     try:
         # Verify permissions
+        user_id = get_user_id(current_user)
         platform_permission = Permission.CREATE_TEAMS_ROOMS if request.platform == "teams" else Permission.CREATE_ZOOM_ROOMS
-        await verify_permission(current_user.id, organization_id, platform_permission)
+        await verify_permission(user_id, organization_id, platform_permission)
 
         # Validate and convert enums
         try:
@@ -297,7 +308,7 @@ async def create_meeting_room(
             name=request.name,
             platform=platform,
             room_type=room_type,
-            created_by=current_user.id,
+            created_by=user_id,
             project_id=request.project_id,
             track_id=request.track_id,
             instructor_id=request.instructor_id,
@@ -334,7 +345,7 @@ async def get_organization_meeting_rooms(
     """Get organization meeting rooms"""
     try:
         # Verify permissions
-        await verify_permission(current_user.id, organization_id, Permission.MANAGE_MEETING_ROOMS)
+        await verify_permission(get_user_id(current_user), organization_id, Permission.MANAGE_MEETING_ROOMS)
 
         platform_filter = None
         room_type_filter = None
@@ -426,7 +437,7 @@ async def create_track_room(
         platform_enum = MeetingPlatform(platform)
 
         room = await meeting_room_service.create_track_room(
-            track_id, organization_id, platform_enum, current_user.id, name
+            track_id, organization_id, platform_enum, get_user_id(current_user), name
         )
 
         return MeetingRoomResponse(
@@ -463,7 +474,7 @@ async def create_instructor_room(
         platform_enum = MeetingPlatform(platform)
 
         room = await meeting_room_service.create_instructor_room(
-            instructor_id, organization_id, platform_enum, current_user.id, name
+            instructor_id, organization_id, platform_enum, get_user_id(current_user), name
         )
 
         return MeetingRoomResponse(

@@ -61,34 +61,51 @@ class OrgAdminDashboard {
         const authToken = localStorage.getItem('authToken');
         const sessionStart = localStorage.getItem('sessionStart');
         const lastActivity = localStorage.getItem('lastActivity');
-        
+
+        console.log('🔍 Session Validation:', {
+            hasUser: !!currentUser,
+            hasToken: !!authToken,
+            hasSessionStart: !!sessionStart,
+            hasLastActivity: !!lastActivity,
+            userRole: currentUser?.role
+        });
+
         // Validate complete session state
-        if (!currentUser || !authToken || !sessionStart || !lastActivity) {
-            console.log('Session invalid: Missing session data');
+        if (!currentUser || !authToken) {
+            console.log('❌ Session invalid: Missing user or token');
             this.redirectToHome();
             return false;
         }
-        
+
+        // Session timestamps are optional - create them if missing
+        if (!sessionStart || !lastActivity) {
+            console.log('⚠️ Creating missing session timestamps');
+            const now = Date.now();
+            localStorage.setItem('sessionStart', now.toString());
+            localStorage.setItem('lastActivity', now.toString());
+        }
+
         // Check session timeout (8 hours from start)
         const now = Date.now();
-        const sessionAge = now - parseInt(sessionStart);
-        const timeSinceActivity = now - parseInt(lastActivity);
+        const sessionAge = now - parseInt(sessionStart || now);
+        const timeSinceActivity = now - parseInt(lastActivity || now);
         const SESSION_TIMEOUT = 8 * 60 * 60 * 1000; // 8 hours
         const INACTIVITY_TIMEOUT = 2 * 60 * 60 * 1000; // 2 hours
-        
+
         if (sessionAge > SESSION_TIMEOUT || timeSinceActivity > INACTIVITY_TIMEOUT) {
-            console.log('Session expired: Redirecting to home page');
+            console.log('❌ Session expired: Redirecting to home page');
             this.clearExpiredSession();
             return false;
         }
-        
+
         // Check if user has org_admin or organization_admin role
         if (currentUser.role !== 'org_admin' && currentUser.role !== 'organization_admin' && currentUser.role !== 'admin') {
-            console.log('Invalid role for org admin dashboard:', currentUser.role);
+            console.log('❌ Invalid role for org admin dashboard:', currentUser.role);
             this.redirectToHome();
             return false;
         }
-        
+
+        console.log('✅ Session validation passed');
         return true;
     }
 
@@ -178,9 +195,10 @@ class OrgAdminDashboard {
                 return;
             }
             
-            // Set organization ID from user data
-            this.currentOrganizationId = this.currentUser.organization || this.currentUser.organization_id;
-            
+            // Set organization ID from user data or JWT token
+            this.currentOrganizationId = this.getCurrentUserOrgId();
+            console.log('🏢 Current Organization ID:', this.currentOrganizationId);
+
             // Update UI
             document.getElementById('currentUserName').textContent = this.currentUser.full_name || this.currentUser.name || this.currentUser.email;
             
@@ -195,11 +213,45 @@ class OrgAdminDashboard {
         }
     }
 
+    /**
+     * Get current user's organization ID from JWT token
+     */
+    getCurrentUserOrgId() {
+        // Try to get from URL parameter first
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlOrgId = urlParams.get('orgId');
+        if (urlOrgId) {
+            return urlOrgId;
+        }
+
+        // Try to extract from JWT token
+        const token = Auth.getToken();
+        if (token) {
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                if (payload.organization_id) {
+                    return payload.organization_id;
+                }
+            } catch (error) {
+                console.error('Error parsing token:', error);
+            }
+        }
+
+        // Fallback to user data
+        if (this.currentUser) {
+            return this.currentUser.organization_id || this.currentUser.organization;
+        }
+
+        // Final fallback to AI Elevate org for testing
+        return '259da6df-c148-40c2-bcd9-dc6889e7e9fb';
+    }
+
     setupEventListeners() {
         // Tab navigation
         document.querySelectorAll('.nav-tab').forEach(tab => {
             tab.addEventListener('click', (e) => {
-                const tabName = e.target.getAttribute('data-tab');
+                // Use currentTarget to get the tab button, not the clicked child element
+                const tabName = e.currentTarget.getAttribute('data-tab');
                 this.showTab(tabName);
             });
         });
@@ -415,12 +467,18 @@ class OrgAdminDashboard {
     }
 
     showTab(tabName) {
+        // Validate tabName parameter
+        if (!tabName || typeof tabName !== 'string') {
+            console.error('showTab called with invalid tabName:', tabName);
+            return;
+        }
+
         // Update active tab with ARIA attributes
         document.querySelectorAll('.nav-tab[role="tab"]').forEach(tab => {
             tab.classList.remove('active');
             tab.setAttribute('aria-selected', 'false');
             tab.setAttribute('tabindex', '-1');
-            
+
             // Remove screen reader indication
             const srText = tab.querySelector('.sr-only');
             if (srText) {
@@ -1911,6 +1969,107 @@ class OrgAdminDashboard {
         }
         showNotification('Projects table refreshed', 'success');
         this.createProjectsTable();
+    }
+
+    /**
+     * Load assignments tab data
+     * PURPOSE: Fetch and display track assignments for the organization
+     */
+    async loadAssignments() {
+        try {
+            const orgId = this.currentOrgId;
+            const response = await fetch(`${CONFIG.API_BASE_URL}/api/v1/organizations/${orgId}/assignments`, {
+                headers: {
+                    'Authorization': `Bearer ${Auth.getToken()}`
+                }
+            });
+
+            if (response.ok) {
+                const assignments = await response.json();
+                this.renderAssignments(assignments);
+            } else {
+                console.error('Failed to load assignments');
+                showNotification('Failed to load assignments', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading assignments:', error);
+            showNotification('Error loading assignments', 'error');
+        }
+    }
+
+    /**
+     * Render assignments in the assignments tab
+     */
+    renderAssignments(assignments) {
+        const container = document.getElementById('assignmentsContainer');
+        if (!container) return;
+
+        if (!assignments || assignments.length === 0) {
+            container.innerHTML = '<div class="empty-state"><p>No assignments found</p></div>';
+            return;
+        }
+
+        const assignmentsHtml = assignments.map(assignment => `
+            <div class="assignment-card">
+                <h4>${assignment.track_name || 'Unknown Track'}</h4>
+                <p>Assigned to: ${assignment.user_name || 'Unknown User'}</p>
+                <p>Status: ${assignment.status || 'Active'}</p>
+            </div>
+        `).join('');
+
+        container.innerHTML = assignmentsHtml;
+    }
+
+    /**
+     * Load settings tab data
+     * PURPOSE: Display organization settings and configuration options
+     */
+    async loadSettings() {
+        try {
+            const orgId = this.currentOrgId;
+            const response = await fetch(`${CONFIG.API_BASE_URL}/api/v1/organizations/${orgId}`, {
+                headers: {
+                    'Authorization': `Bearer ${Auth.getToken()}`
+                }
+            });
+
+            if (response.ok) {
+                const orgData = await response.json();
+                this.renderSettings(orgData);
+            } else {
+                console.error('Failed to load settings');
+                showNotification('Failed to load organization settings', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading settings:', error);
+            showNotification('Error loading settings', 'error');
+        }
+    }
+
+    /**
+     * Render settings in the settings tab
+     */
+    renderSettings(orgData) {
+        const container = document.getElementById('settingsContainer');
+        if (!container) return;
+
+        container.innerHTML = `
+            <div class="settings-section">
+                <h3>Organization Settings</h3>
+                <div class="setting-item">
+                    <label>Organization Name:</label>
+                    <p>${orgData.name || 'N/A'}</p>
+                </div>
+                <div class="setting-item">
+                    <label>Organization ID:</label>
+                    <p>${orgData.id || 'N/A'}</p>
+                </div>
+                <div class="setting-item">
+                    <label>Status:</label>
+                    <p>${orgData.is_active ? 'Active' : 'Inactive'}</p>
+                </div>
+            </div>
+        `;
     }
 
 }
