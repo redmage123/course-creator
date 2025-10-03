@@ -716,6 +716,180 @@
             color: var(--text-muted);
             font-style: italic;
         }
+
+        /* Members Modal Styles */
+        .members-controls {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: var(--hover-color);
+            border-radius: 8px;
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .members-stats {
+            margin-bottom: 1rem;
+            padding: 0.75rem 1rem;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .member-card {
+            background: var(--card-background);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .member-card:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .member-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .member-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .member-info i {
+            font-size: 2rem;
+            color: var(--primary-color);
+        }
+
+        .member-info h4 {
+            margin: 0 0 0.25rem 0;
+            color: var(--text-primary);
+        }
+
+        .member-email {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .member-role-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .member-role-badge.student {
+            background: rgba(33, 150, 243, 0.2);
+            color: #2196F3;
+        }
+
+        .member-role-badge.instructor {
+            background: rgba(156, 39, 176, 0.2);
+            color: #9C27B0;
+        }
+
+        .member-role-badge.organization_admin,
+        .member-role-badge.org_admin {
+            background: rgba(255, 152, 0, 0.2);
+            color: #FF9800;
+        }
+
+        .member-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+        }
+
+        .detail-row {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .detail-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .status-badge.active {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4CAF50;
+        }
+
+        .status-badge.inactive {
+            background: rgba(244, 67, 54, 0.2);
+            color: #F44336;
+        }
+
+        .enrollments-section {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .enrollments-section h5 {
+            margin: 0 0 0.75rem 0;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .enrollments-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .enrollment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            background: var(--hover-color);
+            border-radius: 4px;
+            font-size: 0.875rem;
+        }
+
+        .enrollment-name {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .enrollment-date {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        .no-enrollments {
+            color: var(--text-muted);
+            font-style: italic;
+            margin: 0;
+        }
     </style>
 </head>
 <body>

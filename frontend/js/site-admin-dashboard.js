@@ -1193,11 +1193,282 @@ class SiteAdminDashboard {
     }
 
     // Organization member/project viewing
-    showOrganizationMembers(orgId, role) {
-        const roleText = role === 'all' ? 'all members' : `${role}s`;
-        this.showNotification(`Viewing ${roleText} for organization ${orgId.substring(0, 8)}...`, 'info');
-        // TODO: Implement member viewing modal/tab
-        console.log(`Show ${roleText} for org ${orgId}`);
+    async showOrganizationMembers(orgId, role) {
+        /**
+         * ORGANIZATION MEMBERS VIEWER
+         * PURPOSE: Display organization members with filtering by role
+         * WHY: Site admins need to manage and view members across different roles
+         *
+         * FEATURES:
+         * - Filter by role (all, student, instructor, org_admin)
+         * - Sort by name, email, enrollment date
+         * - Display member details and status
+         * - Course/project enrollment information for students
+         */
+        try {
+            this.showLoadingOverlay(true);
+
+            // Fetch members for the organization
+            const url = role && role !== 'all'
+                ? `/api/v1/organizations/${orgId}/members?role_type=${role}`
+                : `/api/v1/organizations/${orgId}/members`;
+
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch members');
+            }
+
+            const members = await response.json();
+
+            // For students, fetch enrollment details
+            if (role === 'student') {
+                for (const member of members) {
+                    try {
+                        const enrollmentResponse = await fetch(
+                            `/api/v1/students/${member.user_id}/enrollments`,
+                            {
+                                headers: {
+                                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                                }
+                            }
+                        );
+                        if (enrollmentResponse.ok) {
+                            member.enrollments = await enrollmentResponse.json();
+                        }
+                    } catch (error) {
+                        console.error(`Failed to fetch enrollments for ${member.user_id}:`, error);
+                        member.enrollments = [];
+                    }
+                }
+            }
+
+            // Create and show modal
+            this.showMembersModal(orgId, members, role);
+
+        } catch (error) {
+            console.error('Error loading members:', error);
+            this.showNotification('Failed to load members', 'error');
+        } finally {
+            this.showLoadingOverlay(false);
+        }
+    }
+
+    showMembersModal(orgId, members, roleFilter) {
+        /**
+         * MEMBERS MODAL DISPLAY
+         * PURPOSE: Render interactive modal showing organization members
+         * WHY: Provides structured view of member data with filtering and sorting
+         */
+        const roleText = roleFilter === 'all' ? 'All Members' :
+                        roleFilter === 'student' ? 'Students' :
+                        roleFilter === 'instructor' ? 'Instructors' :
+                        'Organization Admins';
+
+        const modalContent = `
+            <div class="modal-header">
+                <h2><i class="fas fa-users"></i> ${roleText}</h2>
+                <button class="modal-close" onclick="siteAdmin.closeMembersModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="members-controls">
+                    <div class="control-group">
+                        <label>Filter by Role:</label>
+                        <select id="memberRoleFilter" onchange="siteAdmin.filterMembersByRole('${orgId}')">
+                            <option value="all" ${roleFilter === 'all' ? 'selected' : ''}>All Members</option>
+                            <option value="student" ${roleFilter === 'student' ? 'selected' : ''}>Students</option>
+                            <option value="instructor" ${roleFilter === 'instructor' ? 'selected' : ''}>Instructors</option>
+                            <option value="organization_admin" ${roleFilter === 'organization_admin' ? 'selected' : ''}>Org Admins</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>Sort by:</label>
+                        <select id="memberSortOrder" onchange="siteAdmin.sortMembers()">
+                            <option value="name-asc">Name (A-Z)</option>
+                            <option value="name-desc">Name (Z-A)</option>
+                            <option value="email-asc">Email (A-Z)</option>
+                            <option value="date-asc">Oldest First</option>
+                            <option value="date-desc">Newest First</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="members-stats">
+                    <span><i class="fas fa-users"></i> Total: ${members.length}</span>
+                </div>
+                <div id="membersList">
+                    ${members.length === 0 ? '<p class="no-data">No members found</p>' : this.renderMembers(members, roleFilter)}
+                </div>
+            </div>
+        `;
+
+        // Create or update modal
+        let modal = document.getElementById('membersModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'membersModal';
+            modal.className = 'modal';
+            document.body.appendChild(modal);
+        }
+
+        modal.innerHTML = modalContent;
+        this.currentMembers = members;
+        this.currentMembersOrgId = orgId;
+        this.currentMembersRole = roleFilter;
+        this.showModal('membersModal');
+    }
+
+    renderMembers(members, roleFilter) {
+        /**
+         * MEMBERS RENDERING
+         * PURPOSE: Generate HTML for members list with role-specific details
+         * WHY: Different roles need different information displayed
+         */
+        return members.map(member => `
+            <div class="member-card" data-role="${member.role || member.role_type}">
+                <div class="member-header">
+                    <div class="member-info">
+                        <i class="fas ${this.getRoleIcon(member.role || member.role_type)}"></i>
+                        <div>
+                            <h4>${member.full_name || member.name || 'Unknown'}</h4>
+                            <span class="member-email">${member.email}</span>
+                        </div>
+                    </div>
+                    <span class="member-role-badge ${member.role || member.role_type}">
+                        ${this.formatRoleName(member.role || member.role_type)}
+                    </span>
+                </div>
+                <div class="member-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Username:</span>
+                        <span>${member.username || 'N/A'}</span>
+                    </div>
+                    ${member.phone ? `
+                        <div class="detail-row">
+                            <span class="detail-label">Phone:</span>
+                            <span>${this.formatPhoneNumber(member.phone)}</span>
+                        </div>
+                    ` : ''}
+                    <div class="detail-row">
+                        <span class="detail-label">Joined:</span>
+                        <span>${new Date(member.created_at || member.joined_at).toLocaleDateString()}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Status:</span>
+                        <span class="status-badge ${member.is_active ? 'active' : 'inactive'}">
+                            ${member.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                    </div>
+                </div>
+                ${roleFilter === 'student' && member.enrollments ? this.renderStudentEnrollments(member.enrollments) : ''}
+            </div>
+        `).join('');
+    }
+
+    renderStudentEnrollments(enrollments) {
+        /**
+         * STUDENT ENROLLMENTS RENDERING
+         * PURPOSE: Show course/project enrollments for students
+         * WHY: Site admins need to see what students are enrolled in
+         */
+        if (!enrollments || enrollments.length === 0) {
+            return '<div class="enrollments-section"><p class="no-enrollments">No enrollments</p></div>';
+        }
+
+        return `
+            <div class="enrollments-section">
+                <h5><i class="fas fa-book"></i> Enrollments (${enrollments.length})</h5>
+                <div class="enrollments-list">
+                    ${enrollments.map(enrollment => `
+                        <div class="enrollment-item">
+                            <span class="enrollment-name">${enrollment.course_name || enrollment.project_name}</span>
+                            <span class="enrollment-date">${new Date(enrollment.enrolled_at).toLocaleDateString()}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    getRoleIcon(role) {
+        /**
+         * GET ROLE ICON
+         * PURPOSE: Return appropriate FontAwesome icon for role
+         */
+        const icons = {
+            'student': 'fa-user-graduate',
+            'instructor': 'fa-chalkboard-teacher',
+            'organization_admin': 'fa-user-shield',
+            'org_admin': 'fa-user-shield',
+            'site_admin': 'fa-user-cog'
+        };
+        return icons[role] || 'fa-user';
+    }
+
+    formatRoleName(role) {
+        /**
+         * FORMAT ROLE NAME
+         * PURPOSE: Convert role slug to display name
+         */
+        const names = {
+            'student': 'Student',
+            'instructor': 'Instructor',
+            'organization_admin': 'Org Admin',
+            'org_admin': 'Org Admin',
+            'site_admin': 'Site Admin'
+        };
+        return names[role] || role;
+    }
+
+    async filterMembersByRole(orgId) {
+        /**
+         * FILTER MEMBERS BY ROLE
+         * PURPOSE: Re-fetch members with new role filter
+         */
+        const roleFilter = document.getElementById('memberRoleFilter').value;
+        await this.showOrganizationMembers(orgId, roleFilter);
+    }
+
+    sortMembers() {
+        /**
+         * SORT MEMBERS
+         * PURPOSE: Sort members based on user selection
+         */
+        const sortOrder = document.getElementById('memberSortOrder').value;
+        const members = [...this.currentMembers];
+
+        members.sort((a, b) => {
+            switch(sortOrder) {
+                case 'name-asc':
+                    return (a.full_name || a.name || '').localeCompare(b.full_name || b.name || '');
+                case 'name-desc':
+                    return (b.full_name || b.name || '').localeCompare(a.full_name || a.name || '');
+                case 'email-asc':
+                    return a.email.localeCompare(b.email);
+                case 'date-asc':
+                    return new Date(a.created_at || a.joined_at) - new Date(b.created_at || b.joined_at);
+                case 'date-desc':
+                    return new Date(b.created_at || b.joined_at) - new Date(a.created_at || a.joined_at);
+                default:
+                    return 0;
+            }
+        });
+
+        document.getElementById('membersList').innerHTML = this.renderMembers(members, this.currentMembersRole);
+    }
+
+    closeMembersModal() {
+        /**
+         * CLOSE MEMBERS MODAL
+         * PURPOSE: Clean up and close the members modal
+         */
+        this.closeModal('membersModal');
+        this.currentMembers = null;
+        this.currentMembersOrgId = null;
+        this.currentMembersRole = null;
     }
 
     async showOrganizationProjects(orgId) {
