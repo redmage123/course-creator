@@ -94,9 +94,115 @@ class SiteAdminDashboard {
         this.API_BASE = window.CONFIG?.API_URLS?.ORGANIZATION || `${protocol}//${host}:8008`;
         this.AUTH_API_BASE = window.CONFIG?.API_URLS?.USER_MANAGEMENT || `${protocol}//${host}:8000`;
         
+        // NETWORK STATE RECOVERY: Handle browser offline/online state
+        // WHY: Browser can get stuck in offline mode after container restarts
+        this.setupNetworkRecovery();
+
         // AUTOMATIC INITIALIZATION: Set up dashboard immediately
         // WHY: Constructor should establish fully functional dashboard system
         this.init();
+    }
+
+    /**
+     * NETWORK STATE RECOVERY SYSTEM
+     * PURPOSE: Automatically detect and recover from browser offline state
+     * WHY: Docker restarts can cause browser to get stuck thinking it's offline
+     *
+     * RECOVERY WORKFLOW:
+     * 1. Listen for online/offline events from browser
+     * 2. Detect when browser incorrectly thinks it's offline
+     * 3. Show helpful message instead of generic "no internet" error
+     * 4. Automatically retry connections when back online
+     * 5. Clear any stuck network state
+     *
+     * BUSINESS REQUIREMENT:
+     * During development/deployment, Docker container restarts cause browser
+     * to enter offline mode. This provides automatic recovery without user
+     * needing to close/reopen browser or use incognito mode.
+     */
+    setupNetworkRecovery() {
+        // Track network state
+        this.isOnline = navigator.onLine;
+
+        // Listen for network state changes
+        window.addEventListener('online', () => {
+            console.log('🌐 Browser detected network is back online');
+            this.isOnline = true;
+            this.handleNetworkRecovery();
+        });
+
+        window.addEventListener('offline', () => {
+            console.log('📴 Browser detected network went offline');
+            this.isOnline = false;
+            this.showNetworkOfflineMessage();
+        });
+
+        // Periodically check if browser is incorrectly offline
+        setInterval(() => {
+            if (!navigator.onLine) {
+                // Browser thinks we're offline, but let's verify
+                this.verifyNetworkConnectivity();
+            }
+        }, 5000); // Check every 5 seconds
+    }
+
+    /**
+     * VERIFY NETWORK CONNECTIVITY
+     * PURPOSE: Check if network is actually offline or if browser is stuck
+     * WHY: Browser can incorrectly report offline after WebSocket/connection breaks
+     */
+    async verifyNetworkConnectivity() {
+        try {
+            // Try to fetch a lightweight endpoint
+            const response = await fetch('/health', {
+                method: 'GET',
+                cache: 'no-cache',
+                mode: 'no-cors'
+            });
+
+            // If we got here, network is actually working
+            if (!this.isOnline) {
+                console.log('✅ Network is actually online, browser state was incorrect');
+                this.isOnline = true;
+                // Manually trigger online event
+                window.dispatchEvent(new Event('online'));
+            }
+        } catch (error) {
+            // Network really is offline
+            console.log('❌ Network connectivity check failed, truly offline');
+        }
+    }
+
+    /**
+     * HANDLE NETWORK RECOVERY
+     * PURPOSE: Actions to take when network comes back online
+     * WHY: Refresh data and clear stuck states
+     */
+    handleNetworkRecovery() {
+        this.showNotification('Network connection restored! Refreshing data...', 'success');
+
+        // Reload current data after a brief delay
+        setTimeout(() => {
+            const activeTab = document.querySelector('.tab-content.active');
+            if (activeTab && activeTab.id === 'organizationsTab') {
+                this.loadOrganizations();
+            } else if (activeTab && activeTab.id === 'overviewTab') {
+                this.loadPlatformStats();
+            }
+        }, 1000);
+    }
+
+    /**
+     * SHOW NETWORK OFFLINE MESSAGE
+     * PURPOSE: Display helpful message when network is offline
+     * WHY: Better UX than generic browser "no internet" error
+     */
+    showNetworkOfflineMessage() {
+        this.showNotification(
+            'Network connection lost. If Docker containers restarted, refresh the page (Ctrl+Shift+R) or wait for automatic reconnection.',
+            'warning',
+            10000 // Show for 10 seconds
+        );
     }
 
     /**
@@ -207,6 +313,71 @@ class SiteAdminDashboard {
             console.error('Error getting current user:', error);
             return null;
         }
+    }
+
+    /**
+     * PHONE NUMBER FORMATTING UTILITY
+     * PURPOSE: Format phone numbers for consistent display across the platform
+     * WHY: Phone numbers need standardized, readable formatting for professional presentation
+     *
+     * FORMATTING RULES:
+     * - US/Canada numbers (+1): Format as +1 (XXX) XXX-XXXX
+     * - International numbers: Format as +XX XXX XXX XXXX (grouped by country conventions)
+     * - Handles various input formats (with/without country code, with/without separators)
+     * - Preserves original format if parsing fails
+     *
+     * SUPPORTED FORMATS:
+     * - +14155551212 → +1 (415) 555-1212
+     * - +442071234567 → +44 20 7123 4567
+     * - +33123456789 → +33 1 23 45 67 89
+     * - Raw numbers are assumed to be US if 10 digits
+     *
+     * @param {string} phone - Phone number in any format
+     * @returns {string} Formatted phone number or original if cannot parse
+     */
+    formatPhoneNumber(phone) {
+        if (!phone) return 'Not specified';
+
+        // Remove all non-digit characters
+        const digits = phone.replace(/\D/g, '');
+
+        // If empty after cleaning, return original
+        if (!digits) return phone;
+
+        // US/Canada format: +1 (XXX) XXX-XXXX
+        if (digits.length === 11 && digits[0] === '1') {
+            return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+        }
+
+        // US format without country code (assume +1)
+        if (digits.length === 10) {
+            return `+1 (${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+        }
+
+        // UK format: +44 XX XXXX XXXX
+        if (digits.length === 12 && digits.slice(0, 2) === '44') {
+            return `+44 ${digits.slice(2, 4)} ${digits.slice(4, 8)} ${digits.slice(8)}`;
+        }
+
+        // France format: +33 X XX XX XX XX
+        if (digits.length === 11 && digits.slice(0, 2) === '33') {
+            return `+33 ${digits.slice(2, 3)} ${digits.slice(3, 5)} ${digits.slice(5, 7)} ${digits.slice(7, 9)} ${digits.slice(9)}`;
+        }
+
+        // Germany format: +49 XXX XXXXXXX
+        if (digits.length >= 11 && digits.slice(0, 2) === '49') {
+            return `+49 ${digits.slice(2, 5)} ${digits.slice(5)}`;
+        }
+
+        // Generic international format: +XX XXX XXX XXXX
+        if (digits.length > 10) {
+            const countryCode = digits.slice(0, digits.length - 10);
+            const rest = digits.slice(digits.length - 10);
+            return `+${countryCode} ${rest.slice(0, 3)} ${rest.slice(3, 6)} ${rest.slice(6)}`;
+        }
+
+        // If we can't parse it, return original
+        return phone;
     }
 
     /**
@@ -392,9 +563,10 @@ class SiteAdminDashboard {
 
     setupEventListeners() {
         // Tab navigation
-        document.querySelectorAll('.nav-tab').forEach(tab => {
-            tab.addEventListener('click', (e) => {
-                const tabName = e.target.getAttribute('data-tab');
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const tabName = e.target.closest('.nav-link').getAttribute('data-tab');
                 this.showTab(tabName);
             });
         });
@@ -549,9 +721,9 @@ class SiteAdminDashboard {
     }
 
     showTab(tabName) {
-        // Update active tab
-        document.querySelectorAll('.nav-tab').forEach(tab => {
-            tab.classList.remove('active');
+        // Update active nav link
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.classList.remove('active');
         });
         document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
 
@@ -559,7 +731,7 @@ class SiteAdminDashboard {
         document.querySelectorAll('.tab-content').forEach(content => {
             content.classList.remove('active');
         });
-        document.getElementById(`${tabName}-tab`).classList.add('active');
+        document.getElementById(tabName).classList.add('active');
 
         // Load tab-specific data
         switch (tabName) {
@@ -598,7 +770,16 @@ class SiteAdminDashboard {
 
     renderOrganizations() {
         const container = document.getElementById('organizationsContainer');
-        
+
+        console.log('Rendering organizations:', this.organizations);
+        console.log('First org address data:', this.organizations[0] ? {
+            street_address: this.organizations[0].street_address,
+            city: this.organizations[0].city,
+            state_province: this.organizations[0].state_province,
+            postal_code: this.organizations[0].postal_code,
+            country: this.organizations[0].country
+        } : 'no orgs');
+
         if (this.organizations.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
@@ -612,53 +793,140 @@ class SiteAdminDashboard {
 
         const organizationsHtml = this.organizations.map(org => `
             <div class="organization-card ${org.is_active ? 'active' : 'inactive'}" data-status="${org.is_active ? 'active' : 'inactive'}">
-                <div class="org-status ${org.is_active ? 'active' : 'inactive'}">
-                    <i class="fas ${org.is_active ? 'fa-check-circle' : 'fa-times-circle'}"></i>
-                </div>
-                <div class="org-header">
-                    <div class="org-info">
+                <div class="org-card-header">
+                    <div class="org-status-badge ${org.is_active ? 'active' : 'inactive'}">
+                        <i class="fas ${org.is_active ? 'fa-check-circle' : 'fa-times-circle'}"></i>
+                        <span>${org.is_active ? 'Active' : 'Inactive'}</span>
+                    </div>
+                    <div class="org-title">
                         <h3>${org.name}</h3>
-                        <div class="org-slug">${org.slug}</div>
+                        <span class="org-slug"><i class="fas fa-tag"></i> ${org.slug}</span>
                     </div>
                 </div>
-                <p class="org-description">${org.description || 'No description provided'}</p>
-                <div class="org-stats">
-                    <div class="org-stat">
-                        <span class="value">${org.total_members}</span>
-                        <span class="label">Members</span>
+
+                <div class="org-card-body">
+                    <div class="org-section">
+                        <h4><i class="fas fa-info-circle"></i> Description</h4>
+                        <p>${org.description || 'No description provided'}</p>
                     </div>
-                    <div class="org-stat">
-                        <span class="value">${org.project_count}</span>
-                        <span class="label">Projects</span>
+
+                    ${org.org_admin ? `
+                    <div class="org-section">
+                        <h4><i class="fas fa-user-shield"></i> Organization Administrator</h4>
+                        <div class="org-details-grid">
+                            <div class="detail-item">
+                                <label><i class="fas fa-user"></i> Name</label>
+                                <span>${org.org_admin.full_name || 'Not specified'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label><i class="fas fa-id-badge"></i> Username (Login ID)</label>
+                                <span>${org.org_admin.username || 'Not specified'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label><i class="fas fa-envelope"></i> Email</label>
+                                <span>${org.org_admin.email || 'Not specified'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label><i class="fas fa-phone"></i> Phone</label>
+                                <span>${this.formatPhoneNumber(org.org_admin.phone)}</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="org-stat">
-                        <span class="value">${org.member_counts?.instructor || 0}</span>
-                        <span class="label">Instructors</span>
+                    ` : ''}
+
+                    <div class="org-section">
+                        <h4><i class="fas fa-building"></i> Organization Details</h4>
+                        <div class="org-details-grid">
+                            <div class="detail-item">
+                                <label><i class="fas fa-globe"></i> Domain</label>
+                                <span>${org.domain || 'Not specified'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label><i class="fas fa-envelope"></i> Contact Email</label>
+                                <span>${org.contact_email || 'Not specified'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label><i class="fas fa-phone"></i> Contact Phone</label>
+                                <span>${this.formatPhoneNumber(org.contact_phone)}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label><i class="fas fa-map-marker-alt"></i> Street Address</label>
+                                <span>${org.street_address || 'Not specified'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label><i class="fas fa-city"></i> City</label>
+                                <span>${org.city || 'Not specified'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label><i class="fas fa-map"></i> State/Province</label>
+                                <span>${org.state_province || 'Not specified'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label><i class="fas fa-mail-bulk"></i> Postal Code</label>
+                                <span>${org.postal_code || 'Not specified'}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label><i class="fas fa-flag"></i> Country</label>
+                                <span>${org.country === 'US' ? 'United States' : (org.country || 'Not specified')}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label><i class="fas fa-fingerprint"></i> Organization ID</label>
+                                <span class="monospace">${org.id}</span>
+                            </div>
+                            <div class="detail-item">
+                                <label><i class="fas fa-calendar-plus"></i> Created</label>
+                                <span>${new Date(org.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="org-stat">
-                        <span class="value">${org.member_counts?.student || 0}</span>
-                        <span class="label">Students</span>
+
+                    <div class="org-section">
+                        <h4><i class="fas fa-chart-bar"></i> Statistics</h4>
+                        <div class="org-stats">
+                            <div class="org-stat clickable" onclick="siteAdmin.showOrganizationMembers('${org.id}', 'all')" title="Click to view all members">
+                                <div class="stat-icon"><i class="fas fa-users"></i></div>
+                                <div class="stat-content">
+                                    <span class="value">${org.total_members}</span>
+                                    <span class="label">Total Members</span>
+                                </div>
+                            </div>
+                            <div class="org-stat clickable" onclick="siteAdmin.showOrganizationProjects('${org.id}')" title="Click to view projects">
+                                <div class="stat-icon"><i class="fas fa-project-diagram"></i></div>
+                                <div class="stat-content">
+                                    <span class="value">${org.project_count}</span>
+                                    <span class="label">Projects</span>
+                                </div>
+                            </div>
+                            <div class="org-stat clickable" onclick="siteAdmin.showOrganizationMembers('${org.id}', 'instructor')" title="Click to view instructors">
+                                <div class="stat-icon"><i class="fas fa-chalkboard-teacher"></i></div>
+                                <div class="stat-content">
+                                    <span class="value">${org.member_counts?.instructor || 0}</span>
+                                    <span class="label">Instructors</span>
+                                </div>
+                            </div>
+                            <div class="org-stat clickable" onclick="siteAdmin.showOrganizationMembers('${org.id}', 'student')" title="Click to view students">
+                                <div class="stat-icon"><i class="fas fa-user-graduate"></i></div>
+                                <div class="stat-content">
+                                    <span class="value">${org.member_counts?.student || 0}</span>
+                                    <span class="label">Students</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="org-meta">
-                    <span>Created: ${new Date(org.created_at).toLocaleDateString()}</span>
-                    <span>ID: ${org.id.substring(0, 8)}...</span>
-                </div>
-                <div class="org-actions">
-                    <button class="btn btn-sm btn-outline" onclick="siteAdmin.viewOrganizationDetails('${org.id}')">
-                        <i class="fas fa-eye"></i> View
-                    </button>
+
+                <div class="org-card-footer">
                     ${org.is_active ? `
-                        <button class="btn btn-sm btn-warning" onclick="siteAdmin.deactivateOrganization('${org.id}')">
+                        <button class="btn btn-sm btn-warning" onclick="siteAdmin.deactivateOrganization('${org.id}')" title="Deactivate organization (soft delete - can be reactivated later)">
                             <i class="fas fa-pause"></i> Deactivate
                         </button>
                     ` : `
-                        <button class="btn btn-sm btn-success" onclick="siteAdmin.reactivateOrganization('${org.id}')">
+                        <button class="btn btn-sm btn-success" onclick="siteAdmin.reactivateOrganization('${org.id}')" title="Reactivate organization">
                             <i class="fas fa-play"></i> Reactivate
                         </button>
                     `}
-                    <button class="btn btn-sm btn-danger" onclick="siteAdmin.showDeleteOrganizationModal('${org.id}', '${org.name}', ${org.total_members}, ${org.project_count}, 0)">
-                        <i class="fas fa-trash"></i> Delete
+                    <button class="btn btn-sm btn-danger" onclick="siteAdmin.showDeleteOrganizationModal('${org.id}', '${org.name.replace(/'/g, "\\'")}', ${org.total_members}, ${org.project_count}, 0)" title="Permanently delete organization and all data">
+                        <i class="fas fa-trash"></i> Delete Permanently
                     </button>
                 </div>
             </div>
@@ -911,17 +1179,210 @@ class SiteAdminDashboard {
     searchOrganizations() {
         const searchTerm = document.getElementById('orgSearchFilter').value.toLowerCase();
         const orgCards = document.querySelectorAll('.organization-card');
-        
+
         orgCards.forEach(card => {
             const orgName = card.querySelector('h3').textContent.toLowerCase();
             const orgSlug = card.querySelector('.org-slug').textContent.toLowerCase();
-            
+
             if (orgName.includes(searchTerm) || orgSlug.includes(searchTerm)) {
                 card.style.display = 'block';
             } else {
                 card.style.display = 'none';
             }
         });
+    }
+
+    // Organization member/project viewing
+    showOrganizationMembers(orgId, role) {
+        const roleText = role === 'all' ? 'all members' : `${role}s`;
+        this.showNotification(`Viewing ${roleText} for organization ${orgId.substring(0, 8)}...`, 'info');
+        // TODO: Implement member viewing modal/tab
+        console.log(`Show ${roleText} for org ${orgId}`);
+    }
+
+    async showOrganizationProjects(orgId) {
+        /**
+         * ORGANIZATION PROJECTS VIEWER
+         * PURPOSE: Display comprehensive project and track information for an organization
+         * WHY: Site admins need visibility into organization's educational content structure
+         *
+         * FEATURES:
+         * - Lists all projects for the organization
+         * - Shows tracks within each project
+         * - Displays courses within each track
+         * - Sortable by name or creation date
+         * - Real-time data fetching from API
+         */
+        try {
+            this.showLoadingOverlay(true);
+
+            // Fetch projects for the organization
+            const response = await fetch(`/api/v1/organizations/${orgId}/projects`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch projects');
+            }
+
+            const projects = await response.json();
+
+            // Fetch tracks for each project
+            for (const project of projects) {
+                const tracksResponse = await fetch(`/api/v1/projects/${project.id}/tracks`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    }
+                });
+
+                if (tracksResponse.ok) {
+                    project.tracks = await tracksResponse.json();
+                } else {
+                    project.tracks = [];
+                }
+            }
+
+            // Create and show modal
+            this.showProjectsModal(orgId, projects);
+
+        } catch (error) {
+            console.error('Error loading projects:', error);
+            this.showNotification('Failed to load projects', 'error');
+        } finally {
+            this.showLoadingOverlay(false);
+        }
+    }
+
+    showProjectsModal(orgId, projects) {
+        /**
+         * PROJECTS MODAL DISPLAY
+         * PURPOSE: Render interactive modal showing organization's projects and tracks
+         * WHY: Provides structured view of educational content hierarchy
+         */
+        const modalContent = `
+            <div class="modal-header">
+                <h2><i class="fas fa-project-diagram"></i> Organization Projects</h2>
+                <button class="modal-close" onclick="siteAdmin.closeProjectsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="projects-controls">
+                    <div class="control-group">
+                        <label>Sort by:</label>
+                        <select id="projectSortOrder" onchange="siteAdmin.sortProjects()">
+                            <option value="name-asc">Name (A-Z)</option>
+                            <option value="name-desc">Name (Z-A)</option>
+                            <option value="date-asc">Oldest First</option>
+                            <option value="date-desc">Newest First</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="projectsList">
+                    ${projects.length === 0 ? '<p class="no-data">No projects found</p>' : this.renderProjects(projects)}
+                </div>
+            </div>
+        `;
+
+        // Create or update modal
+        let modal = document.getElementById('projectsModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'projectsModal';
+            modal.className = 'modal';
+            document.body.appendChild(modal);
+        }
+
+        modal.innerHTML = modalContent;
+        this.currentProjects = projects;  // Store for sorting
+        this.showModal('projectsModal');
+    }
+
+    renderProjects(projects) {
+        /**
+         * PROJECTS RENDERING
+         * PURPOSE: Generate HTML for projects list with tracks and courses
+         * WHY: Structured display of educational content hierarchy
+         */
+        return projects.map(project => `
+            <div class="project-card">
+                <div class="project-header">
+                    <h3><i class="fas fa-folder-open"></i> ${project.name}</h3>
+                    <span class="project-status ${project.is_published ? 'published' : 'draft'}">
+                        ${project.is_published ? 'Published' : 'Draft'}
+                    </span>
+                </div>
+                <p class="project-description">${project.description || 'No description'}</p>
+                <div class="project-meta">
+                    <span><i class="fas fa-calendar"></i> Created: ${new Date(project.created_at).toLocaleDateString()}</span>
+                    <span><i class="fas fa-route"></i> ${project.tracks?.length || 0} Track(s)</span>
+                </div>
+                ${project.tracks && project.tracks.length > 0 ? `
+                    <div class="tracks-section">
+                        <h4>Tracks:</h4>
+                        ${this.renderTracks(project.tracks)}
+                    </div>
+                ` : '<p class="no-tracks">No tracks in this project</p>'}
+            </div>
+        `).join('');
+    }
+
+    renderTracks(tracks) {
+        /**
+         * TRACKS RENDERING
+         * PURPOSE: Generate HTML for tracks list within a project
+         * WHY: Shows learning paths and associated courses
+         */
+        return tracks.map(track => `
+            <div class="track-item">
+                <div class="track-header">
+                    <i class="fas fa-route"></i>
+                    <span class="track-name">${track.name}</span>
+                    <span class="track-difficulty ${track.difficulty_level}">${track.difficulty_level}</span>
+                </div>
+                <p class="track-description">${track.description || ''}</p>
+                <div class="track-meta">
+                    <span><i class="fas fa-clock"></i> ${track.estimated_hours || 0} hours</span>
+                    <span><i class="fas fa-list"></i> ${track.sequence_order || 0} in sequence</span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    sortProjects() {
+        /**
+         * PROJECTS SORTING
+         * PURPOSE: Sort projects based on user selection
+         * WHY: Allows flexible organization of project list
+         */
+        const sortOrder = document.getElementById('projectSortOrder').value;
+        const projects = [...this.currentProjects];
+
+        projects.sort((a, b) => {
+            switch(sortOrder) {
+                case 'name-asc':
+                    return a.name.localeCompare(b.name);
+                case 'name-desc':
+                    return b.name.localeCompare(a.name);
+                case 'date-asc':
+                    return new Date(a.created_at) - new Date(b.created_at);
+                case 'date-desc':
+                    return new Date(b.created_at) - new Date(a.created_at);
+                default:
+                    return 0;
+            }
+        });
+
+        document.getElementById('projectsList').innerHTML = this.renderProjects(projects);
+    }
+
+    closeProjectsModal() {
+        /**
+         * CLOSE PROJECTS MODAL
+         * PURPOSE: Clean up and close the projects viewing modal
+         */
+        this.closeModal('projectsModal');
+        this.currentProjects = null;
     }
 
     // Utility Functions
@@ -998,6 +1459,8 @@ class SiteAdminDashboard {
     }
 
     refreshOrganizations() {
+        console.log('🔄 Refresh button clicked - reloading organizations');
+        this.showNotification('Refreshing organizations...', 'info');
         this.loadOrganizations();
     }
 

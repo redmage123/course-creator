@@ -127,9 +127,10 @@ class OrganizationManagementDAO:
                 
                 org_id = await conn.fetchval(
                     """INSERT INTO course_creator.organizations (
-                        id, name, slug, description, domain, contact_email, 
-                        contact_phone, settings, is_active, created_at, updated_at
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
+                        id, name, slug, description, domain, contact_email,
+                        contact_phone, street_address, city, state_province,
+                        postal_code, country, settings, is_active, created_at, updated_at
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
                     RETURNING id""",
                     org_data['id'],
                     org_data['name'],
@@ -138,6 +139,11 @@ class OrganizationManagementDAO:
                     org_data.get('domain'),
                     org_data['contact_email'],
                     org_data.get('contact_phone'),
+                    org_data.get('street_address'),
+                    org_data.get('city'),
+                    org_data.get('state_province'),
+                    org_data.get('postal_code'),
+                    org_data.get('country', 'US'),
                     json.dumps(org_data.get('settings', {})),
                     org_data.get('is_active', True),
                     datetime.utcnow(),
@@ -172,17 +178,46 @@ class OrganizationManagementDAO:
                 original_exception=e
             )
     
+    async def get_all_organizations(self) -> List[Dict[str, Any]]:
+        """
+        Retrieve all organizations.
+
+        Business Context:
+        Site administrators need to view all organizations for platform-wide management.
+
+        Returns:
+            List of all organization records
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                orgs = await conn.fetch(
+                    """SELECT id, name, slug, description, logo_url, domain,
+                              address, street_address, city, state_province, postal_code, country,
+                              contact_phone, contact_email, logo_file_path,
+                              settings, is_active, created_at, updated_at
+                       FROM course_creator.organizations
+                       ORDER BY created_at DESC"""
+                )
+                return [dict(org) for org in orgs]
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to retrieve all organizations",
+                error_code="ORGANIZATION_LIST_ERROR",
+                details={},
+                original_exception=e
+            )
+
     async def get_organization_by_id(self, org_id: str) -> Optional[Dict[str, Any]]:
         """
         Retrieve organization information by unique ID.
-        
+
         Business Context:
         Organization lookup by ID is used for tenant validation, configuration
         retrieval, and administrative operations requiring organizational context.
-        
+
         Args:
             org_id: Unique organization identifier
-            
+
         Returns:
             Complete organization record or None if not found
         """
@@ -190,7 +225,8 @@ class OrganizationManagementDAO:
             async with self.db_pool.acquire() as conn:
                 org = await conn.fetchrow(
                     """SELECT id, name, slug, description, logo_url, domain,
-                              address, contact_phone, contact_email, logo_file_path,
+                              address, street_address, city, state_province, postal_code, country,
+                              contact_phone, contact_email, logo_file_path,
                               settings, is_active, created_at, updated_at
                        FROM course_creator.organizations WHERE id = $1""",
                     UUID(org_id)
@@ -222,7 +258,8 @@ class OrganizationManagementDAO:
             async with self.db_pool.acquire() as conn:
                 org = await conn.fetchrow(
                     """SELECT id, name, slug, description, logo_url, domain,
-                              address, contact_phone, contact_email, logo_file_path,
+                              address, street_address, city, state_province, postal_code, country,
+                              contact_phone, contact_email, logo_file_path,
                               settings, is_active, created_at, updated_at
                        FROM course_creator.organizations WHERE slug = $1""",
                     slug
@@ -546,7 +583,7 @@ class OrganizationManagementDAO:
             async with self.db_pool.acquire() as conn:
                 members = await conn.fetch(
                     """SELECT m.id, m.role, m.is_active, m.joined_at as created_at,
-                              u.id as user_id, u.email, u.username, u.full_name
+                              u.id as user_id, u.email, u.username, u.full_name, u.phone
                        FROM course_creator.organization_memberships m
                        JOIN course_creator.users u ON m.user_id = u.id
                        WHERE m.organization_id = $1 AND m.is_active = true
@@ -666,13 +703,11 @@ class OrganizationManagementDAO:
         try:
             async with self.db_pool.acquire() as conn:
                 projects = await conn.fetch(
-                    """SELECT p.id, p.name, p.description, p.settings, p.is_active, 
-                              p.created_at, p.updated_at,
-                              u.full_name as creator_name, u.email as creator_email
-                       FROM course_creator.projects p
-                       JOIN users u ON p.created_by = u.id
-                       WHERE p.organization_id = $1 AND p.is_active = true
-                       ORDER BY p.created_at DESC
+                    """SELECT id, name, description, settings, is_active,
+                              created_at, updated_at
+                       FROM course_creator.projects
+                       WHERE organization_id = $1
+                       ORDER BY created_at DESC
                        LIMIT $2 OFFSET $3""",
                     UUID(org_id), limit, offset
                 )
