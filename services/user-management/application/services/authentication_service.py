@@ -57,6 +57,7 @@ Version: 2.3.0
 Last Updated: 2025-08-02
 """
 from typing import Optional
+import logging
 import secrets
 import string
 from passlib.context import CryptContext
@@ -64,6 +65,8 @@ from passlib.context import CryptContext
 from data_access.user_dao import UserManagementDAO
 from domain.interfaces.user_service import IAuthenticationService
 from domain.entities.user import User
+
+logger = logging.getLogger(__name__)
 
 class AuthenticationService(IAuthenticationService):
     """
@@ -207,38 +210,52 @@ class AuthenticationService(IAuthenticationService):
         """
         # First try to find by username
         user = await self._user_dao.get_user_by_username(username_or_email)
-        
+        logger.info(f"🔍 After get_user_by_username: user is {user is not None}")
+
         # If not found by username, try by email
         if not user:
             user = await self._user_dao.get_user_by_email(username_or_email)
-        
+            logger.info(f"🔍 After get_user_by_email: user is {user is not None}")
+
         if not user:
+            logger.warning(f"🔍 User not found for: {username_or_email}")
             return None
-        
+
         """
         Account status verification: Only active users can authenticate.
         This prevents access for suspended, inactive, or pending accounts.
         """
-        if not user.is_active():
+        is_active_status = user.is_active()
+        logger.info(f"🔍 User is_active check: {is_active_status}")
+        if not is_active_status:
+            logger.warning(f"🔍 User account is not active")
             return None
         
         """
         Password verification: Use secure bcrypt verification.
         """
         hashed_password = user.metadata.get('hashed_password')
-        
+        logger.info(f"🔍 Has hashed_password in metadata: {hashed_password is not None}")
+
         if hashed_password:
             try:
+                logger.info(f"🔍 Verifying password...")
                 is_valid = self._pwd_context.verify(password, hashed_password)
+                logger.info(f"🔍 Password verification result: {is_valid}")
                 if is_valid:
                     """
                     Successful authentication: Record login activity.
                     """
                     user.record_login()
+                    logger.info(f"🔍 LOGIN SUCCESS - Returning user")
                     return user
-            except Exception:
-                pass
-        
+                else:
+                    logger.warning(f"🔍 Password verification failed - incorrect password")
+            except Exception as e:
+                logger.error(f"🔍 Password verification exception: {e}")
+        else:
+            logger.warning(f"🔍 No hashed_password found in user.metadata")
+
         return None
     
     async def change_password(self, user_id: str, old_password: str, new_password: str) -> bool:

@@ -326,28 +326,61 @@ export class NavigationManager {
         if (!main) return;
 
         main.innerHTML = `
-            <section>
-                <h2>Login</h2>
-                <form id="login-form">
-                    <div class="form-group">
-                        <label for="login-username">Username/ID:</label>
-                        <input type="text" id="login-username" name="username" required placeholder="Enter your username or ID" autocomplete="username">
-                    </div>
-                    <div class="form-group">
-                        <label for="login-password">Password:</label>
-                        <div class="password-input-container">
-                            <input type="password" id="login-password" name="password" required autocomplete="current-password">
+            <section class="login-section" style="max-width: 500px; margin: 4rem auto; padding: 0 1rem;">
+                <div style="text-align: center; margin-bottom: 2rem;">
+                    <h2 style="font-size: 2rem; margin-bottom: 0.5rem;">Welcome Back</h2>
+                    <p style="color: var(--text-secondary); font-size: 1.125rem;">Sign in to your account</p>
+                </div>
+
+                <div class="login-card" style="background: var(--surface-color); border-radius: var(--radius-lg); padding: 2.5rem; box-shadow: var(--shadow-lg);">
+                    <form id="login-form">
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <label for="login-username" style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 1.125rem; color: var(--text-primary);">Username or Email</label>
+                            <input type="text" id="login-username" name="username" required
+                                   placeholder="Enter your username or email"
+                                   autocomplete="username"
+                                   aria-label="Username or Email"
+                                   style="width: 100%; padding: 1rem; border: 2px solid var(--border-color); border-radius: var(--radius-md); font-size: 1.125rem; transition: all 0.2s; box-sizing: border-box; cursor: text;">
                         </div>
-                    </div>
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">Login</button>
-                        <button type="button" onclick="window.location.hash='#home'" class="btn btn-secondary">Cancel</button>
-                    </div>
-                    <div class="form-links">
-                        <a href="#password-reset">Forgot Password?</a>
-                    </div>
-                </form>
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <label for="login-password" style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 1.125rem; color: var(--text-primary);">Password</label>
+                            <div class="password-input-container" style="position: relative;">
+                                <input type="password" id="login-password" name="password" required
+                                       autocomplete="current-password"
+                                       aria-label="Password"
+                                       style="width: 100%; padding: 1rem; border: 2px solid var(--border-color); border-radius: var(--radius-md); font-size: 1.125rem; transition: all 0.2s; box-sizing: border-box; cursor: text; padding-right: 3rem;">
+                            </div>
+                        </div>
+                        <div class="form-actions" style="margin-top: 2rem;">
+                            <button type="submit" class="btn btn-primary"
+                                    style="width: 100%; padding: 1rem; font-size: 1.125rem; font-weight: 600; border-radius: var(--radius-md); margin-bottom: 1rem;">
+                                Sign In
+                            </button>
+                            <button type="button" onclick="window.location.hash='#home'" class="btn btn-secondary"
+                                    style="width: 100%; padding: 1rem; font-size: 1.125rem; font-weight: 600; border-radius: var(--radius-md);">
+                                Cancel
+                            </button>
+                        </div>
+                        <div class="form-links" style="text-align: center; margin-top: 1.5rem;">
+                            <a href="#password-reset" style="color: var(--primary-color); text-decoration: none; font-size: 1rem;">Forgot Password?</a>
+                        </div>
+                    </form>
+                </div>
             </section>
+            <style>
+                .login-section input {
+                    cursor: text !important;
+                }
+                .login-section input:focus {
+                    outline: none;
+                    border-color: var(--primary-color);
+                    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+                }
+                .login-section input::placeholder {
+                    color: var(--text-muted);
+                    font-size: 1rem;
+                }
+            </style>
         `;
 
         // Add password toggle

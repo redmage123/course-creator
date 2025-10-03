@@ -86,10 +86,15 @@ export class NotificationManager {
                 transition: all 0.3s ease;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                 position: relative;
+                /* Anti-blur fixes for smooth rendering during animations */
+                backface-visibility: hidden;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                transform-style: preserve-3d;
             }
-            
+
             .notification.show {
-                transform: translateX(0);
+                transform: translateX(0) translateZ(0);
                 opacity: 1;
             }
             

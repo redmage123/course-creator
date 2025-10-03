@@ -48,3 +48,15 @@ security:
   jwt_algorithm: HS256
   access_token_expire_minutes: 30
 
+# User Roles Configuration
+roles:
+  admin: admin
+  organization_admin: organization_admin
+  instructor: instructor
+  student: student
+  site_admin: admin  # Alias for admin role
+
+# Special Users Configuration
+special_users:
+  site_admin_username: admin  # Username of the site-wide administrator
+

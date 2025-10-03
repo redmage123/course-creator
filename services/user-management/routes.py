@@ -485,18 +485,29 @@ def setup_auth_routes(app: FastAPI) -> None:
         """Reset user password"""
         try:
             temp_password = await auth_service.reset_password(request.email)
-            
+
             # In production, send email instead of returning password
             return {
                 "message": "Password reset successfully",
                 "temporary_password": temp_password  # Remove in production
             }
-            
+
         except ValueError as e:
             raise HTTPException(status_code=404, detail=str(e))
         except Exception as e:
             logging.error("Error resetting password: %s", e)
             raise HTTPException(status_code=500, detail="Internal server error") from e
+
+    @app.get("/auth/me", response_model=UserResponse)
+    async def get_authenticated_user(current_user: User = Depends(get_current_user)):
+        """
+        Get current authenticated user profile
+
+        Business Context:
+        Provides authenticated user information for site admin dashboard and other
+        administrative interfaces. Used for session validation and user context.
+        """
+        return _user_to_response(current_user)
 
 def setup_user_routes(app: FastAPI) -> None:
     """Setup user management routes"""

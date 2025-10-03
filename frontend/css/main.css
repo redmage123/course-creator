@@ -275,7 +275,22 @@ textarea:not([class*="form"]) {
  * - Accessible: Built-in accessibility considerations
  * - Responsive: Mobile-first design with consistent breakpoints
  */
+/* Fix cursor for entire page and text inputs */
+body, html {
+    cursor: default !important;
+}
+
 /* Fix cursor for text inputs - should be text cursor, not pointer */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+input[type="number"],
+textarea {
+    cursor: text !important;
+}
 input[type="text"],
 input[type="password"],
 input[type="email"],

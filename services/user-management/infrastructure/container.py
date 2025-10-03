@@ -232,14 +232,15 @@ class UserManagementContainer:
         db_port = os.getenv('DB_PORT', '5432')
         db_name = os.getenv('DB_NAME', 'course_creator')
         
-        database_url = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}?options=-csearch_path=course_creator,public"
+        database_url = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
         logger.info(f"Connecting to database at: postgresql://{db_user}:***@{db_host}:{db_port}/{db_name}")
-        
+
         self._connection_pool = await asyncpg.create_pool(
             database_url,
             min_size=5,      # Always have connections available
             max_size=20,     # Scale up for concurrent requests
-            command_timeout=60  # Prevent hanging operations
+            command_timeout=60,  # Prevent hanging operations
+            server_settings={'search_path': 'course_creator,public'}  # Set schema search path
         )
         logger.info("PostgreSQL connection pool initialized successfully")
     

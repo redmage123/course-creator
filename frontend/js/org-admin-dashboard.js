@@ -1,12 +1,20 @@
 /**
  * Organization Admin Dashboard JavaScript
- * Manages organization settings, projects, instructors, and members
+ * Manages organization settings, projects, instructors, and students
  */
 
 
 
 // Configuration
 const ORG_API_BASE = window.CONFIG?.API_URLS.ORGANIZATION;
+
+// Logout function
+function logout() {
+    if (confirm('Are you sure you want to logout?')) {
+        Auth.logout();
+        window.location.href = '../index.html';
+    }
+}
 
 // Global state
 let currentOrganization = null;
@@ -109,7 +117,7 @@ function updateOrganizationDisplay() {
     document.getElementById('orgName').textContent = currentOrganization.name;
     document.getElementById('orgDomain').textContent = currentOrganization.domain || 'No domain set';
     document.getElementById('orgTitle').textContent = `${currentOrganization.name} Dashboard`;
-    document.getElementById('orgDescription').textContent = currentOrganization.description || 'Manage your organization\'s training programs and team members';
+    document.getElementById('orgDescription').textContent = currentOrganization.description || 'Manage your organization\'s training programs and students';
 }
 
 function setupTabNavigation() {
@@ -152,8 +160,8 @@ async function loadTabContent(tabName) {
             case 'instructors':
                 await loadInstructorsData();
                 break;
-            case 'members':
-                await loadMembersData();
+            case 'students':
+                await loadStudentsData();
                 break;
             case 'settings':
                 await loadSettingsData();
@@ -168,11 +176,18 @@ async function loadTabContent(tabName) {
 async function loadOverviewData() {
     // Load overview statistics
     const stats = await getOrganizationStats();
-    
-    document.getElementById('totalProjects').textContent = stats.active_projects || 0;
-    document.getElementById('totalInstructors').textContent = stats.instructors || 0;
-    document.getElementById('totalMembers').textContent = stats.total_members || 0;
-    document.getElementById('totalCourses').textContent = stats.courses || 0;
+
+    const totalProjectsEl = document.getElementById('totalProjects');
+    if (totalProjectsEl) totalProjectsEl.textContent = stats.active_projects || 0;
+
+    const totalInstructorsEl = document.getElementById('totalInstructors');
+    if (totalInstructorsEl) totalInstructorsEl.textContent = stats.instructors || 0;
+
+    const totalStudentsEl = document.getElementById('totalStudents');
+    if (totalStudentsEl) totalStudentsEl.textContent = stats.total_students || 0;
+
+    const totalCoursesEl = document.getElementById('totalCourses');
+    if (totalCoursesEl) totalCoursesEl.textContent = stats.courses || 0;
 
     // Load recent projects
     const recentProjects = await getRecentProjects();
@@ -233,28 +248,28 @@ async function loadInstructorsData() {
     }
 }
 
-async function loadMembersData() {
+async function loadStudentsData() {
     try {
         const orgId = currentOrganization.id;
-        const response = await fetch(`${ORG_API_BASE}/organizations/${orgId}/members`, {
+        const response = await fetch(`${ORG_API_BASE}/organizations/${orgId}/students`, {
             headers: {
                 'Authorization': `Bearer ${Auth.getToken()}`,
                 'Content-Type': 'application/json'
             }
         });
 
-        let members = [];
+        let students = [];
         if (response.ok) {
-            members = await response.json();
+            students = await response.json();
         } else {
             // Mock data for development
-            members = getMockMembers();
+            students = getMockStudents();
         }
 
-        displayMembers(members);
+        displayStudents(students);
     } catch (error) {
-        console.error('Error loading members:', error);
-        displayMembers(getMockMembers());
+        console.error('Error loading students:', error);
+        displayStudents(getMockStudents());
     }
 }
 
@@ -379,55 +394,83 @@ function displayInstructors(instructors) {
     `).join('');
 }
 
-function displayMembers(members) {
-    const tbody = document.querySelector('#membersTable tbody');
-    
-    if (members.length === 0) {
+function displayStudents(students) {
+    const tbody = document.querySelector('#studentsTable tbody');
+
+    if (students.length === 0) {
         tbody.innerHTML = `
             <tr>
                 <td colspan="7" style="text-align: center; padding: 2rem; color: var(--text-muted);">
-                    No members found.
+                    No students found.
                 </td>
             </tr>
         `;
         return;
     }
 
-    tbody.innerHTML = members.map(member => `
+    tbody.innerHTML = students.map(student => `
         <tr>
-            <td>${member.first_name || ''} ${member.last_name || ''}</td>
-            <td>${member.email}</td>
-            <td><span class="role-badge role-${member.role}">${member.role.replace('_', ' ')}</span></td>
-            <td>${member.project_count || 0}</td>
-            <td>${new Date(member.joined_at).toLocaleDateString()}</td>
-            <td><span class="status-${member.is_active ? 'active' : 'inactive'}">${member.is_active ? 'Active' : 'Inactive'}</span></td>
+            <td>${student.first_name || ''} ${student.last_name || ''}</td>
+            <td>${student.email}</td>
+            <td>${student.project_count || 0}</td>
+            <td>${new Date(student.joined_at).toLocaleDateString()}</td>
+            <td>${student.last_active ? new Date(student.last_active).toLocaleDateString() : 'Never'}</td>
+            <td><span class="status-${student.is_active ? 'active' : 'inactive'}">${student.is_active ? 'Active' : 'Inactive'}</span></td>
             <td>
-                <button class="action-btn btn-edit" onclick="editMember('${member.user_id}')">Edit</button>
-                <button class="action-btn btn-delete" onclick="removeMember('${member.user_id}')">Remove</button>
+                <button class="action-btn btn-edit" onclick="editStudent('${student.user_id}')">Edit</button>
+                <button class="action-btn btn-delete" onclick="removeStudent('${student.user_id}')">Remove</button>
             </td>
         </tr>
     `).join('');
 }
 
 function setupEventListeners() {
-    // Form submissions
-    document.getElementById('addInstructorForm').addEventListener('submit', handleAddInstructor);
-    document.getElementById('createProjectForm').addEventListener('submit', handleCreateProject);
-    document.getElementById('addMemberForm').addEventListener('submit', handleAddMember);
-    document.getElementById('orgSettingsForm').addEventListener('submit', handleUpdateSettings);
-    document.getElementById('orgPreferencesForm').addEventListener('submit', handleUpdatePreferences);
+    // Form submissions - with null checks for safety
+    const addInstructorForm = document.getElementById('addInstructorForm');
+    if (addInstructorForm) {
+        addInstructorForm.addEventListener('submit', handleAddInstructor);
+    }
+
+    const createProjectForm = document.getElementById('createProjectForm');
+    if (createProjectForm) {
+        createProjectForm.addEventListener('submit', handleCreateProject);
+    }
+
+    const addStudentForm = document.getElementById('addStudentForm');
+    if (addStudentForm) {
+        addStudentForm.addEventListener('submit', handleAddStudent);
+    }
+
+    const orgSettingsForm = document.getElementById('orgSettingsForm');
+    if (orgSettingsForm) {
+        orgSettingsForm.addEventListener('submit', handleUpdateSettings);
+    }
+
+    const orgPreferencesForm = document.getElementById('orgPreferencesForm');
+    if (orgPreferencesForm) {
+        orgPreferencesForm.addEventListener('submit', handleUpdatePreferences);
+    }
 
     // Auto-generate slug from project name
-    document.getElementById('projectName').addEventListener('input', function(e) {
-        const slug = e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        document.getElementById('projectSlug').value = slug;
-    });
+    const projectNameInput = document.getElementById('projectName');
+    if (projectNameInput) {
+        projectNameInput.addEventListener('input', function(e) {
+            const slug = e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+            const projectSlugInput = document.getElementById('projectSlug');
+            if (projectSlugInput) {
+                projectSlugInput.value = slug;
+            }
+        });
+    }
 
     // Cancel button for organization settings
-    document.getElementById('cancelOrgSettingsBtn').addEventListener('click', function(e) {
-        e.preventDefault();
-        cancelOrganizationChanges();
-    });
+    const cancelBtn = document.getElementById('cancelOrgSettingsBtn');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            cancelOrganizationChanges();
+        });
+    }
 }
 
 // Modal functions
@@ -447,8 +490,8 @@ function showAddInstructorModal() {
     document.getElementById('addInstructorModal').style.display = 'block';
 }
 
-function showAddMemberModal() {
-    document.getElementById('addMemberModal').style.display = 'block';
+function showAddStudentModal() {
+    document.getElementById('addStudentModal').style.display = 'block';
 }
 
 function closeModal(modalId) {
@@ -546,39 +589,42 @@ async function handleCreateProject(e) {
     }
 }
 
-async function handleAddMember(e) {
+async function handleAddStudent(e) {
     e.preventDefault();
-    
+
     try {
         const formData = new FormData(e.target);
-        const memberData = {
+        const studentData = {
             user_email: formData.get('user_email'),
-            role: formData.get('role')
+            first_name: formData.get('first_name'),
+            last_name: formData.get('last_name'),
+            send_welcome_email: formData.get('send_welcome_email') === 'on',
+            role: 'student'
         };
 
         const orgId = currentOrganization.id;
-        const response = await fetch(`${ORG_API_BASE}/organizations/${orgId}/members`, {
+        const response = await fetch(`${ORG_API_BASE}/organizations/${orgId}/students`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${Auth.getToken()}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(memberData)
+            body: JSON.stringify(studentData)
         });
 
         if (response.ok) {
-            showNotification('Member added successfully', 'success');
-            closeModal('addMemberModal');
-            if (currentTab === 'members') {
-                await loadMembersData();
+            showNotification('Student added successfully', 'success');
+            closeModal('addStudentModal');
+            if (currentTab === 'students') {
+                await loadStudentsData();
             }
         } else {
             const error = await response.json();
-            showNotification(error.detail || 'Failed to add member', 'error');
+            showNotification(error.detail || 'Failed to add student', 'error');
         }
     } catch (error) {
-        console.error('Error adding member:', error);
-        showNotification('Failed to add member', 'error');
+        console.error('Error adding student:', error);
+        showNotification('Failed to add student', 'error');
     }
 }
 
@@ -762,27 +808,37 @@ function getMockInstructors() {
     ];
 }
 
-function getMockMembers() {
+function getMockStudents() {
     return [
         {
             user_id: 'user-3',
             email: 'student1@techuni.edu',
             first_name: 'Alice',
             last_name: 'Johnson',
-            role: 'student',
             project_count: 2,
             is_active: true,
-            joined_at: '2024-01-10T00:00:00Z'
+            joined_at: '2024-01-10T00:00:00Z',
+            last_active: '2024-09-28T00:00:00Z'
         },
         {
             user_id: 'user-4',
             email: 'student2@techuni.edu',
             first_name: 'Bob',
             last_name: 'Wilson',
-            role: 'student',
             project_count: 1,
             is_active: true,
-            joined_at: '2024-01-12T00:00:00Z'
+            joined_at: '2024-01-12T00:00:00Z',
+            last_active: '2024-09-30T00:00:00Z'
+        },
+        {
+            user_id: 'user-5',
+            email: 'student3@techuni.edu',
+            first_name: 'Charlie',
+            last_name: 'Brown',
+            project_count: 3,
+            is_active: true,
+            joined_at: '2024-02-01T00:00:00Z',
+            last_active: '2024-10-01T00:00:00Z'
         }
     ];
 }
@@ -790,8 +846,8 @@ function getMockMembers() {
 async function getOrganizationStats() {
     return {
         active_projects: 3,
-        instructors: 8,
-        total_members: 156,
+        instructors: 2,
+        total_students: 3,
         courses: 24
     };
 }
@@ -1303,18 +1359,18 @@ async function deleteProject(projectId) {
     }
 }
 
-// Placeholder functions for instructor and member management
+// Placeholder functions for instructor and student management
 function editInstructor(userId) {
     showNotification('Edit instructor functionality coming soon', 'info');
 }
 
-function editMember(userId) {
-    showNotification('Edit member functionality coming soon', 'info');
+function editStudent(userId) {
+    showNotification('Edit student functionality coming soon', 'info');
 }
 
-function removeMember(userId) {
-    if (confirm('Are you sure you want to remove this member?')) {
-        showNotification('Member removal functionality coming soon', 'info');
+function removeStudent(userId) {
+    if (confirm('Are you sure you want to remove this student?')) {
+        showNotification('Student removal functionality coming soon', 'info');
     }
 }
 
@@ -2749,8 +2805,8 @@ function fabAction(action) {
         case 'instructor':
             showAddInstructorModal();
             break;
-        case 'member':
-            showAddMemberModal();
+        case 'student':
+            showAddStudentModal();
             break;
         case 'settings':
             document.querySelector('[data-tab="settings"]').click();

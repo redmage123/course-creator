@@ -817,17 +817,31 @@ class AuthManager {
         console.log('🔍 REDIRECT DEBUG - Path prefix:', pathPrefix);
         console.log('🔍 REDIRECT DEBUG - User role:', userRole);
         
+        // Configuration-based role definitions (should match backend config)
+        const ROLES = {
+            ADMIN: 'admin',
+            ORG_ADMIN: 'organization_admin',
+            INSTRUCTOR: 'instructor',
+            STUDENT: 'student'
+        };
+        const SITE_ADMIN_USERNAME = 'admin';
+
         switch (userRole) {
-            case 'admin':
+            case ROLES.ADMIN:
                 return `${pathPrefix}site-admin-dashboard.html`;  // Site admin gets the comprehensive admin dashboard
             case 'org_admin':
-            case 'organization_admin':  // Handle both role names
+            case ROLES.ORG_ADMIN:  // Handle both role names
+                // Check if this is the site-wide admin user by username
+                if (this.currentUser?.username === SITE_ADMIN_USERNAME) {
+                    console.log('🔍 REDIRECT DEBUG - Admin user detected, redirecting to site-admin-dashboard');
+                    return `${pathPrefix}site-admin-dashboard.html`;
+                }
                 const redirectUrl = `${pathPrefix}org-admin-dashboard.html`;
                 console.log('🔍 REDIRECT DEBUG - Final URL:', redirectUrl);
                 return redirectUrl;
-            case 'instructor':
+            case ROLES.INSTRUCTOR:
                 return `${pathPrefix}instructor-dashboard.html`;
-            case 'student':
+            case ROLES.STUDENT:
                 return `${pathPrefix}student-dashboard.html`;
             default:
                 return isInHtmlDir ? '../index.html' : 'index.html';

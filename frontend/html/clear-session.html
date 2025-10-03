@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head><title>Clear Session</title></head>
+<body>
+<h1>Clearing session...</h1>
+<script>
+localStorage.clear();
+sessionStorage.clear();
+document.cookie.split(";").forEach(function(c) {
+    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+});
+setTimeout(() => {
+    window.location.href = '/html/org-admin-login.html';
+}, 1000);
+</script>
+</body>
+</html>

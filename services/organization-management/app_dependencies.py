@@ -2,7 +2,7 @@
 FastAPI Dependencies for Organization Management Service
 Single Responsibility: Dependency injection for FastAPI endpoints
 """
-from typing import Dict, Any
+from typing import Dict, Any, List
 from uuid import UUID
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -14,6 +14,11 @@ from application.services.meeting_room_service import MeetingRoomService
 from domain.entities.enhanced_role import Permission
 
 security = HTTPBearer()
+
+def get_config():
+    """Get current Hydra configuration"""
+    from main import current_config
+    return current_config
 
 
 async def get_organization_service() -> OrganizationService:
@@ -62,16 +67,25 @@ async def require_instructor_or_admin(
     current_user: Dict[str, Any] = Depends(get_current_user),
     auth_service: AuthService = Depends(get_auth_service)
 ) -> Dict[str, Any]:
-    """Require instructor role or higher (instructor, project_manager, org_admin, super_admin)"""
+    """
+    Require instructor role or higher (instructor, project_manager, org_admin)
+
+    Business Context:
+    Site admin (username='admin') bypasses role checks and has all permissions.
+    """
+    # Site admin has all permissions
+    if current_user.get('username') == 'admin':
+        return current_user
+
     user_roles = current_user.get('roles', [])
-    allowed_roles = ['instructor', 'project_manager', 'org_admin', 'organization_admin', 'super_admin']
-    
+    allowed_roles = ['instructor', 'project_manager', 'org_admin', 'organization_admin', 'admin']
+
     if not any(role in allowed_roles for role in user_roles):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Instructor, project manager, or administrator access required"
         )
-    
+
     return current_user
 
 
@@ -112,12 +126,57 @@ async def verify_permission(user_id: UUID, organization_id: UUID, permission: Pe
         )
 
 
+async def verify_organization_access(
+    organization_id: UUID,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+    auth_service: AuthService = Depends(get_auth_service)
+) -> bool:
+    """
+    Verify user has access to the specified organization
+
+    Business Context:
+    - Site admin (username='admin') has access to ALL organizations
+    - Organization admins can ONLY access their own organization
+    - This enforces proper organization isolation for security
+
+    Args:
+        organization_id: Organization ID to check access for
+        current_user: Current authenticated user
+        auth_service: Authentication service
+
+    Returns:
+        True if user has access
+
+    Raises:
+        HTTPException: If user doesn't have access to the organization
+    """
+    return auth_service.check_organization_access(current_user, organization_id)
+
+
 async def verify_site_admin_permission(current_user: Dict[str, Any]) -> bool:
-    """Verify user is site admin"""
+    """
+    Verify user is site admin using configuration-driven role definitions
+
+    Business Context:
+    Site admin verification uses Hydra configuration to avoid hard-coded role strings.
+    This enables flexible role management and easier configuration updates.
+    """
     try:
-        # Check if user has site admin role
+        config = get_config()
         user_role = current_user.get('role')
-        if user_role != 'admin':  # Assuming 'admin' is the site admin role
+        username = current_user.get('username')
+
+        # Get allowed roles from configuration
+        allowed_roles: List[str] = [
+            config.roles.admin,
+            config.roles.organization_admin
+        ]
+
+        # Get site admin username from configuration
+        site_admin_username = config.special_users.site_admin_username
+
+        # Allow configured roles or configured site admin username
+        if user_role not in allowed_roles and username != site_admin_username:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Site administrator access required"

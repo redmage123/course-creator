@@ -330,11 +330,14 @@ class UserManagementDAO:
         try:
             async with self.db_pool.acquire() as conn:
                 user = await conn.fetchrow(
-                    """SELECT id, email, username, full_name, hashed_password, role, 
+                    """SELECT id, email, username, full_name, hashed_password, role,
                               organization, status, created_at, updated_at, last_login
                        FROM course_creator.users WHERE username = $1""",
                     username
                 )
+                self.logger.info(f"🔍 DB QUERY RESULT for username '{username}': {user is not None}")
+                if user:
+                    self.logger.info(f"🔍 User data: username={user['username']}, email={user['email']}, role={user['role']}")
                 return self._row_to_user(dict(user)) if user else None
         except Exception as e:
             raise CourseCreatorBaseException(

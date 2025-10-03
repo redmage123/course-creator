@@ -173,6 +173,11 @@ class JWTAuthenticator:
         """
         Check if user has access to specific organization
 
+        Business Context:
+        - Site admin (username='admin') has access to ALL organizations
+        - Organization admins have access ONLY to their specific organization
+        - Regular users have access ONLY to their own organization
+
         Args:
             user: User information
             organization_id: Organization ID to check access for
@@ -180,15 +185,17 @@ class JWTAuthenticator:
         Returns:
             True if user has access, False otherwise
         """
-        user_role = user.get("role")
+        username = user.get("username")
         user_org_id = user.get("organization_id")
+        user_org = user.get("organization")  # Might be stored as organization instead of organization_id
 
-        # Super admins have access to all organizations
-        if user_role == "super_admin":
+        # Site admin has access to all organizations
+        if username == "admin":
             return True
 
         # Organization admins and users have access to their own organization
-        if user_org_id == organization_id:
+        # Check both organization_id and organization fields
+        if user_org_id == organization_id or user_org == organization_id:
             return True
 
         return False
