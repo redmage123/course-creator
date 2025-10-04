@@ -1,17 +1,20 @@
 # Course Creator Platform - API Documentation
 
-**Version**: 3.0.0 - Password Management & Enhanced UI Features  
-**Last Updated**: 2025-08-11
+**Version**: 3.1.0 - Modular Architecture & Exception Handling Refactoring
+**Last Updated**: 2025-10-04
 
 ## Overview
 
 The Course Creator Platform provides a comprehensive RESTful API for managing courses, users, and content. The API is built using FastAPI and follows REST conventions with a microservices architecture.
 
-**Version 3.0 Highlights:**
-- ✨ **Password Management System**: Self-service password changes with JWT authentication
-- 🏢 **Enhanced Organization Registration**: Automatic admin account creation with password setup
-- 🔐 **Professional Email Validation**: Business-only email enforcement with detailed error handling
-- 📝 **Comprehensive Form Validation**: Real-time validation with specific error messages
+**Version 3.1 Highlights:**
+- 🔧 **Modular Architecture**: Refactored org admin dashboard with 8 ES6 modules
+- ⚠️ **Exception Handling**: Custom exception system across all services
+- 🧪 **Comprehensive Testing**: 112+ tests for instructor dashboard, 100% syntax validation
+- 📋 **Track Management**: Complete CRUD operations for learning tracks
+- 🏗️ **Project Management**: Enhanced project endpoints with enrollment/unenrollment
+- 👥 **Site Admin Dashboard**: Platform-wide user and organization management
+- 📊 **Advanced Analytics**: Enhanced analytics with engagement scores and predictions
 
 ## Microservices Architecture
 
@@ -1924,6 +1927,283 @@ Response:
 }
 ```
 
+### Track Management (Refactored v3.1)
+
+#### Create Track
+
+Create a new learning track for an organization.
+
+```http
+POST http://localhost:8008/api/v1/organizations/{org_id}/tracks
+Authorization: Bearer <org-admin-token>
+Content-Type: application/json
+
+{
+  "name": "Full Stack Development Track",
+  "description": "Complete web development curriculum",
+  "difficulty_level": "intermediate",
+  "duration_weeks": 16,
+  "auto_enrollment": true,
+  "learning_objectives": [
+    "Master React and Node.js",
+    "Build complete web applications"
+  ],
+  "prerequisites": ["basic_programming"],
+  "target_audience": ["developers", "students"]
+}
+```
+
+Response:
+```json
+{
+  "id": "track-123",
+  "name": "Full Stack Development Track",
+  "organization_id": "org-456",
+  "difficulty_level": "intermediate",
+  "status": "active",
+  "enrollment_count": 0,
+  "created_at": "2025-10-04T10:00:00Z"
+}
+```
+
+#### Get Track Details
+
+```http
+GET http://localhost:8008/api/v1/organizations/{org_id}/tracks/{track_id}
+Authorization: Bearer <token>
+```
+
+#### List Organization Tracks
+
+```http
+GET http://localhost:8008/api/v1/organizations/{org_id}/tracks?status=active
+Authorization: Bearer <token>
+```
+
+#### Update Track
+
+```http
+PUT http://localhost:8008/api/v1/organizations/{org_id}/tracks/{track_id}
+Authorization: Bearer <org-admin-token>
+Content-Type: application/json
+
+{
+  "name": "Updated Track Name",
+  "status": "active",
+  "duration_weeks": 20
+}
+```
+
+#### Delete Track
+
+```http
+DELETE http://localhost:8008/api/v1/organizations/{org_id}/tracks/{track_id}
+Authorization: Bearer <org-admin-token>
+```
+
+#### Publish/Unpublish Track
+
+```http
+POST http://localhost:8008/api/v1/organizations/{org_id}/tracks/{track_id}/publish
+POST http://localhost:8008/api/v1/organizations/{org_id}/tracks/{track_id}/unpublish
+Authorization: Bearer <org-admin-token>
+```
+
+#### Enroll Student in Track
+
+```http
+POST http://localhost:8008/api/v1/organizations/{org_id}/tracks/{track_id}/enroll
+Authorization: Bearer <instructor-token>
+Content-Type: application/json
+
+{
+  "student_id": "student-123",
+  "enrollment_type": "manual",
+  "start_date": "2025-10-05T00:00:00Z",
+  "send_notification": true
+}
+```
+
+#### Get Track Enrollments
+
+```http
+GET http://localhost:8008/api/v1/organizations/{org_id}/tracks/{track_id}/enrollments
+Authorization: Bearer <instructor-token>
+```
+
+#### Get Track Analytics
+
+```http
+GET http://localhost:8008/api/v1/organizations/{org_id}/tracks/{track_id}/analytics
+Authorization: Bearer <org-admin-token>
+```
+
+#### Duplicate Track
+
+```http
+POST http://localhost:8008/api/v1/organizations/{org_id}/tracks/{track_id}/duplicate
+Authorization: Bearer <org-admin-token>
+Content-Type: application/json
+
+{
+  "new_name": "Advanced Track Copy",
+  "include_enrollments": false
+}
+```
+
+### Project Management (Enhanced v3.1)
+
+#### Create Project
+
+```http
+POST http://localhost:8008/api/v1/organizations/{org_id}/projects
+Authorization: Bearer <org-admin-token>
+Content-Type: application/json
+
+{
+  "name": "Web Development Bootcamp",
+  "description": "Intensive 12-week bootcamp",
+  "status": "active",
+  "start_date": "2025-10-15T00:00:00Z",
+  "end_date": "2026-01-15T00:00:00Z"
+}
+```
+
+#### Get Organization Projects
+
+```http
+GET http://localhost:8008/api/v1/organizations/{org_id}/projects
+Authorization: Bearer <token>
+```
+
+#### Get Project Details
+
+```http
+GET http://localhost:8008/api/v1/organizations/{org_id}/projects/{project_id}
+Authorization: Bearer <token>
+```
+
+#### Publish Project
+
+```http
+POST http://localhost:8008/api/v1/organizations/{org_id}/projects/{project_id}/publish
+Authorization: Bearer <org-admin-token>
+```
+
+#### Create Track for Project
+
+```http
+POST http://localhost:8008/api/v1/organizations/{org_id}/projects/{project_id}/tracks
+Authorization: Bearer <org-admin-token>
+Content-Type: application/json
+
+{
+  "name": "Backend Development Track",
+  "description": "Node.js and databases",
+  "difficulty_level": "intermediate"
+}
+```
+
+#### Get Project Tracks
+
+```http
+GET http://localhost:8008/api/v1/organizations/{org_id}/projects/{project_id}/tracks
+Authorization: Bearer <token>
+```
+
+#### Unenroll Student from Project
+
+```http
+DELETE http://localhost:8008/api/v1/organizations/{org_id}/projects/{project_id}/students/{student_id}/unenroll
+Authorization: Bearer <org-admin-token>
+```
+
+#### Remove Instructor from Track
+
+```http
+DELETE http://localhost:8008/api/v1/organizations/{org_id}/tracks/{track_id}/instructors/{instructor_id}
+Authorization: Bearer <org-admin-token>
+```
+
+### Site Administration (Enhanced v3.1)
+
+#### Get Platform Statistics
+
+```http
+GET http://localhost:8008/api/v1/site-admin/stats
+Authorization: Bearer <site-admin-token>
+```
+
+Response:
+```json
+{
+  "total_organizations": 25,
+  "total_users": 5000,
+  "total_projects": 150,
+  "total_tracks": 300,
+  "active_organizations": 22,
+  "platform_health": "healthy",
+  "resource_usage": {
+    "storage_gb": 250.5,
+    "active_sessions": 450
+  }
+}
+```
+
+#### List All Organizations (Site Admin)
+
+```http
+GET http://localhost:8008/api/v1/site-admin/organizations?include_inactive=true
+Authorization: Bearer <site-admin-token>
+```
+
+#### Delete Organization (Site Admin)
+
+```http
+DELETE http://localhost:8008/api/v1/site-admin/organizations/{organization_id}
+Authorization: Bearer <site-admin-token>
+```
+
+Response:
+```json
+{
+  "success": true,
+  "organization_id": "org-123",
+  "deleted_members": 150,
+  "deleted_projects": 25,
+  "deleted_tracks": 45,
+  "cleanup_complete": true
+}
+```
+
+#### Deactivate Organization
+
+```http
+POST http://localhost:8008/api/v1/site-admin/organizations/{organization_id}/deactivate
+Authorization: Bearer <site-admin-token>
+```
+
+#### Reactivate Organization
+
+```http
+POST http://localhost:8008/api/v1/site-admin/organizations/{organization_id}/reactivate
+Authorization: Bearer <site-admin-token>
+```
+
+#### Get User Memberships
+
+```http
+GET http://localhost:8008/api/v1/site-admin/users/{user_id}/memberships
+Authorization: Bearer <site-admin-token>
+```
+
+#### Get Platform Health
+
+```http
+GET http://localhost:8008/api/v1/site-admin/platform/health
+Authorization: Bearer <site-admin-token>
+```
+
 ### RBAC Service Health Check
 
 Check the health and status of the Organization Management Service.
@@ -2196,6 +2476,275 @@ Response:
 }
 ```
 
+### Enhanced Analytics Endpoints (v3.1)
+
+#### Get Student Engagement Score
+
+```http
+GET http://localhost:8007/api/v1/students/{student_id}/courses/{course_id}/engagement
+Authorization: Bearer <token>
+```
+
+Response:
+```json
+{
+  "student_id": "student-123",
+  "course_id": "course-456",
+  "engagement_score": 78.5,
+  "engagement_level": "high",
+  "metrics": {
+    "activity_frequency": 0.85,
+    "lab_completion_rate": 0.82,
+    "quiz_participation": 0.90,
+    "time_on_platform": 125.5
+  },
+  "calculated_at": "2025-10-04T10:00:00Z"
+}
+```
+
+#### Get Course Activity Summary
+
+```http
+GET http://localhost:8007/api/v1/courses/{course_id}/activity-summary?days_back=30
+Authorization: Bearer <instructor-token>
+```
+
+Response:
+```json
+{
+  "course_id": "course-456",
+  "period_days": 30,
+  "total_activities": 2500,
+  "unique_students": 45,
+  "activity_breakdown": {
+    "lab_sessions": 850,
+    "quiz_attempts": 450,
+    "content_views": 1200
+  },
+  "daily_trend": [
+    {"date": "2025-10-01", "activities": 85},
+    {"date": "2025-10-02", "activities": 92}
+  ]
+}
+```
+
+#### Get Student Lab Proficiency
+
+```http
+GET http://localhost:8007/api/v1/students/{student_id}/courses/{course_id}/lab-proficiency
+Authorization: Bearer <token>
+```
+
+Response:
+```json
+{
+  "student_id": "student-123",
+  "course_id": "course-456",
+  "proficiency_score": 82.5,
+  "proficiency_level": "proficient",
+  "metrics": {
+    "average_completion_time": 35.5,
+    "code_quality_score": 85.0,
+    "error_reduction_rate": 0.65,
+    "independence_score": 78.0
+  },
+  "strengths": ["problem_solving", "code_organization"],
+  "improvement_areas": ["debugging", "optimization"]
+}
+```
+
+#### Get Student Progress Summary
+
+```http
+GET http://localhost:8007/api/v1/students/{student_id}/courses/{course_id}/progress-summary
+Authorization: Bearer <token>
+```
+
+Response:
+```json
+{
+  "student_id": "student-123",
+  "course_id": "course-456",
+  "overall_progress": 65.5,
+  "content_items_completed": 25,
+  "content_items_total": 40,
+  "estimated_completion_date": "2025-11-15T00:00:00Z",
+  "time_spent_hours": 45.5,
+  "last_activity": "2025-10-04T09:30:00Z"
+}
+```
+
+#### Generate Student Analytics Report
+
+```http
+POST http://localhost:8007/api/v1/students/{student_id}/courses/{course_id}/analytics
+Authorization: Bearer <instructor-token>
+Content-Type: application/json
+
+{
+  "analysis_period_days": 30,
+  "include_predictions": true,
+  "include_recommendations": true
+}
+```
+
+Response:
+```json
+{
+  "student_id": "student-123",
+  "course_id": "course-456",
+  "engagement_score": 78.5,
+  "proficiency_score": 82.5,
+  "progress_percentage": 65.5,
+  "predicted_completion_date": "2025-11-15",
+  "predicted_final_grade": 85.0,
+  "risk_level": "low",
+  "recommendations": [
+    "Continue current pace",
+    "Focus on advanced topics"
+  ],
+  "generated_at": "2025-10-04T10:00:00Z"
+}
+```
+
+#### Get Course Analytics Summary
+
+```http
+GET http://localhost:8007/api/v1/courses/{course_id}/analytics-summary
+Authorization: Bearer <instructor-token>
+```
+
+Response:
+```json
+{
+  "course_id": "course-456",
+  "enrollment_count": 50,
+  "active_students": 42,
+  "average_engagement": 75.5,
+  "average_progress": 68.2,
+  "completion_rate": 78.0,
+  "at_risk_students": 5,
+  "top_performers": 12,
+  "course_health_score": 82.5
+}
+```
+
+#### Get Student Performance Comparison
+
+```http
+GET http://localhost:8007/api/v1/students/{student_id}/courses/{course_id}/performance-comparison
+Authorization: Bearer <token>
+```
+
+Response:
+```json
+{
+  "student_id": "student-123",
+  "course_id": "course-456",
+  "student_score": 85.0,
+  "class_average": 75.5,
+  "percentile": 78,
+  "rank": 8,
+  "total_students": 50,
+  "comparison": "above_average"
+}
+```
+
+#### Get Student Success Prediction
+
+```http
+GET http://localhost:8007/api/v1/students/{student_id}/courses/{course_id}/prediction
+Authorization: Bearer <instructor-token>
+```
+
+Response:
+```json
+{
+  "student_id": "student-123",
+  "course_id": "course-456",
+  "predicted_final_grade": 85.0,
+  "predicted_completion_date": "2025-11-15",
+  "success_probability": 0.92,
+  "confidence_level": "high",
+  "factors": {
+    "current_performance": 0.85,
+    "engagement_level": 0.88,
+    "improvement_trend": 0.95
+  }
+}
+```
+
+#### Generate Student Performance Report (PDF)
+
+```http
+POST http://localhost:8007/api/v1/reports/student
+Authorization: Bearer <instructor-token>
+Content-Type: application/json
+
+{
+  "student_id": "student-123",
+  "course_id": "course-456",
+  "report_type": "comprehensive",
+  "include_charts": true,
+  "analysis_period_days": 90
+}
+```
+
+Response:
+```json
+{
+  "report_id": "report-789",
+  "student_id": "student-123",
+  "course_id": "course-456",
+  "report_url": "/reports/download/report-789.pdf",
+  "generated_at": "2025-10-04T10:00:00Z",
+  "expires_at": "2025-10-11T10:00:00Z"
+}
+```
+
+#### Generate Course Performance Report (PDF)
+
+```http
+POST http://localhost:8007/api/v1/reports/course
+Authorization: Bearer <instructor-token>
+Content-Type: application/json
+
+{
+  "course_id": "course-456",
+  "report_type": "comprehensive",
+  "include_student_breakdown": true,
+  "include_recommendations": true
+}
+```
+
+#### Get Student Risk Assessment
+
+```http
+GET http://localhost:8007/api/v1/students/{student_id}/courses/{course_id}/risk-assessment
+Authorization: Bearer <instructor-token>
+```
+
+Response:
+```json
+{
+  "student_id": "student-123",
+  "course_id": "course-456",
+  "risk_level": "low",
+  "risk_score": 15.5,
+  "risk_factors": [],
+  "protective_factors": [
+    "high_engagement",
+    "consistent_performance",
+    "regular_attendance"
+  ],
+  "recommendations": [
+    "Continue monitoring progress",
+    "Maintain current support level"
+  ],
+  "assessed_at": "2025-10-04T10:00:00Z"
+}
+```
+
 ### Analytics Service Health Check
 
 Check the health of the analytics service.
@@ -2209,8 +2758,8 @@ Response:
 {
   "status": "healthy",
   "service": "analytics",
-  "version": "2.0.0",
-  "timestamp": "2025-07-26T10:30:00Z",
+  "version": "3.1.0",
+  "timestamp": "2025-10-04T10:30:00Z",
   "database_status": "connected"
 }
 ```
@@ -2365,20 +2914,32 @@ Access the web interface at:
 
 ## Platform Status
 
-**Current Version**: 2.3.0 - Enhanced RBAC System with Multi-Tenant Organization Management  
-**Last Updated**: 2025-07-31  
-**Status**: Production Ready with Enhanced RBAC System and Advanced Lab Container Management
+**Current Version**: 3.1.0 - Modular Architecture & Exception Handling Refactoring
+**Last Updated**: 2025-10-04
+**Status**: Production Ready with Enhanced Testing and Code Quality
 
-### New in v2.3 - Enhanced RBAC System
+### New in v3.1 - Modular Architecture & Testing
+- **Modular Frontend Architecture** - Refactored org admin dashboard into 8 ES6 modules for maintainability
+- **Custom Exception Handling** - Comprehensive custom exception system across all services
+- **Comprehensive Test Coverage** - 112+ instructor dashboard tests, 100% syntax validation (3,149 files)
+- **Enhanced Track Management** - Full CRUD operations for learning tracks with analytics and duplication
+- **Project Management Enhancement** - Student/instructor enrollment management with proper cleanup
+- **Site Admin Dashboard** - Platform statistics, organization management, and health monitoring
+- **Advanced Analytics API** - Student engagement scores, proficiency metrics, risk assessment, and PDF reports
+- **Code Quality Improvements** - Automated cleanup, syntax validation tools, and test infrastructure
+- **Development Tools** - Created `check_syntax.py`, `cleanup_codebase.sh`, and comprehensive test suites
+
+### New in v3.0 - Password Management & Enhanced UI
+- **Password Management System** - Self-service password changes with JWT authentication
+- **Enhanced Organization Registration** - Automatic admin account creation with password setup
+- **Professional Email Validation** - Business-only email enforcement with detailed error handling
+- **Comprehensive Form Validation** - Real-time validation with specific error messages
+
+### Previous v2.3 - Enhanced RBAC System
 - **Multi-Tenant Organization Management** - Comprehensive organization administration with granular permissions
 - **JWT Authentication & Authorization** - Secure role-based access control with sophisticated permission management
 - **Teams/Zoom Integration** - Automated meeting room creation and management for organizations and learning tracks
 - **Comprehensive Audit Logging** - Complete audit trail for all RBAC operations with security monitoring
-- **Automated Email Notifications** - Hydra-configured email service for member invitations and role assignments
-- **Site Administration** - Platform-wide management with organization oversight and user administration
-- **Learning Track Management** - Automatic enrollment capabilities with track-based learning paths
-- **Project-Based Access Control** - Granular permissions for project-specific resource access
-- **Complete Test Coverage** - 102 RBAC tests with 100% success rate and comprehensive code quality enforcement
 
 ### Previous v2.2 - Complete Quiz Management System
 - **Course Instance-Specific Quiz Publishing** - Publish/unpublish quizzes per course instance with analytics integration
