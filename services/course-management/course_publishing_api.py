@@ -1312,9 +1312,9 @@ def setup_course_publishing_routes(app, db_pool, get_current_user, config: Optio
     ):
         """Clean up student data from courses completed more than 30 days ago."""
         try:
-            # Only allow admin users to run cleanup
-            if current_user.get('role') != 'admin':
-                raise HTTPException(status_code=403, detail="Admin access required")
+            # Only allow site admin users to run cleanup
+            if current_user.get('role') != 'site_admin':
+                raise HTTPException(status_code=403, detail="Site admin access required")
             
             cleanup_stats = await service.cleanup_completed_courses()
             return {

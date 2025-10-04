@@ -14,7 +14,8 @@ class UserRole(str, Enum):
     """User role enumeration."""
     STUDENT = "student"
     INSTRUCTOR = "instructor"
-    ADMIN = "admin"
+    ORGANIZATION_ADMIN = "organization_admin"
+    SITE_ADMIN = "site_admin"
 
 
 class UserBase(BaseModel):

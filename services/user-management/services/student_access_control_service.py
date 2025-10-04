@@ -61,12 +61,12 @@ class StudentAccessControlService:
                 'message': 'System is currently under maintenance. Please try again later.'
             }
         
-        # Admin and instructor overrides
-        if user_role == 'admin':
+        # Site admin and instructor overrides
+        if user_role == 'site_admin':
             return {
                 'has_access': True,
-                'reason': 'admin_override',
-                'message': 'Admin access granted'
+                'reason': 'site_admin_override',
+                'message': 'Site admin access granted'
             }
         
         if user_role == 'instructor':

@@ -155,39 +155,30 @@ async def verify_organization_access(
 
 async def verify_site_admin_permission(current_user: Dict[str, Any]) -> bool:
     """
-    Verify user is site admin using configuration-driven role definitions
+    Verify user has site_admin role
 
-    Business Context:
-    Site admin verification uses Hydra configuration to avoid hard-coded role strings.
-    This enables flexible role management and easier configuration updates.
+    BUSINESS CONTEXT:
+    Site admins have platform-wide administrative access, distinct from
+    organization admins who only manage their specific organization.
+
+    TECHNICAL IMPLEMENTATION:
+    Checks user role is 'site_admin' - a dedicated role for platform administrators.
+
+    Args:
+        current_user: User dictionary with role information
+
+    Returns:
+        True if user has site_admin role
+
+    Raises:
+        HTTPException (403): If user doesn't have site_admin role
     """
-    try:
-        config = get_config()
-        user_role = current_user.get('role')
-        username = current_user.get('username')
+    user_role = current_user.get('role') or current_user.get('role_type')
 
-        # Get allowed roles from configuration
-        allowed_roles: List[str] = [
-            config.roles.admin,
-            config.roles.organization_admin
-        ]
-
-        # Get site admin username from configuration
-        site_admin_username = config.special_users.site_admin_username
-
-        # Allow configured roles or configured site admin username
-        if user_role not in allowed_roles and username != site_admin_username:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Site administrator access required"
-            )
-
+    if user_role == 'site_admin':
         return True
 
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Site admin permission check failed: {str(e)}"
-        )
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Site administrator access required"
+    )

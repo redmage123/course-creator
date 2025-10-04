@@ -151,6 +151,8 @@ selenium-server-standalone-*.jar
 
 # Memory files
 memory/
+.claude/memory.db
+.claude/*.db
 
 # Large archives and downloads
 *.tar.gz

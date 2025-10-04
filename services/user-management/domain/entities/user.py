@@ -55,9 +55,9 @@ class UserRole(Enum):
     
     Role Hierarchy (ascending privilege order):
         1. STUDENT: Basic user with course consumption privileges
-        2. INSTRUCTOR: Content creator with course management privileges  
+        2. INSTRUCTOR: Content creator with course management privileges
         3. ORGANIZATION_ADMIN: Organization-level administrator with org management privileges
-        4. ADMIN: System administrator with platform management privileges
+        4. SITE_ADMIN: Platform-wide system administrator with full privileges
     
     Design Rationale:
         - Enum provides type safety and prevents invalid role values
@@ -79,7 +79,7 @@ class UserRole(Enum):
     STUDENT = "student"                    # Basic users who consume course content
     INSTRUCTOR = "instructor"              # Content creators and course managers
     ORGANIZATION_ADMIN = "organization_admin"  # Organization-level administrators
-    ADMIN = "admin"                        # Platform administrators
+    SITE_ADMIN = "site_admin"              # Platform-wide system administrators
 
 class UserStatus(Enum):
     """

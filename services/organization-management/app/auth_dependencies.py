@@ -36,11 +36,29 @@ async def verify_permission(user_id: UUID, organization_id: UUID, permission: Pe
 
 
 async def verify_site_admin_permission(current_user: Dict[str, Any]) -> bool:
-    """Verify user is site admin"""
+    """
+    Verify user has site_admin role
+
+    BUSINESS CONTEXT:
+    Site admins have platform-wide administrative access, distinct from
+    organization admins who only manage their specific organization.
+
+    TECHNICAL IMPLEMENTATION:
+    Checks user role is 'site_admin' - a dedicated role for platform administrators.
+
+    Args:
+        current_user: User dictionary with role information
+
+    Returns:
+        True if user has site_admin role
+
+    Raises:
+        HTTPException (403): If user doesn't have site_admin role
+    """
     try:
-        # Check if user has site admin role
-        user_role = current_user.get('role')
-        if user_role != 'admin':  # Assuming 'admin' is the site admin role
+        user_role = current_user.get('role') or current_user.get('role_type')
+
+        if user_role != 'site_admin':
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Site administrator access required"

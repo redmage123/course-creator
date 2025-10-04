@@ -1887,7 +1887,7 @@ class SiteAdminDashboard {
             const auditContainer = document.getElementById('auditLogContainer');
             auditContainer.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Loading audit log...</p></div>';
 
-            const response = await fetch('/api/v1/rbac/audit-log', {
+            const response = await fetch(`${this.API_BASE}/api/v1/rbac/audit-log`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
                     'Content-Type': 'application/json'
@@ -2022,6 +2022,117 @@ class SiteAdminDashboard {
     async loadMoreAuditEntries() {
         // Implementation for pagination
         this.showNotification('Loading more audit entries...', 'info');
+    }
+
+    async filterAuditLog() {
+        /**
+         * AUDIT LOG FILTERING
+         * PURPOSE: Filter audit log entries by action type and date
+         * WHY: Site admins need to search through audit logs efficiently
+         *
+         * FEATURES:
+         * - Filter by action type (organization_deleted, user_created, etc.)
+         * - Filter by date range
+         * - Real-time filtering without page reload
+         */
+        try {
+            const actionFilter = document.getElementById('auditActionFilter')?.value || '';
+            const dateFilter = document.getElementById('auditDateFilter')?.value || '';
+
+            const auditContainer = document.getElementById('auditLogContainer');
+            auditContainer.innerHTML = '<div class="loading"><div class="loading-spinner"></div><p>Filtering audit log...</p></div>';
+
+            // Build query parameters
+            const params = new URLSearchParams();
+            if (actionFilter) params.append('action', actionFilter);
+            if (dateFilter) params.append('date', dateFilter);
+
+            const response = await fetch(`${this.API_BASE}/api/v1/rbac/audit-log?${params.toString()}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to filter audit log: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            const auditEntries = data.entries || [];
+
+            this.renderAuditLog(auditEntries);
+
+        } catch (error) {
+            console.error('Failed to filter audit log:', error);
+            const auditContainer = document.getElementById('auditLogContainer');
+            auditContainer.innerHTML = `
+                <div class="error-state">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>Failed to Filter Audit Log</h3>
+                    <p>${error.message}</p>
+                    <button onclick="window.siteAdmin.loadAuditLog()" class="btn btn-primary">
+                        <i class="fas fa-redo"></i> Reset Filters
+                    </button>
+                </div>
+            `;
+        }
+    }
+
+    async exportAuditLog() {
+        /**
+         * AUDIT LOG EXPORT
+         * PURPOSE: Export audit log entries to CSV format
+         * WHY: Compliance and record-keeping require audit log exports
+         *
+         * FEATURES:
+         * - Export filtered or all audit log entries
+         * - CSV format with all audit details
+         * - Automatic file download
+         */
+        try {
+            this.showNotification('Preparing audit log export...', 'info');
+
+            const actionFilter = document.getElementById('auditActionFilter')?.value || '';
+            const dateFilter = document.getElementById('auditDateFilter')?.value || '';
+
+            // Build query parameters
+            const params = new URLSearchParams();
+            if (actionFilter) params.append('action', actionFilter);
+            if (dateFilter) params.append('date', dateFilter);
+            params.append('format', 'csv');
+
+            const response = await fetch(`${this.API_BASE}/api/v1/rbac/audit-log/export?${params.toString()}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to export audit log: ${response.statusText}`);
+            }
+
+            // Get the CSV data
+            const blob = await response.blob();
+
+            // Create download link
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `audit-log-${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+
+            // Cleanup
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            this.showNotification('Audit log exported successfully', 'success');
+
+        } catch (error) {
+            console.error('Failed to export audit log:', error);
+            this.showNotification('Failed to export audit log. Please try again.', 'error');
+        }
     }
 
     viewOrganizationDetails(orgId) {
