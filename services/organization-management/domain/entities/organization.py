@@ -25,9 +25,16 @@ class Organization:
     name: str
     slug: str
     # Required contact information
-    address: str
-    contact_phone: str  
+    contact_phone: str
     contact_email: str
+    # Subdivided address fields (replacing single address field)
+    street_address: Optional[str] = None
+    city: Optional[str] = None
+    state_province: Optional[str] = None
+    postal_code: Optional[str] = None
+    country: str = 'US'  # ISO 3166-1 alpha-2 country code
+    # Legacy address field (deprecated - use subdivided fields above)
+    address: Optional[str] = None
     # Optional fields
     id: Optional[UUID] = None
     description: Optional[str] = None
@@ -52,6 +59,9 @@ class Organization:
     def update_info(self, name: str = None, description: str = None,
                    logo_url: str = None, logo_file_path: str = None,
                    domain: str = None, address: str = None,
+                   street_address: str = None, city: str = None,
+                   state_province: str = None, postal_code: str = None,
+                   country: str = None,
                    contact_phone: str = None, contact_email: str = None,
                    settings: Dict[str, Any] = None) -> None:
         """Update organization information with professional contact details"""
@@ -67,6 +77,16 @@ class Organization:
             self.domain = domain
         if address is not None:
             self.address = address
+        if street_address is not None:
+            self.street_address = street_address
+        if city is not None:
+            self.city = city
+        if state_province is not None:
+            self.state_province = state_province
+        if postal_code is not None:
+            self.postal_code = postal_code
+        if country is not None:
+            self.country = country
         if contact_phone is not None:
             self.contact_phone = contact_phone
         if contact_email is not None:
@@ -110,7 +130,6 @@ class Organization:
         return (
             bool(self.name and len(self.name.strip()) >= 2) and
             bool(self.slug and len(self.slug.strip()) >= 2) and
-            bool(self.address and len(self.address.strip()) >= 10) and
             bool(self.contact_phone and len(self.contact_phone.strip()) >= 10) and
             bool(self.contact_email and '@' in self.contact_email)
         )

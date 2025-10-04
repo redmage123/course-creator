@@ -158,9 +158,15 @@ class OrganizationService:
             self._logger.error(f"Error creating organization admin user: {str(e)}")
             raise
 
-    async def create_organization(self, name: str, slug: str, address: str,
+    async def create_organization(self, name: str, slug: str,
                                   contact_phone: str, contact_email: str, description: str = None,
                                   logo_url: str = None, domain: str = None,
+                                  # Subdivided address fields
+                                  street_address: str = None, city: str = None,
+                                  state_province: str = None, postal_code: str = None,
+                                  country: str = 'US',
+                                  # Legacy address field (optional for backwards compatibility)
+                                  address: str = None,
                                   settings: Dict[str, Any] = None,
                                   # Organization admin parameters
                                   admin_full_name: str = None, admin_email: str = None,
@@ -228,9 +234,14 @@ class OrganizationService:
                 organization = Organization(
                     name=name,
                     slug=slug,
-                    address=address,
                     contact_phone=contact_phone,
                     contact_email=contact_email,
+                    street_address=street_address,
+                    city=city,
+                    state_province=state_province,
+                    postal_code=postal_code,
+                    country=country,
+                    address=address,  # Legacy field
                     description=description,
                     logo_url=logo_url,
                     domain=domain,
@@ -313,6 +324,11 @@ class OrganizationService:
                 'description': organization.description,
                 'domain': organization.domain,
                 'address': organization.address,
+                'street_address': organization.street_address,
+                'city': organization.city,
+                'state_province': organization.state_province,
+                'postal_code': organization.postal_code,
+                'country': organization.country,
                 'contact_email': organization.contact_email,
                 'contact_phone': organization.contact_phone,
                 'logo_url': organization.logo_url,
@@ -373,10 +389,70 @@ class OrganizationService:
         if hasattr(self, '_http_client'):
             await self._http_client.aclose()
 
+    async def get_all_organizations(self) -> list[Organization]:
+        """Get all organizations"""
+        try:
+            org_dicts = await self._dao.get_all_organizations()
+            organizations = []
+            for org_dict in org_dicts:
+                org = Organization(
+                    name=org_dict['name'],
+                    slug=org_dict['slug'],
+                    contact_phone=org_dict.get('contact_phone'),
+                    contact_email=org_dict.get('contact_email'),
+                    street_address=org_dict.get('street_address'),
+                    city=org_dict.get('city'),
+                    state_province=org_dict.get('state_province'),
+                    postal_code=org_dict.get('postal_code'),
+                    country=org_dict.get('country', 'US'),
+                    address=org_dict.get('address'),
+                    domain=org_dict.get('domain'),
+                    description=org_dict.get('description'),
+                    logo_url=org_dict.get('logo_url'),
+                    settings=org_dict.get('settings', {}),
+                    is_active=org_dict.get('is_active', True)
+                )
+                org.id = UUID(org_dict['id']) if isinstance(org_dict['id'], str) else org_dict['id']
+                org.created_at = org_dict.get('created_at')
+                org.updated_at = org_dict.get('updated_at')
+                organizations.append(org)
+            return organizations
+        except Exception as e:
+            self._logger.error(f"Error getting all organizations: {str(e)}")
+            raise
+
+    async def get_organization_projects(self, organization_id: UUID) -> list:
+        """Get all projects for an organization"""
+        # Projects table doesn't exist yet, return empty list
+        return []
+
     async def get_organization(self, organization_id: UUID) -> Optional[Organization]:
         """Get organization by ID"""
         try:
-            return await self._dao.get_by_id(organization_id)
+            org_dict = await self._dao.get_organization_by_id(str(organization_id))
+            if not org_dict:
+                return None
+            org = Organization(
+                name=org_dict['name'],
+                slug=org_dict['slug'],
+                contact_phone=org_dict.get('contact_phone'),
+                contact_email=org_dict.get('contact_email'),
+                street_address=org_dict.get('street_address'),
+                city=org_dict.get('city'),
+                state_province=org_dict.get('state_province'),
+                postal_code=org_dict.get('postal_code'),
+                country=org_dict.get('country', 'US'),
+                address=org_dict.get('address'),
+                domain=org_dict.get('domain'),
+                description=org_dict.get('description'),
+                logo_url=org_dict.get('logo_url'),
+                settings=org_dict.get('settings', {}),
+                is_active=org_dict.get('is_active', True)
+            )
+            org.id = UUID(org_dict['id']) if isinstance(org_dict['id'], str) else org_dict['id']
+            org.created_at = org_dict.get('created_at')
+            org.updated_at = org_dict.get('updated_at')
+            return org
         except Exception as e:
             self._logger.error(f"Error getting organization {organization_id}: {str(e)}")
             raise

@@ -49,7 +49,7 @@ from api.organization_endpoints import router as organization_router
 from api.project_endpoints import router as project_router
 from api.rbac_endpoints import router as rbac_router
 from api.site_admin_endpoints import router as site_admin_router
-# from api import track_endpoints
+from api.track_endpoints import router as track_router
 
 # Custom exceptions
 # Import shared exceptions from platform-wide exception hierarchy
@@ -420,7 +420,7 @@ def create_app(config: DictConfig = None) -> FastAPI:
     app.include_router(project_router)
     app.include_router(rbac_router)
     app.include_router(site_admin_router)
-    # app.include_router(track_endpoints.router)
+    app.include_router(track_router)
 
     # Health check endpoint
     @app.get("/health")

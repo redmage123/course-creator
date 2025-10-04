@@ -4,9 +4,9 @@ User Management Services
 Business logic layer for user management operations.
 """
 
-from user_service import UserService
-from auth_service import AuthService
-from admin_service import AdminService
+from services.user_management.services.user_service import UserService
+from services.user_management.services.auth_service import AuthService
+from services.user_management.services.admin_service import AdminService
 
 __all__ = [
     "UserService",

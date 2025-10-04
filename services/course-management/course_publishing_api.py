@@ -430,9 +430,10 @@ class CoursePublishingService:
                 LIMIT {limit_param} OFFSET {offset_param}
             """, *params, per_page, offset)
             
+            count_params = params[:len(params)-2] if course_id else params[:1]
             total = await conn.fetchval(f"""
                 SELECT COUNT(*) FROM course_instances ci WHERE {where_clause}
-            """, *params[:len(params)-2] if course_id else *params[:1])
+            """, *count_params)
             
             instance_list = []
             for instance in instances:

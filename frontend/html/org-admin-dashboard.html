@@ -910,6 +910,11 @@
                         </a>
                     </li>
                     <li style="margin-bottom: 0.5rem;">
+                        <a href="#tracks" class="nav-link" data-tab="tracks">
+                            🎓 Tracks
+                        </a>
+                    </li>
+                    <li style="margin-bottom: 0.5rem;">
                         <a href="#settings" class="nav-link" data-tab="settings">
                             ⚙️ Settings
                         </a>
@@ -945,6 +950,10 @@
                     <div class="stat-card" onclick="document.querySelector('[data-tab=students]').click()" style="cursor: pointer;" title="Click to view all students">
                         <span class="stat-number" id="totalStudents">0</span>
                         <span>Total Students</span>
+                    </div>
+                    <div class="stat-card" onclick="document.querySelector('[data-tab=tracks]').click()" style="cursor: pointer;" title="Click to view all tracks">
+                        <span class="stat-number" id="totalTracks">0</span>
+                        <span>Learning Tracks</span>
                     </div>
                     <div class="stat-card" onclick="document.querySelector('[data-tab=projects]').click()" style="cursor: pointer;" title="Click to view courses in projects">
                         <span class="stat-number" id="totalCourses">0</span>
@@ -1090,6 +1099,58 @@
                 </table>
             </div>
 
+            <!-- Tracks Tab -->
+            <div id="tracks" class="tab-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2>Learning Tracks</h2>
+                    <button class="btn btn-primary" onclick="showCreateTrackModal()">
+                        ➕ Create New Track
+                    </button>
+                </div>
+
+                <!-- Filters -->
+                <div style="display: flex; gap: 1rem; margin-bottom: 2rem; align-items: center;">
+                    <select id="trackProjectFilter" onchange="loadTracks()" style="padding: 0.5rem;">
+                        <option value="">All Projects</option>
+                        <!-- Project options will be populated here -->
+                    </select>
+                    <select id="trackStatusFilter" onchange="loadTracks()" style="padding: 0.5rem;">
+                        <option value="">All Statuses</option>
+                        <option value="draft">Draft</option>
+                        <option value="active">Active</option>
+                        <option value="completed">Completed</option>
+                        <option value="archived">Archived</option>
+                    </select>
+                    <select id="trackDifficultyFilter" onchange="loadTracks()" style="padding: 0.5rem;">
+                        <option value="">All Difficulty Levels</option>
+                        <option value="beginner">Beginner</option>
+                        <option value="intermediate">Intermediate</option>
+                        <option value="advanced">Advanced</option>
+                    </select>
+                    <input type="text" id="trackSearchInput" placeholder="Search tracks..."
+                           onkeyup="loadTracks()" style="flex: 1; padding: 0.5rem;">
+                </div>
+
+                <!-- Tracks Table -->
+                <table class="data-table" id="tracksTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Project</th>
+                            <th>Difficulty</th>
+                            <th>Duration</th>
+                            <th>Students</th>
+                            <th>Instructors</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tracksTableBody">
+                        <!-- Track data will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+
             <!-- Settings Tab -->
             <div id="settings" class="tab-content">
                 <h2>Organization Settings</h2>
@@ -1112,9 +1173,94 @@
                                 <textarea id="orgDescriptionSetting" name="description" rows="3"></textarea>
                             </div>
                             <div class="form-group" style="grid-column: 1 / -1;">
-                                <label for="orgAddressSetting" class="required">Business Address</label>
-                                <textarea id="orgAddressSetting" name="address" required rows="2" 
-                                          placeholder="Complete physical address"></textarea>
+                                <label for="orgStreetAddressSetting">Street Address</label>
+                                <input type="text" id="orgStreetAddressSetting" name="street_address"
+                                       maxlength="255" placeholder="Street number and name">
+                            </div>
+                            <div class="form-group">
+                                <label for="orgCitySetting">City</label>
+                                <input type="text" id="orgCitySetting" name="city"
+                                       maxlength="100" placeholder="City name">
+                            </div>
+                            <div class="form-group">
+                                <label for="orgStateProvinceSetting">State / Province</label>
+                                <select id="orgStateProvinceSetting" name="state_province">
+                                    <option value="N/A">N/A (Non-US)</option>
+                                    <option value="AL">Alabama</option>
+                                    <option value="AK">Alaska</option>
+                                    <option value="AZ">Arizona</option>
+                                    <option value="AR">Arkansas</option>
+                                    <option value="CA">California</option>
+                                    <option value="CO">Colorado</option>
+                                    <option value="CT">Connecticut</option>
+                                    <option value="DE">Delaware</option>
+                                    <option value="FL">Florida</option>
+                                    <option value="GA">Georgia</option>
+                                    <option value="HI">Hawaii</option>
+                                    <option value="ID">Idaho</option>
+                                    <option value="IL">Illinois</option>
+                                    <option value="IN">Indiana</option>
+                                    <option value="IA">Iowa</option>
+                                    <option value="KS">Kansas</option>
+                                    <option value="KY">Kentucky</option>
+                                    <option value="LA">Louisiana</option>
+                                    <option value="ME">Maine</option>
+                                    <option value="MD">Maryland</option>
+                                    <option value="MA">Massachusetts</option>
+                                    <option value="MI">Michigan</option>
+                                    <option value="MN">Minnesota</option>
+                                    <option value="MS">Mississippi</option>
+                                    <option value="MO">Missouri</option>
+                                    <option value="MT">Montana</option>
+                                    <option value="NE">Nebraska</option>
+                                    <option value="NV">Nevada</option>
+                                    <option value="NH">New Hampshire</option>
+                                    <option value="NJ">New Jersey</option>
+                                    <option value="NM">New Mexico</option>
+                                    <option value="NY">New York</option>
+                                    <option value="NC">North Carolina</option>
+                                    <option value="ND">North Dakota</option>
+                                    <option value="OH">Ohio</option>
+                                    <option value="OK">Oklahoma</option>
+                                    <option value="OR">Oregon</option>
+                                    <option value="PA">Pennsylvania</option>
+                                    <option value="RI">Rhode Island</option>
+                                    <option value="SC">South Carolina</option>
+                                    <option value="SD">South Dakota</option>
+                                    <option value="TN">Tennessee</option>
+                                    <option value="TX">Texas</option>
+                                    <option value="UT">Utah</option>
+                                    <option value="VT">Vermont</option>
+                                    <option value="VA">Virginia</option>
+                                    <option value="WA">Washington</option>
+                                    <option value="WV">West Virginia</option>
+                                    <option value="WI">Wisconsin</option>
+                                    <option value="WY">Wyoming</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="orgPostalCodeSetting">Postal Code</label>
+                                <input type="text" id="orgPostalCodeSetting" name="postal_code"
+                                       maxlength="20" placeholder="ZIP or postal code">
+                            </div>
+                            <div class="form-group">
+                                <label for="orgCountrySetting">Country</label>
+                                <select id="orgCountrySetting" name="country">
+                                    <option value="US">🇺🇸 United States</option>
+                                    <option value="CA">🇨🇦 Canada</option>
+                                    <option value="GB">🇬🇧 United Kingdom</option>
+                                    <option value="AU">🇦🇺 Australia</option>
+                                    <option value="DE">🇩🇪 Germany</option>
+                                    <option value="FR">🇫🇷 France</option>
+                                    <option value="ES">🇪🇸 Spain</option>
+                                    <option value="IT">🇮🇹 Italy</option>
+                                    <option value="MX">🇲🇽 Mexico</option>
+                                    <option value="BR">🇧🇷 Brazil</option>
+                                    <option value="IN">🇮🇳 India</option>
+                                    <option value="JP">🇯🇵 Japan</option>
+                                    <option value="CN">🇨🇳 China</option>
+                                    <option value="KR">🇰🇷 South Korea</option>
+                                </select>
                             </div>
                             <div class="form-group">
                                 <label for="orgContactEmailSetting" class="required">Contact Email</label>
@@ -1637,6 +1783,122 @@
         </div>
     </div>
 
+    <!-- Create/Edit Track Modal -->
+    <div id="trackModal" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <span class="close" onclick="closeModal('trackModal')">&times;</span>
+            <h2 id="trackModalTitle">Create New Track</h2>
+
+            <form id="trackForm" onsubmit="submitTrack(event)">
+                <input type="hidden" id="trackId" name="trackId">
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label for="trackName" class="required">Track Name</label>
+                        <input type="text" id="trackName" name="name" required maxlength="200"
+                               placeholder="e.g., Python Fundamentals">
+                    </div>
+
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label for="trackDescription">Description</label>
+                        <textarea id="trackDescription" name="description" rows="4" maxlength="1000"
+                                  placeholder="Describe the track objectives and content..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="trackProject" class="required">Project</label>
+                        <select id="trackProject" name="project_id" required>
+                            <option value="">Select Project</option>
+                            <!-- Projects will be populated here -->
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="trackDifficulty">Difficulty Level</label>
+                        <select id="trackDifficulty" name="difficulty_level">
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate">Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="trackDuration">Duration (weeks)</label>
+                        <input type="number" id="trackDuration" name="duration_weeks" min="1" max="52"
+                               placeholder="e.g., 8">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="trackMaxStudents">Max Students</label>
+                        <input type="number" id="trackMaxStudents" name="max_students" min="1" max="1000"
+                               placeholder="e.g., 30">
+                    </div>
+
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label for="trackAudience">Target Audience (comma-separated)</label>
+                        <input type="text" id="trackAudience" name="target_audience"
+                               placeholder="e.g., Beginners, Students, Professionals">
+                        <small>Enter audience types separated by commas</small>
+                    </div>
+
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label for="trackPrerequisites">Prerequisites (comma-separated)</label>
+                        <input type="text" id="trackPrerequisites" name="prerequisites"
+                               placeholder="e.g., Basic programming, Computer literacy">
+                        <small>Enter prerequisites separated by commas</small>
+                    </div>
+
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label for="trackObjectives">Learning Objectives (comma-separated)</label>
+                        <textarea id="trackObjectives" name="learning_objectives" rows="3"
+                                  placeholder="e.g., Understand Python syntax, Build simple applications, Debug code"></textarea>
+                        <small>Enter learning objectives separated by commas</small>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeModal('trackModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="trackSubmitBtn">Create Track</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Track Details Modal -->
+    <div id="trackDetailsModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <span class="close" onclick="closeModal('trackDetailsModal')">&times;</span>
+            <h2 id="trackDetailsTitle">Track Details</h2>
+
+            <div id="trackDetailsContent">
+                <!-- Track details will be loaded here -->
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('trackDetailsModal')">Close</button>
+                <button type="button" class="btn btn-primary" onclick="editTrackFromDetails()">Edit Track</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Track Confirmation Modal -->
+    <div id="deleteTrackModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close" onclick="closeModal('deleteTrackModal')">&times;</span>
+            <h2>Delete Track</h2>
+
+            <p>Are you sure you want to delete this track?</p>
+            <p id="deleteTrackWarning" style="color: var(--error-color); font-weight: bold;"></p>
+
+            <input type="hidden" id="deleteTrackId">
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" onclick="closeModal('deleteTrackModal')">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDeleteTrack()">Delete Track</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Floating Action Button (FAB) -->
     <button class="fab" id="fabButton" onclick="toggleFabMenu()" title="Quick Actions">
         <i class="fas fa-plus" id="fabIcon"></i>
@@ -1656,6 +1918,10 @@
             <i class="fas fa-user-plus"></i>
             <span>Add Student</span>
         </div>
+        <div class="fab-menu-item" onclick="fabAction('track')">
+            <i class="fas fa-road"></i>
+            <span>New Track</span>
+        </div>
         <div class="fab-menu-item" onclick="fabAction('settings')">
             <i class="fas fa-cog"></i>
             <span>Settings</span>
@@ -1674,6 +1940,7 @@
 
         console.log('✅ Auth module loaded and made global');
     </script>
-    <script src="../js/org-admin-dashboard.js"></script>
+    <!-- Modular JavaScript Architecture -->
+    <script type="module" src="../js/org-admin-main.js"></script>
 </body>
 </html>

@@ -103,7 +103,9 @@ class TestStudentEnrollment:
         # Verify user creation SQL was called
         calls = enrollment_service.db_pool.execute.call_args_list
         user_creation_call = calls[0]
-        assert "INSERT INTO users" in user_creation_call[0][0]
+        # Check for INSERT INTO users (may have schema prefix like course_creator.users)
+        assert ("INSERT INTO users" in user_creation_call[0][0] or
+                "INSERT INTO course_creator.users" in user_creation_call[0][0])
         assert student_email in str(user_creation_call)
         assert "student" in str(user_creation_call)  # Role should be 'student'
     

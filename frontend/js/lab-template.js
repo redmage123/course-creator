@@ -40,11 +40,9 @@ let totalLabTime = 0;
 // File system simulation with sandbox restrictions
 const fileSystem = {
     '/home/student': {
-        'readme.txt': 'Welcome to the lab environment!
-This is a simulated file system.',
+        'readme.txt': 'Welcome to the lab environment!\nThis is a simulated file system.',
         'examples': {
-            'hello.sh': '#!/bin/bash
-echo "Hello from the lab!"',
+            'hello.sh': '#!/bin/bash\necho "Hello from the lab!"',
             'test.py': 'print("Python in the lab!")',
             'sample.js': 'console.log("JavaScript in the lab!");'
         }
@@ -205,19 +203,13 @@ Restricted to: ${sandboxRoot}
     
     // Add security notice
     if (!restrictedFS[sandboxRoot]['security_notice.txt']) {
-        restrictedFS[sandboxRoot]['security_notice.txt'] = 
-            'SECURITY NOTICE:
-' +
-            '================
-' +
-            'This is a sandboxed environment for educational purposes.
-' +
-            'You have restricted access to system commands and files.
-' +
-            'All activities are logged for security and assessment purposes.
-' +
-            'Do not attempt to bypass security restrictions.
-';
+        restrictedFS[sandboxRoot]['security_notice.txt'] =
+            'SECURITY NOTICE:\n' +
+            '================\n' +
+            'This is a sandboxed environment for educational purposes.\n' +
+            'You have restricted access to system commands and files.\n' +
+            'All activities are logged for security and assessment purposes.\n' +
+            'Do not attempt to bypass security restrictions.\n';
     }
     
     // Update file system to restricted version
@@ -477,11 +469,8 @@ function selectExercise(exerciseId) {
     // Load exercise code (always start with starter code)
     const editor = document.getElementById('codeEditor');
     if (editor) {
-        const starterCode = currentExercise.starterCode || currentExercise.starter_code || '// Write your code here
-';
-        editor.value = starterCode.replace(/\
-/g, '
-');
+        const starterCode = currentExercise.starterCode || currentExercise.starter_code || '// Write your code here\n';
+        editor.value = starterCode.replace(/\\n/g, '\n');
         // Reset solution toggle state
         showingSolution[exerciseId] = false;
         const button = document.getElementById('solutionBtn' + exerciseId);
@@ -758,20 +747,9 @@ function askAIForHelp(exerciseId) {
     
     // Simulate AI response with context
     setTimeout(() => {
-        let aiResponse = `I'd be happy to help you with **${exercise.title}**! This is a *${exercise.difficulty}* level exercise.
-
-Let me provide some guidance:
-
-${exercise.hints && exercise.hints.length > 0 ? 
-    `Here are some hints to get you started:
-• ${exercise.hints.join('
-• ')}
-
-` : 
-    'Feel free to ask specific questions about the requirements or share your code if you need help debugging.
-
-'
-}What specific part would you like help with?`;
+        let aiResponse = `I'd be happy to help you with **${exercise.title}**! This is a *${exercise.difficulty}* level exercise.\n\nLet me provide some guidance:\n\n${exercise.hints && exercise.hints.length > 0 ?
+    `Here are some hints to get you started:\n• ${exercise.hints.join('\n• ')}\n\n` :
+    'Feel free to ask specific questions about the requirements or share your code if you need help debugging.\n\n'}What specific part would you like help with?`;
         
         addMessage(aiResponse, 'assistant');
     }, 1000);
@@ -796,11 +774,8 @@ function toggleSolution(exerciseId) {
     
     if (showingSolution[exerciseId]) {
         // Hide solution - show starter code
-        const starterCode = exercise.starterCode || exercise.starter_code || '// Write your code here
-';
-        editor.value = starterCode.replace(/\
-/g, '
-');
+        const starterCode = exercise.starterCode || exercise.starter_code || '// Write your code here\n';
+        editor.value = starterCode.replace(/\\n/g, '\n');
         button.textContent = '👁️ Show Solution';
         button.classList.remove('active');
         showingSolution[exerciseId] = false;

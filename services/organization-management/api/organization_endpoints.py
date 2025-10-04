@@ -1,6 +1,15 @@
 """
 Organization Management API Endpoints
 Handles organization CRUD operations, member management, and professional registration requirements
+
+BUSINESS CONTEXT:
+Provides REST API endpoints for organization lifecycle management including creation,
+updates, member management, and professional registration workflows.
+
+TECHNICAL IMPLEMENTATION:
+All exceptions are wrapped in custom exception classes to provide detailed context
+and proper error tracking. Generic exceptions are never used - all errors are
+classified and contextualized for better debugging and monitoring.
 """
 from fastapi import APIRouter, HTTPException, Query, Depends, File, UploadFile, Form
 from typing import List, Dict, Any, Optional
@@ -16,6 +25,17 @@ from application.services.organization_service import OrganizationService
 # Pydantic models for API (Data Transfer Objects)
 from pydantic import BaseModel, Field, EmailStr, validator
 
+# Import custom exceptions for proper error handling
+from exceptions import (
+    OrganizationException,
+    OrganizationNotFoundException,
+    OrganizationValidationException,
+    ValidationException,
+    DatabaseException,
+    FileStorageException,
+    APIException
+)
+
 # Response Models
 class OrganizationResponse(BaseModel):
     """Organization response with complete contact information"""
@@ -24,12 +44,19 @@ class OrganizationResponse(BaseModel):
     slug: str
     description: Optional[str] = None
     # Contact information
-    address: str
     contact_phone: str
     contact_email: str
+    # Subdivided address fields
+    street_address: Optional[str] = None
+    city: Optional[str] = None
+    state_province: Optional[str] = None
+    postal_code: Optional[str] = None
+    country: str = 'US'
+    # Legacy address field (deprecated)
+    address: Optional[str] = None
     # Optional fields
     logo_url: Optional[str] = None
-    logo_file_path: Optional[str] = None 
+    logo_file_path: Optional[str] = None
     domain: Optional[str] = None
     is_active: bool
     member_count: int
@@ -52,9 +79,18 @@ class OrganizationCreateRequest(BaseModel):
     # Required organization information
     name: str = Field(..., min_length=2, max_length=255, description="Official organization name")
     slug: str = Field(..., min_length=2, max_length=100, pattern=r'^[a-z0-9-]+$', description="URL-friendly organization identifier")
-    address: str = Field(..., min_length=10, max_length=500, description="Complete physical address")
     contact_phone: str = Field(..., min_length=10, max_length=20, description="Professional contact phone number")
     contact_email: EmailStr = Field(..., description="Professional contact email (no Gmail, Yahoo, etc.)")
+
+    # Subdivided address fields (replacing single address field)
+    street_address: Optional[str] = Field(None, max_length=255, description="Street address (number and street name)")
+    city: Optional[str] = Field(None, max_length=100, description="City name")
+    state_province: Optional[str] = Field(None, max_length=100, description="State (US) or Province")
+    postal_code: Optional[str] = Field(None, max_length=20, description="ZIP code (US) or postal code")
+    country: str = Field(default='US', max_length=2, description="ISO 3166-1 alpha-2 country code")
+
+    # Legacy address field (deprecated but kept for backwards compatibility)
+    address: Optional[str] = Field(None, min_length=10, max_length=500, description="Complete physical address (deprecated - use subdivided fields)")
     
     # Organization admin information  
     admin_full_name: str = Field(..., min_length=2, max_length=100, description="Full name of organization administrator")
@@ -189,9 +225,14 @@ async def create_organization(
         result = await organization_service.create_organization(
             name=request.name,
             slug=request.slug,
-            address=request.address,
             contact_phone=request.contact_phone,
             contact_email=request.contact_email,
+            street_address=request.street_address,
+            city=request.city,
+            state_province=request.state_province,
+            postal_code=request.postal_code,
+            country=request.country,
+            address=request.address,  # Legacy field
             description=request.description,
             logo_url=request.logo_url,
             domain=request.domain,
@@ -222,9 +263,14 @@ async def create_organization(
             name=org_data["name"],
             slug=org_data["slug"],
             description=org_data["description"],
-            address=org_data["address"],
             contact_phone=org_data["contact_phone"],
             contact_email=org_data["contact_email"],
+            street_address=org_data.get("street_address"),
+            city=org_data.get("city"),
+            state_province=org_data.get("state_province"),
+            postal_code=org_data.get("postal_code"),
+            country=org_data.get("country", "US"),
+            address=org_data.get("address"),
             logo_url=org_data["logo_url"],
             logo_file_path=None,
             domain=org_data["domain"],
@@ -235,19 +281,37 @@ async def create_organization(
             updated_at=datetime.fromisoformat(org_data["updated_at"]) if org_data["updated_at"] else datetime.utcnow()
         )
     except ValueError as e:
-        # This catches Pydantic validation errors from our custom validators
-        print(f"=== API ERROR: ValueError occurred: {str(e)}")
-        logging.error(f"API ERROR: ValueError occurred: {str(e)}")
+        # Wrap validation errors with proper context
+        wrapped_error = OrganizationValidationException(
+            message=f"Invalid organization data: {str(e)}",
+            error_code="ORG_CREATION_VALIDATION_ERROR",
+            details={"validation_error": str(e)},
+            original_exception=e
+        )
+        logging.warning(f"Organization creation validation failed: {wrapped_error.message}", extra=wrapped_error.to_dict())
+        raise HTTPException(status_code=400, detail=wrapped_error.message)
+    except OrganizationValidationException as e:
+        # Re-raise organization validation errors
+        logging.error(f"Organization validation error: {e.message}", extra=e.to_dict())
+        raise HTTPException(status_code=400, detail=e.message)
+    except DatabaseException as e:
+        # Database errors during organization creation
+        logging.error(f"Database error creating organization: {e.message}", extra=e.to_dict())
         raise HTTPException(
-            status_code=400,
-            detail=f"Invalid organization data: {str(e)}"
+            status_code=500,
+            detail="Failed to create organization due to database error"
         )
     except Exception as e:
-        print(f"=== API ERROR: Exception occurred: {type(e).__name__}: {str(e)}")
-        logging.error(f"API ERROR: Exception occurred: {type(e).__name__}: {str(e)}")
+        # Wrap unknown exceptions with full context
         import traceback
-        print(f"=== API ERROR TRACEBACK: {traceback.format_exc()}")
-        logging.error(f"API ERROR TRACEBACK: {traceback.format_exc()}")
+        logging.exception(f"Unexpected error creating organization: {str(e)}")
+        logging.error(f"Traceback: {traceback.format_exc()}")
+        wrapped_error = OrganizationException(
+            message="Failed to create organization due to an unexpected error",
+            error_code="ORG_CREATION_ERROR",
+            details={"error_type": type(e).__name__, "traceback": traceback.format_exc()},
+            original_exception=e
+        )
         raise HTTPException(
             status_code=500,
             detail="Failed to create organization"
@@ -428,6 +492,31 @@ async def create_organization_with_logo(
         
     except HTTPException:
         raise
+    except FileStorageException as e:
+        # File storage errors (logo upload)
+        logging.error(f"File storage error creating organization: {e.message}", extra=e.to_dict())
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to create organization: Logo upload error"
+        )
+    except (OrganizationValidationException, OrganizationException) as e:
+        # Organization-specific errors
+        logging.error(f"Organization error: {e.message}", extra=e.to_dict())
+        raise HTTPException(
+            status_code=400 if isinstance(e, OrganizationValidationException) else 500,
+            detail=e.message
+        )
+    except DatabaseException as e:
+        # Database errors
+        logging.error(f"Database error creating organization with logo: {e.message}", extra=e.to_dict())
+        raise HTTPException(status_code=500, detail="Failed to create organization due to database error")
     except Exception as e:
-        logging.error(f"Error creating organization with logo: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to create organization")
+        # Wrap unknown exceptions with context
+        logging.exception(f"Unexpected error creating organization with logo: {str(e)}")
+        wrapped_error = OrganizationException(
+            message="Failed to create organization with logo",
+            error_code="ORG_CREATION_WITH_LOGO_ERROR",
+            details={"error_type": type(e).__name__},
+            original_exception=e
+        )
+        raise HTTPException(status_code=500, detail=wrapped_error.message)

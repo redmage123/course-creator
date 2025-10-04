@@ -1001,9 +1001,16 @@ class OrganizationRegistration {
                 const organizationData = {
                     name: formData.get('name'),
                     slug: formData.get('slug'),
-                    address: formData.get('address'),
                     contact_phone: formData.get('contact_phone'),
                     contact_email: formData.get('contact_email'),
+                    // Subdivided address fields
+                    street_address: formData.get('street_address') || undefined,
+                    city: formData.get('city') || undefined,
+                    state_province: formData.get('state_province') || undefined,
+                    postal_code: formData.get('postal_code') || undefined,
+                    country: formData.get('country') || 'US',
+                    // Legacy address field (optional)
+                    address: formData.get('address') || undefined,
                     admin_full_name: formData.get('admin_full_name'),
                     admin_username: formData.get('admin_username'),
                     admin_email: formData.get('admin_email'),
@@ -1127,7 +1134,11 @@ class OrganizationRegistration {
             const fieldMapping = {
                 'name': 'orgName',
                 'slug': 'orgSlug',
-                'address': 'orgAddress',
+                'street_address': 'orgStreetAddress',
+                'city': 'orgCity',
+                'state_province': 'orgStateProvince',
+                'postal_code': 'orgPostalCode',
+                'country': 'orgCountry',
                 'contact_phone': 'orgPhone',
                 'contact_email': 'orgEmail',
                 'admin_full_name': 'adminName',

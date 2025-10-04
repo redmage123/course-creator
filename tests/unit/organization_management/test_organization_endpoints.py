@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 """
 Unit Tests for Organization API Endpoints
-Tests FastAPI endpoint logic, request/response handling, and dependency injection
+
+BUSINESS REQUIREMENT:
+Tests FastAPI endpoint logic for organization management including multi-tenant
+hierarchy, member management, and role-based access control.
+
+TECHNICAL IMPLEMENTATION:
+Tests request validation, response formatting, error handling, file upload,
+and dependency injection for organization API endpoints.
 """
 import pytest
 import asyncio
@@ -13,11 +20,21 @@ from uuid import uuid4
 from datetime import datetime
 import json
 
-# Import the FastAPI app and dependencies
-from services.organization_management.main import app, create_app
-from services.organization_management.api.organization_endpoints import router
-from services.organization_management.application.services.organization_service import OrganizationService
-from services.organization_management.domain.entities.organization import Organization
+import sys
+from pathlib import Path
+from unittest.mock import MagicMock
+
+# Mock shared.cache module before importing organization-management modules
+sys.modules['shared'] = MagicMock()
+sys.modules['shared.cache'] = MagicMock()
+sys.modules['shared.cache.redis_cache'] = MagicMock()
+
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / 'services' / 'organization-management'))
+
+from main import app, create_app
+from api.organization_endpoints import router
+from application.services.organization_service import OrganizationService
+from domain.entities.organization import Organization
 
 
 class TestOrganizationEndpoints:

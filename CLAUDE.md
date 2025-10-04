@@ -2,8 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Version**: 3.0.0 - Password Management & Enhanced UI Features  
-**Last Updated**: 2025-08-11
+**Version**: 3.1.0 - Modular Architecture & Exception Handling Refactoring
+**Last Updated**: 2025-10-04
 
 ## 📁 Documentation Structure
 

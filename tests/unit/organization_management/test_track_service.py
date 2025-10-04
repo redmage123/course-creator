@@ -7,8 +7,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../../services/organization-management'))
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / 'services' / 'organization-management'))
 
 from domain.entities.track import Track, TrackStatus, TrackType
 from application.services.track_service import TrackService

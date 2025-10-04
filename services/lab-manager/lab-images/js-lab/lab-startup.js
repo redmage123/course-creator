@@ -257,7 +257,7 @@ function startLabServer() {
     });
     
     server.on('exit', (code) => {
-        console.log(\`Lab server exited with code: \${code}\`);
+        console.log(`Lab server exited with code: ${code}`);
     });
 }
 

@@ -1,5 +1,12 @@
 # Organization Management Service Configuration
 
+hydra:
+  run:
+    dir: /tmp/hydra_outputs
+  output_subdir: null
+  job:
+    chdir: false
+
 server:
   host: "0.0.0.0"
   port: 8008

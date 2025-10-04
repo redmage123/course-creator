@@ -27,13 +27,14 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../../services/user-management'))
 
-from models.user import User, UserCreate, UserUpdate, UserResponse, UserRole, UserSession
-from models.common import BaseModel, ErrorResponse, SuccessResponse
-from auth.password_manager import PasswordManager
-from auth.jwt_manager import JWTManager
-from auth.session_manager import SessionManager
-from repositories.user_repository import UserRepository
-from services.user_service import UserService
+from models.user import User, UserCreate, UserUpdate, UserRole, UserProfile, UserStats
+# Note: UserResponse and UserSession not in models, using User and UserProfile instead
+# from models.common import BaseModel, ErrorResponse, SuccessResponse
+# from auth.password_manager import PasswordManager
+# from auth.jwt_manager import JWTManager
+# from auth.session_manager import SessionManager
+# from repositories.user_repository import UserRepository
+# from services.user_service import UserService
 
 
 class TestUserModels:

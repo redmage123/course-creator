@@ -150,16 +150,30 @@ class TestStudentAccessControl:
         """Test that students cannot access courses after end date"""
         if access_control_service is None:
             pytest.skip("StudentAccessControlService not implemented yet")
-        
+
         student_id = sample_student['id']
         course_instance = sample_course_instances['past_course']
-        
+
+        # Mock database response for enrollment with completed course
+        access_control_service.db_pool.fetch.return_value = [{
+            'student_id': student_id,
+            'enrolled_at': datetime.now(),
+            'enrollment_status': 'enrolled',
+            'id': course_instance['id'],
+            'course_id': course_instance['course_id'],
+            'start_date': course_instance['start_date'],
+            'end_date': course_instance['end_date'],
+            'status': course_instance['status'],
+            'timezone': 'UTC',
+            'title': course_instance['title']
+        }]
+
         # Act
         access_result = await access_control_service.check_course_access(
             student_id=student_id,
             course_instance_id=course_instance['id']
         )
-        
+
         # Assert
         assert access_result['has_access'] == False
         assert access_result['reason'] == 'course_completed'
@@ -230,7 +244,9 @@ class TestStudentAccessControl:
         sql_query = call_args[0][0]
         assert "enrollments" in sql_query
         assert "course_instances" in sql_query
-        assert "start_date <= $2 AND end_date >= $2" in sql_query  # Current time check
+        # Check for time-based filtering (may have schema prefix)
+        assert ("start_date <= $2" in sql_query and "end_date >= $2" in sql_query) or \
+               ("ci.start_date <= $2" in sql_query and "ci.end_date >= $2" in sql_query)
     
     @pytest.mark.asyncio
     async def test_get_upcoming_courses_for_student(self, access_control_service, sample_student):
@@ -267,11 +283,11 @@ class TestStudentAccessControl:
         """Test course access with grace period for late joiners"""
         if access_control_service is None:
             pytest.skip("StudentAccessControlService not implemented yet")
-        
+
         # Arrange
         student_id = sample_student['id']
         current_time = datetime.now()
-        
+
         # Course that started 2 hours ago (within grace period)
         course_with_grace = {
             'id': str(uuid.uuid4()),
@@ -281,14 +297,28 @@ class TestStudentAccessControl:
             'status': 'active',
             'grace_period_hours': 24  # 24 hour grace period
         }
-        
+
+        # Mock database response for enrollment
+        access_control_service.db_pool.fetch.return_value = [{
+            'student_id': student_id,
+            'enrolled_at': datetime.now(),
+            'enrollment_status': 'enrolled',
+            'id': course_with_grace['id'],
+            'course_id': course_with_grace['course_id'],
+            'start_date': course_with_grace['start_date'],
+            'end_date': course_with_grace['end_date'],
+            'status': course_with_grace['status'],
+            'timezone': 'UTC',
+            'title': 'Grace Period Course'
+        }]
+
         # Act
         access_result = await access_control_service.check_course_access(
             student_id=student_id,
             course_instance_id=course_with_grace['id'],
             grace_period_hours=24
         )
-        
+
         # Assert
         assert access_result['has_access'] == True
         assert access_result['reason'] == 'course_active'
@@ -329,22 +359,36 @@ class TestStudentAccessControl:
         """Test that course access attempts are logged for audit purposes"""
         if access_control_service is None:
             pytest.skip("StudentAccessControlService not implemented yet")
-        
+
         # Arrange
         student_id = sample_student['id']
         course_instance = sample_course_instances['active_course']
-        
+
+        # Mock database response for enrollment
+        access_control_service.db_pool.fetch.return_value = [{
+            'student_id': student_id,
+            'enrolled_at': datetime.now(),
+            'enrollment_status': 'enrolled',
+            'id': course_instance['id'],
+            'course_id': course_instance['course_id'],
+            'start_date': course_instance['start_date'],
+            'end_date': course_instance['end_date'],
+            'status': course_instance['status'],
+            'timezone': 'UTC',
+            'title': course_instance['title']
+        }]
+
         # Act
         access_result = await access_control_service.check_course_access(
             student_id=student_id,
             course_instance_id=course_instance['id'],
             log_access=True
         )
-        
+
         # Assert - Verify logging was called
         log_calls = access_control_service.db_pool.execute.call_args_list
         access_log_call = [call for call in log_calls if "INSERT INTO access_logs" in str(call)][0]
-        
+
         assert student_id in str(access_log_call)
         assert course_instance['id'] in str(access_log_call)
     
@@ -425,24 +469,40 @@ class TestStudentAccessControl:
         """Test that access control respects timezone differences"""
         if access_control_service is None:
             pytest.skip("StudentAccessControlService not implemented yet")
-        
+
         # Arrange
         student_id = sample_student['id']
-        
+
         # Course in different timezone
         course_with_timezone = {
             'id': str(uuid.uuid4()),
+            'course_id': str(uuid.uuid4()),
             'start_date': datetime.now(),
             'end_date': datetime.now() + timedelta(days=14),
-            'timezone': 'America/New_York'
+            'timezone': 'America/New_York',
+            'status': 'active'
         }
-        
+
+        # Mock database response for enrollment
+        access_control_service.db_pool.fetch.return_value = [{
+            'student_id': student_id,
+            'enrolled_at': datetime.now(),
+            'enrollment_status': 'enrolled',
+            'id': course_with_timezone['id'],
+            'course_id': course_with_timezone['course_id'],
+            'start_date': course_with_timezone['start_date'],
+            'end_date': course_with_timezone['end_date'],
+            'status': course_with_timezone['status'],
+            'timezone': course_with_timezone['timezone'],
+            'title': 'Timezone Test Course'
+        }]
+
         # Act
         access_result = await access_control_service.check_course_access(
             student_id=student_id,
             course_instance_id=course_with_timezone['id'],
             user_timezone='America/Los_Angeles'
         )
-        
+
         # Assert - Should handle timezone conversion properly
         assert 'timezone' in access_result or access_result['has_access'] in [True, False]

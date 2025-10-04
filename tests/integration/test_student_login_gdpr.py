@@ -96,12 +96,17 @@ class TestStudentLoginGDPRCompliance:
         analytics_calls = []
         
         # Mock analytics service
-        async def mock_analytics_post(url, json_data, headers):
-            analytics_calls.append((url, json.loads(json_data)))
+        async def mock_analytics_post(url, json=None, headers=None):
+            analytics_calls.append((url, json))
             return Mock(status_code=200)
-        
-        with patch('httpx.AsyncClient') as mock_client:
-            mock_client.return_value.__aenter__.return_value.post = mock_analytics_post
+
+        # Create proper async HTTP client mock
+        mock_http_client = AsyncMock()
+        mock_http_client.post = mock_analytics_post
+
+        with patch('httpx.AsyncClient') as mock_client_class:
+            mock_client_class.return_value.__aenter__.return_value = mock_http_client
+            mock_client_class.return_value.__aexit__.return_value = AsyncMock()
             
             # Import and test the actual function
             from routes import _log_student_login_analytics
@@ -142,14 +147,19 @@ class TestStudentLoginGDPRCompliance:
         login_time = datetime.utcnow()
         
         notification_calls = []
-        
+
         # Mock course management service
-        async def mock_notification_post(url, json_data, headers):
-            notification_calls.append((url, json.loads(json_data)))
+        async def mock_notification_post(url, json=None, headers=None):
+            notification_calls.append((url, json))
             return Mock(status_code=200)
-        
-        with patch('httpx.AsyncClient') as mock_client:
-            mock_client.return_value.__aenter__.return_value.post = mock_notification_post
+
+        # Create proper async HTTP client mock
+        mock_http_client = AsyncMock()
+        mock_http_client.post = mock_notification_post
+
+        with patch('httpx.AsyncClient') as mock_client_class:
+            mock_client_class.return_value.__aenter__.return_value = mock_http_client
+            mock_client_class.return_value.__aexit__.return_value = AsyncMock()
             
             # Import and test the actual function
             from routes import _notify_instructor_student_login
@@ -226,14 +236,19 @@ class TestStudentLoginGDPRCompliance:
     async def test_data_retention_compliance(self):
         """Test that data retention policies are properly communicated."""
         # Arrange
-        with patch('httpx.AsyncClient') as mock_client:
-            posted_data = []
-            
-            async def capture_post(url, json_data, headers):
-                posted_data.append(json.loads(json_data))
-                return Mock(status_code=200)
-            
-            mock_client.return_value.__aenter__.return_value.post = capture_post
+        posted_data = []
+
+        async def capture_post(url, json=None, headers=None):
+            posted_data.append(json)
+            return Mock(status_code=200)
+
+        # Create proper async HTTP client mock
+        mock_http_client = AsyncMock()
+        mock_http_client.post = capture_post
+
+        with patch('httpx.AsyncClient') as mock_client_class:
+            mock_client_class.return_value.__aenter__.return_value = mock_http_client
+            mock_client_class.return_value.__aexit__.return_value = AsyncMock()
             
             # Import and test the actual functions
             from routes import _log_student_login_analytics, _notify_instructor_student_login
@@ -359,14 +374,19 @@ class TestStudentLoginServiceIntegration:
         }
         
         # Mock service calls
-        with patch('httpx.AsyncClient') as mock_http_client:
-            service_calls = []
-            
-            async def track_service_calls(url, json_data, headers):
-                service_calls.append((url, json.loads(json_data)))
-                return Mock(status_code=200)
-            
-            mock_http_client.return_value.__aenter__.return_value.post = track_service_calls
+        service_calls = []
+
+        async def track_service_calls(url, json=None, headers=None):
+            service_calls.append((url, json))
+            return Mock(status_code=200)
+
+        # Create proper async HTTP client mock
+        mock_http_client = AsyncMock()
+        mock_http_client.post = track_service_calls
+
+        with patch('httpx.AsyncClient') as mock_client_class:
+            mock_client_class.return_value.__aenter__.return_value = mock_http_client
+            mock_client_class.return_value.__aexit__.return_value = AsyncMock()
             
             # Simulate the complete login flow
             login_request = StudentLoginRequest(
@@ -423,14 +443,19 @@ class TestStudentLoginServiceIntegration:
     async def test_partial_consent_service_integration(self):
         """Test service integration with partial consent (analytics only)."""
         # Arrange
-        with patch('httpx.AsyncClient') as mock_client:
-            service_calls = []
-            
-            async def track_calls(url, json_data, headers):
-                service_calls.append(url)
-                return Mock(status_code=200)
-            
-            mock_client.return_value.__aenter__.return_value.post = track_calls
+        service_calls = []
+
+        async def track_calls(url, json=None, headers=None):
+            service_calls.append(url)
+            return Mock(status_code=200)
+
+        # Create proper async HTTP client mock
+        mock_http_client = AsyncMock()
+        mock_http_client.post = track_calls
+
+        with patch('httpx.AsyncClient') as mock_client_class:
+            mock_client_class.return_value.__aenter__.return_value = mock_http_client
+            mock_client_class.return_value.__aexit__.return_value = AsyncMock()
             
             # Simulate login with analytics consent only
             from routes import _log_student_login_analytics, _notify_instructor_student_login

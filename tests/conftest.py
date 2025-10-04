@@ -7,6 +7,7 @@ test utilities.
 """
 
 import pytest
+import pytest_asyncio
 import asyncio
 import os
 import sys
@@ -17,12 +18,24 @@ from datetime import datetime, timedelta
 import uuid
 import json
 
-# Add services to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../services/user-management'))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../services/course-management'))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../services/content-storage'))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../services/course-generator'))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../services/content-management'))
+# Add ALL services to path for imports
+service_paths = [
+    'analytics',
+    'content-management',
+    'content-storage',
+    'course-generator',
+    'course-management',
+    'demo-service',
+    'lab-manager',
+    'organization-management',
+    'rag-service',
+    'user-management'
+]
+
+for service in service_paths:
+    service_path = os.path.join(os.path.dirname(__file__), f'../services/{service}')
+    if os.path.exists(service_path):
+        sys.path.insert(0, service_path)
 
 
 @pytest.fixture(scope="session")
@@ -675,3 +688,85 @@ pytest.assert_valid_uuid = assert_valid_uuid
 pytest.assert_valid_email = assert_valid_email
 pytest.assert_valid_datetime = assert_valid_datetime
 pytest.TestUtils = TestUtils
+
+
+@pytest_asyncio.fixture
+async def db_connection():
+    """
+    Create a database connection for integration tests.
+
+    BUSINESS CONTEXT:
+    Integration tests need direct database access to create
+    test data and verify database operations.
+    """
+    import asyncpg
+
+    # Get database connection parameters from environment
+    db_host = os.getenv('DB_HOST', 'localhost')
+    db_port = int(os.getenv('DB_PORT', '5432'))
+    db_name = os.getenv('DB_NAME', 'course_creator')
+    db_user = os.getenv('DB_USER', 'course_creator_user')
+    db_password = os.getenv('DB_PASSWORD', 'course_creator_password')
+
+    # Create connection
+    conn = await asyncpg.connect(
+        host=db_host,
+        port=db_port,
+        database=db_name,
+        user=db_user,
+        password=db_password
+    )
+
+    yield conn
+
+    # Close connection
+    await conn.close()
+
+
+@pytest_asyncio.fixture
+async def api_client():
+    """
+    Create an HTTP client for API integration tests.
+
+    BUSINESS CONTEXT:
+    Integration tests need to make real HTTP requests to
+    test the complete request/response cycle.
+    """
+    import httpx
+
+    # Get API base URL from environment
+    base_url = os.getenv('API_BASE_URL', 'https://localhost:8008')
+
+    # Create async HTTP client with SSL verification disabled for testing
+    async with httpx.AsyncClient(
+        base_url=base_url,
+        verify=False,  # Disable SSL verification for self-signed certificates
+        timeout=30.0
+    ) as client:
+        yield client
+
+
+@pytest.fixture
+def site_admin_token():
+    """
+    Create a mock site admin authentication token.
+
+    BUSINESS CONTEXT:
+    Many API endpoints require site admin permissions,
+    so tests need a valid authentication token.
+    """
+    # Mock token format used in development
+    # In production, this would be a real JWT token
+    return "mock-token-site-admin-id"
+
+
+@pytest.fixture
+def instructor_token():
+    """Create a mock instructor authentication token."""
+    return "mock-token-instructor-id"
+
+
+@pytest.fixture
+def student_token():
+    """Create a mock student authentication token."""
+    return "mock-token-student-id"

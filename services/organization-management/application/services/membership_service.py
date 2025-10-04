@@ -264,32 +264,12 @@ class MembershipService:
         organization_id: UUID,
         role_type: Optional[RoleType] = None
     ) -> List[Dict]:
-        """Get organization members with user details"""
+        """Get organization members"""
         try:
-            memberships = await self._organization_dao.get_organization_memberships(
-                organization_id, role_type
+            memberships = await self._organization_dao.get_organization_members(
+                str(organization_id)
             )
-
-            members = []
-            for membership in memberships:
-                user = await self._organization_dao.get_by_id(membership.user_id)
-                if user:
-                    members.append({
-                        "membership_id": str(membership.id),
-                        "user_id": str(user.id),
-                        "email": user.email,
-                        "name": user.name,
-                        "role_type": membership.role.role_type.value,
-                        "permissions": [p.value for p in membership.role.permissions],
-                        "project_ids": [str(pid) for pid in membership.role.project_ids],
-                        "track_ids": [str(tid) for tid in membership.role.track_ids],
-                        "status": membership.status,
-                        "invited_at": membership.invited_at.isoformat(),
-                        "accepted_at": membership.accepted_at.isoformat() if membership.accepted_at else None
-                    })
-
-            return members
-
+            return memberships
         except Exception as e:
             self._logger.error(f"Failed to get organization members: {e}")
             raise

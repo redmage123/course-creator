@@ -17,6 +17,11 @@ RAG INTEGRATION STRATEGY:
 - Module content generation using RAG-retrieved contextual knowledge
 - Learning from successful content patterns and user feedback
 - Quality scoring and continuous improvement of AI-generated content
+
+EXCEPTION HANDLING:
+All exceptions are wrapped in custom exception classes to provide detailed context
+and proper error tracking. Generic exceptions are never used - all errors are
+classified and contextualized for better debugging and monitoring.
 """
 
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks, Query
@@ -28,6 +33,21 @@ import asyncio
 
 # Import dependencies and services
 from app_dependencies import get_organization_service, get_current_user, require_org_admin, require_instructor_or_admin
+
+# Import custom exceptions for proper error handling
+from exceptions import (
+    CourseException,
+    CourseNotFoundException,
+    CourseValidationException,
+    ContentException,
+    ContentNotFoundException,
+    ValidationException,
+    DatabaseException,
+    ExternalServiceException,
+    AIServiceException,
+    RAGException,
+    APIException
+)
 from application.services.organization_service import OrganizationService
 
 # Import RAG integration for enhanced content generation
@@ -225,9 +245,25 @@ async def create_project(
             ai_planning_applied=rag_applied
         )
     
-    except Exception as e:
-        logging.error(f"Error creating project: {str(e)}")
+    except CourseValidationException as e:
+        logging.error(f"Project validation error: {e.message}", extra=e.to_dict())
+        raise HTTPException(status_code=400, detail=e.message)
+    except DatabaseException as e:
+        logging.error(f"Database error creating project: {e.message}", extra=e.to_dict())
+        raise HTTPException(status_code=500, detail="Failed to create project due to database error")
+    except RAGException as e:
+        logging.warning(f"RAG service error during project creation: {e.message}", extra=e.to_dict())
+        # Continue without RAG suggestions if RAG fails
         raise HTTPException(status_code=500, detail="Failed to create project")
+    except Exception as e:
+        logging.exception(f"Unexpected error creating project: {str(e)}")
+        wrapped_error = CourseException(
+            message="Failed to create project",
+            error_code="PROJECT_CREATION_ERROR",
+            details={"error_type": type(e).__name__},
+            original_exception=e
+        )
+        raise HTTPException(status_code=500, detail=wrapped_error.message)
 
 @router.get("/organizations/{org_id}/projects", response_model=List[ProjectResponse])
 async def list_projects(
@@ -267,9 +303,18 @@ async def list_projects(
         
         return mock_projects[skip:skip + limit]
     
+    except DatabaseException as e:
+        logging.error(f"Database error listing projects: {e.message}", extra=e.to_dict())
+        raise HTTPException(status_code=500, detail="Failed to list projects due to database error")
     except Exception as e:
-        logging.error(f"Error listing projects: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to list projects")
+        logging.exception(f"Unexpected error listing projects: {str(e)}")
+        wrapped_error = CourseException(
+            message="Failed to list projects",
+            error_code="PROJECT_LIST_ERROR",
+            details={"organization_id": str(org_id), "error_type": type(e).__name__},
+            original_exception=e
+        )
+        raise HTTPException(status_code=500, detail=wrapped_error.message)
 
 @router.get("/projects/{project_id}", response_model=ProjectResponse)
 async def get_project(
@@ -286,9 +331,21 @@ async def get_project(
 
     except HTTPException:
         raise
+    except CourseNotFoundException as e:
+        logging.error(f"Project not found: {e.message}", extra=e.to_dict())
+        raise HTTPException(status_code=404, detail=e.message)
+    except DatabaseException as e:
+        logging.error(f"Database error getting project: {e.message}", extra=e.to_dict())
+        raise HTTPException(status_code=500, detail="Failed to retrieve project due to database error")
     except Exception as e:
-        logging.error(f"Error getting project {project_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve project: {str(e)}")
+        logging.exception(f"Unexpected error getting project {project_id}: {str(e)}")
+        wrapped_error = CourseException(
+            message="Failed to retrieve project",
+            error_code="PROJECT_RETRIEVAL_ERROR",
+            details={"project_id": str(project_id), "error_type": type(e).__name__},
+            original_exception=e
+        )
+        raise HTTPException(status_code=500, detail=wrapped_error.message)
 
 @router.post("/projects/{project_id}/publish")
 async def publish_project(
@@ -301,9 +358,21 @@ async def publish_project(
         logging.info(f"Publishing project {project_id}")
         return {"message": "Project published successfully", "status": "active"}
     
+    except CourseValidationException as e:
+        logging.error(f"Project validation error during publishing: {e.message}", extra=e.to_dict())
+        raise HTTPException(status_code=400, detail=e.message)
+    except DatabaseException as e:
+        logging.error(f"Database error publishing project: {e.message}", extra=e.to_dict())
+        raise HTTPException(status_code=500, detail="Failed to publish project due to database error")
     except Exception as e:
-        logging.error(f"Error publishing project {project_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to publish project")
+        logging.exception(f"Unexpected error publishing project {project_id}: {str(e)}")
+        wrapped_error = CourseException(
+            message="Failed to publish project",
+            error_code="PROJECT_PUBLISH_ERROR",
+            details={"project_id": str(project_id), "error_type": type(e).__name__},
+            original_exception=e
+        )
+        raise HTTPException(status_code=500, detail=wrapped_error.message)
 
 # =============================================================================
 # TRACK ENDPOINTS
@@ -338,9 +407,21 @@ async def create_track(
             module_count=0
         )
     
+    except CourseValidationException as e:
+        logging.error(f"Track validation error: {e.message}", extra=e.to_dict())
+        raise HTTPException(status_code=400, detail=e.message)
+    except DatabaseException as e:
+        logging.error(f"Database error creating track: {e.message}", extra=e.to_dict())
+        raise HTTPException(status_code=500, detail="Failed to create track due to database error")
     except Exception as e:
-        logging.error(f"Error creating track: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to create track")
+        logging.exception(f"Unexpected error creating track: {str(e)}")
+        wrapped_error = CourseException(
+            message="Failed to create track",
+            error_code="TRACK_CREATION_ERROR",
+            details={"project_id": str(project_id), "error_type": type(e).__name__},
+            original_exception=e
+        )
+        raise HTTPException(status_code=500, detail=wrapped_error.message)
 
 @router.get("/projects/{project_id}/tracks", response_model=List[TrackResponse])
 async def list_project_tracks(
@@ -594,8 +675,28 @@ async def query_rag_for_content_enhancement(description: str) -> str:
                 logging.warning(f"RAG query failed with status {response.status_code}")
                 return ""
     
+    except httpx.HTTPError as e:
+        # HTTP-specific errors from RAG service
+        wrapped_error = ExternalServiceException(
+            message="RAG service HTTP error",
+            error_code="RAG_HTTP_ERROR",
+            details={"error": str(e)},
+            original_exception=e
+        )
+        logging.error(f"RAG service HTTP error: {wrapped_error.message}", extra=wrapped_error.to_dict())
+        return ""
+    except RAGException as e:
+        logging.error(f"RAG service error: {e.message}", extra=e.to_dict())
+        return ""
     except Exception as e:
-        logging.error(f"Error querying RAG system: {str(e)}")
+        logging.exception(f"Unexpected error querying RAG system: {str(e)}")
+        wrapped_error = RAGException(
+            message="Failed to query RAG system",
+            error_code="RAG_QUERY_ERROR",
+            details={"error_type": type(e).__name__},
+            original_exception=e
+        )
+        logging.error(f"RAG query error: {wrapped_error.message}", extra=wrapped_error.to_dict())
         return ""
 
 def create_rag_enhanced_prompt(original_prompt: str, rag_context: str, content_type: str) -> str:

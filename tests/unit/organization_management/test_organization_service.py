@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 """
 Unit Tests for Organization Service
-Tests business logic, validation, and service operations for organization management
+
+BUSINESS REQUIREMENT:
+Tests business logic, validation, and service operations for multi-tenant
+organization management including hierarchy, member management, and settings.
+
+TECHNICAL IMPLEMENTATION:
+Tests service layer operations, business rules, and validation logic for
+organization management system.
 """
 import pytest
 import asyncio
@@ -10,12 +17,15 @@ from uuid import UUID, uuid4
 from datetime import datetime
 from typing import Dict, Any, Optional
 
-# Test the organization service business logic
-from services.organization_management.application.services.organization_service import OrganizationService
-from services.organization_management.domain.entities.organization import Organization
-from services.organization_management.domain.repositories.organization_repository import OrganizationRepository
-from services.organization_management.exceptions import (
-    OrganizationException, ValidationException, DuplicateResourceException,
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / 'services' / 'organization-management'))
+
+from application.services.organization_service import OrganizationService
+from domain.entities.organization import Organization
+from data_access.organization_dao import OrganizationManagementDAO
+from exceptions import (
+    OrganizationException, ValidationException,
     OrganizationNotFoundException
 )
 
@@ -28,7 +38,7 @@ class TestOrganizationService:
 
     def setup_method(self):
         """Set up test fixtures for each test method"""
-        self.mock_repository = Mock(spec=OrganizationRepository)
+        self.mock_repository = Mock(spec=OrganizationManagementDAO)
         self.organization_service = OrganizationService(self.mock_repository)
         
         # Sample organization data for testing
@@ -99,10 +109,10 @@ class TestOrganizationService:
         self.mock_repository.get_by_slug.return_value = existing_org
 
         # Act & Assert
-        with pytest.raises(DuplicateResourceException) as exc_info:
+        with pytest.raises(ValidationException) as exc_info:
             await self.organization_service.create_organization(self.sample_org_data)
-        
-        assert "slug already exists" in str(exc_info.value)
+
+        assert "slug already exists" in str(exc_info.value).lower()
         self.mock_repository.create.assert_not_called()
 
     def test_validate_professional_email_valid(self):
