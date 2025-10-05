@@ -33,9 +33,7 @@
                     <h1><i class="fas fa-graduation-cap"></i> Course Creator</h1>
                 </div>
                 <nav class="nav-links">
-                    <a href="#" onclick="returnToDashboard(); return false;" id="dashboard-link" style="display: none;">
-                        <i class="fas fa-tachometer-alt"></i> Dashboard
-                    </a>
+                    <!-- Dashboard link removed - using banner below instead -->
                 </nav>
                 <div class="account-section">
                     <div class="account-dropdown" id="accountDropdown" style="display: none;">
@@ -271,14 +269,9 @@
                 try {
                     const user = JSON.parse(currentUser);
                     const banner = document.getElementById('backToDashboardBanner');
-                    const dashboardLink = document.getElementById('dashboard-link');
 
                     if (banner) {
                         banner.style.display = 'block';
-                    }
-
-                    if (dashboardLink) {
-                        dashboardLink.style.display = 'inline-block';
                     }
                 } catch (e) {
                     console.error('Error parsing user data:', e);
