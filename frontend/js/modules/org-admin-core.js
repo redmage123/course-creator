@@ -42,24 +42,36 @@ let currentUser = null;
  * @returns {Promise<void>}
  */
 export async function initializeDashboard() {
+    console.log('🚀 initializeDashboard called');
     try {
         // Verify authentication
         const token = localStorage.getItem('authToken');
+        const sessionStart = localStorage.getItem('sessionStart');
+        const lastActivity = localStorage.getItem('lastActivity');
+
+        console.log('🔍 localStorage check:', {
+            hasToken: !!token,
+            hasSessionStart: !!sessionStart,
+            hasLastActivity: !!lastActivity,
+            tokenPreview: token ? token.substring(0, 20) + '...' : 'none'
+        });
+
         if (!token) {
+            console.log('❌ No token found, redirecting to login');
             window.location.href = '../index.html';
             return;
         }
 
-        // Initialize Auth module for session monitoring
-        // BUSINESS CONTEXT: Dashboard pages need active session monitoring to maintain security
-        // WHY: Session monitoring started on login page is lost when navigating to new page
-        // TECHNICAL: window.Auth is already an instantiated singleton (authManager)
-        if (window.Auth) {
-            console.log('🔐 Starting session monitoring on dashboard...');
-            // Session monitoring will use existing localStorage values (authToken, sessionStart, lastActivity)
+        // NOTE: Session monitoring is now started in the HTML inline script
+        // This ensures it starts immediately when Auth module loads
+        // The code below is kept as a backup in case HTML initialization fails
+        if (window.Auth && !window.Auth.sessionCheckInterval) {
+            console.log('🔐 Starting session monitoring from core (backup)...');
             window.Auth.startSessionMonitoring();
             window.Auth.activityTracker.start();
-            console.log('✅ Session monitoring active on dashboard');
+            console.log('✅ Session monitoring active (backup initialization)');
+        } else if (window.Auth && window.Auth.sessionCheckInterval) {
+            console.log('✅ Session monitoring already active from HTML initialization');
         } else {
             console.warn('⚠️ Auth module not available - session monitoring disabled');
         }

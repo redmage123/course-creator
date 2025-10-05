@@ -1932,7 +1932,7 @@
 
     <script src="../js/config-global.js"></script>
     <script type="module">
-        // Import Auth module
+        // Import Auth module and initialize it for dashboard
         import { Auth } from '../js/modules/auth.js';
         import { showNotification } from '../js/modules/notifications.js';
 
@@ -1941,6 +1941,21 @@
         window.showNotification = showNotification;
 
         console.log('✅ Auth module loaded and made global');
+        console.log('🔍 Auth object:', window.Auth);
+        console.log('🔍 Has startSessionMonitoring?', typeof window.Auth?.startSessionMonitoring);
+        console.log('🔍 Has activityTracker?', typeof window.Auth?.activityTracker);
+
+        // Start session monitoring immediately since Auth is already initialized
+        if (window.Auth) {
+            console.log('🔐 Starting session monitoring from dashboard HTML...');
+            try {
+                window.Auth.startSessionMonitoring();
+                window.Auth.activityTracker.start();
+                console.log('✅ Session monitoring started successfully');
+            } catch (error) {
+                console.error('❌ Error starting session monitoring:', error);
+            }
+        }
     </script>
     <!-- Modular JavaScript Architecture -->
     <script type="module" src="../js/org-admin-main.js"></script>
