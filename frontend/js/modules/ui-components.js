@@ -286,21 +286,25 @@ export class UIComponents {
                     padding: 4px;
                     border-radius: 4px;
                     transition: all 0.2s ease;
+                    z-index: 10;
+                    pointer-events: auto;
                 }
-                
+
                 .password-toggle:hover {
                     background: #f5f5f5;
                     color: #333;
                 }
-                
+
                 .password-input-container {
                     position: relative;
                     display: inline-block;
                     width: 100%;
                 }
-                
+
                 .password-input-container input {
                     padding-right: 40px;
+                    position: relative;
+                    z-index: 1;
                 }
             `;
             document.head.appendChild(style);
