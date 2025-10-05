@@ -93,20 +93,35 @@ export async function fetchOrganization(organizationId) {
  */
 export async function updateOrganization(organizationId, data) {
     try {
+        console.log('🔄 Updating organization:', organizationId);
+        console.log('📤 Update data:', data);
+        console.log('🌐 API endpoint:', `${ORG_API_BASE}/api/v1/organizations/${organizationId}`);
+
         const response = await fetch(`${ORG_API_BASE}/api/v1/organizations/${organizationId}`, {
             method: 'PUT',
             headers: await getAuthHeaders(),
             body: JSON.stringify(data)
         });
 
+        console.log('📡 Response status:', response.status, response.statusText);
+
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.detail || 'Failed to update organization');
+            const errorText = await response.text();
+            console.error('❌ API Error Response:', errorText);
+            let error;
+            try {
+                error = JSON.parse(errorText);
+            } catch (e) {
+                error = { detail: errorText };
+            }
+            throw new Error(error.detail || `Failed to update organization (${response.status})`);
         }
 
-        return await response.json();
+        const result = await response.json();
+        console.log('✅ Update successful:', result);
+        return result;
     } catch (error) {
-        console.error('Error updating organization:', error);
+        console.error('❌ Error updating organization:', error);
         showNotification(error.message, 'error');
         throw error;
     }

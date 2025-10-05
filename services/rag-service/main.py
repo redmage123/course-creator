@@ -63,7 +63,7 @@ from collections import Counter
 
 import chromadb
 from chromadb.config import Settings
-from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import openai
@@ -1241,9 +1241,9 @@ async def cross_encoder_rerank_endpoint(request: QueryRAGRequest):
 
 @app.post("/api/v1/rag/lora/train")
 async def train_lora_adapter_endpoint(
-    domain: str = Field(..., description="Domain name for adapter"),
-    num_epochs: int = Field(default=3, description="Training epochs"),
-    learning_rate: float = Field(default=2e-4, description="Learning rate")
+    domain: str = Query(..., description="Domain name for adapter"),
+    num_epochs: int = Query(default=3, description="Training epochs"),
+    learning_rate: float = Query(default=2e-4, description="Learning rate")
 ):
     """
     Train LoRA adapter for domain-specific fine-tuning
@@ -1303,9 +1303,9 @@ async def train_lora_adapter_endpoint(
 
 @app.post("/api/v1/rag/evaluate")
 async def evaluate_rag_endpoint(
-    test_case_query: str = Field(..., description="Test query"),
-    ground_truth_answer: str = Field(..., description="Expected answer"),
-    domain: str = Field(default="content_generation", description="Domain")
+    test_case_query: str = Query(..., description="Test query"),
+    ground_truth_answer: str = Query(..., description="Expected answer"),
+    domain: str = Query(default="content_generation", description="Domain")
 ):
     """
     Evaluate RAG system performance with comprehensive metrics

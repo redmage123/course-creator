@@ -44,6 +44,9 @@
 for port in 8000 8001 8003 8004 8005 8006 8007 8008; do
   curl -s http://localhost:$port/health | jq
 done
+
+# Health check NLP preprocessing (HTTPS)
+curl -k -s https://localhost:8013/health | jq
 ```
 
 ### Service Ports
@@ -58,6 +61,7 @@ done
 | Lab Manager | 8006 | http://localhost:8006/health |
 | Analytics | 8007 | http://localhost:8007/health |
 | Organization Management | 8008 | http://localhost:8008/health |
+| NLP Preprocessing | 8013 | https://localhost:8013/health |
 | Frontend | 3000 | http://localhost:3000 |
 | PostgreSQL | 5432 | N/A |
 | Redis | 6379 | N/A |

@@ -60,17 +60,24 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 async function initializeDashboard() {
     try {
+        console.log('📊 Initialize dashboard - step 1: show spinner');
         showLoadingSpinner();
-        
+
+        console.log('📊 Initialize dashboard - step 2: load org data');
         // Load organization data
         await loadOrganizationData();
-        
+        console.log('✅ Organization data loaded:', currentOrganization);
+
+        console.log('📊 Initialize dashboard - step 3: load tab content');
         // Load initial tab content
         await loadTabContent(currentTab);
-        
+        console.log('✅ Tab content loaded');
+
+        console.log('📊 Initialize dashboard - step 4: hide spinner');
         hideLoadingSpinner();
+        console.log('✅ Dashboard initialization complete');
     } catch (error) {
-        console.error('Error initializing dashboard:', error);
+        console.error('❌ Error initializing dashboard:', error);
         showNotification('Failed to load dashboard data', 'error');
         hideLoadingSpinner();
     }
@@ -383,6 +390,15 @@ function updateTracksStats(tracks) {
 }
 
 async function loadSettingsData() {
+    console.log('📋 Loading settings data');
+    console.log('Current organization:', currentOrganization);
+
+    // If currentOrganization is not loaded, reload it
+    if (!currentOrganization || !currentOrganization.id) {
+        console.log('⚠️ Organization data not loaded, reloading...');
+        await loadOrganizationData();
+    }
+
     // Populate settings form with current organization data
     document.getElementById('orgNameSetting').value = currentOrganization.name || '';
     document.getElementById('orgSlugSetting').value = currentOrganization.slug || '';
@@ -396,6 +412,8 @@ async function loadSettingsData() {
     document.getElementById('orgContactPhoneSetting').value = currentOrganization.contact_phone || '';
     document.getElementById('orgDomainSetting').value = currentOrganization.domain || '';
     document.getElementById('orgLogoSetting').value = currentOrganization.logo_url || '';
+
+    console.log('✅ Settings form populated');
 
     // Set the country code for the contact phone
     if (currentOrganization.contact_phone) {

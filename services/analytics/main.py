@@ -646,9 +646,9 @@ def create_app(config: DictConfig) -> FastAPI:
     try:
         from metadata_analytics_endpoints import router as metadata_analytics_router
         app.include_router(metadata_analytics_router)
-        logger.info("Metadata analytics endpoints integrated successfully")
+        print("Metadata analytics endpoints integrated successfully")
     except ImportError as e:
-        logger.warning(f"Metadata analytics endpoints not available: {e}")
+        print(f"Metadata analytics endpoints not available: {e}")
 
     # ========================================
     # Core Service Endpoints

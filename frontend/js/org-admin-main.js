@@ -24,6 +24,8 @@ import * as Instructors from './modules/org-admin-instructors.js';
 import * as Students from './modules/org-admin-students.js';
 import * as Tracks from './modules/org-admin-tracks.js';
 import * as Settings from './modules/org-admin-settings.js';
+import * as TargetRoles from './modules/org-admin-target-roles.js';
+import * as AIAssistant from './modules/ai-assistant.js';
 
 // Import utilities (for potential direct use)
 import * as Utils from './modules/org-admin-utils.js';
@@ -66,7 +68,10 @@ window.OrgAdmin = {
         confirmDelete: Projects.confirmDeleteProject,
         filter: Projects.filterProjects,
         nextStep: Projects.nextProjectStep,
-        previousStep: Projects.previousProjectStep
+        previousStep: Projects.previousProjectStep,
+        regenerateAI: Projects.regenerateAISuggestions,
+        toggleChat: Projects.toggleAIChatPanel,
+        sendChatMessage: Projects.sendAIChatMessage
     },
 
     // Instructors module
@@ -119,6 +124,17 @@ window.OrgAdmin = {
         resetDefaults: Settings.resetToDefaults
     },
 
+    // Target Roles module
+    TargetRoles: {
+        get: TargetRoles.getTargetRoles,
+        add: TargetRoles.addTargetRole,
+        update: TargetRoles.updateTargetRole,
+        delete: TargetRoles.deleteTargetRole,
+        reset: TargetRoles.resetTargetRolesToDefaults,
+        render: TargetRoles.renderTargetRolesList,
+        init: TargetRoles.initializeTargetRolesManagement
+    },
+
     // Analytics module (metadata-driven)
     Analytics: {
         loadContent: Analytics.loadContentAnalytics,
@@ -145,7 +161,17 @@ window.OrgAdmin = {
     },
 
     // Metadata client (exposed for direct access)
-    Metadata: metadataClient
+    Metadata: metadataClient,
+
+    // AI Assistant (context-aware with RAG and web search)
+    AI: {
+        initialize: AIAssistant.initializeAIAssistant,
+        sendMessage: AIAssistant.sendContextAwareMessage,
+        getContext: AIAssistant.getCurrentContext,
+        clearHistory: AIAssistant.clearConversationHistory,
+        exportHistory: AIAssistant.exportConversationHistory,
+        CONTEXTS: AIAssistant.CONTEXT_TYPES
+    }
 };
 
 /**
@@ -184,6 +210,41 @@ window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection:', event.reason);
     Utils.showNotification('An unexpected error occurred. Please try again.', 'error');
 });
+
+/**
+ * Global function aliases for HTML onclick handlers
+ *
+ * BUSINESS CONTEXT:
+ * HTML onclick attributes cannot access namespaced functions, so we create
+ * global aliases for commonly-used functions.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * These are simple wrapper functions that delegate to the namespaced versions
+ */
+// Modal functions
+window.showCreateProjectModal = () => window.OrgAdmin.Projects.showCreate();
+window.showAddInstructorModal = () => window.OrgAdmin.Instructors.showAdd();
+window.showAddStudentModal = () => window.OrgAdmin.Students.showAdd();
+window.showCreateTrackModal = () => window.OrgAdmin.Tracks.showCreate();
+window.closeModal = (modalId) => window.OrgAdmin.Utils.closeModal(modalId);
+
+// Project wizard functions
+window.nextProjectStep = () => window.OrgAdmin.Projects.nextStep();
+window.previousProjectStep = () => window.OrgAdmin.Projects.previousStep();
+window.finalizeProjectCreation = () => window.OrgAdmin.Projects.submit();
+window.regenerateAISuggestions = () => window.OrgAdmin.Projects.regenerateAI();
+window.toggleAIChatPanel = () => window.OrgAdmin.Projects.toggleChat();
+window.sendAIChatMessage = () => window.OrgAdmin.Projects.sendChatMessage();
+
+// Target roles functions
+window.deleteTargetRole = (roleName) => window.OrgAdmin.TargetRoles.delete(roleName);
+window.resetTargetRolesToDefaults = () => window.OrgAdmin.TargetRoles.reset();
+
+// Auth function
+window.logout = () => {
+    localStorage.removeItem('authToken');
+    window.location.href = '../index.html';
+};
 
 // Export for potential module-based usage
 export { initializeDashboard };

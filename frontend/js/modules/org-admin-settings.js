@@ -40,6 +40,42 @@ let currentOrganizationData = null;
 export function initializeSettingsManagement(organizationId) {
     currentOrganizationId = organizationId;
     console.log('Settings management initialized for organization:', organizationId);
+
+    // Set up form submit handlers
+    setupFormHandlers();
+}
+
+/**
+ * Setup form event handlers
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * Attaches submit handlers to all settings forms
+ */
+function setupFormHandlers() {
+    console.log('📋 Setting up settings form handlers');
+
+    // Main settings form
+    const settingsForm = document.getElementById('orgSettingsForm');
+    if (settingsForm) {
+        settingsForm.addEventListener('submit', saveOrganizationProfile);
+        console.log('✅ Settings form submit handler attached');
+    } else {
+        console.warn('⚠️ Settings form not found (will try again when tab loads)');
+    }
+
+    // Preferences form (if separate)
+    const preferencesForm = document.getElementById('orgPreferencesForm');
+    if (preferencesForm) {
+        preferencesForm.addEventListener('submit', savePreferences);
+        console.log('✅ Preferences form submit handler attached');
+    }
+
+    // Logo upload input
+    const logoInput = document.getElementById('settingsOrgLogoFile');
+    if (logoInput) {
+        logoInput.addEventListener('change', uploadLogo);
+        console.log('✅ Logo upload handler attached');
+    }
 }
 
 /**
@@ -52,7 +88,12 @@ export function initializeSettingsManagement(organizationId) {
  */
 export async function loadSettingsData() {
     try {
+        console.log('📋 Loading settings data for org:', currentOrganizationId);
         currentOrganizationData = await fetchOrganization(currentOrganizationId);
+        console.log('✅ Organization data fetched:', currentOrganizationData);
+
+        // Re-attach form handlers (in case tab was just loaded)
+        setupFormHandlers();
 
         // Populate settings forms
         populateOrganizationProfileForm(currentOrganizationData);
@@ -60,8 +101,15 @@ export async function loadSettingsData() {
         populateBrandingSettings(currentOrganizationData);
         populatePreferences(currentOrganizationData);
 
+        // Initialize target roles management
+        if (window.OrgAdmin?.TargetRoles?.init) {
+            await window.OrgAdmin.TargetRoles.init(currentOrganizationId, currentOrganizationData);
+        }
+
+        console.log('✅ Settings forms populated');
+
     } catch (error) {
-        console.error('Error loading settings:', error);
+        console.error('❌ Error loading settings:', error);
         showNotification('Failed to load settings', 'error');
     }
 }
@@ -78,29 +126,48 @@ export async function loadSettingsData() {
  * @param {Object} org - Organization data object
  */
 function populateOrganizationProfileForm(org) {
-    // Organization name
-    const nameInput = document.getElementById('settingsOrgName');
+    console.log('📝 Populating organization profile form');
+
+    // Try both naming conventions (settingsOrgName and orgNameSetting)
+    const nameInput = document.getElementById('settingsOrgName') || document.getElementById('orgNameSetting');
     if (nameInput) {
         nameInput.value = org.name || '';
+        console.log('✅ Set organization name:', org.name);
+    } else {
+        console.warn('⚠️ Name input not found (tried settingsOrgName and orgNameSetting)');
     }
 
     // Organization slug
-    const slugInput = document.getElementById('settingsOrgSlug');
+    const slugInput = document.getElementById('settingsOrgSlug') || document.getElementById('orgSlugSetting');
     if (slugInput) {
         slugInput.value = org.slug || '';
         slugInput.disabled = true; // Slug cannot be changed after creation
+        console.log('✅ Set organization slug:', org.slug);
+    } else {
+        console.warn('⚠️ Slug input not found');
     }
 
     // Description
-    const descInput = document.getElementById('settingsOrgDescription');
+    const descInput = document.getElementById('settingsOrgDescription') || document.getElementById('orgDescriptionSetting');
     if (descInput) {
         descInput.value = org.description || '';
+        console.log('✅ Set description');
+    } else {
+        console.warn('⚠️ Description input not found');
     }
 
-    // Domain
-    const domainInput = document.getElementById('settingsOrgDomain');
+    // Domain - ensure it has protocol for URL validation
+    const domainInput = document.getElementById('settingsOrgDomain') || document.getElementById('orgDomainSetting');
     if (domainInput) {
-        domainInput.value = org.domain || '';
+        let domainValue = org.domain || '';
+        // Add https:// if domain exists but doesn't have protocol
+        if (domainValue && !domainValue.startsWith('http://') && !domainValue.startsWith('https://')) {
+            domainValue = 'https://' + domainValue;
+        }
+        domainInput.value = domainValue;
+        console.log('✅ Set domain:', domainValue);
+    } else {
+        console.warn('⚠️ Domain input not found');
     }
 
     // Active status
@@ -122,22 +189,61 @@ function populateOrganizationProfileForm(org) {
  * @param {Object} org - Organization data object
  */
 function populateContactInformationForm(org) {
-    // Address
-    const addressInput = document.getElementById('settingsOrgAddress');
+    console.log('📞 Populating contact information form');
+
+    // Address - try both formats
+    const addressInput = document.getElementById('settingsOrgAddress') ||
+                        document.getElementById('orgStreetAddressSetting');
     if (addressInput) {
-        addressInput.value = org.address || '';
+        addressInput.value = org.street_address || org.address || '';
+        console.log('✅ Set address');
+    } else {
+        console.warn('⚠️ Address input not found');
     }
 
-    // Phone
-    const phoneInput = document.getElementById('settingsOrgPhone');
+    // Phone - try both formats
+    const phoneInput = document.getElementById('settingsOrgPhone') ||
+                      document.getElementById('orgContactPhoneSetting');
     if (phoneInput) {
         phoneInput.value = org.contact_phone || '';
+        console.log('✅ Set phone:', org.contact_phone);
+    } else {
+        console.warn('⚠️ Phone input not found');
     }
 
-    // Email
-    const emailInput = document.getElementById('settingsOrgEmail');
+    // Email - try both formats
+    const emailInput = document.getElementById('settingsOrgEmail') ||
+                      document.getElementById('orgContactEmailSetting');
     if (emailInput) {
         emailInput.value = org.contact_email || '';
+        console.log('✅ Set email:', org.contact_email);
+    } else {
+        console.warn('⚠️ Email input not found');
+    }
+
+    // Additional address fields
+    const cityInput = document.getElementById('orgCitySetting');
+    if (cityInput) {
+        cityInput.value = org.city || '';
+        console.log('✅ Set city:', org.city);
+    }
+
+    const stateInput = document.getElementById('orgStateProvinceSetting');
+    if (stateInput) {
+        stateInput.value = org.state_province || '';
+        console.log('✅ Set state:', org.state_province);
+    }
+
+    const postalInput = document.getElementById('orgPostalCodeSetting');
+    if (postalInput) {
+        postalInput.value = org.postal_code || '';
+        console.log('✅ Set postal code:', org.postal_code);
+    }
+
+    const countryInput = document.getElementById('orgCountrySetting');
+    if (countryInput) {
+        countryInput.value = org.country || 'US';
+        console.log('✅ Set country:', org.country);
     }
 }
 
@@ -218,22 +324,53 @@ function populatePreferences(org) {
 export async function saveOrganizationProfile(event) {
     event.preventDefault();
 
+    console.log('💾 Saving organization profile...');
+
     try {
+        // Get values from form fields (try both naming conventions)
+        const nameField = document.getElementById('settingsOrgName') || document.getElementById('orgNameSetting');
+        const descField = document.getElementById('settingsOrgDescription') || document.getElementById('orgDescriptionSetting');
+        const domainField = document.getElementById('settingsOrgDomain') || document.getElementById('orgDomainSetting');
+        const streetField = document.getElementById('orgStreetAddressSetting');
+        const cityField = document.getElementById('orgCitySetting');
+        const stateField = document.getElementById('orgStateProvinceSetting');
+        const postalField = document.getElementById('orgPostalCodeSetting');
+        const countryField = document.getElementById('orgCountrySetting');
+        const phoneField = document.getElementById('settingsOrgPhone') || document.getElementById('orgContactPhoneSetting');
+        const emailField = document.getElementById('settingsOrgEmail') || document.getElementById('orgContactEmailSetting');
+
+        // Strip protocol from domain for API (backend expects just domain name)
+        let domainValue = domainField?.value || null;
+        if (domainValue) {
+            domainValue = domainValue.replace(/^https?:\/\//, '');
+        }
+
         const updateData = {
-            name: document.getElementById('settingsOrgName')?.value,
-            description: document.getElementById('settingsOrgDescription')?.value || null,
-            domain: document.getElementById('settingsOrgDomain')?.value || null,
-            is_active: document.getElementById('settingsOrgActive')?.checked ?? true
+            name: nameField?.value,
+            description: descField?.value || null,
+            domain: domainValue,
+            street_address: streetField?.value || null,
+            city: cityField?.value || null,
+            state_province: stateField?.value || null,
+            postal_code: postalField?.value || null,
+            country: countryField?.value || null,
+            contact_phone: phoneField?.value || null,
+            contact_email: emailField?.value || null
         };
+
+        console.log('📤 Sending update data:', updateData);
 
         await updateOrganization(currentOrganizationId, updateData);
         showNotification('Organization profile updated successfully', 'success');
+
+        console.log('✅ Organization profile saved');
 
         // Reload settings to reflect changes
         await loadSettingsData();
 
     } catch (error) {
-        console.error('Error saving organization profile:', error);
+        console.error('❌ Error saving organization profile:', error);
+        showNotification(`Failed to save: ${error.message}`, 'error');
     }
 }
 

@@ -14,6 +14,12 @@ import os
 
 from domain.entities.organization import Organization
 from data_access.organization_dao import OrganizationManagementDAO
+from exceptions import (
+    OrganizationNotFoundException,
+    OrganizationValidationException,
+    OrganizationException,
+    DatabaseException
+)
 
 
 class OrganizationService:
@@ -479,39 +485,96 @@ class OrganizationService:
                                   contact_phone: str = None, contact_email: str = None,
                                   settings: Dict[str, Any] = None,
                                   is_active: bool = None) -> Organization:
-        """Update organization"""
+        """
+        Update organization details.
+
+        Business Context:
+        Organization admins can update organization profile, contact information,
+        branding, and settings. Domain uniqueness is enforced across all organizations.
+
+        Technical Implementation:
+        Uses custom exceptions for proper error handling and validation.
+        Only updates fields that are explicitly provided (non-None).
+
+        Args:
+            organization_id: UUID of organization to update
+            name: Updated organization name
+            description: Updated description
+            logo_url: Updated logo URL
+            domain: Updated domain (must be unique)
+            address: Updated street address
+            contact_phone: Updated contact phone
+            contact_email: Updated contact email
+            settings: Updated settings dictionary
+            is_active: Updated active status
+
+        Returns:
+            Updated organization dict
+
+        Raises:
+            OrganizationNotFoundException: If organization_id not found
+            OrganizationValidationException: If domain conflicts with existing org
+            DatabaseException: If database operation fails
+        """
+        # Get existing organization
+        existing_org = await self._dao.get_organization_by_id(str(organization_id))
+        if not existing_org:
+            raise OrganizationNotFoundException(
+                message=f"Organization with ID {organization_id} not found",
+                error_code="ORGANIZATION_NOT_FOUND",
+                details={"organization_id": str(organization_id)}
+            )
+
+        # Check domain uniqueness if being changed
+        if domain and domain != existing_org.get('domain'):
+            if await self._dao.exists_by_domain(domain):
+                raise OrganizationValidationException(
+                    message=f"Organization with domain '{domain}' already exists",
+                    error_code="DUPLICATE_DOMAIN",
+                    details={"domain": domain, "organization_id": str(organization_id)}
+                )
+
+        # Build update data dict - only include non-None values
+        update_data = {}
+        if name is not None:
+            update_data['name'] = name
+        if description is not None:
+            update_data['description'] = description
+        if logo_url is not None:
+            update_data['logo_url'] = logo_url
+        if domain is not None:
+            update_data['domain'] = domain
+        if address is not None:
+            update_data['address'] = address
+        if contact_phone is not None:
+            update_data['contact_phone'] = contact_phone
+        if contact_email is not None:
+            update_data['contact_email'] = contact_email
+        if settings is not None:
+            update_data['settings'] = settings
+        if is_active is not None:
+            update_data['is_active'] = is_active
+
+        # Persist changes using DAO's update method
         try:
-            # Get existing organization
-            organization = await self._dao.get_by_id(organization_id)
-            if not organization:
-                raise ValueError(f"Organization with ID {organization_id} not found")
-
-            # Check domain uniqueness if being changed
-            if domain and domain != organization.domain:
-                if await self._dao.exists_by_domain(domain):
-                    raise ValueError(f"Organization with domain '{domain}' already exists")
-
-            # Update organization
-            organization.update_info(name, description, logo_url, None, domain, address, contact_phone, contact_email, settings)
-            if is_active is not None:
-                if is_active:
-                    organization.activate()
-                else:
-                    organization.deactivate()
-
-            # Validate updated organization
-            if not organization.is_valid():
-                raise ValueError("Invalid organization data")
-
-            # Persist changes
-            updated_organization = await self._dao.update(organization)
-
-            self._logger.info(f"Organization updated successfully: {organization.slug}")
+            updated_organization = await self._dao.update_organization(str(organization_id), update_data)
+            self._logger.info(f"Organization updated successfully: {organization_id}")
             return updated_organization
-
-        except Exception as e:
-            self._logger.error(f"Error updating organization {organization_id}: {str(e)}")
+        except DatabaseException:
+            # Re-raise DatabaseException from DAO
             raise
+        except (OrganizationNotFoundException, OrganizationValidationException):
+            # Re-raise validation exceptions
+            raise
+        except Exception as e:
+            # Wrap any other unexpected exceptions
+            self._logger.error(f"Unexpected error updating organization {organization_id}: {str(e)}")
+            raise OrganizationException(
+                message=f"Failed to update organization",
+                error_code="ORGANIZATION_UPDATE_ERROR",
+                details={"organization_id": str(organization_id)},
+                original_exception=e
+            )
 
     async def delete_organization(self, organization_id: UUID) -> bool:
         """Delete organization"""

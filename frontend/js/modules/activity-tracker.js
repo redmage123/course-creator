@@ -427,7 +427,7 @@ export class ActivityTracker {
         // GRACEFUL REDIRECT: Allow time for notification to be read
         // WHY: Immediate redirect prevents user from seeing the explanation
         setTimeout(() => {
-            window.location.href = 'html/index.html';  // Return to login page
+            window.location.href = window.location.pathname.includes('/html/') ? '../index.html' : 'index.html';
         }, 2000);  // 2-second delay for notification visibility
     }
 

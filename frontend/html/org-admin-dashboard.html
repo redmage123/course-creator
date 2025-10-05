@@ -51,6 +51,11 @@
             padding: 2rem;
             border-radius: 12px;
             margin-bottom: 2rem;
+            text-align: center !important;
+        }
+
+        .org-header h1 {
+            text-align: center !important;
         }
 
         .org-stats {
@@ -933,9 +938,8 @@
         <!-- Main Content -->
         <main class="main-content">
             <!-- Organization Header -->
-            <div class="org-header">
+            <div class="org-header" style="text-align: center; cursor: pointer;" onclick="document.querySelector('[data-tab=overview]').click()" title="Click to return to overview">
                 <h1 id="orgTitle">Organization Dashboard</h1>
-                <p id="orgDescription">Manage your organization's training programs and team members</p>
             </div>
 
             <!-- Overview Tab -->
@@ -1288,10 +1292,10 @@
                                 <small class="form-help">Professional business phone number</small>
                             </div>
                             <div class="form-group">
-                                <label for="orgDomainSetting">Website Domain</label>
-                                <input type="url" id="orgDomainSetting" name="domain" 
+                                <label for="orgDomainSetting">Website URL</label>
+                                <input type="url" id="orgDomainSetting" name="domain"
                                        placeholder="https://organization.com">
-                                <small class="form-help">Organization website URL</small>
+                                <small class="form-help">Organization website URL (must start with http:// or https://)</small>
                             </div>
                             <div class="form-group">
                                 <label for="orgLogoSetting">Logo URL</label>
@@ -1349,6 +1353,44 @@
                             </div>
                             <button type="submit" class="btn btn-primary">Save Preferences</button>
                         </form>
+                    </div>
+                </div>
+
+                <!-- Target Roles Management Section -->
+                <div style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border-color);">
+                    <h3>Target Roles Management</h3>
+                    <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+                        Manage the list of available target roles for projects. These roles will appear in the dropdown when creating new projects.
+                    </p>
+
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+                        <!-- Current Roles List -->
+                        <div>
+                            <h4>Current Target Roles</h4>
+                            <div id="targetRolesList" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; min-height: 300px; background: var(--hover-color);">
+                                <!-- Roles will be populated here -->
+                            </div>
+                        </div>
+
+                        <!-- Add New Role -->
+                        <div>
+                            <h4>Add New Role</h4>
+                            <form id="addTargetRoleForm" style="background: var(--card-background); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem;">
+                                <div class="form-group">
+                                    <label for="newTargetRole">Role Name</label>
+                                    <input type="text" id="newTargetRole" placeholder="e.g., Frontend Developer" required
+                                           style="width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 4px;">
+                                </div>
+                                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                                    ➕ Add Role
+                                </button>
+                            </form>
+
+                            <!-- Reset to Defaults -->
+                            <button type="button" onclick="resetTargetRolesToDefaults()" class="btn btn-secondary" style="width: 100%; margin-top: 1rem;">
+                                🔄 Reset to Defaults
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1431,8 +1473,19 @@
                         <small>This description will be used by AI to suggest relevant tracks and content</small>
                     </div>
                     <div class="form-group">
-                        <label for="projectTargetRoles">Target Roles (one per line)</label>
-                        <textarea id="projectTargetRoles" name="target_roles" placeholder="Application Developer&#10;Business Analyst&#10;Operations Engineer"></textarea>
+                        <label for="projectTargetRoles">Target Roles</label>
+                        <select id="projectTargetRoles" name="target_roles" multiple size="6" style="width: 100%; padding: 0.5rem;">
+                            <option value="Application Developer">Application Developer</option>
+                            <option value="Business Analyst">Business Analyst</option>
+                            <option value="Operations Engineer">Operations Engineer</option>
+                            <option value="Data Scientist">Data Scientist</option>
+                            <option value="DevOps Engineer">DevOps Engineer</option>
+                            <option value="QA Engineer">QA Engineer</option>
+                            <option value="System Administrator">System Administrator</option>
+                            <option value="Technical Architect">Technical Architect</option>
+                            <option value="Product Manager">Product Manager</option>
+                        </select>
+                        <small class="form-help">Hold Ctrl/Cmd to select multiple roles. Manage roles in Settings → Target Roles.</small>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div class="form-group">
@@ -1463,30 +1516,91 @@
             
             <!-- Step 2: AI-Enhanced Planning -->
             <div id="projectStep2" class="project-step">
-                <h3>AI-Enhanced Project Planning</h3>
-                <div id="ragLoadingIndicator" style="display: none;">
-                    <p>🤖 Analyzing your project description with AI...</p>
-                    <div class="loading-spinner"></div>
-                </div>
-                <div id="ragSuggestions" style="display: none;">
-                    <div class="ai-suggestions">
-                        <h4>📊 AI-Generated Insights</h4>
-                        <div id="projectInsights" class="insights-container">
-                            <!-- AI insights will be populated here -->
+                <div style="display: grid; grid-template-columns: 1fr 400px; gap: 1.5rem; height: 600px;">
+                    <!-- Main suggestions area -->
+                    <div style="overflow-y: auto; padding-right: 1rem;">
+                        <h3>AI-Enhanced Project Planning</h3>
+                        <div id="ragLoadingIndicator" style="display: none;">
+                            <p>🤖 Analyzing your project description with AI and RAG knowledge base...</p>
+                            <div class="loading-spinner"></div>
                         </div>
-                        
-                        <h4>🎯 Recommended Track Structure</h4>
-                        <div id="recommendedTracks" class="tracks-container">
-                            <!-- Recommended tracks will be populated here -->
-                        </div>
-                        
-                        <h4>📚 Suggested Learning Objectives</h4>
-                        <div id="suggestedObjectives" class="objectives-container">
-                            <!-- Learning objectives will be populated here -->
+                        <div id="ragSuggestions" style="display: none;">
+                            <div class="ai-suggestions">
+                                <h4>📊 AI-Generated Insights (RAG-Enhanced)</h4>
+                                <div id="projectInsights" class="insights-container">
+                                    <!-- AI insights will be populated here -->
+                                </div>
+
+                                <h4>🎯 Recommended Track Structure</h4>
+                                <div id="recommendedTracks" class="tracks-container">
+                                    <!-- Recommended tracks will be populated here -->
+                                </div>
+
+                                <h4>📚 Suggested Learning Objectives</h4>
+                                <div id="suggestedObjectives" class="objectives-container">
+                                    <!-- Learning objectives will be populated here -->
+                                </div>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Interactive chat panel -->
+                    <div id="aiChatPanel" style="border-left: 2px solid var(--border-color); padding-left: 1.5rem; display: flex; flex-direction: column;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h4 style="margin: 0;">💬 AI Assistant</h4>
+                            <button type="button" onclick="toggleAIChatPanel()" class="btn-icon"
+                                    style="background: none; border: none; cursor: pointer; font-size: 1.2rem;"
+                                    title="Minimize chat">
+                                ➖
+                            </button>
+                        </div>
+                        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1rem;">
+                            Ask questions or provide additional requirements for your project structure.
+                        </p>
+
+                        <!-- Chat messages -->
+                        <div id="aiChatMessages" style="flex: 1; overflow-y: auto; border: 1px solid var(--border-color);
+                                                         border-radius: 8px; padding: 1rem; margin-bottom: 1rem;
+                                                         background: var(--hover-color); max-height: 400px;">
+                            <div class="ai-message" style="margin-bottom: 1rem;">
+                                <strong style="color: var(--primary-color);">🤖 AI Assistant:</strong>
+                                <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem;">
+                                    Hello! I can help refine your project structure. Share any specific requirements,
+                                    preferences, or questions you have about the training program.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Chat input -->
+                        <div style="display: flex; gap: 0.5rem;">
+                            <textarea id="aiChatInput" placeholder="Type your message or suggestions..."
+                                      style="flex: 1; padding: 0.75rem; border: 1px solid var(--border-color);
+                                             border-radius: 4px; resize: none; min-height: 60px; max-height: 100px;"
+                                      onkeydown="if(event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendAIChatMessage(); }"></textarea>
+                            <button type="button" onclick="sendAIChatMessage()" class="btn btn-primary"
+                                    style="align-self: flex-end; white-space: nowrap;">
+                                📤 Send
+                            </button>
+                        </div>
+
+                        <!-- RAG Context indicator -->
+                        <div id="ragContextIndicator" style="margin-top: 0.5rem; font-size: 0.75rem;
+                                                              color: var(--text-muted); display: none;">
+                            <span style="color: var(--success-color);">✓</span> Using RAG knowledge base for context
+                        </div>
+                    </div>
+
+                    <!-- Minimized chat button (hidden initially) -->
+                    <div id="aiChatMinimized" style="display: none; position: fixed; right: 2rem; bottom: 2rem; z-index: 100;">
+                        <button type="button" onclick="toggleAIChatPanel()" class="btn btn-primary"
+                                style="padding: 1rem; border-radius: 50%; width: 60px; height: 60px;
+                                       box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                            💬
+                        </button>
+                    </div>
                 </div>
-                <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 2rem;">
+
+                <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem;">
                     <button type="button" class="btn btn-secondary" onclick="previousProjectStep()">Back</button>
                     <button type="button" class="btn btn-info" onclick="regenerateAISuggestions()">🔄 Regenerate Suggestions</button>
                     <button type="button" class="btn btn-primary" onclick="nextProjectStep()">Next: Select Tracks</button>

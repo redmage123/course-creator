@@ -115,7 +115,8 @@ const CONFIG = {
             COURSE_MANAGEMENT: `${protocol}://${host}:${this.PORTS.COURSE_MANAGEMENT}`,
             LAB_MANAGER: `${protocol}://${host}:${this.PORTS.LAB_MANAGER}`,
             ANALYTICS: `${protocol}://${host}:${this.PORTS.ANALYTICS}`,
-            ORGANIZATION: `${protocol}://${host}:${this.PORTS.ORGANIZATION}`
+            ORGANIZATION: `${protocol}://${host}:${this.PORTS.ORGANIZATION}`,
+            ORGANIZATION_MANAGEMENT: `${protocol}://${host}:${this.PORTS.ORGANIZATION}`  // Alias for org-admin-api.js
         };
     },
 

@@ -291,9 +291,10 @@
                     return;
                 }
 
+                console.log('Current user data:', currentUser);
                 const role = currentUser.role;
                 const username = currentUser.username;
-                const orgId = currentUser.organization_id;
+                const orgId = currentUser.organization_id || currentUser.org_id;
 
                 // Site admin - goes to site admin dashboard
                 if (username === 'admin') {

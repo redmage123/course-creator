@@ -119,7 +119,7 @@ export class InstructorDashboard {
         // WHY: Dashboard contains sensitive instructor tools requiring proper authorization
         if (!Auth.isAuthenticated() || !Auth.hasRole('instructor')) {
             // SECURITY REDIRECT: Send unauthorized users to login page
-            window.location.href = 'html/index.html';
+            window.location.href = window.location.pathname.includes('/html/') ? '../index.html' : 'index.html';
             return;
         }
 

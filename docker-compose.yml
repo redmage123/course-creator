@@ -593,6 +593,8 @@ services:
       - LOG_LEVEL=INFO
       - PYTHONPATH=/app:/app/.venv/lib/python3.12/site-packages
       - VIRTUAL_ENV=/app/.venv
+      - SSL_CERT_FILE=/app/ssl/nginx-selfsigned.crt
+      - SSL_KEY_FILE=/app/ssl/nginx-selfsigned.key
     ports:
       - "8011:8011"
     volumes:
@@ -606,7 +608,72 @@ services:
       - postgres
       - redis
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; r = requests.get('https://localhost:8011/health', verify=False); exit(0 if r.status_code == 200 else 1)"]
+      test: ["CMD", "python", "-c", "import warnings; warnings.filterwarnings('ignore'); import requests; r = requests.get('https://localhost:8011/', verify=False); exit(0 if r.status_code == 200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  knowledge-graph-service:
+    image: course-creator-knowledge-graph-service:latest
+    build:
+      context: ./services/knowledge-graph-service
+      dockerfile: Dockerfile
+      cache_from:
+        - course-creator-knowledge-graph-service:latest
+    env_file:
+      - .cc_env
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres_password
+      - DB_NAME=course_creator
+      - ENVIRONMENT=docker
+      - DOCKER_CONTAINER=true
+      - SERVICE_NAME=knowledge-graph-service
+      - LOG_LEVEL=INFO
+      - PYTHONPATH=/app
+      - SSL_CERT_FILE=/app/ssl/nginx-selfsigned.crt
+      - SSL_KEY_FILE=/app/ssl/nginx-selfsigned.key
+    ports:
+      - "8012:8012"
+    volumes:
+      - ./shared:/app/shared:ro
+      - ./logs:/var/log/course-creator
+      - ./ssl:/app/ssl:ro
+    networks:
+      - course-creator-network
+    depends_on:
+      - postgres
+    healthcheck:
+      test: ["CMD", "python", "-c", "import warnings; warnings.filterwarnings('ignore'); import requests; r = requests.get('https://localhost:8012/health', verify=False); exit(0 if r.status_code == 200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  nlp-preprocessing:
+    image: course-creator-nlp-preprocessing:latest
+    build:
+      context: ./services/nlp-preprocessing
+      dockerfile: Dockerfile
+      cache_from:
+        - course-creator-nlp-preprocessing:latest
+    environment:
+      - SERVICE_NAME=nlp-preprocessing
+      - LOG_LEVEL=INFO
+      - PYTHONPATH=/app
+    ports:
+      - "8013:8013"
+    volumes:
+      - ./ssl:/app/certs:ro
+      - ./logs:/var/log/course-creator
+    networks:
+      - course-creator-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import warnings; warnings.filterwarnings('ignore'); import requests; r = requests.get('https://localhost:8013/health', verify=False); exit(0 if r.status_code == 200 else 1)"]
       interval: 30s
       timeout: 10s
       retries: 3

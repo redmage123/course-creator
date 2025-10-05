@@ -100,6 +100,7 @@ class UserResponse(BaseModel):
     role: str
     status: str
     organization: Optional[str] = None
+    organization_id: Optional[str] = None  # Added for org admin dashboard navigation
     phone: Optional[str] = None
     timezone: Optional[str] = None
     language: str
@@ -290,11 +291,36 @@ def setup_auth_routes(app: FastAPI) -> None:
                     detail="Invalid credentials"
                 )
             
-            # Authentication successful - return simple token response  
-            # (session service temporarily disabled for DAO migration)
+            # Authentication successful - fetch organization_id if user is org admin
+            user_response = _user_to_response(user)
+
+            # Fetch organization_id for organization admins from organization_memberships table
+            if user.role.value in ['organization_admin', 'org_admin']:
+                try:
+                    # Get database connection pool from app state container
+                    pool = raw_request.app.state.container._connection_pool
+
+                    # Query organization_memberships to get organization_id
+                    # Note: asyncpg uses $1, $2 for parameters, not %s
+                    membership_query = """
+                        SELECT organization_id
+                        FROM course_creator.organization_memberships
+                        WHERE user_id = $1 AND is_active = true
+                        LIMIT 1
+                    """
+                    async with pool.acquire() as conn:
+                        result = await conn.fetchrow(membership_query, user.id)
+                        if result:
+                            user_response.organization_id = str(result['organization_id'])
+                            logger.info(f"✅ Found organization_id for {user.username}: {user_response.organization_id}")
+                        else:
+                            logger.warning(f"⚠️ No organization membership found for org admin: {user.username}")
+                except Exception as e:
+                    logger.error(f"❌ Error fetching organization_id: {e}")
+
             return TokenResponse(
                 access_token=f"mock-token-{user.id[:8]}",
-                user=_user_to_response(user)
+                user=user_response
             )
             
         except HTTPException:

@@ -136,14 +136,19 @@ export async function initializeDashboard() {
 function updateOrganizationHeader(organization) {
     console.log('updateOrganizationHeader called with:', organization);
 
-    // Update organization name
+    // Update main dashboard title with organization name
+    const orgTitleEl = document.getElementById('orgTitle');
+    if (orgTitleEl) {
+        orgTitleEl.textContent = `${organization.name} Organization Dashboard`;
+        console.log('Set organization title to:', orgTitleEl.textContent);
+    }
+
+    // Update organization name in sidebar (if exists)
     const orgNameEl = document.getElementById('organizationName');
     console.log('organizationName element:', orgNameEl);
     if (orgNameEl) {
         orgNameEl.textContent = organization.name;
         console.log('Set organization name to:', organization.name);
-    } else {
-        console.error('Element with id="organizationName" not found');
     }
 
     // Update organization domain

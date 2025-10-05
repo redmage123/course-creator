@@ -142,18 +142,21 @@ async def add_organization_member(
 @router.get("/organizations/{organization_id}/members", response_model=List[MemberResponse])
 async def get_organization_members(
     organization_id: UUID,
-    role_type: Optional[str] = None,
+    role: Optional[str] = None,  # Changed from role_type to match frontend
+    role_type: Optional[str] = None,  # Keep for backward compatibility
     current_user=Depends(get_current_user),
     membership_service: MembershipService = Depends(get_membership_service)
 ):
-    """Get organization members"""
+    """Get organization members filtered by role"""
     try:
         # Verify permissions
         await verify_permission(get_user_id(current_user), organization_id, Permission.MANAGE_ORGANIZATION)
 
+        # Use 'role' parameter if provided, otherwise fall back to 'role_type'
+        role_param = role or role_type
         role_filter = None
-        if role_type:
-            role_filter = RoleType(role_type)
+        if role_param:
+            role_filter = RoleType(role_param)
 
         members = await membership_service.get_organization_members(organization_id, role_filter)
         return [MemberResponse(**member) for member in members]

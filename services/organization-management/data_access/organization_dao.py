@@ -326,23 +326,23 @@ class OrganizationManagementDAO:
     async def update_organization_settings(self, org_id: str, settings: Dict[str, Any]) -> bool:
         """
         Update organization configuration settings.
-        
+
         Business Context:
         Organization settings control feature availability, branding, and
         operational parameters for the multi-tenant platform experience.
-        
+
         Args:
             org_id: Organization to update settings for
             settings: New settings configuration object
-            
+
         Returns:
             True if settings were updated successfully
         """
         try:
             async with self.db_pool.acquire() as conn:
                 result = await conn.execute(
-                    """UPDATE course_creator.organizations 
-                       SET settings = $1, updated_at = $2 
+                    """UPDATE course_creator.organizations
+                       SET settings = $1, updated_at = $2
                        WHERE id = $3""",
                     json.dumps(settings),
                     datetime.utcnow(),
@@ -356,7 +356,66 @@ class OrganizationManagementDAO:
                 details={"org_id": org_id},
                 original_exception=e
             )
-    
+
+    async def update_organization(self, org_id: str, update_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Update organization details with flexible field updates.
+
+        Business Context:
+        Organization admin can update various organization details like name,
+        description, contact information, domain, logo, etc.
+
+        Args:
+            org_id: Organization ID to update
+            update_data: Dictionary of fields to update (only non-None values)
+
+        Returns:
+            Updated organization record or None if not found
+        """
+        try:
+            # Build dynamic UPDATE query based on provided fields
+            set_clauses = []
+            params = []
+            param_count = 1
+
+            for field, value in update_data.items():
+                if field == 'settings':
+                    set_clauses.append(f"{field} = ${param_count}")
+                    params.append(json.dumps(value))
+                else:
+                    set_clauses.append(f"{field} = ${param_count}")
+                    params.append(value)
+                param_count += 1
+
+            # Add updated_at timestamp
+            set_clauses.append(f"updated_at = ${param_count}")
+            params.append(datetime.utcnow())
+            param_count += 1
+
+            # Add org_id as final parameter
+            params.append(UUID(org_id))
+
+            query = f"""
+                UPDATE course_creator.organizations
+                SET {', '.join(set_clauses)}
+                WHERE id = ${param_count}
+                RETURNING *
+            """
+
+            async with self.db_pool.acquire() as conn:
+                row = await conn.fetchrow(query, *params)
+                if row:
+                    return dict(row)
+                return None
+
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to update organization",
+                error_code="ORGANIZATION_UPDATE_ERROR",
+                details={"org_id": org_id, "update_data": update_data},
+                original_exception=e
+            )
+
     # ================================================================
     # USER LOOKUP QUERIES (for membership operations)
     # ================================================================

@@ -460,7 +460,7 @@ class App {
                 showNotification('Logged out successfully', 'success');
                 // CONTEXT-AWARE REDIRECT: Different pages need different logout behaviors
                 if (this.currentPage.includes('dashboard') || this.currentPage.includes('admin')) {
-                    window.location.href = 'html/index.html';  // Redirect admin/dashboard pages
+                    window.location.href = window.location.pathname.includes('/html/') ? '../index.html' : 'index.html';
                 } else {
                     // UPDATE UI IN-PLACE: For public pages, update navigation without redirect
                     Navigation.updateAccountSection();
