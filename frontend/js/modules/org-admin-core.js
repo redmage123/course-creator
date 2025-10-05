@@ -44,7 +44,7 @@ let currentUser = null;
 export async function initializeDashboard() {
     try {
         // Verify authentication
-        const token = localStorage.getItem('auth_token');
+        const token = localStorage.getItem('authToken');
         if (!token) {
             window.location.href = '../index.html';
             return;
@@ -299,8 +299,11 @@ function setupLogoutHandler() {
             // Confirm logout
             if (confirm('Are you sure you want to logout?')) {
                 // Clear authentication
-                localStorage.removeItem('auth_token');
-                localStorage.removeItem('user_data');
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('userEmail');
+                localStorage.removeItem('sessionStart');
+                localStorage.removeItem('lastActivity');
 
                 // Redirect to login
                 window.location.href = '../index.html';

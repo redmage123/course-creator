@@ -233,9 +233,11 @@ class SessionManager {
         // Clear session data
         localStorage.removeItem(SESSION_CONFIG.LAST_ACTIVITY_KEY);
         localStorage.removeItem(SESSION_CONFIG.SESSION_WARNING_SHOWN);
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('access_token');
+        localStorage.removeItem('authToken');
         localStorage.removeItem('currentUser');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('sessionStart');
+        localStorage.removeItem('lastActivity');
 
         // Show logout message
         alert('Your session has expired due to inactivity. Please log in again.');

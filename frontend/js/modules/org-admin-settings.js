@@ -373,7 +373,7 @@ export async function uploadLogo(event) {
         const response = await fetch('/api/v1/organizations/upload-logo', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
             },
             body: formData
         });
