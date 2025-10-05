@@ -460,6 +460,4 @@ class MetadataClient {
 const metadataClient = new MetadataClient();
 
 // Export for use in other modules
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { MetadataClient, metadataClient };
-}
+export { MetadataClient, metadataClient };
