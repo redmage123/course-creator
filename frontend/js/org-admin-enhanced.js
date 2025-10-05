@@ -9,6 +9,7 @@ import AccessibilityManager from './modules/accessibility-manager.js';
 import NavigationManager from './modules/navigation-manager.js';
 import DataVisualization from './modules/data-visualization.js';
 import OnboardingSystem from './modules/onboarding-system.js';
+import { safeSetHTML, escapeHtml, createSafeElement } from './security-utils.js';
 
 // Global logout function for logout button
 window.logout = async function() {

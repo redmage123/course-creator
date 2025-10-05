@@ -24,6 +24,7 @@ import { authManager } from './modules/auth.js';           // Authentication and
 import { labLifecycleManager } from './modules/lab-lifecycle.js'; // Lab container lifecycle management
 import StudentFileManager from './modules/student-file-manager.js'; // Student file operations
 import { metadataClient } from './metadata-client.js';     // Metadata service for intelligent search and recommendations
+import { safeSetHTML, escapeHtml, createSafeElement } from './security-utils.js'; // XSS protection utilities
 
 /**
  * DYNAMIC FEEDBACK MANAGER IMPORT
