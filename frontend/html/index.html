@@ -300,14 +300,20 @@
 
                 const role = currentUser.role;
                 const username = currentUser.username;
+                const orgId = currentUser.organization_id;
 
                 // Site admin - goes to site admin dashboard
                 if (username === 'admin') {
                     window.location.href = 'html/site-admin-dashboard.html';
                 }
-                // Organization admin - goes to org admin dashboard
+                // Organization admin - goes to org admin dashboard WITH org_id parameter
                 else if (role === 'organization_admin' || role === 'org_admin') {
-                    window.location.href = 'html/org-admin-dashboard.html';
+                    if (orgId) {
+                        window.location.href = `html/org-admin-dashboard.html?org_id=${orgId}`;
+                    } else {
+                        console.error('No organization_id found for org admin user');
+                        window.location.href = 'html/org-admin-dashboard.html';
+                    }
                 }
                 // Instructor - goes to instructor dashboard
                 else if (role === 'instructor') {
