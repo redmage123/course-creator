@@ -627,4 +627,5 @@ volumes:
 
 networks:
   course-creator-network:
+    name: course-creator_course-creator-network
     driver: bridge
