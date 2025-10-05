@@ -59,6 +59,9 @@ Located in `docs/features/`:
 - **[KNOWLEDGE_GRAPH_COMPLETE.md](docs/features/KNOWLEDGE_GRAPH_COMPLETE.md)** - Knowledge graph implementation
 - **[KNOWLEDGE_GRAPH_COMPLETE_SUMMARY.md](docs/features/KNOWLEDGE_GRAPH_COMPLETE_SUMMARY.md)** - Implementation summary
 
+### Performance Optimization
+- **[RUST_TRANSLATION_ANALYSIS.md](docs/features/RUST_TRANSLATION_ANALYSIS.md)** - Rust translation candidates and ROI analysis
+
 ### Other Features
 - **[COURSE_VIDEO_FEATURE.md](docs/features/COURSE_VIDEO_FEATURE.md)** - Video upload and linking
 - **[ACCESSIBILITY_IMPLEMENTATION_SUMMARY.md](docs/features/ACCESSIBILITY_IMPLEMENTATION_SUMMARY.md)** - Accessibility features
