@@ -108,6 +108,12 @@ function updateOrganizationHeader(organization) {
         orgNameEl.textContent = organization.name;
     }
 
+    // Update organization domain
+    const orgDomainEl = document.getElementById('organizationDomain');
+    if (orgDomainEl && organization.domain) {
+        orgDomainEl.textContent = organization.domain;
+    }
+
     // Update organization logo if present
     const orgLogoEl = document.getElementById('organizationLogo');
     if (orgLogoEl && organization.logo_url) {

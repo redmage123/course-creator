@@ -186,4 +186,5 @@ window.addEventListener('unhandledrejection', (event) => {
 });
 
 // Export for potential module-based usage
-export { initializeDashboard, OrgAdmin };
+export { initializeDashboard };
+export const OrgAdmin = window.OrgAdmin;
