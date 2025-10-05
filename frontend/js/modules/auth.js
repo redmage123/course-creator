@@ -836,8 +836,12 @@ class AuthManager {
                     console.log('🔍 REDIRECT DEBUG - Admin user detected, redirecting to site-admin-dashboard');
                     return `${pathPrefix}site-admin-dashboard.html`;
                 }
-                const redirectUrl = `${pathPrefix}org-admin-dashboard.html`;
-                console.log('🔍 REDIRECT DEBUG - Final URL:', redirectUrl);
+                // Organization admin needs org_id parameter
+                const orgId = this.currentUser?.organization_id;
+                const redirectUrl = orgId
+                    ? `${pathPrefix}org-admin-dashboard.html?org_id=${orgId}`
+                    : `${pathPrefix}org-admin-dashboard.html`;
+                console.log('🔍 REDIRECT DEBUG - Org Admin redirect with org_id:', orgId, '- URL:', redirectUrl);
                 return redirectUrl;
             case ROLES.INSTRUCTOR:
                 return `${pathPrefix}instructor-dashboard.html`;
@@ -871,9 +875,18 @@ class AuthManager {
         const sessionStart = localStorage.getItem('sessionStart');
         const lastActivity = localStorage.getItem('lastActivity');
         const authToken = localStorage.getItem('authToken');
-        
+
+        console.log('🔍 Session validation check:', {
+            hasSessionStart: !!sessionStart,
+            hasLastActivity: !!lastActivity,
+            hasAuthToken: !!authToken,
+            sessionStart,
+            lastActivity
+        });
+
         // No session data means invalid session
         if (!sessionStart || !lastActivity || !authToken) {
+            console.log('❌ Session INVALID: Missing session data');
             return false;
         }
         

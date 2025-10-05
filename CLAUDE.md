@@ -39,36 +39,72 @@ This documentation is organized into logical sections within the `claude.md/` su
   - Container running with "Up (healthy)" status
   - Real test results, not assumptions
 
-### 3. MEMORY AND STATE TRACKING
+### 3. MANDATORY MEMORY TOOL USAGE
+- **NEVER make assumptions** - ALWAYS check the MCP memory tool BEFORE making any assumptions about the system
+- **Check memory FIRST** - Search existing facts before implementing any solution
+- **Update memory ALWAYS** - Add new facts discovered or created during work
+
+**Memory Tool Commands:**
+```bash
+# Search for existing facts (CHECK THIS FIRST!)
+python3 .claude/query_memory.py search "<search_term>"
+
+# Add new facts (DO THIS AFTER DISCOVERIES!)
+python3 .claude/query_memory.py add "<fact_content>" "<category>" "<importance>"
+
+# List recent facts
+python3 .claude/query_memory.py list [limit]
+```
+
+**Mandatory Memory Workflow:**
+1. **BEFORE** making any technical decision → Search memory for relevant facts
+2. **DURING** investigation → Document findings as you discover them
+3. **AFTER** fixing bugs → Add facts about root cause and solution
+4. **NEVER** assume you know something → Verify it exists in memory first
+
+**Example Workflow:**
+```bash
+# User says: "The platform uses HTTPS only"
+# Step 1: Search memory to verify
+python3 .claude/query_memory.py search "HTTPS"
+# Found: ID 300 confirms HTTPS-only requirement
+
+# Step 2: Work on the task using this fact
+
+# Step 3: Add new discovery
+python3 .claude/query_memory.py add "Service endpoint discovered: /users/me (not /api/v1/users/me)" "api-endpoints" "critical"
+```
+
+### 4. MEMORY AND STATE TRACKING
 - **ALWAYS** maintain accurate state of what has been attempted vs. what actually works
 - If something failed before, acknowledge it failed and explain what's different this time
 - Keep track of which services/components are genuinely working vs. still broken
 
-### 4. TRUTHFUL STATUS REPORTING
+### 5. TRUTHFUL STATUS REPORTING
 When reporting status, use only these categories:
 - **WORKING**: Verified with evidence (show the evidence)
 - **ATTEMPTED**: Tried but not verified to work
 - **BROKEN**: Confirmed not working
 - **UNKNOWN**: Not yet tested
 
-### 5. PROBLEM ACKNOWLEDGMENT
+### 6. PROBLEM ACKNOWLEDGMENT
 - If you encounter the same error repeatedly, STOP and acknowledge the pattern
 - Don't keep trying the same approach that already failed
 - Ask for guidance when stuck in loops
 
-### 6. NO ASSUMPTION-BASED CLAIMS
+### 7. NO ASSUMPTION-BASED CLAIMS
 - Don't claim something works because "the code looks right"
 - Don't assume Docker containers work because they built successfully
 - Verify actual functionality, not just absence of build errors
 
-### 7. SYSTEMATIC VERIFICATION PROTOCOL
+### 8. SYSTEMATIC VERIFICATION PROTOCOL
 **Before claiming ANY fix works, you MUST:**
 - **Test the exact failing case** - Copy/paste the exact error scenario and reproduce it
 - **Test in the actual environment** - Not just isolated unit tests, but in the real deployment context
 - **Provide evidence** - Show the before/after comparison with actual output
 - **Wait for user confirmation** - Never declare success, only "attempted fix - please verify"
 
-### 8. LANGUAGE RESTRICTIONS
+### 9. LANGUAGE RESTRICTIONS
 **FORBIDDEN phrases (never use these without concrete proof):**
 - ✅ "PROVEN: [anything] is working"
 - ✅ "The error should now be resolved"
@@ -83,7 +119,7 @@ When reporting status, use only these categories:
 - 🔄 "The pattern works in my test, but please confirm in your browser."
 - 🔄 "Attempted fix deployed - needs user verification"
 
-### 9. ROOT CAUSE ANALYSIS REQUIREMENT
+### 10. ROOT CAUSE ANALYSIS REQUIREMENT
 **When debugging, you MUST:**
 - **Understand the problem** (not just pattern-match visual symptoms)
 - **Research the root cause** (don't guess based on superficial similarities)
@@ -91,7 +127,7 @@ When reporting status, use only these categories:
 - **Make minimal changes** (one thing at a time)
 - **Document uncertainty** (what you're not sure about)
 
-### 10. ANTI-PATTERN RECOGNITION
+### 11. ANTI-PATTERN RECOGNITION
 **Recognize and STOP these harmful patterns:**
 - Visual pattern recognition → quick fix instinct → biased testing
 - "This looks wrong" → make change → assume it's fixed
@@ -99,7 +135,7 @@ When reporting status, use only these categories:
 - Isolated test passes → claim real-world functionality
 - Speed/confidence prioritized over accuracy/verification
 
-### 11. EPISTEMOLOGICAL HUMILITY
+### 12. EPISTEMOLOGICAL HUMILITY
 **Acknowledge the limits of what you can know:**
 - You cannot directly interact with user browsers
 - You cannot see actual user experience

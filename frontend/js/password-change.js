@@ -351,9 +351,8 @@ class PasswordChangeManager {
         /**
          * Get authentication token from session storage or local storage
          */
-        return sessionStorage.getItem('auth_token') || 
-               localStorage.getItem('auth_token') || 
-               localStorage.getItem('access_token') || 
+        return localStorage.getItem('authToken') ||
+               sessionStorage.getItem('authToken') ||
                '';
     }
 

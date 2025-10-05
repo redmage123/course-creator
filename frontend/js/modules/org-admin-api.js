@@ -20,8 +20,16 @@ import { showNotification } from './org-admin-utils.js';
  * API Base URLs from environment configuration
  * BUSINESS CONTEXT: Multi-microservice architecture requires different base URLs
  */
-const ORG_API_BASE = window.ENV?.API_URLS?.ORGANIZATION_MANAGEMENT || 'https://localhost:8008';
-const USER_API_BASE = window.ENV?.API_URLS?.USER_MANAGEMENT || 'https://localhost:8001';
+const ORG_API_BASE = window.CONFIG?.API_URLS?.ORGANIZATION_MANAGEMENT || 'https://localhost:8008';
+const USER_API_BASE = window.CONFIG?.API_URLS?.USER_MANAGEMENT || 'https://localhost:8000';
+
+// Debug logging for API configuration
+console.log('🔧 API Configuration:', {
+    hasConfig: !!window.CONFIG,
+    USER_API_BASE,
+    ORG_API_BASE,
+    configApiUrls: window.CONFIG?.API_URLS
+});
 
 /**
  * Get authentication headers for API requests
@@ -37,7 +45,7 @@ const USER_API_BASE = window.ENV?.API_URLS?.USER_MANAGEMENT || 'https://localhos
  * fetch(url, { headers });
  */
 export async function getAuthHeaders() {
-    const token = localStorage.getItem('auth_token');
+    const token = localStorage.getItem('authToken');
     return {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -498,17 +506,30 @@ export async function removeMember(organizationId, userId) {
  */
 export async function fetchCurrentUser() {
     try {
-        const response = await fetch(`${USER_API_BASE}/api/v1/users/me`, {
-            headers: await getAuthHeaders()
+        const url = `${USER_API_BASE}/users/me`;
+        const headers = await getAuthHeaders();
+
+        console.log('🔍 Fetching current user from:', url);
+        console.log('🔑 Auth headers:', {
+            hasToken: !!headers.Authorization,
+            tokenPreview: headers.Authorization ? headers.Authorization.substring(0, 20) + '...' : 'none'
         });
 
+        const response = await fetch(url, { headers });
+
+        console.log('📡 Response status:', response.status, response.statusText);
+
         if (!response.ok) {
-            throw new Error('Failed to fetch current user');
+            const errorText = await response.text();
+            console.error('❌ API Error:', response.status, errorText);
+            throw new Error(`Failed to fetch current user: ${response.status} ${response.statusText}`);
         }
 
-        return await response.json();
+        const userData = await response.json();
+        console.log('✅ User data fetched:', userData.email);
+        return userData;
     } catch (error) {
-        console.error('Error fetching current user:', error);
+        console.error('💥 Error fetching current user:', error);
         throw error;
     }
 }

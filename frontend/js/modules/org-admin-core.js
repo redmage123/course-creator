@@ -59,8 +59,8 @@ export async function initializeDashboard() {
         const orgId = urlParams.get('org_id');
 
         if (!orgId) {
-            showNotification('No organization specified', 'error');
-            setTimeout(() => window.location.href = '/organizations.html', 2000);
+            showNotification('No organization specified. Please select your organization.', 'error');
+            setTimeout(() => window.location.href = '../index.html', 2000);
             return;
         }
 
@@ -88,8 +88,14 @@ export async function initializeDashboard() {
         setupLogoutHandler();
 
     } catch (error) {
-        console.error('Error initializing dashboard:', error);
-        showNotification('Failed to initialize dashboard', 'error');
+        console.error('💥 Error initializing dashboard:', error);
+        console.error('💥 Error stack:', error.stack);
+        console.error('💥 Current user:', currentUser);
+        console.error('💥 Org ID from URL:', new URLSearchParams(window.location.search).get('org_id'));
+        showNotification(`Failed to initialize dashboard: ${error.message}`, 'error');
+
+        // Don't redirect on error - let user see what happened
+        // setTimeout(() => window.location.href = '../index.html', 5000);
     }
 }
 

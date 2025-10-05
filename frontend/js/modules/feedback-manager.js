@@ -28,7 +28,7 @@ class FeedbackManager {
      */
     async submitCourseFeedback(courseId, feedbackData) {
         try {
-            const token = localStorage.getItem('access_token');
+            const token = localStorage.getItem('authToken');
             if (!token) {
                 throw new Error('Authentication required');
             }
@@ -63,7 +63,7 @@ class FeedbackManager {
      */
     async submitStudentFeedback(studentId, courseId, feedbackData) {
         try {
-            const token = localStorage.getItem('access_token');
+            const token = localStorage.getItem('authToken');
             if (!token) {
                 throw new Error('Authentication required');
             }
@@ -99,7 +99,7 @@ class FeedbackManager {
      */
     async getCourseFeedback(courseId) {
         try {
-            const token = localStorage.getItem('access_token');
+            const token = localStorage.getItem('authToken');
             if (!token) {
                 throw new Error('Authentication required');
             }
@@ -128,7 +128,7 @@ class FeedbackManager {
      */
     async getStudentFeedback(studentId, courseId) {
         try {
-            const token = localStorage.getItem('access_token');
+            const token = localStorage.getItem('authToken');
             if (!token) {
                 throw new Error('Authentication required');
             }
@@ -157,7 +157,7 @@ class FeedbackManager {
      */
     async getAllStudentsFeedback(courseId) {
         try {
-            const token = localStorage.getItem('access_token');
+            const token = localStorage.getItem('authToken');
             if (!token) {
                 throw new Error('Authentication required');
             }
@@ -186,7 +186,7 @@ class FeedbackManager {
      */
     async toggleFeedbackSharing(feedbackId, share) {
         try {
-            const token = localStorage.getItem('access_token');
+            const token = localStorage.getItem('authToken');
             if (!token) {
                 throw new Error('Authentication required');
             }
