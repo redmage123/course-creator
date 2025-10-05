@@ -50,6 +50,20 @@ export async function initializeDashboard() {
             return;
         }
 
+        // Initialize Auth module for session monitoring
+        // BUSINESS CONTEXT: Dashboard pages need active session monitoring to maintain security
+        // WHY: Session monitoring started on login page is lost when navigating to new page
+        if (window.Auth) {
+            console.log('🔐 Initializing Auth module for session monitoring...');
+            const authInstance = new window.Auth();
+            // Session monitoring will use existing localStorage values (authToken, sessionStart, lastActivity)
+            authInstance.startSessionMonitoring();
+            authInstance.activityTracker.start();
+            console.log('✅ Session monitoring active on dashboard');
+        } else {
+            console.warn('⚠️ Auth module not available - session monitoring disabled');
+        }
+
         // Load current user
         currentUser = await fetchCurrentUser();
         console.log('Dashboard initialized for user:', currentUser.email);
