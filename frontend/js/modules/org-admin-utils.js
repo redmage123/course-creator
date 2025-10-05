@@ -240,6 +240,45 @@ export function openModal(modalId) {
 }
 
 /**
+ * Show loading spinner
+ *
+ * BUSINESS CONTEXT:
+ * Displays loading indicator during async operations
+ *
+ * @param {string} message - Loading message to display
+ *
+ * @example
+ * showLoading('Loading data...')
+ */
+export function showLoading(message = 'Loading...') {
+    let spinner = document.getElementById('loadingSpinner');
+    if (!spinner) {
+        spinner = document.createElement('div');
+        spinner.id = 'loadingSpinner';
+        spinner.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;';
+        spinner.innerHTML = `<div style="background: white; padding: 2rem; border-radius: 8px; text-align: center;"><div class="loading-spinner"></div><p>${message}</p></div>`;
+        document.body.appendChild(spinner);
+    }
+    spinner.style.display = 'flex';
+}
+
+/**
+ * Hide loading spinner
+ *
+ * BUSINESS CONTEXT:
+ * Removes loading indicator after async operation completes
+ *
+ * @example
+ * hideLoading()
+ */
+export function hideLoading() {
+    const spinner = document.getElementById('loadingSpinner');
+    if (spinner) {
+        spinner.style.display = 'none';
+    }
+}
+
+/**
  * Close modal by ID
  *
  * BUSINESS CONTEXT:

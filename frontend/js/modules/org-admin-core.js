@@ -102,16 +102,24 @@ export async function initializeDashboard() {
  * @param {Object} organization - Organization data object
  */
 function updateOrganizationHeader(organization) {
+    console.log('updateOrganizationHeader called with:', organization);
+
     // Update organization name
     const orgNameEl = document.getElementById('organizationName');
+    console.log('organizationName element:', orgNameEl);
     if (orgNameEl) {
         orgNameEl.textContent = organization.name;
+        console.log('Set organization name to:', organization.name);
+    } else {
+        console.error('Element with id="organizationName" not found');
     }
 
     // Update organization domain
     const orgDomainEl = document.getElementById('organizationDomain');
+    console.log('organizationDomain element:', orgDomainEl);
     if (orgDomainEl && organization.domain) {
         orgDomainEl.textContent = organization.domain;
+        console.log('Set organization domain to:', organization.domain);
     }
 
     // Update organization logo if present
