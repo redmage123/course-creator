@@ -46,7 +46,7 @@ export async function initializeDashboard() {
         // Verify authentication
         const token = localStorage.getItem('auth_token');
         if (!token) {
-            window.location.href = '/login.html';
+            window.location.href = '../index.html';
             return;
         }
 
@@ -303,7 +303,7 @@ function setupLogoutHandler() {
                 localStorage.removeItem('user_data');
 
                 // Redirect to login
-                window.location.href = '/login.html';
+                window.location.href = '../index.html';
             }
         });
     }

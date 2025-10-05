@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     /* AUTHENTICATION VERIFICATION: Ensure user has proper access rights
      * WHY: Project management requires specific permissions for security */
     if (!Auth.isAuthenticated() || !Auth.hasRole(['org_admin', 'instructor', 'super_admin'])) {
-        window.location.href = '/login.html';
+        window.location.href = '/html/index.html';
         return;
     }
 

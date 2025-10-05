@@ -370,7 +370,7 @@ class PasswordChangeManager {
         // Optionally redirect after success
         setTimeout(() => {
             // Redirect to dashboard or login page
-            const redirectUrl = new URLSearchParams(window.location.search).get('redirect') || '/html/login.html';
+            const redirectUrl = new URLSearchParams(window.location.search).get('redirect') || '/html/index.html';
             window.location.href = redirectUrl;
         }, 3000);
     }
