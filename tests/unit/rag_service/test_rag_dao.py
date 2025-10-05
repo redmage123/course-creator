@@ -33,7 +33,6 @@ mock_exceptions.DatabaseException = type('DatabaseException', (Exception,), {})
 sys.modules['exceptions'] = mock_exceptions
 
 # Now add the service path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / 'services' / 'rag-service'))
 
 from data_access.rag_dao import RAGDAO
 

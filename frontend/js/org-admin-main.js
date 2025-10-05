@@ -29,6 +29,12 @@ import * as Settings from './modules/org-admin-settings.js';
 import * as Utils from './modules/org-admin-utils.js';
 import * as API from './modules/org-admin-api.js';
 
+// Import metadata-driven analytics module
+import * as Analytics from './modules/org-admin-analytics.js';
+
+// Import metadata client for analytics and insights
+import { metadataClient } from './metadata-client.js';
+
 /**
  * Global namespace for organization admin dashboard
  *
@@ -113,6 +119,15 @@ window.OrgAdmin = {
         resetDefaults: Settings.resetToDefaults
     },
 
+    // Analytics module (metadata-driven)
+    Analytics: {
+        loadContent: Analytics.loadContentAnalytics,
+        filterByTag: Analytics.filterByTag,
+        analyzeGaps: Analytics.analyzeContentGaps,
+        viewTrends: Analytics.viewSearchTrends,
+        generateRecommendations: Analytics.generateContentRecommendations
+    },
+
     // Utilities (exposed for potential direct use)
     Utils: {
         escapeHtml: Utils.escapeHtml,
@@ -127,7 +142,10 @@ window.OrgAdmin = {
         debounce: Utils.debounce,
         generateUniqueId: Utils.generateUniqueId,
         hasPermission: Utils.hasPermission
-    }
+    },
+
+    // Metadata client (exposed for direct access)
+    Metadata: metadataClient
 };
 
 /**

@@ -29,7 +29,6 @@ sys.modules['shared'] = MagicMock()
 sys.modules['shared.cache'] = MagicMock()
 sys.modules['shared.cache.redis_cache'] = MagicMock()
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / 'services' / 'organization-management'))
 
 from main import app, create_app
 from api.organization_endpoints import router

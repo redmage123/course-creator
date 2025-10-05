@@ -10,9 +10,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import json
 
 # Import the analytics service components
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "services" / "analytics"))
 
 from main import (
     app, StudentActivity, LabUsageMetrics, QuizPerformance, 

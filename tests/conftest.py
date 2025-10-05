@@ -26,7 +26,9 @@ service_paths = [
     'course-generator',
     'course-management',
     'demo-service',
+    'knowledge-graph-service',
     'lab-manager',
+    'metadata-service',
     'organization-management',
     'rag-service',
     'user-management'
@@ -34,6 +36,7 @@ service_paths = [
 
 for service in service_paths:
     service_path = os.path.join(os.path.dirname(__file__), f'../services/{service}')
+    service_path = os.path.abspath(service_path)  # Make absolute
     if os.path.exists(service_path):
         sys.path.insert(0, service_path)
 

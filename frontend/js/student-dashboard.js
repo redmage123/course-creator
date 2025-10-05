@@ -23,6 +23,7 @@
 import { authManager } from './modules/auth.js';           // Authentication and session management
 import { labLifecycleManager } from './modules/lab-lifecycle.js'; // Lab container lifecycle management
 import StudentFileManager from './modules/student-file-manager.js'; // Student file operations
+import { metadataClient } from './metadata-client.js';     // Metadata service for intelligent search and recommendations
 
 /**
  * DYNAMIC FEEDBACK MANAGER IMPORT
@@ -233,11 +234,49 @@ async function loadStudentData() {
         await Promise.all([
             loadEnrolledCourses(),
             loadStudentProgress(),
-            loadLabEnvironments()
+            loadLabEnvironments(),
+            loadCourseRecommendations()
         ]);
         updateDashboardMetrics();
     } catch (error) {
         console.error('Error loading student data:', error);
+    }
+}
+
+/**
+ * INTELLIGENT COURSE RECOMMENDATIONS - METADATA-DRIVEN
+ * PURPOSE: Provide personalized course recommendations based on completed courses
+ * WHY: Improves student learning paths by suggesting relevant next courses
+ * ALGORITHM: Uses metadata service to find similar courses at appropriate difficulty
+ */
+async function loadCourseRecommendations() {
+    try {
+        // Get completed course IDs
+        const completedCourseIds = enrolledCourses
+            .filter(course => course.status === 'completed')
+            .map(course => course.course_id);
+
+        if (completedCourseIds.length === 0) {
+            // No completed courses yet, show popular beginner courses
+            const recommendations = await metadataClient.search('beginner programming', {
+                entity_types: ['course'],
+                required_tags: ['beginner'],
+                limit: 5
+            });
+            displayRecommendations(recommendations);
+            return;
+        }
+
+        // Get personalized recommendations based on completed courses
+        const recommendations = await metadataClient.getRecommendations(
+            completedCourseIds,
+            { difficulty_level: 'intermediate', limit: 5 }
+        );
+
+        displayRecommendations(recommendations);
+    } catch (error) {
+        console.error('Error loading recommendations:', error);
+        // Fail silently - recommendations are not critical
     }
 }
 
@@ -335,10 +374,10 @@ function loadDashboardData() {
 
 function displayCurrentCourses() {
     const container = document.getElementById('current-courses-list');
-    const inProgressCourses = enrolledCourses.filter(course => 
+    const inProgressCourses = enrolledCourses.filter(course =>
         course.status === 'active' || course.status === 'in-progress'
     ).slice(0, 3); // Show max 3 courses
-    
+
     if (!inProgressCourses.length) {
         container.innerHTML = `
             <div class="empty-state">
@@ -349,7 +388,7 @@ function displayCurrentCourses() {
         `;
         return;
     }
-    
+
     container.innerHTML = inProgressCourses.map(enrollment => `
         <div class="course-card current-course">
             <div class="course-header">
@@ -374,6 +413,111 @@ function displayCurrentCourses() {
             </div>
         </div>
     `).join('');
+}
+
+/**
+ * DISPLAY COURSE RECOMMENDATIONS - METADATA-POWERED
+ * PURPOSE: Show personalized course recommendations to students
+ * WHY: Helps students discover relevant next courses for their learning path
+ */
+function displayRecommendations(recommendations) {
+    const container = document.getElementById('recommendations-list');
+    if (!container) return; // Container doesn't exist in current dashboard
+
+    if (!recommendations || recommendations.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <i class="fas fa-lightbulb"></i>
+                <h3>No recommendations yet</h3>
+                <p>Complete some courses to get personalized recommendations</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = recommendations.map(course => `
+        <div class="recommendation-card">
+            <div class="recommendation-header">
+                <h4>${course.title || `Course ${course.entity_id}`}</h4>
+                <div class="recommendation-tags">
+                    ${course.tags.slice(0, 3).map(tag => `
+                        <span class="tag">${tag}</span>
+                    `).join('')}
+                </div>
+            </div>
+            <p class="recommendation-description">${course.description || 'No description available'}</p>
+            <div class="recommendation-meta">
+                ${course.metadata?.educational?.difficulty ?
+                    `<span class="difficulty-badge ${course.metadata.educational.difficulty}">
+                        ${course.metadata.educational.difficulty}
+                    </span>` : ''}
+                ${course.metadata?.educational?.duration ?
+                    `<span class="duration">
+                        <i class="fas fa-clock"></i> ${course.metadata.educational.duration}
+                    </span>` : ''}
+            </div>
+            <div class="recommendation-actions">
+                <button class="btn btn-primary" onclick="viewCourseDetails('${course.entity_id}')">
+                    <i class="fas fa-eye"></i> View Details
+                </button>
+                <button class="btn btn-secondary" onclick="requestEnrollment('${course.entity_id}')">
+                    <i class="fas fa-user-plus"></i> Request Enrollment
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+/**
+ * INTELLIGENT COURSE SEARCH - METADATA-DRIVEN
+ * PURPOSE: Allow students to search courses using natural language
+ * WHY: Makes course discovery easier with intelligent matching
+ */
+async function intelligentCourseSearch(query) {
+    if (!query || query.trim().length < 2) {
+        displayFilteredCourses(enrolledCourses);
+        return;
+    }
+
+    try {
+        // Use FUZZY search for typo tolerance
+        // This allows students to find courses even with typos like "pyton" → "python"
+        const results = await metadataClient.searchFuzzy(query, {
+            entity_types: ['course'],
+            similarity_threshold: 0.2,  // Lower threshold for better typo tolerance
+            limit: 20
+        });
+
+        // Filter to only show enrolled courses
+        const enrolledResults = results.filter(result =>
+            enrolledCourses.some(enrolled => enrolled.course_id === result.entity_id)
+        );
+
+        // Convert metadata format to enrollment format for display
+        const displayResults = enrolledResults.map(result => {
+            const enrollment = enrolledCourses.find(e => e.course_id === result.entity_id);
+            return {
+                ...enrollment,
+                title: result.title,
+                description: result.description,
+                relevance_score: result.relevance_score,
+                similarity_score: result.similarity_score  // Add fuzzy match score
+            };
+        });
+
+        // Sort by similarity score (best matches first)
+        displayResults.sort((a, b) => (b.similarity_score || 0) - (a.similarity_score || 0));
+
+        displayFilteredCourses(displayResults);
+    } catch (error) {
+        console.error('Error searching courses:', error);
+        // Fallback to basic search
+        const filteredCourses = enrolledCourses.filter(course =>
+            course.course_id.toLowerCase().includes(query.toLowerCase()) ||
+            (course.title && course.title.toLowerCase().includes(query.toLowerCase()))
+        );
+        displayFilteredCourses(filteredCourses);
+    }
 }
 
 function displayRecentActivity() {
@@ -627,7 +771,14 @@ function filterStudentCourses() {
 }
 
 function searchStudentCourses() {
-    filterStudentCourses(); // Use the same filtering logic
+    const searchTerm = document.getElementById('courseSearch')?.value;
+    if (searchTerm && searchTerm.trim().length >= 2) {
+        // Use intelligent metadata-powered search
+        intelligentCourseSearch(searchTerm);
+    } else {
+        // Fall back to regular filtering
+        filterStudentCourses();
+    }
 }
 
 function displayFilteredCourses(courses) {
@@ -1537,6 +1688,42 @@ function closeStudentFeedbackView() {
     }
 }
 
+/**
+ * REQUEST COURSE ENROLLMENT - METADATA-ENHANCED
+ * PURPOSE: Allow students to request enrollment in recommended courses
+ * WHY: Enables self-directed learning by allowing students to request access
+ */
+async function requestEnrollment(courseId) {
+    if (!currentUser) {
+        showNotification('Please log in to request enrollment', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${window.CONFIG?.API_URLS.COURSE_MANAGEMENT}/enrollment-requests`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            },
+            body: JSON.stringify({
+                student_id: currentUser.id,
+                course_id: courseId,
+                requested_at: new Date().toISOString()
+            })
+        });
+
+        if (response.ok) {
+            showNotification('Enrollment request submitted successfully', 'success');
+        } else {
+            throw new Error('Failed to submit enrollment request');
+        }
+    } catch (error) {
+        console.error('Error requesting enrollment:', error);
+        showNotification('Error submitting enrollment request', 'error');
+    }
+}
+
 // Make functions globally available
 window.logout = logout;
 window.openLabEnvironment = openLabEnvironment;
@@ -1549,3 +1736,5 @@ window.openCourseFeedbackForm = openCourseFeedbackForm;
 window.closeFeedbackForm = closeFeedbackForm;
 window.openStudentFeedbackView = openStudentFeedbackView;
 window.closeStudentFeedbackView = closeStudentFeedbackView;
+window.requestEnrollment = requestEnrollment;
+window.intelligentCourseSearch = intelligentCourseSearch;

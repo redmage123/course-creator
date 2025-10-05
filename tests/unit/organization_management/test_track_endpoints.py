@@ -29,8 +29,6 @@ from fastapi.testclient import TestClient
 from unittest.mock import Mock, patch, MagicMock
 
 # Import test base
-import sys
-sys.path.insert(0, '/home/bbrelin/course-creator/tests')
 from base_test import BaseServiceTest
 
 

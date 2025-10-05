@@ -640,27 +640,38 @@ def create_app(config: DictConfig) -> FastAPI:
         )
     
     # ========================================
+    # Metadata-Enhanced Analytics Integration
+    # ========================================
+
+    try:
+        from metadata_analytics_endpoints import router as metadata_analytics_router
+        app.include_router(metadata_analytics_router)
+        logger.info("Metadata analytics endpoints integrated successfully")
+    except ImportError as e:
+        logger.warning(f"Metadata analytics endpoints not available: {e}")
+
+    # ========================================
     # Core Service Endpoints
     # ========================================
-    
+
     @app.get("/health")
     async def health_check():
         """
         Health check endpoint for educational analytics service.
-        
+
         Provides service status information for:
         - Educational platform integration monitoring
         - Load balancer health checks
         - Service discovery and registration
         - Performance monitoring and alerting
-        
+
         Returns comprehensive health status including:
         - Service version and build information
         - Database connectivity status
         - Cache system availability
         - Analytics processing queue status
         - Educational data pipeline health
-        
+
         Educational Platform Integration:
         - Enables automatic failover for educational continuity
         - Supports distributed analytics architecture
@@ -673,7 +684,7 @@ def create_app(config: DictConfig) -> FastAPI:
             "version": "2.0.0",
             "timestamp": datetime.utcnow()
         }
-    
+
     return app
 
 app = create_app(current_config or {})

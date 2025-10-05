@@ -9,9 +9,7 @@ import json
 from uuid import uuid4
 from datetime import datetime
 
-import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '../../services/organization-management'))
 
 from domain.entities.track import TrackStatus, TrackType
 

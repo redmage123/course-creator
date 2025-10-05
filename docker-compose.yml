@@ -569,6 +569,49 @@ services:
       retries: 3
     restart: unless-stopped
 
+  # Metadata Service
+  metadata-service:
+    image: course-creator-metadata-service:latest
+    build:
+      context: ./services/metadata-service
+      dockerfile: Dockerfile
+      cache_from:
+        - course-creator-metadata-service:latest
+    env_file:
+      - .cc_env
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
+      - REDIS_URL=redis://redis:6379
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres_password
+      - DB_NAME=course_creator
+      - ENVIRONMENT=docker
+      - DOCKER_CONTAINER=true
+      - SERVICE_NAME=metadata-service
+      - LOG_LEVEL=INFO
+      - PYTHONPATH=/app:/app/.venv/lib/python3.12/site-packages
+      - VIRTUAL_ENV=/app/.venv
+    ports:
+      - "8011:8011"
+    volumes:
+      - ./.venv:/app/.venv:ro
+      - ./shared:/app/shared:ro
+      - ./logs:/var/log/course-creator
+      - ./ssl:/app/ssl:ro
+    networks:
+      - course-creator-network
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; r = requests.get('https://localhost:8011/health', verify=False); exit(0 if r.status_code == 200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
 
 volumes:
   postgres_data:

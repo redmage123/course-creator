@@ -17,9 +17,6 @@ from uuid import UUID, uuid4
 from datetime import datetime
 from typing import Dict, Any, Optional
 
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / 'services' / 'organization-management'))
 
 from application.services.organization_service import OrganizationService
 from domain.entities.organization import Organization

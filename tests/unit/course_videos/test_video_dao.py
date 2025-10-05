@@ -13,9 +13,6 @@ TECHNICAL IMPLEMENTATION:
 - Tests data integrity constraints
 """
 
-import sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / 'services' / 'course-management'))
 
 import pytest
 import pytest_asyncio

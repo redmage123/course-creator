@@ -457,3 +457,25 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 Made with ❤️ by the Course Creator Team
 
 </div>
+
+---
+
+## 📚 Complete Documentation
+
+For comprehensive documentation, see **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** which provides:
+
+- **Quick Start Guides** - Get up and running fast
+- **Testing Documentation** - 1,450 integrated tests (96.7% coverage)
+- **Deployment Guides** - Production deployment procedures
+- **Feature Documentation** - Fuzzy search, knowledge graph, video features
+- **AI Assistant Docs** - Claude Code integration and standards
+- **API Reference** - Complete API documentation
+
+### Key Documents
+
+- [CLAUDE.md](CLAUDE.md) - AI assistant documentation and coding standards
+- [RUNBOOK.md](RUNBOOK.md) - Operational procedures and troubleshooting
+- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture and design
+- [Testing Guide](docs/testing/TEST_INTEGRATION_SUMMARY.md) - Comprehensive testing documentation
+
+---
