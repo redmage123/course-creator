@@ -1,0 +1,130 @@
+{
+  "template_name": "Standard TDD Task Board",
+  "description": "Use this template for ALL coding tasks - Agile + TDD workflow",
+  "usage": "Copy and customize for each task",
+  "todos": [
+    {
+      "content": "Search memory for relevant facts about <TOPIC>",
+      "status": "in_progress",
+      "activeForm": "Searching memory for existing facts",
+      "notes": "Search user-preferences, bugfix, api-endpoints, architecture"
+    },
+    {
+      "content": "Create test file: tests/test_<FEATURE>.py",
+      "status": "pending",
+      "activeForm": "Creating test file",
+      "notes": "TDD RED phase - write test before code"
+    },
+    {
+      "content": "Write failing test for <FEATURE> (TDD RED phase)",
+      "status": "pending",
+      "activeForm": "Writing failing test",
+      "notes": "Test should FAIL initially - proves it tests something"
+    },
+    {
+      "content": "Run test and confirm it fails (pytest -v)",
+      "status": "pending",
+      "activeForm": "Running initial test",
+      "notes": "Collect evidence of RED phase"
+    },
+    {
+      "content": "Implement <FEATURE> to pass test (TDD GREEN phase)",
+      "status": "pending",
+      "activeForm": "Implementing minimal code",
+      "notes": "Minimal implementation only - just enough to pass"
+    },
+    {
+      "content": "Run test and confirm it passes",
+      "status": "pending",
+      "activeForm": "Verifying GREEN phase",
+      "notes": "Collect evidence of passing test"
+    },
+    {
+      "content": "Refactor code for quality (TDD REFACTOR phase)",
+      "status": "pending",
+      "activeForm": "Refactoring code",
+      "notes": "SOLID principles, documentation, optimization"
+    },
+    {
+      "content": "Run full test suite (pytest tests/ -v)",
+      "status": "pending",
+      "activeForm": "Running full test suite",
+      "notes": "Ensure no regressions introduced"
+    },
+    {
+      "content": "Verify all tests pass and collect evidence",
+      "status": "pending",
+      "activeForm": "Collecting test evidence",
+      "notes": "Screenshot or paste test output"
+    },
+    {
+      "content": "Update memory with new facts discovered",
+      "status": "pending",
+      "activeForm": "Updating memory database",
+      "notes": "python3 .claude/query_memory.py add '<fact>'"
+    },
+    {
+      "content": "Commit with test evidence and tentative language",
+      "status": "pending",
+      "activeForm": "Committing changes",
+      "notes": "Include test output, use 'Attempted fix' not 'Fixed'"
+    }
+  ],
+  "examples": {
+    "new_feature": {
+      "title": "Add Email Validation Feature",
+      "todos": [
+        "Search memory: validation, email, user-management",
+        "Create test: tests/test_email_validation.py",
+        "Write failing test: test_email_validation_rejects_invalid()",
+        "Run test: pytest tests/test_email_validation.py -v (expect FAIL)",
+        "Implement: validate_email() function",
+        "Run test: confirm PASS",
+        "Refactor: add regex, documentation, error messages",
+        "Run full suite: pytest tests/ -v",
+        "Collect evidence: test output, coverage",
+        "Update memory: 'Email validation feature with TDD'",
+        "Commit: 'feat: Add email validation (TDD) - 5 tests passing'"
+      ]
+    },
+    "bug_fix": {
+      "title": "Fix 500 Error on Missing User",
+      "todos": [
+        "Search memory: bugfix, api-endpoints, error-handling",
+        "Create test: tests/test_user_api_errors.py",
+        "Write failing test: test_missing_user_returns_404()",
+        "Run test: pytest tests/test_user_api_errors.py -v (expect FAIL - currently 500)",
+        "Implement: add 404 check in get_user()",
+        "Run test: confirm PASS (404 returned)",
+        "Refactor: improve error messages, add logging",
+        "Run full suite: pytest tests/ -v",
+        "Collect evidence: before/after status codes",
+        "Update memory: 'Bug fixed: 500→404 for missing user - root cause: no null check'",
+        "Commit: 'fix: Return 404 for missing user (was 500) - test added'"
+      ]
+    },
+    "refactoring": {
+      "title": "Extract Function Following SRP",
+      "todos": [
+        "Search memory: SOLID, refactoring, architecture",
+        "Create test: tests/test_refactored_function.py",
+        "Write tests for current behavior (should PASS)",
+        "Run tests: confirm behavior captured",
+        "Extract function: separate concerns",
+        "Run tests: confirm still PASS (no regression)",
+        "Refactor: improve names, add docs",
+        "Run full suite: pytest tests/ -v",
+        "Collect evidence: tests still passing",
+        "Update memory: 'Refactored <module> following SRP - tests confirm no regressions'",
+        "Commit: 'refactor: Extract <function> (SRP) - all tests passing'"
+      ]
+    }
+  },
+  "notes": [
+    "ALWAYS create TodoWrite board at task start",
+    "NEVER skip TDD phases (Red → Green → Refactor)",
+    "ALWAYS mark tasks completed with evidence",
+    "ALWAYS update memory after discoveries",
+    "ALWAYS use tentative language in commits"
+  ]
+}
