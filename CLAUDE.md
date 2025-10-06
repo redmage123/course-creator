@@ -2,8 +2,49 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Version**: 3.1.0 - Modular Architecture & Exception Handling Refactoring
-**Last Updated**: 2025-10-04
+**Version**: 3.2.0 - Self-Improvement Framework & Parallel Agent Development
+**Last Updated**: 2025-10-06
+
+---
+
+## 🚀 MANDATORY SESSION START PROTOCOL
+
+**AT THE START OF EVERY SESSION, CLAUDE CODE MUST:**
+
+### Step 1: Load Core Methodology (30 seconds)
+```bash
+# Check user preferences (CRITICAL - DO THIS FIRST)
+python3 .claude/query_memory.py search "Agile"
+python3 .claude/query_memory.py search "TDD"
+python3 .claude/query_memory.py search "parallel"
+
+# Review recent context
+python3 .claude/query_memory.py list 20
+```
+
+### Step 2: Internalize Methodology (No user reminder needed)
+- ✅ User ALWAYS wants Agile + Kanban boards (automatic)
+- ✅ User ALWAYS wants TDD - tests BEFORE code (automatic)
+- ✅ User ALWAYS wants TodoWrite tracking (automatic)
+- ✅ User NEVER wants to be reminded of these preferences
+- ✅ For complex tasks: Use Parallel Agent Development System (PADS)
+
+### Step 3: Reference Self-Improvement Framework
+- **Read**: `.claude/CLAUDE_SELF_IMPROVEMENT_PLAN.md` for behavioral guidelines
+- **Read**: `.claude/PARALLEL_AGENT_DEVELOPMENT_SYSTEM.md` for parallel workflows
+- **Templates**: `.claude/templates/` for TDD, Kanban, session checklists
+
+### Step 4: Confirm Readiness
+Silently confirm understanding of:
+- Memory-first workflow
+- TDD approach (Red-Green-Refactor)
+- Parallel agent development for efficiency
+- TodoWrite for task tracking
+- Tentative language (no false claims)
+
+**THESE ARE NOW DEFAULT BEHAVIOR - NOT OPTIONAL**
+
+---
 
 ## 📁 Documentation Structure
 
