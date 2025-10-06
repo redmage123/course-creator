@@ -156,7 +156,7 @@ class AuthManager {
      * AUTHENTICATION STATUS CHECKER
      * PURPOSE: Determine if user has valid authentication credentials
      * WHY: Authorization decisions depend on accurate authentication status
-     * 
+     *
      * AUTHENTICATION CRITERIA:
      * - User data must exist (from getCurrentUser())
      * - Valid auth token must be present in localStorage
@@ -167,10 +167,25 @@ class AuthManager {
     }
 
     /**
+     * GET AUTHENTICATION TOKEN
+     * PURPOSE: Retrieve the current authentication token for API requests
+     * WHY: External modules need access to the auth token for authenticated requests
+     *
+     * TOKEN RETRIEVAL STRATEGY:
+     * - Return authToken property if set in memory
+     * - Fall back to localStorage if memory token not available
+     * - Ensures token availability across page refreshes
+     */
+    getToken() {
+        // Return authToken if set, otherwise check localStorage
+        return this.authToken || localStorage.getItem('authToken');
+    }
+
+    /**
      * AUTHENTICATION STATE INITIALIZATION
      * PURPOSE: Restore authentication state from persistent storage on app startup
      * WHY: Users should remain logged in across browser sessions and page refreshes
-     * 
+     *
      * INITIALIZATION PROCESS:
      * 1. Check for saved authentication tokens and user data
      * 2. Restore user state if valid credentials exist

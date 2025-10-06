@@ -15,6 +15,9 @@
  * and reusability across different modules.
  */
 
+// Import authentication manager for user context
+import { Auth } from '../auth.js';
+
 // Data Parsing Utilities
 export function parseCommaSeparated(value) {
     if (!value) return [];
