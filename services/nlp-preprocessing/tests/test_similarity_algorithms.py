@@ -13,7 +13,7 @@ TECHNICAL APPROACH:
 
 import pytest
 import numpy as np
-from application.similarity_algorithms import (
+from nlp_preprocessing.application.similarity_algorithms import (
     cosine_similarity_numba,
     batch_cosine_similarity,
     find_duplicates_fast,

@@ -20,8 +20,8 @@ from typing import List, Optional, Dict, Any
 from uuid import UUID
 from datetime import datetime
 
-from domain.entities.node import Node, NodeType
-from domain.entities.edge import Edge, EdgeType
+from knowledge_graph_service.domain.entities.node import Node, NodeType
+from knowledge_graph_service.domain.entities.edge import Edge, EdgeType
 
 
 class GraphDAO:

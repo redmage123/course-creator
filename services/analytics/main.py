@@ -79,7 +79,7 @@ except ImportError:
     OrganizationAuthorizationMiddleware = None
 
 # Infrastructure
-from infrastructure.container import AnalyticsContainer
+from analytics.infrastructure.container import AnalyticsContainer
 
 # API modules (refactored)
 from api.routes import router as analytics_router

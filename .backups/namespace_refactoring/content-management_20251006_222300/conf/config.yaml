@@ -1,0 +1,38 @@
+# Content Management Service Configuration
+defaults:
+  - _self_
+
+name: "Content Management Service"
+version: "2.0.0"
+host: "0.0.0.0"
+port: 8005
+
+# Service configuration
+server:
+  host: "0.0.0.0"
+  port: 8005
+  workers: 1
+  timeout: 300
+
+# Database configuration
+database:
+  url: postgresql://${oc.env:DB_USER,postgres}:${oc.env:DB_PASSWORD,postgres_password}@${oc.env:DB_HOST,postgres}:${oc.env:DB_PORT,5432}/${oc.env:DB_NAME,course_creator}
+
+# Redis configuration
+redis:
+  url: redis://${oc.env:REDIS_HOST,redis}:${oc.env:REDIS_PORT,6379}/${oc.env:REDIS_DB,0}
+  host: ${oc.env:REDIS_HOST,redis}
+  port: ${oc.env:REDIS_PORT,6379}
+  db: ${oc.env:REDIS_DB,0}
+
+# Logging
+logging:
+  level: INFO
+
+# Content management specific settings
+content:
+  upload_path: "/app/uploads"
+  export_path: "/app/exports"
+  temp_path: "/app/temp"
+  max_file_size: 104857600  # 100MB
+  allowed_types: ["pdf", "docx", "pptx", "txt", "json"]

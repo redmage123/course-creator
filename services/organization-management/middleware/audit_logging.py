@@ -12,7 +12,7 @@ from uuid import UUID
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from domain.entities.enhanced_role import Permission, RoleType
+from organization_management.domain.entities.enhanced_role import Permission, RoleType
 
 
 class AuditEventType(Enum):

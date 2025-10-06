@@ -110,18 +110,18 @@ except ImportError:
 from pydantic import BaseModel, Field
 
 # Domain entities and services
-from domain.entities.student_analytics import (
+from analytics.domain.entities.student_analytics import (
     StudentActivity, LabUsageMetrics, QuizPerformance, 
     StudentProgress, LearningAnalytics, ActivityType, ContentType, RiskLevel
 )
-from domain.interfaces.analytics_service import (
+from analytics.domain.interfaces.analytics_service import (
     IStudentActivityService, ILabAnalyticsService, IQuizAnalyticsService,
     IProgressTrackingService, ILearningAnalyticsService, IReportingService,
     IRiskAssessmentService, IPersonalizationService, IPerformanceComparisonService
 )
 
 # Infrastructure
-from infrastructure.container import AnalyticsContainer
+from analytics.infrastructure.container import AnalyticsContainer
 
 # Custom exceptions
 from exceptions import (

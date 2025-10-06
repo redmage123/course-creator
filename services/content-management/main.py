@@ -125,22 +125,22 @@ except ImportError:
 from pydantic import BaseModel, Field
 
 # Domain entities
-from domain.entities.base_content import ContentType, ContentStatus
-from domain.entities.syllabus import Syllabus
-from domain.entities.slide import Slide
-from domain.entities.quiz import Quiz
-from domain.entities.exercise import Exercise
-from domain.entities.lab_environment import LabEnvironment
+from content_management.domain.entities.base_content import ContentType, ContentStatus
+from content_management.domain.entities.syllabus import Syllabus
+from content_management.domain.entities.slide import Slide
+from content_management.domain.entities.quiz import Quiz
+from content_management.domain.entities.exercise import Exercise
+from content_management.domain.entities.lab_environment import LabEnvironment
 
 # Domain interfaces
-from domain.interfaces.content_service import (
+from content_management.domain.interfaces.content_service import (
     ISyllabusService, ISlideService, IQuizService, IExerciseService,
     ILabEnvironmentService, IContentSearchService, IContentValidationService,
     IContentAnalyticsService, IContentExportService
 )
 
 # Infrastructure
-from infrastructure.container import ContentManagementContainer
+from content_management.infrastructure.container import ContentManagementContainer
 
 # Custom exceptions
 from exceptions import (

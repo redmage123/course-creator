@@ -20,7 +20,7 @@ import re
 
 # Import dependency injection
 from app_dependencies import get_organization_service, get_current_user, require_org_admin
-from application.services.organization_service import OrganizationService
+from organization_management.application.services.organization_service import OrganizationService
 
 # Pydantic models for API (Data Transfer Objects)
 from pydantic import BaseModel, Field, EmailStr, validator
@@ -627,8 +627,8 @@ async def create_organization_with_logo(
 
 # Import dependencies for members endpoint
 from app_dependencies import get_membership_service, get_current_user, verify_permission
-from application.services.membership_service import MembershipService
-from domain.entities.enhanced_role import Permission, RoleType
+from organization_management.application.services.membership_service import MembershipService
+from organization_management.domain.entities.enhanced_role import Permission, RoleType
 from typing import Dict, Any
 
 # Helper function to extract user ID from current_user

@@ -6,8 +6,8 @@ from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import Dict, Any, Optional
 
 from app.dependencies import get_container, DependencyContainer
-from application.services.job_management_service import JobManagementService
-from domain.entities.course_content import JobStatus
+from course_generator.application.services.job_management_service import JobManagementService
+from course_generator.domain.entities.course_content import JobStatus
 
 router = APIRouter()
 

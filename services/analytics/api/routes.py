@@ -51,11 +51,11 @@ from api.dependencies import (
 )
 
 # Domain entities and interfaces
-from domain.entities.student_analytics import (
+from analytics.domain.entities.student_analytics import (
     StudentActivity, LabUsageMetrics, QuizPerformance,
     StudentProgress, LearningAnalytics, ActivityType, ContentType, RiskLevel
 )
-from domain.interfaces.analytics_service import (
+from analytics.domain.interfaces.analytics_service import (
     IStudentActivityService, ILabAnalyticsService, IQuizAnalyticsService,
     IProgressTrackingService, ILearningAnalyticsService, IReportingService,
     IRiskAssessmentService

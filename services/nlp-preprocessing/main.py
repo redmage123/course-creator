@@ -24,8 +24,8 @@ from typing import List, Dict, Any, Optional
 import numpy as np
 import logging
 
-from application.nlp_preprocessor import NLPPreprocessor
-from domain.entities import ConversationMessage
+from nlp_preprocessing.application.nlp_preprocessor import NLPPreprocessor
+from nlp_preprocessing.domain.entities import ConversationMessage
 
 # Configure logging
 logging.basicConfig(

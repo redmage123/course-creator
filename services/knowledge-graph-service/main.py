@@ -40,7 +40,7 @@ import uvicorn
 
 from api.graph_endpoints import router as graph_router
 from api.path_endpoints import router as path_router
-from infrastructure.database import (
+from knowledge_graph_service.infrastructure.database import (
     get_database_pool,
     close_database_pool,
     check_database_health

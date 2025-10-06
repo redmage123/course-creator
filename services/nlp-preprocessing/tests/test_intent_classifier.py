@@ -17,8 +17,8 @@ PERFORMANCE TARGET:
 """
 
 import pytest
-from application.intent_classifier import IntentClassifier
-from domain.entities import IntentType
+from nlp_preprocessing.application.intent_classifier import IntentClassifier
+from nlp_preprocessing.domain.entities import IntentType
 
 
 class TestIntentClassifier:

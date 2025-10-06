@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse
 from pydantic import ValidationError as PydanticValidationError
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from domain.entities.enhanced_role import Permission
+from organization_management.domain.entities.enhanced_role import Permission
 
 logger = logging.getLogger(__name__)
 

@@ -1,0 +1,1 @@
+# Course Management Domain Entities

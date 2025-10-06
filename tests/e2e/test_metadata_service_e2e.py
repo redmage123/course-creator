@@ -37,7 +37,7 @@ import os
 # Add metadata-service to path
 
 # Import domain entities
-from domain.entities.metadata import Metadata
+from metadata_service.domain.entities.metadata import Metadata
 from data_access.metadata_dao import MetadataDAO
 
 

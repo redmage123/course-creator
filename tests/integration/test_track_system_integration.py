@@ -12,9 +12,9 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../services/organization-management'))
 
-from domain.entities.track import Track, TrackStatus, TrackType
-from infrastructure.repositories.postgresql_track_repository import PostgreSQLTrackRepository
-from application.services.track_service import TrackService
+from organization_management.domain.entities.track import Track, TrackStatus, TrackType
+from organization_management.infrastructure.repositories.postgresql_track_repository import PostgreSQLTrackRepository
+from organization_management.application.services.track_service import TrackService
 
 
 class TestTrackSystemIntegration:

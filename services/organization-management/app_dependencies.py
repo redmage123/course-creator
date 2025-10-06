@@ -6,12 +6,12 @@ from typing import Dict, Any, List
 from uuid import UUID
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from infrastructure.container import get_container
-from application.services.organization_service import OrganizationService
-from application.services.auth_service import AuthService
-from application.services.membership_service import MembershipService
-from application.services.meeting_room_service import MeetingRoomService
-from domain.entities.enhanced_role import Permission
+from organization_management.infrastructure.container import get_container
+from organization_management.application.services.organization_service import OrganizationService
+from organization_management.application.services.auth_service import AuthService
+from organization_management.application.services.membership_service import MembershipService
+from organization_management.application.services.meeting_room_service import MeetingRoomService
+from organization_management.domain.entities.enhanced_role import Permission
 
 security = HTTPBearer()
 

@@ -18,8 +18,8 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 
 
-from application.services.organization_service import OrganizationService
-from domain.entities.organization import Organization
+from organization_management.application.services.organization_service import OrganizationService
+from organization_management.domain.entities.organization import Organization
 from data_access.organization_dao import OrganizationManagementDAO
 from exceptions import (
     OrganizationException, ValidationException,

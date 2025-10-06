@@ -17,7 +17,7 @@ TECHNICAL IMPLEMENTATION:
 
 import pytest
 from datetime import datetime, timedelta
-from domain.entities.student_analytics import (
+from analytics.domain.entities.student_analytics import (
     ActivityType,
     CompletionStatus,
     RiskLevel,

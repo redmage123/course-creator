@@ -8,8 +8,8 @@ from uuid import uuid4
 
 
 
-from domain.entities.track import Track, TrackStatus, TrackType
-from application.services.track_service import TrackService
+from organization_management.domain.entities.track import Track, TrackStatus, TrackType
+from organization_management.application.services.track_service import TrackService
 
 
 class TestTrackService:

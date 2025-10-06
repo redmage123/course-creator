@@ -11,7 +11,7 @@ from datetime import datetime
 
 import os
 
-from domain.entities.track import TrackStatus, TrackType
+from organization_management.domain.entities.track import TrackStatus, TrackType
 
 
 class TestTrackSystemE2E:

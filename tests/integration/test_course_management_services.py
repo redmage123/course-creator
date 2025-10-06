@@ -15,16 +15,16 @@ service_path = Path(__file__).parent.parent.parent / 'services' / 'course-manage
 sys.path.insert(0, str(service_path))
 
 # Import classes directly from the service
-from infrastructure.container import Container
-from domain.entities.course import Course, CourseStatus, DifficultyLevel
-from domain.entities.enrollment import Enrollment, EnrollmentStatus
-from domain.entities.feedback import (
+from course_management.infrastructure.container import Container
+from course_management.domain.entities.course import Course, CourseStatus, DifficultyLevel
+from course_management.domain.entities.enrollment import Enrollment, EnrollmentStatus
+from course_management.domain.entities.feedback import (
     CourseFeedback, StudentFeedback, FeedbackResponse, 
     FeedbackStatus, FeedbackType, InterventionLevel
 )
-from application.services.course_service import CourseService
-from application.services.enrollment_service import EnrollmentService
-from application.services.feedback_service import FeedbackService
+from course_management.application.services.course_service import CourseService
+from course_management.application.services.enrollment_service import EnrollmentService
+from course_management.application.services.feedback_service import FeedbackService
 
 class TestCourseServiceIntegration:
     """Test course service integration with dependencies"""

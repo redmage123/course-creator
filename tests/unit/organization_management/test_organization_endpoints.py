@@ -32,8 +32,8 @@ sys.modules['shared.cache.redis_cache'] = MagicMock()
 
 from main import app, create_app
 from api.organization_endpoints import router
-from application.services.organization_service import OrganizationService
-from domain.entities.organization import Organization
+from organization_management.application.services.organization_service import OrganizationService
+from organization_management.domain.entities.organization import Organization
 
 
 class TestOrganizationEndpoints:

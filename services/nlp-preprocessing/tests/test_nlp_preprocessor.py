@@ -7,8 +7,8 @@ Verify end-to-end NLP preprocessing pipeline works correctly.
 
 import pytest
 import numpy as np
-from application.nlp_preprocessor import NLPPreprocessor
-from domain.entities import ConversationMessage, IntentType
+from nlp_preprocessing.application.nlp_preprocessor import NLPPreprocessor
+from nlp_preprocessing.domain.entities import ConversationMessage, IntentType
 
 
 class TestNLPPreprocessor:

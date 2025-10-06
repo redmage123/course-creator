@@ -27,14 +27,14 @@ from typing import List, Optional, Dict, Any
 from uuid import UUID
 from pydantic import BaseModel, Field
 
-from application.services.graph_service import (
+from knowledge_graph_service.application.services.graph_service import (
     GraphService,
     NodeNotFoundError,
     EdgeNotFoundError,
     DuplicateNodeError
 )
-from domain.entities.node import NodeType
-from domain.entities.edge import EdgeType
+from knowledge_graph_service.domain.entities.node import NodeType
+from knowledge_graph_service.domain.entities.edge import EdgeType
 
 
 router = APIRouter(prefix="/graph", tags=["Knowledge Graph"])

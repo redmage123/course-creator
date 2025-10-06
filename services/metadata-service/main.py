@@ -28,7 +28,7 @@ from fastapi.responses import JSONResponse
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from api.metadata_endpoints import router as metadata_router
-from infrastructure.database import get_database_pool, close_database_pool
+from metadata_service.infrastructure.database import get_database_pool, close_database_pool
 
 
 # Configure logging

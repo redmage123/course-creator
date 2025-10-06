@@ -90,15 +90,15 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 # Domain entities and services
-from domain.entities.course import Course, DifficultyLevel, DurationUnit
-from domain.entities.enrollment import EnrollmentRequest, BulkEnrollmentRequest
-from domain.entities.feedback import CourseFeedback, StudentFeedback, FeedbackResponse
-from domain.interfaces.course_service import ICourseService
-from domain.interfaces.enrollment_service import IEnrollmentService
-from domain.interfaces.feedback_service import IFeedbackService
+from course_management.domain.entities.course import Course, DifficultyLevel, DurationUnit
+from course_management.domain.entities.enrollment import EnrollmentRequest, BulkEnrollmentRequest
+from course_management.domain.entities.feedback import CourseFeedback, StudentFeedback, FeedbackResponse
+from course_management.domain.interfaces.course_service import ICourseService
+from course_management.domain.interfaces.enrollment_service import IEnrollmentService
+from course_management.domain.interfaces.feedback_service import IFeedbackService
 
 # Infrastructure
-from infrastructure.container import Container
+from course_management.infrastructure.container import Container
 
 # Organization security middleware
 sys.path.append('/app/shared')

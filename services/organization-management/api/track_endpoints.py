@@ -8,10 +8,10 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 from datetime import datetime
 
-from application.services.track_service import TrackService
-from domain.entities.track import Track, TrackStatus, DifficultyLevel
+from organization_management.application.services.track_service import TrackService
+from organization_management.domain.entities.track import Track, TrackStatus, DifficultyLevel
 from app_dependencies import get_container, get_current_user, verify_permission
-from domain.entities.enhanced_role import Permission
+from organization_management.domain.entities.enhanced_role import Permission
 
 router = APIRouter(prefix="/api/v1/tracks", tags=["Tracks"])
 

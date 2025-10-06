@@ -1,0 +1,132 @@
+# Organization Management Service Configuration
+
+hydra:
+  run:
+    dir: /tmp/hydra_outputs
+  output_subdir: null
+  job:
+    chdir: false
+
+server:
+  host: "0.0.0.0"
+  port: 8008
+  debug: false
+  reload: false
+
+database:
+  host: ${oc.env:DB_HOST,localhost}
+  port: ${oc.env:DB_PORT,5433}
+  name: ${oc.env:DB_NAME,course_creator}
+  user: ${oc.env:DB_USER,postgres}
+  password: ${oc.env:DB_PASSWORD,password}
+  pool_size: 10
+  max_overflow: 15
+
+redis:
+  host: ${oc.env:REDIS_HOST,redis}
+  port: ${oc.env:REDIS_PORT,6379}
+  db: ${oc.env:REDIS_DB,2}
+  password: ${oc.env:REDIS_PASSWORD,}
+
+logging:
+  level: ${oc.env:LOG_LEVEL,INFO}
+  service_name: "organization-management"
+  format: "json"
+
+auth:
+  jwt_secret: ${oc.env:JWT_SECRET,your-secret-key-change-in-production}
+  jwt_algorithm: "HS256"
+  jwt_expiration_hours: 24
+
+organization:
+  default_settings:
+    max_projects_per_org: 100
+    max_members_per_org: 10000
+    enable_project_templates: true
+    enable_custom_branding: false
+  
+  auto_assignment:
+    enabled: true
+    domain_matching: true
+    default_role: "student"
+
+project:
+  default_settings:
+    max_duration_weeks: 52
+    max_participants: 1000
+    enable_prerequisites: true
+    enable_sequencing: true
+  
+  templates:
+    - name: "Software Development Program"
+      target_roles: ["Application Developer", "DevOps Engineer"]
+      duration_weeks: 16
+      objectives:
+        - "Full-stack web development"
+        - "CI/CD pipeline management"
+        - "Cloud deployment strategies"
+    
+    - name: "Business Analysis Program"  
+      target_roles: ["Business Analyst", "Product Manager"]
+      duration_weeks: 12
+      objectives:
+        - "Requirements gathering and analysis"
+        - "Stakeholder management"
+        - "Process optimization"
+
+notifications:
+  enabled: true
+  email:
+    enabled: true
+    smtp_host: ${oc.env:SMTP_HOST,localhost}
+    smtp_port: ${oc.env:SMTP_PORT,587}
+    smtp_user: ${oc.env:SMTP_USER,}
+    smtp_password: ${oc.env:SMTP_PASSWORD,}
+    from_email: ${oc.env:FROM_EMAIL,noreply@courseportal.com}
+  
+  templates:
+    welcome_instructor: "Welcome to your organization! You've been added as an instructor."
+    project_invitation: "You've been invited to join a new training project."
+    role_updated: "Your role in the organization has been updated."
+
+cors:
+  origins:
+    - "http://localhost:3000"
+    - "https://localhost:3000"
+    - "http://localhost:8080" 
+    - "https://localhost:8080"
+    - "https://*.courseportal.com"
+  allow_credentials: true
+  allow_methods: ["*"]
+  allow_headers: ["*"]
+
+rate_limiting:
+  enabled: true
+  requests_per_minute: 100
+  burst_limit: 200
+
+monitoring:
+  enabled: true
+  metrics_endpoint: "/metrics"
+  health_endpoint: "/health"
+  
+security:
+  password_min_length: 8
+  password_require_uppercase: true
+  password_require_lowercase: true
+  password_require_numbers: true
+  password_require_symbols: false
+  max_login_attempts: 5
+  lockout_duration_minutes: 15
+
+# User Roles Configuration
+roles:
+  admin: admin
+  organization_admin: organization_admin
+  instructor: instructor
+  student: student
+  site_admin: admin  # Alias for admin role
+
+# Special Users Configuration
+special_users:
+  site_admin_username: admin  # Username of the site-wide administrator

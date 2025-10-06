@@ -7,10 +7,10 @@ from typing import List, Optional, Dict, Any
 from uuid import UUID
 from pydantic import BaseModel, EmailStr
 
-from application.services.membership_service import MembershipService
-from application.services.meeting_room_service import MeetingRoomService
-from domain.entities.enhanced_role import RoleType, Permission
-from domain.entities.meeting_room import MeetingPlatform, RoomType
+from organization_management.application.services.membership_service import MembershipService
+from organization_management.application.services.meeting_room_service import MeetingRoomService
+from organization_management.domain.entities.enhanced_role import RoleType, Permission
+from organization_management.domain.entities.meeting_room import MeetingPlatform, RoomType
 from app_dependencies import get_container, get_current_user, verify_permission, get_membership_service, get_meeting_room_service, verify_site_admin_permission
 
 router = APIRouter(prefix="/api/v1/rbac", tags=["RBAC"])

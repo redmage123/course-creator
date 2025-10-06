@@ -12,9 +12,9 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / 'services' / 'course-management'))
 
-from domain.entities.course import Course, DifficultyLevel, DurationUnit
-from domain.entities.enrollment import Enrollment, EnrollmentStatus, EnrollmentRequest, BulkEnrollmentRequest
-from domain.entities.feedback import CourseFeedback, StudentFeedback, FeedbackResponse, FeedbackType
+from course_management.domain.entities.course import Course, DifficultyLevel, DurationUnit
+from course_management.domain.entities.enrollment import Enrollment, EnrollmentStatus, EnrollmentRequest, BulkEnrollmentRequest
+from course_management.domain.entities.feedback import CourseFeedback, StudentFeedback, FeedbackResponse, FeedbackType
 
 
 class TestCourse:

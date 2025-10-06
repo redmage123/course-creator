@@ -1,0 +1,1 @@
+# Course Generator Domain Interfaces

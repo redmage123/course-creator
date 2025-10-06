@@ -13,10 +13,10 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / 'services' / 'content-management'))
 
-from domain.entities.base_content import BaseContent, ContentStatus, ContentType
-from domain.entities.syllabus import Syllabus, SyllabusModule, GradingScheme
-from domain.entities.slide import Slide, SlideType, SlideLayout, SlideContent, SlideAnimation
-from domain.entities.quiz import Quiz, QuizQuestion, QuestionType, QuizSettings
+from content_management.domain.entities.base_content import BaseContent, ContentStatus, ContentType
+from content_management.domain.entities.syllabus import Syllabus, SyllabusModule, GradingScheme
+from content_management.domain.entities.slide import Slide, SlideType, SlideLayout, SlideContent, SlideAnimation
+from content_management.domain.entities.quiz import Quiz, QuizQuestion, QuestionType, QuizSettings
 
 
 class TestBaseContent:

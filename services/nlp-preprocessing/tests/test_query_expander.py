@@ -16,8 +16,8 @@ PERFORMANCE TARGET:
 """
 
 import pytest
-from application.query_expander import QueryExpander
-from domain.entities import ExpandedQuery
+from nlp_preprocessing.application.query_expander import QueryExpander
+from nlp_preprocessing.domain.entities import ExpandedQuery
 
 
 class TestQueryExpander:

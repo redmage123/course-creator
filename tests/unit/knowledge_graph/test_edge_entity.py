@@ -13,7 +13,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../../services/knowledge-graph-service'))
 
-from domain.entities.edge import (
+from knowledge_graph_service.domain.entities.edge import (
     Edge,
     EdgeType,
     InvalidWeightError,

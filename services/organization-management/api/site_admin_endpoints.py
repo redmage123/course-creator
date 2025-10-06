@@ -19,10 +19,10 @@ from uuid import UUID
 from pydantic import BaseModel
 import logging
 
-from application.services.organization_service import OrganizationService
-from application.services.membership_service import MembershipService
-from application.services.meeting_room_service import MeetingRoomService
-from domain.entities.enhanced_role import RoleType, Permission
+from organization_management.application.services.organization_service import OrganizationService
+from organization_management.application.services.membership_service import MembershipService
+from organization_management.application.services.meeting_room_service import MeetingRoomService
+from organization_management.domain.entities.enhanced_role import RoleType, Permission
 from app_dependencies import get_container, get_current_user, verify_site_admin_permission
 from datetime import datetime
 

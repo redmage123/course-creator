@@ -19,12 +19,12 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../services/knowledge-graph-service'))
 
-from domain.entities.node import Node, NodeType, create_course_node
-from domain.entities.edge import Edge, EdgeType, create_prerequisite_edge
+from knowledge_graph_service.domain.entities.node import Node, NodeType, create_course_node
+from knowledge_graph_service.domain.entities.edge import Edge, EdgeType, create_prerequisite_edge
 from data_access.graph_dao import GraphDAO
-from application.services.graph_service import GraphService
-from application.services.path_finding_service import PathFindingService
-from application.services.prerequisite_service import PrerequisiteService
+from knowledge_graph_service.application.services.graph_service import GraphService
+from knowledge_graph_service.application.services.path_finding_service import PathFindingService
+from knowledge_graph_service.application.services.prerequisite_service import PrerequisiteService
 
 
 @pytest_asyncio.fixture(scope="function")

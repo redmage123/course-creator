@@ -27,13 +27,13 @@ from typing import List, Optional, Dict, Any
 from uuid import UUID
 from pydantic import BaseModel, Field
 
-from application.services.path_finding_service import (
+from knowledge_graph_service.application.services.path_finding_service import (
     PathFindingService,
     PathNotFoundError,
     InvalidOptimizationError
 )
-from application.services.prerequisite_service import PrerequisiteService
-from infrastructure.database import get_database_pool
+from knowledge_graph_service.application.services.prerequisite_service import PrerequisiteService
+from knowledge_graph_service.infrastructure.database import get_database_pool
 from data_access.graph_dao import GraphDAO
 
 

@@ -20,7 +20,7 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 import logging
 
-from infrastructure.metadata_client import get_metadata_client, MetadataServiceClient
+from analytics.infrastructure.metadata_client import get_metadata_client, MetadataServiceClient
 
 logger = logging.getLogger(__name__)
 

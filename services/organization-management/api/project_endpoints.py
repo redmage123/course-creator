@@ -48,7 +48,7 @@ from exceptions import (
     RAGException,
     APIException
 )
-from application.services.organization_service import OrganizationService
+from organization_management.application.services.organization_service import OrganizationService
 
 # Import RAG integration for enhanced content generation
 import httpx

@@ -39,9 +39,9 @@ from enum import Enum
 from uuid import UUID
 
 from logging_setup import setup_docker_logging
-from infrastructure.container import initialize_container, cleanup_container
+from organization_management.infrastructure.container import initialize_container, cleanup_container
 from app_dependencies import get_organization_service, get_current_user, require_org_admin, require_project_manager
-from application.services.organization_service import OrganizationService
+from organization_management.application.services.organization_service import OrganizationService
 from auth.jwt_auth import JWTAuthenticator
 
 # Import API route modules

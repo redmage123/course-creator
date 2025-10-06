@@ -32,7 +32,7 @@ from fastapi import HTTPException
 from typing import Optional
 
 # Domain interfaces
-from domain.interfaces.analytics_service import (
+from analytics.domain.interfaces.analytics_service import (
     IStudentActivityService,
     ILabAnalyticsService,
     IQuizAnalyticsService,
@@ -43,7 +43,7 @@ from domain.interfaces.analytics_service import (
 )
 
 # Infrastructure
-from infrastructure.container import AnalyticsContainer
+from analytics.infrastructure.container import AnalyticsContainer
 
 # Global container instance (initialized in main.py lifespan)
 container: Optional[AnalyticsContainer] = None

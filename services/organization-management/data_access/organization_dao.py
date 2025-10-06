@@ -31,7 +31,7 @@ from uuid import UUID
 import json
 import sys
 sys.path.append('/app/shared')
-from domain.entities.enhanced_role import RoleType
+from organization_management.domain.entities.enhanced_role import RoleType
 from exceptions import (
     CourseCreatorBaseException,
     DatabaseException,

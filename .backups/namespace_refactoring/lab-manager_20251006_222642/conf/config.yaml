@@ -1,0 +1,22 @@
+# Lab Manager Service Configuration
+name: "Lab Container Management Service"
+version: "2.1.0"
+host: "0.0.0.0"
+port: 8006
+
+# Docker configuration
+docker:
+  base_url: "unix:///var/run/docker.sock"
+  timeout: 60
+  api_version: "auto"
+  
+# Lab configuration
+lab:
+  max_concurrent: 10
+  session_timeout: 3600
+  image_registry: "course-creator/labs"
+  storage_path: "/home/bbrelin/course-creator/lab-storage"
+  
+# Logging
+logging:
+  level: INFO

@@ -17,8 +17,8 @@ PERFORMANCE TARGET:
 """
 
 import pytest
-from application.entity_extractor import EntityExtractor
-from domain.entities import EntityType
+from nlp_preprocessing.application.entity_extractor import EntityExtractor
+from nlp_preprocessing.domain.entities import EntityType
 
 
 class TestEntityExtractor:

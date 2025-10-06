@@ -6,7 +6,7 @@ from fastapi import HTTPException, status
 from typing import Dict, Any
 from uuid import UUID
 
-from domain.entities.enhanced_role import Permission, RoleType
+from organization_management.domain.entities.enhanced_role import Permission, RoleType
 from app.dependencies import get_container
 
 

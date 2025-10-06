@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / 'services' / 'organization-management'))
 
-from domain.entities.track import Track, TrackStatus, TrackType
+from organization_management.domain.entities.track import Track, TrackStatus, TrackType
 
 
 class TestTrackEntity:

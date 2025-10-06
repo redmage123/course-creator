@@ -14,13 +14,13 @@ from typing import List, Optional, Dict, Any
 from uuid import UUID
 from pydantic import BaseModel, Field
 
-from application.services.metadata_service import (
+from metadata_service.application.services.metadata_service import (
     MetadataService,
     MetadataServiceError,
     MetadataValidationError,
     BulkOperationError
 )
-from domain.entities.metadata import Metadata as MetadataEntity
+from metadata_service.domain.entities.metadata import Metadata as MetadataEntity
 from data_access.metadata_dao import MetadataDAO
 
 

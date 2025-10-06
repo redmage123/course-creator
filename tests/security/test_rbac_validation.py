@@ -22,7 +22,7 @@ sys.path.append(str(project_root))
 sys.path.append(str(project_root / 'services' / 'user-management'))
 
 # Import User entity for role checking
-from domain.entities.user import User, UserRole, UserStatus
+from user_management.domain.entities.user import User, UserRole, UserStatus
 
 
 class RBACValidationTest:

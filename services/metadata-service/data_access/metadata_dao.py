@@ -15,7 +15,7 @@ import asyncpg
 import json
 from datetime import datetime, timezone
 
-from domain.entities.metadata import Metadata
+from metadata_service.domain.entities.metadata import Metadata
 
 
 # Custom Exceptions

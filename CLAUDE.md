@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Version**: 3.2.0 - Self-Improvement Framework & Parallel Agent Development
+**Version**: 3.3.0 - Service-Specific Namespace Refactoring
 **Last Updated**: 2025-10-06
 
 ---
@@ -80,22 +80,32 @@ This documentation is organized into logical sections within the `claude.md/` su
   - Container running with "Up (healthy)" status
   - Real test results, not assumptions
 
-### 3. MANDATORY MEMORY TOOL USAGE
-- **NEVER make assumptions** - ALWAYS check the MCP memory tool BEFORE making any assumptions about the system
-- **Check memory FIRST** - Search existing facts before implementing any solution
-- **Update memory ALWAYS** - Add new facts discovered or created during work
+### 3. MANDATORY MEMORY TOOL USAGE - ALWAYS FIRST, EVERY TASK
+
+**CRITICAL RULE: MEMORY SEARCH IS THE FIRST ACTION FOR EVERY TASK**
+
+Before doing ANYTHING - before reading files, before writing code, before running commands - you MUST:
+
+1. **Search memory for task-relevant facts** (keywords: technology, feature, component)
+2. **Search memory for constraints** (keywords: HTTPS, requirements, architecture)
+3. **Review recent context** (`list 20`)
 
 **Memory Tool Commands:**
 ```bash
-# Search for existing facts (CHECK THIS FIRST!)
-python3 .claude/query_memory.py search "<search_term>"
+# ALWAYS START WITH THESE - NO EXCEPTIONS
+python3 .claude/query_memory.py search "relevant_keyword"
+python3 .claude/query_memory.py search "constraints"
+python3 .claude/query_memory.py list 20
 
-# Add new facts (DO THIS AFTER DISCOVERIES!)
+# Add new facts AFTER discoveries
 python3 .claude/query_memory.py add "<fact_content>" "<category>" "<importance>"
-
-# List recent facts
-python3 .claude/query_memory.py list [limit]
 ```
+
+**Why This Matters:**
+- Prevents repeating mistakes (like using HTTP instead of HTTPS)
+- Ensures critical requirements aren't forgotten
+- Maintains consistency with user preferences
+- Avoids redundant work
 
 **Mandatory Memory Workflow:**
 1. **BEFORE** making any technical decision → Search memory for relevant facts
@@ -188,6 +198,48 @@ When reporting status, use only these categories:
 
 ### 1. Python Import Requirements
 **ABSOLUTE IMPORTS ONLY** - Never use relative imports (`from ..`, `from .`) in Python files.
+
+**SERVICE-SPECIFIC NAMESPACES** - All services use service-specific namespaces to prevent collision:
+
+**9 Services with Clean Architecture (domain/application/infrastructure layers):**
+- `analytics` → imports from `analytics.domain.*`, `analytics.application.*`, `analytics.infrastructure.*`
+- `content-management` → imports from `content_management.domain.*`, `content_management.application.*`, `content_management.infrastructure.*`
+- `course-generator` → imports from `course_generator.domain.*`, `course_generator.application.*`, `course_generator.infrastructure.*`
+- `course-management` → imports from `course_management.domain.*`, `course_management.application.*`, `course_management.infrastructure.*`
+- `knowledge-graph-service` → imports from `knowledge_graph_service.domain.*`, `knowledge_graph_service.application.*`, `knowledge_graph_service.infrastructure.*`
+- `metadata-service` → imports from `metadata_service.domain.*`, `metadata_service.application.*`, `metadata_service.infrastructure.*`
+- `nlp-preprocessing` → imports from `nlp_preprocessing.domain.*`, `nlp_preprocessing.application.*`, `nlp_preprocessing.infrastructure.*`
+- `organization-management` → imports from `organization_management.domain.*`, `organization_management.application.*`, `organization_management.infrastructure.*`
+- `user-management` → imports from `user_management.domain.*`, `user_management.application.*`, `user_management.infrastructure.*`
+
+**Directory Structure:**
+```
+services/SERVICE-NAME/
+├── service_name_package/       # ← New namespace directory (underscored)
+│   ├── __init__.py
+│   ├── domain/                 # ← Domain layer under service namespace
+│   │   └── entities/
+│   ├── application/            # ← Application layer under service namespace
+│   │   └── services/
+│   └── infrastructure/         # ← Infrastructure layer under service namespace
+│       └── repositories/
+├── data_access/                # ← Shared DAOs (not in namespace)
+├── api/                        # ← API endpoints (not in namespace)
+└── main.py                     # ← Service entry point
+```
+
+**Import Examples:**
+```python
+# OLD (namespace collision - DO NOT USE):
+from domain.entities.course import Course
+from application.services.course_service import CourseService
+
+# NEW (service-specific namespace - USE THIS):
+from course_management.domain.entities.course import Course
+from course_management.application.services.course_service import CourseService
+```
+
+**Note**: Service directory names use hyphens (`content-management`), but Python package names use underscores (`content_management`).
 
 ### 2. Exception Handling
 **CUSTOM EXCEPTIONS MANDATORY** - Never use generic `except Exception as e` handlers. Use structured custom exceptions with f-strings.
