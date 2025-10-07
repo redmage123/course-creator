@@ -305,12 +305,14 @@ def main(cfg: DictConfig) -> None:
     logger.info(f"Starting Analytics Service (Refactored v3.2.1)")
     logger.info(f"Configuration: {cfg}")
 
-    # Start server
+    # Start server with SSL
     uvicorn.run(
         app,
         host=cfg.server.host,
         port=cfg.server.port,
-        log_level=cfg.get("logging", {}).get("level", "info").lower()
+        log_level=cfg.get("logging", {}).get("level", "info").lower(),
+        ssl_keyfile="/app/ssl/nginx-selfsigned.key",
+        ssl_certfile="/app/ssl/nginx-selfsigned.crt"
     )
 
 

@@ -338,5 +338,7 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=8012,
         reload=True,  # Auto-reload on code changes (dev only)
-        log_level="info"
+        log_level="info",
+        ssl_keyfile="/app/ssl/nginx-selfsigned.key",
+        ssl_certfile="/app/ssl/nginx-selfsigned.crt"
     )

@@ -51,7 +51,7 @@ class SeleniumConfig:
     """
 
     def __init__(self):
-        self.base_url = os.getenv('TEST_BASE_URL', 'https://localhost')
+        self.base_url = os.getenv('TEST_BASE_URL', 'https://localhost:3000')
         self.headless = os.getenv('HEADLESS', 'true').lower() == 'true'
         self.screenshot_dir = os.getenv('SCREENSHOT_DIR', 'tests/reports/screenshots')
         self.implicit_wait = int(os.getenv('IMPLICIT_WAIT', '15'))

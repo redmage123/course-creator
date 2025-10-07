@@ -53,13 +53,30 @@ class Permission(Enum):
     SUBMIT_ASSIGNMENTS = "submit_assignments"
     VIEW_OWN_PROGRESS = "view_own_progress"
 
+    # Guest Powers (Read-Only, Limited Access)
+    ACCESS_DEMO_SERVICE = "access_demo_service"
+    VIEW_PUBLIC_COURSES = "view_public_courses"
+    USE_AI_ASSISTANT_LIMITED = "use_ai_assistant_limited"
+    BROWSE_COURSE_CATALOG = "browse_course_catalog"
+
 
 class RoleType(Enum):
-    """Enhanced role types with clear hierarchy"""
+    """
+    Enhanced role types with clear hierarchy
+
+    BUSINESS CONTEXT:
+    The platform supports 5 user role types:
+    - SITE_ADMIN: Platform-wide administration
+    - ORGANIZATION_ADMIN: Organization-level management
+    - INSTRUCTOR: Course creation and student management
+    - STUDENT: Learning and coursework submission
+    - GUEST: Unauthenticated users with read-only demo access
+    """
     SITE_ADMIN = "site_admin"
     ORGANIZATION_ADMIN = "organization_admin"
     INSTRUCTOR = "instructor"
     STUDENT = "student"
+    GUEST = "guest"
 
 @dataclass
 
@@ -134,6 +151,12 @@ class EnhancedRole:
                 Permission.ACCESS_ASSIGNED_TRACKS,
                 Permission.SUBMIT_ASSIGNMENTS,
                 Permission.VIEW_OWN_PROGRESS
+            },
+            RoleType.GUEST: {
+                Permission.ACCESS_DEMO_SERVICE,
+                Permission.VIEW_PUBLIC_COURSES,
+                Permission.USE_AI_ASSISTANT_LIMITED,
+                Permission.BROWSE_COURSE_CATALOG
             }
         }
 
@@ -178,12 +201,30 @@ class EnhancedRole:
         )
 
     def add_project_access(self, project_id: UUID):
-        """Add project access to role"""
+        """
+        Add project access to role
+
+        BUSINESS REQUIREMENT:
+        Guest users cannot be assigned to projects - they have read-only access
+        """
+        # Guest role cannot have project assignments
+        if self.role_type == RoleType.GUEST:
+            return  # Silently ignore for guest role
+
         if project_id not in self.project_ids:
             self.project_ids.append(project_id)
 
     def add_track_access(self, track_id: UUID):
-        """Add track access to role"""
+        """
+        Add track access to role
+
+        BUSINESS REQUIREMENT:
+        Guest users cannot be assigned to tracks - they have read-only access
+        """
+        # Guest role cannot have track assignments
+        if self.role_type == RoleType.GUEST:
+            return  # Silently ignore for guest role
+
         if track_id not in self.track_ids:
             self.track_ids.append(track_id)
 
@@ -198,11 +239,19 @@ class EnhancedRole:
             self.track_ids.remove(track_id)
 
     def is_valid(self) -> bool:
-        """Validate role configuration"""
+        """
+        Validate role configuration
+
+        BUSINESS REQUIREMENT:
+        - Organization-scoped roles (ORG_ADMIN, INSTRUCTOR, STUDENT) require organization_id
+        - Platform-scoped roles (SITE_ADMIN, GUEST) do NOT require organization_id
+        - Guest role is valid without organization_id (not organization-scoped)
+        """
         if not self.role_type:
             return False
 
         # Organization-scoped roles must have organization_id
+        # Guest and Site Admin are NOT organization-scoped
         if self.role_type in [RoleType.ORGANIZATION_ADMIN, RoleType.INSTRUCTOR, RoleType.STUDENT]:
             if not self.organization_id:
                 return False

@@ -71,11 +71,17 @@ from demo_data_generator import (
     generate_demo_students,
 )
 
+# Privacy API router
+from api.privacy_routes import router as privacy_router
+
 app = FastAPI(
     title="Course Creator Demo Service",
     description="Realistic demo backend showcasing platform capabilities",
     version="1.0.0"
 )
+
+# Register privacy API router
+app.include_router(privacy_router)
 
 # CORS configuration for frontend access
 app.add_middleware(

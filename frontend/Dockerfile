@@ -12,6 +12,9 @@ RUN cp /usr/share/nginx/html/html/index.html /usr/share/nginx/html/index.html &&
     ls -la /usr/share/nginx/html/index.html && \
     head -3 /usr/share/nginx/html/index.html
 
+# Fix permissions for public directory
+RUN chmod -R 755 /usr/share/nginx/html/public
+
 # Copy custom nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 

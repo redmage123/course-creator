@@ -135,125 +135,344 @@ done
 echo "✅ All validation checks passed!"
 ```
 
-## CI/CD Pipeline
+## CI/CD Pipeline - GitHub Actions Workflows
 
-The platform uses a comprehensive Jenkins and SonarQube CI/CD pipeline for automated testing, code quality analysis, and multi-environment deployment.
+The platform uses GitHub Actions workflows for automated testing, code quality analysis, and Docker infrastructure validation.
 
-### Pipeline Overview
+### **CRITICAL REQUIREMENT: Docker Infrastructure Testing (v3.2.2)**
+
+**MANDATORY**: All code changes, deletions, or additions MUST include Docker infrastructure testing as part of GitHub Actions workflows. This requirement is non-negotiable and applies to every PR and commit.
+
+#### Docker Infrastructure Verification Checklist
+Before any code changes are merged, the following MUST be verified:
+
+- [ ] **Container Build Success** - All Docker images build without errors
+- [ ] **Container Startup** - All services start successfully
+- [ ] **Health Check Passing** - All containers pass health checks within start period
+- [ ] **Service Availability** - All services respond to health endpoints (HTTP 200)
+- [ ] **HTTPS Configuration** - All services running on HTTPS (not HTTP)
+- [ ] **Network Connectivity** - Inter-service communication verified
+- [ ] **Database Connectivity** - Services can connect to PostgreSQL/Redis
+- [ ] **Volume Mounts** - All required volumes mounted correctly
+- [ ] **Environment Variables** - All required env vars present and correct
+
+#### Docker Testing Commands
 ```bash
-# Start Jenkins and SonarQube services
-./jenkins/jenkins-setup.sh      # Setup Jenkins with plugins and configuration
-./sonarqube/setup-sonarqube.sh  # Setup SonarQube with quality profiles and gates
+# Complete Docker infrastructure verification
+./scripts/app-control.sh status                    # Verify all services healthy
+./scripts/app-control.sh test-infrastructure       # Run comprehensive infra tests
+docker-compose ps                                  # Check all containers running
+docker-compose logs --tail=50                      # Review startup logs for errors
 
-# Pipeline trigger methods
-# 1. Automatic: Git push/PR to GitHub triggers webhook
-# 2. Manual: Jenkins UI or CLI trigger
-# 3. Scheduled: Nightly builds for main branch
+# Individual service health checks
+curl -k https://localhost:8000/health              # User Management
+curl -k https://localhost:8001/health              # Course Management
+curl -k https://localhost:8002/health              # Content Generation
+curl -k https://localhost:8007/health              # Analytics
+curl -k https://localhost:8012/health              # Knowledge Graph
+curl -k https://localhost:8013/health              # NLP Preprocessing
+# ... (all 16 services)
+
+# Container health verification
+docker inspect --format='{{.State.Health.Status}}' course-creator_user-management_1
+docker inspect --format='{{.State.Health.Status}}' course-creator_analytics_1
+# ... (verify all services show "healthy")
 ```
 
-### Pipeline Environments
-- **Development**: Local development environment
-- **Staging**: `course-creator-staging` namespace, single replicas for testing
-- **Production**: `course-creator-prod` namespace, 3+ replicas with autoscaling
+#### Pre-Commit Docker Validation Script
+```bash
+#!/bin/bash
+# validate-docker-infrastructure.sh - MANDATORY pre-commit Docker checks
 
-### Pipeline Stages
-1. **Code Quality** - Linting, formatting, SonarQube analysis
-2. **Testing** - Unit, integration, and E2E tests
-3. **Security** - Vulnerability scanning, secret detection
-4. **Build** - Docker image building and security scanning
-5. **Deploy** - Environment-specific deployment with health checks
-6. **Monitor** - Post-deployment monitoring and alerting
+echo "🐋 Starting Docker infrastructure validation..."
 
-### SonarQube Quality Gates
-- **Code Coverage**: Minimum 80% for new code
-- **Maintainability Rating**: A rating required
-- **Reliability Rating**: A rating required
-- **Security Rating**: A rating required
-- **Duplicated Lines**: Less than 3% duplication
-- **Code Smells**: Zero new code smells
-- **Bugs**: Zero new bugs
-- **Vulnerabilities**: Zero new vulnerabilities
-
-### Jenkins Pipeline Configuration
-```groovy
-pipeline {
-    agent any
-    
-    stages {
-        stage('Code Quality') {
-            steps {
-                sh './validate-code.sh'
-                sh 'sonar-scanner'
-            }
-        }
-        
-        stage('Testing') {
-            parallel {
-                stage('Unit Tests') {
-                    steps {
-                        sh 'python -m pytest tests/unit/ --junitxml=test-results/unit.xml'
-                    }
-                }
-                stage('Integration Tests') {
-                    steps {
-                        sh 'python -m pytest tests/integration/ --junitxml=test-results/integration.xml'
-                    }
-                }
-                stage('E2E Tests') {
-                    steps {
-                        sh 'python -m pytest tests/e2e/ --junitxml=test-results/e2e.xml'
-                    }
-                }
-            }
-        }
-        
-        stage('Security Scan') {
-            steps {
-                sh 'bandit -r services/ -f json -o security-report.json'
-                sh 'safety check --json > dependency-report.json'
-            }
-        }
-        
-        stage('Build') {
-            steps {
-                sh 'docker-compose build'
-                sh 'trivy image course-creator:latest'
-            }
-        }
-        
-        stage('Deploy') {
-            when {
-                branch 'main'
-            }
-            steps {
-                sh 'docker-compose -f docker-compose.prod.yml up -d'
-            }
-        }
-    }
-    
-    post {
-        always {
-            publishTestResults testResultsPattern: 'test-results/*.xml'
-            publishHTML([
-                allowMissing: false,
-                alwaysLinkToLastBuild: true,
-                keepAll: true,
-                reportDir: 'htmlcov',
-                reportFiles: 'index.html',
-                reportName: 'Coverage Report'
-            ])
-        }
-    }
+# Stop and rebuild affected services
+echo "🔨 Rebuilding Docker services..."
+docker-compose build || {
+    echo "❌ Docker build failed!"
+    exit 1
 }
+
+# Start all services
+echo "🚀 Starting all services..."
+docker-compose up -d || {
+    echo "❌ Failed to start services!"
+    exit 1
+}
+
+# Wait for services to initialize
+echo "⏳ Waiting for services to initialize (60s)..."
+sleep 60
+
+# Check container health status
+echo "🏥 Checking container health..."
+UNHEALTHY=$(docker ps --filter "health=unhealthy" --format "{{.Names}}" | wc -l)
+STARTING=$(docker ps --filter "health=starting" --format "{{.Names}}" | wc -l)
+
+if [ "$UNHEALTHY" -gt 0 ]; then
+    echo "❌ Found $UNHEALTHY unhealthy containers:"
+    docker ps --filter "health=unhealthy" --format "table {{.Names}}\t{{.Status}}"
+    exit 1
+fi
+
+if [ "$STARTING" -gt 0 ]; then
+    echo "⏳ Found $STARTING containers still starting, waiting 30s more..."
+    sleep 30
+    UNHEALTHY=$(docker ps --filter "health=unhealthy" --format "{{.Names}}" | wc -l)
+    if [ "$UNHEALTHY" -gt 0 ]; then
+        echo "❌ Containers failed to become healthy:"
+        docker ps --filter "health=unhealthy" --format "table {{.Names}}\t{{.Status}}"
+        exit 1
+    fi
+fi
+
+# Verify all expected services are running
+echo "🔍 Verifying all 16 services are running..."
+RUNNING=$(docker-compose ps --services --filter "status=running" | wc -l)
+if [ "$RUNNING" -lt 16 ]; then
+    echo "❌ Expected 16 services, but only $RUNNING are running!"
+    docker-compose ps
+    exit 1
+fi
+
+# Test service health endpoints
+echo "🩺 Testing service health endpoints..."
+FAILED_HEALTH_CHECKS=0
+
+for port in 8000 8001 8002 8003 8004 8005 8006 8007 8008 8009 8010 8011 8012 8013; do
+    if ! curl -k -f -s -o /dev/null -w "%{http_code}" https://localhost:$port/health | grep -q "200"; then
+        echo "❌ Health check failed for service on port $port"
+        FAILED_HEALTH_CHECKS=$((FAILED_HEALTH_CHECKS + 1))
+    fi
+done
+
+if [ "$FAILED_HEALTH_CHECKS" -gt 0 ]; then
+    echo "❌ $FAILED_HEALTH_CHECKS health checks failed!"
+    exit 1
+fi
+
+echo "✅ All Docker infrastructure checks passed!"
+exit 0
 ```
 
-### Emergency Procedures
-```bash
-# Force deployment (use only for critical fixes)
-jenkins-cli build course-creator-pipeline -p FORCE_DEPLOY=true -p DEPLOY_ENVIRONMENT=prod
+### GitHub Actions Workflow Configuration
 
-# Rollback deployment
-kubectl rollout undo deployment/service-name -n course-creator-prod
+#### Main CI/CD Workflow (`.github/workflows/ci-cd.yml`)
+```yaml
+name: CI/CD Pipeline with Docker Infrastructure Testing
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install flake8 black isort bandit
+
+      - name: Run code quality checks
+        run: |
+          ./validate-code.sh
+
+  docker-infrastructure-test:
+    runs-on: ubuntu-latest
+    needs: code-quality
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Create required directories
+        run: |
+          mkdir -p ssl logs shared
+
+      - name: Generate self-signed certificates
+        run: |
+          openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+            -keyout ssl/nginx-selfsigned.key \
+            -out ssl/nginx-selfsigned.crt \
+            -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
+
+      - name: Create .cc_env file
+        run: |
+          touch .cc_env
+          echo "ENVIRONMENT=ci" >> .cc_env
+
+      - name: Build Docker images
+        run: |
+          docker-compose build
+        timeout-minutes: 30
+
+      - name: Start all services
+        run: |
+          docker-compose up -d
+        timeout-minutes: 5
+
+      - name: Wait for services to initialize
+        run: |
+          echo "Waiting 90 seconds for all services to start..."
+          sleep 90
+
+      - name: Check container health status
+        run: |
+          echo "Checking Docker container health..."
+          docker ps -a
+
+          UNHEALTHY=$(docker ps --filter "health=unhealthy" --format "{{.Names}}" | wc -l)
+          if [ "$UNHEALTHY" -gt 0 ]; then
+            echo "❌ Found unhealthy containers:"
+            docker ps --filter "health=unhealthy" --format "table {{.Names}}\t{{.Status}}"
+            exit 1
+          fi
+
+          echo "✅ All containers are healthy"
+
+      - name: Verify all services running
+        run: |
+          EXPECTED=16
+          RUNNING=$(docker-compose ps --services --filter "status=running" | wc -l)
+
+          if [ "$RUNNING" -lt "$EXPECTED" ]; then
+            echo "❌ Expected $EXPECTED services, but only $RUNNING are running!"
+            docker-compose ps
+            exit 1
+          fi
+
+          echo "✅ All $EXPECTED services are running"
+
+      - name: Test service health endpoints
+        run: |
+          FAILED=0
+
+          # Test all service health endpoints
+          for port in 8000 8001 8002 8003 8004 8005 8006 8007 8008 8009 8010 8011 8012 8013; do
+            echo "Testing service on port $port..."
+            STATUS=$(curl -k -s -o /dev/null -w "%{http_code}" https://localhost:$port/health || echo "000")
+
+            if [ "$STATUS" != "200" ]; then
+              echo "❌ Health check failed for port $port (HTTP $STATUS)"
+              FAILED=$((FAILED + 1))
+            else
+              echo "✅ Service on port $port is healthy"
+            fi
+          done
+
+          if [ "$FAILED" -gt 0 ]; then
+            echo "❌ $FAILED health checks failed!"
+            docker-compose logs --tail=100
+            exit 1
+          fi
+
+          echo "✅ All service health checks passed"
+
+      - name: Run app-control.sh status check
+        run: |
+          chmod +x ./scripts/app-control.sh
+          ./scripts/app-control.sh status
+
+      - name: Output logs on failure
+        if: failure()
+        run: |
+          echo "=== Docker Container Status ==="
+          docker ps -a
+
+          echo "=== Service Logs ==="
+          docker-compose logs --tail=200
+
+          echo "=== Unhealthy Containers ==="
+          docker ps --filter "health=unhealthy"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker-compose down -v
+
+  unit-tests:
+    runs-on: ubuntu-latest
+    needs: docker-infrastructure-test
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Run unit tests
+        run: |
+          python -m pytest tests/unit/ --junitxml=test-results/unit.xml || true
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results
+          path: test-results/
+
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: code-quality
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run Bandit security scan
+        run: |
+          pip install bandit
+          bandit -r services/ -f json -o security-report.json || true
+
+      - name: Upload security report
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: security-report
+          path: security-report.json
+```
+
+#### Branch Protection Rules
+Configure the following branch protection rules for `main` and `master` branches:
+
+- ✅ Require status checks to pass before merging
+- ✅ Require branches to be up to date before merging
+- ✅ Required status checks:
+  - `code-quality`
+  - `docker-infrastructure-test` (CRITICAL)
+  - `unit-tests`
+  - `security-scan`
+- ✅ Require pull request reviews before merging (minimum 1)
+- ✅ Dismiss stale pull request approvals when new commits are pushed
+
+### Workflow Trigger Events
+- **Pull Request**: All checks run on PR creation and updates
+- **Push to main/master**: Full pipeline runs including infrastructure tests
+- **Push to develop**: Full pipeline runs for integration testing
+- **Manual**: Can be triggered via GitHub Actions UI for testing
+
+### Monitoring Workflow Results
+```bash
+# View workflow runs
+gh run list --workflow=ci-cd.yml
+
+# View specific run details
+gh run view <run-id>
+
+# Download artifacts
+gh run download <run-id>
+
+# Re-run failed workflows
+gh run rerun <run-id>
 ```
 
 ## Centralized Logging System (v2.2 - Syslog Format)
@@ -301,13 +520,15 @@ ls -lh ./logs/course-creator/
 ## Code Review Process
 
 ### Pull Request Requirements
+- [ ] **Docker infrastructure tests pass** - ALL containers healthy, all services respond (CRITICAL)
 - [ ] **All tests pass** - Unit, integration, and E2E tests
 - [ ] **Code coverage maintained** - Minimum 80% coverage
-- [ ] **SonarQube quality gate passed** - All quality metrics met
 - [ ] **Security scan passed** - No new vulnerabilities
 - [ ] **CLAUDE.md compliance verified** - All directives followed
 - [ ] **Documentation updated** - README and API docs current
-- [ ] **Manual testing completed** - Feature tested in staging environment
+- [ ] **Manual testing completed** - Feature tested locally with Docker
+- [ ] **Health checks verified** - All 16 services passing health checks
+- [ ] **HTTPS configuration** - All services running on HTTPS (not HTTP)
 
 ### Code Review Checklist
 - [ ] **Architecture consistency** - Follows established patterns

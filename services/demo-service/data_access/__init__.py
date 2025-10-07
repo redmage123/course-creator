@@ -33,5 +33,6 @@ Demo Capabilities:
 """
 
 from .demo_dao import DemoDAO
+from .guest_session_dao import GuestSessionDAO
 
-__all__ = ['DemoDAO']
+__all__ = ['DemoDAO', 'GuestSessionDAO']

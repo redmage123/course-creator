@@ -1202,40 +1202,41 @@ class TestOrgAdminCompleteWorkflowIntegration(BaseTest):
         logger.info("Step 1: ✓ Accessed organization admin dashboard")
 
         # Step 3: View overview and statistics
-        assert self.driver.find_element(By.ID, "overview"), "Overview should be visible"
+        overview = self.wait_for_element((By.ID, "overview"))
+        assert overview is not None, "Overview should be visible"
         logger.info("Step 2: ✓ Viewed organization overview")
 
         # Step 4: Navigate to projects
-        projects_tab = self.driver.find_element(By.CSS_SELECTOR, '[data-tab="projects"]')
+        projects_tab = self.wait_for_element((By.CSS_SELECTOR, '[data-tab="projects"]'))
         self.click_element_js(projects_tab)
         time.sleep(2)
         logger.info("Step 3: ✓ Navigated to projects tab")
 
         # Step 5: Navigate to members
-        instructors_tab = self.driver.find_element(By.CSS_SELECTOR, '[data-tab="instructors"]')
+        instructors_tab = self.wait_for_element((By.CSS_SELECTOR, '[data-tab="instructors"]'))
         self.click_element_js(instructors_tab)
         time.sleep(2)
         logger.info("Step 4: ✓ Viewed instructors")
 
-        students_tab = self.driver.find_element(By.CSS_SELECTOR, '[data-tab="students"]')
+        students_tab = self.wait_for_element((By.CSS_SELECTOR, '[data-tab="students"]'))
         self.click_element_js(students_tab)
         time.sleep(2)
         logger.info("Step 5: ✓ Viewed students")
 
         # Step 6: Navigate to tracks
-        tracks_tab = self.driver.find_element(By.CSS_SELECTOR, '[data-tab="tracks"]')
+        tracks_tab = self.wait_for_element((By.CSS_SELECTOR, '[data-tab="tracks"]'))
         self.click_element_js(tracks_tab)
         time.sleep(2)
         logger.info("Step 6: ✓ Viewed learning tracks")
 
         # Step 7: Access settings
-        settings_tab = self.driver.find_element(By.CSS_SELECTOR, '[data-tab="settings"]')
+        settings_tab = self.wait_for_element((By.CSS_SELECTOR, '[data-tab="settings"]'))
         self.click_element_js(settings_tab)
         time.sleep(2)
         logger.info("Step 7: ✓ Accessed organization settings")
 
         # Step 8: Return to overview
-        overview_tab = self.driver.find_element(By.CSS_SELECTOR, '[data-tab="overview"]')
+        overview_tab = self.wait_for_element((By.CSS_SELECTOR, '[data-tab="overview"]'))
         self.click_element_js(overview_tab)
         time.sleep(2)
         logger.info("Step 8: ✓ Returned to overview")

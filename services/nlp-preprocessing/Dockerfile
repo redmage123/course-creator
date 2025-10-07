@@ -6,6 +6,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements
@@ -25,7 +26,7 @@ EXPOSE 8013
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import warnings; warnings.filterwarnings('ignore'); import requests; r = requests.get('https://localhost:8013/health', verify=False); exit(0 if r.status_code == 200 else 1)"
+    CMD curl -f -k https://localhost:8013/health || exit 1
 
 # Run the service
 CMD ["python", "main.py"]

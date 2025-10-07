@@ -21,7 +21,7 @@ USER demouser
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8010/api/v1/demo/health')" || exit 1
+    CMD python -c "import requests; requests.get('https://localhost:8010/api/v1/demo/health', verify=False)" || exit 1
 
 EXPOSE 8010
 

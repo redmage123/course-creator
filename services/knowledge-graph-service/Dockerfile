@@ -9,6 +9,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     gcc \
     postgresql-client \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
@@ -29,7 +30,7 @@ EXPOSE 8012
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8012/health')"
+    CMD curl -f -k https://localhost:8012/health || exit 1
 
-# Run the application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8012"]
+# Run the application with SSL
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8012", "--ssl-keyfile", "/app/ssl/nginx-selfsigned.key", "--ssl-certfile", "/app/ssl/nginx-selfsigned.crt"]

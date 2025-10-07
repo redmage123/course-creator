@@ -1,5 +1,34 @@
 # Testing Strategy
 
+## 🚨 CRITICAL REQUIREMENT: Comprehensive Selenium E2E Testing (v3.2.2)
+
+**MANDATORY**: Subagents must perform comprehensive Selenium E2E tests on **EVERY feature and pathway** in the web application infrastructure. This is a non-negotiable requirement for ALL code changes.
+
+### Comprehensive E2E Test Plan
+
+**Document:** `/home/bbrelin/course-creator/tests/COMPREHENSIVE_E2E_TEST_PLAN.md`
+
+**Scope:**
+- **1,200+ tests** covering all 14 major feature areas
+- **Every user journey** from start to finish
+- **All integration points** between services
+- **Cross-cutting concerns**: accessibility, performance, security
+
+**Current Coverage:** ~45-60% (539 tests)
+**Target Coverage:** 90%+ (1,200+ tests)
+**Implementation Timeline:** 6-8 weeks
+
+**Priority 0 (Critical) Test Areas:**
+1. ✅ **Complete Student Learning Journey** - Login → Browse → Enroll → Learn → Quiz → Lab → Certificate
+2. ✅ **RAG AI Assistant Workflow** - Question → Knowledge Graph → AI Response → Learning Path
+3. ✅ **Content Generation Pipeline** - Topic → Syllabus → Slides → Quiz → Lab (complete AI flow)
+4. ✅ **Lab Environment Lifecycle** - Create → Use → Persist → Timeout → Cleanup
+5. ✅ **Analytics Data Accuracy** - Verify all calculations mathematically correct
+
+**See Full Test Plan:** All test scenarios, acceptance criteria, and implementation roadmap in `tests/COMPREHENSIVE_E2E_TEST_PLAN.md`
+
+---
+
 ## 🚨 Testing Philosophy
 
 **The analytics service database configuration bug revealed a critical flaw in our original testing approach**: Over-mocking in integration tests was hiding real configuration issues that would cause runtime failures.

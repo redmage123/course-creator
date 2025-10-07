@@ -2,8 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Version**: 3.3.0 - Service-Specific Namespace Refactoring
-**Last Updated**: 2025-10-06
+**Version**: 3.3.0 - Guest Session Privacy Compliance (GDPR/CCPA/PIPEDA)
+**Last Updated**: 2025-10-07
 
 ---
 
@@ -68,19 +68,75 @@ This documentation is organized into logical sections within the `claude.md/` su
 
 ## 🚨 CRITICAL BEHAVIORAL REQUIREMENTS FOR CLAUDE CODE
 
-### 1. NO FALSE SUCCESS CLAIMS
+### 1. MANDATORY COMPREHENSIVE E2E SELENIUM TESTING - ALL ROLES (v3.2.2)
+**HIGHEST PRIORITY - APPLIES TO ALL CODE CHANGES**
+
+- **MANDATORY**: Subagents MUST perform Selenium E2E tests on **EVERY feature and pathway for ALL user roles**
+- **NO EXCEPTIONS**: All user journeys for ALL 4 roles must have complete E2E test coverage
+- **TARGET**: 90%+ E2E coverage across 14 major feature areas and ALL roles (currently ~45-60%)
+- **CRITICAL REQUIREMENT**: Test ALL roles, not just students!
+
+**User Roles Requiring Complete Coverage (4 authenticated + 1 unauthenticated):**
+1. **Site Admin** - Platform administration, all organizations, system configuration
+2. **Organization Admin** - Member management, organization settings, tracks, compliance
+3. **Instructor** - Course creation, content generation, student management, analytics
+4. **Student** - Learning workflows, assessments, labs, progress tracking
+5. **Anonymous/Guest** - Public pages, registration, course browsing (unauthenticated)
+
+**Comprehensive Test Plan:** `/home/bbrelin/course-creator/tests/COMPREHENSIVE_E2E_TEST_PLAN.md`
+
+**Priority 0 Tests (Must Implement First) - ALL ROLES:**
+1. Complete Student Learning Journey (Login → Learn → Quiz → Lab → Certificate)
+2. Complete Instructor Workflow (Create Course → Generate Content → Manage Students → Analytics)
+3. Complete Organization Admin Workflow (Manage Members → Configure Org → Tracks → Reports)
+4. Complete Site Admin Workflow (Platform Admin → Monitor System → Manage All Orgs)
+5. Anonymous/Guest Workflows (Browse → Register → Password Reset)
+6. RAG AI Assistant Workflow (ALL roles can interact with AI)
+7. Content Generation Pipeline (Instructor role)
+
+**Quick Test Command:**
+```bash
+# Run Priority 0 tests for ALL roles
+pytest tests/e2e/critical_user_journeys/ -v
+
+# Run specific role tests
+pytest tests/e2e/critical_user_journeys/test_student_complete_journey.py -v
+pytest tests/e2e/critical_user_journeys/test_instructor_complete_journey.py -v
+pytest tests/e2e/critical_user_journeys/test_org_admin_complete_journey.py -v
+pytest tests/e2e/critical_user_journeys/test_site_admin_complete_journey.py -v
+pytest tests/e2e/critical_user_journeys/test_guest_complete_journey.py -v
+```
+
+### 2. MANDATORY DOCKER INFRASTRUCTURE TESTING (v3.2.2)
+**SECOND HIGHEST PRIORITY - APPLIES TO ALL CODE CHANGES**
+
+- **BEFORE** any PR or commit: ALL Docker containers MUST be healthy
+- **MANDATORY** GitHub Actions workflow: `docker-infrastructure-test` must pass
+- **NO EXCEPTIONS**: Every code change requires Docker health verification
+- **ALL 16 SERVICES** must pass health checks with HTTPS enabled
+- **VERIFICATION REQUIRED**: Run `./scripts/app-control.sh status` and confirm all green checkmarks
+
+**Quick Verification Command:**
+```bash
+# THIS MUST PASS BEFORE ANY PR
+./scripts/app-control.sh status 2>&1 | grep "✅"
+# Expected: 16 services showing "✅ Healthy"
+```
+
+### 3. NO FALSE SUCCESS CLAIMS
 - **NEVER** claim a task is "completed" or "successful" unless you have PROVEN it works through actual testing
 - **NEVER** say "✅" or mark anything as working without concrete evidence
 - **NEVER** use phrases like "successfully completed", "working correctly", "fixed", "healthy" without verification
 
-### 2. MANDATORY VERIFICATION REQUIREMENTS
+### 4. MANDATORY VERIFICATION REQUIREMENTS
 - Before claiming ANY task completion, you MUST provide concrete evidence:
   - Service responding to HTTP requests with 200 status
   - Actual command output showing success
   - Container running with "Up (healthy)" status
   - Real test results, not assumptions
+  - **Docker infrastructure tests passing** (see requirement #1)
 
-### 3. MANDATORY MEMORY TOOL USAGE - ALWAYS FIRST, EVERY TASK
+### 5. MANDATORY MEMORY TOOL USAGE - ALWAYS FIRST, EVERY TASK
 
 **CRITICAL RULE: MEMORY SEARCH IS THE FIRST ACTION FOR EVERY TASK**
 
@@ -265,10 +321,12 @@ The Course Creator Platform is a comprehensive educational technology system wit
 
 - **9 Microservices** (ports 8000-8010) providing authentication, content generation, lab management, analytics, RBAC, and demo functionality
 - **Multi-IDE Lab Environment** with individual Docker containers for students
-- **Enhanced RBAC System** with multi-tenant organization management
+- **Enhanced RBAC System** with multi-tenant organization management and Guest role
 - **RAG-Enhanced AI** for progressive learning and content generation
 - **Demo Service** with realistic data generation for platform demonstration (port 8010)
-- **Comprehensive Testing** with 102 RBAC tests achieving 100% success rate plus 70+ demo service tests
+- **Guest Session Privacy Compliance** with GDPR/CCPA/PIPEDA-compliant PostgreSQL storage and privacy APIs
+- **Enhanced AI Chatbot** with NLP, RAG, knowledge graph integration, and personalized onboarding
+- **Comprehensive Testing** with 102 RBAC tests achieving 100% success rate plus 101+ demo service tests
 - **Advanced Password Management** with secure admin account creation and self-service password changes
 - **Enhanced UI/UX** with keyboard navigation, accessibility features, and responsive design
 
@@ -287,6 +345,8 @@ For immediate needs:
 - **Troubleshooting**: See [Troubleshooting](claude.md/10-troubleshooting.md)
 - **Architecture Questions**: See [Architecture Overview](claude.md/05-architecture.md)
 - **Testing Issues**: See [Testing Strategy](claude.md/08-testing-strategy.md)
+- **Privacy Compliance**: See [Guest Session Privacy Compliance](docs/GUEST_SESSION_PRIVACY_COMPLIANCE.md)
+- **Privacy API**: See [Privacy API Documentation](docs/PRIVACY_API_DOCUMENTATION.md)
 
 ---
 
