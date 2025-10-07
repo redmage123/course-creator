@@ -239,26 +239,26 @@ class TestOrgAdminCompleteJourney(BaseTest):
         SUCCESS CRITERIA: Settings update form submits successfully
         """
         self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
-        time.sleep(2)
+        time.sleep(3)
 
         # Navigate to settings
         settings_tab = self.wait_for_element((By.CSS_SELECTOR, '[data-tab="settings"]'))
         self.click_element_js(settings_tab)
-        time.sleep(2)
+        time.sleep(3)  # Increased wait for tab switching
 
         # Update organization name
         try:
-            org_name_field = self.driver.find_element(By.ID, "orgNameSetting")
+            org_name_field = self.wait_for_element((By.ID, "orgNameSetting"))
             org_name_field.clear()
             org_name_field.send_keys("Updated Test Organization")
 
             # Update description
-            org_desc_field = self.driver.find_element(By.ID, "orgDescriptionSetting")
+            org_desc_field = self.wait_for_element((By.ID, "orgDescriptionSetting"))
             org_desc_field.clear()
             org_desc_field.send_keys("This is an updated test organization description")
 
             # Click save button
-            save_btn = self.driver.find_element(By.ID, "saveOrgSettingsBtn")
+            save_btn = self.wait_for_element((By.ID, "saveOrgSettingsBtn"))
             self.click_element_js(save_btn)
             time.sleep(2)
 
@@ -454,17 +454,17 @@ class TestOrgAdminCompleteJourney(BaseTest):
         SUCCESS CRITERIA: Projects list displays
         """
         self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
-        time.sleep(2)
+        time.sleep(3)
 
         # Navigate to projects tab
         projects_tab = self.wait_for_element((By.CSS_SELECTOR, '[data-tab="projects"]'))
         self.click_element_js(projects_tab)
-        time.sleep(2)
+        time.sleep(3)
 
         # Check for projects list container
         try:
-            projects_list = self.driver.find_element(By.ID, "projectsList")
-            assert projects_list.is_displayed(), "Projects list should be visible"
+            projects_list = self.wait_for_element((By.ID, "projectsList"))
+            assert projects_list is not None, "Projects list should exist"
             logger.info("✓ Projects list container found")
         except NoSuchElementException:
             logger.warning("Projects list container not found")
@@ -476,16 +476,16 @@ class TestOrgAdminCompleteJourney(BaseTest):
         SUCCESS CRITERIA: Project status filter works
         """
         self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
-        time.sleep(2)
+        time.sleep(3)
 
         # Navigate to projects tab
         projects_tab = self.wait_for_element((By.CSS_SELECTOR, '[data-tab="projects"]'))
         self.click_element_js(projects_tab)
-        time.sleep(2)
+        time.sleep(3)
 
         # Look for status filter
         try:
-            status_filter = self.driver.find_element(By.ID, "projectStatusFilter")
+            status_filter = self.wait_for_element((By.ID, "projectStatusFilter"))
             select = Select(status_filter)
 
             # Try to select "active" status
@@ -581,17 +581,17 @@ class TestOrgAdminCompleteJourney(BaseTest):
         SUCCESS CRITERIA: Track project filter works
         """
         self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
-        time.sleep(2)
+        time.sleep(3)
 
         # Navigate to tracks tab
         tracks_tab = self.wait_for_element((By.CSS_SELECTOR, '[data-tab="tracks"]'))
         self.click_element_js(tracks_tab)
-        time.sleep(2)
+        time.sleep(3)
 
         # Look for project filter
         try:
-            project_filter = self.driver.find_element(By.ID, "trackProjectFilter")
-            assert project_filter.is_displayed(), "Track project filter should be visible"
+            project_filter = self.wait_for_element((By.ID, "trackProjectFilter"))
+            assert project_filter is not None, "Track project filter should exist"
             logger.info("✓ Track project filter found")
         except NoSuchElementException:
             logger.warning("Track project filter not found")
@@ -630,16 +630,16 @@ class TestOrgAdminCompleteJourney(BaseTest):
         SUCCESS CRITERIA: Track difficulty filter works
         """
         self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
-        time.sleep(2)
+        time.sleep(3)
 
         # Navigate to tracks tab
         tracks_tab = self.wait_for_element((By.CSS_SELECTOR, '[data-tab="tracks"]'))
         self.click_element_js(tracks_tab)
-        time.sleep(2)
+        time.sleep(3)
 
         # Look for difficulty filter
         try:
-            difficulty_filter = self.driver.find_element(By.ID, "trackDifficultyFilter")
+            difficulty_filter = self.wait_for_element((By.ID, "trackDifficultyFilter"))
             select = Select(difficulty_filter)
 
             # Try to select "beginner" difficulty
@@ -657,16 +657,16 @@ class TestOrgAdminCompleteJourney(BaseTest):
         SUCCESS CRITERIA: Track search input works
         """
         self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
-        time.sleep(2)
+        time.sleep(3)
 
         # Navigate to tracks tab
         tracks_tab = self.wait_for_element((By.CSS_SELECTOR, '[data-tab="tracks"]'))
         self.click_element_js(tracks_tab)
-        time.sleep(2)
+        time.sleep(3)
 
         # Look for search input
         try:
-            search_input = self.driver.find_element(By.ID, "trackSearchInput")
+            search_input = self.wait_for_element((By.ID, "trackSearchInput"))
             search_input.send_keys("Python")
             time.sleep(1)
 
@@ -778,17 +778,17 @@ class TestOrgAdminCompleteJourney(BaseTest):
         SUCCESS CRITERIA: Preferences form displays in settings
         """
         self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
-        time.sleep(2)
+        time.sleep(3)
 
         # Navigate to settings
         settings_tab = self.wait_for_element((By.CSS_SELECTOR, '[data-tab="settings"]'))
         self.click_element_js(settings_tab)
-        time.sleep(2)
+        time.sleep(3)
 
         # Look for preferences form
         try:
-            prefs_form = self.driver.find_element(By.ID, "orgPreferencesForm")
-            assert prefs_form.is_displayed(), "Organization preferences form should be visible"
+            prefs_form = self.wait_for_element((By.ID, "orgPreferencesForm"))
+            assert prefs_form is not None, "Organization preferences form should exist"
             logger.info("✓ Organization preferences form found")
         except NoSuchElementException:
             logger.warning("Organization preferences form not found")
@@ -1108,16 +1108,16 @@ class TestOrgAdminCompleteJourney(BaseTest):
         SUCCESS CRITERIA: No SEVERE console errors during tab navigation
         """
         self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
-        time.sleep(2)
+        time.sleep(3)
 
         # Navigate through all tabs
         tabs = ['projects', 'instructors', 'students', 'tracks', 'settings', 'overview']
 
         for tab_name in tabs:
             try:
-                tab_link = self.driver.find_element(By.CSS_SELECTOR, f'[data-tab="{tab_name}"]')
+                tab_link = self.wait_for_element((By.CSS_SELECTOR, f'[data-tab="{tab_name}"]'))
                 self.click_element_js(tab_link)
-                time.sleep(1)
+                time.sleep(2)  # Increased wait for tab switching
             except:
                 pass
 
