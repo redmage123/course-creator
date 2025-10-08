@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.5, maximum-scale=3.0">
+    <title>Course Creator Platform - AI-Powered Course Creation</title>
+    <link rel="stylesheet" href="../css/design-system.css?v=4.0">
+    <link rel="stylesheet" href="../css/pages/home-redesign.css?v=4.0">
+    <link rel="stylesheet" href="../css/main.css?v=3.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Security: DOMPurify for XSS protection -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>
+        .quick-login-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary-color);
+        }
+
+        #backToDashboardBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        #backToDashboardBtn:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <header role="banner">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <h1><i class="fas fa-graduation-cap"></i> Course Creator</h1>
+                </div>
+                <nav class="nav-links" role="navigation" aria-label="Main navigation">
+                    <!-- Dashboard link removed - using banner below instead -->
+                </nav>
+                <div class="account-section">
+                    <div class="account-dropdown" id="accountDropdown" style="display: none;">
+                        <button class="account-trigger" onclick="toggleAccountDropdown()" type="button" style="cursor: pointer; border: none; background: none; color: inherit; font: inherit;">
+                            <div class="user-avatar" id="userAvatar">
+                                <span class="avatar-initials" id="avatarInitials">U</span>
+                            </div>
+                            <span class="user-name" id="userName">User</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="account-menu" id="accountMenu">
+                            <a href="#profile"><i class="fas fa-user"></i> Profile</a>
+                            <a href="#settings"><i class="fas fa-cog"></i> Settings</a>
+                            <a href="#help"><i class="fas fa-question-circle"></i> Help</a>
+                            <hr>
+                            <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                        </div>
+                    </div>
+                    <div class="auth-buttons" id="authButtons">
+                        <button class="btn-auth btn-login" id="loginBtn">Login</button>
+                        <button class="btn-auth btn-register" id="registerBtn">Register</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Back to Dashboard Banner (shown only when logged in) -->
+    <div id="backToDashboardBanner" style="display: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1rem 0; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <div class="container">
+            <div style="display: flex; align-items: center; justify-content: space-between; max-width: 1200px; margin: 0 auto;">
+                <div style="flex: 1;"></div>
+                <div style="color: white; font-size: 1rem;">
+                    <i class="fas fa-info-circle"></i> You're currently viewing the home page
+                </div>
+                <div style="flex: 1; text-align: right;">
+                    <button id="backToDashboardBtn" onclick="returnToDashboard()" style="background: white; color: #667eea; border: none; padding: 0.75rem 1.5rem; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; font-size: 1rem; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <i class="fas fa-arrow-left"></i> Back to Dashboard
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Slideshow - First Thing Users See -->
+    <section class="hero-slideshow">
+        <div class="slideshow-container">
+            <!-- Slideshow Pause/Play Control - WCAG 2.2.2 Level A -->
+            <button class="slideshow-control"
+                    id="slideshowPauseBtn"
+                    aria-label="Pause slideshow"
+                    aria-pressed="false"
+                    title="Pause automatic slideshow">
+                <i class="fas fa-pause" aria-hidden="true"></i>
+                <span class="sr-only">Pause slideshow</span>
+            </button>
+
+            <div class="slideshow-wrapper">
+                <!-- Slide 1: AI Course Generation -->
+                <div class="slide">
+                    <div class="slide-background">
+                        <div class="slide-overlay"></div>
+                        <div class="slide-content">
+                            <h2>AI-Powered Course Creation</h2>
+                            <p>Generate complete courses in minutes with our advanced AI technology</p>
+                            <button class="slide-btn">Try AI Course Generation</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 2: Interactive Labs -->
+                <div class="slide">
+                    <div class="slide-background">
+                        <div class="slide-overlay"></div>
+                        <div class="slide-content">
+                            <h2>Hands-On Learning Environments</h2>
+                            <p>Professional coding environments directly in the browser - no setup required</p>
+                            <button class="slide-btn">Explore Lab Environment</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 3: Analytics Dashboard -->
+                <div class="slide">
+                    <div class="slide-background">
+                        <div class="slide-overlay"></div>
+                        <div class="slide-content">
+                            <h2>Comprehensive Learning Analytics</h2>
+                            <p>Track student progress with detailed insights and data-driven decision making</p>
+                            <button class="slide-btn">View Analytics Demo</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slide 4: Enterprise Management -->
+                <div class="slide">
+                    <div class="slide-background">
+                        <div class="slide-overlay"></div>
+                        <div class="slide-content">
+                            <h2>Enterprise Organization Management</h2>
+                            <p>Multi-tenant architecture with role-based access control for institutions</p>
+                            <button class="slide-btn">Setup Organization</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <main id="main-content" role="main">
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="container">
+                <div class="hero-content">
+                    <div class="hero-text">
+                        <h1 class="hero-title">
+                            Transform Learning with AI-Powered Course Creation
+                        </h1>
+                        <p class="hero-subtitle">
+                            Build engaging, personalized online courses with cutting-edge AI assistance. 
+                            From concept to completion in minutes, not months.
+                        </p>
+                        <div class="hero-buttons">
+                            <button class="btn btn-primary btn-lg" onclick="startDemo()">
+                                <i class="fas fa-play"></i> Try Demo
+                            </button>
+                            <a href="organization-registration.html" class="btn btn-outline btn-lg">
+                                <i class="fas fa-building"></i> Register Organization
+                            </a>
+                        </div>
+                        <div class="hero-features">
+                            <div class="feature-point">
+                                <i class="fas fa-check-circle"></i>
+                                <span>AI-Powered Course Generation</span>
+                            </div>
+                            <div class="feature-point">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Interactive Learning Labs</span>
+                            </div>
+                            <div class="feature-point">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Enterprise-Ready Security</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="hero-visual">
+                        <div class="hero-card">
+                            <div class="card-icon">
+                                <i class="fas fa-graduation-cap"></i>
+                            </div>
+                            <h3>Smart Course Builder</h3>
+                            <p>AI analyzes your content and suggests optimal learning paths</p>
+                        </div>
+                        <div class="hero-card">
+                            <div class="card-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <h3>Real-time Analytics</h3>
+                            <p>Track student progress and optimize course performance</p>
+                        </div>
+                        <div class="hero-card">
+                            <div class="card-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <h3>Collaborative Learning</h3>
+                            <p>Foster student engagement with interactive features</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Quick Login Section - Single unified login -->
+        <section class="quick-login-section" style="background: var(--surface-color); padding: 2rem 0; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
+            <div class="container">
+                <div style="text-align: center;">
+                    <h3 style="color: var(--text-primary); font-size: 1.25rem; margin: 0 0 1rem 0;">Already have an account?</h3>
+                    <button onclick="showLogin()" class="btn btn-primary" style="padding: 1rem 3rem; font-size: 1.125rem; font-weight: 600;">
+                        <i class="fas fa-sign-in-alt"></i> Sign In
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="features-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2 class="section-title">Everything You Need to Create Amazing Courses</h2>
+                    <p class="section-subtitle">Powerful tools designed for educators, by educators</p>
+                </div>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <h3>AI Content Generation</h3>
+                        <p>Generate course materials, quizzes, and assessments automatically with our advanced AI.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-code"></i>
+                        </div>
+                        <h3>Interactive Labs</h3>
+                        <p>Hands-on coding environments with multiple IDE support for practical learning.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h3>Enterprise Security</h3>
+                        <p>Role-based access control and enterprise-grade security for your organization.</p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <h3>Mobile Optimized</h3>
+                        <p>Learn anywhere with our responsive design that works on all devices.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <!-- Modern ES6 module system -->
+    <script type="module" src="../js/main.js?v=3.3"></script>
+
+    <!-- Back to Dashboard functionality -->
+    <script>
+        /**
+         * Show/hide the "Back to Dashboard" banner based on user authentication
+         *
+         * Business Context:
+         * When logged-in users navigate back to the home page, they need an easy way
+         * to return to their dashboard without using browser navigation.
+         */
+        function checkAndShowDashboardBanner() {
+            const currentUser = localStorage.getItem('currentUser');
+            const authToken = localStorage.getItem('authToken');
+
+            if (currentUser && authToken) {
+                try {
+                    const user = JSON.parse(currentUser);
+                    const banner = document.getElementById('backToDashboardBanner');
+
+                    if (banner) {
+                        banner.style.display = 'block';
+                    }
+                } catch (e) {
+                    console.error('Error parsing user data:', e);
+                }
+            }
+        }
+
+        /**
+         * Return user to their appropriate dashboard based on role
+         */
+        function returnToDashboard() {
+            try {
+                const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+
+                if (!currentUser) {
+                    console.error('No user data found');
+                    return;
+                }
+
+                console.log('Current user data:', currentUser);
+                const role = currentUser.role;
+                const username = currentUser.username;
+                const orgId = currentUser.organization_id || currentUser.org_id;
+
+                // Site admin - goes to site admin dashboard
+                if (username === 'admin') {
+                    window.location.href = 'html/site-admin-dashboard.html';
+                }
+                // Organization admin - goes to org admin dashboard WITH org_id parameter
+                else if (role === 'organization_admin' || role === 'org_admin') {
+                    if (orgId) {
+                        window.location.href = `html/org-admin-dashboard.html?org_id=${orgId}`;
+                    } else {
+                        console.error('No organization_id found for org admin user');
+                        window.location.href = 'html/org-admin-dashboard.html';
+                    }
+                }
+                // Instructor - goes to instructor dashboard
+                else if (role === 'instructor') {
+                    window.location.href = 'html/instructor-dashboard.html';
+                }
+                // Student - goes to student dashboard
+                else if (role === 'student') {
+                    window.location.href = 'html/student-dashboard.html';
+                }
+                else {
+                    console.error('Unknown role:', role);
+                }
+            } catch (e) {
+                console.error('Error returning to dashboard:', e);
+            }
+        }
+
+        // Check on page load
+        document.addEventListener('DOMContentLoaded', checkAndShowDashboardBanner);
+    </script>
+
+    <!-- Slideshow Module -->
+    <script type="module">
+        import Slideshow from '../js/modules/slideshow.js';
+
+        // Initialize slideshow
+        const slideshow = new Slideshow('.slideshow-container');
+
+        // Connect pause/play button
+        const pauseBtn = document.getElementById('slideshowPauseBtn');
+        if (pauseBtn && slideshow) {
+            pauseBtn.addEventListener('click', () => {
+                slideshow.toggleAutoplay();
+
+                // Update button state
+                const isPaused = !slideshow.isAutoplayActive();
+                pauseBtn.setAttribute('aria-pressed', isPaused ? 'true' : 'false');
+                pauseBtn.setAttribute('aria-label', isPaused ? 'Play slideshow' : 'Pause slideshow');
+                pauseBtn.title = isPaused ? 'Resume automatic slideshow' : 'Pause automatic slideshow';
+
+                // Update icon
+                const icon = pauseBtn.querySelector('i');
+                const srText = pauseBtn.querySelector('.sr-only');
+                if (isPaused) {
+                    icon.className = 'fas fa-play';
+                    srText.textContent = 'Play slideshow';
+                } else {
+                    icon.className = 'fas fa-pause';
+                    srText.textContent = 'Pause slideshow';
+                }
+            });
+        }
+    </script>
+
+    <!-- Cookie Consent Banner -->
+    <script src="../public/js/cookie-consent-banner.js"></script>
+    <script src="../js/focus-manager.js"></script>
+
+</body>
+</html>

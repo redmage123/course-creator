@@ -64,6 +64,10 @@
 }
 
 /* ===== FOCUS MANAGEMENT ===== */
+/* WCAG 2.4.7 Level AA: Focus Visible
+ * High visibility keyboard focus indicators
+ * Works with focus-manager.js to detect mouse vs keyboard users
+ */
 :root {
     --focus-color: #2563eb;
     --focus-width: 3px;
@@ -71,7 +75,13 @@
     --focus-shadow: 0 0 0 6px rgba(37, 99, 235, 0.2);
 }
 
-/* Enhanced focus indicators */
+/* Default focus style for all focusable elements */
+*:focus {
+    outline: var(--focus-width) solid var(--focus-color);
+    outline-offset: var(--focus-offset);
+}
+
+/* Enhanced focus indicators for keyboard users */
 *:focus-visible {
     outline: var(--focus-width) solid var(--focus-color) !important;
     outline-offset: var(--focus-offset) !important;
@@ -80,13 +90,54 @@
     z-index: 10;
 }
 
-/* Remove outline for non-keyboard focus */
+/* Remove outline for non-keyboard focus (mouse clicks) */
 *:focus:not(:focus-visible) {
     outline: none !important;
     box-shadow: none !important;
 }
 
-/* Special focus for interactive elements */
+/* Subtle focus for mouse users (when using-mouse class is present) */
+.using-mouse *:focus {
+    outline-width: 2px;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Enhanced focus for buttons */
+button:focus,
+.btn:focus,
+input[type="submit"]:focus,
+input[type="button"]:focus {
+    outline: var(--focus-width) solid var(--focus-color);
+    outline-offset: var(--focus-offset);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2);
+}
+
+/* Focus for links */
+a:focus {
+    outline: var(--focus-width) solid var(--focus-color);
+    outline-offset: var(--focus-offset);
+    background-color: rgba(37, 99, 235, 0.1);
+}
+
+/* Focus for form inputs */
+input:focus,
+select:focus,
+textarea:focus {
+    outline: var(--focus-width) solid var(--focus-color);
+    outline-offset: var(--focus-offset);
+    border-color: var(--focus-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+/* Focus for custom controls */
+[role="button"]:focus,
+[role="tab"]:focus,
+[role="menuitem"]:focus {
+    outline: var(--focus-width) solid var(--focus-color);
+    outline-offset: var(--focus-offset);
+}
+
+/* Special focus for interactive elements with :focus-visible support */
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
@@ -266,6 +317,7 @@ textarea:focus-visible,
 .status-pending::before { content: "◐ Pending"; }
 
 /* ===== FORM ACCESSIBILITY ENHANCEMENTS ===== */
+/* WCAG 3.3.1, 3.3.3 Level AA: Error Identification and Suggestions */
 .form-group {
     position: relative;
     margin-bottom: 1.5rem;
@@ -301,9 +353,17 @@ textarea:focus-visible,
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
-.form-control[aria-invalid="true"] {
-    border-color: var(--danger-color);
+/* Form validation states */
+.form-control[aria-invalid="true"],
+.form-control.is-invalid {
+    border-color: var(--danger-color) !important;
     background: rgba(239, 68, 68, 0.05);
+}
+
+.form-control[aria-invalid="false"],
+.form-control.is-valid {
+    border-color: var(--success-color);
+    background: rgba(16, 185, 129, 0.05);
 }
 
 .form-help {
@@ -312,15 +372,40 @@ textarea:focus-visible,
     margin-top: 0.25rem;
 }
 
-.form-error {
+.form-error,
+.error-message {
     font-size: 0.875rem;
     color: var(--danger-color);
     margin-top: 0.25rem;
     font-weight: 500;
+    display: flex;
+    align-items: center;
 }
 
-.form-error:empty {
+.error-message::before {
+    content: "⚠️";
+    margin-right: 0.25rem;
+    font-size: 1rem;
+}
+
+.form-error:empty,
+.error-message:empty {
     display: none;
+}
+
+.success-message {
+    font-size: 0.875rem;
+    color: var(--success-color);
+    margin-top: 0.25rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+}
+
+.success-message::before {
+    content: "✓";
+    margin-right: 0.25rem;
+    font-size: 1rem;
 }
 
 /* ===== BUTTON ACCESSIBILITY ===== */

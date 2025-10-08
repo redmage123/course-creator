@@ -4,13 +4,14 @@
  * BUSINESS CONTEXT:
  * Manages organization settings and preferences. Includes organization profile
  * configuration, branding (logo, colors), contact information, and system
- * preferences. Only organization admins can modify settings.
+ * preferences. Only organization admins can modified settings.
  *
  * TECHNICAL IMPLEMENTATION:
  * - Organization profile CRUD operations
- * - Logo upload and management
+ * - Logo upload and management with drag-and-drop support
  * - Contact information updates
  * - Feature toggles and preferences
+ * - Metadata tracking for uploaded files
  *
  * @module org-admin-settings
  */
@@ -27,6 +28,8 @@ import {
     showNotification,
     validateEmail
 } from './org-admin-utils.js';
+
+import { CONFIG } from '../config.js';
 
 // Current organization context
 let currentOrganizationId = null;
@@ -49,7 +52,7 @@ export function initializeSettingsManagement(organizationId) {
  * Setup form event handlers
  *
  * TECHNICAL IMPLEMENTATION:
- * Attaches submit handlers to all settings forms
+ * Attaches submit handlers to all settings forms and initializes drag-drop
  */
 function setupFormHandlers() {
     console.log('📋 Setting up settings form handlers');
@@ -70,12 +73,8 @@ function setupFormHandlers() {
         console.log('✅ Preferences form submit handler attached');
     }
 
-    // Logo upload input
-    const logoInput = document.getElementById('settingsOrgLogoFile');
-    if (logoInput) {
-        logoInput.addEventListener('change', uploadLogo);
-        console.log('✅ Logo upload handler attached');
-    }
+    // Initialize drag-and-drop for logo upload
+    setupDragDropLogoUpload();
 }
 
 /**
@@ -474,7 +473,145 @@ export async function savePreferences(event) {
 }
 
 /**
- * Handle logo file upload
+ * Setup drag-and-drop logo upload interface
+ *
+ * BUSINESS CONTEXT:
+ * Provides enhanced user experience for logo uploads with drag-and-drop support
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * Uses the DragDropUpload ES6 module for file handling
+ */
+async function setupDragDropLogoUpload() {
+    const logoUploadArea = document.getElementById('logoUploadAreaSettings');
+    if (!logoUploadArea) {
+        console.warn('⚠️ Logo upload area not found');
+        return;
+    }
+
+    try {
+        // Dynamically import the DragDropUpload module
+        const { DragDropUpload } = await import('../modules/drag-drop-upload.js');
+
+        // Initialize drag-drop on the logo upload area
+        const dragDropUpload = new DragDropUpload(logoUploadArea, {
+            acceptedTypes: ['.jpg', '.jpeg', '.png', '.gif'],
+            maxSizeMB: 5,
+            uploadEndpoint: `${CONFIG.ENDPOINTS.METADATA_SERVICE}/organizations/${currentOrganizationId}/upload-logo`,
+
+            onUploadStart: () => {
+                console.log('Starting logo upload...');
+            },
+
+            onUploadProgress: (percent, file) => {
+                console.log(`Upload progress: ${percent.toFixed(0)}%`);
+            },
+
+            onUploadComplete: async (response, file) => {
+                console.log('Logo upload complete:', response);
+                showNotification('Organization logo uploaded successfully!', 'success');
+
+                // Track file upload with metadata
+                await trackLogoUpload(file.name, file.size, response.logo_url);
+
+                // Update logo preview
+                displayLogoPreview(response.logo_url);
+
+                // Refresh organization data
+                await loadSettingsData();
+            },
+
+            onUploadError: (error) => {
+                console.error('Logo upload failed:', error);
+                showNotification(`Logo upload failed: ${error.message}`, 'error');
+            }
+        });
+
+        console.log('✅ Drag-drop logo upload initialized');
+    } catch (error) {
+        console.error('Failed to initialize drag-drop upload:', error);
+        // Fallback to regular file input if drag-drop fails
+        setupFallbackLogoUpload();
+    }
+}
+
+/**
+ * Setup fallback logo upload using standard file input
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * Provides graceful degradation if drag-drop module fails to load
+ */
+function setupFallbackLogoUpload() {
+    const logoInput = document.getElementById('orgLogoFile');
+    if (logoInput) {
+        logoInput.addEventListener('change', uploadLogo);
+        console.log('✅ Fallback logo upload handler attached');
+    }
+}
+
+/**
+ * Track logo upload with metadata service
+ *
+ * BUSINESS CONTEXT:
+ * Records file upload activity for analytics and audit trail
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * Posts metadata to metadata-service for tracking
+ *
+ * @param {string} filename - Name of uploaded file
+ * @param {number} fileSize - Size of file in bytes
+ * @param {string} logoUrl - URL of uploaded logo
+ * @returns {Promise<void>}
+ */
+async function trackLogoUpload(filename, fileSize, logoUrl) {
+    const authToken = localStorage.getItem('authToken');
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+
+    try {
+        await fetch(`${CONFIG.ENDPOINTS.METADATA_SERVICE}/metadata`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            },
+            body: JSON.stringify({
+                entity_id: currentOrganizationId,
+                entity_type: 'organization_logo_upload',
+                tags: ['logo', 'branding', 'org_admin_upload'],
+                metadata: {
+                    file_type: 'logo',
+                    filename: filename,
+                    file_size_bytes: fileSize,
+                    logo_url: logoUrl,
+                    uploaded_by: currentUser.id,
+                    upload_timestamp: new Date().toISOString(),
+                    organization_id: currentOrganizationId
+                }
+            })
+        });
+        console.log('✅ Logo upload tracked in metadata service');
+    } catch (error) {
+        console.error('Failed to track logo upload:', error);
+        // Non-critical error - don't fail the upload
+    }
+}
+
+/**
+ * Display logo preview after upload
+ *
+ * @param {string} logoUrl - URL of uploaded logo
+ */
+function displayLogoPreview(logoUrl) {
+    const logoPreview = document.getElementById('logoPreview');
+    const logoPreviewImg = document.getElementById('logoPreviewImg');
+
+    if (logoPreview && logoPreviewImg) {
+        logoPreviewImg.src = logoUrl;
+        logoPreview.style.display = 'block';
+    }
+}
+
+/**
+ * Handle logo file upload (fallback method)
  *
  * TECHNICAL IMPLEMENTATION:
  * Uploads logo file to server and updates organization
@@ -494,9 +631,9 @@ export async function uploadLogo(event) {
         return;
     }
 
-    // Validate file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-        showNotification('File size must be less than 2MB', 'error');
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+        showNotification('File size must be less than 5MB', 'error');
         return;
     }
 
@@ -506,8 +643,8 @@ export async function uploadLogo(event) {
         formData.append('logo', file);
         formData.append('organization_id', currentOrganizationId);
 
-        // Upload to server (this endpoint would need to be implemented)
-        const response = await fetch('/api/v1/organizations/upload-logo', {
+        // Upload to server
+        const response = await fetch(`${CONFIG.ENDPOINTS.METADATA_SERVICE}/organizations/${currentOrganizationId}/upload-logo`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${localStorage.getItem('authToken')}`
@@ -520,6 +657,9 @@ export async function uploadLogo(event) {
         }
 
         const result = await response.json();
+
+        // Track upload with metadata
+        await trackLogoUpload(file.name, file.size, result.logo_url);
 
         // Update logo URL in form
         const logoUrlInput = document.getElementById('settingsOrgLogoUrl');

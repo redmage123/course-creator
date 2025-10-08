@@ -491,6 +491,287 @@ class MetadataDAO:
             rows = await conn.fetch(query, *params)
             return [self._row_to_metadata(row) for row in rows]
 
+    async def get_upload_analytics_by_course(
+        self,
+        course_id: int
+    ) -> List[Dict[str, Any]]:
+        """
+        Get file upload analytics for a specific course
+
+        Uses mv_file_upload_analytics materialized view
+
+        Args:
+            course_id: Course ID to filter by
+
+        Returns:
+            List of upload analytics aggregated by file type
+        """
+        query = """
+            SELECT
+                course_id, file_type, uploader_role,
+                total_uploads, total_bytes, avg_file_size_bytes,
+                first_upload_at, last_upload_at,
+                unique_instructors, unique_students,
+                uploads_last_7_days, bytes_last_7_days,
+                uploads_last_30_days, bytes_last_30_days
+            FROM mv_file_upload_analytics
+            WHERE course_id = $1
+            ORDER BY total_uploads DESC
+        """
+
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch(query, course_id)
+            return [dict(row) for row in rows]
+
+    async def get_upload_analytics_by_file_type(
+        self,
+        file_type: str
+    ) -> List[Dict[str, Any]]:
+        """
+        Get file upload analytics for a specific file type
+
+        Args:
+            file_type: File type to filter by (e.g., 'syllabus', 'slides')
+
+        Returns:
+            List of upload analytics aggregated by course
+        """
+        query = """
+            SELECT
+                course_id, file_type, uploader_role,
+                total_uploads, total_bytes, avg_file_size_bytes,
+                unique_instructors, unique_students
+            FROM mv_file_upload_analytics
+            WHERE file_type = $1
+            ORDER BY total_uploads DESC
+        """
+
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch(query, file_type)
+            return [dict(row) for row in rows]
+
+    async def get_recent_upload_activity(
+        self,
+        days: int = 7
+    ) -> List[Dict[str, Any]]:
+        """
+        Get recent upload activity
+
+        Args:
+            days: Number of days to look back (7 or 30)
+
+        Returns:
+            List of upload analytics with recent activity
+        """
+        column = f"uploads_last_{days}_days"
+        query = f"""
+            SELECT
+                course_id, file_type,
+                total_uploads, {column} as recent_uploads
+            FROM mv_file_upload_analytics
+            WHERE {column} > 0
+            ORDER BY {column} DESC
+        """
+
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch(query)
+            return [dict(row) for row in rows]
+
+    async def get_download_analytics_by_course(
+        self,
+        course_id: int
+    ) -> List[Dict[str, Any]]:
+        """
+        Get file download analytics for a specific course
+
+        Args:
+            course_id: Course ID to filter by
+
+        Returns:
+            List of download analytics aggregated by file type
+        """
+        query = """
+            SELECT
+                course_id, file_type, downloader_role,
+                total_downloads, total_bytes, avg_file_size_bytes,
+                first_download_at, last_download_at,
+                unique_instructors, unique_students,
+                downloads_last_7_days, downloads_last_30_days,
+                most_downloaded_filename
+            FROM mv_file_download_analytics
+            WHERE course_id = $1
+            ORDER BY total_downloads DESC
+        """
+
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch(query, course_id)
+            return [dict(row) for row in rows]
+
+    async def get_most_downloaded_files(
+        self,
+        limit: int = 10
+    ) -> List[Dict[str, Any]]:
+        """
+        Get most downloaded files across all courses
+
+        Args:
+            limit: Maximum number of results
+
+        Returns:
+            List of files ordered by download count
+        """
+        query = """
+            SELECT
+                course_id, file_type,
+                total_downloads, most_downloaded_filename
+            FROM mv_file_download_analytics
+            ORDER BY total_downloads DESC
+            LIMIT $1
+        """
+
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch(query, limit)
+            return [dict(row) for row in rows]
+
+    async def get_course_material_summary(
+        self,
+        course_id: int
+    ) -> List[Dict[str, Any]]:
+        """
+        Get combined upload/download summary for a course
+
+        Args:
+            course_id: Course ID to filter by
+
+        Returns:
+            Summary with both upload and download metrics
+        """
+        query = """
+            SELECT
+                course_id, file_type,
+                total_uploads, total_upload_bytes,
+                uploads_last_7_days, uploads_last_30_days,
+                total_downloads, total_download_bytes,
+                downloads_last_7_days, downloads_last_30_days,
+                downloads_per_upload,
+                uploading_instructors, downloading_students,
+                first_activity_at, last_activity_at
+            FROM mv_course_material_summary
+            WHERE course_id = $1
+            ORDER BY downloads_per_upload DESC
+        """
+
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch(query, course_id)
+            return [dict(row) for row in rows]
+
+    async def get_engagement_metrics(
+        self,
+        limit: int = 20
+    ) -> List[Dict[str, Any]]:
+        """
+        Get engagement metrics (downloads per upload ratio)
+
+        Args:
+            limit: Maximum number of results
+
+        Returns:
+            Courses ordered by engagement ratio
+        """
+        query = """
+            SELECT
+                course_id, file_type,
+                total_uploads, total_downloads,
+                downloads_per_upload,
+                downloading_students
+            FROM mv_course_material_summary
+            WHERE total_uploads > 0
+            ORDER BY downloads_per_upload DESC
+            LIMIT $1
+        """
+
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch(query, limit)
+            return [dict(row) for row in rows]
+
+    async def refresh_analytics_views(self) -> None:
+        """
+        Refresh all analytics materialized views
+
+        Calls PostgreSQL function to refresh views concurrently
+        """
+        query = "SELECT refresh_course_material_analytics()"
+
+        async with self.pool.acquire() as conn:
+            await conn.execute(query)
+
+    async def search_course_materials(
+        self,
+        search_query: str,
+        entity_type_filter: Optional[str] = None,
+        course_id_filter: Optional[int] = None,
+        limit_results: int = 50
+    ) -> List[Dict[str, Any]]:
+        """
+        Full-text search for course materials with ranking
+
+        Uses PostgreSQL search_course_materials function
+
+        Args:
+            search_query: Search query text
+            entity_type_filter: Optional entity type filter
+            course_id_filter: Optional course ID filter
+            limit_results: Maximum number of results
+
+        Returns:
+            List of search results with rank and headline
+        """
+        query = """
+            SELECT * FROM search_course_materials($1, $2, $3, $4)
+        """
+
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch(
+                query,
+                search_query,
+                entity_type_filter,
+                course_id_filter,
+                limit_results
+            )
+            return [dict(row) for row in rows]
+
+    async def fuzzy_search_course_materials(
+        self,
+        search_text: str,
+        similarity_threshold: float = 0.3,
+        limit_results: int = 50
+    ) -> List[Dict[str, Any]]:
+        """
+        Fuzzy similarity search for course materials
+
+        Uses PostgreSQL fuzzy_search_course_materials function
+
+        Args:
+            search_text: Text to search for
+            similarity_threshold: Minimum similarity (0.0 to 1.0)
+            limit_results: Maximum number of results
+
+        Returns:
+            List of results with similarity scores
+        """
+        query = """
+            SELECT * FROM fuzzy_search_course_materials($1, $2, $3)
+        """
+
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch(
+                query,
+                search_text,
+                similarity_threshold,
+                limit_results
+            )
+            return [dict(row) for row in rows]
+
     def _row_to_metadata(self, row: asyncpg.Record) -> Metadata:
         """
         Convert database row to Metadata entity

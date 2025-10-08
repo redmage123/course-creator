@@ -20,7 +20,7 @@
  * WHY: Modular imports enable clean separation of concerns and better maintainability
  */
                       // Configuration system for API endpoints
-import { authManager } from './modules/auth.js';           // Authentication and session management
+import authManager from './modules/auth.js';           // Authentication and session management
 import { labLifecycleManager } from './modules/lab-lifecycle.js'; // Lab container lifecycle management
 import StudentFileManager from './modules/student-file-manager.js'; // Student file operations
 import { metadataClient } from './metadata-client.js';     // Metadata service for intelligent search and recommendations
@@ -1567,12 +1567,6 @@ function formatDate(dateString) {
     if (!dateString) return 'Unknown';
     const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
 }
 
 // Feedback form functions

@@ -41,6 +41,14 @@ from webdriver_manager.core.os_manager import ChromeType
 
 logger = logging.getLogger(__name__)
 
+# Import video recorder
+try:
+    from tests.e2e.video_recorder import VideoRecorder, FrameCaptureThread
+    VIDEO_RECORDING_AVAILABLE = True
+except ImportError:
+    VIDEO_RECORDING_AVAILABLE = False
+    logger.warning("Video recording not available - install opencv-python to enable")
+
 
 class SeleniumConfig:
     """
@@ -54,6 +62,9 @@ class SeleniumConfig:
         self.base_url = os.getenv('TEST_BASE_URL', 'https://localhost:3000')
         self.headless = os.getenv('HEADLESS', 'true').lower() == 'true'
         self.screenshot_dir = os.getenv('SCREENSHOT_DIR', 'tests/reports/screenshots')
+        self.video_dir = os.getenv('VIDEO_DIR', 'tests/reports/videos')
+        self.record_video = os.getenv('RECORD_VIDEO', 'false').lower() == 'true'
+        self.video_fps = int(os.getenv('VIDEO_FPS', '5'))
         self.implicit_wait = int(os.getenv('IMPLICIT_WAIT', '15'))
         self.explicit_wait = int(os.getenv('EXPLICIT_WAIT', '30'))
         self.window_width = int(os.getenv('WINDOW_WIDTH', '1920'))
@@ -76,8 +87,9 @@ class SeleniumConfig:
         self.disable_gpu = os.getenv('DISABLE_GPU', 'true').lower() == 'true'
         self.no_sandbox = os.getenv('NO_SANDBOX', 'true').lower() == 'true'
 
-        # Create screenshot directory if it doesn't exist
+        # Create screenshot and video directories if they don't exist
         os.makedirs(self.screenshot_dir, exist_ok=True)
+        os.makedirs(self.video_dir, exist_ok=True)
 
 
 class ChromeDriverSetup:
@@ -150,9 +162,10 @@ class ChromeDriverSetup:
             options.binary_location = config.chrome_binary
 
         # Set unique user data directory for each session
-        import tempfile
-        user_data_dir = tempfile.mkdtemp(prefix="chrome_test_")
-        options.add_argument(f'--user-data-dir={user_data_dir}')
+        # DISABLED: Causing conflicts with pytest-selenium
+        # import tempfile
+        # user_data_dir = tempfile.mkdtemp(prefix="chrome_test_")
+        # options.add_argument(f'--user-data-dir={user_data_dir}')
 
         # Enable downloads (useful for testing file downloads)
         prefs = {
@@ -498,6 +511,20 @@ class BaseTest:
         self.config = SeleniumConfig()
         self.driver = ChromeDriverSetup.create_driver(self.config)
         self.test_name = method.__name__
+
+        # Initialize video recorder if enabled
+        self.video_recorder = None
+        self.frame_capturer = None
+        if self.config.record_video and VIDEO_RECORDING_AVAILABLE:
+            self.video_recorder = VideoRecorder(
+                self.test_name,
+                output_dir=self.config.video_dir,
+                fps=self.config.video_fps,
+                resolution=(self.config.window_width, self.config.window_height)
+            )
+            self.video_recorder.start()
+            logger.info(f"Video recording enabled for test: {self.test_name}")
+
         logger.info(f"Starting test: {self.test_name}")
 
     def teardown_method(self, method):
@@ -506,10 +533,17 @@ class BaseTest:
         Called after each test method.
         """
         if hasattr(self, 'driver') and self.driver:
-            # Take screenshot if test failed
+            # Take final screenshot
             if hasattr(method, '__self__'):
-                # Check if test failed (pytest integration)
                 self.take_screenshot(f"{self.test_name}_final")
+
+            # Stop video recording if enabled
+            if self.video_recorder:
+                # Capture final frame
+                self.capture_video_frame()
+                video_path = self.video_recorder.stop()
+                if video_path:
+                    logger.info(f"Video saved: {video_path}")
 
             # Close browser
             try:
@@ -533,6 +567,45 @@ class BaseTest:
 
         page = BasePage(self.driver, self.config)
         return page.take_screenshot(name)
+
+    def capture_video_frame(self):
+        """
+        Capture current frame for video recording
+
+        Call this method after important test actions to add frames to video
+        """
+        if self.video_recorder and VIDEO_RECORDING_AVAILABLE:
+            try:
+                self.video_recorder.capture_frame_from_driver(self.driver)
+            except Exception as e:
+                logger.warning(f"Failed to capture video frame: {e}")
+
+    def start_continuous_recording(self, interval: float = 0.2):
+        """
+        Start continuous video frame capture in background thread
+
+        Args:
+            interval: Seconds between frame captures (default 0.2 = 5 FPS)
+
+        USAGE:
+            self.start_continuous_recording()
+            # ... perform test actions ...
+            self.stop_continuous_recording()
+        """
+        if self.video_recorder and VIDEO_RECORDING_AVAILABLE:
+            self.frame_capturer = FrameCaptureThread(
+                self.driver,
+                self.video_recorder,
+                interval
+            )
+            self.frame_capturer.start()
+            logger.info("Started continuous video frame capture")
+
+    def stop_continuous_recording(self):
+        """Stop continuous video frame capture"""
+        if self.frame_capturer:
+            self.frame_capturer.stop()
+            logger.info("Stopped continuous video frame capture")
 
     def wait_for_element(self, locator, timeout=None):
         """Wait for element to be present."""

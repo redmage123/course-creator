@@ -26,6 +26,7 @@ import * as Tracks from './modules/org-admin-tracks.js';
 import * as Settings from './modules/org-admin-settings.js';
 import * as TargetRoles from './modules/org-admin-target-roles.js';
 import * as AIAssistant from './modules/ai-assistant.js';
+import * as FileManager from './modules/org-admin-file-manager.js';
 
 // Import utilities (for potential direct use)
 import * as Utils from './modules/org-admin-utils.js';
@@ -144,6 +145,11 @@ window.OrgAdmin = {
         generateRecommendations: Analytics.generateContentRecommendations
     },
 
+    // File Manager module
+    Files: {
+        initExplorer: FileManager.initOrgAdminFileExplorer
+    },
+
     // Utilities (exposed for potential direct use)
     Utils: {
         escapeHtml: Utils.escapeHtml,
@@ -239,6 +245,12 @@ window.sendAIChatMessage = () => window.OrgAdmin.Projects.sendChatMessage();
 // Target roles functions
 window.deleteTargetRole = (roleName) => window.OrgAdmin.TargetRoles.delete(roleName);
 window.resetTargetRolesToDefaults = () => window.OrgAdmin.TargetRoles.reset();
+
+// Filter and load functions
+window.filterProjects = () => window.OrgAdmin.Projects.load();
+window.loadTracks = () => window.OrgAdmin.Tracks.load();
+window.filterInstructors = () => window.OrgAdmin.Instructors.load();
+window.filterStudents = () => window.OrgAdmin.Students.load();
 
 // Auth function
 window.logout = () => {

@@ -357,6 +357,195 @@ export class StudentFileManager {
         }
         return null;
     }
+
+    /**
+     * Download course syllabus with metadata tracking
+     *
+     * @param {number} courseId - Course ID
+     * @param {string} format - File format (pdf, docx, txt)
+     * @returns {Promise<void>}
+     */
+    async downloadCourseSyllabus(courseId, format = 'pdf') {
+        try {
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                throw new Error('Authentication required');
+            }
+
+            // Fetch syllabus file
+            const response = await fetch(
+                `${window.CONFIG?.API_URLS.CONTENT_MANAGEMENT}/courses/${courseId}/syllabus?format=${format}`,
+                {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`Failed to download syllabus: HTTP ${response.status}`);
+            }
+
+            const blob = await response.blob();
+            const filename = `course-${courseId}-syllabus.${format}`;
+
+            // Track download in metadata service
+            await this.trackFileDownload(courseId, 'syllabus', filename, blob.size);
+
+            this.triggerDownload(blob, filename);
+        } catch (error) {
+            console.error('Error downloading syllabus:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Download course slides/presentations with metadata tracking
+     *
+     * @param {number} courseId - Course ID
+     * @param {number|null} moduleId - Optional module ID for specific module slides
+     * @returns {Promise<void>}
+     */
+    async downloadCourseSlides(courseId, moduleId = null) {
+        try {
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                throw new Error('Authentication required');
+            }
+
+            const endpoint = moduleId
+                ? `${window.CONFIG?.API_URLS.CONTENT_MANAGEMENT}/courses/${courseId}/modules/${moduleId}/slides`
+                : `${window.CONFIG?.API_URLS.CONTENT_MANAGEMENT}/courses/${courseId}/slides`;
+
+            const response = await fetch(endpoint, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to download slides: HTTP ${response.status}`);
+            }
+
+            const blob = await response.blob();
+            const filename = moduleId
+                ? `course-${courseId}-module-${moduleId}-slides.zip`
+                : `course-${courseId}-all-slides.zip`;
+
+            // Track download in metadata service
+            await this.trackFileDownload(courseId, 'slides', filename, blob.size);
+
+            this.triggerDownload(blob, filename);
+        } catch (error) {
+            console.error('Error downloading slides:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Download all course materials as ZIP with metadata tracking
+     *
+     * @param {number} courseId - Course ID
+     * @returns {Promise<void>}
+     */
+    async downloadAllCourseMaterials(courseId) {
+        try {
+            const authToken = localStorage.getItem('authToken');
+            if (!authToken) {
+                throw new Error('Authentication required');
+            }
+
+            const response = await fetch(
+                `${window.CONFIG?.API_URLS.CONTENT_MANAGEMENT}/courses/${courseId}/materials/download-all`,
+                {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`Failed to download materials: HTTP ${response.status}`);
+            }
+
+            const blob = await response.blob();
+            const filename = `course-${courseId}-complete-materials-${new Date().toISOString().split('T')[0]}.zip`;
+
+            // Track download in metadata service
+            await this.trackFileDownload(courseId, 'complete_materials', filename, blob.size);
+
+            this.triggerDownload(blob, filename);
+        } catch (error) {
+            console.error('Error downloading all materials:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Track file download in metadata service for analytics
+     *
+     * @param {number} courseId - Course ID
+     * @param {string} fileType - Type of file (syllabus, slides, complete_materials)
+     * @param {string} filename - Downloaded filename
+     * @param {number} fileSize - File size in bytes
+     * @returns {Promise<void>}
+     */
+    async trackFileDownload(courseId, fileType, filename, fileSize) {
+        try {
+            const authToken = localStorage.getItem('authToken');
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+
+            if (!authToken || !currentUser.id) {
+                console.warn('Cannot track download - no authentication');
+                return;
+            }
+
+            await fetch(`${window.CONFIG?.API_URLS.METADATA_SERVICE}/metadata`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${authToken}`
+                },
+                body: JSON.stringify({
+                    entity_id: courseId,
+                    entity_type: 'course_material_download',
+                    tags: [fileType, 'student_download'],
+                    description: `Student ${currentUser.id} downloaded ${fileType}: ${filename}`,
+                    metadata: {
+                        file_type: fileType,
+                        filename: filename,
+                        file_size_bytes: fileSize,
+                        student_id: currentUser.id,
+                        download_timestamp: new Date().toISOString(),
+                        course_id: courseId
+                    }
+                })
+            });
+        } catch (error) {
+            // Don't fail download if metadata tracking fails
+            console.warn('Failed to track download in metadata service:', error);
+        }
+    }
+
+    /**
+     * Helper method to trigger browser download
+     *
+     * @param {Blob} blob - File blob
+     * @param {string} filename - Filename for download
+     */
+    triggerDownload(blob, filename) {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+    }
 }
 
 // Auto-initialize when DOM is loaded

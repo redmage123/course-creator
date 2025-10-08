@@ -814,7 +814,6 @@ class App {
             case 'student-dashboard.html':
                 assets.push(
                     '/js/student-dashboard.js',
-                    '/css/components/student-interface.css',
                     '/js/modules/student-file-manager.js'
                 );
                 break;

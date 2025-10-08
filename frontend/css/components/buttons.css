@@ -80,13 +80,15 @@
 
 /* Auth buttons (specific styling for login/register) */
 .btn-auth {
-    padding: 0.5rem 1rem;
+    padding: 0.5rem 1.25rem;
     border-radius: var(--radius-md);
     font-weight: var(--font-weight-medium);
     text-decoration: none;
     border: 1px solid transparent;
     cursor: pointer;
     transition: all var(--transition-fast);
+    white-space: nowrap;
+    font-size: 0.95rem;
 }
 
 .btn-login {

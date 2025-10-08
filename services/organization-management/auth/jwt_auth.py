@@ -21,7 +21,7 @@ class JWTAuthenticator:
         self._logger = logging.getLogger(__name__)
         self._secret_key = config.get('jwt', {}).get('secret_key', 'your-secret-key-change-in-production')
         self._algorithm = config.get('jwt', {}).get('algorithm', 'HS256')
-        self._user_service_url = config.get('services', {}).get('user_management_url', 'https://176.9.99.103:8000')
+        self._user_service_url = config.get('services', {}).get('user_management_url', 'https://user-management:8000')
 
     async def validate_token(self, token: str) -> Dict[str, Any]:
         """

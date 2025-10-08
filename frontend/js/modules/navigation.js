@@ -326,7 +326,7 @@ export class NavigationManager {
         if (!main) return;
 
         main.innerHTML = `
-            <section class="login-section" style="max-width: 500px; margin: 4rem auto; padding: 0 1rem;">
+            <section class="login-section" style="max-width: 600px; margin: 4rem auto; padding: 0 1rem;">
                 <div style="text-align: center; margin-bottom: 2rem;">
                     <h2 style="font-size: 2rem; margin-bottom: 0.5rem;">Welcome Back</h2>
                     <p style="color: var(--text-secondary); font-size: 1.125rem;">Sign in to your account</p>
@@ -340,7 +340,7 @@ export class NavigationManager {
                                    placeholder="Enter your username or email"
                                    autocomplete="username"
                                    aria-label="Username or Email"
-                                   style="width: 100%; padding: 1rem; border: 2px solid var(--border-color); border-radius: var(--radius-md); font-size: 1.125rem; transition: all 0.2s; box-sizing: border-box; cursor: text;">
+                                   style="width: 100%; padding: 0.875rem 1rem; border: 2px solid var(--border-color); border-radius: var(--radius-md); font-size: 1rem; transition: all 0.2s; box-sizing: border-box; cursor: text;">
                         </div>
                         <div class="form-group" style="margin-bottom: 1.5rem;">
                             <label for="login-password" style="display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 1.125rem; color: var(--text-primary);">Password</label>
@@ -348,16 +348,16 @@ export class NavigationManager {
                                 <input type="password" id="login-password" name="password" required
                                        autocomplete="current-password"
                                        aria-label="Password"
-                                       style="width: 100%; padding: 1rem; border: 2px solid var(--border-color); border-radius: var(--radius-md); font-size: 1.125rem; transition: all 0.2s; box-sizing: border-box; cursor: text; padding-right: 3rem;">
+                                       style="width: 100%; padding: 0.875rem 1rem; border: 2px solid var(--border-color); border-radius: var(--radius-md); font-size: 1rem; transition: all 0.2s; box-sizing: border-box; cursor: text; padding-right: 3rem;">
                             </div>
                         </div>
                         <div class="form-actions" style="margin-top: 2rem;">
                             <button type="submit" class="btn btn-primary"
-                                    style="width: 100%; padding: 1rem; font-size: 1.125rem; font-weight: 600; border-radius: var(--radius-md); margin-bottom: 1rem;">
+                                    style="width: 100%; padding: 1rem 1.25rem !important; font-size: 1.125rem !important; font-weight: 600; border-radius: var(--radius-md); margin-bottom: 1rem; box-sizing: border-box !important; height: 52px !important; line-height: 1.5 !important; border: none !important; display: flex !important; align-items: center !important; justify-content: center !important;">
                                 Sign In
                             </button>
                             <button type="button" onclick="window.location.hash='#home'" class="btn btn-secondary"
-                                    style="width: 100%; padding: 1rem; font-size: 1.125rem; font-weight: 600; border-radius: var(--radius-md);">
+                                    style="width: 100%; padding: 1rem 1.25rem !important; font-size: 1.125rem !important; font-weight: 600; border-radius: var(--radius-md); box-sizing: border-box !important; height: 52px !important; line-height: 1.5 !important; border: none !important; display: flex !important; align-items: center !important; justify-content: center !important;">
                                 Cancel
                             </button>
                         </div>

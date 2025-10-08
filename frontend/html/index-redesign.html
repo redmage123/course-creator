@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Creator Platform - AI-Powered Course Creation</title>
+    <meta name="description" content="Create professional courses in minutes with AI-powered technology. Interactive labs, comprehensive analytics, and enterprise-grade management.">
+
+    <!-- Design System -->
+    <link rel="stylesheet" href="../css/design-system.css?v=4.0">
+    <link rel="stylesheet" href="../css/components/header-footer.css?v=4.0">
+    <link rel="stylesheet" href="../css/pages/home-redesign.css?v=4.0">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Accessibility Skip Link -->
+    <a href="#main-content" class="skip-link" style="position: absolute; left: -9999px; z-index: 999; padding: 1rem; background: var(--primary-600); color: white; text-decoration: none;">Skip to main content</a>
+
+    <!-- HEADER - Consistent across all pages -->
+    <header class="site-header" role="banner">
+        <div class="header-container">
+            <!-- Logo -->
+            <a href="/html/index.html" class="header-logo">
+                <i class="fas fa-graduation-cap"></i>
+                <span>Course Creator</span>
+            </a>
+
+            <!-- Navigation -->
+            <nav class="header-nav" role="navigation" aria-label="Main navigation">
+                <a href="#features" class="nav-link">Features</a>
+                <a href="#pricing" class="nav-link">Pricing</a>
+                <a href="#about" class="nav-link">About</a>
+                <a href="#contact" class="nav-link">Contact</a>
+            </nav>
+
+            <!-- Mobile Menu Toggle -->
+            <button class="mobile-menu-toggle" aria-label="Toggle menu">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <!-- Auth Buttons / User Account -->
+            <div class="header-actions">
+                <div id="authButtons" class="header-actions">
+                    <button class="header-btn header-btn-login" id="loginBtn">Login</button>
+                    <button class="header-btn header-btn-register" id="registerBtn">Register</button>
+                </div>
+
+                <!-- User Dropdown (hidden by default, shown when logged in) -->
+                <div id="userDropdown" class="user-dropdown" style="display: none;">
+                    <button class="user-trigger" aria-expanded="false" aria-haspopup="true">
+                        <div class="user-avatar">
+                            <span id="userInitials">U</span>
+                        </div>
+                        <span id="userName">User</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="user-menu" id="userMenu">
+                        <a href="#dashboard"><i class="fas fa-th-large"></i> Dashboard</a>
+                        <a href="#profile"><i class="fas fa-user"></i> Profile</a>
+                        <a href="#settings"><i class="fas fa-cog"></i> Settings</a>
+                        <hr style="margin: var(--space-2) 0; border: none; border-top: 1px solid var(--border);">
+                        <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main id="main-content" role="main" style="padding-top: 80px;">
+
+        <!-- HERO SECTION - Bold, Centered, Professional -->
+        <section class="hero">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    Transform Learning with<br>AI-Powered Courses
+                </h1>
+                <p class="hero-subtitle">
+                    Create professional courses in minutes. Interactive labs, comprehensive analytics,
+                    and enterprise-grade management—all powered by advanced AI technology.
+                </p>
+                <div class="hero-cta">
+                    <button class="hero-btn hero-btn-primary" onclick="window.location.href='#register'">
+                        Get Started Free
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                    <button class="hero-btn hero-btn-secondary" onclick="window.location.href='#demo'">
+                        Watch Demo
+                        <i class="fas fa-play"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- FEATURES SECTION - Clean Grid Layout -->
+        <section class="features-section" id="features">
+            <div class="features-header">
+                <h2 class="features-title">Everything You Need</h2>
+                <p class="features-subtitle">
+                    Comprehensive tools for creating, managing, and delivering world-class educational experiences
+                </p>
+            </div>
+
+            <div class="features-grid">
+                <!-- Feature 1: AI Course Generation -->
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3 class="feature-title">AI-Powered Generation</h3>
+                    <p class="feature-description">
+                        Generate complete courses with lessons, quizzes, and assessments in minutes using advanced AI technology.
+                    </p>
+                </div>
+
+                <!-- Feature 2: Interactive Labs -->
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <h3 class="feature-title">Interactive Lab Environments</h3>
+                    <p class="feature-description">
+                        Professional coding environments directly in the browser. No setup required, instant access for students.
+                    </p>
+                </div>
+
+                <!-- Feature 3: Analytics -->
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h3 class="feature-title">Comprehensive Analytics</h3>
+                    <p class="feature-description">
+                        Track student progress with detailed insights. Data-driven decision making for better learning outcomes.
+                    </p>
+                </div>
+
+                <!-- Feature 4: Organization Management -->
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <h3 class="feature-title">Enterprise Management</h3>
+                    <p class="feature-description">
+                        Multi-tenant architecture with role-based access control. Perfect for institutions and organizations.
+                    </p>
+                </div>
+
+                <!-- Feature 5: Content Library -->
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-book"></i>
+                    </div>
+                    <h3 class="feature-title">Content Library</h3>
+                    <p class="feature-description">
+                        Rich library of reusable content. Share and collaborate across your organization seamlessly.
+                    </p>
+                </div>
+
+                <!-- Feature 6: Mobile Friendly -->
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-mobile-alt"></i>
+                    </div>
+                    <h3 class="feature-title">Mobile Optimized</h3>
+                    <p class="feature-description">
+                        Fully responsive design. Learn anywhere, anytime, on any device with a seamless experience.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA SECTION - Compelling Call to Action -->
+        <section class="cta-section">
+            <div class="cta-content">
+                <h2 class="cta-title">Ready to Transform Your Learning?</h2>
+                <p class="cta-subtitle">
+                    Join thousands of educators creating engaging courses with our AI-powered platform
+                </p>
+                <div class="cta-buttons">
+                    <button class="hero-btn hero-btn-primary" onclick="window.location.href='#register'">
+                        Start Free Trial
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                    <button class="hero-btn hero-btn-secondary" onclick="window.location.href='#contact'">
+                        Contact Sales
+                        <i class="fas fa-envelope"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER - Professional, Informative -->
+    <footer class="site-footer" role="contentinfo">
+        <div class="footer-container">
+            <div class="footer-content">
+                <!-- Brand Section -->
+                <div class="footer-brand">
+                    <a href="/html/index.html" class="footer-logo">
+                        <i class="fas fa-graduation-cap"></i>
+                        <span>Course Creator</span>
+                    </a>
+                    <p class="footer-description">
+                        Empowering educators with AI-powered course creation tools. Build better courses,
+                        track student progress, and deliver exceptional learning experiences.
+                    </p>
+                </div>
+
+                <!-- Product Links -->
+                <div class="footer-section">
+                    <h3>Product</h3>
+                    <div class="footer-links">
+                        <a href="#features" class="footer-link">Features</a>
+                        <a href="#pricing" class="footer-link">Pricing</a>
+                        <a href="#demo" class="footer-link">Demo</a>
+                        <a href="#integrations" class="footer-link">Integrations</a>
+                    </div>
+                </div>
+
+                <!-- Company Links -->
+                <div class="footer-section">
+                    <h3>Company</h3>
+                    <div class="footer-links">
+                        <a href="#about" class="footer-link">About Us</a>
+                        <a href="#careers" class="footer-link">Careers</a>
+                        <a href="#blog" class="footer-link">Blog</a>
+                        <a href="#contact" class="footer-link">Contact</a>
+                    </div>
+                </div>
+
+                <!-- Support Links -->
+                <div class="footer-section">
+                    <h3>Support</h3>
+                    <div class="footer-links">
+                        <a href="#help" class="footer-link">Help Center</a>
+                        <a href="#docs" class="footer-link">Documentation</a>
+                        <a href="#api" class="footer-link">API Reference</a>
+                        <a href="#status" class="footer-link">System Status</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Bottom -->
+            <div class="footer-bottom">
+                <p class="footer-copyright">
+                    &copy; 2025 Course Creator Platform. All rights reserved.
+                </p>
+                <div class="footer-social">
+                    <a href="#" class="social-link" aria-label="Twitter">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                    <a href="#" class="social-link" aria-label="LinkedIn">
+                        <i class="fab fa-linkedin"></i>
+                    </a>
+                    <a href="#" class="social-link" aria-label="GitHub">
+                        <i class="fab fa-github"></i>
+                    </a>
+                    <a href="#" class="social-link" aria-label="YouTube">
+                        <i class="fab fa-youtube"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script type="module">
+        // Header scroll effect
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('.site-header');
+            if (window.scrollY > 50) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        });
+
+        // User dropdown toggle
+        const userTrigger = document.querySelector('.user-trigger');
+        const userMenu = document.querySelector('.user-menu');
+
+        if (userTrigger && userMenu) {
+            userTrigger.addEventListener('click', () => {
+                const isExpanded = userTrigger.getAttribute('aria-expanded') === 'true';
+                userTrigger.setAttribute('aria-expanded', !isExpanded);
+                userMenu.classList.toggle('active');
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.user-dropdown')) {
+                    userTrigger.setAttribute('aria-expanded', 'false');
+                    userMenu.classList.remove('active');
+                }
+            });
+        }
+
+        // Login button handler
+        document.getElementById('loginBtn')?.addEventListener('click', () => {
+            window.location.href = '/html/student-login.html';
+        });
+
+        // Register button handler
+        document.getElementById('registerBtn')?.addEventListener('click', () => {
+            window.location.href = '/html/register.html';
+        });
+
+        // Logout function
+        window.logout = function() {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userRole');
+            document.getElementById('userDropdown').style.display = 'none';
+            document.getElementById('authButtons').style.display = 'flex';
+            window.location.href = '/html/index.html';
+        };
+
+        // Check if user is logged in
+        const authToken = localStorage.getItem('authToken');
+        if (authToken) {
+            document.getElementById('authButtons').style.display = 'none';
+            document.getElementById('userDropdown').style.display = 'block';
+
+            // You would typically fetch user data here
+            const userName = localStorage.getItem('userName') || 'User';
+            document.getElementById('userName').textContent = userName;
+            document.getElementById('userInitials').textContent = userName.charAt(0).toUpperCase();
+        }
+    </script>
+</body>
+</html>

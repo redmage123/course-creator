@@ -88,11 +88,9 @@ class SiteAdminDashboard {
         this.INTEGRATION_TEST_DELAY = window.CONFIG?.TESTING.INTEGRATION_DELAY || 2000; // 2 seconds
         
         // API ENDPOINTS: Centralized endpoint configuration
-        // Use organization service for site-admin endpoints
-        const protocol = window.location.protocol;
-        const host = window.location.hostname;
-        this.API_BASE = window.CONFIG?.API_URLS?.ORGANIZATION || `${protocol}//${host}:8008`;
-        this.AUTH_API_BASE = window.CONFIG?.API_URLS?.USER_MANAGEMENT || `${protocol}//${host}:8000`;
+        // Use relative URLs to go through nginx proxy
+        this.API_BASE = '';  // Empty string for relative URLs through nginx proxy
+        this.AUTH_API_BASE = '';  // Empty string for relative URLs through nginx proxy
         
         // NETWORK STATE RECOVERY: Handle browser offline/online state
         // WHY: Browser can get stuck in offline mode after container restarts

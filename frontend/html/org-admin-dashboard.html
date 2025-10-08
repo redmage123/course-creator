@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Organization Administration - Course Creator</title>
     <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/drag-drop.css">
+    <link rel="stylesheet" href="../css/file-explorer.css">
     <style>
         /* Anti-blur fixes for all text and animations */
         * {
@@ -872,6 +874,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <div aria-live="polite" aria-atomic="true" class="sr-only" id="form-announcements"></div>
     <!-- Loading Spinner -->
     <div id="loadingSpinner" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
         <div style="background: white; padding: 2rem; border-radius: 8px; text-align: center;">
@@ -882,7 +886,7 @@
 
     <div class="org-admin-container">
         <!-- Sidebar -->
-        <nav class="sidebar">
+        <nav class="sidebar" role="navigation" aria-label="Main navigation">
             <div style="padding: 0 1.5rem;">
                 <h2 style="margin: 0 0 1rem 0; color: var(--primary-color);">Organization Admin</h2>
 
@@ -922,6 +926,11 @@
                         </a>
                     </li>
                     <li style="margin-bottom: 0.5rem;">
+                        <a href="#files" class="nav-link" data-tab="files">
+                            📁 Files
+                        </a>
+                    </li>
+                    <li style="margin-bottom: 0.5rem;">
                         <a href="#settings" class="nav-link" data-tab="settings">
                             ⚙️ Settings
                         </a>
@@ -936,7 +945,7 @@
         </nav>
 
         <!-- Main Content -->
-        <main class="main-content">
+        <main role="main" class="main-content">
             <!-- Organization Header -->
             <div class="org-header" style="text-align: center; cursor: pointer;" onclick="document.querySelector('[data-tab=overview]').click()" title="Click to return to overview">
                 <h1 id="orgTitle">Organization Dashboard</h1>
@@ -1046,9 +1055,22 @@
                     </div>
                 </div>
 
-                <div id="projectsList">
-                    <!-- Projects will be loaded here -->
-                </div>
+                <table class="data-table" id="projectsTable">
+                    <thead>
+                        <tr>
+                            <th>Project</th>
+                            <th>Status</th>
+                            <th>Duration</th>
+                            <th>Tracks</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="projectsTableBody">
+                        <!-- Project data will be loaded here -->
+                    </tbody>
+                </table>
             </div>
 
             <!-- Instructors Tab -->
@@ -1072,7 +1094,7 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="instructorsTableBody">
                         <!-- Instructor data will be loaded here -->
                     </tbody>
                 </table>
@@ -1099,7 +1121,7 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="studentsTableBody">
                         <!-- Student data will be loaded here -->
                     </tbody>
                 </table>
@@ -1155,6 +1177,19 @@
                         <!-- Track data will be loaded here -->
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Files Tab -->
+            <div id="files" class="tab-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2>Organization Files</h2>
+                    <div style="font-size: 0.875rem; color: var(--text-muted);">
+                        Manage course materials, documents, and assets
+                    </div>
+                </div>
+
+                <!-- File Explorer Widget Container -->
+                <div id="orgFileExplorerContainer"></div>
             </div>
 
             <!-- Settings Tab -->
@@ -1398,7 +1433,7 @@
     </div>
 
     <!-- Add Instructor Modal -->
-    <div id="addInstructorModal" class="modal">
+    <div id="addInstructorModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="addInstructorModalTitle">
         <div class="modal-content">
             <span class="close" onclick="closeModal('addInstructorModal')">&times;</span>
             <h2>Add New Instructor</h2>
@@ -1438,7 +1473,7 @@
     </div>
 
     <!-- Create Project Modal -->
-    <div id="createProjectModal" class="modal">
+    <div id="createProjectModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="createProjectModalTitle">
         <div class="modal-content draggable-modal" style="max-width: 800px;">
             <div class="modal-header draggable-handle" style="cursor: move; padding: 1rem; background: var(--primary-color); color: white; margin: -1.5rem -1.5rem 1rem -1.5rem; border-radius: 8px 8px 0 0; display: flex; justify-content: space-between; align-items: center;">
                 <h2 style="margin: 0; color: white;">Create New Training Project</h2>
@@ -1641,7 +1676,7 @@
     </div>
 
     <!-- Add Student Modal -->
-    <div id="addStudentModal" class="modal">
+    <div id="addStudentModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="addStudentModalTitle">
         <div class="modal-content">
             <span class="close" onclick="closeModal('addStudentModal')">&times;</span>
             <h2>Add Student to Organization</h2>
@@ -1673,7 +1708,7 @@
     </div>
 
     <!-- Project Instantiation Modal -->
-    <div id="instantiateProjectModal" class="modal">
+    <div id="instantiateProjectModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="instantiateProjectModalTitle">
         <div class="modal-content" style="max-width: 800px;">
             <span class="close" onclick="closeModal('instantiateProjectModal')">&times;</span>
             <h2>Instantiate Project</h2>
@@ -1701,7 +1736,7 @@
     </div>
 
     <!-- Instructor Assignment Modal -->
-    <div id="instructorAssignmentModal" class="modal">
+    <div id="instructorAssignmentModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="instructorAssignmentModalTitle">
         <div class="modal-content" style="max-width: 900px;">
             <span class="close" onclick="closeModal('instructorAssignmentModal')">&times;</span>
             <h2>Assign Instructors</h2>
@@ -1735,7 +1770,7 @@
     </div>
 
     <!-- Student Enrollment Modal -->
-    <div id="studentEnrollmentModal" class="modal">
+    <div id="studentEnrollmentModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="studentEnrollmentModalTitle">
         <div class="modal-content" style="max-width: 1000px;">
             <span class="close" onclick="closeModal('studentEnrollmentModal')">&times;</span>
             <h2>Manage Student Enrollments</h2>
@@ -1777,7 +1812,7 @@
     </div>
 
     <!-- Project Analytics Modal -->
-    <div id="projectAnalyticsModal" class="modal">
+    <div id="projectAnalyticsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="projectAnalyticsModalTitle">
         <div class="modal-content" style="max-width: 1200px;">
             <span class="close" onclick="closeModal('projectAnalyticsModal')">&times;</span>
             <h2>Project Analytics Dashboard</h2>
@@ -1900,7 +1935,7 @@
     </div>
 
     <!-- Create/Edit Track Modal -->
-    <div id="trackModal" class="modal">
+    <div id="trackModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="trackModalTitle">
         <div class="modal-content" style="max-width: 800px;">
             <span class="close" onclick="closeModal('trackModal')">&times;</span>
             <h2 id="trackModalTitle">Create New Track</h2>
@@ -1981,7 +2016,7 @@
     </div>
 
     <!-- Track Details Modal -->
-    <div id="trackDetailsModal" class="modal">
+    <div id="trackDetailsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="trackDetailsModalTitle">
         <div class="modal-content" style="max-width: 900px;">
             <span class="close" onclick="closeModal('trackDetailsModal')">&times;</span>
             <h2 id="trackDetailsTitle">Track Details</h2>
@@ -1998,7 +2033,7 @@
     </div>
 
     <!-- Delete Track Confirmation Modal -->
-    <div id="deleteTrackModal" class="modal">
+    <div id="deleteTrackModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="deleteTrackModalTitle">
         <div class="modal-content" style="max-width: 500px;">
             <span class="close" onclick="closeModal('deleteTrackModal')">&times;</span>
             <h2>Delete Track</h2>
@@ -2071,7 +2106,36 @@
             }
         }
     </script>
+    <!-- File Explorer Initialization -->
+    <script type="module">
+        // Initialize file explorer when Files tab is loaded
+        import { initOrgAdminFileExplorer } from '../js/modules/org-admin-file-manager.js';
+
+        // Track if file explorer has been initialized
+        let fileExplorerInitialized = false;
+
+        // Listen for tab changes
+        document.addEventListener('click', (e) => {
+            const tabLink = e.target.closest('[data-tab="files"]');
+            if (tabLink && !fileExplorerInitialized) {
+                // Get organization ID from URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const orgId = urlParams.get('org_id') || 1;
+
+                // Initialize file explorer
+                setTimeout(() => {
+                    const fileExplorer = initOrgAdminFileExplorer('orgFileExplorerContainer', orgId);
+                    if (fileExplorer) {
+                        fileExplorerInitialized = true;
+                        console.log('✅ File explorer initialized for org admin');
+                    }
+                }, 100);
+            }
+        });
+    </script>
     <!-- Modular JavaScript Architecture -->
     <script type="module" src="../js/org-admin-main.js"></script>
+    <script src="../js/focus-manager.js"></script>
+
 </body>
 </html>

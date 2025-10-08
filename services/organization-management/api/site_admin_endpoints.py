@@ -502,7 +502,7 @@ async def get_platform_health(
         # Verify site admin permissions
         await verify_site_admin_permission(current_user)
 
-        from domain.entities.meeting_room import MeetingPlatform
+        from organization_management.domain.entities.meeting_room import MeetingPlatform
 
         health_status = {
             "teams_integration": meeting_room_service.validate_platform_configuration(MeetingPlatform.TEAMS),

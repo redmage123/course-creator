@@ -56,6 +56,26 @@ class SessionService(ISessionService):
     
     async def validate_session(self, token: str) -> Optional[Session]:
         """Validate session and return if active"""
+        # For JWT tokens, decode and validate
+        if not token.startswith("mock-token-"):
+            try:
+                # Verify JWT token
+                payload = await self._token_service.verify_token(token)
+                if payload and 'user_id' in payload:
+                    # Create session from JWT payload
+                    session = Session(
+                        user_id=payload['user_id'],
+                        token=token,
+                        session_type="web"
+                    )
+                    return session
+                return None
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"JWT validation failed: {e}")
+                return None
+
         # For mock tokens, extract user_id and create a simple session
         if token.startswith("mock-token-"):
             # Extract user_id from token (format: mock-token-{first_8_chars})

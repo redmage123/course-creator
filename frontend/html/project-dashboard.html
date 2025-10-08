@@ -302,9 +302,11 @@
     </style>
 </head>
 <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <div aria-live="polite" aria-atomic="true" class="sr-only" id="form-announcements"></div>
     <div class="project-dashboard-container">
         <!-- Sidebar -->
-        <nav class="sidebar">
+        <nav class="sidebar" role="navigation" aria-label="Main navigation">
             <div style="padding: 0 1.5rem;">
                 <h2 style="margin: 0 0 2rem 0; color: var(--primary-color);">Project Dashboard</h2>
                 
@@ -364,9 +366,9 @@
         </nav>
 
         <!-- Main Content -->
-        <main class="main-content">
+        <main role="main" class="main-content">
             <!-- Breadcrumb -->
-            <nav class="breadcrumb">
+            <nav class="breadcrumb" role="navigation" aria-label="Main navigation">
                 <a href="org-admin-dashboard.html">Organization Admin</a> > 
                 <a href="org-admin-dashboard.html#projects">Projects</a> > 
                 <span id="breadcrumbProjectName">Project Dashboard</span>
@@ -476,7 +478,7 @@
     </div>
 
     <!-- Create Track Modal -->
-    <div id="createTrackModal" class="modal">
+    <div id="createTrackModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="createTrackModalTitle">
         <div class="modal-content">
             <span class="close" onclick="closeModal('createTrackModal')">&times;</span>
             <h2>Create Training Track</h2>
@@ -516,7 +518,7 @@
     </div>
 
     <!-- Create Module Modal -->
-    <div id="createModuleModal" class="modal">
+    <div id="createModuleModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="createModuleModalTitle">
         <div class="modal-content" style="max-width: 700px;">
             <span class="close" onclick="closeModal('createModuleModal')">&times;</span>
             <h2>Create Course Module with AI</h2>
@@ -574,5 +576,7 @@
     <script src="../js/modules/auth.js"></script>
     <script src="../js/modules/notifications.js"></script>
     <script src="../js/project-dashboard.js"></script>
+    <script src="../js/focus-manager.js"></script>
+
 </body>
 </html>

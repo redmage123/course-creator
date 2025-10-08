@@ -455,7 +455,6 @@ class AssetCacheManager {
                 ],
                 'student': [
                     '/js/student-dashboard.js',
-                    '/css/components/student-interface.css',
                     '/js/modules/student-file-manager.js'
                 ],
                 'admin': [

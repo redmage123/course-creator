@@ -4,7 +4,7 @@
  * and provides global functions for lab management
  */
 
-import { authManager } from './modules/auth.js';
+import authManager from './modules/auth.js';
 import { labLifecycleManager } from './modules/lab-lifecycle.js';
 
 class LabIntegration {

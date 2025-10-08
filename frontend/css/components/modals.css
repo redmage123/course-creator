@@ -8,40 +8,46 @@
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(2px);
-    z-index: var(--z-modal-backdrop);
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
     opacity: 0;
     visibility: hidden;
-    transition: all var(--transition-normal);
-    display: flex;
+    transition: opacity var(--transition-normal), visibility var(--transition-normal);
+    display: none;
     align-items: center;
     justify-content: center;
     padding: var(--spacing-lg);
     box-sizing: border-box;
+    overflow-y: auto;
+    pointer-events: none;
 }
 
 .modal-backdrop.show {
     opacity: 1;
     visibility: visible;
+    display: flex;
+    pointer-events: auto;
 }
 
 /* Modal container */
 .modal {
     background-color: var(--surface-color);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-xl);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     max-width: var(--modal-max-width);
     width: 100%;
     max-height: calc(100vh - 2 * var(--spacing-lg));
     overflow: hidden;
     transform: scale(0.9) translateY(-2rem);
-    transition: all var(--transition-normal);
+    transition: transform var(--transition-normal);
     position: relative;
     display: flex;
     flex-direction: column;
+    margin: auto;
+    z-index: 10002;
 }
 
 .modal-backdrop.show .modal {
@@ -591,26 +597,266 @@
     .instructor-removal-modal {
         max-width: 100%;
     }
-    
+
     .unenrollment-options,
     .removal-options {
         margin: var(--spacing-md) 0;
         padding: var(--spacing-sm);
     }
-    
+
     .students-list,
     .instructors-list {
         max-height: 300px;
         margin: var(--spacing-md) 0;
     }
-    
+
     .student-selection,
     .instructor-selection {
         padding: var(--spacing-sm);
     }
-    
+
     .student-selection label,
     .instructor-selection label {
         gap: var(--spacing-sm);
+    }
+}
+
+/* ==========================================================================
+   LOGIN MODAL - Clean, Guest-First Design
+   ========================================================================== */
+
+.login-modal {
+    max-width: min(90vw, 480px);
+}
+
+.guest-login-section {
+    text-align: center;
+    padding: var(--spacing-lg) 0;
+}
+
+.guest-login-btn {
+    width: 100%;
+    height: 60px;
+    font-size: var(--font-size-lg);
+    margin-bottom: var(--spacing-sm);
+}
+
+.guest-login-description {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    margin: 0;
+    line-height: var(--line-height-relaxed);
+}
+
+.modal-divider {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    margin: var(--spacing-lg) 0;
+    color: var(--text-muted);
+    font-size: var(--font-size-sm);
+}
+
+.modal-divider::before,
+.modal-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-color);
+}
+
+.account-login-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.form-group label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-primary);
+}
+
+.form-input {
+    width: 100%;
+    height: 48px;
+    padding: 0 var(--spacing-md);
+    font-family: var(--font-primary);
+    font-size: var(--font-size-base);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    background: var(--surface-color);
+    color: var(--text-primary);
+    transition: all var(--transition-fast);
+    box-sizing: border-box;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--border-focus);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-input::placeholder {
+    color: var(--text-muted);
+}
+
+.account-login-footer {
+    text-align: center;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    margin: var(--spacing-sm) 0 0 0;
+}
+
+.account-login-footer a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: var(--font-weight-medium);
+    transition: color var(--transition-fast);
+}
+
+.account-login-footer a:hover {
+    color: var(--primary-dark);
+    text-decoration: underline;
+}
+
+/* ==========================================================================
+   PRIVACY CONSENT MODAL - GDPR/CCPA Compliant
+   ========================================================================== */
+
+.privacy-consent-modal {
+    max-width: min(90vw, 600px);
+}
+
+.privacy-intro {
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-relaxed);
+    color: var(--text-primary);
+    margin: 0 0 var(--spacing-lg) 0;
+}
+
+.privacy-categories {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.privacy-category {
+    padding: var(--spacing-md);
+    background: var(--gray-50);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+
+.privacy-category-header {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
+}
+
+.privacy-category-header input[type="checkbox"] {
+    margin-top: 2px;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.privacy-category-header input[type="checkbox"]:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.privacy-category-header label {
+    flex: 1;
+    cursor: pointer;
+    font-size: var(--font-size-base);
+    color: var(--text-primary);
+}
+
+.privacy-required {
+    color: var(--text-muted);
+    font-weight: var(--font-weight-normal);
+    font-size: var(--font-size-sm);
+}
+
+.privacy-category-description {
+    margin: 0 0 0 26px;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    line-height: var(--line-height-relaxed);
+}
+
+.privacy-footer-text {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    text-align: center;
+    margin: 0;
+    line-height: var(--line-height-relaxed);
+}
+
+.privacy-footer-text a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: var(--font-weight-medium);
+}
+
+.privacy-footer-text a:hover {
+    text-decoration: underline;
+}
+
+/* Privacy modal backdrop - Higher z-index to appear above login modal and site header */
+.privacy-consent-backdrop {
+    z-index: 99999 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    background-color: rgba(0, 0, 0, 0.85) !important;
+}
+
+.privacy-consent-backdrop .modal {
+    z-index: 100000 !important;
+    position: relative;
+}
+
+/* Prevent body scroll when modal is open */
+body.modal-open {
+    overflow: hidden !important;
+    position: fixed !important;
+    width: 100% !important;
+    height: 100vh !important;
+    top: 0;
+    left: 0;
+}
+
+/* Responsive adjustments for login and privacy modals */
+@media (max-width: 640px) {
+    .login-modal,
+    .privacy-consent-modal {
+        max-width: 100%;
+        width: 100%;
+    }
+
+    .guest-login-btn {
+        height: 52px;
+        font-size: var(--font-size-base);
+    }
+
+    .form-input {
+        height: 44px;
+        font-size: var(--font-size-sm);
+    }
+
+    .privacy-category {
+        padding: var(--spacing-sm);
     }
 }

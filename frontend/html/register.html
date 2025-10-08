@@ -157,28 +157,30 @@
     </style>
 </head>
 <body>
-    <header>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <div aria-live="polite" aria-atomic="true" class="sr-only" id="form-announcements"></div>
+    <header role="banner">
         <div class="container">
             <div class="header-content">
                 <div class="logo">
                     <h1><i class="fas fa-graduation-cap"></i> Course Creator</h1>
                 </div>
-                <nav class="nav-links">
+                <nav class="nav-links" role="navigation" aria-label="Main navigation">
                     <a href="/">Home</a>
                 </nav>
             </div>
         </div>
     </header>
 
-    <main>
+    <main id="main-content" role="main">
         <div class="registration-container">
             <div class="registration-header">
                 <h1>Student Registration</h1>
                 <p>Create your account to start learning</p>
             </div>
 
-            <div class="error-message" id="errorMessage"></div>
-            <div class="success-message" id="successMessage"></div>
+            <div class="error-message" id="errorMessage" role="alert" aria-live="assertive"></div>
+            <div class="success-message" id="successMessage" role="alert" aria-live="assertive"></div>
 
             <form id="registrationForm">
                 <div class="form-group">
@@ -335,5 +337,8 @@
             }
         });
     </script>
+    <script src="../js/focus-manager.js"></script>
+
+    <script src="../js/inline-validation.js"></script>
 </body>
 </html>

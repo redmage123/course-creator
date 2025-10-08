@@ -200,6 +200,15 @@ const CONFIG = {
             LAB_SESSION_SAVE: `${urls.COURSE_GENERATOR}/lab/session/save`,
             LAB_SESSION_LOAD: (courseId, studentId) => `${urls.COURSE_GENERATOR}/lab/session/${courseId}/${studentId}`,
             LAB_SESSION_CLEAR: (courseId, studentId) => `${urls.COURSE_GENERATOR}/lab/session/${courseId}/${studentId}`,
+
+            /* ================================================================
+             * COURSE INSTANCE MANAGEMENT ENDPOINTS
+             * PURPOSE: Manage course instances and published courses
+             * ================================================================ */
+            PUBLISHED_COURSES: `https://localhost:8004/courses?status=published`,
+            COURSE_INSTANCES: `https://localhost:8004/course-instances`,
+            COURSES_BY_STATUS: (status) => `https://localhost:8004/courses?status=${status}`,
+            INSTRUCTOR_INSTANCES: (instructorId) => `https://localhost:8004/course-instances?instructor_id=${instructorId}`,
         }
     }
 };

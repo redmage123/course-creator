@@ -498,18 +498,20 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <div aria-live="polite" aria-atomic="true" class="sr-only" id="form-announcements"></div>
     <!-- Mobile sidebar toggle -->
-    <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle navigation">
+    <button class="sidebar-toggle" type="button" onclick="toggleSidebar()" onkeypress="if(event.key===\'Enter\'||event.key===\' \')toggleSidebar()" aria-label="Toggle navigation">
         <i class="fas fa-bars"></i>
     </button>
     
-    <header>
+    <header role="banner">
         <div class="container">
             <div class="header-content">
                 <div class="logo">
                     <h1><i class="fas fa-graduation-cap"></i> Course Creator</h1>
                 </div>
-                <nav class="nav-links">
+                <nav class="nav-links" role="navigation" aria-label="Main navigation">
                     <a href="index.html">Home</a>
                     <a href="instructor-dashboard.html" class="active">Dashboard</a>
                 </nav>
@@ -550,7 +552,7 @@
                 </div>
             </div>
             
-            <nav class="sidebar-nav">
+            <nav class="sidebar-nav" role="navigation" aria-label="Main navigation">
                 <ul class="nav-menu">
                     <li class="nav-item">
                         <a href="#" class="nav-link" onclick="showSection('overview')" data-section="overview">
@@ -598,6 +600,12 @@
                             <span>Analytics</span>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" onclick="showSection('files')" data-section="files">
+                            <i class="fas fa-folder"></i>
+                            <span>Course Files</span>
+                        </a>
+                    </li>
                 </ul>
             </nav>
             
@@ -616,7 +624,7 @@
         </aside>
 
         <!-- Main Content Area -->
-        <main class="dashboard-main">
+        <main role="main" class="dashboard-main">
             <div class="main-header">
                 <div class="breadcrumb">
                     <span class="breadcrumb-item" id="currentSection">Overview</span>
@@ -1090,12 +1098,23 @@
                     </div>
                 </section>
 
+                <!-- Course Files Section -->
+                <section id="files-section" class="content-section">
+                    <div class="section-header">
+                        <h2>Course Files & Materials</h2>
+                        <p>Manage course materials, documents, and resources</p>
+                    </div>
+
+                    <!-- File Explorer Widget Container -->
+                    <div id="instructorFileExplorerContainer"></div>
+                </section>
+
             </div>
         </main>
     </div>
 
     <!-- Create Lab Modal -->
-    <div id="createLabModal" class="modal">
+    <div id="createLabModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="createLabModalTitle">
         <div class="modal-content large-modal">
             <div class="modal-header">
                 <h3>Create Custom Lab</h3>
@@ -1200,6 +1219,8 @@
     <!-- <script type="module" src="../js/main.js"></script> -->
     <script src="../js/lab-template.js"></script>
     <script src="../js/modules/course-video-manager.js"></script>
+    <link rel="stylesheet" href="../css/drag-drop.css">
+    <link rel="stylesheet" href="../css/file-explorer.css">
 
     <!-- Temporary fix: Load a simplified version that works with existing functionality -->
     <script type="module">
@@ -2211,7 +2232,99 @@
         function showNotification(message, type = 'info') {
             // For now, just log to console. In a full implementation, this would show a toast or modal
         }
-        
+
+        /**
+         * Track file upload in metadata service
+         *
+         * @param {number} courseId - Course ID
+         * @param {string} fileType - Type of file (syllabus, slides, quiz, lab)
+         * @param {string} filename - Uploaded filename
+         * @param {number} fileSize - File size in bytes
+         * @param {string} fileId - File ID from content service
+         */
+        async function trackFileUpload(courseId, fileType, filename, fileSize, fileId) {
+            try {
+                const authToken = localStorage.getItem('authToken');
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+
+                if (!authToken || !currentUser.id) {
+                    console.warn('Cannot track upload - no authentication');
+                    return;
+                }
+
+                await fetch(`${CONFIG.ENDPOINTS.METADATA_SERVICE}/metadata`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        entity_id: courseId,
+                        entity_type: 'course_material_upload',
+                        tags: [fileType, 'instructor_upload'],
+                        description: `Instructor ${currentUser.id} uploaded ${fileType}: ${filename}`,
+                        metadata: {
+                            file_type: fileType,
+                            filename: filename,
+                            file_size_bytes: fileSize,
+                            file_id: fileId,
+                            instructor_id: currentUser.id,
+                            upload_timestamp: new Date().toISOString(),
+                            course_id: courseId
+                        }
+                    })
+                });
+            } catch (error) {
+                // Don't fail upload if metadata tracking fails
+                console.warn('Failed to track upload in metadata service:', error);
+            }
+        }
+
+        /**
+         * Track file download in metadata service
+         *
+         * @param {number} courseId - Course ID
+         * @param {string} fileType - Type of file
+         * @param {string} filename - Downloaded filename
+         * @param {number} fileSize - File size in bytes
+         */
+        async function trackFileDownload(courseId, fileType, filename, fileSize) {
+            try {
+                const authToken = localStorage.getItem('authToken');
+                const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+
+                if (!authToken || !currentUser.id) {
+                    console.warn('Cannot track download - no authentication');
+                    return;
+                }
+
+                await fetch(`${CONFIG.ENDPOINTS.METADATA_SERVICE}/metadata`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({
+                        entity_id: courseId,
+                        entity_type: 'course_material_download',
+                        tags: [fileType, 'instructor_download'],
+                        description: `Instructor ${currentUser.id} downloaded ${fileType}: ${filename}`,
+                        metadata: {
+                            file_type: fileType,
+                            filename: filename,
+                            file_size_bytes: fileSize,
+                            instructor_id: currentUser.id,
+                            download_timestamp: new Date().toISOString(),
+                            course_id: courseId
+                        }
+                    })
+                });
+            } catch (error) {
+                // Don't fail download if metadata tracking fails
+                console.warn('Failed to track download in metadata service:', error);
+            }
+        }
+
         // Progress notification for long-running operations
         function showProgressNotification(message, type = 'info') {
             const notification = document.createElement('div');
@@ -2911,7 +3024,9 @@
             slideshowWindow.document.write('    if (e.key === "ArrowLeft") prevSlide();');
             slideshowWindow.document.write('    if (e.key === "Escape") window.close();');
             slideshowWindow.document.write('});');
-            slideshowWindow.document.write('</' + 'script></body></html>');
+            slideshowWindow.document.write('</' + 'script>
+    <script src="../js/focus-manager.js"></script>
+</body></html>');
             
             slideshowWindow.document.close();
         };
@@ -4470,69 +4585,75 @@
         
         // SYLLABUS FUNCTIONS
         async function uploadSyllabusFile(courseId) {
-            
-            // Create file input
-            const fileInput = document.createElement('input');
-            fileInput.type = 'file';
-            fileInput.accept = '.pdf,.doc,.docx,.txt,.md';
-            fileInput.style.display = 'none';
-            
-            fileInput.onchange = async function(event) {
-                const file = event.target.files[0];
-                if (!file) return;
-                
-                // Show upload progress
-                showNotification('Uploading syllabus...', 'info');
-                
-                try {
-                    const formData = new FormData();
-                    formData.append('syllabus_file', file);
-                    formData.append('course_id', courseId);
-                    
-                    const response = await fetch(`${CONFIG.ENDPOINTS.CONTENT_SERVICE}/upload-syllabus`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-                        },
-                        body: formData
-                    });
-                    
-                    if (response.ok) {
-                        const result = await response.json();
+            // Create modal with drag-and-drop zone
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-upload"></i> Upload Syllabus</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="syllabusDropZone"></div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            // Initialize drag-and-drop
+            const dropZone = document.getElementById('syllabusDropZone');
+
+            // Import and use DragDropUpload module
+            import('../js/modules/drag-drop-upload.js').then(module => {
+                const DragDropUpload = module.default;
+
+                new DragDropUpload(dropZone, {
+                    acceptedTypes: ['.pdf', '.doc', '.docx', '.txt', '.md'],
+                    maxSizeMB: 50,
+                    multiple: false,
+                    uploadEndpoint: `${CONFIG.ENDPOINTS.CONTENT_SERVICE}/upload-syllabus?course_id=${courseId}`,
+
+                    onUploadStart: (file) => {
+                        showNotification(`Uploading ${file.name}...`, 'info');
+                    },
+
+                    onUploadProgress: (percent, file) => {
+                        console.log(`Upload progress: ${percent}%`);
+                    },
+
+                    onUploadComplete: async (response, file) => {
                         showNotification('Syllabus uploaded successfully!', 'success');
-                        
-                        // Update syllabus source indicator
+
+                        // Track upload in metadata service
+                        await trackFileUpload(courseId, 'syllabus', file.name, file.size, response.syllabus_id);
+
+                        // Update UI
                         const sourceElement = document.getElementById(`syllabus-source-${courseId}`);
                         if (sourceElement) {
                             sourceElement.textContent = 'Custom Upload';
                             sourceElement.className = 'badge badge-success';
                         }
-                        
-                        // Update last updated time
+
                         const updatedElement = document.getElementById(`syllabus-updated-${courseId}`);
                         if (updatedElement) {
                             updatedElement.textContent = new Date().toLocaleDateString();
                         }
-                        
+
+                        // Close modal
+                        setTimeout(() => modal.remove(), 1500);
+
                         // Trigger AI processing if enabled
                         if (confirm('Would you like AI to analyze this syllabus and generate course content?')) {
-                            await generateContentFromSyllabus(courseId, result.syllabus_id);
+                            await generateContentFromSyllabus(courseId, response.syllabus_id);
                         }
-                    } else {
-                        throw new Error('Upload failed');
+                    },
+
+                    onUploadError: (error) => {
+                        showNotification(`Upload failed: ${error.message}`, 'error');
                     }
-                } catch (error) {
-                    console.error('Error uploading syllabus:', error);
-                    showNotification('Failed to upload syllabus: ' + error.message, 'error');
-                }
-                
-                // Clean up
-                document.body.removeChild(fileInput);
-            };
-            
-            // Trigger file selection
-            document.body.appendChild(fileInput);
-            fileInput.click();
+                });
+            });
         }
         
         async function downloadSyllabus(courseId, format = 'pdf') {
@@ -4548,7 +4669,10 @@
                     const blob = await response.blob();
                     const course = userCourses.find(c => c.id === courseId);
                     const filename = `${course?.title || 'course'}-syllabus.${format}`;
-                    
+
+                    // Track download in metadata service
+                    await trackFileDownload(courseId, 'syllabus', filename, blob.size);
+
                     // Create download link
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
@@ -4558,7 +4682,7 @@
                     a.click();
                     document.body.removeChild(a);
                     window.URL.revokeObjectURL(url);
-                    
+
                     showNotification('Syllabus downloaded successfully!', 'success');
                 } else {
                     throw new Error('Download failed');
@@ -4614,59 +4738,60 @@
         
         // SLIDES FUNCTIONS
         async function uploadSlides(courseId) {
-            
-            const fileInput = document.createElement('input');
-            fileInput.type = 'file';
-            fileInput.accept = '.ppt,.pptx,.pdf,.json';
-            fileInput.style.display = 'none';
-            
-            fileInput.onchange = async function(event) {
-                const file = event.target.files[0];
-                if (!file) return;
-                
-                showNotification('Uploading slides...', 'info');
-                
-                try {
-                    const formData = new FormData();
-                    formData.append('slides_file', file);
-                    formData.append('course_id', courseId);
-                    
-                    const response = await fetch(`${CONFIG.ENDPOINTS.CONTENT_SERVICE}/upload-slides`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-                        },
-                        body: formData
-                    });
-                    
-                    if (response.ok) {
-                        const result = await response.json();
+            // Create modal with drag-and-drop zone
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-upload"></i> Upload Slides</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="slidesDropZone"></div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            const dropZone = document.getElementById('slidesDropZone');
+
+            import('../js/modules/drag-drop-upload.js').then(module => {
+                const DragDropUpload = module.default;
+
+                new DragDropUpload(dropZone, {
+                    acceptedTypes: ['.ppt', '.pptx', '.pdf', '.json'],
+                    maxSizeMB: 100,
+                    multiple: false,
+                    uploadEndpoint: `${CONFIG.ENDPOINTS.CONTENT_SERVICE}/upload-slides?course_id=${courseId}`,
+
+                    onUploadStart: (file) => {
+                        showNotification(`Uploading ${file.name}...`, 'info');
+                    },
+
+                    onUploadComplete: async (response, file) => {
                         showNotification('Slides uploaded successfully!', 'success');
-                        
-                        // Update slides count
+
+                        await trackFileUpload(courseId, 'slides', file.name, file.size, response.slides_id);
+
                         const countElement = document.getElementById(`slides-count-${courseId}`);
                         if (countElement) {
-                            countElement.textContent = result.slide_count || 'Unknown';
+                            countElement.textContent = response.slide_count || 'Unknown';
                         }
-                        
-                        // Update last updated time
+
                         const updatedElement = document.getElementById(`slides-updated-${courseId}`);
                         if (updatedElement) {
                             updatedElement.textContent = new Date().toLocaleDateString();
                         }
-                    } else {
-                        throw new Error('Upload failed');
+
+                        setTimeout(() => modal.remove(), 1500);
+                    },
+
+                    onUploadError: (error) => {
+                        showNotification(`Upload failed: ${error.message}`, 'error');
                     }
-                } catch (error) {
-                    console.error('Error uploading slides:', error);
-                    showNotification('Failed to upload slides: ' + error.message, 'error');
-                }
-                
-                document.body.removeChild(fileInput);
-            };
-            
-            document.body.appendChild(fileInput);
-            fileInput.click();
+                });
+            });
         }
         
         async function uploadTemplate(courseId) {
@@ -4733,7 +4858,10 @@
                     const blob = await response.blob();
                     const course = userCourses.find(c => c.id === courseId);
                     const filename = `${course?.title || 'course'}-slides.${format}`;
-                    
+
+                    // Track download in metadata service
+                    await trackFileDownload(courseId, 'slides', filename, blob.size);
+
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
@@ -4742,7 +4870,7 @@
                     a.click();
                     document.body.removeChild(a);
                     window.URL.revokeObjectURL(url);
-                    
+
                     showNotification('Slides downloaded successfully!', 'success');
                 } else {
                     throw new Error('Download failed');
@@ -5169,7 +5297,7 @@
     </script>
 
     <!-- Lab Container Management Modal -->
-    <div id="labContainerModal" class="modal">
+    <div id="labContainerModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="labContainerModalTitle">
         <div class="modal-content extra-large">
             <div class="modal-header">
                 <h2><i class="fas fa-server"></i> Lab Container Management</h2>
@@ -5259,7 +5387,7 @@
     </div>
 
     <!-- Create Instructor Lab Modal -->
-    <div id="createInstructorLabModal" class="modal">
+    <div id="createInstructorLabModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="createInstructorLabModalTitle">
         <div class="modal-content large">
             <div class="modal-header">
                 <h2><i class="fas fa-flask"></i> Create Instructor Lab Environment</h2>
@@ -5306,7 +5434,7 @@
     </div>
 
     <!-- Student Details Modal -->
-    <div id="studentDetailsModal" class="modal">
+    <div id="studentDetailsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="studentDetailsModalTitle">
         <div class="modal-content large">
             <div class="modal-header">
                 <h2><i class="fas fa-user-chart"></i> Student Analytics Details</h2>
@@ -5322,7 +5450,7 @@
     </div>
 
     <!-- Create Course Instance Modal -->
-    <div id="createInstanceModal" class="modal">
+    <div id="createInstanceModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="createInstanceModalTitle">
         <div class="modal-content">
             <div class="modal-header">
                 <h3><i class="fas fa-calendar-plus"></i> Create Course Instance</h3>
@@ -5402,7 +5530,7 @@
     </div>
 
     <!-- Student Enrollment Modal -->
-    <div id="enrollStudentModal" class="modal">
+    <div id="enrollStudentModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="enrollStudentModalTitle">
         <div class="modal-content">
             <div class="modal-header">
                 <h3><i class="fas fa-user-plus"></i> Enroll Student</h3>
@@ -5445,12 +5573,37 @@
     <!-- Analytics Dashboard Module -->
     <script type="module">
         import AnalyticsDashboard from './js/modules/analytics-dashboard.js';
-        
+
         // Initialize analytics dashboard when DOM is loaded
         document.addEventListener('DOMContentLoaded', function() {
             window.analyticsDashboard = new AnalyticsDashboard();
         });
     </script>
+
+    <!-- File Explorer Initialization -->
+    <script type="module">
+        // Initialize file explorer when Files section is shown
+        import { initInstructorFileExplorer } from '../js/modules/instructor-file-manager.js';
+
+        // Track if file explorer has been initialized
+        let fileExplorerInitialized = false;
+
+        // Listen for direct link clicks to files section
+        document.addEventListener('click', (e) => {
+            const sectionLink = e.target.closest('[data-section="files"]');
+            if (sectionLink && !fileExplorerInitialized) {
+                setTimeout(() => {
+                    const fileExplorer = initInstructorFileExplorer('instructorFileExplorerContainer', null);
+                    if (fileExplorer) {
+                        fileExplorerInitialized = true;
+                        console.log('✅ File explorer initialized for instructor');
+                    }
+                }, 100);
+            }
+        });
+    </script>
+    <script src="../js/focus-manager.js"></script>
+
 
 </body>
 </html>

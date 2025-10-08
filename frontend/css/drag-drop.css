@@ -1,0 +1,254 @@
+/**
+ * Drag & Drop Upload Styles
+ *
+ * DESIGN PHILOSOPHY:
+ * - Clear visual feedback for all drag states
+ * - Accessible and intuitive interface
+ * - Responsive design for all screen sizes
+ */
+
+/* Base drag-drop zone */
+.drag-drop-zone {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 40px;
+    text-align: center;
+    background-color: #f9f9f9;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.drag-drop-zone:hover {
+    border-color: #3498db;
+    background-color: #f0f8ff;
+}
+
+/* Drag over state */
+.drag-drop-zone.drag-over {
+    border-color: #2ecc71;
+    background-color: #e8f8f5;
+    border-style: solid;
+    transform: scale(1.02);
+}
+
+/* Content container */
+.drag-drop-content {
+    width: 100%;
+}
+
+/* Icon */
+.drag-drop-icon {
+    font-size: 64px;
+    color: #3498db;
+    margin-bottom: 20px;
+    transition: color 0.3s ease;
+}
+
+.drag-drop-zone.drag-over .drag-drop-icon {
+    color: #2ecc71;
+    animation: bounce 0.6s ease;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+/* Text */
+.drag-drop-text {
+    font-size: 18px;
+    color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+.drag-drop-text strong {
+    color: #34495e;
+    font-weight: 600;
+}
+
+.drag-drop-browse {
+    color: #3498db;
+    text-decoration: underline;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.drag-drop-browse:hover {
+    color: #2980b9;
+}
+
+/* Hint text */
+.drag-drop-hint {
+    font-size: 13px;
+    color: #7f8c8d;
+    margin-top: 10px;
+    line-height: 1.6;
+}
+
+/* Progress container */
+.drag-drop-progress {
+    width: 100%;
+}
+
+/* Progress bar */
+.progress-bar {
+    width: 100%;
+    height: 30px;
+    background-color: #ecf0f1;
+    border-radius: 15px;
+    overflow: hidden;
+    margin-bottom: 15px;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3498db, #2ecc71);
+    border-radius: 15px;
+    transition: width 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Progress text */
+.progress-text {
+    font-size: 14px;
+    color: #34495e;
+    font-weight: 600;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .drag-drop-zone {
+        padding: 30px 20px;
+        min-height: 150px;
+    }
+
+    .drag-drop-icon {
+        font-size: 48px;
+    }
+
+    .drag-drop-text {
+        font-size: 16px;
+    }
+
+    .drag-drop-hint {
+        font-size: 12px;
+    }
+}
+
+/* File type badges */
+.file-type-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin: 2px;
+}
+
+.file-type-badge.pdf {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.file-type-badge.doc,
+.file-type-badge.docx {
+    background-color: #2980b9;
+    color: white;
+}
+
+.file-type-badge.ppt,
+.file-type-badge.pptx {
+    background-color: #e67e22;
+    color: white;
+}
+
+.file-type-badge.zip {
+    background-color: #95a5a6;
+    color: white;
+}
+
+/* Success/Error states */
+.drag-drop-zone.success {
+    border-color: #2ecc71;
+    background-color: #d5f4e6;
+}
+
+.drag-drop-zone.error {
+    border-color: #e74c3c;
+    background-color: #fadbd8;
+}
+
+/* Uploaded file list */
+.uploaded-files-list {
+    margin-top: 20px;
+    text-align: left;
+}
+
+.uploaded-file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    border-left: 3px solid #2ecc71;
+}
+
+.uploaded-file-item .file-name {
+    font-weight: 600;
+    color: #2c3e50;
+    flex: 1;
+}
+
+.uploaded-file-item .file-size {
+    font-size: 12px;
+    color: #7f8c8d;
+    margin-right: 10px;
+}
+
+.uploaded-file-item .file-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.uploaded-file-item .file-actions button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #7f8c8d;
+    font-size: 16px;
+    padding: 4px 8px;
+}
+
+.uploaded-file-item .file-actions button:hover {
+    color: #34495e;
+}

@@ -4,965 +4,605 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Site Admin Dashboard - Course Creator Platform</title>
-    <link rel="stylesheet" href="../css/main.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Design System -->
+    <link rel="stylesheet" href="../css/design-system.css?v=5.4">
+    <link rel="stylesheet" href="../css/components/header-footer.css?v=5.4">
+    <link rel="stylesheet" href="../css/components/modals.css?v=5.4">
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
     <style>
-        /* Anti-blur fixes for all text and animations */
-        * {
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
+        /* Dashboard Layout */
+        body {
+            padding-top: 80px; /* Header height */
+            background: var(--gray-50);
         }
 
-        /* Prevent blur on transformed/animated elements */
-        .nav-link,
-        .stat-card,
-        .card,
-        .modal,
-        .notification {
-            backface-visibility: hidden;
-            transform-style: preserve-3d;
-        }
-
-        .site-admin-container {
+        .dashboard-container {
             display: flex;
-            min-height: 100vh;
-            background-color: var(--background-color);
+            min-height: calc(100vh - 80px);
         }
 
-        .sidebar {
+        /* Sidebar - Modern Design */
+        .dashboard-sidebar {
             width: 280px;
-            background: var(--card-background);
-            border-right: 1px solid var(--border-color);
-            padding: 2rem 0;
+            background: var(--surface-elevated);
+            border-right: 1px solid var(--border);
             position: fixed;
-            height: 100vh;
+            top: 80px;
+            bottom: 0;
+            left: 0;
             overflow-y: auto;
+            z-index: 100;
         }
 
-        .main-content {
-            flex: 1;
-            margin-left: 280px;
-            padding: 2rem;
+        .sidebar-content {
+            padding: var(--space-6) 0;
         }
 
-        .site-header {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            padding: 2rem;
-            border-radius: 12px;
-            margin-bottom: 2rem;
+        .sidebar-header {
+            padding: 0 var(--space-6) var(--space-6);
+            border-bottom: 1px solid var(--border);
         }
 
-        .nav-link {
-            display: block;
-            padding: 0.75rem 1rem;
-            color: var(--text-color);
+        .sidebar-title {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            font-size: var(--text-xl);
+            font-weight: var(--weight-bold);
+            color: var(--primary-600);
+            margin-bottom: var(--space-4);
+        }
+
+        .user-info-card {
+            background: var(--primary-50);
+            padding: var(--space-4);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--primary-200);
+        }
+
+        .user-info-card h4 {
+            margin: 0;
+            font-size: var(--text-base);
+            font-weight: var(--weight-semibold);
+            color: var(--primary-700);
+        }
+
+        .user-info-card p {
+            margin: var(--space-1) 0 0;
+            font-size: var(--text-sm);
+            color: var(--primary-600);
+        }
+
+        /* Sidebar Navigation */
+        .sidebar-nav {
+            padding: var(--space-4) var(--space-3);
+        }
+
+        .sidebar-nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-nav li {
+            margin-bottom: var(--space-1);
+        }
+
+        .sidebar-nav-link {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-3) var(--space-4);
+            color: var(--text-secondary);
             text-decoration: none;
-            border-radius: 4px;
-            transition: all 0.3s ease;
+            border-radius: var(--radius-lg);
+            transition: all var(--transition-base);
+            font-weight: var(--weight-medium);
+            font-size: var(--text-base);
             cursor: pointer;
         }
 
-        .nav-link:hover {
-            background: var(--hover-color);
+        .sidebar-nav-link:hover {
+            background: var(--gray-100);
+            color: var(--text-primary);
         }
 
-        .nav-link.active {
-            background: var(--primary-color);
+        .sidebar-nav-link.active {
+            background: var(--primary-600);
             color: white;
         }
 
+        .sidebar-nav-link i {
+            width: 20px;
+            text-align: center;
+        }
+
+        .sidebar-footer {
+            padding: var(--space-6) var(--space-6) 0;
+            border-top: 1px solid var(--border);
+            margin-top: auto;
+        }
+
+        .logout-btn {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            background: var(--error);
+            color: white;
+            border: none;
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            font-size: var(--text-base);
+            font-weight: var(--weight-medium);
+            transition: all var(--transition-base);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-2);
+        }
+
+        .logout-btn:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Main Content */
+        .dashboard-main {
+            flex: 1;
+            margin-left: 280px;
+            padding: var(--space-8) var(--space-6);
+            max-width: calc(100vw - 280px);
+        }
+
+        .page-header {
+            background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
+            color: white;
+            padding: var(--space-8);
+            border-radius: var(--radius-xl);
+            margin-bottom: var(--space-6);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .page-header h1 {
+            margin: 0 0 var(--space-2);
+            font-size: var(--text-3xl);
+            font-weight: var(--weight-bold);
+        }
+
+        .page-header p {
+            margin: 0;
+            font-size: var(--text-lg);
+            opacity: 0.95;
+        }
+
+        /* Tab Content */
         .tab-content {
             display: none;
         }
 
         .tab-content.active {
             display: block;
+            animation: fadeIn 0.3s ease-in-out;
         }
 
-        .overview-grid {
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Stats Grid */
+        .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--space-6);
+            margin-bottom: var(--space-6);
         }
 
         .stat-card {
-            background: var(--card-background);
-            padding: 1.5rem;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            text-align: center;
-            transition: all 0.3s ease;
+            background: var(--surface-elevated);
+            padding: var(--space-6);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--border);
+            transition: all var(--transition-base);
+            cursor: pointer;
         }
 
         .stat-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            border-color: var(--primary-color);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-600);
         }
 
         .stat-icon {
-            font-size: 2rem;
-            color: var(--primary-color);
-            margin-bottom: 1rem;
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary-50);
+            color: var(--primary-600);
+            border-radius: var(--radius-lg);
+            font-size: var(--text-2xl);
+            margin-bottom: var(--space-4);
         }
 
         .stat-info h3 {
-            font-size: 2rem;
-            font-weight: bold;
-            color: var(--primary-color);
-            margin: 0 0 0.5rem 0;
+            font-size: var(--text-3xl);
+            font-weight: var(--weight-bold);
+            color: var(--primary-600);
+            margin: 0 0 var(--space-2);
         }
 
         .stat-info p {
             margin: 0;
-            color: var(--text-muted);
+            font-size: var(--text-base);
+            color: var(--text-secondary);
         }
 
-        .activity-section,
-        .quick-actions {
-            background: var(--card-background);
-            padding: 1.5rem;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            margin-bottom: 2rem;
+        /* Section Cards */
+        .section-card {
+            background: var(--surface-elevated);
+            padding: var(--space-6);
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--border);
+            margin-bottom: var(--space-6);
         }
 
-        .activity-section h2,
-        .quick-actions h2 {
-            margin: 0 0 1rem 0;
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-6);
+            padding-bottom: var(--space-4);
+            border-bottom: 1px solid var(--border);
         }
 
+        .section-header h2 {
+            margin: 0;
+            font-size: var(--text-2xl);
+            font-weight: var(--weight-bold);
+            color: var(--text-primary);
+        }
+
+        .section-actions {
+            display: flex;
+            gap: var(--space-3);
+        }
+
+        /* Action Grid */
         .action-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
+            gap: var(--space-4);
         }
 
         .action-btn {
-            padding: 1rem;
-            background: var(--primary-color);
+            padding: var(--space-4);
+            background: var(--primary-600);
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius: var(--radius-lg);
             cursor: pointer;
-            transition: all 0.3s ease;
+            font-size: var(--text-base);
+            font-weight: var(--weight-medium);
+            transition: all var(--transition-base);
             display: flex;
-            flex-direction: column;
             align-items: center;
-            gap: 0.5rem;
+            justify-content: center;
+            gap: var(--space-2);
         }
 
         .action-btn:hover {
-            background: var(--secondary-color);
+            background: var(--primary-700);
             transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
         }
 
-        .action-btn i {
-            font-size: 1.5rem;
-        }
-
-        .tab-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
+        /* Tables */
+        .data-table {
             width: 100%;
-            position: relative;
-            flex-wrap: nowrap;
+            border-collapse: collapse;
+            margin-top: var(--space-4);
         }
 
-        .tab-header h2 {
-            flex-shrink: 0;
-            margin: 0;
+        .data-table thead {
+            background: var(--gray-50);
         }
 
-        .tab-actions {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-            flex-shrink: 0;
-            flex-wrap: nowrap;
-        }
-
-        .filter-group {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-            flex-wrap: nowrap;
-        }
-
-        .filter-field {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            flex-shrink: 0;
-        }
-
-        .filter-field label {
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            white-space: nowrap;
-        }
-
-        .filter-group select,
-        .filter-group input {
-            padding: 0.5rem 0.75rem;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 0.875rem;
-            background: var(--card-background);
-            color: var(--text-primary);
-        }
-
-        .filter-group select {
-            min-width: 150px;
-        }
-
-        .filter-group input {
-            min-width: 250px;
-        }
-
-        .filter-group select:focus,
-        .filter-group input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(103, 58, 183, 0.1);
-        }
-
-        .organizations-grid {
-            margin-top: 1rem;
-            display: flex;
-            justify-content: center;
-        }
-
-        #organizationsContainer {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 1.5rem;
-            justify-content: center;
-            max-width: 1400px;
-            width: 100%;
-        }
-
-        .organization-card {
-            flex: 0 1 calc(50% - 0.75rem);
-            min-width: 500px;
-            max-width: 700px;
-            background: var(--card-background);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-
-        .organization-card:hover {
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-            transform: translateY(-2px);
-        }
-
-        .org-card-header {
-            padding: 1.5rem;
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
-
-        .org-status-badge {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 20px;
-            font-size: 0.875rem;
-            font-weight: 600;
-        }
-
-        .org-status-badge.active {
-            background: rgba(76, 175, 80, 0.3);
-        }
-
-        .org-status-badge.inactive {
-            background: rgba(244, 67, 54, 0.3);
-        }
-
-        .org-title h3 {
-            margin: 0 0 0.5rem 0;
-            font-size: 1.5rem;
-            color: white;
-        }
-
-        .org-slug {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.875rem;
-            color: rgba(255, 255, 255, 0.9);
-            font-family: 'Courier New', monospace;
-        }
-
-        .org-card-body {
-            padding: 1.5rem;
-        }
-
-        .org-section {
-            margin-bottom: 1.5rem;
-        }
-
-        .org-section:last-child {
-            margin-bottom: 0;
-        }
-
-        .org-section h4 {
-            margin: 0 0 1rem 0;
-            font-size: 1rem;
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-weight: 600;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid var(--border-color);
-        }
-
-        .org-section h4 i {
-            color: var(--primary-color);
-        }
-
-        .org-section p {
-            margin: 0;
-            color: var(--text-secondary);
-            line-height: 1.6;
-        }
-
-        .org-details-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
-            align-items: start;
-            justify-items: start;
-        }
-
-        .detail-item {
-            display: flex;
-            flex-direction: column;
-            gap: 0.25rem;
-            line-height: 1.4;
-            align-items: flex-start;
-            width: 100%;
-        }
-
-        .detail-item label {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin: 0;
-            padding: 0;
-            justify-content: flex-start;
-        }
-
-        .detail-item label i {
-            color: var(--primary-color);
-            width: 16px;
-            min-width: 16px;
-            text-align: center;
-            flex-shrink: 0;
-        }
-
-        .detail-item span {
-            font-size: 0.875rem;
-            color: var(--text-primary);
-            word-break: break-word;
-            line-height: 1.5;
-            margin: 0;
-            padding: 0;
+        .data-table th {
+            padding: var(--space-4);
             text-align: left;
+            font-weight: var(--weight-semibold);
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--border);
         }
 
-        .detail-item span.monospace {
-            font-family: 'Courier New', monospace;
-            font-size: 0.8rem;
-            background: var(--hover-color);
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
+        .data-table td {
+            padding: var(--space-4);
+            border-bottom: 1px solid var(--border);
+            color: var(--text-secondary);
         }
 
-        .org-stats {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
+        .data-table tbody tr:hover {
+            background: var(--gray-50);
         }
 
-        .org-stat {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem;
-            background: var(--hover-color);
-            border-radius: 8px;
-            transition: all 0.2s ease;
-        }
-
-        .org-stat.clickable {
+        /* Buttons */
+        .btn {
+            padding: var(--space-3) var(--space-6);
+            border-radius: var(--radius-lg);
+            font-size: var(--text-base);
+            font-weight: var(--weight-medium);
             cursor: pointer;
-        }
-
-        .org-stat.clickable:hover {
-            background: var(--primary-color);
-            transform: translateX(4px);
-        }
-
-        .org-stat.clickable:hover .stat-icon {
-            background: white;
-            color: var(--primary-color);
-        }
-
-        .org-stat.clickable:hover .value,
-        .org-stat.clickable:hover .label {
-            color: white;
-        }
-
-        .org-stat:not(.clickable):hover {
-            background: var(--border-color);
-            transform: translateX(4px);
-        }
-
-        .org-stat .stat-icon {
-            width: 48px;
-            height: 48px;
-            display: flex;
+            transition: all var(--transition-base);
+            border: none;
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
-            background: var(--primary-color);
+            gap: var(--space-2);
+        }
+
+        .btn-primary {
+            background: var(--primary-600);
             color: white;
-            border-radius: 8px;
-            font-size: 1.25rem;
         }
 
-        .org-stat .stat-content {
+        .btn-primary:hover {
+            background: var(--primary-700);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--primary-600);
+            border: 2px solid var(--primary-600);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary-50);
+        }
+
+        .btn-danger {
+            background: var(--error);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-sm {
+            padding: var(--space-2) var(--space-4);
+            font-size: var(--text-sm);
+        }
+
+        /* Search and Filter */
+        .filter-bar {
             display: flex;
-            flex-direction: column;
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+            flex-wrap: wrap;
         }
 
-        .org-stat .value {
-            font-size: 1.75rem;
-            font-weight: bold;
-            color: var(--primary-color);
-            line-height: 1;
+        .search-input,
+        .filter-select {
+            flex: 1;
+            min-width: 200px;
+            padding: var(--space-3) var(--space-4);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            font-size: var(--text-base);
+            transition: all var(--transition-base);
         }
 
-        .org-stat .label {
-            font-size: 0.875rem;
-            color: var(--text-muted);
-            margin-top: 0.25rem;
+        .search-input:focus,
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--primary-600);
+            box-shadow: 0 0 0 3px var(--primary-50);
         }
 
-        .org-card-footer {
-            padding: 1rem 1.5rem;
-            background: var(--surface-color);
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            gap: 0.75rem;
-            justify-content: flex-end;
+        /* Integration Status */
+        .integration-status {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            padding: var(--space-2) var(--space-3);
+            border-radius: var(--radius-full);
+            font-size: var(--text-sm);
+            font-weight: var(--weight-medium);
         }
 
-        @media (max-width: 1200px) {
-            .organization-card {
-                flex: 0 1 100%;
-                max-width: 700px;
+        .integration-status.active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .integration-status.inactive {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: var(--space-12) var(--space-6);
+            color: var(--text-secondary);
+        }
+
+        .empty-state i {
+            font-size: var(--text-5xl);
+            color: var(--gray-300);
+            margin-bottom: var(--space-4);
+        }
+
+        .empty-state h3 {
+            margin: 0 0 var(--space-2);
+            color: var(--text-primary);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .dashboard-sidebar {
+                transform: translateX(-100%);
+            }
+
+            .dashboard-main {
+                margin-left: 0;
+                max-width: 100vw;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             }
         }
 
         @media (max-width: 768px) {
-            .organization-card {
-                min-width: 280px;
+            .dashboard-main {
+                padding: var(--space-4);
             }
 
-            .org-details-grid {
+            .page-header {
+                padding: var(--space-6);
+            }
+
+            .page-header h1 {
+                font-size: var(--text-2xl);
+            }
+
+            .stats-grid {
                 grid-template-columns: 1fr;
             }
 
-            .org-stats {
-                grid-template-columns: 1fr;
-            }
-
-            .org-card-footer {
+            .filter-bar {
                 flex-direction: column;
             }
 
-            .org-card-footer .btn {
-                width: 100%;
+            .search-input,
+            .filter-select {
+                min-width: 100%;
             }
-        }
-
-        .users-stats,
-        .integration-cards,
-        .settings-grid {
-            margin-top: 1rem;
-        }
-
-        @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%) translateZ(0);
-                transition: transform 0.3s ease;
-            }
-
-            .sidebar.open {
-                transform: translateX(0) translateZ(0);
-            }
-
-            .main-content {
-                margin-left: 0;
-                padding: 1rem;
-            }
-        }
-
-        /* Projects Modal Styles */
-        .projects-controls {
-            margin-bottom: 1.5rem;
-            padding: 1rem;
-            background: var(--hover-color);
-            border-radius: 8px;
-        }
-
-        .control-group {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .control-group label {
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .control-group select {
-            padding: 0.5rem 1rem;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            background: var(--card-background);
-            color: var(--text-primary);
-        }
-
-        .project-card {
-            background: var(--card-background);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .project-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-
-        .project-header h3 {
-            margin: 0;
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .project-header h3 i {
-            color: var(--primary-color);
-        }
-
-        .project-status {
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .project-status.published {
-            background: rgba(76, 175, 80, 0.2);
-            color: #4CAF50;
-        }
-
-        .project-status.draft {
-            background: rgba(255, 152, 0, 0.2);
-            color: #FF9800;
-        }
-
-        .project-description {
-            color: var(--text-secondary);
-            margin: 0 0 1rem 0;
-        }
-
-        .project-meta {
-            display: flex;
-            gap: 1.5rem;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .project-meta span {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.875rem;
-            color: var(--text-muted);
-        }
-
-        .project-meta i {
-            color: var(--primary-color);
-        }
-
-        .tracks-section {
-            margin-top: 1rem;
-            padding-top: 1rem;
-            border-top: 1px solid var(--border-color);
-        }
-
-        .tracks-section h4 {
-            margin: 0 0 1rem 0;
-            color: var(--text-primary);
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .track-item {
-            background: var(--hover-color);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 1rem;
-            margin-bottom: 0.75rem;
-        }
-
-        .track-header {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .track-header i {
-            color: var(--primary-color);
-        }
-
-        .track-name {
-            font-weight: 600;
-            color: var(--text-primary);
-            flex: 1;
-        }
-
-        .track-difficulty {
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .track-difficulty.beginner {
-            background: rgba(76, 175, 80, 0.2);
-            color: #4CAF50;
-        }
-
-        .track-difficulty.intermediate {
-            background: rgba(255, 152, 0, 0.2);
-            color: #FF9800;
-        }
-
-        .track-difficulty.advanced {
-            background: rgba(244, 67, 54, 0.2);
-            color: #F44336;
-        }
-
-        .track-description {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-            margin: 0.5rem 0;
-        }
-
-        .track-meta {
-            display: flex;
-            gap: 1rem;
-            font-size: 0.75rem;
-            color: var(--text-muted);
-        }
-
-        .track-meta span {
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-
-        .track-meta i {
-            color: var(--primary-color);
-        }
-
-        .no-data,
-        .no-tracks {
-            text-align: center;
-            padding: 2rem;
-            color: var(--text-muted);
-            font-style: italic;
-        }
-
-        /* Members Modal Styles */
-        .members-controls {
-            margin-bottom: 1.5rem;
-            padding: 1rem;
-            background: var(--hover-color);
-            border-radius: 8px;
-            display: flex;
-            gap: 1.5rem;
-            flex-wrap: wrap;
-        }
-
-        .members-stats {
-            margin-bottom: 1rem;
-            padding: 0.75rem 1rem;
-            background: var(--primary-color);
-            color: white;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .member-card {
-            background: var(--card-background);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .member-card:hover {
-            border-color: var(--primary-color);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .member-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .member-info {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        .member-info i {
-            font-size: 2rem;
-            color: var(--primary-color);
-        }
-
-        .member-info h4 {
-            margin: 0 0 0.25rem 0;
-            color: var(--text-primary);
-        }
-
-        .member-email {
-            font-size: 0.875rem;
-            color: var(--text-muted);
-        }
-
-        .member-role-badge {
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .member-role-badge.student {
-            background: rgba(33, 150, 243, 0.2);
-            color: #2196F3;
-        }
-
-        .member-role-badge.instructor {
-            background: rgba(156, 39, 176, 0.2);
-            color: #9C27B0;
-        }
-
-        .member-role-badge.organization_admin,
-        .member-role-badge.org_admin {
-            background: rgba(255, 152, 0, 0.2);
-            color: #FF9800;
-        }
-
-        .member-details {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.75rem;
-        }
-
-        .detail-row {
-            display: flex;
-            flex-direction: column;
-            gap: 0.25rem;
-        }
-
-        .detail-label {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-        }
-
-        .status-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            display: inline-block;
-        }
-
-        .status-badge.active {
-            background: rgba(76, 175, 80, 0.2);
-            color: #4CAF50;
-        }
-
-        .status-badge.inactive {
-            background: rgba(244, 67, 54, 0.2);
-            color: #F44336;
-        }
-
-        .enrollments-section {
-            margin-top: 1rem;
-            padding-top: 1rem;
-            border-top: 1px solid var(--border-color);
-        }
-
-        .enrollments-section h5 {
-            margin: 0 0 0.75rem 0;
-            font-size: 0.9rem;
-            color: var(--text-primary);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .enrollments-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .enrollment-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.5rem;
-            background: var(--hover-color);
-            border-radius: 4px;
-            font-size: 0.875rem;
-        }
-
-        .enrollment-name {
-            font-weight: 500;
-            color: var(--text-primary);
-        }
-
-        .enrollment-date {
-            color: var(--text-muted);
-            font-size: 0.8rem;
-        }
-
-        .no-enrollments {
-            color: var(--text-muted);
-            font-style: italic;
-            margin: 0;
         }
     </style>
-    <!-- Security: DOMPurify for XSS protection -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
-    <div class="site-admin-container">
+    <!-- Header -->
+    <header class="site-header" role="banner">
+        <div class="header-container">
+            <!-- Logo -->
+            <a href="/html/index.html" class="header-logo">
+                <i class="fas fa-graduation-cap"></i>
+                <span>Course Creator</span>
+            </a>
+
+            <!-- Spacer -->
+            <div style="flex: 1;"></div>
+
+            <!-- User Dropdown -->
+            <div class="header-actions">
+                <div id="userDropdown" class="user-dropdown">
+                    <button class="user-trigger" aria-expanded="false" aria-haspopup="true">
+                        <div class="user-avatar">
+                            <span id="userInitials">SA</span>
+                        </div>
+                        <span id="userName">Site Admin</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="user-menu" id="userMenu">
+                        <a href="/html/site-admin-dashboard.html"><i class="fas fa-th-large"></i> Dashboard</a>
+                        <a href="#profile"><i class="fas fa-user"></i> Profile</a>
+                        <a href="#settings"><i class="fas fa-cog"></i> Settings</a>
+                        <hr style="margin: var(--space-2) 0; border: none; border-top: 1px solid var(--border);">
+                        <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Dashboard Container -->
+    <div class="dashboard-container">
         <!-- Sidebar -->
-        <nav class="sidebar">
-            <div style="padding: 0 1.5rem;">
-                <h2 style="margin: 0 0 1rem 0; color: var(--primary-color);">
-                    <i class="fas fa-shield-alt"></i> Site Admin
-                </h2>
-
-                <a href="../index.html" style="display: block; padding: 0.5rem 1rem; background: var(--hover-color); border-radius: 4px; text-decoration: none; color: var(--text-color); margin-bottom: 1rem; transition: all 0.3s ease;">
-                    ← Back to Home
-                </a>
-
-                <div class="user-info" style="margin-bottom: 2rem; padding: 1rem; background: var(--hover-color); border-radius: 8px;">
-                    <h4 id="currentUserName" style="margin: 0;">Loading...</h4>
+        <nav class="dashboard-sidebar" role="navigation" aria-label="Dashboard navigation">
+            <div class="sidebar-content">
+                <div class="sidebar-header">
+                    <div class="sidebar-title">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Site Admin</span>
+                    </div>
+                    <div class="user-info-card">
+                        <h4 id="currentUserName">Loading...</h4>
+                        <p>Platform Administrator</p>
+                    </div>
                 </div>
 
-                <ul style="list-style: none; padding: 0; margin: 0;">
-                    <li style="margin-bottom: 0.5rem;">
-                        <a href="#overview" class="nav-link active" data-tab="overview">
-                            <i class="fas fa-chart-line"></i> Platform Overview
-                        </a>
-                    </li>
-                    <li style="margin-bottom: 0.5rem;">
-                        <a href="#organizations" class="nav-link" data-tab="organizations">
-                            <i class="fas fa-building"></i> Organizations
-                        </a>
-                    </li>
-                    <li style="margin-bottom: 0.5rem;">
-                        <a href="#users" class="nav-link" data-tab="users">
-                            <i class="fas fa-users"></i> Users
-                        </a>
-                    </li>
-                    <li style="margin-bottom: 0.5rem;">
-                        <a href="#integrations" class="nav-link" data-tab="integrations">
-                            <i class="fas fa-plug"></i> Integrations
-                        </a>
-                    </li>
-                    <li style="margin-bottom: 0.5rem;">
-                        <a href="#audit" class="nav-link" data-tab="audit">
-                            <i class="fas fa-history"></i> Audit Log
-                        </a>
-                    </li>
-                    <li style="margin-bottom: 0.5rem;">
-                        <a href="#settings" class="nav-link" data-tab="settings">
-                            <i class="fas fa-cog"></i> System Settings
-                        </a>
-                    </li>
-                    <li style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-                        <button onclick="logout()" style="width: 100%; padding: 0.75rem 1rem; background: var(--error-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; transition: all 0.3s ease;">
-                            <i class="fas fa-sign-out-alt"></i> Logout
-                        </button>
-                    </li>
-                </ul>
+                <div class="sidebar-nav">
+                    <ul>
+                        <li>
+                            <a href="#overview" class="sidebar-nav-link active" data-tab="overview">
+                                <i class="fas fa-chart-line"></i>
+                                <span>Platform Overview</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#organizations" class="sidebar-nav-link" data-tab="organizations">
+                                <i class="fas fa-building"></i>
+                                <span>Organizations</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#users" class="sidebar-nav-link" data-tab="users">
+                                <i class="fas fa-users"></i>
+                                <span>Users</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#integrations" class="sidebar-nav-link" data-tab="integrations">
+                                <i class="fas fa-plug"></i>
+                                <span>Integrations</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#audit" class="sidebar-nav-link" data-tab="audit">
+                                <i class="fas fa-history"></i>
+                                <span>Audit Log</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#settings" class="sidebar-nav-link" data-tab="settings">
+                                <i class="fas fa-cog"></i>
+                                <span>System Settings</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-footer">
+                    <button onclick="logout()" class="logout-btn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </button>
+                </div>
             </div>
         </nav>
 
         <!-- Main Content -->
-        <main class="main-content">
-            <!-- Site Header -->
-            <div class="site-header">
+        <main class="dashboard-main" role="main">
+            <!-- Page Header -->
+            <div class="page-header">
                 <h1>Site Administrator Dashboard</h1>
                 <p>Manage the entire Course Creator Platform</p>
             </div>
+
             <!-- Overview Tab -->
             <div class="tab-content active" id="overview">
-                <div class="overview-grid">
-                    <!-- Platform Statistics -->
-                    <div class="stat-card" onclick="document.querySelector('[data-tab=organizations]').click()" style="cursor: pointer;" title="Click to view all organizations">
+                <!-- Platform Statistics -->
+                <div class="stats-grid">
+                    <div class="stat-card" onclick="document.querySelector('[data-tab=organizations]').click()" title="Click to view all organizations">
                         <div class="stat-icon">
                             <i class="fas fa-building"></i>
                         </div>
@@ -972,7 +612,7 @@
                         </div>
                     </div>
 
-                    <div class="stat-card" onclick="document.querySelector('[data-tab=users]').click()" style="cursor: pointer;" title="Click to view all users">
+                    <div class="stat-card" onclick="document.querySelector('[data-tab=users]').click()" title="Click to view all users">
                         <div class="stat-icon">
                             <i class="fas fa-users"></i>
                         </div>
@@ -982,7 +622,7 @@
                         </div>
                     </div>
 
-                    <div class="stat-card" onclick="document.querySelector('[data-tab=organizations]').click()" style="cursor: pointer;" title="Click to view projects across organizations">
+                    <div class="stat-card" onclick="document.querySelector('[data-tab=organizations]').click()" title="Click to view projects">
                         <div class="stat-icon">
                             <i class="fas fa-project-diagram"></i>
                         </div>
@@ -992,7 +632,7 @@
                         </div>
                     </div>
 
-                    <div class="stat-card" onclick="document.querySelector('[data-tab=organizations]').click()" style="cursor: pointer;" title="Click to view learning tracks">
+                    <div class="stat-card" onclick="document.querySelector('[data-tab=organizations]').click()" title="Click to view learning tracks">
                         <div class="stat-icon">
                             <i class="fas fa-road"></i>
                         </div>
@@ -1001,54 +641,25 @@
                             <p>Learning Tracks</p>
                         </div>
                     </div>
-
-                    <div class="stat-card" onclick="document.querySelector('[data-tab=integrations]').click()" style="cursor: pointer;" title="Click to view integrations">
-                        <div class="stat-icon">
-                            <i class="fas fa-video"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="totalMeetingRooms">0</h3>
-                            <p>Meeting Rooms</p>
-                        </div>
-                    </div>
-
-                    <div class="stat-card" onclick="document.querySelector('[data-tab=settings]').click()" style="cursor: pointer;" title="Click to view system settings">
-                        <div class="stat-icon">
-                            <i class="fas fa-heartbeat"></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="systemHealth">100%</h3>
-                            <p>System Health</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Recent Activity -->
-                <div class="activity-section">
-                    <h2>Recent Platform Activity</h2>
-                    <div id="recentActivity" class="activity-feed">
-                        <div class="loading">
-                            <div class="loading-spinner"></div>
-                            <p>Loading recent activity...</p>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Quick Actions -->
-                <div class="quick-actions">
-                    <h2>Quick Administrative Actions</h2>
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>Quick Actions</h2>
+                    </div>
                     <div class="action-grid">
                         <button class="action-btn" onclick="refreshPlatformStats()">
-                            <i class="fas fa-sync-alt"></i>
+                            <i class="fas fa-sync"></i>
                             <span>Refresh Stats</span>
                         </button>
                         <button class="action-btn" onclick="runHealthCheck()">
-                            <i class="fas fa-stethoscope"></i>
+                            <i class="fas fa-heartbeat"></i>
                             <span>Health Check</span>
                         </button>
                         <button class="action-btn" onclick="viewSystemLogs()">
                             <i class="fas fa-file-alt"></i>
-                            <span>System Logs</span>
+                            <span>View Logs</span>
                         </button>
                         <button class="action-btn" onclick="exportPlatformReport()">
                             <i class="fas fa-download"></i>
@@ -1056,343 +667,363 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- Recent Activity -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>Recent Activity</h2>
+                        <button class="btn btn-outline btn-sm" onclick="document.querySelector('[data-tab=audit]').click()">
+                            View All
+                        </button>
+                    </div>
+                    <div id="recentActivityList">
+                        <div class="empty-state">
+                            <i class="fas fa-history"></i>
+                            <h3>No Recent Activity</h3>
+                            <p>System activity will appear here</p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Organizations Tab -->
             <div class="tab-content" id="organizations">
-                <div class="tab-header" style="display: flex !important; flex-wrap: wrap !important; justify-content: space-between !important; align-items: center !important; gap: 1rem !important; width: 100% !important;">
-                    <h2 style="margin: 0; flex-shrink: 0;">Platform Organizations</h2>
-                    <div class="tab-actions" style="display: flex !important; flex-wrap: nowrap !important; gap: 0.75rem !important; align-items: center !important;">
-                        <div class="filter-field" style="display: flex !important; align-items: center !important; gap: 0.5rem !important;">
-                            <label for="orgStatusFilter" style="white-space: nowrap;">Status:</label>
-                            <select id="orgStatusFilter" onchange="siteAdmin.filterOrganizations()" style="min-width: 120px;">
-                                <option value="">All Status</option>
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
-                        </div>
-                        <div class="filter-field" style="display: flex !important; align-items: center !important; gap: 0.5rem !important;">
-                            <label for="orgSearchFilter" style="white-space: nowrap;">Search:</label>
-                            <input type="text" id="orgSearchFilter" placeholder="Search organizations..." onkeyup="siteAdmin.searchOrganizations()" style="min-width: 200px;">
-                        </div>
-                        <button class="btn btn-outline" onclick="refreshOrganizations()" style="white-space: nowrap;">
-                            <i class="fas fa-sync-alt"></i> Refresh
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>Organizations</h2>
+                        <button class="btn btn-outline" onclick="refreshOrganizations()">
+                            <i class="fas fa-sync"></i>
+                            <span>Refresh</span>
                         </button>
                     </div>
-                </div>
 
-                <div class="organizations-grid">
-                    <div id="organizationsContainer" class="loading">
-                        <div class="loading-spinner"></div>
-                        <p>Loading organizations...</p>
+                    <div class="filter-bar">
+                        <input type="text"
+                               id="orgSearchInput"
+                               class="search-input"
+                               placeholder="Search organizations..."
+                               oninput="searchOrganizations()">
+                        <select id="orgStatusFilter" class="filter-select" onchange="filterOrganizations()">
+                            <option value="all">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
                     </div>
+
+                    <table class="data-table" id="organizationsTable">
+                        <thead>
+                            <tr>
+                                <th>Organization</th>
+                                <th>Members</th>
+                                <th>Projects</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="organizationsList">
+                            <tr>
+                                <td colspan="6">
+                                    <div class="empty-state">
+                                        <i class="fas fa-building"></i>
+                                        <h3>No Organizations</h3>
+                                        <p>Organizations will appear here</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
             <!-- Users Tab -->
             <div class="tab-content" id="users">
-                <div class="tab-header">
-                    <h2>Platform Users</h2>
-                    <div class="tab-actions">
-                        <div class="filter-group">
-                            <select id="userRoleFilter" onchange="filterUsers()">
-                                <option value="">All Roles</option>
-                                <option value="site_admin">Site Admins</option>
-                                <option value="organization_admin">Organization Admins</option>
-                                <option value="instructor">Instructors</option>
-                                <option value="student">Students</option>
-                            </select>
-                        </div>
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>Platform Users</h2>
                         <button class="btn btn-outline" onclick="refreshUsers()">
-                            <i class="fas fa-sync-alt"></i> Refresh
+                            <i class="fas fa-sync"></i>
+                            <span>Refresh</span>
                         </button>
                     </div>
-                </div>
 
-                <div class="users-stats">
-                    <div class="role-stats">
-                        <div class="role-stat">
-                            <i class="fas fa-shield-alt"></i>
-                            <span>Site Admins: <strong id="siteAdminCount">0</strong></span>
-                        </div>
-                        <div class="role-stat">
-                            <i class="fas fa-crown"></i>
-                            <span>Org Admins: <strong id="orgAdminCount">0</strong></span>
-                        </div>
-                        <div class="role-stat">
-                            <i class="fas fa-chalkboard-teacher"></i>
-                            <span>Instructors: <strong id="instructorCount">0</strong></span>
-                        </div>
-                        <div class="role-stat">
-                            <i class="fas fa-user-graduate"></i>
-                            <span>Students: <strong id="studentCount">0</strong></span>
-                        </div>
+                    <div class="filter-bar">
+                        <input type="text"
+                               id="userSearchInput"
+                               class="search-input"
+                               placeholder="Search users..."
+                               oninput="filterUsers()">
+                        <select id="userRoleFilter" class="filter-select" onchange="filterUsers()">
+                            <option value="all">All Roles</option>
+                            <option value="site_admin">Site Admin</option>
+                            <option value="organization_admin">Organization Admin</option>
+                            <option value="instructor">Instructor</option>
+                            <option value="student">Student</option>
+                        </select>
                     </div>
-                </div>
 
-                <div id="usersContainer" class="loading">
-                    <div class="loading-spinner"></div>
-                    <p>Loading users...</p>
+                    <table class="data-table" id="usersTable">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Organization</th>
+                                <th>Last Login</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersList">
+                            <tr>
+                                <td colspan="6">
+                                    <div class="empty-state">
+                                        <i class="fas fa-users"></i>
+                                        <h3>No Users</h3>
+                                        <p>Users will appear here</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
             <!-- Integrations Tab -->
             <div class="tab-content" id="integrations">
-                <div class="integrations-section">
-                    <h2>Platform Integrations</h2>
-                    
-                    <div class="integration-cards">
-                        <!-- Teams Integration -->
-                        <div class="integration-card">
-                            <div class="integration-header">
-                                <div class="integration-icon teams">
-                                    <i class="fab fa-microsoft"></i>
-                                </div>
-                                <div class="integration-info">
-                                    <h3>Microsoft Teams</h3>
-                                    <p>Meeting room integration</p>
-                                </div>
-                                <div class="integration-status" id="teamsIntegrationStatus">
-                                    <i class="fas fa-circle"></i>
-                                </div>
-                            </div>
-                            <div class="integration-details">
-                                <div class="detail-item">
-                                    <span>Rooms Created:</span>
-                                    <strong id="teamsRoomsCount">0</strong>
-                                </div>
-                                <div class="detail-item">
-                                    <span>Last Test:</span>
-                                    <span id="teamsLastTest">Never</span>
-                                </div>
-                            </div>
-                            <div class="integration-actions">
-                                <button class="btn btn-sm btn-outline" onclick="testTeamsIntegration()">
-                                    Test Connection
-                                </button>
-                                <button class="btn btn-sm btn-primary" onclick="configureTeamsIntegration()">
-                                    Configure
-                                </button>
-                            </div>
-                        </div>
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>Platform Integrations</h2>
+                    </div>
 
-                        <!-- Zoom Integration -->
-                        <div class="integration-card">
-                            <div class="integration-header">
-                                <div class="integration-icon zoom">
-                                    <i class="fas fa-video"></i>
+                    <!-- Microsoft Teams Integration -->
+                    <div style="padding: var(--space-6); background: var(--gray-50); border-radius: var(--radius-lg); margin-bottom: var(--space-6);">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4);">
+                            <div style="display: flex; align-items: center; gap: var(--space-4);">
+                                <div style="width: 48px; height: 48px; background: #5558AF; border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
+                                    <i class="fab fa-microsoft" style="color: white; font-size: var(--text-xl);"></i>
                                 </div>
-                                <div class="integration-info">
-                                    <h3>Zoom</h3>
-                                    <p>Meeting room integration</p>
-                                </div>
-                                <div class="integration-status" id="zoomIntegrationStatus">
-                                    <i class="fas fa-circle"></i>
+                                <div>
+                                    <h3 style="margin: 0 0 var(--space-1); font-size: var(--text-lg); font-weight: var(--weight-semibold);">Microsoft Teams</h3>
+                                    <p style="margin: 0; color: var(--text-secondary); font-size: var(--text-sm);">Virtual meeting rooms and collaboration</p>
                                 </div>
                             </div>
-                            <div class="integration-details">
-                                <div class="detail-item">
-                                    <span>Rooms Created:</span>
-                                    <strong id="zoomRoomsCount">0</strong>
+                            <span class="integration-status active" id="teamsStatus">
+                                <i class="fas fa-circle"></i>
+                                Active
+                            </span>
+                        </div>
+                        <div style="display: flex; gap: var(--space-3);">
+                            <button class="btn btn-outline btn-sm" onclick="testTeamsIntegration()">
+                                <i class="fas fa-vial"></i>
+                                Test Connection
+                            </button>
+                            <button class="btn btn-primary btn-sm" onclick="configureTeamsIntegration()">
+                                <i class="fas fa-cog"></i>
+                                Configure
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Zoom Integration -->
+                    <div style="padding: var(--space-6); background: var(--gray-50); border-radius: var(--radius-lg); margin-bottom: var(--space-6);">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4);">
+                            <div style="display: flex; align-items: center; gap: var(--space-4);">
+                                <div style="width: 48px; height: 48px; background: #2D8CFF; border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-video" style="color: white; font-size: var(--text-xl);"></i>
                                 </div>
-                                <div class="detail-item">
-                                    <span>Last Test:</span>
-                                    <span id="zoomLastTest">Never</span>
+                                <div>
+                                    <h3 style="margin: 0 0 var(--space-1); font-size: var(--text-lg); font-weight: var(--weight-semibold);">Zoom</h3>
+                                    <p style="margin: 0; color: var(--text-secondary); font-size: var(--text-sm);">Video conferencing and webinars</p>
                                 </div>
                             </div>
-                            <div class="integration-actions">
-                                <button class="btn btn-sm btn-outline" onclick="testZoomIntegration()">
-                                    Test Connection
-                                </button>
-                                <button class="btn btn-sm btn-primary" onclick="configureZoomIntegration()">
-                                    Configure
-                                </button>
-                            </div>
+                            <span class="integration-status active" id="zoomStatus">
+                                <i class="fas fa-circle"></i>
+                                Active
+                            </span>
+                        </div>
+                        <div style="display: flex; gap: var(--space-3);">
+                            <button class="btn btn-outline btn-sm" onclick="testZoomIntegration()">
+                                <i class="fas fa-vial"></i>
+                                Test Connection
+                            </button>
+                            <button class="btn btn-primary btn-sm" onclick="configureZoomIntegration()">
+                                <i class="fas fa-cog"></i>
+                                Configure
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Audit Tab -->
+            <!-- Audit Log Tab -->
             <div class="tab-content" id="audit">
-                <div class="tab-header">
-                    <h2>Audit Log</h2>
-                    <div class="tab-actions">
-                        <div class="filter-group">
-                            <select id="auditActionFilter" onchange="filterAuditLog()">
-                                <option value="">All Actions</option>
-                                <option value="organization_deleted">Organization Deleted</option>
-                                <option value="user_created">User Created</option>
-                                <option value="permission_granted">Permission Granted</option>
-                                <option value="integration_tested">Integration Tested</option>
-                            </select>
-                            <input type="date" id="auditDateFilter" onchange="filterAuditLog()">
-                        </div>
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>Audit Log</h2>
                         <button class="btn btn-outline" onclick="exportAuditLog()">
-                            <i class="fas fa-download"></i> Export
+                            <i class="fas fa-download"></i>
+                            <span>Export Log</span>
                         </button>
                     </div>
-                </div>
 
-                <div id="auditLogContainer" class="audit-log">
-                    <div class="loading">
-                        <div class="loading-spinner"></div>
-                        <p>Loading audit log...</p>
+                    <div class="filter-bar">
+                        <input type="text"
+                               id="auditSearchInput"
+                               class="search-input"
+                               placeholder="Search audit log..."
+                               oninput="filterAuditLog()">
+                        <select id="auditActionFilter" class="filter-select" onchange="filterAuditLog()">
+                            <option value="all">All Actions</option>
+                            <option value="create">Create</option>
+                            <option value="update">Update</option>
+                            <option value="delete">Delete</option>
+                            <option value="login">Login</option>
+                            <option value="logout">Logout</option>
+                        </select>
+                        <select id="auditEntityFilter" class="filter-select" onchange="filterAuditLog()">
+                            <option value="all">All Entities</option>
+                            <option value="organization">Organization</option>
+                            <option value="user">User</option>
+                            <option value="project">Project</option>
+                            <option value="course">Course</option>
+                        </select>
                     </div>
+
+                    <table class="data-table" id="auditTable">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Entity</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="auditLogList">
+                            <tr>
+                                <td colspan="5">
+                                    <div class="empty-state">
+                                        <i class="fas fa-history"></i>
+                                        <h3>No Audit Entries</h3>
+                                        <p>Audit log will appear here</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
             <!-- Settings Tab -->
             <div class="tab-content" id="settings">
-                <div class="settings-section">
-                    <h2>System Settings</h2>
-                    
-                    <div class="settings-grid">
-                        <!-- Platform Configuration -->
-                        <div class="settings-card">
-                            <h3>Platform Configuration</h3>
-                            <form id="platformSettingsForm">
-                                <div class="form-group">
-                                    <label for="platformName">Platform Name</label>
-                                    <input type="text" id="platformName" name="name" class="form-control" value="Course Creator Platform">
-                                </div>
-                                <div class="form-group">
-                                    <label for="maxOrganizations">Max Organizations</label>
-                                    <input type="number" id="maxOrganizations" name="max_organizations" class="form-control" value="100">
-                                </div>
-                                <div class="form-group">
-                                    <label for="maintenanceMode">Maintenance Mode</label>
-                                    <select id="maintenanceMode" name="maintenance_mode" class="form-control">
-                                        <option value="false">Disabled</option>
-                                        <option value="true">Enabled</option>
-                                    </select>
-                                </div>
-                                <button type="button" class="btn btn-primary" onclick="updatePlatformSettings()">
-                                    <i class="fas fa-save"></i> Save Settings
-                                </button>
-                            </form>
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>Platform Settings</h2>
+                    </div>
+
+                    <form style="max-width: 600px;">
+                        <div style="margin-bottom: var(--space-6);">
+                            <label style="display: block; margin-bottom: var(--space-2); font-weight: var(--weight-medium); color: var(--text-primary);">
+                                Platform Name
+                            </label>
+                            <input type="text"
+                                   value="Course Creator Platform"
+                                   class="search-input"
+                                   style="width: 100%;">
                         </div>
 
-                        <!-- Backup & Maintenance -->
-                        <div class="settings-card">
-                            <h3>Backup & Maintenance</h3>
-                            <div class="maintenance-actions">
-                                <div class="action-item">
-                                    <span>Database Backup</span>
-                                    <button class="btn btn-sm btn-outline" onclick="createDatabaseBackup()">
-                                        <i class="fas fa-database"></i> Create Backup
-                                    </button>
-                                </div>
-                                <div class="action-item">
-                                    <span>Clear System Cache</span>
-                                    <button class="btn btn-sm btn-outline" onclick="clearSystemCache()">
-                                        <i class="fas fa-broom"></i> Clear Cache
-                                    </button>
-                                </div>
-                                <div class="action-item">
-                                    <span>Optimize Database</span>
-                                    <button class="btn btn-sm btn-outline" onclick="optimizeDatabase()">
-                                        <i class="fas fa-tools"></i> Optimize
-                                    </button>
-                                </div>
-                            </div>
+                        <div style="margin-bottom: var(--space-6);">
+                            <label style="display: block; margin-bottom: var(--space-2); font-weight: var(--weight-medium); color: var(--text-primary);">
+                                Max Organizations
+                            </label>
+                            <input type="number"
+                                   value="100"
+                                   class="search-input"
+                                   style="width: 100%;">
                         </div>
 
-                        <!-- Security Settings -->
-                        <div class="settings-card">
-                            <h3>Security Settings</h3>
-                            <div class="security-settings">
-                                <div class="setting-item">
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" id="forceHttps" checked>
-                                        Force HTTPS
-                                    </label>
-                                </div>
-                                <div class="setting-item">
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" id="enableMfa" checked>
-                                        Require MFA for Admins
-                                    </label>
-                                </div>
-                                <div class="setting-item">
-                                    <label class="checkbox-label">
-                                        <input type="checkbox" id="auditLogging" checked>
-                                        Enable Audit Logging
-                                    </label>
-                                </div>
-                            </div>
+                        <div style="margin-bottom: var(--space-6);">
+                            <label style="display: block; margin-bottom: var(--space-2); font-weight: var(--weight-medium); color: var(--text-primary);">
+                                Session Timeout (minutes)
+                            </label>
+                            <input type="number"
+                                   value="480"
+                                   class="search-input"
+                                   style="width: 100%;">
                         </div>
+
+                        <button type="button" class="btn btn-primary" onclick="updatePlatformSettings()">
+                            <i class="fas fa-save"></i>
+                            <span>Save Settings</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- System Maintenance -->
+                <div class="section-card">
+                    <div class="section-header">
+                        <h2>System Maintenance</h2>
+                    </div>
+                    <div class="action-grid">
+                        <button class="btn btn-outline" onclick="createDatabaseBackup()">
+                            <i class="fas fa-database"></i>
+                            <span>Create Backup</span>
+                        </button>
+                        <button class="btn btn-outline" onclick="clearSystemCache()">
+                            <i class="fas fa-broom"></i>
+                            <span>Clear Cache</span>
+                        </button>
+                        <button class="btn btn-outline" onclick="optimizeDatabase()">
+                            <i class="fas fa-bolt"></i>
+                            <span>Optimize DB</span>
+                        </button>
                     </div>
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- Organization Deletion Modal -->
-    <div id="deleteOrgModal" class="modal" style="display: none;">
+    <!-- Delete Organization Modal -->
+    <div id="deleteOrgModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3><i class="fas fa-exclamation-triangle"></i> Delete Organization</h3>
+                <h2>Delete Organization</h2>
                 <button class="modal-close" onclick="closeModal('deleteOrgModal')">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <div class="modal-body">
-                <div class="warning-message">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <strong>WARNING:</strong> This action will permanently delete the organization and all associated data including users, projects, tracks, and meeting rooms. This cannot be undone.
-                </div>
-                
-                <form id="deleteOrgForm">
-                    <input type="hidden" id="deleteOrgId" name="organization_id">
-                    
-                    <div class="form-group">
-                        <label for="confirmOrgName">
-                            To confirm deletion, type the organization name: <strong id="orgNameToDelete"></strong>
-                        </label>
-                        <input type="text" id="confirmOrgName" name="confirmation_name" class="form-control" required>
-                    </div>
-                    
-                    <div class="deletion-impact">
-                        <h4>This will delete:</h4>
-                        <ul id="deletionImpact">
-                            <li><span id="membersToDelete">0</span> organization members</li>
-                            <li><span id="projectsToDelete">0</span> projects</li>
-                            <li><span id="meetingRoomsToDelete">0</span> meeting rooms</li>
-                            <li>All associated user accounts and data</li>
-                        </ul>
-                    </div>
-                </form>
+                <p style="margin-bottom: var(--space-4); color: var(--text-secondary);">
+                    This action cannot be undone. This will permanently delete:
+                </p>
+                <ul style="margin: var(--space-4) 0; padding-left: var(--space-6); color: var(--text-secondary);">
+                    <li>Organization profile and settings</li>
+                    <li>All associated projects and tracks</li>
+                    <li>User memberships (users remain in system)</li>
+                    <li>Meeting rooms and scheduling data</li>
+                </ul>
+                <p style="margin: var(--space-4) 0; padding: var(--space-4); background: #fef3c7; border: 1px solid #fcd34d; border-radius: var(--radius-lg); color: #92400e;">
+                    <strong>⚠️ Warning:</strong> Type the organization name to confirm deletion
+                </p>
+                <input type="text"
+                       id="deleteOrgConfirmInput"
+                       class="search-input"
+                       placeholder="Type organization name"
+                       style="width: 100%; margin-top: var(--space-4);"
+                       oninput="document.getElementById('confirmDeleteBtn').disabled = this.value !== window.organizationToDelete?.name">
             </div>
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="closeModal('deleteOrgModal')">Cancel</button>
                 <button class="btn btn-danger" onclick="confirmDeleteOrganization()" id="confirmDeleteBtn" disabled>
-                    <i class="fas fa-trash"></i> Delete Organization
+                    <i class="fas fa-trash"></i>
+                    Delete Organization
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Notification Toast -->
-    <div id="notification" class="notification">
-        <div class="notification-content">
-            <i class="notification-icon"></i>
-            <span class="notification-message"></span>
-        </div>
-    </div>
-
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
-        <div class="loading-spinner large"></div>
-        <p>Processing...</p>
-    </div>
-
     <!-- Scripts -->
-    <script type="module" src="../js/modules/auth.js?v=1759491523"></script>
-    <script type="module" src="../js/modules/notifications.js?v=1759491523"></script>
-    <script type="module" src="../js/site-admin-dashboard.js?v=1759495813"></script>
-
-    <!-- Global function wrappers for onclick handlers -->
+    <script src="../js/site-admin-dashboard.js"></script>
     <script>
         // These wrapper functions delegate to the siteAdmin instance
         function filterOrganizations() { if (window.siteAdmin) window.siteAdmin.filterOrganizations(); }
@@ -1416,6 +1047,29 @@
         function optimizeDatabase() { alert('Database optimization feature coming soon'); }
         function closeModal(modalId) { if (window.siteAdmin) window.siteAdmin.closeModal(modalId); }
         function confirmDeleteOrganization() { if (window.siteAdmin) window.siteAdmin.confirmDeleteOrganization(); }
+
+        // User dropdown functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            const userTrigger = document.querySelector('.user-trigger');
+            const userMenu = document.querySelector('.user-menu');
+
+            if (userTrigger && userMenu) {
+                userTrigger.addEventListener('click', () => {
+                    const isExpanded = userTrigger.getAttribute('aria-expanded') === 'true';
+                    userTrigger.setAttribute('aria-expanded', !isExpanded);
+                    userMenu.classList.toggle('active');
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('.user-dropdown')) {
+                        userTrigger.setAttribute('aria-expanded', 'false');
+                        userMenu.classList.remove('active');
+                    }
+                });
+            }
+        });
     </script>
+    <script src="../js/focus-manager.js"></script>
 </body>
 </html>

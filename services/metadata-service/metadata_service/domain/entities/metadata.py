@@ -70,7 +70,9 @@ class Metadata:
     # Valid entity types
     VALID_ENTITY_TYPES = [
         'course', 'content', 'user', 'lab', 'project',
-        'track', 'quiz', 'exercise', 'video', 'slide', 'test'  # test for unit testing
+        'track', 'quiz', 'exercise', 'video', 'slide',
+        'course_material_upload', 'course_material_download',  # File tracking
+        'test'  # test for unit testing
     ]
 
     # Field constraints

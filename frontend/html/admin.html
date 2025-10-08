@@ -136,8 +136,10 @@
     </style>
 </head>
 <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <div aria-live="polite" aria-atomic="true" class="sr-only" id="form-announcements"></div>
     <!-- Mobile sidebar toggle -->
-    <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle navigation">
+    <button class="sidebar-toggle" type="button" onclick="toggleSidebar()" onkeypress="if(event.key===\'Enter\'||event.key===\' \')toggleSidebar()" aria-label="Toggle navigation">
         <i class="fas fa-bars"></i>
     </button>
     
@@ -323,5 +325,7 @@
             }
         }
     </script>
+    <script src="../js/focus-manager.js"></script>
+
 </body>
 </html>

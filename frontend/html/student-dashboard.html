@@ -10,18 +10,20 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <div aria-live="polite" aria-atomic="true" class="sr-only" id="form-announcements"></div>
     <!-- Mobile sidebar toggle -->
-    <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle navigation">
+    <button class="sidebar-toggle" type="button" onclick="toggleSidebar()" onkeypress="if(event.key===\'Enter\'||event.key===\' \')toggleSidebar()" aria-label="Toggle navigation">
         <i class="fas fa-bars"></i>
     </button>
     
-    <header>
+    <header role="banner">
         <div class="container">
             <div class="header-content">
                 <div class="logo">
                     <h1><i class="fas fa-graduation-cap"></i> Course Creator</h1>
                 </div>
-                <nav class="nav-links">
+                <nav class="nav-links" role="navigation" aria-label="Main navigation">
                     <a href="#" onclick="showSection('dashboard')" class="active">Dashboard</a>
                     <a href="#" onclick="showSection('courses')">My Courses</a>
                     <a href="#" onclick="showSection('progress')">Progress</a>
@@ -63,7 +65,7 @@
                 </div>
             </div>
             
-            <nav class="sidebar-nav">
+            <nav class="sidebar-nav" role="navigation" aria-label="Main navigation">
                 <ul class="nav-menu">
                     <li class="nav-item">
                         <a href="#" class="nav-link active" onclick="showSection('dashboard')" data-section="dashboard">
@@ -108,7 +110,7 @@
         </aside>
 
         <!-- Main Content Area -->
-        <main class="dashboard-main">
+        <main role="main" class="dashboard-main">
             <div class="main-header">
                 <div class="breadcrumb">
                     <span class="breadcrumb-item" id="currentSection">Dashboard</span>
@@ -305,7 +307,7 @@
     </div>
 
     <!-- Course Detail Modal -->
-    <div id="courseModal" class="modal">
+    <div id="courseModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="courseModalTitle">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="modalCourseTitle">Course Details</h3>
@@ -320,7 +322,7 @@
     </div>
 
     <!-- Lab Environment Modal -->
-    <div id="labModal" class="modal">
+    <div id="labModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="labModalTitle">
         <div class="modal-content lab-modal">
             <div class="modal-header">
                 <h3 id="modalLabTitle">Lab Environment</h3>
@@ -348,5 +350,7 @@
             }
         }
     </script>
+    <script src="../js/focus-manager.js"></script>
+
 </body>
 </html>

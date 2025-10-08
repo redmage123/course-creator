@@ -272,6 +272,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <div aria-live="polite" aria-atomic="true" class="sr-only" id="form-announcements"></div>
     <div class="header">
         <h1>Quiz Interface</h1>
         <p>Test your knowledge with interactive quizzes</p>
@@ -602,5 +604,7 @@
         // Initialize when page loads
         window.onload = initQuizInterface;
     </script>
+    <script src="../js/focus-manager.js"></script>
+
 </body>
 </html>
