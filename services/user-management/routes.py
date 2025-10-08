@@ -109,6 +109,7 @@ class UserResponse(BaseModel):
     last_login: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
+    is_site_admin: bool = False  # Added for frontend dashboard validation
 
 class TokenResponse(BaseModel):
     access_token: str
@@ -174,11 +175,18 @@ def get_session_service() -> ISessionService:
         raise HTTPException(status_code=500, detail="Service not initialized")
     return get_session_service._container.get_session_service()
 
+def get_token_service():
+    """Dependency injection for token service"""
+    if not hasattr(get_token_service, '_container'):
+        raise HTTPException(status_code=500, detail="Service not initialized")
+    return get_token_service._container.get_token_service()
+
 def set_container(container):
     """Set the container for dependency injection"""
     get_user_service._container = container
     get_auth_service._container = container
     get_session_service._container = container
+    get_token_service._container = container
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
@@ -186,6 +194,7 @@ async def get_current_user(
     user_service: IUserService = Depends(get_user_service)
 ) -> User:
     """Get current authenticated user"""
+    logger.info(f"Token received in get_current_user: '{token[:50] if token else 'None'}...'")
     session = await session_service.validate_session(token)
     if not session:
         raise HTTPException(
@@ -266,7 +275,8 @@ def setup_auth_routes(app: FastAPI) -> None:
         request: LoginRequest,
         raw_request: Request,
         auth_service: IAuthenticationService = Depends(get_auth_service),
-        session_service: ISessionService = Depends(get_session_service)
+        session_service: ISessionService = Depends(get_session_service),
+        token_service = Depends(get_token_service)
     ):
         """
         CONSOLIDATED LOGIN ENDPOINT
@@ -318,8 +328,13 @@ def setup_auth_routes(app: FastAPI) -> None:
                 except Exception as e:
                     logger.error(f"❌ Error fetching organization_id: {e}")
 
+            # Generate JWT token with user information
+            # Note: JWT tokens are stateless, no need to store session in database
+            session_id = f"sess_{user.id[:8]}"  # Simple session ID for JWT payload
+            access_token = await token_service.generate_access_token(str(user.id), session_id)
+
             return TokenResponse(
-                access_token=f"mock-token-{user.id[:8]}",
+                access_token=access_token,
                 user=user_response
             )
             
@@ -671,7 +686,8 @@ def _user_to_response(user: User) -> UserResponse:
         bio=user.bio,
         last_login=user.last_login,
         created_at=user.created_at,
-        updated_at=user.updated_at
+        updated_at=user.updated_at,
+        is_site_admin=(user.role.value == "site_admin")  # Calculate based on role
     )
 
 def _session_to_response(session: Session) -> SessionResponse:

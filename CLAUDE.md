@@ -2,8 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-**Version**: 3.3.0 - Guest Session Privacy Compliance (GDPR/CCPA/PIPEDA)
-**Last Updated**: 2025-10-07
+**Version**: 3.3.1 - Login Redirect Fixes & Authentication Enhancement
+**Last Updated**: 2025-10-08
 
 ---
 

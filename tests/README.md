@@ -233,6 +233,56 @@ Test complete user workflows and system interactions.
 python tests/main.py --type e2e
 ```
 
+### Login Redirect E2E Tests (New in v3.3.1)
+
+Comprehensive E2E tests for role-based login redirects with localStorage and URL parameter validation.
+
+**Location**: `tests/e2e/test_login_redirect_proof.py`
+
+**Coverage**:
+- **Site Admin Login**: Validates redirect to `site-admin-dashboard.html`
+- **Org Admin Login**: Validates redirect to `org-admin-dashboard.html?org_id={organization_id}`
+- **localStorage Validation**: Verifies all required session data is stored
+- **URL Parameter Validation**: Ensures org_id parameter is included for org-admins
+
+**Test Features**:
+- Browser automation with Selenium WebDriver
+- localStorage session data verification
+- URL parameter validation for org-admin redirects
+- Screenshot capture for debugging
+- Privacy modal handling
+- Clean session state between tests
+
+**Running Tests**:
+```bash
+# Run all login redirect tests
+HEADLESS=true TEST_BASE_URL=https://localhost:3000 pytest tests/e2e/test_login_redirect_proof.py -v
+
+# Run specific role test
+pytest tests/e2e/test_login_redirect_proof.py::TestLoginRedirectProof::test_admin_login_redirects_to_site_admin_dashboard -v
+pytest tests/e2e/test_login_redirect_proof.py::TestLoginRedirectProof::test_org_admin_login_redirects_to_org_admin_dashboard -v
+
+# Run with visible browser (non-headless)
+TEST_BASE_URL=https://localhost:3000 pytest tests/e2e/test_login_redirect_proof.py -v
+```
+
+**Test Credentials**:
+- **Admin**: username=`admin`, password=`admin123!`
+- **Org Admin**: username=`bbrelin`, password=`f00bar123!`
+
+**Validated Requirements**:
+1. ✅ Login stores complete user object in localStorage as `currentUser`
+2. ✅ Login stores session timestamps (`sessionStart`, `lastActivity`)
+3. ✅ Org-admin redirect includes `org_id` URL parameter
+4. ✅ Site admin redirect includes `is_site_admin` field
+5. ✅ No redirect loops or 10-12 second delays
+6. ✅ Dashboard validation passes without redirecting back to homepage
+
+**Related Documentation**:
+- Troubleshooting: `claude.md/10-troubleshooting.md` - "Login Redirect Issues (Fixed v3.3.1)"
+- Implementation: `frontend/html/index.html:513-620` - Login handler
+- Validation: `frontend/js/modules/org-admin-core.js:44-126` - Dashboard validation
+
 ### Enhanced RBAC System Tests (New in v2.3)
 
 Comprehensive test suite for the Enhanced Role-Based Access Control system with 102 tests achieving 100% success rate.

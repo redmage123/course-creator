@@ -354,6 +354,96 @@ docker exec -it course-creator-redis-1 redis-cli
 > KEYS rbac:*
 ```
 
+### Login Redirect Issues (Fixed v3.3.1)
+
+**Root Cause**: Missing localStorage data or URL parameters required by role-specific dashboards.
+
+**Symptoms**:
+- User redirects to dashboard but bounces back to homepage after 10-12 seconds
+- Org-admin login appears to work but redirects back to homepage
+- Dashboard loads briefly then redirects away
+
+**Common Issues**:
+
+#### Issue 1: Missing currentUser Object in localStorage
+- **Symptom**: Dashboard validateSession() fails immediately
+- **Cause**: Login only stored authToken/userRole, not full user object
+- **Solution**: Login must store complete user object:
+```javascript
+// In frontend/html/index.html handleAccountLogin function
+localStorage.setItem('currentUser', JSON.stringify(data.user));
+localStorage.setItem('authToken', data.access_token);
+localStorage.setItem('userRole', data.user.role);
+localStorage.setItem('userName', data.user.username);
+localStorage.setItem('isGuest', 'false');
+```
+
+#### Issue 2: Missing Session Timestamps
+- **Symptom**: Dashboard validateSession() fails on timestamp check
+- **Cause**: Login didn't create sessionStart/lastActivity timestamps
+- **Solution**: Add session timestamps during login:
+```javascript
+const now = Date.now();
+localStorage.setItem('sessionStart', now.toString());
+localStorage.setItem('lastActivity', now.toString());
+```
+
+#### Issue 3: Org-Admin Missing org_id Parameter (CRITICAL)
+- **Symptom**: Org-admin redirects to dashboard, then back to home after timeout
+- **Cause**: org-admin-dashboard.html REQUIRES `org_id` URL parameter
+- **Location**: `frontend/js/modules/org-admin-core.js:87-91`
+- **Solution**: Include org_id in redirect URL:
+```javascript
+// For org-admin login redirect
+const orgId = data.user.organization_id;
+window.location.href = orgId
+    ? `/html/org-admin-dashboard.html?org_id=${orgId}`
+    : '/html/org-admin-dashboard.html';
+```
+
+#### Issue 4: Missing is_site_admin Field
+- **Symptom**: Site admin dashboard rejects user with role check failure
+- **Cause**: UserResponse missing calculated is_site_admin boolean
+- **Solution**: Backend must include is_site_admin in response:
+```python
+# In services/user-management/routes.py UserResponse model
+class UserResponse(BaseModel):
+    # ... other fields ...
+    is_site_admin: bool = False
+
+# In _user_to_response() helper
+def _user_to_response(user: User) -> UserResponse:
+    return UserResponse(
+        # ... other fields ...
+        is_site_admin=(user.role.value == "site_admin")
+    )
+```
+
+**Verification Commands**:
+```bash
+# Test admin redirect
+pytest tests/e2e/test_login_redirect_proof.py::TestLoginRedirectProof::test_admin_login_redirects_to_site_admin_dashboard -v
+
+# Test org-admin redirect (includes org_id verification)
+pytest tests/e2e/test_login_redirect_proof.py::TestLoginRedirectProof::test_org_admin_login_redirects_to_org_admin_dashboard -v
+
+# Check localStorage after login (browser console)
+console.log({
+    authToken: localStorage.getItem('authToken'),
+    userRole: localStorage.getItem('userRole'),
+    currentUser: JSON.parse(localStorage.getItem('currentUser')),
+    sessionStart: localStorage.getItem('sessionStart'),
+    lastActivity: localStorage.getItem('lastActivity')
+});
+```
+
+**Related Files**:
+- Login handler: `frontend/html/index.html:513-620`
+- Site admin validation: `frontend/js/site-admin-dashboard.js:245`
+- Org admin validation: `frontend/js/modules/org-admin-core.js:44-126`
+- User response model: `services/user-management/routes.py:25-45`
+- E2E tests: `tests/e2e/test_login_redirect_proof.py`
+
 ## Password Management Issues (v3.0)
 
 ### Password Change Failures

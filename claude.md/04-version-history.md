@@ -1,5 +1,73 @@
 # Version History
 
+## Version 3.3.1 - Login Redirect Fixes (2025-10-08)
+
+### Authentication & Navigation (v3.3.1)
+- **Login Redirect Fix**: Resolved 10-12 second delay before redirect back to homepage for org-admin users
+- **localStorage Enhancement**: Login now stores complete user object with all required fields
+- **URL Parameter Validation**: Org-admin redirects include required `org_id` parameter
+- **Session Timestamp Management**: Added `sessionStart` and `lastActivity` timestamps to localStorage
+- **Dashboard Navigation**: User dropdown dashboard link dynamically sets URL based on role with org_id parameter
+
+### Technical Implementation (v3.3.1)
+**Root Cause Analysis:**
+- Org-admin dashboard requires `org_id` URL parameter (frontend/js/modules/org-admin-core.js:87-91)
+- Site-admin dashboard requires `is_site_admin` boolean field for validation
+- Dashboard validateSession() checks for complete user object and session timestamps
+- Missing any required field causes immediate redirect back to homepage
+
+**localStorage Requirements:**
+```javascript
+// Complete set of required fields for successful dashboard access
+localStorage.setItem('authToken', data.access_token);
+localStorage.setItem('userRole', data.user.role);
+localStorage.setItem('userName', data.user.username);
+localStorage.setItem('isGuest', 'false');
+localStorage.setItem('currentUser', JSON.stringify(data.user));  // CRITICAL: Full user object
+localStorage.setItem('sessionStart', Date.now().toString());     // CRITICAL: Session start timestamp
+localStorage.setItem('lastActivity', Date.now().toString());     // CRITICAL: Activity timestamp
+```
+
+**Role-Based Redirect Logic:**
+- **Site Admin**: `/html/site-admin-dashboard.html` (no parameters needed)
+- **Org Admin**: `/html/org-admin-dashboard.html?org_id={user.organization_id}` (org_id REQUIRED)
+- **Instructor**: `/html/instructor-dashboard.html` (no parameters needed)
+- **Student**: `/html/student-dashboard.html` (no parameters needed)
+
+**Backend Changes:**
+- Added `is_site_admin` field to UserResponse model (services/user-management/routes.py)
+- Calculated dynamically from role: `is_site_admin=(user.role.value == "site_admin")`
+- Ensures site-admin dashboard validation passes without permission errors
+
+### Testing Coverage (v3.3.1)
+- **E2E Login Redirect Tests**: 2/2 tests passing
+  - `test_admin_login_redirects_to_site_admin_dashboard` - Validates admin redirect
+  - `test_org_admin_login_redirects_to_org_admin_dashboard` - Validates org-admin redirect with org_id
+- **Selenium WebDriver**: Browser automation with localStorage verification
+- **URL Parameter Validation**: Ensures org_id is present in org-admin redirect URL
+- **Screenshot Capture**: Debugging support with timestamped screenshots
+
+### Test Credentials (v3.3.1)
+- **Admin User**: username=`admin`, password=`admin123!`
+- **Org Admin User**: username=`bbrelin`, password=`f00bar123!`
+
+### Files Modified (v3.3.1)
+- `frontend/html/index.html:568-603` - Login handler with complete localStorage storage
+- `frontend/html/index.html:484-514` - User dropdown dashboard link with org_id parameter
+- `services/user-management/routes.py:25-45` - UserResponse model with is_site_admin field
+- `tests/e2e/test_login_redirect_proof.py` - E2E tests for login redirect validation
+
+### Documentation Updates (v3.3.1)
+- `claude.md/10-troubleshooting.md` - Added "Login Redirect Issues (Fixed v3.3.1)" section
+- `tests/README.md` - Added "Login Redirect E2E Tests (New in v3.3.1)" section
+- Memory system updated with 6 critical authentication facts
+
+### Business Impact (v3.3.1)
+- **User Experience**: Eliminates frustrating redirect loops and delays
+- **Reliability**: Consistent dashboard access for all user roles
+- **Trust**: Users can reliably access their role-specific dashboards
+- **Debugging**: Comprehensive E2E tests prevent regression of this critical flow
+
 ## Version 3.3.0 - Guest Session Privacy Compliance & Enhanced AI Chatbot (2025-10-07)
 
 ### Privacy Compliance Infrastructure (v3.3.0)
