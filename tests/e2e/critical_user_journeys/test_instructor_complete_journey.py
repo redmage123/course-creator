@@ -654,21 +654,106 @@ class TestPublishedCoursesTabWorkflow(BaseTest):
 
     @pytest.fixture(scope="function", autouse=True)
     def setup_instructor_session(self):
-        """Set up authenticated instructor session before each test."""
+        """Set up authenticated instructor session before each test using real login."""
+        # Navigate to index page
         self.driver.get(f"{BASE_URL}/html/index.html")
         time.sleep(2)
-        self.driver.execute_script("""
-            localStorage.setItem('authToken', 'test-instructor-token-12345');
-            localStorage.setItem('userRole', 'instructor');
-            localStorage.setItem('userName', 'Test Instructor');
-            localStorage.setItem('currentUser', JSON.stringify({
-                id: 200, email: 'instructor@example.com', role: 'instructor',
-                organization_id: 1, name: 'Test Instructor'
-            }));
-            localStorage.setItem('userEmail', 'instructor@example.com');
-            localStorage.setItem('sessionStart', Date.now().toString());
-            localStorage.setItem('lastActivity', Date.now().toString());
-        """)
+
+        # Perform real login via API
+        login_result = self.driver.execute_script("""
+            return fetch('https://localhost:8000/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: arguments[0],
+                    password: arguments[1]
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.access_token) {
+                    // Store authentication data
+                    localStorage.setItem('authToken', data.access_token);
+                    localStorage.setItem('userRole', data.role || 'instructor');
+                    localStorage.setItem('userName', data.username || 'Test Instructor');
+                    localStorage.setItem('currentUser', JSON.stringify({
+                        id: data.user_id || data.id,
+                        email: data.email || arguments[0],
+                        role: data.role || 'instructor',
+                        username: data.username,
+                        organization_id: data.organization_id || 1
+                    }));
+                    localStorage.setItem('userEmail', data.email || arguments[0]);
+                    localStorage.setItem('sessionStart', Date.now().toString());
+                    localStorage.setItem('lastActivity', Date.now().toString());
+                    return { success: true, token: data.access_token, data: data };
+                }
+                return { success: false, error: 'No access token', data: data };
+            })
+            .catch(error => {
+                return { success: false, error: error.toString() };
+            });
+        """, TEST_INSTRUCTOR_EMAIL, TEST_INSTRUCTOR_PASSWORD)
+
+        # Check if login succeeded
+        if not login_result.get('success'):
+            # If login fails, create the user first
+            self.driver.execute_script("""
+                fetch('https://localhost:8000/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: arguments[0].split('@')[0],
+                        email: arguments[0],
+                        password: arguments[1],
+                        full_name: 'Test Instructor',
+                        role: 'instructor'
+                    })
+                }).then(() => console.log('User created'));
+            """, TEST_INSTRUCTOR_EMAIL, TEST_INSTRUCTOR_PASSWORD)
+
+            time.sleep(2)
+
+            # Try login again
+            login_result = self.driver.execute_script("""
+                return fetch('https://localhost:8000/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: arguments[0],
+                        password: arguments[1]
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.access_token) {
+                        localStorage.setItem('authToken', data.access_token);
+                        localStorage.setItem('userRole', data.role || 'instructor');
+                        localStorage.setItem('userName', data.username || 'Test Instructor');
+                        localStorage.setItem('currentUser', JSON.stringify({
+                            id: data.user_id || data.id,
+                            email: data.email || arguments[0],
+                            role: data.role || 'instructor',
+                            username: data.username,
+                            organization_id: data.organization_id || 1
+                        }));
+                        localStorage.setItem('userEmail', data.email || arguments[0]);
+                        localStorage.setItem('sessionStart', Date.now().toString());
+                        localStorage.setItem('lastActivity', Date.now().toString());
+                        return { success: true, token: data.access_token };
+                    }
+                    return { success: false, error: 'No access token after retry' };
+                })
+                .catch(error => ({ success: false, error: error.toString() }));
+            """, TEST_INSTRUCTOR_EMAIL, TEST_INSTRUCTOR_PASSWORD)
+
+        assert login_result.get('success'), f"Login failed: {login_result.get('error')}"
         yield
 
     def test_published_courses_tab_loads(self):
@@ -713,21 +798,106 @@ class TestCourseInstancesTabWorkflow(BaseTest):
 
     @pytest.fixture(scope="function", autouse=True)
     def setup_instructor_session(self):
-        """Set up authenticated instructor session before each test."""
+        """Set up authenticated instructor session before each test using real login."""
+        # Navigate to index page
         self.driver.get(f"{BASE_URL}/html/index.html")
         time.sleep(2)
-        self.driver.execute_script("""
-            localStorage.setItem('authToken', 'test-instructor-token-12345');
-            localStorage.setItem('userRole', 'instructor');
-            localStorage.setItem('userName', 'Test Instructor');
-            localStorage.setItem('currentUser', JSON.stringify({
-                id: 200, email: 'instructor@example.com', role: 'instructor',
-                organization_id: 1, name: 'Test Instructor'
-            }));
-            localStorage.setItem('userEmail', 'instructor@example.com');
-            localStorage.setItem('sessionStart', Date.now().toString());
-            localStorage.setItem('lastActivity', Date.now().toString());
-        """)
+
+        # Perform real login via API
+        login_result = self.driver.execute_script("""
+            return fetch('https://localhost:8000/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: arguments[0],
+                    password: arguments[1]
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.access_token) {
+                    // Store authentication data
+                    localStorage.setItem('authToken', data.access_token);
+                    localStorage.setItem('userRole', data.role || 'instructor');
+                    localStorage.setItem('userName', data.username || 'Test Instructor');
+                    localStorage.setItem('currentUser', JSON.stringify({
+                        id: data.user_id || data.id,
+                        email: data.email || arguments[0],
+                        role: data.role || 'instructor',
+                        username: data.username,
+                        organization_id: data.organization_id || 1
+                    }));
+                    localStorage.setItem('userEmail', data.email || arguments[0]);
+                    localStorage.setItem('sessionStart', Date.now().toString());
+                    localStorage.setItem('lastActivity', Date.now().toString());
+                    return { success: true, token: data.access_token, data: data };
+                }
+                return { success: false, error: 'No access token', data: data };
+            })
+            .catch(error => {
+                return { success: false, error: error.toString() };
+            });
+        """, TEST_INSTRUCTOR_EMAIL, TEST_INSTRUCTOR_PASSWORD)
+
+        # Check if login succeeded
+        if not login_result.get('success'):
+            # If login fails, create the user first
+            self.driver.execute_script("""
+                fetch('https://localhost:8000/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: arguments[0].split('@')[0],
+                        email: arguments[0],
+                        password: arguments[1],
+                        full_name: 'Test Instructor',
+                        role: 'instructor'
+                    })
+                }).then(() => console.log('User created'));
+            """, TEST_INSTRUCTOR_EMAIL, TEST_INSTRUCTOR_PASSWORD)
+
+            time.sleep(2)
+
+            # Try login again
+            login_result = self.driver.execute_script("""
+                return fetch('https://localhost:8000/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: arguments[0],
+                        password: arguments[1]
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.access_token) {
+                        localStorage.setItem('authToken', data.access_token);
+                        localStorage.setItem('userRole', data.role || 'instructor');
+                        localStorage.setItem('userName', data.username || 'Test Instructor');
+                        localStorage.setItem('currentUser', JSON.stringify({
+                            id: data.user_id || data.id,
+                            email: data.email || arguments[0],
+                            role: data.role || 'instructor',
+                            username: data.username,
+                            organization_id: data.organization_id || 1
+                        }));
+                        localStorage.setItem('userEmail', data.email || arguments[0]);
+                        localStorage.setItem('sessionStart', Date.now().toString());
+                        localStorage.setItem('lastActivity', Date.now().toString());
+                        return { success: true, token: data.access_token };
+                    }
+                    return { success: false, error: 'No access token after retry' };
+                })
+                .catch(error => ({ success: false, error: error.toString() }));
+            """, TEST_INSTRUCTOR_EMAIL, TEST_INSTRUCTOR_PASSWORD)
+
+        assert login_result.get('success'), f"Login failed: {login_result.get('error')}"
         yield
 
     def test_course_instances_tab_loads(self):
