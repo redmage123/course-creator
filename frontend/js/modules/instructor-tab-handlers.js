@@ -428,10 +428,14 @@ async function loadAnalyticsData() {
         document.getElementById('activeStudentsCount').textContent = data.active_students || 0;
         document.getElementById('avgQuizScore').textContent = `${data.avg_quiz_score || 0}%`;
 
-        // Update charts (if Chart.js is available)
-        if (typeof Chart !== 'undefined') {
-            renderAnalyticsCharts(data);
+        // Update lab completion rate if present
+        const labCompletionEl = document.getElementById('labCompletionRate');
+        if (labCompletionEl) {
+            labCompletionEl.textContent = `${data.lab_completion_rate || 0}%`;
         }
+
+        // Render charts with Chart.js
+        renderAnalyticsCharts(data);
 
     } catch (error) {
         console.error('Error loading analytics:', error);
@@ -446,12 +450,338 @@ async function loadAnalyticsData() {
 }
 
 /**
- * Render analytics charts
+ * Render analytics charts using Chart.js
+ *
+ * Creates 4 interactive charts:
+ * 1. Student Engagement Over Time (Line chart)
+ * 2. Lab Completion Status (Doughnut chart)
+ * 3. Quiz Score Distribution (Bar chart)
+ * 4. Content Progress Distribution (Horizontal bar chart)
  */
 function renderAnalyticsCharts(data) {
-    // This is a placeholder for chart rendering
-    // In a real implementation, you would use Chart.js or similar library
-    console.log('Rendering charts with data:', data);
+    console.log('📊 Rendering analytics charts with data:', data);
+
+    if (typeof Chart === 'undefined') {
+        console.warn('Chart.js not loaded');
+        return;
+    }
+
+    // Destroy existing charts to prevent canvas reuse errors
+    destroyExistingCharts();
+
+    // 1. Student Engagement Over Time (Line Chart)
+    renderEngagementChart(data);
+
+    // 2. Lab Completion Status (Doughnut Chart)
+    renderLabCompletionChart(data);
+
+    // 3. Quiz Score Distribution (Bar Chart)
+    renderQuizPerformanceChart(data);
+
+    // 4. Content Progress Distribution (Horizontal Bar Chart)
+    renderProgressDistributionChart(data);
+
+    console.log('✅ All charts rendered successfully');
+}
+
+/**
+ * Global chart instances for cleanup
+ */
+let chartInstances = {
+    engagement: null,
+    labCompletion: null,
+    quizPerformance: null,
+    progressDistribution: null
+};
+
+/**
+ * Destroy existing charts before creating new ones
+ */
+function destroyExistingCharts() {
+    Object.keys(chartInstances).forEach(key => {
+        if (chartInstances[key]) {
+            chartInstances[key].destroy();
+            chartInstances[key] = null;
+        }
+    });
+}
+
+/**
+ * Render Student Engagement Over Time Chart (Line)
+ */
+function renderEngagementChart(data) {
+    const ctx = document.getElementById('engagementChart');
+    if (!ctx) return;
+
+    // Sample data - replace with real data from API
+    const engagementData = data.engagement_over_time || {
+        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7', 'Week 8'],
+        active_students: [45, 52, 48, 55, 58, 54, 60, 62],
+        course_completions: [5, 8, 12, 15, 18, 22, 25, 28],
+        lab_submissions: [30, 35, 40, 45, 48, 50, 55, 58]
+    };
+
+    chartInstances.engagement = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: engagementData.labels,
+            datasets: [
+                {
+                    label: 'Active Students',
+                    data: engagementData.active_students,
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Course Completions',
+                    data: engagementData.course_completions,
+                    borderColor: 'rgb(34, 197, 94)',
+                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: 'Lab Submissions',
+                    data: engagementData.lab_submissions,
+                    borderColor: 'rgb(168, 85, 247)',
+                    backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: false
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            },
+            interaction: {
+                mode: 'nearest',
+                axis: 'x',
+                intersect: false
+            }
+        }
+    });
+}
+
+/**
+ * Render Lab Completion Status Chart (Doughnut)
+ */
+function renderLabCompletionChart(data) {
+    const ctx = document.getElementById('labCompletionChart');
+    if (!ctx) return;
+
+    const labData = data.lab_completion || {
+        completed: 45,
+        in_progress: 28,
+        not_started: 15,
+        overdue: 12
+    };
+
+    chartInstances.labCompletion = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Completed', 'In Progress', 'Not Started', 'Overdue'],
+            datasets: [{
+                data: [
+                    labData.completed,
+                    labData.in_progress,
+                    labData.not_started,
+                    labData.overdue
+                ],
+                backgroundColor: [
+                    'rgb(34, 197, 94)',   // Green - Completed
+                    'rgb(59, 130, 246)',  // Blue - In Progress
+                    'rgb(156, 163, 175)', // Gray - Not Started
+                    'rgb(239, 68, 68)'    // Red - Overdue
+                ],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+/**
+ * Render Quiz Score Distribution Chart (Bar)
+ */
+function renderQuizPerformanceChart(data) {
+    const ctx = document.getElementById('quizPerformanceChart');
+    if (!ctx) return;
+
+    const quizData = data.quiz_scores || {
+        ranges: ['0-20%', '21-40%', '41-60%', '61-80%', '81-100%'],
+        counts: [2, 8, 15, 25, 50]
+    };
+
+    chartInstances.quizPerformance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: quizData.ranges,
+            datasets: [{
+                label: 'Number of Students',
+                data: quizData.counts,
+                backgroundColor: [
+                    'rgba(239, 68, 68, 0.8)',   // Red - Very Low
+                    'rgba(251, 146, 60, 0.8)',  // Orange - Low
+                    'rgba(250, 204, 21, 0.8)',  // Yellow - Medium
+                    'rgba(132, 204, 22, 0.8)',  // Light Green - Good
+                    'rgba(34, 197, 94, 0.8)'    // Green - Excellent
+                ],
+                borderColor: [
+                    'rgb(239, 68, 68)',
+                    'rgb(251, 146, 60)',
+                    'rgb(250, 204, 21)',
+                    'rgb(132, 204, 22)',
+                    'rgb(34, 197, 94)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.parsed.y;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${value} students (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    },
+                    title: {
+                        display: true,
+                        text: 'Number of Students'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Score Range'
+                    }
+                }
+            }
+        }
+    });
+}
+
+/**
+ * Render Content Progress Distribution Chart (Horizontal Bar)
+ */
+function renderProgressDistributionChart(data) {
+    const ctx = document.getElementById('progressDistributionChart');
+    if (!ctx) return;
+
+    const progressData = data.progress_distribution || {
+        ranges: ['0-20%', '21-40%', '41-60%', '61-80%', '81-100%'],
+        counts: [5, 12, 20, 30, 33]
+    };
+
+    chartInstances.progressDistribution = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: progressData.ranges,
+            datasets: [{
+                label: 'Number of Students',
+                data: progressData.counts,
+                backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                borderColor: 'rgb(59, 130, 246)',
+                borderWidth: 2,
+                indexAxis: 'y' // This makes it horizontal
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.parsed.x;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${value} students (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    },
+                    title: {
+                        display: true,
+                        text: 'Number of Students'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Progress Range'
+                    }
+                }
+            }
+        }
+    });
 }
 
 /**
