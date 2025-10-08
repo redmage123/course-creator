@@ -437,26 +437,53 @@
         /**
          * Initialize tab-specific features after content is loaded
          */
-        function initializeTabSpecificFeatures(tabName) {
-            // Call existing instructor dashboard functions based on tab
-            if (window.instructor) {
+        async function initializeTabSpecificFeatures(tabName) {
+            console.log(`✨ Initializing features for tab: ${tabName}`);
+
+            // Dynamically import tab handlers and initialize
+            try {
+                const {
+                    initOverviewTab,
+                    initCoursesTab,
+                    initCreateCourseTab,
+                    initPublishedCoursesTab,
+                    initCourseInstancesTab,
+                    initStudentsTab,
+                    initAnalyticsTab,
+                    initFilesTab
+                } = await import('../js/modules/instructor-tab-handlers.js');
+
+                // Call appropriate initializer based on tab
                 switch (tabName) {
                     case 'overview':
-                        if (window.instructor.loadOverview) window.instructor.loadOverview();
+                        initOverviewTab();
                         break;
                     case 'courses':
-                        if (window.instructor.loadCourses) window.instructor.loadCourses();
+                        initCoursesTab();
+                        break;
+                    case 'create-course':
+                        initCreateCourseTab();
+                        break;
+                    case 'published-courses':
+                        initPublishedCoursesTab();
+                        break;
+                    case 'course-instances':
+                        initCourseInstancesTab();
                         break;
                     case 'students':
-                        if (window.instructor.loadStudents) window.instructor.loadStudents();
+                        initStudentsTab();
                         break;
                     case 'analytics':
-                        if (window.instructor.loadAnalytics) window.instructor.loadAnalytics();
+                        initAnalyticsTab();
                         break;
                     case 'files':
-                        if (window.instructor.initFileExplorer) window.instructor.initFileExplorer();
+                        initFilesTab();
                         break;
+                    default:
+                        console.warn(`No initializer for tab: ${tabName}`);
                 }
+            } catch (error) {
+                console.error(`❌ Error initializing tab ${tabName}:`, error);
             }
         }
 
