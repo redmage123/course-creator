@@ -17,6 +17,7 @@
  * - Dependency Inversion: Uses CONFIG for API endpoints
  */
 
+import { CONFIG } from '../config.js';
 import { FileExplorer } from './file-explorer.js';
 
 /**
@@ -1029,7 +1030,7 @@ async function loadPublishedCourses(filterValue = 'all') {
         const authToken = localStorage.getItem('authToken');
 
         // Fetch published courses from API
-        const response = await fetch('https://localhost:8002/api/v1/courses?status=published', {
+        const response = await fetch(CONFIG.ENDPOINTS.PUBLISHED_COURSES, {
             headers: {
                 'Authorization': `Bearer ${authToken}`,
                 'Content-Type': 'application/json'
@@ -1172,7 +1173,7 @@ async function loadCourseInstances(filterValue = 'all', searchQuery = '') {
         const authToken = localStorage.getItem('authToken');
 
         // Fetch course instances from API
-        const response = await fetch('https://localhost:8002/api/v1/course-instances?instructor_id=' + currentUser.id, {
+        const response = await fetch(CONFIG.ENDPOINTS.INSTRUCTOR_INSTANCES(currentUser.id), {
             headers: {
                 'Authorization': `Bearer ${authToken}`,
                 'Content-Type': 'application/json'
@@ -1384,7 +1385,7 @@ async function loadCoursesForInstanceCreation() {
 
     try {
         const authToken = localStorage.getItem('authToken');
-        const response = await fetch('https://localhost:8002/api/v1/courses?status=published', {
+        const response = await fetch(CONFIG.ENDPOINTS.PUBLISHED_COURSES, {
             headers: {
                 'Authorization': `Bearer ${authToken}`,
                 'Content-Type': 'application/json'
@@ -1441,7 +1442,7 @@ async function submitCreateInstance() {
 
     try {
         const authToken = localStorage.getItem('authToken');
-        const response = await fetch('https://localhost:8002/api/v1/course-instances', {
+        const response = await fetch(CONFIG.ENDPOINTS.COURSE_INSTANCES, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${authToken}`,
