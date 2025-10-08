@@ -544,20 +544,35 @@ async def get_course(
         )
 
 @app.get("/courses", response_model=List[CourseResponse])
-async def get_instructor_courses(
+async def get_courses(
+    instructor_id: Optional[str] = None,
+    published_only: bool = True,
     course_service: ICourseService = Depends(get_course_service),
-    current_user_id: str = Depends(get_current_user_id),
-    org_context: dict = Depends(get_organization_context)
+    current_user_id: Optional[str] = Depends(lambda: None)
 ):
-    """Get all courses for the current instructor"""
+    """
+    Get courses - either published courses for browsing or instructor's courses
+
+    Query parameters:
+    - instructor_id: Filter by instructor (if provided)
+    - published_only: Only return published courses (default: True)
+
+    This endpoint supports both:
+    1. Public course browsing (no auth required if published_only=True)
+    2. Instructor course management (with auth)
+    """
     try:
-        # Include organization context in query
-        organization_id = org_context['organization_id']
-        courses = await course_service.get_courses_by_instructor(current_user_id, organization_id=organization_id)
+        if instructor_id:
+            # Get specific instructor's courses
+            courses = await course_service.get_courses_by_instructor(instructor_id)
+        else:
+            # Get all published courses for browsing
+            courses = await course_service.get_published_courses(limit=100, offset=0)
+
         return [_course_to_response(course) for course in courses]
-        
+
     except Exception as e:
-        logging.error("Error getting instructor courses: %s", e)
+        logging.error("Error getting courses: %s", e)
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.put("/courses/{course_id}", response_model=CourseResponse)

@@ -61,7 +61,9 @@ class OrganizationAuthorizationMiddleware(BaseHTTPMiddleware):
         # Endpoints that don't require organization validation
         self.exempt_endpoints = {
             '/health', '/docs', '/openapi.json', '/redoc',
-            '/api/v1/auth/login', '/api/v1/auth/register', '/api/v1/auth/refresh'
+            '/api/v1/auth/login', '/api/v1/auth/register', '/api/v1/auth/refresh',
+            '/courses',  # Allow public course browsing
+            '/enrollments'  # Allow course enrollment with just auth
         }
     
     async def dispatch(self, request: Request, call_next):
