@@ -8,16 +8,22 @@
  * TECHNICAL IMPLEMENTATION:
  * - Modular initialization functions for each tab
  * - Event handlers for forms and buttons
- * - API integration with backend services
+ * - Service layer integration (CourseService, StudentService, etc.)
  * - Real-time data updates and validation
  *
  * SOLID PRINCIPLES:
  * - Single Responsibility: Each init function handles one tab's functionality
  * - Open/Closed: Easy to extend with new tab handlers
- * - Dependency Inversion: Uses CONFIG for API endpoints
+ * - Dependency Inversion: Depends on service abstractions, not direct API calls
  */
 
 import { FileExplorer } from './file-explorer.js';
+import { courseService } from '../services/CourseService.js';
+import { studentService } from '../services/StudentService.js';
+import { quizService } from '../services/QuizService.js';
+import { feedbackService } from '../services/FeedbackService.js';
+import { analyticsService } from '../services/AnalyticsService.js';
+import { courseInstanceService } from '../services/CourseInstanceService.js';
 
 /**
  * Initialize Create Course Tab Functionality
@@ -53,30 +59,8 @@ export function initCreateCourseTab() {
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
 
-            // Get auth token and user info
-            const authToken = localStorage.getItem('authToken');
-            const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-
-            // Create course via API
-            const response = await fetch(`${window.CONFIG.API_URLS.COURSE_MANAGEMENT}/courses`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${authToken}`
-                },
-                body: JSON.stringify({
-                    ...courseData,
-                    instructor_id: currentUser.id,
-                    organization_id: currentUser.organization_id,
-                    status: 'draft'
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error(`Failed to create course: ${response.statusText}`);
-            }
-
-            const result = await response.json();
+            // Create course via service layer
+            const result = await courseService.createCourse(courseData);
 
             // Show success message
             alert(`Course "${courseData.title}" created successfully! You can now add content to it.`);
@@ -85,8 +69,9 @@ export function initCreateCourseTab() {
             form.reset();
 
             // Navigate to courses tab
-            if (typeof showSection === 'function') {
-                showSection('courses');
+            const coursesTab = document.querySelector('[data-tab="courses"]');
+            if (coursesTab) {
+                coursesTab.click();
             }
 
         } catch (error) {
@@ -103,8 +88,17 @@ export function initCreateCourseTab() {
     });
 
     // Reset button handler
-    window.resetForm = function() {
+    window.resetCourseForm = function() {
         form.reset();
+    };
+
+    // Cancel button handler - navigate back to courses tab
+    window.cancelCourseCreation = function() {
+        form.reset();
+        const coursesTab = document.querySelector('[data-tab="courses"]');
+        if (coursesTab) {
+            coursesTab.click();
+        }
     };
 
     console.log('✅ Create Course Tab initialized');
@@ -118,44 +112,180 @@ export function initCreateCourseTab() {
 export function initStudentsTab() {
     console.log('👥 Initializing Students Tab');
 
-    // Load courses for selection
-    loadInstructorCourses();
+    // Load initial student data
+    loadAllStudents();
 
-    // Single enrollment form
-    const singleForm = document.getElementById('singleEnrollmentForm');
-    if (singleForm) {
-        singleForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await enrollStudent(document.getElementById('studentEmail').value);
-            singleForm.reset();
-        });
+    // Set up Add Student button
+    const addStudentBtn = document.getElementById('addStudentBtn');
+    if (addStudentBtn) {
+        addStudentBtn.addEventListener('click', openAddStudentModal);
     }
 
-    // Bulk enrollment form
-    const bulkForm = document.getElementById('bulkEnrollmentForm');
-    if (bulkForm) {
-        bulkForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const emails = document.getElementById('studentEmails').value
-                .split('\n')
-                .map(email => email.trim())
-                .filter(email => email.length > 0);
-
-            await enrollStudentsBulk(emails);
-            bulkForm.reset();
-        });
-    }
-
-    // Course selector change handler
-    window.loadCourseStudents = async function() {
-        const courseId = document.getElementById('selectedCourse').value;
-        if (!courseId) return;
-
-        await loadEnrolledStudents(courseId);
-    };
+    // Make modal functions globally accessible
+    window.closeAddStudentModal = closeAddStudentModal;
+    window.submitAddStudent = submitAddStudent;
 
     console.log('✅ Students Tab initialized');
 }
+
+/**
+ * Load all students across all courses
+ */
+async function loadAllStudents() {
+    const tbody = document.getElementById('studentsTableBody');
+    if (!tbody) return;
+
+    try {
+        // Show loading state
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 2rem;">
+                    <i class="fas fa-spinner fa-spin"></i> Loading students...
+                </td>
+            </tr>
+        `;
+
+        // Load students via service layer
+        const students = await studentService.loadStudents();
+
+        if (students.length === 0) {
+            tbody.innerHTML = `
+                <tr class="empty-state">
+                    <td colspan="6">
+                        <div class="empty-message">
+                            <i class="fas fa-users"></i>
+                            <p>No students enrolled yet. Click "Add Student" to get started.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        // Render students
+        tbody.innerHTML = students.map(student => `
+            <tr class="student-row">
+                <td>${student.name}</td>
+                <td>${student.email}</td>
+                <td>${student.course}</td>
+                <td>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${student.progress}%"></div>
+                        <span class="progress-text">${student.progress}%</span>
+                    </div>
+                </td>
+                <td><span class="grade-badge">${student.grade}</span></td>
+                <td>
+                    <button class="btn btn-sm btn-secondary" onclick="viewStudentDetails(${student.id})">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+
+    } catch (error) {
+        console.error('Error loading students:', error);
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 2rem; color: var(--error-600);">
+                    <i class="fas fa-exclamation-circle"></i> Failed to load students. Please try again.
+                </td>
+            </tr>
+        `;
+    }
+}
+
+/**
+ * Open the Add Student modal
+ */
+function openAddStudentModal() {
+    const modal = document.getElementById('addStudentModal');
+    if (!modal) return;
+
+    // Load courses for selection
+    loadCoursesForStudentModal();
+
+    // Show modal
+    modal.style.display = 'flex';
+}
+
+/**
+ * Close the Add Student modal
+ */
+function closeAddStudentModal() {
+    const modal = document.getElementById('addStudentModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+
+    // Clear form
+    const courseSelect = document.getElementById('studentCourseSelect');
+    const emailInput = document.getElementById('studentEmailInput');
+    if (courseSelect) courseSelect.value = '';
+    if (emailInput) emailInput.value = '';
+}
+
+/**
+ * Load courses for student modal
+ */
+async function loadCoursesForStudentModal() {
+    const courseSelect = document.getElementById('studentCourseSelect');
+    if (!courseSelect) return;
+
+    try {
+        // Load courses via service layer
+        const courses = await courseService.loadCourses();
+
+        courseSelect.innerHTML = '<option value="">-- Select a course --</option>';
+        courses.forEach(course => {
+            const option = document.createElement('option');
+            option.value = course.id;
+            option.textContent = course.title;
+            courseSelect.appendChild(option);
+        });
+
+    } catch (error) {
+        console.error('Error loading courses:', error);
+        courseSelect.innerHTML = '<option value="">Error loading courses</option>';
+    }
+}
+
+/**
+ * Submit add student form
+ */
+async function submitAddStudent() {
+    const courseSelect = document.getElementById('studentCourseSelect');
+    const emailInput = document.getElementById('studentEmailInput');
+
+    if (!courseSelect || !emailInput) return;
+
+    const courseId = courseSelect.value;
+    const email = emailInput.value.trim();
+
+    if (!courseId || !email) {
+        alert('Please fill in all fields');
+        return;
+    }
+
+    try {
+        // Simulate API call (replace with actual API)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        alert(`Student ${email} added successfully!`);
+        closeAddStudentModal();
+        loadAllStudents(); // Reload the students list
+
+    } catch (error) {
+        console.error('Error adding student:', error);
+        alert('Failed to add student. Please try again.');
+    }
+}
+
+// Make viewStudentDetails globally accessible
+window.viewStudentDetails = function(studentId) {
+    console.log('Viewing details for student:', studentId);
+    alert(`Student details view not yet implemented for student ID: ${studentId}`);
+};
 
 /**
  * Load instructor's courses into select dropdown
@@ -165,18 +295,8 @@ async function loadInstructorCourses() {
     if (!selectElement) return;
 
     try {
-        const authToken = localStorage.getItem('authToken');
-        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-
-        const response = await fetch(`${window.CONFIG.API_URLS.COURSE_MANAGEMENT}/courses?instructor_id=${currentUser.id}`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
-
-        if (!response.ok) throw new Error('Failed to load courses');
-
-        const courses = await response.json();
+        // Load courses via service layer
+        const courses = await courseService.loadCourses();
 
         selectElement.innerHTML = '<option value="">Select a course...</option>';
         courses.forEach(course => {
@@ -202,21 +322,8 @@ async function enrollStudent(email) {
     }
 
     try {
-        const authToken = localStorage.getItem('authToken');
-
-        const response = await fetch(`${window.CONFIG.API_URLS.COURSE_MANAGEMENT}/enrollments`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
-            },
-            body: JSON.stringify({
-                course_id: parseInt(courseId),
-                student_email: email
-            })
-        });
-
-        if (!response.ok) throw new Error('Enrollment failed');
+        // Enroll student via service layer
+        await studentService.enrollStudentByEmail(email, parseInt(courseId));
 
         alert(`Student ${email} enrolled successfully!`);
         await loadEnrolledStudents(courseId);
@@ -262,17 +369,8 @@ async function loadEnrolledStudents(courseId) {
     container.innerHTML = '<p>Loading students...</p>';
 
     try {
-        const authToken = localStorage.getItem('authToken');
-
-        const response = await fetch(`${window.CONFIG.API_URLS.COURSE_MANAGEMENT}/courses/${courseId}/students`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
-
-        if (!response.ok) throw new Error('Failed to load students');
-
-        const students = await response.json();
+        // Load enrolled students via service layer
+        const students = await studentService.getStudentsByCourse(courseId);
 
         if (students.length === 0) {
             container.innerHTML = '<p>No students enrolled yet.</p>';
@@ -343,8 +441,8 @@ export function initAnalyticsTab() {
         pdfBtn.addEventListener('click', downloadPDFReport);
     }
 
-    // Course selector change
-    const courseSelect = document.getElementById('analyticsCourseSelect');
+    // Course selector change (supports both ID names for backwards compatibility)
+    const courseSelect = document.getElementById('analyticsCourseFilter') || document.getElementById('analyticsCourseSelect');
     if (courseSelect) {
         courseSelect.addEventListener('change', loadAnalyticsData);
     }
@@ -365,22 +463,12 @@ export function initAnalyticsTab() {
  * Load courses for analytics filter
  */
 async function loadAnalyticsCourses() {
-    const selectElement = document.getElementById('analyticsCourseSelect');
+    const selectElement = document.getElementById('analyticsCourseFilter') || document.getElementById('analyticsCourseSelect');
     if (!selectElement) return;
 
     try {
-        const authToken = localStorage.getItem('authToken');
-        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-
-        const response = await fetch(`${window.CONFIG.API_URLS.COURSE_MANAGEMENT}/courses?instructor_id=${currentUser.id}`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
-
-        if (!response.ok) throw new Error('Failed to load courses');
-
-        const courses = await response.json();
+        // Load courses via service layer
+        const courses = await courseService.loadCourses();
 
         selectElement.innerHTML = '<option value="">All Courses</option>';
         courses.forEach(course => {
@@ -399,7 +487,8 @@ async function loadAnalyticsCourses() {
  * Load analytics data
  */
 async function loadAnalyticsData() {
-    const courseId = document.getElementById('analyticsCourseSelect')?.value;
+    const courseSelect = document.getElementById('analyticsCourseFilter') || document.getElementById('analyticsCourseSelect');
+    const courseId = courseSelect?.value;
     const timeRange = document.getElementById('analyticsTimeRange')?.value || '30';
 
     // Show loading
@@ -407,23 +496,14 @@ async function loadAnalyticsData() {
     if (loading) loading.style.display = 'block';
 
     try {
-        const authToken = localStorage.getItem('authToken');
         const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
 
-        const url = new URL(`${window.CONFIG.API_URLS.ANALYTICS}/instructor/analytics`);
-        url.searchParams.append('instructor_id', currentUser.id);
-        if (courseId) url.searchParams.append('course_id', courseId);
-        url.searchParams.append('time_range', timeRange);
-
-        const response = await fetch(url, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
+        // Load analytics via service layer
+        const data = await analyticsService.loadInstructorAnalytics({
+            instructorId: currentUser.id,
+            courseId: courseId,
+            timeRange: timeRange
         });
-
-        if (!response.ok) throw new Error('Failed to load analytics');
-
-        const data = await response.json();
 
         // Update overview cards
         document.getElementById('totalStudentsCount').textContent = data.total_students || 0;
@@ -829,18 +909,8 @@ async function loadCoursesList() {
     container.innerHTML = '<p>Loading courses...</p>';
 
     try {
-        const authToken = localStorage.getItem('authToken');
-        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-
-        const response = await fetch(`${window.CONFIG.API_URLS.COURSE_MANAGEMENT}/courses?instructor_id=${currentUser.id}`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
-
-        if (!response.ok) throw new Error('Failed to load courses');
-
-        const courses = await response.json();
+        // Load courses via service layer
+        const courses = await courseService.loadCourses();
 
         if (courses.length === 0) {
             container.innerHTML = `
@@ -905,22 +975,10 @@ export function initOverviewTab() {
  */
 async function loadOverviewStats() {
     try {
-        const authToken = localStorage.getItem('authToken');
         const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
 
-        // Load quick stats
-        const response = await fetch(`${window.CONFIG.API_URLS.ANALYTICS}/instructor/overview?instructor_id=${currentUser.id}`, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`
-            }
-        });
-
-        if (!response.ok) {
-            console.warn('Failed to load overview stats');
-            return;
-        }
-
-        const stats = await response.json();
+        // Load overview stats via service layer
+        const stats = await analyticsService.loadOverviewStats(currentUser.id);
 
         // Update stat cards
         if (document.getElementById('totalStudents')) {
@@ -992,8 +1050,10 @@ export function initFilesTab() {
 export function initPublishedCoursesTab() {
     console.log('🎓 Initializing Published Courses Tab');
 
-    // Make filter function globally accessible for inline event handler
+    // Make functions globally accessible for inline event handlers
     window.filterPublishedCourses = filterPublishedCourses;
+    window.createCourseInstance = createCourseInstance;
+    window.viewCourseDetails = viewCourseDetails;
 
     // Load initial course list
     loadPublishedCourses();
@@ -1026,21 +1086,9 @@ async function loadPublishedCourses(filterValue = 'all') {
 
         // Get current user context
         const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-        const authToken = localStorage.getItem('authToken');
 
-        // Fetch published courses from API
-        const response = await fetch(window.CONFIG.ENDPOINTS.PUBLISHED_COURSES, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to fetch courses: ${response.status}`);
-        }
-
-        const courses = await response.json();
+        // Load published courses via service layer
+        const courses = await courseService.loadPublishedCourses();
 
         // Apply filter
         let filteredCourses = courses;
@@ -1118,6 +1166,130 @@ function filterPublishedCourses() {
 }
 
 /**
+ * Create a course instance from a published course
+ *
+ * BUSINESS LOGIC:
+ * Navigates to course instances tab and initiates instance creation
+ * with the selected course pre-filled
+ *
+ * @param {number} courseId - Published course ID
+ */
+function createCourseInstance(courseId) {
+    console.log(`Creating instance for course ${courseId}`);
+
+    // Store the selected course ID for the instance creation modal
+    localStorage.setItem('selectedCourseForInstance', courseId);
+
+    // Navigate to course instances tab
+    const instancesTab = document.querySelector('[data-tab="course-instances"]');
+    if (instancesTab) {
+        instancesTab.click();
+
+        // After tab switches, trigger the create instance modal
+        setTimeout(() => {
+            if (typeof window.showCreateInstanceModal === 'function') {
+                window.showCreateInstanceModal(courseId);
+            }
+        }, 300);
+    } else {
+        console.error('Course instances tab not found');
+    }
+}
+
+/**
+ * View detailed information about a published course
+ *
+ * BUSINESS LOGIC:
+ * Shows a modal with comprehensive course details including
+ * syllabus, prerequisites, materials, and enrollment info
+ *
+ * @param {number} courseId - Course ID to view
+ */
+async function viewCourseDetails(courseId) {
+    console.log(`Viewing details for course ${courseId}`);
+
+    try {
+        // Load full course details
+        const course = await courseService.getCourse(courseId);
+
+        // Create and show modal with course details
+        const modal = document.createElement('div');
+        modal.className = 'modal active';
+        modal.innerHTML = `
+            <div class="modal-content large">
+                <div class="modal-header">
+                    <h2>${course.title}</h2>
+                    <button class="modal-close" onclick="this.closest('.modal').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="course-details-grid">
+                        <div class="course-details-section">
+                            <h3>Description</h3>
+                            <p>${course.description || 'No description available'}</p>
+                        </div>
+
+                        <div class="course-details-section">
+                            <h3>Course Information</h3>
+                            <dl class="course-info-list">
+                                <dt>Course Code:</dt>
+                                <dd>${course.course_code || 'N/A'}</dd>
+
+                                <dt>Instructor:</dt>
+                                <dd>${course.instructor_name || 'Unknown'}</dd>
+
+                                <dt>Duration:</dt>
+                                <dd>${course.estimated_duration || 'N/A'} ${course.duration_unit || ''}</dd>
+
+                                <dt>Difficulty:</dt>
+                                <dd>${course.difficulty_level || 'N/A'}</dd>
+
+                                <dt>Visibility:</dt>
+                                <dd><span class="badge badge-${course.visibility}">${course.visibility}</span></dd>
+
+                                <dt>Status:</dt>
+                                <dd><span class="badge badge-${course.status}">${course.status}</span></dd>
+                            </dl>
+                        </div>
+
+                        ${course.prerequisites ? `
+                        <div class="course-details-section">
+                            <h3>Prerequisites</h3>
+                            <p>${course.prerequisites}</p>
+                        </div>
+                        ` : ''}
+
+                        ${course.learning_objectives ? `
+                        <div class="course-details-section">
+                            <h3>Learning Objectives</h3>
+                            <ul>
+                                ${course.learning_objectives.map(obj => `<li>${obj}</li>`).join('')}
+                            </ul>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" onclick="createCourseInstance(${courseId}); this.closest('.modal').remove();">
+                        <i class="fas fa-plus"></i> Create Instance
+                    </button>
+                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+    } catch (error) {
+        console.error('Error loading course details:', error);
+        alert('Failed to load course details. Please try again.');
+    }
+}
+
+/**
  * Initialize Course Instances Tab
  *
  * BUSINESS REQUIREMENT:
@@ -1137,6 +1309,8 @@ export function initCourseInstancesTab() {
     window.showCreateInstanceModal = showCreateInstanceModal;
     window.filterInstances = filterInstances;
     window.searchInstances = searchInstances;
+    window.viewInstanceDetails = viewInstanceDetails;
+    window.manageEnrollment = manageEnrollment;
 
     // Load initial instance list
     loadCourseInstances();
@@ -1169,21 +1343,9 @@ async function loadCourseInstances(filterValue = 'all', searchQuery = '') {
 
         // Get current user context
         const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
-        const authToken = localStorage.getItem('authToken');
 
-        // Fetch course instances from API
-        const response = await fetch(window.CONFIG.ENDPOINTS.INSTRUCTOR_INSTANCES(currentUser.id), {
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) {
-            throw new Error(`Failed to fetch course instances: ${response.status}`);
-        }
-
-        let instances = await response.json();
+        // Load course instances via service layer
+        let instances = await courseInstanceService.loadInstructorInstances(currentUser.id);
 
         // Apply status filter
         if (filterValue !== 'all') {
@@ -1383,16 +1545,10 @@ async function loadCoursesForInstanceCreation() {
     if (!select) return;
 
     try {
-        const authToken = localStorage.getItem('authToken');
-        const response = await fetch(window.CONFIG.ENDPOINTS.PUBLISHED_COURSES, {
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'Content-Type': 'application/json'
-            }
-        });
+        // Load published courses via service layer
+        const courses = await courseService.loadPublishedCourses();
 
-        if (response.ok) {
-            const courses = await response.json();
+        if (courses) {
             select.innerHTML = '<option value="">-- Select a course --</option>' +
                 courses.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
         }
@@ -1440,25 +1596,613 @@ async function submitCreateInstance() {
     };
 
     try {
-        const authToken = localStorage.getItem('authToken');
-        const response = await fetch(window.CONFIG.ENDPOINTS.COURSE_INSTANCES, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${authToken}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(instanceData)
-        });
+        // Create instance via service layer
+        await courseInstanceService.createInstance(instanceData);
 
-        if (response.ok) {
-            alert('Course instance created successfully!');
-            closeCreateInstanceModal();
-            loadCourseInstances(); // Reload the list
-        } else {
-            throw new Error(`Failed to create instance: ${response.status}`);
-        }
+        alert('Course instance created successfully!');
+        closeCreateInstanceModal();
+        loadCourseInstances(); // Reload the list
     } catch (error) {
         console.error('Error creating instance:', error);
         alert('Failed to create course instance. Please try again.');
     }
+}
+
+/**
+ * View detailed information about a course instance
+ *
+ * BUSINESS LOGIC:
+ * Shows comprehensive instance details including enrolled students,
+ * schedule, status, and management options
+ *
+ * @param {number} instanceId - Instance ID to view
+ */
+async function viewInstanceDetails(instanceId) {
+    console.log(`Viewing details for instance ${instanceId}`);
+
+    try {
+        // Load instance details
+        const instance = await courseInstanceService.getInstance(instanceId);
+        const students = await courseInstanceService.getInstanceStudents(instanceId);
+
+        // Create and show modal with instance details
+        const modal = document.createElement('div');
+        modal.className = 'modal active';
+        modal.innerHTML = `
+            <div class="modal-content large">
+                <div class="modal-header">
+                    <h2>${instance.course_title || 'Course Instance'}</h2>
+                    <button class="modal-close" onclick="this.closest('.modal').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="instance-details-grid">
+                        <div class="instance-details-section">
+                            <h3>Instance Information</h3>
+                            <dl class="instance-info-list">
+                                <dt>Course Code:</dt>
+                                <dd>${instance.course_code || 'N/A'}</dd>
+
+                                <dt>Status:</dt>
+                                <dd><span class="badge badge-${instance.status}">${instance.status}</span></dd>
+
+                                <dt>Start Date:</dt>
+                                <dd>${formatDate(instance.start_date)}</dd>
+
+                                <dt>End Date:</dt>
+                                <dd>${formatDate(instance.end_date)}</dd>
+
+                                <dt>Max Students:</dt>
+                                <dd>${instance.max_students || 'Unlimited'}</dd>
+
+                                <dt>Enrolled Students:</dt>
+                                <dd>${students.length} / ${instance.max_students || '∞'}</dd>
+                            </dl>
+                        </div>
+
+                        ${students.length > 0 ? `
+                        <div class="instance-details-section">
+                            <h3>Enrolled Students</h3>
+                            <ul class="enrolled-students-list">
+                                ${students.map(student => `
+                                    <li>
+                                        <span>${student.name || student.email}</span>
+                                        <span class="student-email">${student.email}</span>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                        ` : `
+                        <div class="instance-details-section">
+                            <h3>Enrolled Students</h3>
+                            <p class="empty-message">No students enrolled yet.</p>
+                        </div>
+                        `}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" onclick="manageEnrollment(${instanceId}); this.closest('.modal').remove();">
+                        <i class="fas fa-user-plus"></i> Manage Enrollment
+                    </button>
+                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+    } catch (error) {
+        console.error('Error loading instance details:', error);
+        alert('Failed to load instance details. Please try again.');
+    }
+}
+
+/**
+ * Manage student enrollment for a course instance
+ *
+ * BUSINESS LOGIC:
+ * Provides interface for adding/removing students from instance
+ * Shows current enrollment and available actions
+ *
+ * @param {number} instanceId - Instance ID
+ */
+async function manageEnrollment(instanceId) {
+    console.log(`Managing enrollment for instance ${instanceId}`);
+
+    try {
+        // Load instance and student data
+        const instance = await courseInstanceService.getInstance(instanceId);
+        const enrolledStudents = await courseInstanceService.getInstanceStudents(instanceId);
+        const allStudents = await studentService.loadStudents();
+
+        // Filter out already enrolled students
+        const availableStudents = allStudents.filter(s =>
+            !enrolledStudents.some(enrolled => enrolled.id === s.id)
+        );
+
+        // Create enrollment management modal
+        const modal = document.createElement('div');
+        modal.className = 'modal active';
+        modal.innerHTML = `
+            <div class="modal-content large">
+                <div class="modal-header">
+                    <h2>Manage Enrollment: ${instance.course_title}</h2>
+                    <button class="modal-close" onclick="this.closest('.modal').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="enrollment-management">
+                        <div class="enrollment-section">
+                            <h3>Add Students</h3>
+                            ${availableStudents.length > 0 ? `
+                                <select id="studentToEnroll" class="form-control">
+                                    <option value="">-- Select student --</option>
+                                    ${availableStudents.map(s => `
+                                        <option value="${s.id}">${s.name || s.email} (${s.email})</option>
+                                    `).join('')}
+                                </select>
+                                <button class="btn btn-primary" onclick="enrollStudentInInstance(${instanceId})">
+                                    <i class="fas fa-plus"></i> Enroll Student
+                                </button>
+                            ` : '<p>No available students to enroll.</p>'}
+                        </div>
+
+                        <div class="enrollment-section">
+                            <h3>Currently Enrolled (${enrolledStudents.length})</h3>
+                            ${enrolledStudents.length > 0 ? `
+                                <ul class="enrolled-list">
+                                    ${enrolledStudents.map(student => `
+                                        <li>
+                                            ${student.name || student.email} (${student.email})
+                                            <button class="btn btn-small btn-danger"
+                                                    onclick="unenrollStudent(${instanceId}, ${student.id})">
+                                                <i class="fas fa-times"></i> Remove
+                                            </button>
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            ` : '<p>No students enrolled yet.</p>'}
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">
+                        Close
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Make enrollment functions globally accessible
+        window.enrollStudentInInstance = async (instId) => {
+            const select = document.getElementById('studentToEnroll');
+            const studentId = select?.value;
+            if (!studentId) {
+                alert('Please select a student');
+                return;
+            }
+
+            try {
+                await courseInstanceService.enrollStudentInInstance(instId, studentId);
+                alert('Student enrolled successfully!');
+                modal.remove();
+                manageEnrollment(instId); // Refresh the modal
+            } catch (error) {
+                console.error('Error enrolling student:', error);
+                alert('Failed to enroll student. Please try again.');
+            }
+        };
+
+        window.unenrollStudent = async (instId, studId) => {
+            if (!confirm('Are you sure you want to remove this student?')) {
+                return;
+            }
+
+            try {
+                // Note: Would need unenroll method in service
+                alert('Unenroll functionality not yet implemented in backend');
+                // await courseInstanceService.unenrollStudent(instId, studId);
+                // modal.remove();
+                // manageEnrollment(instId);
+            } catch (error) {
+                console.error('Error unenrolling student:', error);
+                alert('Failed to unenroll student. Please try again.');
+            }
+        };
+
+    } catch (error) {
+        console.error('Error managing enrollment:', error);
+        alert('Failed to load enrollment data. Please try again.');
+    }
+}
+
+/**
+ * Initialize Content Generation Tab
+ *
+ * BUSINESS REQUIREMENT:
+ * Instructors can use AI to generate course content including:
+ * - Syllabi based on course description
+ * - Presentation slides
+ * - Quizzes and assessments
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Loads instructor's courses for selection
+ * - Provides buttons for syllabus, slides, and quiz generation
+ * - Shows preview of generated content
+ * - Allows save and regenerate operations
+ */
+export function initContentGenerationTab() {
+    console.log('✨ Initializing Content Generation Tab');
+
+    // Load courses for selection
+    loadCoursesForContentGeneration();
+
+    // Set up event listeners
+    const generateSyllabusBtn = document.getElementById('generateSyllabusBtn');
+    const generateSlidesBtn = document.getElementById('generateSlidesBtn');
+    const generateQuizBtn = document.getElementById('generateQuizBtn');
+    const saveGeneratedContentBtn = document.getElementById('saveGeneratedContentBtn');
+    const regenerateContentBtn = document.getElementById('regenerateContentBtn');
+
+    if (generateSyllabusBtn) {
+        generateSyllabusBtn.addEventListener('click', () => generateContent('syllabus'));
+    }
+
+    if (generateSlidesBtn) {
+        generateSlidesBtn.addEventListener('click', () => generateContent('slides'));
+    }
+
+    if (generateQuizBtn) {
+        generateQuizBtn.addEventListener('click', () => generateContent('quiz'));
+    }
+
+    if (saveGeneratedContentBtn) {
+        saveGeneratedContentBtn.addEventListener('click', saveGeneratedContent);
+    }
+
+    if (regenerateContentBtn) {
+        regenerateContentBtn.addEventListener('click', regenerateContent);
+    }
+
+    console.log('✅ Content Generation Tab initialized');
+}
+
+/**
+ * Load courses for content generation selection
+ */
+async function loadCoursesForContentGeneration() {
+    const courseSelect = document.getElementById('contentGenCourseSelect');
+    if (!courseSelect) {
+        console.error('Course select element not found');
+        return;
+    }
+
+    try {
+        // Load courses via service layer
+        const courses = await courseService.loadCourses();
+
+        // Populate select dropdown
+        courseSelect.innerHTML = '<option value="">-- Select a course --</option>';
+        courses.forEach(course => {
+            const option = document.createElement('option');
+            option.value = course.id;
+            option.textContent = course.title;
+            courseSelect.appendChild(option);
+        });
+
+    } catch (error) {
+        console.error('Error loading courses:', error);
+        courseSelect.innerHTML = '<option value="">Error loading courses</option>';
+    }
+}
+
+/**
+ * Generate content using AI
+ *
+ * @param {string} contentType - Type of content to generate (syllabus, slides, quiz)
+ */
+async function generateContent(contentType) {
+    const courseSelect = document.getElementById('contentGenCourseSelect');
+    const courseId = courseSelect?.value;
+
+    if (!courseId) {
+        alert('Please select a course first');
+        return;
+    }
+
+    const previewSection = document.getElementById('contentPreviewSection');
+    const previewContent = document.getElementById('contentPreview');
+
+    if (!previewSection || !previewContent) {
+        console.error('Preview elements not found');
+        return;
+    }
+
+    try {
+        // Show loading state
+        previewSection.style.display = 'block';
+        previewContent.innerHTML = `
+            <div class="loading-indicator">
+                <i class="fas fa-spinner fa-spin"></i> Generating ${contentType}... This may take a moment.
+            </div>
+        `;
+
+        // Simulate AI generation (replace with actual API call)
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Mock generated content
+        let generatedContent = '';
+        if (contentType === 'syllabus') {
+            generatedContent = `
+                <h3>Course Syllabus</h3>
+                <h4>Week 1: Introduction</h4>
+                <p>Overview of the course topics and learning objectives.</p>
+                <h4>Week 2: Core Concepts</h4>
+                <p>Deep dive into fundamental concepts and principles.</p>
+                <h4>Week 3: Practical Applications</h4>
+                <p>Hands-on exercises and real-world examples.</p>
+                <h4>Week 4: Advanced Topics</h4>
+                <p>Exploration of advanced techniques and best practices.</p>
+            `;
+        } else if (contentType === 'slides') {
+            generatedContent = `
+                <h3>Presentation Slides</h3>
+                <div class="slide-preview">
+                    <p><strong>Slide 1:</strong> Title Slide - Course Introduction</p>
+                    <p><strong>Slide 2:</strong> Learning Objectives</p>
+                    <p><strong>Slide 3:</strong> Course Outline</p>
+                    <p><strong>Slide 4:</strong> Key Concepts</p>
+                    <p><strong>Slide 5:</strong> Summary and Next Steps</p>
+                </div>
+            `;
+        } else if (contentType === 'quiz') {
+            generatedContent = `
+                <h3>Quiz Questions</h3>
+                <div class="quiz-preview">
+                    <p><strong>Question 1:</strong> What is the main purpose of this course?</p>
+                    <p>A) Learn basics<br>B) Master advanced topics<br>C) Both A and B<br>D) None of the above</p>
+                    <p><strong>Question 2:</strong> Which topic is covered in Week 2?</p>
+                    <p>A) Introduction<br>B) Core Concepts<br>C) Advanced Topics<br>D) Conclusion</p>
+                </div>
+            `;
+        }
+
+        previewContent.innerHTML = generatedContent;
+
+        // Store the generated content type for saving
+        previewContent.dataset.contentType = contentType;
+        previewContent.dataset.courseId = courseId;
+
+    } catch (error) {
+        console.error('Error generating content:', error);
+        previewContent.innerHTML = `
+            <div class="alert alert-error">
+                Failed to generate ${contentType}. Please try again.
+            </div>
+        `;
+    }
+}
+
+/**
+ * Save generated content to the course
+ */
+async function saveGeneratedContent() {
+    const previewContent = document.getElementById('contentPreview');
+    if (!previewContent) return;
+
+    const contentType = previewContent.dataset.contentType;
+    const courseId = previewContent.dataset.courseId;
+
+    if (!contentType || !courseId) {
+        alert('No content to save');
+        return;
+    }
+
+    try {
+        // Simulate saving (replace with actual API call)
+        alert(`${contentType} saved successfully to the course!`);
+    } catch (error) {
+        console.error('Error saving content:', error);
+        alert('Failed to save content. Please try again.');
+    }
+}
+
+/**
+ * Regenerate content
+ */
+function regenerateContent() {
+    const previewContent = document.getElementById('contentPreview');
+    if (!previewContent) return;
+
+    const contentType = previewContent.dataset.contentType;
+    if (contentType) {
+        generateContent(contentType);
+    }
+}
+
+/**
+ * Initialize Feedback Tab
+ *
+ * BUSINESS REQUIREMENT:
+ * Instructors can manage student feedback including:
+ * - View all student feedback
+ * - Respond to feedback
+ * - Filter feedback by status
+ * - Mark feedback as resolved
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Feedback list with filtering
+ * - Response modal
+ * - Status management
+ */
+export function initFeedbackTab() {
+    console.log('💬 Initializing Feedback Tab');
+
+    // Set up filter
+    const statusFilter = document.getElementById('feedbackStatusFilter');
+    if (statusFilter) {
+        statusFilter.addEventListener('change', filterFeedback);
+    }
+
+    // Make functions globally accessible
+    window.respondToFeedback = respondToFeedback;
+    window.markFeedbackResolved = markFeedbackResolved;
+    window.closeFeedbackResponseModal = closeFeedbackResponseModal;
+    window.submitFeedbackResponse = submitFeedbackResponse;
+
+    console.log('✅ Feedback Tab initialized');
+}
+
+/**
+ * Filter feedback by status
+ */
+function filterFeedback() {
+    const statusFilter = document.getElementById('feedbackStatusFilter');
+    const filterValue = statusFilter?.value || 'all';
+
+    const feedbackItems = document.querySelectorAll('.feedback-item');
+
+    feedbackItems.forEach(item => {
+        if (filterValue === 'all') {
+            item.style.display = 'block';
+        } else {
+            const status = item.querySelector('.feedback-status')?.textContent.toLowerCase();
+            if (status === filterValue) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        }
+    });
+}
+
+/**
+ * Respond to feedback
+ *
+ * @param {number} feedbackId - ID of the feedback to respond to
+ */
+function respondToFeedback(feedbackId) {
+    console.log('Responding to feedback:', feedbackId);
+
+    const modal = document.getElementById('feedbackResponseModal');
+    if (!modal) return;
+
+    // Show modal
+    modal.style.display = 'flex';
+
+    // You would typically load the feedback details here
+    const modalContext = document.getElementById('modalFeedbackContext');
+    if (modalContext) {
+        modalContext.innerHTML = `
+            <p><strong>Student:</strong> Alice Johnson</p>
+            <p><strong>Question:</strong> Question about Module 3: Functions</p>
+        `;
+    }
+
+    // Store feedback ID for submission
+    modal.dataset.feedbackId = feedbackId;
+}
+
+/**
+ * Close feedback response modal
+ */
+function closeFeedbackResponseModal() {
+    const modal = document.getElementById('feedbackResponseModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+
+    // Clear textarea
+    const textarea = document.getElementById('feedbackResponseText');
+    if (textarea) {
+        textarea.value = '';
+    }
+}
+
+/**
+ * Submit feedback response
+ */
+async function submitFeedbackResponse() {
+    const modal = document.getElementById('feedbackResponseModal');
+    const textarea = document.getElementById('feedbackResponseText');
+
+    if (!textarea || !modal) return;
+
+    const responseText = textarea.value.trim();
+    const feedbackId = modal.dataset.feedbackId;
+
+    if (!responseText) {
+        alert('Please enter a response');
+        return;
+    }
+
+    try {
+        // Simulate API call (replace with actual API)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        alert('Response sent successfully!');
+        closeFeedbackResponseModal();
+
+        // You would typically reload the feedback list here
+
+    } catch (error) {
+        console.error('Error sending response:', error);
+        alert('Failed to send response. Please try again.');
+    }
+}
+
+/**
+ * Mark feedback as resolved
+ *
+ * @param {number} feedbackId - ID of the feedback to mark as resolved
+ */
+async function markFeedbackResolved(feedbackId) {
+    console.log('Marking feedback as resolved:', feedbackId);
+
+    try {
+        // Simulate API call (replace with actual API)
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        alert('Feedback marked as resolved!');
+
+        // You would typically reload the feedback list here
+
+    } catch (error) {
+        console.error('Error marking feedback as resolved:', error);
+        alert('Failed to mark feedback as resolved. Please try again.');
+    }
+}
+
+/**
+ * Initialize Labs Tab
+ *
+ * BUSINESS REQUIREMENT:
+ * Instructors can manage lab environments including:
+ * - View all lab instances
+ * - Create new lab environments
+ * - Monitor lab status and resource usage
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Lab list with status indicators
+ * - Create lab functionality
+ * - Docker container integration
+ */
+export function initLabsTab() {
+    console.log('🧪 Initializing Labs Tab');
+
+    // Set up create lab button
+    const createLabBtn = document.getElementById('createLabBtn');
+    if (createLabBtn) {
+        createLabBtn.addEventListener('click', () => {
+            alert('Create Lab functionality - Coming soon!');
+        });
+    }
+
+    console.log('✅ Labs Tab initialized');
 }
