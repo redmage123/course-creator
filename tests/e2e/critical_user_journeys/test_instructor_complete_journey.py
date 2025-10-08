@@ -770,8 +770,32 @@ class TestPublishedCoursesTabWorkflow(BaseTest):
         dashboard = InstructorDashboardPage(self.driver, self.config)
         dashboard.navigate_to_dashboard()
 
+        # Debug: Check what's on the page after navigation
+        print(f"\n🔍 After navigation - URL: {self.driver.current_url}")
+        print(f"🔍 Page title: {self.driver.title}")
+
+        # Check browser console for errors
+        print("\n🔍 Browser console:")
+        for entry in self.driver.get_log('browser')[-10:]:  # Last 10 entries
+            print(f"   [{entry['level']}] {entry['message'][:150]}")
+
         # Click published courses tab
+        print("\n🔍 Attempting to click published courses tab...")
         dashboard.switch_to_tab(dashboard.PUBLISHED_COURSES_TAB)
+
+        # Debug: Check tab content after click
+        print(f"\n🔍 After tab click - URL: {self.driver.current_url}")
+        try:
+            tab_container = self.driver.find_element(By.ID, "tabContentContainer")
+            content = tab_container.get_attribute('innerHTML')[:300]
+            print(f"🔍 Tab content preview: {content}")
+        except Exception as e:
+            print(f"🔍 Could not get tab content: {e}")
+
+        # Check console again
+        print("\n🔍 Browser console after tab click:")
+        for entry in self.driver.get_log('browser')[-10:]:
+            print(f"   [{entry['level']}] {entry['message'][:150]}")
 
         # Verify container exists
         container = self.wait_for_element((By.ID, "publishedCoursesContainer"), timeout=10)

@@ -335,7 +335,6 @@
     <!-- Scripts -->
     <script src="../js/config-global.js"></script>
     <script type="module" src="../js/components/TemplateLoader.js"></script>
-    <script src="../js/instructor-dashboard.js"></script>
     <script>
         /**
          * MODULAR INSTRUCTOR DASHBOARD ARCHITECTURE
@@ -407,7 +406,9 @@
             }
 
             // Show loading state
-            overlay.style.display = 'flex';
+            if (overlay) {
+                overlay.style.display = 'flex';
+            }
 
             try {
                 // Load tab content using TemplateLoader
@@ -434,7 +435,9 @@
                 `;
             } finally {
                 // Hide loading state
-                overlay.style.display = 'none';
+                if (overlay) {
+                    overlay.style.display = 'none';
+                }
             }
         }
 

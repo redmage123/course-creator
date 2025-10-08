@@ -201,7 +201,7 @@ class TemplateLoader {
 }
 
 // Create global singleton instance
-window.templateLoader = new window.templateLoader || new TemplateLoader();
+window.templateLoader = window.templateLoader || new TemplateLoader();
 
 // Export for module usage
 export default TemplateLoader;
