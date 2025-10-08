@@ -422,7 +422,7 @@ pytest --cov=frontend/js/modules/instructor-dashboard --cov-report=html tests/
 
 ### Related Files
 - **Source Code**: `/frontend/js/modules/instructor-dashboard.js` (2320 lines)
-- **HTML Template**: `/frontend/html/instructor-dashboard-refactored.html`
+- **HTML Template**: `/frontend/html/instructor-dashboard-modular.html`
 - **Component Files**:
   - `/frontend/js/components/component-loader.js`
   - `/frontend/js/components/course-manager.js`

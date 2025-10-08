@@ -21,7 +21,7 @@ from typing import List, Dict, Any
 
 # File paths
 INSTRUCTOR_DASHBOARD_JS = Path("/home/bbrelin/course-creator/frontend/js/modules/instructor-dashboard.js")
-INSTRUCTOR_DASHBOARD_HTML = Path("/home/bbrelin/course-creator/frontend/html/instructor-dashboard-refactored.html")
+INSTRUCTOR_DASHBOARD_HTML = Path("/home/bbrelin/course-creator/frontend/html/instructor-dashboard-modular.html")
 COMPONENT_FILES = [
     Path("/home/bbrelin/course-creator/frontend/js/components/component-loader.js"),
     Path("/home/bbrelin/course-creator/frontend/js/components/course-manager.js"),

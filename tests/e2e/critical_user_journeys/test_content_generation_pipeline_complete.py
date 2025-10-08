@@ -49,8 +49,8 @@ from e2e.selenium_base import BaseTest, BasePage
 
 # Test Configuration
 BASE_URL = "https://localhost:3000"
-INSTRUCTOR_DASHBOARD_URL = f"{BASE_URL}/frontend/html/instructor-dashboard-refactored.html"
-LOGIN_URL = f"{BASE_URL}/frontend/html/index.html"
+INSTRUCTOR_DASHBOARD_URL = f"{BASE_URL}/html/instructor-dashboard-modular.html"
+LOGIN_URL = f"{BASE_URL}/html/index.html"
 
 # Test Credentials
 TEST_INSTRUCTOR_EMAIL = "instructor@example.com"

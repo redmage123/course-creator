@@ -1144,7 +1144,7 @@ class TestRestrictedAccess(BaseTest):
         - No instructor content accessible
         """
         # Try to access instructor dashboard
-        self.driver.get(f"{self.config.base_url}/frontend/html/instructor-dashboard-refactored.html")
+        self.driver.get(f"{self.config.base_url}/frontend/html/instructor-dashboard-modular.html")
         time.sleep(2)
 
         current_url = self.driver.current_url

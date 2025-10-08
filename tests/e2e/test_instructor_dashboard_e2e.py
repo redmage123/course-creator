@@ -25,7 +25,7 @@ from typing import Optional
 
 # Test Configuration
 BASE_URL = "http://localhost"
-INSTRUCTOR_DASHBOARD_URL = f"{BASE_URL}/frontend/html/instructor-dashboard-refactored.html"
+INSTRUCTOR_DASHBOARD_URL = f"{BASE_URL}/frontend/html/instructor-dashboard-modular.html"
 LOGIN_URL = f"{BASE_URL}/frontend/html/index.html"
 
 # Test Credentials
