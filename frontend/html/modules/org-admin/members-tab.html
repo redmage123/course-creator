@@ -1,0 +1,86 @@
+<!-- Org Admin - Members Tab Content -->
+<div class="tab-content-wrapper">
+    <section class="section-card" role="region" aria-labelledby="members-title">
+        <div class="section-header">
+            <div class="section-title-group">
+                <h2 class="section-title" id="members-title">
+                    <i class="fas fa-users"></i>
+                    <span>Organization Members</span>
+                </h2>
+                <p class="section-description">Manage instructors, students, and other members</p>
+            </div>
+            <div class="section-actions">
+                <button class="action-btn action-btn-primary" onclick="openInviteMemberModal()">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Invite Member</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="section-content">
+            <!-- Filters -->
+            <div class="filters-bar">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input
+                        type="text"
+                        id="memberSearchInput"
+                        placeholder="Search members..."
+                        oninput="filterMembers()"
+                        aria-label="Search members"
+                    >
+                </div>
+                <div class="filter-group">
+                    <label for="memberRoleFilter">Role:</label>
+                    <select
+                        id="memberRoleFilter"
+                        class="filter-select"
+                        onchange="filterMembers()"
+                        aria-label="Filter by role"
+                    >
+                        <option value="all">All Roles</option>
+                        <option value="instructor">Instructors</option>
+                        <option value="student">Students</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Members Table -->
+            <div class="data-table-wrapper" role="region" aria-labelledby="members-table-caption" tabindex="0">
+                <table class="data-table" id="membersTable">
+                    <caption id="members-table-caption" class="sr-only">Organization members</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col" class="sortable" data-sort="name" role="columnheader" tabindex="0">
+                                <div class="table-header-content">
+                                    <span>Name</span>
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </div>
+                            </th>
+                            <th scope="col">Email</th>
+                            <th scope="col">Role</th>
+                            <th scope="col" class="sortable" data-sort="joined" role="columnheader" tabindex="0">
+                                <div class="table-header-content">
+                                    <span>Joined</span>
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </div>
+                            </th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="membersList">
+                        <tr>
+                            <td colspan="6" class="table-empty">
+                                <div class="empty-state">
+                                    <i class="fas fa-users"></i>
+                                    <p>No members found</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</div>

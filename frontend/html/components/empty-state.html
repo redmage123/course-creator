@@ -1,0 +1,82 @@
+<!-- Empty State Component - Reusable Empty State Message -->
+<div class="empty-state-container" role="status" aria-live="polite">
+    <div class="empty-state-icon" aria-hidden="true">
+        <i class="{{icon}}"></i>
+    </div>
+    <h3 class="empty-state-title">{{title}}</h3>
+    <p class="empty-state-description">{{description}}</p>
+    {{#if actionLabel}}
+    <button class="empty-state-action" onclick="{{actionHandler}}">
+        {{#if actionIcon}}
+        <i class="{{actionIcon}}"></i>
+        {{/if}}
+        <span>{{actionLabel}}</span>
+    </button>
+    {{/if}}
+</div>
+
+<style>
+    .empty-state-container {
+        text-align: center;
+        padding: var(--space-12) var(--space-6);
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    .empty-state-icon {
+        font-size: 4rem;
+        color: var(--gray-400);
+        margin-bottom: var(--space-4);
+    }
+
+    .empty-state-icon i {
+        display: block;
+    }
+
+    .empty-state-title {
+        font-size: var(--text-xl);
+        font-weight: var(--weight-semibold);
+        color: var(--text-primary);
+        margin: 0 0 var(--space-3) 0;
+    }
+
+    .empty-state-description {
+        font-size: var(--text-base);
+        color: var(--text-secondary);
+        line-height: var(--leading-relaxed);
+        margin: 0 0 var(--space-6) 0;
+    }
+
+    .empty-state-action {
+        height: 44px;
+        padding: 0 var(--space-6);
+        font-family: var(--font-primary);
+        font-size: var(--text-base);
+        font-weight: var(--weight-semibold);
+        background: var(--primary-600);
+        color: white;
+        border: 2px solid var(--primary-600);
+        border-radius: var(--radius-lg);
+        cursor: pointer;
+        transition: all var(--transition-base);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-2);
+    }
+
+    .empty-state-action:hover {
+        background: var(--primary-700);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .empty-state-action:focus {
+        outline: 2px solid var(--primary-600);
+        outline-offset: 2px;
+    }
+
+    .empty-state-action:active {
+        transform: translateY(0);
+    }
+</style>

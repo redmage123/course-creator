@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site Admin Dashboard - Course Creator Platform</title>
+
+    <!-- Design System & Modules -->
+    <link rel="stylesheet" href="../css/design-system.css?v=5.5">
+    <link rel="stylesheet" href="../css/components/header-footer.css?v=5.5">
+    <link rel="stylesheet" href="../css/components/modals.css?v=5.5">
+    <link rel="stylesheet" href="../css/modules/dashboard.css?v=5.5">
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body class="dashboard-page">
+    <!-- Header with User Dropdown -->
+    <header class="site-header" role="banner">
+        <div class="header-container">
+            <a href="/html/index.html" class="header-logo" aria-label="Course Creator Home">
+                <i class="fas fa-graduation-cap"></i>
+                <span>Course Creator</span>
+            </a>
+            <div class="header-actions">
+                <div id="userDropdown" class="user-dropdown">
+                    <button class="user-trigger" aria-expanded="false" aria-haspopup="true">
+                        <div class="user-avatar">
+                            <span id="userInitials">SA</span>
+                        </div>
+                        <span id="userName">Site Admin</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="user-menu" id="userMenu">
+                        <a href="/html/site-admin-dashboard.html"><i class="fas fa-th-large"></i> Dashboard</a>
+                        <a href="/html/password-change.html"><i class="fas fa-key"></i> Change Password</a>
+                        <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Dashboard Container -->
+    <div class="dashboard-container">
+        <!-- Sidebar Navigation -->
+        <nav class="dashboard-sidebar" role="navigation" aria-label="Dashboard navigation">
+            <div class="sidebar-content">
+                <div class="sidebar-header">
+                    <div class="sidebar-title">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Site Admin</span>
+                    </div>
+                </div>
+
+                <div class="sidebar-nav">
+                    <ul role="menu">
+                        <li role="none">
+                            <a href="#overview" class="sidebar-nav-link active" data-tab="overview" role="menuitem">
+                                <i class="fas fa-chart-line"></i>
+                                <span>Platform Overview</span>
+                            </a>
+                        </li>
+                        <li role="none">
+                            <a href="#organizations" class="sidebar-nav-link" data-tab="organizations" role="menuitem">
+                                <i class="fas fa-building"></i>
+                                <span>Organizations</span>
+                            </a>
+                        </li>
+                        <li role="none">
+                            <a href="#users" class="sidebar-nav-link" data-tab="users" role="menuitem">
+                                <i class="fas fa-users"></i>
+                                <span>Users</span>
+                            </a>
+                        </li>
+                        <li role="none">
+                            <a href="#integrations" class="sidebar-nav-link" data-tab="integrations" role="menuitem">
+                                <i class="fas fa-plug"></i>
+                                <span>Integrations</span>
+                            </a>
+                        </li>
+                        <li role="none">
+                            <a href="#audit" class="sidebar-nav-link" data-tab="audit" role="menuitem">
+                                <i class="fas fa-history"></i>
+                                <span>Audit Log</span>
+                            </a>
+                        </li>
+                        <li role="none">
+                            <a href="#settings" class="sidebar-nav-link" data-tab="settings" role="menuitem">
+                                <i class="fas fa-cog"></i>
+                                <span>System Settings</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="dashboard-main" role="main">
+            <!-- Page Header -->
+            <div class="dashboard-header-section">
+                <div class="dashboard-welcome">
+                    <h1>Site Administrator Dashboard</h1>
+                    <p>Manage the entire Course Creator Platform</p>
+                </div>
+            </div>
+
+            <!-- Tab Content Container (Dynamically Loaded) -->
+            <div id="tabContentContainer" class="tab-content active">
+                <!-- Tab content will be dynamically loaded here -->
+                <div class="loading-overlay" id="loadingOverlay">
+                    <div class="loading-content">
+                        <div class="loading-spinner"></div>
+                        <p>Loading...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Delete Organization Modal -->
+    <div id="deleteOrgModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Delete Organization</h2>
+                <button class="modal-close" onclick="closeModal('deleteOrgModal')" aria-label="Close modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: var(--space-4); color: var(--text-secondary);">
+                    This will permanently delete the organization and all associated data:
+                </p>
+                <ul style="list-style: disc; padding-left: var(--space-6); margin-bottom: var(--space-4); color: var(--text-secondary);">
+                    <li>Organization profile and settings</li>
+                    <li>All associated projects and tracks</li>
+                    <li>User memberships (users remain in system)</li>
+                    <li>Meeting rooms and scheduling data</li>
+                </ul>
+                <div class="alert alert-warning">
+                    <div class="alert-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="alert-content">
+                        <div class="alert-message">
+                            Type the organization name to confirm deletion
+                        </div>
+                    </div>
+                </div>
+                <input type="text"
+                       id="deleteOrgConfirmInput"
+                       class="filter-input"
+                       placeholder="Type organization name"
+                       style="width: 100%; margin-top: var(--space-4);"
+                       oninput="document.getElementById('confirmDeleteBtn').disabled = this.value !== window.organizationToDelete?.name">
+            </div>
+            <div class="modal-footer">
+                <button class="action-btn action-btn-ghost" onclick="closeModal('deleteOrgModal')">Cancel</button>
+                <button class="action-btn action-btn-danger" onclick="confirmDeleteOrganization()" id="confirmDeleteBtn" disabled>
+                    <i class="fas fa-trash"></i>
+                    <span>Delete Organization</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="../js/components/TemplateLoader.js"></script>
+    <script src="../js/site-admin-dashboard.js"></script>
+    <script>
+        /**
+         * MODULAR DASHBOARD ARCHITECTURE
+         *
+         * SOLID Principles Implementation:
+         * - Single Responsibility: Each tab module handles one specific area
+         * - Open/Closed: Can add new tabs without modifying this file
+         * - Dependency Inversion: Depends on TemplateLoader abstraction
+         */
+
+        // Tab configuration mapping
+        const TAB_MODULES = {
+            overview: 'modules/site-admin/overview-tab.html',
+            organizations: 'modules/site-admin/organizations-tab.html',
+            users: 'modules/site-admin/users-tab.html',
+            integrations: 'modules/site-admin/integrations-tab.html',
+            audit: 'modules/site-admin/audit-tab.html',
+            settings: 'modules/site-admin/settings-tab.html'
+        };
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', async () => {
+            initializeAuth();
+            initializeTabNavigation();
+            await loadTabContent('overview'); // Load default tab
+        });
+
+        /**
+         * Initialize tab navigation system
+         */
+        function initializeTabNavigation() {
+            const navLinks = document.querySelectorAll('.sidebar-nav-link[data-tab]');
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    const tab = link.dataset.tab;
+
+                    // Update active state
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+
+                    // Load tab content
+                    await loadTabContent(tab);
+                });
+            });
+        }
+
+        /**
+         * Dynamically load tab content using TemplateLoader
+         *
+         * @param {string} tabName - Name of the tab to load
+         */
+        async function loadTabContent(tabName) {
+            const container = document.getElementById('tabContentContainer');
+            const overlay = document.getElementById('loadingOverlay');
+            const modulePath = TAB_MODULES[tabName];
+
+            if (!modulePath) {
+                console.error(`Tab module not found: ${tabName}`);
+                return;
+            }
+
+            // Show loading state
+            overlay.style.display = 'flex';
+
+            try {
+                // Load tab content using TemplateLoader
+                const html = await window.templateLoader.loadTemplate(modulePath);
+                container.innerHTML = html;
+
+                // Dispatch tab change event for other components
+                document.dispatchEvent(new CustomEvent('dashboardTabChange', {
+                    detail: { tab: tabName }
+                }));
+
+                // Initialize tab-specific functionality
+                initializeTabSpecificFeatures(tabName);
+            } catch (error) {
+                console.error(`Error loading tab ${tabName}:`, error);
+                container.innerHTML = `
+                    <div class="alert alert-error">
+                        <div class="alert-icon"><i class="fas fa-exclamation-circle"></i></div>
+                        <div class="alert-content">
+                            <div class="alert-title">Error Loading Content</div>
+                            <div class="alert-message">Failed to load ${tabName} content. Please try again.</div>
+                        </div>
+                    </div>
+                `;
+            } finally {
+                // Hide loading state
+                overlay.style.display = 'none';
+            }
+        }
+
+        /**
+         * Initialize tab-specific features after content is loaded
+         */
+        function initializeTabSpecificFeatures(tabName) {
+            switch (tabName) {
+                case 'overview':
+                    if (window.siteAdmin) window.siteAdmin.loadPlatformStats();
+                    break;
+                case 'organizations':
+                    if (window.siteAdmin) window.siteAdmin.refreshOrganizations();
+                    break;
+                case 'users':
+                    if (window.siteAdmin) window.siteAdmin.refreshUsers();
+                    break;
+                case 'audit':
+                    if (window.siteAdmin) window.siteAdmin.refreshAuditLog();
+                    break;
+            }
+        }
+
+        /**
+         * Initialize authentication and user info
+         */
+        function initializeAuth() {
+            const authToken = localStorage.getItem('authToken');
+            const userRole = localStorage.getItem('userRole');
+            const userName = localStorage.getItem('userName');
+
+            if (!authToken || userRole !== 'site_admin') {
+                console.warn('Unauthorized access to Site Admin Dashboard');
+                window.location.href = '/html/index.html';
+                return;
+            }
+
+            // Set user info in UI
+            if (userName) {
+                document.getElementById('userName').textContent = userName;
+                const initials = userName.split(' ').map(n => n[0]).join('').toUpperCase();
+                document.getElementById('userInitials').textContent = initials;
+            }
+
+            // Initialize user dropdown
+            const userTrigger = document.querySelector('.user-trigger');
+            const userMenu = document.getElementById('userMenu');
+
+            if (userTrigger && userMenu) {
+                userTrigger.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isActive = userMenu.classList.toggle('active');
+                    userTrigger.setAttribute('aria-expanded', isActive);
+                });
+
+                document.addEventListener('click', () => {
+                    userMenu.classList.remove('active');
+                    userTrigger.setAttribute('aria-expanded', 'false');
+                });
+            }
+        }
+
+        /**
+         * Logout function
+         */
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = '/html/index.html';
+            }
+        }
+
+        // Global function wrappers for tab content to call
+        function filterOrganizations() { if (window.siteAdmin) window.siteAdmin.filterOrganizations(); }
+        function searchOrganizations() { if (window.siteAdmin) window.siteAdmin.searchOrganizations(); }
+        function refreshOrganizations() { if (window.siteAdmin) window.siteAdmin.refreshOrganizations(); }
+        function filterUsers() { if (window.siteAdmin) window.siteAdmin.filterUsers(); }
+        function refreshUsers() { if (window.siteAdmin) window.siteAdmin.refreshUsers(); }
+        function filterAuditLog() { if (window.siteAdmin) window.siteAdmin.filterAuditLog(); }
+        function refreshAuditLog() { if (window.siteAdmin) window.siteAdmin.refreshAuditLog(); }
+        function exportAuditLog() { if (window.siteAdmin) window.siteAdmin.exportAuditLog(); }
+        function refreshPlatformStats() { if (window.siteAdmin) window.siteAdmin.loadPlatformStats(); }
+        function runHealthCheck() { if (window.siteAdmin) window.siteAdmin.loadIntegrationStatus(); }
+        function viewSystemLogs() { alert('System logs feature coming soon'); }
+        function exportPlatformReport() { alert('Platform report export feature coming soon'); }
+        function configureMicrosoftTeams() { alert('Microsoft Teams integration coming soon'); }
+        function configureGoogleWorkspace() { alert('Google Workspace integration coming soon'); }
+        function configureSlack() { alert('Slack integration coming soon'); }
+        function configureGitHub() { alert('GitHub integration coming soon'); }
+        function saveSystemSettings() { alert('Save settings feature coming soon'); }
+        function toggleMaintenanceMode() { alert('Maintenance mode feature coming soon'); }
+        function closeModal(modalId) { if (window.siteAdmin) window.siteAdmin.closeModal(modalId); }
+        function confirmDeleteOrganization() { if (window.siteAdmin) window.siteAdmin.confirmDeleteOrganization(); }
+    </script>
+</body>
+</html>

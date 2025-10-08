@@ -1,0 +1,169 @@
+<!-- Action Button Component - Reusable Action Button -->
+<button
+    class="action-btn action-btn-{{variant}}"
+    onclick="{{handler}}"
+    {{#if disabled}}disabled{{/if}}
+    {{#if ariaLabel}}aria-label="{{ariaLabel}}"{{/if}}
+    type="button"
+>
+    {{#if icon}}
+    <i class="{{icon}}" aria-hidden="true"></i>
+    {{/if}}
+    <span>{{label}}</span>
+    {{#if badge}}
+    <span class="action-btn-badge" aria-label="{{badgeLabel}}">{{badge}}</span>
+    {{/if}}
+</button>
+
+<style>
+    .action-btn {
+        height: 44px;
+        padding: 0 var(--space-5);
+        font-family: var(--font-primary);
+        font-size: var(--text-base);
+        font-weight: var(--weight-medium);
+        border-radius: var(--radius-lg);
+        border: 2px solid transparent;
+        cursor: pointer;
+        transition: all var(--transition-base);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-2);
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .action-btn:focus {
+        outline: 2px solid var(--primary-600);
+        outline-offset: 2px;
+    }
+
+    .action-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        pointer-events: none;
+    }
+
+    /* Primary variant */
+    .action-btn-primary {
+        background: var(--primary-600);
+        color: white;
+        border-color: var(--primary-600);
+    }
+
+    .action-btn-primary:hover:not(:disabled) {
+        background: var(--primary-700);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    .action-btn-primary:active:not(:disabled) {
+        transform: translateY(0);
+    }
+
+    /* Secondary variant */
+    .action-btn-secondary {
+        background: var(--gray-900);
+        color: white;
+        border-color: var(--gray-900);
+    }
+
+    .action-btn-secondary:hover:not(:disabled) {
+        background: var(--gray-800);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    /* Outline variant */
+    .action-btn-outline {
+        background: transparent;
+        color: var(--primary-600);
+        border-color: var(--primary-600);
+    }
+
+    .action-btn-outline:hover:not(:disabled) {
+        background: var(--primary-50);
+        border-color: var(--primary-700);
+        color: var(--primary-700);
+    }
+
+    /* Ghost variant */
+    .action-btn-ghost {
+        background: transparent;
+        color: var(--text-primary);
+        border-color: transparent;
+    }
+
+    .action-btn-ghost:hover:not(:disabled) {
+        background: var(--gray-100);
+    }
+
+    /* Danger variant */
+    .action-btn-danger {
+        background: var(--error-600);
+        color: white;
+        border-color: var(--error-600);
+    }
+
+    .action-btn-danger:hover:not(:disabled) {
+        background: var(--error-700);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    /* Success variant */
+    .action-btn-success {
+        background: var(--success-600);
+        color: white;
+        border-color: var(--success-600);
+    }
+
+    .action-btn-success:hover:not(:disabled) {
+        background: var(--success-700);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+
+    /* Badge */
+    .action-btn-badge {
+        background: rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 0 var(--space-2);
+        border-radius: var(--radius-full);
+        font-size: var(--text-xs);
+        font-weight: var(--weight-semibold);
+        min-width: 20px;
+        height: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Size variants */
+    .action-btn-sm {
+        height: 36px;
+        padding: 0 var(--space-4);
+        font-size: var(--text-sm);
+    }
+
+    .action-btn-lg {
+        height: 52px;
+        padding: 0 var(--space-6);
+        font-size: var(--text-lg);
+    }
+
+    /* Icon only */
+    .action-btn-icon {
+        width: 44px;
+        padding: 0;
+    }
+
+    .action-btn-icon.action-btn-sm {
+        width: 36px;
+    }
+
+    .action-btn-icon.action-btn-lg {
+        width: 52px;
+    }
+</style>

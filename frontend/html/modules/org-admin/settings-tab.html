@@ -1,0 +1,144 @@
+<!-- Org Admin - Settings Tab Content -->
+<div class="tab-content-wrapper">
+    <section class="section-card" role="region" aria-labelledby="settings-title">
+        <div class="section-header">
+            <div class="section-title-group">
+                <h2 class="section-title" id="settings-title">
+                    <i class="fas fa-cog"></i>
+                    <span>Organization Settings</span>
+                </h2>
+                <p class="section-description">Configure organization preferences and details</p>
+            </div>
+            <div class="section-actions">
+                <button class="action-btn action-btn-success" onclick="saveOrgSettings()">
+                    <i class="fas fa-save"></i>
+                    <span>Save Settings</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="section-content">
+            <!-- General Settings -->
+            <div style="margin-bottom: var(--space-8);">
+                <h3 style="font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--text-primary); margin: 0 0 var(--space-4) 0;">
+                    General Settings
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+                    <div>
+                        <label for="orgName" style="display: block; font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--text-primary); margin-bottom: var(--space-2);">
+                            Organization Name
+                        </label>
+                        <input
+                            type="text"
+                            id="orgName"
+                            class="filter-input"
+                            placeholder="Enter organization name"
+                            style="width: 100%; max-width: 500px;"
+                        >
+                    </div>
+                    <div>
+                        <label for="orgDescription" style="display: block; font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--text-primary); margin-bottom: var(--space-2);">
+                            Description
+                        </label>
+                        <textarea
+                            id="orgDescription"
+                            class="filter-input"
+                            placeholder="Enter organization description"
+                            rows="4"
+                            style="width: 100%; max-width: 500px; resize: vertical;"
+                        ></textarea>
+                    </div>
+                    <div>
+                        <label for="orgWebsite" style="display: block; font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--text-primary); margin-bottom: var(--space-2);">
+                            Website
+                        </label>
+                        <input
+                            type="url"
+                            id="orgWebsite"
+                            class="filter-input"
+                            placeholder="https://your-organization.com"
+                            style="width: 100%; max-width: 500px;"
+                        >
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Information -->
+            <div style="margin-bottom: var(--space-8);">
+                <h3 style="font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--text-primary); margin: 0 0 var(--space-4) 0;">
+                    Contact Information
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+                    <div>
+                        <label for="contactEmail" style="display: block; font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--text-primary); margin-bottom: var(--space-2);">
+                            Contact Email
+                        </label>
+                        <input
+                            type="email"
+                            id="contactEmail"
+                            class="filter-input"
+                            placeholder="contact@organization.com"
+                            style="width: 100%; max-width: 500px;"
+                        >
+                    </div>
+                    <div>
+                        <label for="contactPhone" style="display: block; font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--text-primary); margin-bottom: var(--space-2);">
+                            Phone Number
+                        </label>
+                        <input
+                            type="tel"
+                            id="contactPhone"
+                            class="filter-input"
+                            placeholder="+1 (555) 000-0000"
+                            style="width: 100%; max-width: 500px;"
+                        >
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preferences -->
+            <div style="margin-bottom: var(--space-8);">
+                <h3 style="font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--text-primary); margin: 0 0 var(--space-4) 0;">
+                    Preferences
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+                    <div style="display: flex; align-items: center; gap: var(--space-3);">
+                        <input type="checkbox" id="allowSelfRegistration" style="width: 20px; height: 20px;">
+                        <label for="allowSelfRegistration" style="font-size: var(--text-sm); color: var(--text-primary);">
+                            Allow self-registration for students
+                        </label>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: var(--space-3);">
+                        <input type="checkbox" id="requireApproval" style="width: 20px; height: 20px;" checked>
+                        <label for="requireApproval" style="font-size: var(--text-sm); color: var(--text-primary);">
+                            Require admin approval for new members
+                        </label>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: var(--space-3);">
+                        <input type="checkbox" id="enableNotifications" style="width: 20px; height: 20px;" checked>
+                        <label for="enableNotifications" style="font-size: var(--text-sm); color: var(--text-primary);">
+                            Enable email notifications
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="alert alert-error">
+                <div class="alert-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="alert-content">
+                    <div class="alert-title">Danger Zone</div>
+                    <div class="alert-message">
+                        Deleting your organization is permanent and cannot be undone
+                    </div>
+                </div>
+                <button class="action-btn action-btn-danger" onclick="confirmDeleteOrganization()">
+                    <i class="fas fa-trash"></i>
+                    <span>Delete Organization</span>
+                </button>
+            </div>
+        </div>
+    </section>
+</div>

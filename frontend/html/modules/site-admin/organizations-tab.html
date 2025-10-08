@@ -1,0 +1,96 @@
+<!-- Site Admin - Organizations Tab Content -->
+<div class="tab-content-wrapper">
+    <section class="section-card" role="region" aria-labelledby="organizations-title">
+        <div class="section-header">
+            <div class="section-title-group">
+                <h2 class="section-title" id="organizations-title">
+                    <i class="fas fa-building"></i>
+                    <span>Organizations</span>
+                </h2>
+                <p class="section-description">Manage all organizations on the platform</p>
+            </div>
+            <div class="section-actions">
+                <button class="action-btn action-btn-primary" onclick="refreshOrganizations()">
+                    <i class="fas fa-sync"></i>
+                    <span>Refresh</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="section-content">
+            <!-- Filters -->
+            <div class="filters-bar">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input
+                        type="text"
+                        id="orgSearchInput"
+                        placeholder="Search organizations..."
+                        oninput="searchOrganizations()"
+                        aria-label="Search organizations"
+                    >
+                </div>
+                <div class="filter-group">
+                    <label for="orgStatusFilter">Status:</label>
+                    <select
+                        id="orgStatusFilter"
+                        class="filter-select"
+                        onchange="filterOrganizations()"
+                        aria-label="Filter by status"
+                    >
+                        <option value="all">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Organizations Table -->
+            <div class="data-table-wrapper" role="region" aria-labelledby="organizations-table-caption" tabindex="0">
+                <table class="data-table" id="organizationsTable">
+                    <caption id="organizations-table-caption" class="sr-only">Organizations list</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col" class="sortable" data-sort="name" role="columnheader" tabindex="0">
+                                <div class="table-header-content">
+                                    <span>Organization</span>
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </div>
+                            </th>
+                            <th scope="col" class="sortable" data-sort="members" role="columnheader" tabindex="0">
+                                <div class="table-header-content">
+                                    <span>Members</span>
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </div>
+                            </th>
+                            <th scope="col" class="sortable" data-sort="projects" role="columnheader" tabindex="0">
+                                <div class="table-header-content">
+                                    <span>Projects</span>
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </div>
+                            </th>
+                            <th scope="col">Status</th>
+                            <th scope="col" class="sortable" data-sort="created" role="columnheader" tabindex="0">
+                                <div class="table-header-content">
+                                    <span>Created</span>
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </div>
+                            </th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="organizationsList">
+                        <tr>
+                            <td colspan="6" class="table-empty">
+                                <div class="empty-state">
+                                    <i class="fas fa-building"></i>
+                                    <p>No organizations found</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</div>

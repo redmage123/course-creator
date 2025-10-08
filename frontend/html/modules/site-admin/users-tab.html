@@ -1,0 +1,93 @@
+<!-- Site Admin - Users Tab Content -->
+<div class="tab-content-wrapper">
+    <section class="section-card" role="region" aria-labelledby="users-title">
+        <div class="section-header">
+            <div class="section-title-group">
+                <h2 class="section-title" id="users-title">
+                    <i class="fas fa-users"></i>
+                    <span>Platform Users</span>
+                </h2>
+                <p class="section-description">Manage all users across the platform</p>
+            </div>
+            <div class="section-actions">
+                <button class="action-btn action-btn-primary" onclick="refreshUsers()">
+                    <i class="fas fa-sync"></i>
+                    <span>Refresh</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="section-content">
+            <!-- Filters -->
+            <div class="filters-bar">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input
+                        type="text"
+                        id="userSearchInput"
+                        placeholder="Search users..."
+                        oninput="filterUsers()"
+                        aria-label="Search users"
+                    >
+                </div>
+                <div class="filter-group">
+                    <label for="userRoleFilter">Role:</label>
+                    <select
+                        id="userRoleFilter"
+                        class="filter-select"
+                        onchange="filterUsers()"
+                        aria-label="Filter by role"
+                    >
+                        <option value="all">All Roles</option>
+                        <option value="site_admin">Site Admin</option>
+                        <option value="organization_admin">Organization Admin</option>
+                        <option value="instructor">Instructor</option>
+                        <option value="student">Student</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Users Table -->
+            <div class="data-table-wrapper" role="region" aria-labelledby="users-table-caption" tabindex="0">
+                <table class="data-table" id="usersTable">
+                    <caption id="users-table-caption" class="sr-only">Platform users list</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col" class="sortable" data-sort="name" role="columnheader" tabindex="0">
+                                <div class="table-header-content">
+                                    <span>Name</span>
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </div>
+                            </th>
+                            <th scope="col" class="sortable" data-sort="email" role="columnheader" tabindex="0">
+                                <div class="table-header-content">
+                                    <span>Email</span>
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </div>
+                            </th>
+                            <th scope="col">Role</th>
+                            <th scope="col">Organization</th>
+                            <th scope="col" class="sortable" data-sort="lastLogin" role="columnheader" tabindex="0">
+                                <div class="table-header-content">
+                                    <span>Last Login</span>
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </div>
+                            </th>
+                            <th scope="col">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersList">
+                        <tr>
+                            <td colspan="6" class="table-empty">
+                                <div class="empty-state">
+                                    <i class="fas fa-users"></i>
+                                    <p>No users found</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</div>

@@ -1,0 +1,34 @@
+<!-- Instructor - Course Instances Tab Content -->
+<div class="tab-content-wrapper">
+                <section id="course-instances-section" class="content-section">
+                    <div class="section-header">
+                        <h2>Course Instances</h2>
+                        <p>Manage scheduled course sessions and student enrollment</p>
+                        <div class="header-actions">
+                            <button class="btn btn-primary" onclick="showCreateInstanceModal()">
+                                <i class="fas fa-plus"></i> Create New Instance
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="instances-filters">
+                        <select id="instanceStatusFilter" onchange="filterInstances()">
+                            <option value="all">All Instances</option>
+                            <option value="scheduled">Scheduled</option>
+                            <option value="active">Active</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                        <div class="search-box">
+                            <input type="text" id="instanceSearch" placeholder="Search instances..." onkeyup="searchInstances()">
+                            <i class="fas fa-search"></i>
+                        </div>
+                    </div>
+
+                    <div id="courseInstancesContainer" class="instances-grid">
+                        <div class="loading-indicator">
+                            <i class="fas fa-spinner fa-spin"></i> Loading course instances...
+                        </div>
+                    </div>
+                </section>
+</div>

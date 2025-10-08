@@ -1,0 +1,56 @@
+<!-- Instructor - Students Tab Content -->
+<div class="tab-content-wrapper">
+                <section id="students-section" class="content-section">
+                    <div class="section-header">
+                        <h2>Student Management</h2>
+                        <p>Manage enrollments and track student progress</p>
+                    </div>
+                    <div class="student-management-section">
+                        <div class="course-selector">
+                            <label for="selectedCourse">Select Course:</label>
+                            <select id="selectedCourse" onchange="loadCourseStudents()">
+                                <option value="">Select a course...</option>
+                            </select>
+                        </div>
+
+                        <div class="enrollment-section">
+                            <h4>Enroll Students</h4>
+                            <div class="enrollment-methods">
+                                <div class="single-enrollment">
+                                    <h5>Single Student</h5>
+                                    <form id="singleEnrollmentForm">
+                                        <div class="form-group">
+                                            <label for="studentEmail">Student Email</label>
+                                            <input type="email" id="studentEmail" name="email" required>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-user-plus"></i> Enroll Student
+                                        </button>
+                                    </form>
+                                </div>
+
+                                <div class="bulk-enrollment">
+                                    <h5>Bulk Enrollment</h5>
+                                    <form id="bulkEnrollmentForm">
+                                        <div class="form-group">
+                                            <label for="studentEmails">Student Emails (one per line)</label>
+                                            <textarea id="studentEmails" name="emails" rows="8"
+                                                    placeholder="student1@example.com&#10;student2@example.com&#10;student3@example.com"></textarea>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-users"></i> Enroll Students
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="enrolled-students-section">
+                            <h4>Enrolled Students</h4>
+                            <div id="enrolled-students-list">
+                                <!-- Enrolled students will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+</div>

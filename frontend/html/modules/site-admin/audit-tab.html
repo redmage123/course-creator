@@ -1,0 +1,102 @@
+<!-- Site Admin - Audit Log Tab Content -->
+<div class="tab-content-wrapper">
+    <section class="section-card" role="region" aria-labelledby="audit-title">
+        <div class="section-header">
+            <div class="section-title-group">
+                <h2 class="section-title" id="audit-title">
+                    <i class="fas fa-history"></i>
+                    <span>Audit Log</span>
+                </h2>
+                <p class="section-description">System-wide activity and security audit trail</p>
+            </div>
+            <div class="section-actions">
+                <button class="action-btn action-btn-outline" onclick="exportAuditLog()">
+                    <i class="fas fa-download"></i>
+                    <span>Export</span>
+                </button>
+                <button class="action-btn action-btn-primary" onclick="refreshAuditLog()">
+                    <i class="fas fa-sync"></i>
+                    <span>Refresh</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="section-content">
+            <!-- Filters -->
+            <div class="filters-bar">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input
+                        type="text"
+                        id="auditSearchInput"
+                        placeholder="Search audit log..."
+                        oninput="filterAuditLog()"
+                        aria-label="Search audit log"
+                    >
+                </div>
+                <div class="filter-group">
+                    <label for="auditTypeFilter">Type:</label>
+                    <select
+                        id="auditTypeFilter"
+                        class="filter-select"
+                        onchange="filterAuditLog()"
+                        aria-label="Filter by event type"
+                    >
+                        <option value="all">All Events</option>
+                        <option value="auth">Authentication</option>
+                        <option value="user">User Changes</option>
+                        <option value="org">Organization Changes</option>
+                        <option value="config">Configuration</option>
+                        <option value="security">Security</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="auditDateFilter">Date:</label>
+                    <select
+                        id="auditDateFilter"
+                        class="filter-select"
+                        onchange="filterAuditLog()"
+                        aria-label="Filter by date range"
+                    >
+                        <option value="today">Today</option>
+                        <option value="week">Last 7 Days</option>
+                        <option value="month">Last 30 Days</option>
+                        <option value="all">All Time</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Audit Log Table -->
+            <div class="data-table-wrapper" role="region" aria-labelledby="audit-table-caption" tabindex="0">
+                <table class="data-table" id="auditTable">
+                    <caption id="audit-table-caption" class="sr-only">Audit log entries</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col" class="sortable" data-sort="timestamp" role="columnheader" tabindex="0">
+                                <div class="table-header-content">
+                                    <span>Timestamp</span>
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </div>
+                            </th>
+                            <th scope="col">Event Type</th>
+                            <th scope="col">User</th>
+                            <th scope="col">Action</th>
+                            <th scope="col">Details</th>
+                            <th scope="col">IP Address</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditLogList">
+                        <tr>
+                            <td colspan="6" class="table-empty">
+                                <div class="empty-state">
+                                    <i class="fas fa-history"></i>
+                                    <p>No audit log entries found</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</div>

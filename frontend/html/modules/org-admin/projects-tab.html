@@ -1,0 +1,91 @@
+<!-- Org Admin - Projects Tab Content -->
+<div class="tab-content-wrapper">
+    <section class="section-card" role="region" aria-labelledby="projects-title">
+        <div class="section-header">
+            <div class="section-title-group">
+                <h2 class="section-title" id="projects-title">
+                    <i class="fas fa-project-diagram"></i>
+                    <span>Projects</span>
+                </h2>
+                <p class="section-description">Manage organization projects and assignments</p>
+            </div>
+            <div class="section-actions">
+                <button class="action-btn action-btn-primary" onclick="openCreateProjectModal()">
+                    <i class="fas fa-plus"></i>
+                    <span>Create Project</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="section-content">
+            <!-- Filters -->
+            <div class="filters-bar">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input
+                        type="text"
+                        id="projectSearchInput"
+                        placeholder="Search projects..."
+                        oninput="searchProjects()"
+                        aria-label="Search projects"
+                    >
+                </div>
+                <div class="filter-group">
+                    <label for="projectStatusFilter">Status:</label>
+                    <select
+                        id="projectStatusFilter"
+                        class="filter-select"
+                        onchange="filterProjects()"
+                        aria-label="Filter by status"
+                    >
+                        <option value="all">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="archived">Archived</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Projects Table -->
+            <div class="data-table-wrapper" role="region" aria-labelledby="projects-table-caption" tabindex="0">
+                <table class="data-table" id="projectsTable">
+                    <caption id="projects-table-caption" class="sr-only">Organization projects</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col" class="sortable" data-sort="name" role="columnheader" tabindex="0">
+                                <div class="table-header-content">
+                                    <span>Project Name</span>
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </div>
+                            </th>
+                            <th scope="col">Description</th>
+                            <th scope="col" class="sortable" data-sort="tracks" role="columnheader" tabindex="0">
+                                <div class="table-header-content">
+                                    <span>Tracks</span>
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </div>
+                            </th>
+                            <th scope="col">Status</th>
+                            <th scope="col" class="sortable" data-sort="created" role="columnheader" tabindex="0">
+                                <div class="table-header-content">
+                                    <span>Created</span>
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </div>
+                            </th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="projectsList">
+                        <tr>
+                            <td colspan="6" class="table-empty">
+                                <div class="empty-state">
+                                    <i class="fas fa-project-diagram"></i>
+                                    <p>No projects found</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</div>

@@ -1,0 +1,89 @@
+<!-- Org Admin - Tracks Tab Content -->
+<div class="tab-content-wrapper">
+    <section class="section-card" role="region" aria-labelledby="tracks-title">
+        <div class="section-header">
+            <div class="section-title-group">
+                <h2 class="section-title" id="tracks-title">
+                    <i class="fas fa-road"></i>
+                    <span>Learning Tracks</span>
+                </h2>
+                <p class="section-description">Manage learning tracks and course pathways</p>
+            </div>
+            <div class="section-actions">
+                <button class="action-btn action-btn-primary" onclick="openCreateTrackModal()">
+                    <i class="fas fa-plus"></i>
+                    <span>Create Track</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="section-content">
+            <!-- Filters -->
+            <div class="filters-bar">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input
+                        type="text"
+                        id="trackSearchInput"
+                        placeholder="Search tracks..."
+                        oninput="searchTracks()"
+                        aria-label="Search tracks"
+                    >
+                </div>
+                <div class="filter-group">
+                    <label for="trackProjectFilter">Project:</label>
+                    <select
+                        id="trackProjectFilter"
+                        class="filter-select"
+                        onchange="filterTracks()"
+                        aria-label="Filter by project"
+                    >
+                        <option value="all">All Projects</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Tracks Table -->
+            <div class="data-table-wrapper" role="region" aria-labelledby="tracks-table-caption" tabindex="0">
+                <table class="data-table" id="tracksTable">
+                    <caption id="tracks-table-caption" class="sr-only">Learning tracks</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col" class="sortable" data-sort="name" role="columnheader" tabindex="0">
+                                <div class="table-header-content">
+                                    <span>Track Name</span>
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </div>
+                            </th>
+                            <th scope="col">Project</th>
+                            <th scope="col" class="sortable" data-sort="courses" role="columnheader" tabindex="0">
+                                <div class="table-header-content">
+                                    <span>Courses</span>
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </div>
+                            </th>
+                            <th scope="col" class="sortable" data-sort="students" role="columnheader" tabindex="0">
+                                <div class="table-header-content">
+                                    <span>Students</span>
+                                    <i class="fas fa-sort sort-icon"></i>
+                                </div>
+                            </th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tracksList">
+                        <tr>
+                            <td colspan="6" class="table-empty">
+                                <div class="empty-state">
+                                    <i class="fas fa-road"></i>
+                                    <p>No tracks found</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</div>

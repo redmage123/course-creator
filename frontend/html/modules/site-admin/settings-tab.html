@@ -1,0 +1,164 @@
+<!-- Site Admin - System Settings Tab Content -->
+<div class="tab-content-wrapper">
+    <section class="section-card" role="region" aria-labelledby="settings-title">
+        <div class="section-header">
+            <div class="section-title-group">
+                <h2 class="section-title" id="settings-title">
+                    <i class="fas fa-cog"></i>
+                    <span>System Settings</span>
+                </h2>
+                <p class="section-description">Configure platform-wide settings and preferences</p>
+            </div>
+            <div class="section-actions">
+                <button class="action-btn action-btn-success" onclick="saveSystemSettings()">
+                    <i class="fas fa-save"></i>
+                    <span>Save Settings</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="section-content">
+            <!-- General Settings -->
+            <div style="margin-bottom: var(--space-8);">
+                <h3 style="font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--text-primary); margin: 0 0 var(--space-4) 0;">
+                    General Settings
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+                    <div>
+                        <label for="platformName" style="display: block; font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--text-primary); margin-bottom: var(--space-2);">
+                            Platform Name
+                        </label>
+                        <input
+                            type="text"
+                            id="platformName"
+                            class="filter-input"
+                            value="Course Creator Platform"
+                            style="width: 100%; max-width: 400px;"
+                        >
+                    </div>
+                    <div>
+                        <label for="platformUrl" style="display: block; font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--text-primary); margin-bottom: var(--space-2);">
+                            Platform URL
+                        </label>
+                        <input
+                            type="url"
+                            id="platformUrl"
+                            class="filter-input"
+                            placeholder="https://your-domain.com"
+                            style="width: 100%; max-width: 400px;"
+                        >
+                    </div>
+                    <div>
+                        <label for="supportEmail" style="display: block; font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--text-primary); margin-bottom: var(--space-2);">
+                            Support Email
+                        </label>
+                        <input
+                            type="email"
+                            id="supportEmail"
+                            class="filter-input"
+                            placeholder="support@your-domain.com"
+                            style="width: 100%; max-width: 400px;"
+                        >
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Settings -->
+            <div style="margin-bottom: var(--space-8);">
+                <h3 style="font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--text-primary); margin: 0 0 var(--space-4) 0;">
+                    Security Settings
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+                    <div style="display: flex; align-items: center; gap: var(--space-3);">
+                        <input type="checkbox" id="requireMFA" style="width: 20px; height: 20px;">
+                        <label for="requireMFA" style="font-size: var(--text-sm); color: var(--text-primary);">
+                            Require Multi-Factor Authentication (MFA)
+                        </label>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: var(--space-3);">
+                        <input type="checkbox" id="enforcePasswordPolicy" style="width: 20px; height: 20px;" checked>
+                        <label for="enforcePasswordPolicy" style="font-size: var(--text-sm); color: var(--text-primary);">
+                            Enforce Strong Password Policy
+                        </label>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: var(--space-3);">
+                        <input type="checkbox" id="enableAuditLog" style="width: 20px; height: 20px;" checked>
+                        <label for="enableAuditLog" style="font-size: var(--text-sm); color: var(--text-primary);">
+                            Enable Audit Logging
+                        </label>
+                    </div>
+                    <div>
+                        <label for="sessionTimeout" style="display: block; font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--text-primary); margin-bottom: var(--space-2);">
+                            Session Timeout (minutes)
+                        </label>
+                        <input
+                            type="number"
+                            id="sessionTimeout"
+                            class="filter-input"
+                            value="30"
+                            min="5"
+                            max="1440"
+                            style="width: 150px;"
+                        >
+                    </div>
+                </div>
+            </div>
+
+            <!-- Email Settings -->
+            <div style="margin-bottom: var(--space-8);">
+                <h3 style="font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--text-primary); margin: 0 0 var(--space-4) 0;">
+                    Email Settings
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+                    <div>
+                        <label for="smtpHost" style="display: block; font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--text-primary); margin-bottom: var(--space-2);">
+                            SMTP Host
+                        </label>
+                        <input
+                            type="text"
+                            id="smtpHost"
+                            class="filter-input"
+                            placeholder="smtp.example.com"
+                            style="width: 100%; max-width: 400px;"
+                        >
+                    </div>
+                    <div>
+                        <label for="smtpPort" style="display: block; font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--text-primary); margin-bottom: var(--space-2);">
+                            SMTP Port
+                        </label>
+                        <input
+                            type="number"
+                            id="smtpPort"
+                            class="filter-input"
+                            value="587"
+                            style="width: 150px;"
+                        >
+                    </div>
+                    <div style="display: flex; align-items: center; gap: var(--space-3);">
+                        <input type="checkbox" id="smtpTLS" style="width: 20px; height: 20px;" checked>
+                        <label for="smtpTLS" style="font-size: var(--text-sm); color: var(--text-primary);">
+                            Use TLS/SSL
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Maintenance Mode -->
+            <div class="alert alert-warning">
+                <div class="alert-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="alert-content">
+                    <div class="alert-title">Maintenance Mode</div>
+                    <div class="alert-message">
+                        Enable maintenance mode to prevent user access during system updates
+                    </div>
+                </div>
+                <button class="action-btn action-btn-warning" onclick="toggleMaintenanceMode()">
+                    <i class="fas fa-tools"></i>
+                    <span>Enable</span>
+                </button>
+            </div>
+        </div>
+    </section>
+</div>

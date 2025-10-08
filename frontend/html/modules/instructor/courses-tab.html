@@ -1,0 +1,23 @@
+<!-- Instructor - My Courses Tab Content -->
+<div class="tab-content-wrapper">
+                <section id="courses-section" class="content-section">
+                    <div class="section-header">
+                        <h2>My Courses</h2>
+                        <div class="course-filters">
+                            <select id="courseStatusFilter" onchange="filterCourses()">
+                                <option value="all">All Courses</option>
+                                <option value="published">Published</option>
+                                <option value="draft">Draft</option>
+                                <option value="archived">Archived</option>
+                            </select>
+                            <div class="search-box">
+                                <input type="text" id="courseSearch" placeholder="Search courses..." onkeyup="searchCourses()">
+                                <i class="fas fa-search"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="courses-list" class="courses-grid enhanced">
+                        <!-- Enhanced courses will be loaded here -->
+                    </div>
+                </section>
+</div>

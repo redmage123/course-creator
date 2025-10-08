@@ -1,0 +1,72 @@
+<!-- Student - Dashboard Tab Content -->
+<div class="tab-content-wrapper">
+    <section id="dashboard-section" class="content-section active">
+        <div class="overview-header">
+            <h1>Welcome back!</h1>
+            <p>Continue your learning journey</p>
+        </div>
+
+        <!-- Progress Overview Cards -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-icon">
+                    <i class="fas fa-book"></i>
+                </div>
+                <div class="metric-content">
+                    <h3 class="metric-value" id="dashboardEnrolledCourses">0</h3>
+                    <p class="metric-label">Enrolled Courses</p>
+                    <span class="metric-change neutral" id="enrollmentChange">No change</span>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="metric-content">
+                    <h3 class="metric-value" id="dashboardCompletedCourses">0</h3>
+                    <p class="metric-label">Completed Courses</p>
+                    <span class="metric-change positive" id="completionChange">+0 this week</span>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="metric-content">
+                    <h3 class="metric-value" id="dashboardOverallProgress">0%</h3>
+                    <p class="metric-label">Overall Progress</p>
+                    <span class="metric-change positive" id="progressChange">+0% this week</span>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-icon">
+                    <i class="fas fa-flask"></i>
+                </div>
+                <div class="metric-content">
+                    <h3 class="metric-value" id="dashboardLabSessions">0</h3>
+                    <p class="metric-label">Lab Sessions</p>
+                    <span class="metric-change positive" id="labSessionChange">+0 today</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Current Courses -->
+        <div class="current-courses">
+            <h2>Continue Learning</h2>
+            <div id="current-courses-list" class="courses-grid">
+                <!-- Current courses will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="recent-activity">
+            <h2>Recent Activity</h2>
+            <div class="activity-list" id="studentActivityList">
+                <!-- Student activity will be loaded here -->
+            </div>
+        </div>
+    </section>
+</div>

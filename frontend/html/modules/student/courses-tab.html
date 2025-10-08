@@ -1,0 +1,23 @@
+<!-- Student - My Courses Tab Content -->
+<div class="tab-content-wrapper">
+    <section id="courses-section" class="content-section">
+        <div class="section-header">
+            <h2>My Courses</h2>
+            <div class="course-filters">
+                <select id="courseStatusFilter" onchange="filterStudentCourses()">
+                    <option value="all">All Courses</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="not-started">Not Started</option>
+                </select>
+                <div class="search-box">
+                    <input type="text" id="courseSearch" placeholder="Search courses..." onkeyup="searchStudentCourses()">
+                    <i class="fas fa-search"></i>
+                </div>
+            </div>
+        </div>
+        <div id="student-courses-list" class="courses-grid enhanced">
+            <!-- Student courses will be loaded here -->
+        </div>
+    </section>
+</div>

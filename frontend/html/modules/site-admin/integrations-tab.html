@@ -1,0 +1,76 @@
+<!-- Site Admin - Integrations Tab Content -->
+<div class="tab-content-wrapper">
+    <section class="section-card" role="region" aria-labelledby="integrations-title">
+        <div class="section-header">
+            <div class="section-title-group">
+                <h2 class="section-title" id="integrations-title">
+                    <i class="fas fa-plug"></i>
+                    <span>Platform Integrations</span>
+                </h2>
+                <p class="section-description">Configure external service integrations</p>
+            </div>
+        </div>
+
+        <div class="section-content">
+            <!-- Microsoft Teams Integration -->
+            <div class="action-card" style="margin-bottom: var(--space-6);">
+                <div class="action-card-icon" style="background: var(--primary-100); color: var(--primary-600);">
+                    <i class="fab fa-microsoft"></i>
+                </div>
+                <h3 class="action-card-title">Microsoft Teams</h3>
+                <p class="action-card-description">
+                    Connect Microsoft Teams for notifications, meetings, and collaboration
+                </p>
+                <button class="action-btn action-btn-outline" onclick="configureMicrosoftTeams()">
+                    <i class="fas fa-cog"></i>
+                    <span>Configure</span>
+                </button>
+            </div>
+
+            <!-- Google Workspace Integration -->
+            <div class="action-card" style="margin-bottom: var(--space-6);">
+                <div class="action-card-icon" style="background: var(--error-100); color: var(--error-600);">
+                    <i class="fab fa-google"></i>
+                </div>
+                <h3 class="action-card-title">Google Workspace</h3>
+                <p class="action-card-description">
+                    Integrate with Google Drive, Calendar, and Meet for seamless collaboration
+                </p>
+                <button class="action-btn action-btn-outline" onclick="configureGoogleWorkspace()">
+                    <i class="fas fa-cog"></i>
+                    <span>Configure</span>
+                </button>
+            </div>
+
+            <!-- Slack Integration -->
+            <div class="action-card" style="margin-bottom: var(--space-6);">
+                <div class="action-card-icon" style="background: var(--warning-100); color: var(--warning-600);">
+                    <i class="fab fa-slack"></i>
+                </div>
+                <h3 class="action-card-title">Slack</h3>
+                <p class="action-card-description">
+                    Send notifications and updates to Slack channels
+                </p>
+                <button class="action-btn action-btn-outline" onclick="configureSlack()">
+                    <i class="fas fa-cog"></i>
+                    <span>Configure</span>
+                </button>
+            </div>
+
+            <!-- GitHub Integration -->
+            <div class="action-card">
+                <div class="action-card-icon" style="background: var(--gray-800); color: white;">
+                    <i class="fab fa-github"></i>
+                </div>
+                <h3 class="action-card-title">GitHub</h3>
+                <p class="action-card-description">
+                    Connect GitHub for code repositories and version control
+                </p>
+                <button class="action-btn action-btn-outline" onclick="configureGitHub()">
+                    <i class="fas fa-cog"></i>
+                    <span>Configure</span>
+                </button>
+            </div>
+        </div>
+    </section>
+</div>

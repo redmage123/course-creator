@@ -1,0 +1,51 @@
+<!-- Student - Labs Tab Content -->
+<div class="tab-content-wrapper">
+    <section id="labs-section" class="content-section">
+        <div class="section-header">
+            <h2>Lab Environment</h2>
+            <p>Access interactive lab environments for hands-on learning</p>
+        </div>
+        <div class="labs-content">
+            <div class="lab-access-card">
+                <div class="lab-info">
+                    <i class="fas fa-flask fa-3x"></i>
+                    <h3>Interactive Lab Environment</h3>
+                    <p>Practice coding, run commands, and work on exercises in a secure sandboxed environment.</p>
+                    <div class="lab-features">
+                        <span class="feature"><i class="fas fa-code"></i> Code Editor</span>
+                        <span class="feature"><i class="fas fa-terminal"></i> Terminal Access</span>
+                        <span class="feature"><i class="fas fa-robot"></i> AI Assistant</span>
+                        <span class="feature"><i class="fas fa-shield-alt"></i> Secure Environment</span>
+                    </div>
+                </div>
+                <div class="lab-actions">
+                    <button class="btn btn-primary btn-large" onclick="openLabEnvironment()">
+                        <i class="fas fa-play"></i> Launch Lab Environment
+                    </button>
+                    <p class="lab-note">Your lab session will be saved automatically</p>
+                </div>
+            </div>
+
+            <!-- File Management Section -->
+            <div class="lab-files-card">
+                <div class="lab-files-header">
+                    <h3><i class="fas fa-folder-open"></i> My Lab Files</h3>
+                    <div class="lab-files-actions">
+                        <button class="btn btn-secondary" onclick="refreshLabFiles()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                        <button class="btn btn-primary" onclick="downloadAllFiles()">
+                            <i class="fas fa-download"></i> Download All
+                        </button>
+                    </div>
+                </div>
+                <div class="lab-files-content" id="labFilesContent">
+                    <div class="no-lab-message">
+                        <i class="fas fa-info-circle"></i>
+                        <p>Launch a lab environment to see your files</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>

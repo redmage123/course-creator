@@ -1,0 +1,124 @@
+<!-- Site Admin - Overview Tab Content -->
+<div class="tab-content-wrapper">
+    <!-- Platform Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card" onclick="document.querySelector('[data-tab=organizations]').click()" style="cursor: pointer;" title="Click to view all organizations">
+            <div class="stat-icon" style="background: var(--primary-100); color: var(--primary-600);">
+                <i class="fas fa-building"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">Total Organizations</div>
+                <div class="stat-value" id="totalOrganizations">0</div>
+                <div class="stat-change neutral">
+                    <i class="fas fa-arrow-right"></i>
+                    <span>View all</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card" onclick="document.querySelector('[data-tab=users]').click()" style="cursor: pointer;" title="Click to view all users">
+            <div class="stat-icon" style="background: var(--success-100); color: var(--success-600);">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">Total Users</div>
+                <div class="stat-value" id="totalUsers">0</div>
+                <div class="stat-change neutral">
+                    <i class="fas fa-arrow-right"></i>
+                    <span>View all</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card" onclick="document.querySelector('[data-tab=organizations]').click()" style="cursor: pointer;" title="Click to view projects">
+            <div class="stat-icon" style="background: var(--warning-100); color: var(--warning-600);">
+                <i class="fas fa-project-diagram"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">Active Projects</div>
+                <div class="stat-value" id="totalProjects">0</div>
+                <div class="stat-change neutral">
+                    <i class="fas fa-arrow-right"></i>
+                    <span>View all</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card" onclick="document.querySelector('[data-tab=organizations]').click()" style="cursor: pointer;" title="Click to view learning tracks">
+            <div class="stat-icon" style="background: var(--error-100); color: var(--error-600);">
+                <i class="fas fa-road"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">Learning Tracks</div>
+                <div class="stat-value" id="totalTracks">0</div>
+                <div class="stat-change neutral">
+                    <i class="fas fa-arrow-right"></i>
+                    <span>View all</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <section class="section-card" role="region" aria-labelledby="quick-actions-title">
+        <div class="section-header">
+            <div class="section-title-group">
+                <h2 class="section-title" id="quick-actions-title">
+                    <i class="fas fa-bolt"></i>
+                    <span>Quick Actions</span>
+                </h2>
+                <p class="section-description">Common administrative tasks</p>
+            </div>
+        </div>
+        <div class="section-content">
+            <div class="action-grid">
+                <button class="action-btn action-btn-primary" onclick="refreshPlatformStats()">
+                    <i class="fas fa-sync"></i>
+                    <span>Refresh Stats</span>
+                </button>
+                <button class="action-btn action-btn-success" onclick="runHealthCheck()">
+                    <i class="fas fa-heartbeat"></i>
+                    <span>Health Check</span>
+                </button>
+                <button class="action-btn action-btn-outline" onclick="viewSystemLogs()">
+                    <i class="fas fa-file-alt"></i>
+                    <span>View Logs</span>
+                </button>
+                <button class="action-btn action-btn-outline" onclick="exportPlatformReport()">
+                    <i class="fas fa-download"></i>
+                    <span>Export Report</span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Recent Activity -->
+    <section class="section-card" role="region" aria-labelledby="recent-activity-title">
+        <div class="section-header">
+            <div class="section-title-group">
+                <h2 class="section-title" id="recent-activity-title">
+                    <i class="fas fa-history"></i>
+                    <span>Recent Activity</span>
+                </h2>
+                <p class="section-description">Latest system events and changes</p>
+            </div>
+            <div class="section-actions">
+                <button class="action-btn action-btn-ghost action-btn-sm" onclick="document.querySelector('[data-tab=audit]').click()">
+                    <span>View All</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+        <div class="section-content">
+            <div id="recentActivityList">
+                <div class="empty-state-container">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <h3 class="empty-state-title">No Recent Activity</h3>
+                    <p class="empty-state-description">System activity and audit events will appear here</p>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
