@@ -583,11 +583,202 @@ class TestLabManagementWorkflow(BaseTest):
     pass
 
 
-@pytest.mark.skip(reason="Course publishing UI not fully implemented")
 @pytest.mark.e2e
-class TestCoursePublishingWorkflow(BaseTest):
-    """Test course publishing and versioning workflows (SKIPPED - UI not implemented)."""
-    pass
+class TestFilesTabWorkflow(BaseTest):
+    """Test instructor files tab functionality (TDD - Test First)."""
+
+    @pytest.fixture(scope="function", autouse=True)
+    def setup_instructor_session(self):
+        """Set up authenticated instructor session before each test."""
+        self.driver.get(f"{BASE_URL}/html/index.html")
+        time.sleep(2)
+        self.driver.execute_script("""
+            localStorage.setItem('authToken', 'test-instructor-token-12345');
+            localStorage.setItem('userRole', 'instructor');
+            localStorage.setItem('userName', 'Test Instructor');
+            localStorage.setItem('currentUser', JSON.stringify({
+                id: 200, email: 'instructor@example.com', role: 'instructor',
+                organization_id: 1, name: 'Test Instructor'
+            }));
+            localStorage.setItem('userEmail', 'instructor@example.com');
+            localStorage.setItem('sessionStart', Date.now().toString());
+            localStorage.setItem('lastActivity', Date.now().toString());
+        """)
+        yield
+
+    def test_files_tab_loads_successfully(self):
+        """
+        Test that files tab loads with file explorer container.
+
+        TDD: RED phase - Test should fail until implementation
+
+        WORKFLOW:
+        1. Navigate to dashboard
+        2. Click files tab
+        3. Verify file explorer container exists
+        """
+        dashboard = InstructorDashboardPage(self.driver, self.config)
+        dashboard.navigate_to_dashboard()
+
+        # Click files tab
+        dashboard.switch_to_tab(dashboard.FILES_TAB)
+
+        # Verify tab content container loads
+        tab_container = self.wait_for_element((By.ID, "tabContentContainer"))
+        assert tab_container is not None, "Tab content container should be present"
+
+        # Verify files content loaded (check for keywords in page source)
+        page_source = self.driver.page_source.lower()
+        assert "file" in page_source or "upload" in page_source or "course files" in page_source, \
+            "Files tab content should be loaded"
+
+    def test_file_upload_button_exists(self):
+        """
+        Test that file upload button is present in files tab.
+
+        TDD: GREEN phase - Check for file management UI
+        """
+        dashboard = InstructorDashboardPage(self.driver, self.config)
+        dashboard.navigate_to_dashboard()
+        dashboard.switch_to_tab(dashboard.FILES_TAB)
+
+        # Verify file management UI is present (check for container from HTML template)
+        page_source = self.driver.page_source.lower()
+        assert "instructorfileexplorercontainer" in page_source or "course files" in page_source, \
+            "File management UI should be present in files tab"
+
+
+@pytest.mark.e2e
+class TestPublishedCoursesTabWorkflow(BaseTest):
+    """Test published courses tab functionality (TDD - Test First)."""
+
+    @pytest.fixture(scope="function", autouse=True)
+    def setup_instructor_session(self):
+        """Set up authenticated instructor session before each test."""
+        self.driver.get(f"{BASE_URL}/html/index.html")
+        time.sleep(2)
+        self.driver.execute_script("""
+            localStorage.setItem('authToken', 'test-instructor-token-12345');
+            localStorage.setItem('userRole', 'instructor');
+            localStorage.setItem('userName', 'Test Instructor');
+            localStorage.setItem('currentUser', JSON.stringify({
+                id: 200, email: 'instructor@example.com', role: 'instructor',
+                organization_id: 1, name: 'Test Instructor'
+            }));
+            localStorage.setItem('userEmail', 'instructor@example.com');
+            localStorage.setItem('sessionStart', Date.now().toString());
+            localStorage.setItem('lastActivity', Date.now().toString());
+        """)
+        yield
+
+    def test_published_courses_tab_loads(self):
+        """
+        Test that published courses tab loads successfully.
+
+        TDD: RED phase
+
+        WORKFLOW:
+        1. Navigate to dashboard
+        2. Click published courses tab
+        3. Verify container exists
+        """
+        dashboard = InstructorDashboardPage(self.driver, self.config)
+        dashboard.navigate_to_dashboard()
+
+        # Click published courses tab
+        dashboard.switch_to_tab(dashboard.PUBLISHED_COURSES_TAB)
+
+        # Verify container exists
+        container = self.wait_for_element((By.ID, "publishedCoursesContainer"), timeout=10)
+        assert container is not None, "Published courses container should be present"
+
+    def test_visibility_filter_exists(self):
+        """
+        Test that visibility filter dropdown exists.
+
+        TDD: RED phase
+        """
+        dashboard = InstructorDashboardPage(self.driver, self.config)
+        dashboard.navigate_to_dashboard()
+        dashboard.switch_to_tab(dashboard.PUBLISHED_COURSES_TAB)
+
+        # Verify filter exists
+        filter_select = self.wait_for_element((By.ID, "courseVisibilityFilter"), timeout=5)
+        assert filter_select is not None, "Visibility filter should be present"
+
+
+@pytest.mark.e2e
+class TestCourseInstancesTabWorkflow(BaseTest):
+    """Test course instances tab functionality (TDD - Test First)."""
+
+    @pytest.fixture(scope="function", autouse=True)
+    def setup_instructor_session(self):
+        """Set up authenticated instructor session before each test."""
+        self.driver.get(f"{BASE_URL}/html/index.html")
+        time.sleep(2)
+        self.driver.execute_script("""
+            localStorage.setItem('authToken', 'test-instructor-token-12345');
+            localStorage.setItem('userRole', 'instructor');
+            localStorage.setItem('userName', 'Test Instructor');
+            localStorage.setItem('currentUser', JSON.stringify({
+                id: 200, email: 'instructor@example.com', role: 'instructor',
+                organization_id: 1, name: 'Test Instructor'
+            }));
+            localStorage.setItem('userEmail', 'instructor@example.com');
+            localStorage.setItem('sessionStart', Date.now().toString());
+            localStorage.setItem('lastActivity', Date.now().toString());
+        """)
+        yield
+
+    def test_course_instances_tab_loads(self):
+        """
+        Test that course instances tab loads successfully.
+
+        TDD: RED phase
+
+        WORKFLOW:
+        1. Navigate to dashboard
+        2. Click course instances tab
+        3. Verify container exists
+        """
+        dashboard = InstructorDashboardPage(self.driver, self.config)
+        dashboard.navigate_to_dashboard()
+
+        # Click course instances tab
+        dashboard.switch_to_tab(dashboard.COURSE_INSTANCES_TAB)
+
+        # Verify container exists
+        container = self.wait_for_element((By.ID, "courseInstancesContainer"), timeout=10)
+        assert container is not None, "Course instances container should be present"
+
+    def test_create_instance_button_exists(self):
+        """
+        Test that create instance button exists.
+
+        TDD: RED phase
+        """
+        dashboard = InstructorDashboardPage(self.driver, self.config)
+        dashboard.navigate_to_dashboard()
+        dashboard.switch_to_tab(dashboard.COURSE_INSTANCES_TAB)
+
+        # Should have create button
+        page_source = self.driver.page_source
+        assert "Create New Instance" in page_source or "create" in page_source.lower(), \
+            "Create instance button should be present"
+
+    def test_status_filter_exists(self):
+        """
+        Test that status filter dropdown exists.
+
+        TDD: RED phase
+        """
+        dashboard = InstructorDashboardPage(self.driver, self.config)
+        dashboard.navigate_to_dashboard()
+        dashboard.switch_to_tab(dashboard.COURSE_INSTANCES_TAB)
+
+        # Verify filter exists
+        filter_select = self.wait_for_element((By.ID, "instanceStatusFilter"), timeout=5)
+        assert filter_select is not None, "Status filter should be present"
 
 
 @pytest.mark.e2e

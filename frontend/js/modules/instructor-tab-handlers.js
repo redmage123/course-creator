@@ -17,6 +17,8 @@
  * - Dependency Inversion: Uses CONFIG for API endpoints
  */
 
+import { FileExplorer } from './file-explorer.js';
+
 /**
  * Initialize Create Course Tab Functionality
  *
@@ -935,24 +937,528 @@ async function loadOverviewStats() {
 
 /**
  * Initialize Files Tab
+ *
+ * BUSINESS REQUIREMENT:
+ * Provides instructors with file management capabilities for course materials
+ * including upload, delete, download, and preview of files.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Uses FileExplorer widget for full file management UI
+ * - Automatically loads files for instructor's organization
+ * - Enforces RBAC for file operations
  */
 export function initFilesTab() {
     console.log('📁 Initializing Files Tab');
-    console.log('✅ Files Tab initialized');
+
+    const container = document.getElementById('instructorFileExplorerContainer');
+    if (!container) {
+        console.error('File explorer container not found');
+        return;
+    }
+
+    // Get current user context for filtering
+    const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+    const organizationId = currentUser.organization_id;
+
+    // Initialize File Explorer widget with instructor-specific options
+    const fileExplorer = new FileExplorer(container, {
+        organizationId: organizationId,
+        allowUpload: true,
+        allowDelete: true,
+        allowDownload: true,
+        allowPreview: true,
+        enableDragDrop: true,
+        multiSelect: true,
+        viewMode: 'grid',
+        sortBy: 'date',
+        sortOrder: 'desc'
+    });
+
+    console.log('✅ Files Tab initialized with FileExplorer widget');
 }
 
 /**
  * Initialize Published Courses Tab
+ *
+ * BUSINESS REQUIREMENT:
+ * Displays all published courses available for instantiation by instructors.
+ * Instructors can filter by visibility (public/private) and view course details.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Fetches published courses from course management API
+ * - Filters courses by visibility setting
+ * - Displays courses in responsive grid layout
  */
 export function initPublishedCoursesTab() {
     console.log('🎓 Initializing Published Courses Tab');
+
+    // Make filter function globally accessible for inline event handler
+    window.filterPublishedCourses = filterPublishedCourses;
+
+    // Load initial course list
+    loadPublishedCourses();
+
     console.log('✅ Published Courses Tab initialized');
 }
 
 /**
+ * Load and display published courses
+ *
+ * BUSINESS LOGIC:
+ * - Fetches all published courses from API
+ * - Applies current visibility filter
+ * - Renders course cards with metadata
+ */
+async function loadPublishedCourses(filterValue = 'all') {
+    const container = document.getElementById('publishedCoursesContainer');
+    if (!container) {
+        console.error('Published courses container not found');
+        return;
+    }
+
+    try {
+        // Show loading state
+        container.innerHTML = `
+            <div class="loading-indicator">
+                <i class="fas fa-spinner fa-spin"></i> Loading published courses...
+            </div>
+        `;
+
+        // Get current user context
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const authToken = localStorage.getItem('authToken');
+
+        // Fetch published courses from API
+        const response = await fetch('https://localhost:8002/api/v1/courses?status=published', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch courses: ${response.status}`);
+        }
+
+        const courses = await response.json();
+
+        // Apply filter
+        let filteredCourses = courses;
+        if (filterValue === 'public') {
+            filteredCourses = courses.filter(c => c.visibility === 'public');
+        } else if (filterValue === 'private') {
+            filteredCourses = courses.filter(c => c.visibility === 'private' && c.instructor_id === currentUser.id);
+        }
+
+        // Render courses
+        if (filteredCourses.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-book"></i>
+                    <h3>No published courses found</h3>
+                    <p>There are currently no published courses matching your filter criteria.</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = filteredCourses.map(course => `
+            <div class="course-card">
+                <div class="course-card-header">
+                    <h3>${course.title}</h3>
+                    <span class="badge badge-${course.visibility}">${course.visibility}</span>
+                </div>
+                <div class="course-card-body">
+                    <p>${course.description || 'No description available'}</p>
+                    <div class="course-metadata">
+                        <span><i class="fas fa-user"></i> ${course.instructor_name || 'Unknown'}</span>
+                        <span><i class="fas fa-clock"></i> ${course.estimated_duration || 'N/A'} ${course.duration_unit || ''}</span>
+                        <span><i class="fas fa-signal"></i> ${course.difficulty_level || 'N/A'}</span>
+                    </div>
+                </div>
+                <div class="course-card-footer">
+                    <button class="btn btn-primary" onclick="createCourseInstance(${course.id})">
+                        <i class="fas fa-plus"></i> Create Instance
+                    </button>
+                    <button class="btn btn-secondary" onclick="viewCourseDetails(${course.id})">
+                        <i class="fas fa-eye"></i> View Details
+                    </button>
+                </div>
+            </div>
+        `).join('');
+
+    } catch (error) {
+        console.error('Error loading published courses:', error);
+        container.innerHTML = `
+            <div class="alert alert-error">
+                <i class="fas fa-exclamation-circle"></i>
+                <div>
+                    <strong>Error Loading Courses</strong>
+                    <p>Failed to load published courses. Please try again.</p>
+                </div>
+            </div>
+        `;
+    }
+}
+
+/**
+ * Filter published courses by visibility
+ *
+ * Called by inline event handler in HTML
+ */
+function filterPublishedCourses() {
+    const filterSelect = document.getElementById('courseVisibilityFilter');
+    if (!filterSelect) {
+        console.error('Visibility filter not found');
+        return;
+    }
+
+    const filterValue = filterSelect.value;
+    loadPublishedCourses(filterValue);
+}
+
+/**
  * Initialize Course Instances Tab
+ *
+ * BUSINESS REQUIREMENT:
+ * Allows instructors to manage course instances (scheduled sessions)
+ * including creation, filtering by status, and searching.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Fetches course instances from course management API
+ * - Provides filtering by status (scheduled, active, completed, cancelled)
+ * - Includes search functionality
+ * - Modal interface for creating new instances
  */
 export function initCourseInstancesTab() {
     console.log('📋 Initializing Course Instances Tab');
+
+    // Make functions globally accessible for inline event handlers
+    window.showCreateInstanceModal = showCreateInstanceModal;
+    window.filterInstances = filterInstances;
+    window.searchInstances = searchInstances;
+
+    // Load initial instance list
+    loadCourseInstances();
+
     console.log('✅ Course Instances Tab initialized');
+}
+
+/**
+ * Load and display course instances
+ *
+ * BUSINESS LOGIC:
+ * - Fetches all course instances for the instructor
+ * - Applies status filter and search query
+ * - Renders instance cards with metadata
+ */
+async function loadCourseInstances(filterValue = 'all', searchQuery = '') {
+    const container = document.getElementById('courseInstancesContainer');
+    if (!container) {
+        console.error('Course instances container not found');
+        return;
+    }
+
+    try {
+        // Show loading state
+        container.innerHTML = `
+            <div class="loading-indicator">
+                <i class="fas fa-spinner fa-spin"></i> Loading course instances...
+            </div>
+        `;
+
+        // Get current user context
+        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const authToken = localStorage.getItem('authToken');
+
+        // Fetch course instances from API
+        const response = await fetch('https://localhost:8002/api/v1/course-instances?instructor_id=' + currentUser.id, {
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch course instances: ${response.status}`);
+        }
+
+        let instances = await response.json();
+
+        // Apply status filter
+        if (filterValue !== 'all') {
+            instances = instances.filter(inst => inst.status === filterValue);
+        }
+
+        // Apply search filter
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            instances = instances.filter(inst =>
+                (inst.course_title || '').toLowerCase().includes(query) ||
+                (inst.course_code || '').toLowerCase().includes(query)
+            );
+        }
+
+        // Render instances
+        if (instances.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-calendar-alt"></i>
+                    <h3>No course instances found</h3>
+                    <p>Create a new course instance to get started.</p>
+                    <button class="btn btn-primary" onclick="showCreateInstanceModal()">
+                        <i class="fas fa-plus"></i> Create New Instance
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = instances.map(instance => `
+            <div class="instance-card" data-instance-id="${instance.id}">
+                <div class="instance-card-header">
+                    <div>
+                        <h3>${instance.course_title || 'Untitled Course'}</h3>
+                        <span class="instance-code">${instance.course_code || ''}</span>
+                    </div>
+                    <span class="badge badge-${instance.status || 'scheduled'}">${instance.status || 'Scheduled'}</span>
+                </div>
+                <div class="instance-card-body">
+                    <div class="instance-metadata">
+                        <div class="metadata-item">
+                            <i class="fas fa-calendar"></i>
+                            <span>Start: ${formatDate(instance.start_date)}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <i class="fas fa-calendar-check"></i>
+                            <span>End: ${formatDate(instance.end_date)}</span>
+                        </div>
+                        <div class="metadata-item">
+                            <i class="fas fa-users"></i>
+                            <span>${instance.enrolled_count || 0} / ${instance.max_students || 'unlimited'} students</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="instance-card-footer">
+                    <button class="btn btn-primary" onclick="viewInstanceDetails(${instance.id})">
+                        <i class="fas fa-eye"></i> View Details
+                    </button>
+                    <button class="btn btn-secondary" onclick="manageEnrollment(${instance.id})">
+                        <i class="fas fa-user-plus"></i> Manage Enrollment
+                    </button>
+                </div>
+            </div>
+        `).join('');
+
+    } catch (error) {
+        console.error('Error loading course instances:', error);
+        container.innerHTML = `
+            <div class="alert alert-error">
+                <i class="fas fa-exclamation-circle"></i>
+                <div>
+                    <strong>Error Loading Instances</strong>
+                    <p>Failed to load course instances. Please try again.</p>
+                </div>
+            </div>
+        `;
+    }
+}
+
+/**
+ * Format date for display
+ */
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+/**
+ * Filter course instances by status
+ *
+ * Called by inline event handler in HTML
+ */
+function filterInstances() {
+    const filterSelect = document.getElementById('instanceStatusFilter');
+    const searchInput = document.getElementById('instanceSearch');
+
+    if (!filterSelect) {
+        console.error('Status filter not found');
+        return;
+    }
+
+    const filterValue = filterSelect.value;
+    const searchQuery = searchInput ? searchInput.value : '';
+
+    loadCourseInstances(filterValue, searchQuery);
+}
+
+/**
+ * Search course instances
+ *
+ * Called by inline event handler in HTML
+ */
+function searchInstances() {
+    const searchInput = document.getElementById('instanceSearch');
+    const filterSelect = document.getElementById('instanceStatusFilter');
+
+    if (!searchInput) {
+        console.error('Search input not found');
+        return;
+    }
+
+    const searchQuery = searchInput.value;
+    const filterValue = filterSelect ? filterSelect.value : 'all';
+
+    loadCourseInstances(filterValue, searchQuery);
+}
+
+/**
+ * Show modal for creating a new course instance
+ *
+ * Called by inline event handler in HTML
+ */
+function showCreateInstanceModal() {
+    console.log('Opening create instance modal...');
+
+    // Create and show modal
+    const modalHTML = `
+        <div class="modal-overlay" id="createInstanceModal" onclick="closeModalOnOutsideClick(event)">
+            <div class="modal-content" onclick="event.stopPropagation()">
+                <div class="modal-header">
+                    <h2>Create New Course Instance</h2>
+                    <button class="modal-close-btn" onclick="closeCreateInstanceModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="createInstanceForm">
+                        <div class="form-group">
+                            <label for="instanceCourseSelect">Select Course</label>
+                            <select id="instanceCourseSelect" name="course_id" required>
+                                <option value="">-- Select a course --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="instanceStartDate">Start Date</label>
+                            <input type="date" id="instanceStartDate" name="start_date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="instanceEndDate">End Date</label>
+                            <input type="date" id="instanceEndDate" name="end_date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="instanceMaxStudents">Max Students</label>
+                            <input type="number" id="instanceMaxStudents" name="max_students" min="1" placeholder="Leave empty for unlimited">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeCreateInstanceModal()">Cancel</button>
+                    <button class="btn btn-primary" onclick="submitCreateInstance()">
+                        <i class="fas fa-plus"></i> Create Instance
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Insert modal into DOM
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // Load available courses into dropdown
+    loadCoursesForInstanceCreation();
+
+    // Make close functions globally accessible
+    window.closeCreateInstanceModal = closeCreateInstanceModal;
+    window.submitCreateInstance = submitCreateInstance;
+    window.closeModalOnOutsideClick = closeModalOnOutsideClick;
+}
+
+/**
+ * Load available courses for instance creation dropdown
+ */
+async function loadCoursesForInstanceCreation() {
+    const select = document.getElementById('instanceCourseSelect');
+    if (!select) return;
+
+    try {
+        const authToken = localStorage.getItem('authToken');
+        const response = await fetch('https://localhost:8002/api/v1/courses?status=published', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const courses = await response.json();
+            select.innerHTML = '<option value="">-- Select a course --</option>' +
+                courses.map(c => `<option value="${c.id}">${c.title}</option>`).join('');
+        }
+    } catch (error) {
+        console.error('Error loading courses:', error);
+    }
+}
+
+/**
+ * Close create instance modal
+ */
+function closeCreateInstanceModal() {
+    const modal = document.getElementById('createInstanceModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+/**
+ * Close modal when clicking outside
+ */
+function closeModalOnOutsideClick(event) {
+    if (event.target.classList.contains('modal-overlay')) {
+        closeCreateInstanceModal();
+    }
+}
+
+/**
+ * Submit create instance form
+ */
+async function submitCreateInstance() {
+    const form = document.getElementById('createInstanceForm');
+    if (!form || !form.checkValidity()) {
+        alert('Please fill in all required fields');
+        return;
+    }
+
+    const formData = new FormData(form);
+    const instanceData = {
+        course_id: formData.get('course_id'),
+        start_date: formData.get('start_date'),
+        end_date: formData.get('end_date'),
+        max_students: formData.get('max_students') || null,
+        status: 'scheduled'
+    };
+
+    try {
+        const authToken = localStorage.getItem('authToken');
+        const response = await fetch('https://localhost:8002/api/v1/course-instances', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(instanceData)
+        });
+
+        if (response.ok) {
+            alert('Course instance created successfully!');
+            closeCreateInstanceModal();
+            loadCourseInstances(); // Reload the list
+        } else {
+            throw new Error(`Failed to create instance: ${response.status}`);
+        }
+    } catch (error) {
+        console.error('Error creating instance:', error);
+        alert('Failed to create course instance. Please try again.');
+    }
 }
