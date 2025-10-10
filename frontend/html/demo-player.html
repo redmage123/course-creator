@@ -483,6 +483,9 @@
                 <button class="control-btn" id="next-btn" aria-label="Go to next slide" title="Next slide (Arrow Right)">
                     <i class="fas fa-step-forward" aria-hidden="true"></i> Next
                 </button>
+                <button class="control-btn" id="subtitle-toggle-btn" aria-label="Show subtitles" title="Toggle subtitles">
+                    <i class="fas fa-closed-captioning" aria-hidden="true"></i> Subtitles
+                </button>
                 <div class="progress-bar-container" id="progress-container" role="progressbar" aria-label="Video progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" tabindex="0" title="Click or use keyboard to seek">
                     <div class="progress-bar" id="progress-bar"></div>
                 </div>
@@ -563,6 +566,7 @@
                 this.playPauseBtn = document.getElementById('play-pause-btn');
                 this.prevBtn = document.getElementById('prev-btn');
                 this.nextBtn = document.getElementById('next-btn');
+                this.subtitleToggleBtn = document.getElementById('subtitle-toggle-btn');
                 this.progressBar = document.getElementById('progress-bar');
                 this.progressContainer = document.getElementById('progress-container');
                 this.timeDisplay = document.getElementById('time-display');
@@ -579,6 +583,9 @@
                 // Enthusiastic, cheerful, and upbeat delivery with high expressiveness
                 this.voiceEnabled = true;  // Enabled with ElevenLabs audio files
                 this.audioPlayer = null;  // HTML5 audio element for narration
+
+                // Subtitle state - default OFF (user must explicitly enable)
+                this.subtitlesEnabled = false;
 
                 this.initialize();
             }
@@ -628,10 +635,10 @@
                 this.slides = [
                     {
                         id: 1,
-                        title: "Organization Registration",
-                        video: "/static/demo/videos/slide_01_org_registration.mp4",
-                        duration: 111,
-                        narration: "Welcome to Course Creator Platform! Let's start by registering your organization. Watch as we fill out the registration form with your organization name, administrator details, and contact information. In under two minutes, you'll have a complete organizational structure ready to host unlimited courses and manage hundreds of users. This is effortless setup for corporate training teams."
+                        title: "Introduction",
+                        video: "/static/demo/videos/slide_01_introduction.mp4",
+                        duration: 20,
+                        narration: "Welcome to Course Creator Platform, built specifically for corporate training teams and professional instructors who need to create courses fast. Our AI-powered system transforms what used to take weeks into just minutes. In the next slide, we'll show you how to create an organization."
                     },
                     {
                         id: 2,
@@ -727,6 +734,7 @@
                 this.playPauseBtn.addEventListener('click', () => this.togglePlayPause());
                 this.prevBtn.addEventListener('click', () => this.previousSlide());
                 this.nextBtn.addEventListener('click', () => this.nextSlide());
+                this.subtitleToggleBtn.addEventListener('click', () => this.toggleSubtitles());
 
                 // Video events
                 this.videoPlayer.addEventListener('loadedmetadata', () => {
@@ -918,7 +926,12 @@
                 this.isPlaying = true;
                 this.playPauseBtn.innerHTML = '<i class="fas fa-pause" aria-hidden="true"></i> Pause';
                 this.playPauseBtn.setAttribute('aria-label', 'Pause video');
-                this.narrationOverlay.style.display = 'block';
+
+                // Only show subtitles if enabled by user
+                if (this.subtitlesEnabled) {
+                    this.narrationOverlay.style.display = 'block';
+                }
+
                 this.announce('Video playing');
 
                 // Start ElevenLabs AI voice narration synchronized with video
@@ -931,6 +944,22 @@
                     return;
                 }
 
+                // CRITICAL: Wait for video to be fully loaded before playing audio
+                if (this.videoPlayer.readyState < 3) {
+                    console.log('Video not ready yet, waiting for loadeddata event...');
+                    const loadedHandler = () => {
+                        this.videoPlayer.removeEventListener('loadeddata', loadedHandler);
+                        console.log('Video loaded, now starting audio...');
+                        this.startAudioPlayback();
+                    };
+                    this.videoPlayer.addEventListener('loadeddata', loadedHandler);
+                } else {
+                    console.log('Video already loaded, starting audio immediately');
+                    this.startAudioPlayback();
+                }
+            }
+
+            startAudioPlayback() {
                 if (this.audioPlayer) {
                     // Sync audio to video position
                     this.audioPlayer.currentTime = this.videoPlayer.currentTime;
@@ -992,6 +1021,28 @@
             nextSlide() {
                 if (this.currentSlideIndex < this.slides.length - 1) {
                     this.loadSlide(this.currentSlideIndex + 1);
+                }
+            }
+
+            toggleSubtitles() {
+                this.subtitlesEnabled = !this.subtitlesEnabled;
+
+                if (this.subtitlesEnabled) {
+                    // Enable subtitles
+                    this.narrationOverlay.style.display = 'block';
+                    this.subtitleToggleBtn.classList.add('active');
+                    this.subtitleToggleBtn.innerHTML = '<i class="fas fa-closed-captioning" aria-hidden="true"></i> Subtitles ON';
+                    this.subtitleToggleBtn.setAttribute('aria-label', 'Hide subtitles');
+                    this.announce('Subtitles enabled');
+                    console.log('✓ Subtitles enabled');
+                } else {
+                    // Disable subtitles
+                    this.narrationOverlay.style.display = 'none';
+                    this.subtitleToggleBtn.classList.remove('active');
+                    this.subtitleToggleBtn.innerHTML = '<i class="fas fa-closed-captioning" aria-hidden="true"></i> Subtitles';
+                    this.subtitleToggleBtn.setAttribute('aria-label', 'Show subtitles');
+                    this.announce('Subtitles disabled');
+                    console.log('✓ Subtitles disabled');
                 }
             }
 
