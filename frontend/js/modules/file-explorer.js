@@ -442,6 +442,13 @@ export class FileExplorer {
             );
 
             if (!response.ok) {
+                // Handle 404 gracefully - just show empty file list
+                if (response.status === 404) {
+                    console.warn('Files endpoint not found - showing empty file list');
+                    this.files = [];
+                    this.renderFiles();
+                    return;
+                }
                 throw new Error('Failed to load files');
             }
 
@@ -450,7 +457,9 @@ export class FileExplorer {
         } catch (error) {
             console.error('Error loading files:', error);
             this.options.onError(error);
-            this.showError('Failed to load files. Please try again.');
+            // Don't show alert - just render empty list
+            this.files = [];
+            this.renderFiles();
         }
     }
 

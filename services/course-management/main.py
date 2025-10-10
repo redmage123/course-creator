@@ -547,8 +547,7 @@ async def get_course(
 async def get_courses(
     instructor_id: Optional[str] = None,
     published_only: bool = True,
-    course_service: ICourseService = Depends(get_course_service),
-    current_user_id: Optional[str] = Depends(lambda: None)
+    course_service: ICourseService = Depends(get_course_service)
 ):
     """
     Get courses - either published courses for browsing or instructor's courses
@@ -1049,20 +1048,21 @@ def _course_to_response(course: Course) -> CourseResponse:
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def main(cfg: DictConfig) -> None:
     """Main entry point using Hydra configuration"""
-    global current_config
+    global current_config, app
+
+    # Update config (app already created with routes attached)
     current_config = cfg
-    
+
     # Setup centralized logging with syslog format
     service_name = os.environ.get('SERVICE_NAME', 'course-management')
     log_level = os.environ.get('LOG_LEVEL', getattr(cfg, 'logging', {}).get('level', 'INFO'))
-    
+
     logger = setup_docker_logging(service_name, log_level)
     logger.info(f"Starting Course Management Service on port {cfg.server.port}")
-    
-    # Create app with configuration
-    global app
-    app = create_app(cfg)
-    
+
+    # Note: app is already created at module level with all routes attached
+    # We don't recreate it here to preserve the route decorators
+
     # Run server with HTTPS/SSL configuration and reduced uvicorn logging to avoid duplicates
     uvicorn.run(
         app,

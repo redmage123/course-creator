@@ -2073,10 +2073,251 @@ class OrgAdminDashboard {
         `;
     }
 
+    /**
+     * Bulk create rooms for all instructors
+     * BUSINESS PURPOSE: Quick setup of meeting rooms for entire instructor team
+     */
+    async bulkCreateInstructorRooms(platform) {
+        try {
+            if (!confirm(`Create ${platform} rooms for all instructors in this organization?`)) {
+                return;
+            }
+
+            showLoadingOverlay();
+
+            const orgId = this.currentOrgId;
+            const response = await fetch(`${CONFIG.API_BASE_URL}/api/v1/rbac/organizations/${orgId}/meeting-rooms/bulk-create-instructor-rooms`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${Auth.getToken()}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    platform: platform,
+                    send_notifications: true
+                })
+            });
+
+            hideLoadingOverlay();
+
+            if (response.ok) {
+                const result = await response.json();
+                showNotification(
+                    `Created ${result.results.created} ${platform} rooms for instructors. ${result.results.failed} failed.`,
+                    result.results.failed > 0 ? 'warning' : 'success'
+                );
+                // Reload meeting rooms
+                await this.loadMeetingRooms();
+            } else {
+                const error = await response.json();
+                showNotification(error.detail || 'Failed to create instructor rooms', 'error');
+            }
+        } catch (error) {
+            hideLoadingOverlay();
+            console.error('Error creating instructor rooms:', error);
+            showNotification('Error creating instructor rooms', 'error');
+        }
+    }
+
+    /**
+     * Bulk create rooms for all tracks
+     * BUSINESS PURPOSE: Quick setup of meeting rooms for all learning tracks
+     */
+    async bulkCreateTrackRooms(platform) {
+        try {
+            if (!confirm(`Create ${platform} rooms for all tracks in this organization?`)) {
+                return;
+            }
+
+            showLoadingOverlay();
+
+            const orgId = this.currentOrgId;
+            const response = await fetch(`${CONFIG.API_BASE_URL}/api/v1/rbac/organizations/${orgId}/meeting-rooms/bulk-create-track-rooms`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${Auth.getToken()}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    platform: platform,
+                    send_notifications: true
+                })
+            });
+
+            hideLoadingOverlay();
+
+            if (response.ok) {
+                const result = await response.json();
+                showNotification(
+                    `Created ${result.results.created} ${platform} rooms for tracks. ${result.results.failed} failed.`,
+                    result.results.failed > 0 ? 'warning' : 'success'
+                );
+                // Reload meeting rooms
+                await this.loadMeetingRooms();
+            } else {
+                const error = await response.json();
+                showNotification(error.detail || 'Failed to create track rooms', 'error');
+            }
+        } catch (error) {
+            hideLoadingOverlay();
+            console.error('Error creating track rooms:', error);
+            showNotification('Error creating track rooms', 'error');
+        }
+    }
+
+    /**
+     * Show notification modal
+     * BUSINESS PURPOSE: Send notifications to channels or entire organization
+     */
+    showNotificationModal() {
+        const modal = document.getElementById('sendNotificationModal');
+        if (modal) {
+            modal.classList.add('show');
+            // Reset form
+            document.getElementById('sendNotificationForm').reset();
+            toggleNotificationFields();
+        }
+    }
+
+    /**
+     * Toggle notification form fields based on type
+     */
+    toggleNotificationFields() {
+        const type = document.getElementById('notificationType').value;
+        const channelIdGroup = document.getElementById('channelIdGroup');
+
+        if (type === 'channel') {
+            channelIdGroup.style.display = 'block';
+            document.getElementById('notificationChannelId').required = true;
+        } else {
+            channelIdGroup.style.display = 'none';
+            document.getElementById('notificationChannelId').required = false;
+        }
+    }
+
+    /**
+     * Send notification
+     * BUSINESS PURPOSE: Deliver notifications via Slack to channels or all org members
+     */
+    async sendNotification() {
+        try {
+            const form = document.getElementById('sendNotificationForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const type = document.getElementById('notificationType').value;
+            const title = document.getElementById('notificationTitle').value;
+            const message = document.getElementById('notificationMessage').value;
+            const priority = document.getElementById('notificationPriority').value;
+            const channelId = document.getElementById('notificationChannelId').value;
+
+            showLoadingOverlay();
+
+            const orgId = this.currentOrgId;
+            let endpoint, body;
+
+            if (type === 'channel') {
+                endpoint = `${CONFIG.API_BASE_URL}/api/v1/rbac/organizations/${orgId}/notifications/send-channel-notification`;
+                body = {
+                    channel_id: channelId,
+                    title: title,
+                    message: message,
+                    priority: priority
+                };
+            } else {
+                endpoint = `${CONFIG.API_BASE_URL}/api/v1/rbac/organizations/${orgId}/notifications/send-announcement`;
+                body = {
+                    title: title,
+                    message: message,
+                    priority: priority
+                };
+            }
+
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${Auth.getToken()}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            });
+
+            hideLoadingOverlay();
+
+            if (response.ok) {
+                const result = await response.json();
+                if (type === 'announcement') {
+                    showNotification(`Announcement sent to ${result.sent_count} members`, 'success');
+                } else {
+                    showNotification('Channel notification sent successfully', 'success');
+                }
+                closeModal('sendNotificationModal');
+            } else {
+                const error = await response.json();
+                showNotification(error.detail || 'Failed to send notification', 'error');
+            }
+        } catch (error) {
+            hideLoadingOverlay();
+            console.error('Error sending notification:', error);
+            showNotification('Error sending notification', 'error');
+        }
+    }
+
 }
 
 // Initialize dashboard when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     window.orgAdmin = new OrgAdminDashboard();
 });
+
+// ============================================================================
+// Global helper functions for onclick handlers
+// ============================================================================
+
+/**
+ * Bulk create instructor rooms (global scope for onclick)
+ */
+window.bulkCreateInstructorRooms = function(platform) {
+    if (window.orgAdmin) {
+        window.orgAdmin.bulkCreateInstructorRooms(platform);
+    }
+};
+
+/**
+ * Bulk create track rooms (global scope for onclick)
+ */
+window.bulkCreateTrackRooms = function(platform) {
+    if (window.orgAdmin) {
+        window.orgAdmin.bulkCreateTrackRooms(platform);
+    }
+};
+
+/**
+ * Show notification modal (global scope for onclick)
+ */
+window.showNotificationModal = function() {
+    if (window.orgAdmin) {
+        window.orgAdmin.showNotificationModal();
+    }
+};
+
+/**
+ * Toggle notification fields (global scope for onchange)
+ */
+window.toggleNotificationFields = function() {
+    if (window.orgAdmin) {
+        window.orgAdmin.toggleNotificationFields();
+    }
+};
+
+/**
+ * Send notification (global scope for onclick)
+ */
+window.sendNotification = function() {
+    if (window.orgAdmin) {
+        window.orgAdmin.sendNotification();
+    }
+};
 

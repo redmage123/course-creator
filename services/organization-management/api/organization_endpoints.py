@@ -26,7 +26,7 @@ from organization_management.application.services.organization_service import Or
 from pydantic import BaseModel, Field, EmailStr, validator
 
 # Import custom exceptions for proper error handling
-from exceptions import (
+from organization_management.exceptions import (
     OrganizationException,
     OrganizationNotFoundException,
     OrganizationValidationException,

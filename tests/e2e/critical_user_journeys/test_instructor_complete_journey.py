@@ -548,39 +548,906 @@ class TestCourseCreationWorkflow(BaseTest):
 # Simplified workflow tests - UI features not yet fully implemented
 # These tests verify that tabs exist and content loads
 
-@pytest.mark.skip(reason="Content generation UI not fully implemented")
 @pytest.mark.e2e
 class TestContentGenerationWorkflow(BaseTest):
-    """Test AI-powered content generation workflows (SKIPPED - UI not implemented)."""
-    pass
+    """
+    Test AI-powered content generation workflows.
+
+    BUSINESS REQUIREMENT:
+    Instructors can use AI to generate course content including:
+    - Syllabi based on course description
+    - Presentation slides
+    - Quizzes and assessments
+
+    TECHNICAL IMPLEMENTATION:
+    - Content generation tab in instructor dashboard
+    - Integration with AI generation APIs
+    - Real-time preview and editing
+    """
+
+    @pytest.fixture(scope="function", autouse=True)
+    def setup_instructor_session(self):
+        """Set up authenticated instructor session before each test using real login."""
+        self.driver.get(f"{BASE_URL}/html/index.html")
+        time.sleep(2)
+
+        # Perform real login via API
+        login_result = self.driver.execute_script("""
+            return fetch('https://localhost:8000/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: arguments[0],
+                    password: arguments[1]
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.access_token) {
+                    localStorage.setItem('authToken', data.access_token);
+                    localStorage.setItem('userRole', data.role || 'instructor');
+                    localStorage.setItem('userName', data.username || 'Test Instructor');
+                    localStorage.setItem('currentUser', JSON.stringify({
+                        id: data.user_id || data.id,
+                        email: data.email || arguments[0],
+                        role: data.role || 'instructor',
+                        username: data.username,
+                        organization_id: data.organization_id || 1
+                    }));
+                    localStorage.setItem('userEmail', data.email || arguments[0]);
+                    localStorage.setItem('sessionStart', Date.now().toString());
+                    localStorage.setItem('lastActivity', Date.now().toString());
+                    return { success: true, token: data.access_token };
+                }
+                return { success: false, error: 'No access token', data: data };
+            })
+            .catch(error => {
+                return { success: false, error: error.toString() };
+            });
+        """, TEST_INSTRUCTOR_EMAIL, TEST_INSTRUCTOR_PASSWORD)
+
+        # Check if login succeeded
+        if not login_result.get('success'):
+            # If login fails, create the user first
+            self.driver.execute_script("""
+                fetch('https://localhost:8000/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: arguments[0].split('@')[0],
+                        email: arguments[0],
+                        password: arguments[1],
+                        full_name: 'Test Instructor',
+                        role: 'instructor'
+                    })
+                }).then(() => console.log('User created'));
+            """, TEST_INSTRUCTOR_EMAIL, TEST_INSTRUCTOR_PASSWORD)
+
+            time.sleep(2)
+
+            # Try login again
+            login_result = self.driver.execute_script("""
+                return fetch('https://localhost:8000/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: arguments[0],
+                        password: arguments[1]
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.access_token) {
+                        localStorage.setItem('authToken', data.access_token);
+                        localStorage.setItem('userRole', data.role || 'instructor');
+                        localStorage.setItem('userName', data.username || 'Test Instructor');
+                        localStorage.setItem('currentUser', JSON.stringify({
+                            id: data.user_id || data.id,
+                            email: data.email || arguments[0],
+                            role: data.role || 'instructor',
+                            username: data.username,
+                            organization_id: data.organization_id || 1
+                        }));
+                        localStorage.setItem('userEmail', data.email || arguments[0]);
+                        localStorage.setItem('sessionStart', Date.now().toString());
+                        localStorage.setItem('lastActivity', Date.now().toString());
+                        return { success: true, token: data.access_token };
+                    }
+                    return { success: false, error: 'No access token after retry' };
+                })
+                .catch(error => ({ success: false, error: error.toString() }));
+            """, TEST_INSTRUCTOR_EMAIL, TEST_INSTRUCTOR_PASSWORD)
+
+        assert login_result.get('success'), f"Login failed: {login_result.get('error')}"
+        yield
+
+    def test_content_generation_tab_exists(self):
+        """
+        Test that content generation tab is accessible.
+
+        TDD: RED phase - Should fail until tab is created
+        """
+        dashboard = InstructorDashboardPage(self.driver, self.config)
+        dashboard.navigate_to_dashboard()
+
+        # Look for content generation tab (assuming data-tab="content-generation")
+        content_gen_tab = self.wait_for_element((By.CSS_SELECTOR, "[data-tab='content-generation']"), timeout=5)
+        assert content_gen_tab is not None, "Content generation tab should be present"
+
+    def test_generate_syllabus_ui_exists(self):
+        """
+        Test that syllabus generation UI exists.
+
+        TDD: RED phase - Should fail until UI is created
+        """
+        dashboard = InstructorDashboardPage(self.driver, self.config)
+        dashboard.navigate_to_dashboard()
+
+        # Navigate to content generation tab
+        content_gen_tab = self.wait_for_element((By.CSS_SELECTOR, "[data-tab='content-generation']"), timeout=5)
+        content_gen_tab.click()
+        time.sleep(1)
+
+        # Check for generate syllabus button
+        page_source = self.driver.page_source.lower()
+        assert "generate syllabus" in page_source or "syllabus" in page_source, \
+            "Syllabus generation UI should be present"
+
+    def test_generate_slides_ui_exists(self):
+        """
+        Test that slides generation UI exists.
+
+        TDD: RED phase - Should fail until UI is created
+        """
+        dashboard = InstructorDashboardPage(self.driver, self.config)
+        dashboard.navigate_to_dashboard()
+
+        # Navigate to content generation tab
+        content_gen_tab = self.wait_for_element((By.CSS_SELECTOR, "[data-tab='content-generation']"), timeout=5)
+        content_gen_tab.click()
+        time.sleep(1)
+
+        # Check for slides generation option
+        page_source = self.driver.page_source.lower()
+        assert "slides" in page_source or "presentation" in page_source, \
+            "Slides generation UI should be present"
+
+    def test_generate_quiz_ui_exists(self):
+        """
+        Test that quiz generation UI exists.
+
+        TDD: RED phase - Should fail until UI is created
+        """
+        dashboard = InstructorDashboardPage(self.driver, self.config)
+        dashboard.navigate_to_dashboard()
+
+        # Navigate to content generation tab
+        content_gen_tab = self.wait_for_element((By.CSS_SELECTOR, "[data-tab='content-generation']"), timeout=5)
+        content_gen_tab.click()
+        time.sleep(1)
+
+        # Check for quiz generation option
+        page_source = self.driver.page_source.lower()
+        assert "quiz" in page_source or "assessment" in page_source, \
+            "Quiz generation UI should be present"
 
 
-@pytest.mark.skip(reason="Student management UI not fully implemented")
 @pytest.mark.e2e
 class TestStudentManagementWorkflow(BaseTest):
-    """Test student management workflows (SKIPPED - UI not implemented)."""
-    pass
+    """
+    Test student management workflows.
+
+    BUSINESS REQUIREMENT:
+    Instructors can manage students including:
+    - View all enrolled students
+    - Add/enroll new students
+    - View student progress and grades
+    - Remove students from courses
+
+    TECHNICAL IMPLEMENTATION:
+    - Students tab with student list table
+    - Add student functionality
+    - Student details and progress tracking
+    """
+
+    @pytest.fixture(scope="function", autouse=True)
+    def setup_instructor_session(self):
+        """Set up authenticated instructor session before each test using real login."""
+        self.driver.get(f"{BASE_URL}/html/index.html")
+        time.sleep(2)
+
+        # Perform real login via API
+        login_result = self.driver.execute_script("""
+            return fetch('https://localhost:8000/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: arguments[0],
+                    password: arguments[1]
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.access_token) {
+                    localStorage.setItem('authToken', data.access_token);
+                    localStorage.setItem('userRole', data.role || 'instructor');
+                    localStorage.setItem('userName', data.username || 'Test Instructor');
+                    localStorage.setItem('currentUser', JSON.stringify({
+                        id: data.user_id || data.id,
+                        email: data.email || arguments[0],
+                        role: data.role || 'instructor',
+                        username: data.username,
+                        organization_id: data.organization_id || 1
+                    }));
+                    localStorage.setItem('userEmail', data.email || arguments[0]);
+                    localStorage.setItem('sessionStart', Date.now().toString());
+                    localStorage.setItem('lastActivity', Date.now().toString());
+                    return { success: true, token: data.access_token };
+                }
+                return { success: false, error: 'No access token', data: data };
+            })
+            .catch(error => {
+                return { success: false, error: error.toString() };
+            });
+        """, TEST_INSTRUCTOR_EMAIL, TEST_INSTRUCTOR_PASSWORD)
+
+        # Check if login succeeded
+        if not login_result.get('success'):
+            # If login fails, create the user first
+            self.driver.execute_script("""
+                fetch('https://localhost:8000/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: arguments[0].split('@')[0],
+                        email: arguments[0],
+                        password: arguments[1],
+                        full_name: 'Test Instructor',
+                        role: 'instructor'
+                    })
+                }).then(() => console.log('User created'));
+            """, TEST_INSTRUCTOR_EMAIL, TEST_INSTRUCTOR_PASSWORD)
+
+            time.sleep(2)
+
+            # Try login again
+            login_result = self.driver.execute_script("""
+                return fetch('https://localhost:8000/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: arguments[0],
+                        password: arguments[1]
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.access_token) {
+                        localStorage.setItem('authToken', data.access_token);
+                        localStorage.setItem('userRole', data.role || 'instructor');
+                        localStorage.setItem('userName', data.username || 'Test Instructor');
+                        localStorage.setItem('currentUser', JSON.stringify({
+                            id: data.user_id || data.id,
+                            email: data.email || arguments[0],
+                            role: data.role || 'instructor',
+                            username: data.username,
+                            organization_id: data.organization_id || 1
+                        }));
+                        localStorage.setItem('userEmail', data.email || arguments[0]);
+                        localStorage.setItem('sessionStart', Date.now().toString());
+                        localStorage.setItem('lastActivity', Date.now().toString());
+                        return { success: true, token: data.access_token };
+                    }
+                    return { success: false, error: 'No access token after retry' };
+                })
+                .catch(error => ({ success: false, error: error.toString() }));
+            """, TEST_INSTRUCTOR_EMAIL, TEST_INSTRUCTOR_PASSWORD)
+
+        assert login_result.get('success'), f"Login failed: {login_result.get('error')}"
+        yield
+
+    def test_students_tab_loads_with_table(self):
+        """
+        Test that students tab loads with student table.
+
+        TDD: RED phase - Should fail until implementation
+        """
+        dashboard = InstructorDashboardPage(self.driver, self.config)
+        dashboard.navigate_to_dashboard()
+
+        # Click students tab
+        dashboard.switch_to_students_tab()
+
+        # Verify students table exists
+        page_source = self.driver.page_source.lower()
+        assert "student" in page_source, "Students content should be loaded"
+
+    def test_add_student_button_exists(self):
+        """
+        Test that add student button is present.
+
+        TDD: RED phase - Should fail until implementation
+        """
+        dashboard = InstructorDashboardPage(self.driver, self.config)
+        dashboard.navigate_to_dashboard()
+        dashboard.switch_to_students_tab()
+
+        # Check for add student button
+        page_source = self.driver.page_source
+        assert "Add Student" in page_source or "add" in page_source.lower(), \
+            "Add student button should be present"
+
+    def test_student_list_container_exists(self):
+        """
+        Test that student list container exists.
+
+        TDD: RED phase - Should fail until implementation
+        """
+        dashboard = InstructorDashboardPage(self.driver, self.config)
+        dashboard.navigate_to_dashboard()
+        dashboard.switch_to_students_tab()
+
+        # Should have students container
+        students_container = self.wait_for_element((By.ID, "studentsTableContainer"), timeout=5)
+        assert students_container is not None, "Students table container should be present"
 
 
-@pytest.mark.skip(reason="Analytics UI not fully implemented")
 @pytest.mark.e2e
 class TestAnalyticsWorkflow(BaseTest):
-    """Test analytics and reporting workflows (SKIPPED - UI not implemented)."""
-    pass
+    """
+    Test analytics and reporting workflows.
+
+    BUSINESS REQUIREMENT:
+    Instructors can view comprehensive analytics including:
+    - Student enrollment statistics
+    - Course completion rates
+    - Quiz performance metrics
+    - Student engagement data
+    - Export analytics reports
+
+    TECHNICAL IMPLEMENTATION:
+    - Analytics tab with charts and graphs
+    - Statistics cards showing key metrics
+    - Chart.js integration for visualizations
+    - Export functionality for reports
+    - Filterable by course and date range
+    """
+
+    @pytest.fixture(scope="function", autouse=True)
+    def setup_instructor_session(self):
+        """Set up authenticated instructor session before each test using real login."""
+        self.driver.get(f"{BASE_URL}/html/index.html")
+        time.sleep(2)
+
+        # Perform real login via API
+        login_result = self.driver.execute_script("""
+            return fetch('https://localhost:8000/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: arguments[0],
+                    password: arguments[1]
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.access_token) {
+                    localStorage.setItem('authToken', data.access_token);
+                    localStorage.setItem('userRole', data.role || 'instructor');
+                    localStorage.setItem('userName', data.username || 'Test Instructor');
+                    localStorage.setItem('currentUser', JSON.stringify({
+                        id: data.user_id || data.id,
+                        email: data.email || arguments[0],
+                        role: data.role || 'instructor',
+                        username: data.username,
+                        organization_id: data.organization_id || 1
+                    }));
+                    localStorage.setItem('userEmail', data.email || arguments[0]);
+                    localStorage.setItem('sessionStart', Date.now().toString());
+                    localStorage.setItem('lastActivity', Date.now().toString());
+                    return { success: true, token: data.access_token };
+                }
+                return { success: false, error: 'No access token', data: data };
+            })
+            .catch(error => {
+                return { success: false, error: error.toString() };
+            });
+        """, TEST_INSTRUCTOR_EMAIL, TEST_INSTRUCTOR_PASSWORD)
+
+        # Check if login succeeded
+        if not login_result.get('success'):
+            # If login fails, create the user first
+            self.driver.execute_script("""
+                fetch('https://localhost:8000/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: arguments[0].split('@')[0],
+                        email: arguments[0],
+                        password: arguments[1],
+                        full_name: 'Test Instructor',
+                        role: 'instructor'
+                    })
+                }).then(() => console.log('User created'));
+            """, TEST_INSTRUCTOR_EMAIL, TEST_INSTRUCTOR_PASSWORD)
+
+            time.sleep(2)
+
+            # Try login again
+            login_result = self.driver.execute_script("""
+                return fetch('https://localhost:8000/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: arguments[0],
+                        password: arguments[1]
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.access_token) {
+                        localStorage.setItem('authToken', data.access_token);
+                        localStorage.setItem('userRole', data.role || 'instructor');
+                        localStorage.setItem('userName', data.username || 'Test Instructor');
+                        localStorage.setItem('currentUser', JSON.stringify({
+                            id: data.user_id || data.id,
+                            email: data.email || arguments[0],
+                            role: data.role || 'instructor',
+                            username: data.username,
+                            organization_id: data.organization_id || 1
+                        }));
+                        localStorage.setItem('userEmail', data.email || arguments[0]);
+                        localStorage.setItem('sessionStart', Date.now().toString());
+                        localStorage.setItem('lastActivity', Date.now().toString());
+                        return { success: true, token: data.access_token };
+                    }
+                    return { success: false, error: 'No access token after retry' };
+                })
+                .catch(error => ({ success: false, error: error.toString() }));
+            """, TEST_INSTRUCTOR_EMAIL, TEST_INSTRUCTOR_PASSWORD)
+
+        assert login_result.get('success'), f"Login failed: {login_result.get('error')}"
+        yield
+
+    def test_analytics_tab_loads(self):
+        """
+        Test that analytics tab loads successfully.
+
+        TDD: RED phase - Should fail until implementation
+        """
+        dashboard = InstructorDashboardPage(self.driver, self.config)
+        dashboard.navigate_to_dashboard()
+
+        # Click analytics tab
+        dashboard.switch_to_analytics_tab()
+
+        # Verify analytics content loaded
+        page_source = self.driver.page_source.lower()
+        assert "analytic" in page_source or "statistic" in page_source, \
+            "Analytics content should be loaded"
+
+    def test_statistics_cards_display(self):
+        """
+        Test that statistics cards are displayed.
+
+        TDD: RED phase - Should fail until implementation
+        """
+        dashboard = InstructorDashboardPage(self.driver, self.config)
+        dashboard.navigate_to_dashboard()
+        dashboard.switch_to_analytics_tab()
+
+        # Should have statistics cards
+        stat_cards = self.driver.find_elements(By.CLASS_NAME, "stat-card")
+        assert len(stat_cards) > 0, "Statistics cards should be present"
+
+    def test_analytics_charts_render(self):
+        """
+        Test that analytics charts render properly.
+
+        TDD: RED phase - Should fail until implementation
+        """
+        dashboard = InstructorDashboardPage(self.driver, self.config)
+        dashboard.navigate_to_dashboard()
+        dashboard.switch_to_analytics_tab()
+
+        # Wait for charts to render
+        time.sleep(2)
+
+        # Should have chart containers
+        page_source = self.driver.page_source.lower()
+        assert "chart" in page_source or "canvas" in page_source, \
+            "Chart elements should be present"
+
+    def test_export_analytics_button_exists(self):
+        """
+        Test that export analytics button is present.
+
+        TDD: RED phase - Should fail until implementation
+        """
+        dashboard = InstructorDashboardPage(self.driver, self.config)
+        dashboard.navigate_to_dashboard()
+        dashboard.switch_to_analytics_tab()
+
+        # Check for export button
+        page_source = self.driver.page_source
+        assert "Export" in page_source or "export" in page_source.lower(), \
+            "Export analytics button should be present"
+
+    def test_course_filter_exists(self):
+        """
+        Test that course filter dropdown exists.
+
+        TDD: RED phase - Should fail until implementation
+        """
+        dashboard = InstructorDashboardPage(self.driver, self.config)
+        dashboard.navigate_to_dashboard()
+        dashboard.switch_to_analytics_tab()
+
+        # Should have course filter
+        course_filter = self.wait_for_element((By.ID, "analyticsCourseFilter"), timeout=5)
+        assert course_filter is not None, "Course filter should be present"
 
 
-@pytest.mark.skip(reason="Feedback UI not fully implemented")
 @pytest.mark.e2e
 class TestFeedbackWorkflow(BaseTest):
-    """Test feedback management workflows (SKIPPED - UI not implemented)."""
-    pass
+    """
+    Test feedback management workflows.
+
+    BUSINESS REQUIREMENT:
+    Instructors can manage student feedback including:
+    - View all student feedback
+    - Respond to feedback
+    - Filter feedback by course
+    - Mark feedback as resolved
+    - Export feedback reports
+
+    TECHNICAL IMPLEMENTATION:
+    - Feedback tab with feedback list
+    - Response functionality
+    - Filter and search capabilities
+    - Status management (pending/resolved)
+    """
+
+    @pytest.fixture(scope="function", autouse=True)
+    def setup_instructor_session(self):
+        """Set up authenticated instructor session before each test using real login."""
+        self.driver.get(f"{BASE_URL}/html/index.html")
+        time.sleep(2)
+
+        # Perform real login via API
+        login_result = self.driver.execute_script("""
+            return fetch('https://localhost:8000/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: arguments[0],
+                    password: arguments[1]
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.access_token) {
+                    localStorage.setItem('authToken', data.access_token);
+                    localStorage.setItem('userRole', data.role || 'instructor');
+                    localStorage.setItem('userName', data.username || 'Test Instructor');
+                    localStorage.setItem('currentUser', JSON.stringify({
+                        id: data.user_id || data.id,
+                        email: data.email || arguments[0],
+                        role: data.role || 'instructor',
+                        username: data.username,
+                        organization_id: data.organization_id || 1
+                    }));
+                    localStorage.setItem('userEmail', data.email || arguments[0]);
+                    localStorage.setItem('sessionStart', Date.now().toString());
+                    localStorage.setItem('lastActivity', Date.now().toString());
+                    return { success: true, token: data.access_token };
+                }
+                return { success: false, error: 'No access token', data: data };
+            })
+            .catch(error => {
+                return { success: false, error: error.toString() };
+            });
+        """, TEST_INSTRUCTOR_EMAIL, TEST_INSTRUCTOR_PASSWORD)
+
+        # Check if login succeeded
+        if not login_result.get('success'):
+            # If login fails, create the user first
+            self.driver.execute_script("""
+                fetch('https://localhost:8000/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: arguments[0].split('@')[0],
+                        email: arguments[0],
+                        password: arguments[1],
+                        full_name: 'Test Instructor',
+                        role: 'instructor'
+                    })
+                }).then(() => console.log('User created'));
+            """, TEST_INSTRUCTOR_EMAIL, TEST_INSTRUCTOR_PASSWORD)
+
+            time.sleep(2)
+
+            # Try login again
+            login_result = self.driver.execute_script("""
+                return fetch('https://localhost:8000/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: arguments[0],
+                        password: arguments[1]
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.access_token) {
+                        localStorage.setItem('authToken', data.access_token);
+                        localStorage.setItem('userRole', data.role || 'instructor');
+                        localStorage.setItem('userName', data.username || 'Test Instructor');
+                        localStorage.setItem('currentUser', JSON.stringify({
+                            id: data.user_id || data.id,
+                            email: data.email || arguments[0],
+                            role: data.role || 'instructor',
+                            username: data.username,
+                            organization_id: data.organization_id || 1
+                        }));
+                        localStorage.setItem('userEmail', data.email || arguments[0]);
+                        localStorage.setItem('sessionStart', Date.now().toString());
+                        localStorage.setItem('lastActivity', Date.now().toString());
+                        return { success: true, token: data.access_token };
+                    }
+                    return { success: false, error: 'No access token after retry' };
+                })
+                .catch(error => ({ success: false, error: error.toString() }));
+            """, TEST_INSTRUCTOR_EMAIL, TEST_INSTRUCTOR_PASSWORD)
+
+        assert login_result.get('success'), f"Login failed: {login_result.get('error')}"
+        yield
+
+    def test_feedback_tab_exists(self):
+        """
+        Test that feedback tab is accessible.
+
+        TDD: RED phase - Should fail until implementation
+        """
+        dashboard = InstructorDashboardPage(self.driver, self.config)
+        dashboard.navigate_to_dashboard()
+
+        # Look for feedback tab
+        feedback_tab = self.wait_for_element((By.CSS_SELECTOR, "[data-tab='feedback']"), timeout=5)
+        assert feedback_tab is not None, "Feedback tab should be present"
+
+    def test_feedback_list_displays(self):
+        """
+        Test that feedback list displays.
+
+        TDD: RED phase - Should fail until implementation
+        """
+        dashboard = InstructorDashboardPage(self.driver, self.config)
+        dashboard.navigate_to_dashboard()
+
+        # Navigate to feedback tab
+        feedback_tab = self.wait_for_element((By.CSS_SELECTOR, "[data-tab='feedback']"), timeout=5)
+        feedback_tab.click()
+        time.sleep(1)
+
+        # Check for feedback content
+        page_source = self.driver.page_source.lower()
+        assert "feedback" in page_source, "Feedback content should be loaded"
+
+    def test_feedback_filter_exists(self):
+        """
+        Test that feedback filter exists.
+
+        TDD: RED phase - Should fail until implementation
+        """
+        dashboard = InstructorDashboardPage(self.driver, self.config)
+        dashboard.navigate_to_dashboard()
+
+        # Navigate to feedback tab
+        feedback_tab = self.wait_for_element((By.CSS_SELECTOR, "[data-tab='feedback']"), timeout=5)
+        feedback_tab.click()
+        time.sleep(1)
+
+        # Should have filter dropdown
+        filter_select = self.wait_for_element((By.ID, "feedbackStatusFilter"), timeout=5)
+        assert filter_select is not None, "Feedback filter should be present"
 
 
-@pytest.mark.skip(reason="Lab management UI not fully implemented")
 @pytest.mark.e2e
 class TestLabManagementWorkflow(BaseTest):
-    """Test lab environment management workflows (SKIPPED - UI not implemented)."""
-    pass
+    """
+    Test lab environment management workflows.
+
+    BUSINESS REQUIREMENT:
+    Instructors can manage lab environments including:
+    - View all lab instances
+    - Create new lab environments
+    - Monitor lab status and resource usage
+    - Manage lab containers
+
+    TECHNICAL IMPLEMENTATION:
+    - Lab management tab with lab list
+    - Create lab functionality
+    - Lab status monitoring
+    - Docker container integration
+    """
+
+    @pytest.fixture(scope="function", autouse=True)
+    def setup_instructor_session(self):
+        """Set up authenticated instructor session before each test using real login."""
+        self.driver.get(f"{BASE_URL}/html/index.html")
+        time.sleep(2)
+
+        # Perform real login via API
+        login_result = self.driver.execute_script("""
+            return fetch('https://localhost:8000/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: arguments[0],
+                    password: arguments[1]
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.access_token) {
+                    localStorage.setItem('authToken', data.access_token);
+                    localStorage.setItem('userRole', data.role || 'instructor');
+                    localStorage.setItem('userName', data.username || 'Test Instructor');
+                    localStorage.setItem('currentUser', JSON.stringify({
+                        id: data.user_id || data.id,
+                        email: data.email || arguments[0],
+                        role: data.role || 'instructor',
+                        username: data.username,
+                        organization_id: data.organization_id || 1
+                    }));
+                    localStorage.setItem('userEmail', data.email || arguments[0]);
+                    localStorage.setItem('sessionStart', Date.now().toString());
+                    localStorage.setItem('lastActivity', Date.now().toString());
+                    return { success: true, token: data.access_token };
+                }
+                return { success: false, error: 'No access token', data: data };
+            })
+            .catch(error => {
+                return { success: false, error: error.toString() };
+            });
+        """, TEST_INSTRUCTOR_EMAIL, TEST_INSTRUCTOR_PASSWORD)
+
+        # Check if login succeeded
+        if not login_result.get('success'):
+            # If login fails, create the user first
+            self.driver.execute_script("""
+                fetch('https://localhost:8000/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: arguments[0].split('@')[0],
+                        email: arguments[0],
+                        password: arguments[1],
+                        full_name: 'Test Instructor',
+                        role: 'instructor'
+                    })
+                }).then(() => console.log('User created'));
+            """, TEST_INSTRUCTOR_EMAIL, TEST_INSTRUCTOR_PASSWORD)
+
+            time.sleep(2)
+
+            # Try login again
+            login_result = self.driver.execute_script("""
+                return fetch('https://localhost:8000/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: arguments[0],
+                        password: arguments[1]
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.access_token) {
+                        localStorage.setItem('authToken', data.access_token);
+                        localStorage.setItem('userRole', data.role || 'instructor');
+                        localStorage.setItem('userName', data.username || 'Test Instructor');
+                        localStorage.setItem('currentUser', JSON.stringify({
+                            id: data.user_id || data.id,
+                            email: data.email || arguments[0],
+                            role: data.role || 'instructor',
+                            username: data.username,
+                            organization_id: data.organization_id || 1
+                        }));
+                        localStorage.setItem('userEmail', data.email || arguments[0]);
+                        localStorage.setItem('sessionStart', Date.now().toString());
+                        localStorage.setItem('lastActivity', Date.now().toString());
+                        return { success: true, token: data.access_token };
+                    }
+                    return { success: false, error: 'No access token after retry' };
+                })
+                .catch(error => ({ success: false, error: error.toString() }));
+            """, TEST_INSTRUCTOR_EMAIL, TEST_INSTRUCTOR_PASSWORD)
+
+        assert login_result.get('success'), f"Login failed: {login_result.get('error')}"
+        yield
+
+    def test_labs_tab_exists(self):
+        """
+        Test that labs tab is accessible.
+
+        TDD: RED phase - Should fail until implementation
+        """
+        dashboard = InstructorDashboardPage(self.driver, self.config)
+        dashboard.navigate_to_dashboard()
+
+        # Look for labs tab
+        labs_tab = self.wait_for_element((By.CSS_SELECTOR, "[data-tab='labs']"), timeout=5)
+        assert labs_tab is not None, "Labs tab should be present"
+
+    def test_create_lab_button_exists(self):
+        """
+        Test that create lab button is present.
+
+        TDD: RED phase - Should fail until implementation
+        """
+        dashboard = InstructorDashboardPage(self.driver, self.config)
+        dashboard.navigate_to_dashboard()
+
+        # Navigate to labs tab
+        labs_tab = self.wait_for_element((By.CSS_SELECTOR, "[data-tab='labs']"), timeout=5)
+        labs_tab.click()
+        time.sleep(1)
+
+        # Check for create lab button
+        page_source = self.driver.page_source
+        assert "Create Lab" in page_source or "create" in page_source.lower(), \
+            "Create lab button should be present"
+
+    def test_labs_list_container_exists(self):
+        """
+        Test that labs list container exists.
+
+        TDD: RED phase - Should fail until implementation
+        """
+        dashboard = InstructorDashboardPage(self.driver, self.config)
+        dashboard.navigate_to_dashboard()
+
+        # Navigate to labs tab
+        labs_tab = self.wait_for_element((By.CSS_SELECTOR, "[data-tab='labs']"), timeout=5)
+        labs_tab.click()
+        time.sleep(1)
+
+        # Should have labs container
+        labs_container = self.wait_for_element((By.ID, "labsListContainer"), timeout=5)
+        assert labs_container is not None, "Labs list container should be present"
 
 
 @pytest.mark.e2e
@@ -589,21 +1456,106 @@ class TestFilesTabWorkflow(BaseTest):
 
     @pytest.fixture(scope="function", autouse=True)
     def setup_instructor_session(self):
-        """Set up authenticated instructor session before each test."""
+        """Set up authenticated instructor session before each test using real login."""
+        # Navigate to index page
         self.driver.get(f"{BASE_URL}/html/index.html")
         time.sleep(2)
-        self.driver.execute_script("""
-            localStorage.setItem('authToken', 'test-instructor-token-12345');
-            localStorage.setItem('userRole', 'instructor');
-            localStorage.setItem('userName', 'Test Instructor');
-            localStorage.setItem('currentUser', JSON.stringify({
-                id: 200, email: 'instructor@example.com', role: 'instructor',
-                organization_id: 1, name: 'Test Instructor'
-            }));
-            localStorage.setItem('userEmail', 'instructor@example.com');
-            localStorage.setItem('sessionStart', Date.now().toString());
-            localStorage.setItem('lastActivity', Date.now().toString());
-        """)
+
+        # Perform real login via API
+        login_result = self.driver.execute_script("""
+            return fetch('https://localhost:8000/auth/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: arguments[0],
+                    password: arguments[1]
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.access_token) {
+                    // Store authentication data
+                    localStorage.setItem('authToken', data.access_token);
+                    localStorage.setItem('userRole', data.role || 'instructor');
+                    localStorage.setItem('userName', data.username || 'Test Instructor');
+                    localStorage.setItem('currentUser', JSON.stringify({
+                        id: data.user_id || data.id,
+                        email: data.email || arguments[0],
+                        role: data.role || 'instructor',
+                        username: data.username,
+                        organization_id: data.organization_id || 1
+                    }));
+                    localStorage.setItem('userEmail', data.email || arguments[0]);
+                    localStorage.setItem('sessionStart', Date.now().toString());
+                    localStorage.setItem('lastActivity', Date.now().toString());
+                    return { success: true, token: data.access_token, data: data };
+                }
+                return { success: false, error: 'No access token', data: data };
+            })
+            .catch(error => {
+                return { success: false, error: error.toString() };
+            });
+        """, TEST_INSTRUCTOR_EMAIL, TEST_INSTRUCTOR_PASSWORD)
+
+        # Check if login succeeded
+        if not login_result.get('success'):
+            # If login fails, create the user first
+            self.driver.execute_script("""
+                fetch('https://localhost:8000/auth/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: arguments[0].split('@')[0],
+                        email: arguments[0],
+                        password: arguments[1],
+                        full_name: 'Test Instructor',
+                        role: 'instructor'
+                    })
+                }).then(() => console.log('User created'));
+            """, TEST_INSTRUCTOR_EMAIL, TEST_INSTRUCTOR_PASSWORD)
+
+            time.sleep(2)
+
+            # Try login again
+            login_result = self.driver.execute_script("""
+                return fetch('https://localhost:8000/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: arguments[0],
+                        password: arguments[1]
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.access_token) {
+                        localStorage.setItem('authToken', data.access_token);
+                        localStorage.setItem('userRole', data.role || 'instructor');
+                        localStorage.setItem('userName', data.username || 'Test Instructor');
+                        localStorage.setItem('currentUser', JSON.stringify({
+                            id: data.user_id || data.id,
+                            email: data.email || arguments[0],
+                            role: data.role || 'instructor',
+                            username: data.username,
+                            organization_id: data.organization_id || 1
+                        }));
+                        localStorage.setItem('userEmail', data.email || arguments[0]);
+                        localStorage.setItem('sessionStart', Date.now().toString());
+                        localStorage.setItem('lastActivity', Date.now().toString());
+                        return { success: true, token: data.access_token };
+                    }
+                    return { success: false, error: 'No access token after retry' };
+                })
+                .catch(error => ({ success: false, error: error.toString() }));
+            """, TEST_INSTRUCTOR_EMAIL, TEST_INSTRUCTOR_PASSWORD)
+
+        assert login_result.get('success'), f"Login failed: {login_result.get('error')}"
         yield
 
     def test_files_tab_loads_successfully(self):

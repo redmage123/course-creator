@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Portal Login - Course Creator Platform</title>
     <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/design-system.css">
+    <link rel="stylesheet" href="../css/accessibility.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <!-- Privacy-focused: No external tracking or analytics without consent -->
     <style>
@@ -269,8 +271,11 @@
     </style>
 </head>
 <body>
-    <a href="#main-content" class="skip-link">Skip to main content</a>
-    <div aria-live="polite" aria-atomic="true" class="sr-only" id="form-announcements"></div>
+    <!-- Skip Navigation Links -->
+    <div class="skip-links">
+        <a href="#main-content" class="skip-link">Skip to main content</a>
+    </div>
+
     <main id="main-content" role="main">
     <div class="login-container">
         <div class="login-card">
@@ -279,11 +284,11 @@
             </div>
             
             <!-- Login Mode Toggle -->
-            <div class="login-mode-toggle">
-                <button type="button" class="mode-button active" onclick="switchLoginMode('credentials')" id="credentialsMode">
+            <div class="login-mode-toggle" role="tablist" aria-label="Login method selection">
+                <button type="button" class="mode-button active" onclick="switchLoginMode('credentials')" id="credentialsMode" role="tab" aria-selected="true" aria-controls="credentialsForm">
                     <i class="fas fa-user"></i> Username<br>or Password
                 </button>
-                <button type="button" class="mode-button" onclick="switchLoginMode('token')" id="tokenMode">
+                <button type="button" class="mode-button" onclick="switchLoginMode('token')" id="tokenMode" role="tab" aria-selected="false" aria-controls="tokenForm">
                     <i class="fas fa-key"></i> Access Token
                 </button>
             </div>
@@ -316,7 +321,7 @@
             <div id="loadingSpinner" class="loading-spinner"></div>
             
             <!-- Credentials Login Form -->
-            <form id="credentialsForm" class="login-form">
+            <form id="credentialsForm" class="login-form" role="tabpanel" aria-labelledby="credentialsMode">
                 <div class="form-group">
                     <label for="email">Email Address:</label>
                     <input
@@ -324,6 +329,7 @@
                         id="email"
                         name="email"
                         required
+                        aria-required="true"
                         autocomplete="email"
                         placeholder="Enter your email address"
                     >
@@ -336,6 +342,7 @@
                         id="password"
                         name="password"
                         required
+                        aria-required="true"
                         autocomplete="current-password"
                         placeholder="Enter your password"
                     >
@@ -383,7 +390,7 @@
             </form>
 
             <!-- Token Login Form -->
-            <form id="tokenForm" class="login-form" style="display: none;">
+            <form id="tokenForm" class="login-form" style="display: none;" role="tabpanel" aria-labelledby="tokenMode">
                 <div class="form-group">
                     <label for="accessToken">Access Token</label>
                     <input
@@ -391,6 +398,7 @@
                         id="accessToken"
                         name="accessToken"
                         required
+                        aria-required="true"
                         placeholder="Enter your access token"
                         autocomplete="off"
                     >
@@ -403,6 +411,7 @@
                         id="tokenPassword"
                         name="tokenPassword"
                         required
+                        aria-required="true"
                         placeholder="Enter your temporary password"
                         autocomplete="current-password"
                     >
@@ -578,15 +587,21 @@
 
         function switchLoginMode(mode) {
             currentLoginMode = mode;
-            
-            // Update button states
-            document.getElementById('credentialsMode').classList.toggle('active', mode === 'credentials');
-            document.getElementById('tokenMode').classList.toggle('active', mode === 'token');
-            
+
+            // Update button states and ARIA attributes
+            const credentialsBtn = document.getElementById('credentialsMode');
+            const tokenBtn = document.getElementById('tokenMode');
+
+            credentialsBtn.classList.toggle('active', mode === 'credentials');
+            credentialsBtn.setAttribute('aria-selected', mode === 'credentials');
+
+            tokenBtn.classList.toggle('active', mode === 'token');
+            tokenBtn.setAttribute('aria-selected', mode === 'token');
+
             // Show/hide forms
             document.getElementById('credentialsForm').style.display = mode === 'credentials' ? 'block' : 'none';
             document.getElementById('tokenForm').style.display = mode === 'token' ? 'block' : 'none';
-            
+
             // Clear any messages
             hideMessages();
         }
@@ -637,7 +652,7 @@
                     consent_notifications: document.getElementById('consentNotifications').checked
                 };
                 
-                const response = await fetch(`https://localhost:8000/auth/login`, {
+                const response = await fetch(`${window.location.origin}/auth/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -660,7 +675,7 @@
                     sessionStorage.setItem('userRole', role);
                     sessionStorage.setItem('userId', userId);
 
-                    showSuccess('Login successful! Redirecting to your student dashboard...');
+                    showSuccess('Login successful! Redirecting to your dashboard...');
 
                     // Store in localStorage as well for persistence
                     localStorage.setItem('authToken', result.access_token);
@@ -677,8 +692,17 @@
                     localStorage.setItem('sessionStart', Date.now().toString());
                     localStorage.setItem('lastActivity', Date.now().toString());
 
+                    // Role-based redirect
+                    const dashboardUrls = {
+                        'site_admin': 'site-admin-dashboard-modular.html',
+                        'organization_admin': 'org-admin-dashboard-modular.html',
+                        'instructor': 'instructor-dashboard-modular.html',
+                        'student': 'student-dashboard-modular.html'
+                    };
+                    const dashboardUrl = dashboardUrls[role] || 'student-dashboard-modular.html';
+
                     // Immediate redirect (no delay for tests)
-                    window.location.href = 'student-dashboard-modular.html';
+                    window.location.href = dashboardUrl;
                     
                 } else {
                     // Handle specific error cases
@@ -1050,7 +1074,9 @@
     </script>
     </main>
     <script src="../js/focus-manager.js"></script>
-
     <script src="../js/inline-validation.js"></script>
+
+    <!-- Accessibility Manager -->
+    <script src="/js/accessibility-manager.js"></script>
 </body>
 </html>

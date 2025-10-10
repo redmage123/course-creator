@@ -13,8 +13,8 @@ import httpx
 import os
 
 from organization_management.domain.entities.organization import Organization
-from data_access.organization_dao import OrganizationManagementDAO
-from exceptions import (
+from organization_management.data_access.organization_dao import OrganizationManagementDAO
+from organization_management.exceptions import (
     OrganizationNotFoundException,
     OrganizationValidationException,
     OrganizationException,

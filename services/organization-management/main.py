@@ -55,7 +55,7 @@ from api.track_endpoints import router as track_router
 # Import shared exceptions from platform-wide exception hierarchy
 import sys
 sys.path.append('/app/shared')
-from exceptions import (
+from organization_management.exceptions import (
     CourseCreatorBaseException,
     ContentException,
     ContentNotFoundException,

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Content - Course Creator Platform</title>
+    <link rel="stylesheet" href="../css/design-system.css?v=5.5">
+    <link rel="stylesheet" href="../css/accessibility.css">
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js"></script>
+    <style>
+        .content-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .content-header {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .course-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .module-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .video-section {
+            background: var(--surface-elevated);
+            border-radius: var(--radius-xl);
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            height: 0;
+            overflow: hidden;
+            background: #000;
+            border-radius: var(--radius-lg);
+        }
+
+        .video-container video,
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .content-text {
+            background: var(--surface-base);
+            padding: 30px;
+            border-radius: var(--radius-lg);
+            margin-bottom: 30px;
+            line-height: 1.8;
+        }
+
+        .module-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+            padding: 20px;
+            background: var(--surface-elevated);
+            border-radius: var(--radius-lg);
+        }
+
+        .nav-btn {
+            padding: 12px 24px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-btn:hover {
+            background: var(--primary-600);
+        }
+
+        .nav-btn:disabled {
+            background: var(--surface-elevated);
+            color: var(--text-secondary);
+            cursor: not-allowed;
+        }
+
+        .mark-complete-btn {
+            padding: 12px 24px;
+            background: var(--success-600);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .mark-complete-btn:hover {
+            background: var(--success-700);
+        }
+
+        .progress-indicator {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Skip links for accessibility -->
+    <div class="skip-links">
+        <a href="#main-content" class="skip-link">Skip to main content</a>
+        <a href="#video-section" class="skip-link">Skip to video</a>
+    </div>
+
+    <header class="site-header" role="banner">
+        <div class="header-container">
+            <a href="/html/index.html" class="header-logo">
+                <i class="fas fa-graduation-cap" aria-hidden="true"></i>
+                <span>Course Creator</span>
+            </a>
+            <nav role="navigation" aria-label="Course navigation">
+                <a href="/dashboard" class="header-link">
+                    <i class="fas fa-arrow-left" aria-hidden="true"></i> Back to Dashboard
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <main id="main-content" class="content-container" role="main">
+        <header class="content-header">
+            <h1 class="course-title" id="course-title">Introduction to Python Programming</h1>
+            <h2 class="module-title" id="module-title">Module 1: Introduction to Python</h2>
+        </header>
+
+        <!-- Video Section -->
+        <section class="video-section" id="video-section" aria-labelledby="video-heading">
+            <h3 id="video-heading" class="sr-only">Video Lesson</h3>
+            <div class="video-container">
+                <!-- Sample video for E2E testing -->
+                <video controls id="course-video" aria-label="Introduction to Python video lesson">
+                    <source src="https://www.w3schools.com/html/mov_bbb.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+        </section>
+
+        <!-- Text Content -->
+        <div class="content-text" id="content-text">
+            <h3>Welcome to Python Programming!</h3>
+            <p>
+                Python is a powerful, versatile programming language that's perfect for beginners
+                and experienced developers alike. In this module, you'll learn the fundamentals
+                of Python syntax, data types, and basic programming concepts.
+            </p>
+            <p>
+                Python's simple and readable syntax makes it an excellent first language to learn.
+                You'll be writing functional programs in no time!
+            </p>
+            <h4>Key Topics Covered:</h4>
+            <ul>
+                <li>Python installation and setup</li>
+                <li>Variables and data types</li>
+                <li>Basic operators</li>
+                <li>Input and output</li>
+                <li>Your first Python program</li>
+            </ul>
+        </div>
+
+        <!-- Module Navigation -->
+        <nav class="module-nav" role="navigation" aria-label="Module navigation">
+            <button class="nav-btn" id="prev-module-btn" onclick="previousModule()" disabled aria-label="Go to previous module">
+                <i class="fas fa-arrow-left" aria-hidden="true"></i> Previous Module
+            </button>
+
+            <div class="progress-indicator" role="status" aria-live="polite">
+                <span id="module-progress">Module 1 of 3</span>
+            </div>
+
+            <button class="nav-btn" id="next-module-btn" onclick="nextModule()" aria-label="Go to next module">
+                Next Module <i class="fas fa-arrow-right" aria-hidden="true"></i>
+            </button>
+        </nav>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="mark-complete-btn" id="mark-complete-btn" onclick="markModuleComplete()" aria-label="Mark current module as complete">
+                <i class="fas fa-check" aria-hidden="true"></i> Mark Module Complete
+            </button>
+        </div>
+
+        <!-- Quiz Link for E2E Testing -->
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="/quiz" class="nav-btn" style="text-decoration: none; display: inline-flex;" aria-label="Take quiz for current module">
+                <i class="fas fa-question-circle" aria-hidden="true"></i> Take Module Quiz
+            </a>
+        </div>
+
+        <!-- Lab Environment Link for E2E Testing -->
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="/lab" class="nav-btn" style="text-decoration: none; display: inline-flex;" aria-label="Open lab environment for hands-on practice">
+                <i class="fas fa-flask" aria-hidden="true"></i> Open Lab Environment
+            </a>
+        </div>
+    </main>
+
+    <script src="../js/accessibility-manager.js"></script>
+
+    <script>
+        let currentModule = 1;
+        const totalModules = 3;
+
+        const modules = [
+            {
+                title: 'Module 1: Introduction to Python',
+                content: `
+                    <h3>Welcome to Python Programming!</h3>
+                    <p>Python is a powerful, versatile programming language that's perfect for beginners
+                    and experienced developers alike. In this module, you'll learn the fundamentals
+                    of Python syntax, data types, and basic programming concepts.</p>
+                `
+            },
+            {
+                title: 'Module 2: Control Flow and Functions',
+                content: `
+                    <h3>Control Flow and Functions</h3>
+                    <p>Learn how to control the flow of your programs using conditionals and loops,
+                    and how to organize your code using functions.</p>
+                `
+            },
+            {
+                title: 'Module 3: Data Structures',
+                content: `
+                    <h3>Data Structures in Python</h3>
+                    <p>Master Python's built-in data structures including lists, tuples, dictionaries,
+                    and sets. Learn when and how to use each one effectively.</p>
+                `
+            }
+        ];
+
+        function updateModuleDisplay() {
+            document.getElementById('module-title').textContent = modules[currentModule - 1].title;
+            document.getElementById('content-text').innerHTML = modules[currentModule - 1].content;
+            document.getElementById('module-progress').textContent = `Module ${currentModule} of ${totalModules}`;
+
+            // Update button states and ARIA attributes
+            const prevBtn = document.getElementById('prev-module-btn');
+            const nextBtn = document.getElementById('next-module-btn');
+
+            prevBtn.disabled = currentModule === 1;
+            prevBtn.setAttribute('aria-disabled', currentModule === 1 ? 'true' : 'false');
+
+            nextBtn.disabled = currentModule === totalModules;
+            nextBtn.setAttribute('aria-disabled', currentModule === totalModules ? 'true' : 'false');
+
+            // Update mark complete button ARIA label with current module
+            const markCompleteBtn = document.getElementById('mark-complete-btn');
+            markCompleteBtn.setAttribute('aria-label', `Mark module ${currentModule} as complete`);
+        }
+
+        function nextModule() {
+            if (currentModule < totalModules) {
+                currentModule++;
+                updateModuleDisplay();
+                window.scrollTo(0, 0);
+            }
+        }
+
+        function previousModule() {
+            if (currentModule > 1) {
+                currentModule--;
+                updateModuleDisplay();
+                window.scrollTo(0, 0);
+            }
+        }
+
+        function markModuleComplete() {
+            const btn = document.getElementById('mark-complete-btn');
+            btn.innerHTML = '<i class="fas fa-check-circle" aria-hidden="true"></i> Module Completed!';
+            btn.style.background = 'var(--success-700)';
+            btn.disabled = true;
+            btn.setAttribute('aria-disabled', 'true');
+            btn.setAttribute('aria-label', `Module ${currentModule} completed`);
+
+            // Auto-advance to next module after 1 second
+            setTimeout(() => {
+                if (currentModule < totalModules) {
+                    nextModule();
+                    // Reset button for new module
+                    btn.innerHTML = '<i class="fas fa-check" aria-hidden="true"></i> Mark Module Complete';
+                    btn.style.background = 'var(--success-600)';
+                    btn.disabled = false;
+                    btn.setAttribute('aria-disabled', 'false');
+                    btn.setAttribute('aria-label', `Mark module ${currentModule} as complete`);
+                }
+            }, 1000);
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            updateModuleDisplay();
+        });
+    </script>
+</body>
+</html>

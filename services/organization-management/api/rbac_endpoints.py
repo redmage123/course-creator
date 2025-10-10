@@ -9,9 +9,10 @@ from pydantic import BaseModel, EmailStr
 
 from organization_management.application.services.membership_service import MembershipService
 from organization_management.application.services.meeting_room_service import MeetingRoomService
+from organization_management.application.services.notification_service import NotificationService
 from organization_management.domain.entities.enhanced_role import RoleType, Permission
 from organization_management.domain.entities.meeting_room import MeetingPlatform, RoomType
-from app_dependencies import get_container, get_current_user, verify_permission, get_membership_service, get_meeting_room_service, verify_site_admin_permission
+from app_dependencies import get_container, get_current_user, verify_permission, get_membership_service, get_meeting_room_service, get_notification_service, verify_site_admin_permission
 
 router = APIRouter(prefix="/api/v1/rbac", tags=["RBAC"])
 
@@ -296,7 +297,14 @@ async def create_meeting_room(
     try:
         # Verify permissions
         user_id = get_user_id(current_user)
-        platform_permission = Permission.CREATE_TEAMS_ROOMS if request.platform == "teams" else Permission.CREATE_ZOOM_ROOMS
+        permission_map = {
+            "teams": Permission.CREATE_TEAMS_ROOMS,
+            "zoom": Permission.CREATE_ZOOM_ROOMS,
+            "slack": Permission.CREATE_SLACK_ROOMS
+        }
+        platform_permission = permission_map.get(request.platform)
+        if not platform_permission:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid platform: {request.platform}")
         await verify_permission(user_id, organization_id, platform_permission)
 
         # Validate and convert enums
@@ -724,5 +732,334 @@ async def export_audit_log(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to export audit log: {str(e)}"
+        )
+
+
+# ============================================================================
+# BULK MEETING ROOM CREATION ENDPOINTS
+# ============================================================================
+
+@router.post("/organizations/{organization_id}/meeting-rooms/bulk-create-instructor-rooms")
+async def bulk_create_instructor_rooms(
+    organization_id: UUID,
+    platform: str,
+    send_notifications: bool = True,
+    current_user=Depends(get_current_user),
+    meeting_room_service: MeetingRoomService = Depends(get_meeting_room_service)
+):
+    """
+    POST /api/v1/rbac/organizations/{organization_id}/meeting-rooms/bulk-create-instructor-rooms
+
+    Create meeting rooms for all instructors in organization
+
+    BUSINESS REQUIREMENT:
+    Org admins need ability to create meeting rooms for all instructors at once
+    when setting up a new organization or onboarding multiple instructors.
+    Each instructor gets a personal room on the specified platform.
+
+    TECHNICAL IMPLEMENTATION:
+    - Validates user has permission to create rooms
+    - Creates rooms only for instructors who don't already have one
+    - Sends notifications to each instructor with room details
+    - Returns summary of creation results
+
+    SECURITY:
+    - Requires MANAGE_MEETING_ROOMS permission
+    - Must be org admin or site admin
+    """
+    try:
+        # Verify permissions
+        user_id = get_user_id(current_user)
+        await verify_permission(user_id, organization_id, Permission.MANAGE_MEETING_ROOMS)
+
+        # Validate platform
+        try:
+            platform_enum = MeetingPlatform(platform)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid platform: {platform}"
+            )
+
+        # Create rooms for all instructors
+        results = await meeting_room_service.create_rooms_for_all_instructors(
+            organization_id=organization_id,
+            platform=platform_enum,
+            created_by=user_id,
+            send_notifications=send_notifications
+        )
+
+        return {
+            "success": True,
+            "organization_id": str(organization_id),
+            "platform": platform,
+            "results": results
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create instructor rooms: {str(e)}"
+        )
+
+
+@router.post("/organizations/{organization_id}/meeting-rooms/bulk-create-track-rooms")
+async def bulk_create_track_rooms(
+    organization_id: UUID,
+    platform: str,
+    send_notifications: bool = True,
+    current_user=Depends(get_current_user),
+    meeting_room_service: MeetingRoomService = Depends(get_meeting_room_service)
+):
+    """
+    POST /api/v1/rbac/organizations/{organization_id}/meeting-rooms/bulk-create-track-rooms
+
+    Create meeting rooms for all tracks in organization
+
+    BUSINESS REQUIREMENT:
+    Org admins need ability to create meeting rooms for all tracks at once
+    to ensure every track has a dedicated space for synchronous learning.
+    All students and instructors in each track are notified.
+
+    TECHNICAL IMPLEMENTATION:
+    - Validates user has permission to create rooms
+    - Creates rooms only for tracks that don't already have one
+    - Sends notifications to all track participants
+    - Returns summary of creation results
+
+    SECURITY:
+    - Requires MANAGE_MEETING_ROOMS permission
+    - Must be org admin or site admin
+    """
+    try:
+        # Verify permissions
+        user_id = get_user_id(current_user)
+        await verify_permission(user_id, organization_id, Permission.MANAGE_MEETING_ROOMS)
+
+        # Validate platform
+        try:
+            platform_enum = MeetingPlatform(platform)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid platform: {platform}"
+            )
+
+        # Create rooms for all tracks
+        results = await meeting_room_service.create_rooms_for_all_tracks(
+            organization_id=organization_id,
+            platform=platform_enum,
+            created_by=user_id,
+            send_notifications=send_notifications
+        )
+
+        return {
+            "success": True,
+            "organization_id": str(organization_id),
+            "platform": platform,
+            "results": results
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create track rooms: {str(e)}"
+        )
+
+
+# ============================================================================
+# NOTIFICATION ENDPOINTS
+# ============================================================================
+
+@router.post("/organizations/{organization_id}/notifications/send-channel-notification")
+async def send_channel_notification(
+    organization_id: UUID,
+    channel_id: str,
+    title: str,
+    message: str,
+    priority: str = "normal",
+    current_user=Depends(get_current_user),
+    notification_service = Depends(get_notification_service)
+):
+    """
+    POST /api/v1/rbac/organizations/{organization_id}/notifications/send-channel-notification
+
+    Send notification to a Slack channel
+
+    BUSINESS REQUIREMENT:
+    Org admins need ability to send announcements and updates to
+    organization channels. Used for course updates, deadline reminders,
+    and general announcements.
+
+    TECHNICAL IMPLEMENTATION:
+    - Sends formatted notification to Slack channel
+    - Supports priority levels (low, normal, high, urgent)
+    - Priority affects message color and styling
+
+    SECURITY:
+    - Requires MANAGE_ORGANIZATION permission
+    - Must be org admin or site admin
+    """
+    try:
+        # Verify permissions
+        user_id = get_user_id(current_user)
+        await verify_permission(user_id, organization_id, Permission.MANAGE_ORGANIZATION)
+
+        # Validate priority
+        try:
+            from organization_management.domain.entities.notification import NotificationPriority, NotificationEvent
+            priority_enum = NotificationPriority(priority)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid priority: {priority}"
+            )
+
+        # Send notification
+        success = await notification_service.send_channel_notification(
+            channel_id=channel_id,
+            event_type=NotificationEvent.SYSTEM_ANNOUNCEMENT,
+            title=title,
+            message=message,
+            organization_id=organization_id,
+            priority=priority_enum
+        )
+
+        if not success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to send notification"
+            )
+
+        return {
+            "success": True,
+            "channel_id": channel_id,
+            "title": title
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to send channel notification: {str(e)}"
+        )
+
+
+@router.post("/organizations/{organization_id}/notifications/send-announcement")
+async def send_organization_announcement(
+    organization_id: UUID,
+    title: str,
+    message: str,
+    priority: str = "normal",
+    current_user=Depends(get_current_user),
+    notification_service = Depends(get_notification_service)
+):
+    """
+    POST /api/v1/rbac/organizations/{organization_id}/notifications/send-announcement
+
+    Send announcement to all members of organization
+
+    BUSINESS REQUIREMENT:
+    Org admins need ability to send important announcements to all
+    organization members. Used for policy changes, system updates,
+    and organization-wide communications.
+
+    TECHNICAL IMPLEMENTATION:
+    - Sends notification to all organization members
+    - Respects individual user notification preferences
+    - Returns count of notifications sent
+
+    SECURITY:
+    - Requires MANAGE_ORGANIZATION permission
+    - Must be org admin or site admin
+    """
+    try:
+        # Verify permissions
+        user_id = get_user_id(current_user)
+        await verify_permission(user_id, organization_id, Permission.MANAGE_ORGANIZATION)
+
+        # Validate priority
+        try:
+            from organization_management.domain.entities.notification import NotificationPriority
+            priority_enum = NotificationPriority(priority)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid priority: {priority}"
+            )
+
+        # Send announcement
+        sent_count = await notification_service.send_organization_announcement(
+            organization_id=organization_id,
+            title=title,
+            message=message,
+            priority=priority_enum
+        )
+
+        return {
+            "success": True,
+            "organization_id": str(organization_id),
+            "sent_count": sent_count,
+            "title": title
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to send announcement: {str(e)}"
+        )
+
+
+@router.get("/organizations/{organization_id}/notifications/statistics")
+async def get_notification_statistics(
+    organization_id: UUID,
+    current_user=Depends(get_current_user),
+    notification_service = Depends(get_notification_service)
+):
+    """
+    GET /api/v1/rbac/organizations/{organization_id}/notifications/statistics
+
+    Get notification statistics for organization
+
+    BUSINESS REQUIREMENT:
+    Org admins need insights into notification effectiveness,
+    user engagement, and communication patterns.
+
+    TECHNICAL IMPLEMENTATION:
+    - Aggregates notification data by event type, priority, status
+    - Calculates read rates and engagement metrics
+    - Returns structured statistics
+
+    SECURITY:
+    - Requires MANAGE_ORGANIZATION permission
+    - Must be org admin or site admin
+    """
+    try:
+        # Verify permissions
+        user_id = get_user_id(current_user)
+        await verify_permission(user_id, organization_id, Permission.MANAGE_ORGANIZATION)
+
+        # Get statistics
+        stats = await notification_service.get_notification_statistics(organization_id)
+
+        return {
+            "success": True,
+            "organization_id": str(organization_id),
+            "statistics": stats
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get notification statistics: {str(e)}"
         )
 

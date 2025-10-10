@@ -13,7 +13,7 @@ from organization_management.domain.entities.enhanced_role import (
     OrganizationMembership, TrackAssignment, EnhancedRole,
     RoleType, Permission
 )
-from data_access.organization_dao import OrganizationManagementDAO
+from organization_management.data_access.organization_dao import OrganizationManagementDAO
 from shared.cache.redis_cache import get_cache_manager
 
 

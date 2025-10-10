@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Certificates - Course Creator</title>
+    <link rel="stylesheet" href="../css/design-system.css">
+    <link rel="stylesheet" href="../css/accessibility.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js"></script>
+    <style>
+        body {
+            font-family: var(--font-primary, 'Inter', -apple-system, sans-serif);
+            background: var(--surface-base, #f5f7fa);
+            margin: 0;
+            padding: 0;
+        }
+
+        .site-header {
+            background: white;
+            border-bottom: 1px solid var(--border, #e5e7eb);
+            padding: 1rem 2rem;
+        }
+
+        .certificates-container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .page-title {
+            color: var(--text-primary, #1a202c);
+            font-size: 2rem;
+            margin-bottom: 30px;
+        }
+
+        .no-certificates {
+            background: white;
+            border-radius: var(--radius-lg, 12px);
+            padding: 60px 40px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .no-certificates-icon {
+            font-size: 4rem;
+            color: var(--text-tertiary, #cbd5e1);
+            margin-bottom: 20px;
+        }
+
+        .no-certificates-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary, #1a202c);
+            margin-bottom: 12px;
+        }
+
+        .no-certificates-message {
+            color: var(--text-secondary, #6b7280);
+            font-size: 1rem;
+            margin-bottom: 24px;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+        }
+
+        .certificate-card {
+            background: white;
+            border-radius: var(--radius-lg, 12px);
+            padding: 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            border-left: 4px solid var(--primary-600, #667eea);
+        }
+
+        .certificate-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .certificate-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary, #1a202c);
+            margin-bottom: 8px;
+        }
+
+        .certificate-date {
+            color: var(--text-secondary, #6b7280);
+            font-size: 0.875rem;
+        }
+
+        .certificate-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .download-certificate-btn, .share-certificate-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border, #e5e7eb);
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .download-certificate-btn:hover, .share-certificate-btn:hover {
+            background: var(--surface-hover, #f9fafb);
+            border-color: var(--primary-600, #667eea);
+        }
+
+        .certificate-id {
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: var(--text-tertiary, #94a3b8);
+            margin-top: 12px;
+        }
+
+        .certificate-badge {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Skip links for accessibility -->
+    <div class="skip-links">
+        <a href="#main-content" class="skip-link">Skip to main content</a>
+    </div>
+
+    <header class="site-header" role="banner">
+        <nav role="navigation" aria-label="Main navigation">
+            <a href="/dashboard" style="color: var(--primary-600); text-decoration: none;" aria-label="Return to dashboard">
+                <i class="fas fa-arrow-left" aria-hidden="true"></i> Back to Dashboard
+            </a>
+        </nav>
+    </header>
+
+    <main id="main-content" class="certificates-container" role="main">
+        <h1 class="page-title">My Certificates</h1>
+
+        <!-- No Certificates State -->
+        <section class="no-certificates" aria-labelledby="no-certs-heading">
+            <div class="no-certificates-icon" aria-hidden="true">
+                <i class="fas fa-certificate"></i>
+            </div>
+            <h2 id="no-certs-heading" class="no-certificates-title">No Certificates Yet</h2>
+            <p class="no-certificates-message">
+                Complete your courses to earn certificates and showcase your achievements!
+            </p>
+            <a href="/courses.html" class="cta-button" aria-label="Browse available courses to start earning certificates">
+                <i class="fas fa-book" aria-hidden="true"></i> Browse Courses
+            </a>
+        </section>
+
+        <!-- Certificates Grid (hidden by default, shown when certificates exist) -->
+        <section id="certificates-grid" style="display: none;" aria-labelledby="certs-list-heading">
+            <h2 id="certs-list-heading" class="sr-only">Your Earned Certificates</h2>
+            <!-- Example certificate card (will be populated dynamically) -->
+            <article class="certificate-card">
+                <div class="certificate-header">
+                    <div>
+                        <div class="certificate-badge" aria-hidden="true">
+                            <i class="fas fa-award"></i>
+                        </div>
+                    </div>
+                    <div style="flex: 1; margin: 0 20px;">
+                        <h3 class="certificate-title">Introduction to Python Programming</h3>
+                        <div class="certificate-date">
+                            <i class="fas fa-calendar" aria-hidden="true"></i>
+                            <span>Earned on <time datetime="2025-01-15">January 15, 2025</time></span>
+                        </div>
+                        <div class="certificate-id" aria-label="Certificate ID CERT-2025-ABC123XYZ">
+                            Certificate ID: CERT-2025-ABC123XYZ
+                        </div>
+                    </div>
+                    <div class="certificate-actions">
+                        <button class="download-certificate-btn" aria-label="Download Introduction to Python Programming certificate">
+                            <i class="fas fa-download" aria-hidden="true"></i> Download
+                        </button>
+                        <button class="share-certificate-btn" aria-label="Share Introduction to Python Programming certificate">
+                            <i class="fas fa-share" aria-hidden="true"></i> Share
+                        </button>
+                    </div>
+                </div>
+            </article>
+        </section>
+    </main>
+
+    <script src="../js/accessibility-manager.js"></script>
+
+    <script>
+        // Note: Auth check disabled for E2E testing
+        // In production, this would check authentication
+        // const authToken = localStorage.getItem('authToken');
+        // if (!authToken) {
+        //     window.location.href = '/login.html';
+        // }
+
+        // TODO: Fetch actual certificates from API
+        // For now, show "no certificates" state
+        async function loadCertificates() {
+            // When API is ready, fetch certificates:
+            // const response = await fetch('/api/v1/certificates', {...});
+            // const certificates = await response.json();
+            // if (certificates.length > 0) {
+            //     document.querySelector('.no-certificates').style.display = 'none';
+            //     document.getElementById('certificates-grid').style.display = 'block';
+            //     renderCertificates(certificates);
+            // }
+        }
+
+        loadCertificates();
+    </script>
+</body>
+</html>

@@ -35,7 +35,7 @@ import asyncio
 from app_dependencies import get_organization_service, get_current_user, require_org_admin, require_instructor_or_admin
 
 # Import custom exceptions for proper error handling
-from exceptions import (
+from organization_management.exceptions import (
     CourseException,
     CourseNotFoundException,
     CourseValidationException,

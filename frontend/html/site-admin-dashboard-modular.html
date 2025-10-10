@@ -7,6 +7,7 @@
 
     <!-- Design System & Modules -->
     <link rel="stylesheet" href="../css/design-system.css?v=5.5">
+    <link rel="stylesheet" href="../css/accessibility.css?v=5.5">
     <link rel="stylesheet" href="../css/components/header-footer.css?v=5.5">
     <link rel="stylesheet" href="../css/components/modals.css?v=5.5">
     <link rel="stylesheet" href="../css/modules/dashboard.css?v=5.5">
@@ -16,6 +17,13 @@
 </head>
 
 <body class="dashboard-page">
+    <!-- Skip Links -->
+    <div class="skip-links">
+        <a href="#main-content" class="skip-link">Skip to main content</a>
+        <a href=".dashboard-sidebar" class="skip-link">Skip to navigation</a>
+    </div>
+    <div aria-live="polite" aria-atomic="true" class="sr-only" id="form-announcements"></div>
+
     <!-- Header with User Dropdown -->
     <header class="site-header" role="banner">
         <div class="header-container">
@@ -356,5 +364,8 @@
         function closeModal(modalId) { if (window.siteAdmin) window.siteAdmin.closeModal(modalId); }
         function confirmDeleteOrganization() { if (window.siteAdmin) window.siteAdmin.confirmDeleteOrganization(); }
     </script>
+
+    <!-- Accessibility Manager -->
+    <script src="../js/accessibility-manager.js"></script>
 </body>
 </html>

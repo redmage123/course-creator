@@ -32,7 +32,7 @@ import json
 import sys
 sys.path.append('/app/shared')
 from organization_management.domain.entities.enhanced_role import RoleType
-from exceptions import (
+from organization_management.exceptions import (
     CourseCreatorBaseException,
     DatabaseException,
     UserNotFoundException,

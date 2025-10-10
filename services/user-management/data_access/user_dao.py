@@ -377,7 +377,89 @@ class UserManagementDAO:
                 details={"user_id": user_id},
                 original_exception=e
             )
-    
+
+    async def get_user_by_metadata_value(self, metadata_key: str, metadata_value: str) -> Optional[User]:
+        """
+        Retrieve user by metadata field value.
+
+        BUSINESS CONTEXT:
+        Enables lookup of users by custom metadata fields stored in the JSONB metadata column.
+        This is essential for password reset token validation and other feature-specific user lookups.
+
+        SECURITY IMPLEMENTATION:
+        - Uses PostgreSQL JSONB operators for efficient indexed lookups
+        - Prevents SQL injection through parameterized queries
+        - Returns None if user not found (no enumeration leaks)
+
+        PERFORMANCE CONSIDERATIONS:
+        In production, create a GIN index on metadata column:
+        CREATE INDEX idx_users_metadata ON course_creator.users USING GIN (metadata);
+
+        This enables fast lookups on JSON fields like password_reset_token.
+
+        Args:
+            metadata_key (str): The metadata field name (e.g., 'password_reset_token')
+            metadata_value (str): The value to search for
+
+        Returns:
+            Optional[User]: User object if found, None otherwise
+
+        Usage Example:
+            ```python
+            # Find user by password reset token
+            user = await dao.get_user_by_metadata_value('password_reset_token', 'abc123...')
+
+            if user:
+                # Token found - validate expiration
+                expires_at = user.metadata.get('password_reset_expires')
+            else:
+                # Token not found - invalid reset link
+                raise ValueError("Invalid reset token")
+            ```
+
+        Author: Course Creator Platform Team
+        Version: 3.4.0 - Token-Based Password Reset
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                # PostgreSQL JSONB operator ->> extracts text value from JSON field
+                # This query finds users where metadata->key = value
+                user = await conn.fetchrow(
+                    """SELECT id, email, username, full_name, hashed_password, role,
+                              organization, status, created_at, updated_at, last_login,
+                              metadata
+                       FROM course_creator.users
+                       WHERE metadata->>$1 = $2
+                       LIMIT 1""",
+                    metadata_key,
+                    metadata_value
+                )
+
+                if not user:
+                    return None
+
+                # Convert database row to User domain object
+                user_dict = dict(user)
+
+                # Parse metadata JSONB to dict if it exists
+                # asyncpg returns JSONB as Python dict automatically
+                if 'metadata' in user_dict and user_dict['metadata'] is None:
+                    user_dict['metadata'] = {}
+
+                return self._row_to_user(user_dict)
+
+        except Exception as e:
+            self.logger.error(f"Error retrieving user by metadata {metadata_key}={metadata_value}: {e}")
+            raise CourseCreatorBaseException(
+                message=f"Failed to retrieve user by metadata field",
+                error_code="USER_METADATA_LOOKUP_ERROR",
+                details={
+                    "metadata_key": metadata_key,
+                    "metadata_value_length": len(metadata_value) if metadata_value else 0
+                },
+                original_exception=e
+            )
+
     async def update_user_password(self, user_id: str, new_hashed_password: str) -> bool:
         """
         Update user password with security validation.

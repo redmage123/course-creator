@@ -77,7 +77,18 @@ class IDEManager:
                     '--port', '8083',
                     '--host', '0.0.0.0'
                 ],
-                'enabled': False,  # Disabled by default due to resource usage
+                'enabled': True,  # Enabled for Java/Kotlin courses
+                'health_endpoint': '/projector'
+            },
+            'pycharm': {
+                'name': 'PyCharm Community',
+                'port': 8084,
+                'command': [
+                    'projector', 'run', 'PyCharm Community Edition',
+                    '--port', '8084',
+                    '--host', '0.0.0.0'
+                ],
+                'enabled': True,  # Enabled by default for Python courses
                 'health_endpoint': '/projector'
             }
         }

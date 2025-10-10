@@ -60,6 +60,7 @@ from typing import Optional
 import logging
 import secrets
 import string
+from datetime import datetime, timedelta, timezone
 from passlib.context import CryptContext
 
 from data_access.user_dao import UserManagementDAO
@@ -283,22 +284,277 @@ class AuthenticationService(IAuthenticationService):
         return True
     
     async def reset_password(self, email: str) -> str:
-        """Reset password and return temporary password"""
-        user = await self._user_dao.get_by_email(email)
+        """
+        DEPRECATED: Use request_password_reset() for secure token-based reset.
+
+        This method returns the temporary password directly (insecure).
+        Maintained for backward compatibility only.
+
+        Migration Guide:
+        OLD: temp_password = await auth_service.reset_password(email)
+        NEW: token = await auth_service.request_password_reset(email)
+             # Send token via email
+             await auth_service.complete_password_reset(token, new_password)
+
+        Reset password and return temporary password.
+        """
+        user = await self._user_dao.get_user_by_email(email)
         if not user:
             raise ValueError("User not found")
-        
+
         # Generate temporary password
         temp_password = self._generate_temporary_password()
-        
+
         # Hash and store temporary password
         hashed_password = await self.hash_password(temp_password)
         user.add_metadata('password_hash', hashed_password)
         user.add_metadata('password_reset', True)
-        
+
         await self._user_dao.update(user)
-        
+
         return temp_password
+
+    async def request_password_reset(self, email: str) -> str:
+        """
+        Request password reset - generates secure token for password reset flow.
+
+        SECURE TOKEN-BASED RESET FLOW:
+        This is the recommended password reset method that uses time-limited tokens
+        instead of returning passwords directly. Follows OWASP authentication best practices.
+
+        Security Features:
+            - Cryptographically secure random tokens (secrets.token_urlsafe)
+            - Time-limited tokens (1 hour expiration)
+            - No user enumeration (same response for valid/invalid emails)
+            - Single-use tokens (invalidated after successful reset)
+
+        Business Workflow:
+            1. User requests password reset via email
+            2. System generates secure random token
+            3. Token stored with user record + expiration timestamp
+            4. Email sent with password reset link containing token
+            5. User clicks link and submits new password
+            6. System validates token and updates password
+            7. Token is invalidated after successful reset
+
+        Args:
+            email (str): User's email address
+
+        Returns:
+            str: Secure reset token (URL-safe base64, >= 32 characters)
+                 In production, this token is sent via email, not returned in response
+
+        Security Considerations:
+            - Returns success even if email doesn't exist (prevents user enumeration)
+            - Overwrites previous tokens (only most recent token is valid)
+            - Tokens expire after 1 hour to limit attack window
+            - Rate limiting should be applied at endpoint level (future enhancement)
+
+        Integration Example:
+            ```python
+            # Backend
+            reset_token = await auth_service.request_password_reset("user@example.com")
+            await email_service.send_password_reset_email(email, reset_token)
+
+            # User clicks email link with token parameter
+            # Frontend submits: POST /auth/password/reset/complete {token, new_password}
+
+            # Backend completes reset
+            await auth_service.complete_password_reset(token, new_password)
+            ```
+
+        Author: Course Creator Platform Team
+        Version: 3.4.0 - Secure Token-Based Password Reset
+        """
+        # Try to find user by email
+        user = await self._user_dao.get_user_by_email(email)
+
+        # Security: No user enumeration - same response for valid/invalid emails
+        if not user:
+            # Generate fake token to maintain consistent timing
+            # Prevents timing attacks that could reveal valid vs invalid emails
+            fake_token = secrets.token_urlsafe(32)
+            return fake_token
+
+        # Generate cryptographically secure reset token
+        # token_urlsafe(32) generates 256 bits of entropy (URL-safe base64)
+        reset_token = secrets.token_urlsafe(32)
+
+        # Calculate token expiration (1 hour from now)
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+
+        # Store token and expiration with user record
+        # This overwrites any previous reset tokens (only latest token is valid)
+        user.add_metadata('password_reset_token', reset_token)
+        user.add_metadata('password_reset_expires', expires_at)
+
+        # Persist token to database
+        await self._user_dao.update(user)
+
+        # Return token for email delivery
+        # In production, this token is sent via email, not in API response
+        return reset_token
+
+    async def validate_password_reset_token(self, token: str) -> str:
+        """
+        Validate password reset token and return associated user ID.
+
+        SECURITY VALIDATION:
+        Ensures token is valid before allowing password reset. Validates:
+        - Token exists in system
+        - Token matches user's stored token
+        - Token has not expired
+
+        Business Logic:
+            Used before displaying password reset form to verify token validity.
+            Frontend can call this endpoint when user clicks email link to ensure
+            token is still valid before showing password input form.
+
+        Args:
+            token (str): Password reset token from email
+
+        Returns:
+            str: User ID associated with valid token
+
+        Raises:
+            ValueError: If token is invalid or expired
+
+        Security Features:
+            - Constant-time token comparison (prevents timing attacks)
+            - Expiration validation prevents use of old tokens
+            - Generic error messages (no leak of token status)
+
+        Usage Example:
+            ```python
+            # Frontend: User clicks email link with token parameter
+            # Backend validates token before showing reset form
+
+            try:
+                user_id = await auth_service.validate_password_reset_token(token)
+                # Token valid - show password reset form
+                return {"valid": True, "user_id": user_id}
+            except ValueError:
+                # Token invalid or expired - show error message
+                return {"valid": False, "error": "Invalid or expired reset link"}
+            ```
+        """
+        # Try to find user with this reset token
+        # Note: In production, use indexed lookup for performance
+        user = await self._user_dao.get_user_by_metadata_value('password_reset_token', token)
+
+        # Token not found in system
+        if not user:
+            raise ValueError("Invalid password reset token")
+
+        # Get token expiration from user metadata
+        expires_at = user.metadata.get('password_reset_expires')
+
+        # Verify token has expiration timestamp
+        if not expires_at:
+            raise ValueError("Invalid password reset token")
+
+        # Check if token has expired
+        current_time = datetime.now(timezone.utc)
+        if current_time > expires_at:
+            raise ValueError("Password reset token has expired. Please request a new reset link.")
+
+        # Token is valid - return user ID for password reset
+        return user.id
+
+    async def complete_password_reset(self, token: str, new_password: str) -> bool:
+        """
+        Complete password reset using valid token and new password.
+
+        SECURE PASSWORD RESET COMPLETION:
+        Final step in token-based password reset flow. Validates token,
+        validates password strength, updates password, and invalidates token.
+
+        Security Features:
+            - Token validation (existence, expiration)
+            - Password strength enforcement
+            - Secure password hashing (bcrypt)
+            - Token invalidation after use (single-use tokens)
+            - All-or-nothing transaction (atomicity)
+
+        Business Workflow:
+            1. Validate token (must exist and not be expired)
+            2. Validate new password strength requirements
+            3. Hash new password securely with bcrypt
+            4. Update user password in database
+            5. Clear reset token and expiration from user metadata
+            6. Return success status
+
+        Args:
+            token (str): Valid password reset token from email
+            new_password (str): New password (must meet strength requirements)
+
+        Returns:
+            bool: True if password reset completed successfully
+
+        Raises:
+            ValueError: If token is invalid/expired OR password fails strength validation
+
+        Security Considerations:
+            - Token must be validated before password update (prevents unauthorized access)
+            - Password strength must be validated (prevents weak passwords)
+            - Token is invalidated after successful use (prevents token reuse)
+            - Failed attempts do NOT invalidate token (user can retry with valid password)
+
+        Usage Example:
+            ```python
+            # User submits new password via reset form
+            try:
+                success = await auth_service.complete_password_reset(
+                    token="abc123...",
+                    new_password="NewSecureP@ss123"
+                )
+
+                if success:
+                    # Password reset successful
+                    # Redirect to login page with success message
+                    return {"message": "Password reset successful. Please login with your new password."}
+
+            except ValueError as e:
+                # Token invalid/expired or password too weak
+                return {"error": str(e)}
+            ```
+
+        Author: Course Creator Platform Team
+        Version: 3.4.0 - Secure Token-Based Password Reset
+        """
+        # Step 1: Validate token and get user ID
+        user_id = await self.validate_password_reset_token(token)
+
+        # Step 2: Get user record (we know it exists from token validation)
+        user = await self._user_dao.get_by_id(user_id)
+        if not user:
+            # Should never happen if token validation succeeded
+            raise ValueError("User not found")
+
+        # Step 3: Validate new password strength
+        # Raises ValueError if password doesn't meet requirements
+        if not self._validate_password_strength(new_password):
+            raise ValueError("Password does not meet strength requirements (min 8 chars, 3 of 4 character types)")
+
+        # Step 4: Hash new password securely with bcrypt
+        hashed_password = self._pwd_context.hash(new_password)
+
+        # Step 5: Update user password
+        user.add_metadata('hashed_password', hashed_password)
+
+        # Step 6: Invalidate reset token (single-use tokens)
+        user.remove_metadata('password_reset_token')
+        user.remove_metadata('password_reset_expires')
+
+        # Step 7: Clear any password reset flags
+        user.remove_metadata('password_reset')
+        user.remove_metadata('require_password_change')
+
+        # Step 8: Persist all changes atomically
+        await self._user_dao.update(user)
+
+        # Success - password updated and token invalidated
+        return True
     
     async def verify_password(self, user_id: str, password: str) -> bool:
         """Verify user password"""

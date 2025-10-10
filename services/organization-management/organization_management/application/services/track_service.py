@@ -9,7 +9,7 @@ from uuid import UUID
 import logging
 
 from organization_management.domain.entities.track import Track, TrackStatus, TrackType
-from data_access.organization_dao import OrganizationManagementDAO
+from organization_management.data_access.organization_dao import OrganizationManagementDAO
 
 
 class TrackService:

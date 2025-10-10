@@ -451,6 +451,7 @@ services:
       - ./frontend/js:/usr/share/nginx/html/js:ro
       - ./frontend/css:/usr/share/nginx/html/css:ro
       - ./frontend/html:/usr/share/nginx/html/html:ro
+      - ./frontend/static:/usr/share/nginx/html/static:ro
       - ./logs:/var/log/nginx
     networks:
       - course-creator-network

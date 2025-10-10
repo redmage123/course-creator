@@ -8,6 +8,7 @@
 
     <!-- Design System -->
     <link rel="stylesheet" href="../css/design-system.css?v=5.3">
+    <link rel="stylesheet" href="../css/accessibility.css">
     <link rel="stylesheet" href="../css/components/header-footer.css?v=5.3">
     <link rel="stylesheet" href="../css/components/modals.css?v=5.3">
     <link rel="stylesheet" href="../css/pages/home-redesign.css?v=5.3">
@@ -16,8 +17,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <!-- Accessibility Skip Link -->
-    <a href="#main-content" class="skip-link" style="position: absolute; left: -9999px; z-index: 999; padding: 1rem; background: var(--primary-600); color: white; text-decoration: none;">Skip to main content</a>
+    <!-- Skip Navigation Links -->
+    <div class="skip-links">
+        <a href="#main-content" class="skip-link">Skip to main content</a>
+    </div>
+
+    <!-- ARIA Live Regions -->
+    <div id="errorMessage" role="alert" aria-live="assertive" style="position: absolute; left: -9999px;"></div>
+    <div id="successMessage" role="status" aria-live="polite" style="position: absolute; left: -9999px;"></div>
 
     <!-- HEADER - Consistent across all pages -->
     <header class="site-header" role="banner">
@@ -716,5 +723,8 @@
             }
         });
     </script>
+
+    <!-- Accessibility Manager -->
+    <script src="/js/accessibility-manager.js"></script>
 </body>
 </html>

@@ -35,6 +35,7 @@ class Permission(Enum):
     # Meeting Room Integration Powers
     CREATE_TEAMS_ROOMS = "create_teams_rooms"
     CREATE_ZOOM_ROOMS = "create_zoom_rooms"
+    CREATE_SLACK_ROOMS = "create_slack_rooms"
     MANAGE_MEETING_ROOMS = "manage_meeting_rooms"
 
     # Student Management Powers
@@ -115,6 +116,7 @@ class EnhancedRole:
                 Permission.MANAGE_TRACK_MODULES,
                 Permission.CREATE_TEAMS_ROOMS,
                 Permission.CREATE_ZOOM_ROOMS,
+                Permission.CREATE_SLACK_ROOMS,
                 Permission.MANAGE_MEETING_ROOMS,
                 Permission.ADD_STUDENTS_TO_PROJECT,
                 Permission.REMOVE_STUDENTS_FROM_PROJECT,
@@ -135,6 +137,7 @@ class EnhancedRole:
                 Permission.MANAGE_TRACK_MODULES,
                 Permission.CREATE_TEAMS_ROOMS,
                 Permission.CREATE_ZOOM_ROOMS,
+                Permission.CREATE_SLACK_ROOMS,
                 Permission.MANAGE_MEETING_ROOMS,
                 Permission.ADD_STUDENTS_TO_PROJECT,
                 Permission.REMOVE_STUDENTS_FROM_PROJECT,

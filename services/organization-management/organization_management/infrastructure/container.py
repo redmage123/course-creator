@@ -12,14 +12,16 @@ from omegaconf import DictConfig
 from shared.cache.redis_cache import initialize_cache_manager, get_cache_manager
 
 # Repository pattern removed - using DAO
-from data_access.organization_dao import OrganizationManagementDAO
+from organization_management.data_access.organization_dao import OrganizationManagementDAO
 from organization_management.application.services.organization_service import OrganizationService
 from organization_management.application.services.track_service import TrackService
 from organization_management.application.services.membership_service import MembershipService
 from organization_management.application.services.meeting_room_service import MeetingRoomService
+from organization_management.application.services.notification_service import NotificationService
 from organization_management.application.services.auth_service import AuthService
 from organization_management.infrastructure.integrations.teams_integration import TeamsCredentials
 from organization_management.infrastructure.integrations.zoom_integration import ZoomCredentials
+from organization_management.infrastructure.integrations.slack_integration import SlackCredentials
 from auth.jwt_auth import JWTAuthenticator
 
 
@@ -43,12 +45,14 @@ class Container:
         self._track_service: Optional[TrackService] = None
         self._membership_service: Optional[MembershipService] = None
         self._meeting_room_service: Optional[MeetingRoomService] = None
+        self._notification_service: Optional[NotificationService] = None
         self._auth_service: Optional[AuthService] = None
         self._jwt_authenticator: Optional[JWTAuthenticator] = None
 
         # Integration credentials
         self._teams_credentials: Optional[TeamsCredentials] = None
         self._zoom_credentials: Optional[ZoomCredentials] = None
+        self._slack_credentials: Optional[SlackCredentials] = None
 
     async def initialize(self) -> None:
         """
@@ -175,18 +179,22 @@ class Container:
         return self._membership_service
 
     async def get_meeting_room_service(self) -> MeetingRoomService:
-        """Get meeting room service"""
+        """Get meeting room service with notification support"""
         if self._meeting_room_service is None:
             organization_dao = await self.get_organization_dao()
             teams_credentials = self._get_teams_credentials()
             zoom_credentials = self._get_zoom_credentials()
+            slack_credentials = self._get_slack_credentials()
+            notification_service = await self.get_notification_service()
 
             self._meeting_room_service = MeetingRoomService(
                 organization_dao,
                 teams_credentials,
-                zoom_credentials
+                zoom_credentials,
+                slack_credentials,
+                notification_service
             )
-            self._logger.debug("Meeting room service initialized")
+            self._logger.debug("Meeting room service initialized with notification support")
 
         return self._meeting_room_service
 
@@ -223,6 +231,45 @@ class Container:
                 self._logger.warning(f"Failed to initialize Zoom credentials: {e}")
 
         return self._zoom_credentials
+
+    def _get_slack_credentials(self) -> Optional[SlackCredentials]:
+        """Get Slack credentials from configuration"""
+        if self._slack_credentials is None:
+            try:
+                slack_config = self._config.get('integrations', {}).get('slack', {})
+                if slack_config.get('enabled', False):
+                    self._slack_credentials = SlackCredentials(
+                        bot_token=slack_config.get('bot_token'),
+                        app_token=slack_config.get('app_token'),
+                        workspace_id=slack_config.get('workspace_id'),
+                        webhook_url=slack_config.get('webhook_url')
+                    )
+                    self._logger.debug("Slack credentials initialized")
+            except Exception as e:
+                self._logger.warning(f"Failed to initialize Slack credentials: {e}")
+
+        return self._slack_credentials
+
+    async def get_notification_service(self) -> NotificationService:
+        """
+        Get notification service with Slack integration
+
+        BUSINESS CONTEXT:
+        The notification service handles all platform notifications including
+        Slack messages, email, and in-app notifications. It respects user
+        preferences and provides analytics on notification effectiveness.
+        """
+        if self._notification_service is None:
+            organization_dao = await self.get_organization_dao()
+            slack_credentials = self._get_slack_credentials()
+
+            self._notification_service = NotificationService(
+                organization_dao,
+                slack_credentials
+            )
+            self._logger.debug("Notification service initialized")
+
+        return self._notification_service
 
     def get_jwt_authenticator(self) -> JWTAuthenticator:
         """Get JWT authenticator"""

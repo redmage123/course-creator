@@ -514,6 +514,7 @@
                                 <option value="">All Platforms</option>
                                 <option value="teams">Microsoft Teams</option>
                                 <option value="zoom">Zoom</option>
+                                <option value="slack">Slack</option>
                             </select>
                             <select id="roomTypeFilter" onchange="filterMeetingRooms()">
                                 <option value="">All Types</option>
@@ -526,6 +527,41 @@
                         <button class="btn btn-primary" onclick="showCreateMeetingRoomModal()">
                             <i class="fas fa-video"></i> Create Room
                         </button>
+                        <button class="btn btn-secondary" onclick="showBulkRoomCreationModal()">
+                            <i class="fas fa-layer-group"></i> Bulk Create
+                        </button>
+                        <button class="btn btn-secondary" onclick="showNotificationModal()">
+                            <i class="fas fa-bell"></i> Send Notification
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Bulk Room Creation Section -->
+                <div class="quick-actions-section" style="margin-bottom: 1rem;">
+                    <div class="quick-action-card">
+                        <h3><i class="fas fa-users"></i> Quick Actions</h3>
+                        <div class="quick-action-buttons">
+                            <button class="btn btn-outline" onclick="bulkCreateInstructorRooms('teams')">
+                                <i class="fab fa-microsoft"></i> Create Teams Rooms for All Instructors
+                            </button>
+                            <button class="btn btn-outline" onclick="bulkCreateInstructorRooms('zoom')">
+                                <i class="fas fa-video"></i> Create Zoom Rooms for All Instructors
+                            </button>
+                            <button class="btn btn-outline" onclick="bulkCreateInstructorRooms('slack')">
+                                <i class="fab fa-slack"></i> Create Slack Channels for All Instructors
+                            </button>
+                        </div>
+                        <div class="quick-action-buttons" style="margin-top: 0.5rem;">
+                            <button class="btn btn-outline" onclick="bulkCreateTrackRooms('teams')">
+                                <i class="fab fa-microsoft"></i> Create Teams Rooms for All Tracks
+                            </button>
+                            <button class="btn btn-outline" onclick="bulkCreateTrackRooms('zoom')">
+                                <i class="fas fa-video"></i> Create Zoom Rooms for All Tracks
+                            </button>
+                            <button class="btn btn-outline" onclick="bulkCreateTrackRooms('slack')">
+                                <i class="fab fa-slack"></i> Create Slack Channels for All Tracks
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -535,7 +571,7 @@
                         <p>Loading meeting rooms...</p>
                     </div>
                 </div>
-            </div>
+            </section>
 
             <!-- Settings Tab Panel -->
             <section class="tab-content" 
@@ -584,6 +620,13 @@
                                     </div>
                                     <span>Zoom</span>
                                     <button class="btn btn-sm btn-outline" onclick="testZoomIntegration()">Test</button>
+                                </div>
+                                <div class="status-item">
+                                    <div class="status-indicator" id="slackStatus">
+                                        <i class="fas fa-circle"></i>
+                                    </div>
+                                    <span>Slack</span>
+                                    <button class="btn btn-sm btn-outline" onclick="testSlackIntegration()">Test</button>
                                 </div>
                             </div>
                         </div>
@@ -724,6 +767,7 @@
                             <select id="roomPlatform" name="platform" class="form-control" required>
                                 <option value="teams">Microsoft Teams</option>
                                 <option value="zoom">Zoom</option>
+                                <option value="slack">Slack</option>
                             </select>
                         </div>
                     </div>
@@ -903,6 +947,61 @@
                 <button class="btn btn-outline" onclick="orgAdmin.closeModal('createProjectModal')">Cancel</button>
                 <button class="btn btn-primary" onclick="orgAdmin.createProject()">
                     <i class="fas fa-folder-plus"></i> Create Project
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Send Notification Modal -->
+    <div id="sendNotificationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-bell"></i> Send Notification</h3>
+                <button class="modal-close" onclick="closeModal('sendNotificationModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="sendNotificationForm">
+                    <div class="form-group">
+                        <label for="notificationType">Notification Type</label>
+                        <select id="notificationType" name="type" class="form-control" required onchange="toggleNotificationFields()">
+                            <option value="channel">Send to Channel</option>
+                            <option value="announcement">Organization Announcement</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group" id="channelIdGroup">
+                        <label for="notificationChannelId">Slack Channel ID</label>
+                        <input type="text" id="notificationChannelId" name="channel_id" class="form-control" placeholder="e.g. C1234567890">
+                        <small class="form-help">The Slack channel ID to send the notification to</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="notificationTitle">Title</label>
+                        <input type="text" id="notificationTitle" name="title" class="form-control" required placeholder="Notification title">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="notificationMessage">Message</label>
+                        <textarea id="notificationMessage" name="message" class="form-control" required rows="4" placeholder="Notification message"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="notificationPriority">Priority</label>
+                        <select id="notificationPriority" name="priority" class="form-control" required>
+                            <option value="low">Low (Green)</option>
+                            <option value="normal" selected>Normal (Blue)</option>
+                            <option value="high">High (Orange)</option>
+                            <option value="urgent">Urgent (Red)</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('sendNotificationModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="sendNotification()">
+                    <i class="fas fa-paper-plane"></i> Send Notification
                 </button>
             </div>
         </div>

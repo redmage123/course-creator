@@ -32,6 +32,7 @@ from exceptions import (
     ContentNotFoundException,
     ValidationException
 )
+from course_management.domain.entities.course import Course, DifficultyLevel
 
 
 class CourseManagementDAO:
@@ -594,5 +595,63 @@ class CourseManagementDAO:
                 message="Failed to execute transaction operations",
                 error_code="TRANSACTION_ERROR",
                 details={"operation_count": len(operations)},
+                original_exception=e
+            )
+
+    async def get_published_courses(self, limit: int = 50, offset: int = 0) -> List[Course]:
+        """
+        Retrieve all published courses with pagination.
+
+        Business Context:
+        Published courses are available for student browsing and enrollment.
+        This query supports the public course catalog feature.
+
+        Args:
+            limit: Maximum number of courses to return (default: 50, max: 100)
+            offset: Number of courses to skip for pagination (default: 0)
+
+        Returns:
+            List of published Course domain entities
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                rows = await conn.fetch(
+                    """
+                    SELECT id, title, description, instructor_id, category,
+                           difficulty_level, estimated_duration, is_published,
+                           created_at, updated_at
+                    FROM courses
+                    WHERE is_published = true
+                    ORDER BY created_at DESC
+                    LIMIT $1 OFFSET $2
+                    """,
+                    limit, offset
+                )
+
+                courses = []
+                for row in rows:
+                    # Convert database row to Course domain entity
+                    course = Course(
+                        id=str(row['id']),
+                        title=row['title'],
+                        description=row['description'],
+                        instructor_id=str(row['instructor_id']),
+                        category=row['category'] or 'General',
+                        difficulty_level=DifficultyLevel(row['difficulty_level'] or 'beginner'),
+                        estimated_duration=row['estimated_duration'] or 0,
+                        is_published=row['is_published'],
+                        created_at=row['created_at'],
+                        updated_at=row['updated_at'],
+                        tags=[]  # Tags loaded separately if needed
+                    )
+                    courses.append(course)
+
+                return courses
+
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to retrieve published courses (limit={limit}, offset={offset})",
+                operation="get_published_courses",
+                table_name="courses",
                 original_exception=e
             )

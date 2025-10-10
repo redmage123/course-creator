@@ -7,6 +7,7 @@
 
     <!-- Design System & Modules -->
     <link rel="stylesheet" href="../css/design-system.css?v=5.5">
+    <link rel="stylesheet" href="../css/accessibility.css?v=5.5">
     <link rel="stylesheet" href="../css/components/header-footer.css?v=5.5">
     <link rel="stylesheet" href="../css/components/modals.css?v=5.5">
     <link rel="stylesheet" href="../css/modules/dashboard.css?v=5.5">
@@ -194,6 +195,13 @@
 </head>
 
 <body class="dashboard-page">
+    <!-- Skip Links -->
+    <div class="skip-links">
+        <a href="#main-content" class="skip-link">Skip to main content</a>
+        <a href=".dashboard-sidebar" class="skip-link">Skip to navigation</a>
+    </div>
+    <div aria-live="polite" aria-atomic="true" class="sr-only" id="form-announcements"></div>
+
     <!-- Header with User Dropdown -->
     <header class="site-header" role="banner">
         <div class="header-container">
@@ -237,7 +245,7 @@
                 <div class="sidebar-nav">
                     <ul role="menu">
                         <li role="none">
-                            <a href="#overview" class="sidebar-nav-link active" data-tab="overview" data-section="overview" role="menuitem">
+                            <a href="#overview" class="sidebar-nav-link active" data-tab="overview" data-section="overview" role="menuitem" aria-current="page">
                                 <i class="fas fa-chart-line"></i>
                                 <span>Overview</span>
                             </a>
@@ -270,10 +278,28 @@
                             </a>
                         </li>
                         <li role="none">
+                            <a href="#content-generation" class="sidebar-nav-link" data-tab="content-generation" data-section="content-generation" role="menuitem">
+                                <i class="fas fa-magic"></i>
+                                <span>Content Generation</span>
+                            </a>
+                        </li>
+                        <li role="none">
                             <a href="#students" class="sidebar-nav-link" data-tab="students" data-section="students" role="menuitem">
                                 <i class="fas fa-users"></i>
                                 <span>Students</span>
                                 <span class="nav-badge" id="studentCount">0</span>
+                            </a>
+                        </li>
+                        <li role="none">
+                            <a href="#feedback" class="sidebar-nav-link" data-tab="feedback" data-section="feedback" role="menuitem">
+                                <i class="fas fa-comments"></i>
+                                <span>Feedback</span>
+                            </a>
+                        </li>
+                        <li role="none">
+                            <a href="#labs" class="sidebar-nav-link" data-tab="labs" data-section="labs" role="menuitem">
+                                <i class="fas fa-flask"></i>
+                                <span>Lab Management</span>
                             </a>
                         </li>
                         <li role="none">
@@ -307,7 +333,7 @@
         </nav>
 
         <!-- Main Content Area -->
-        <main class="dashboard-main" role="main">
+        <main class="dashboard-main" role="main" id="main-content">
             <!-- Breadcrumb Header -->
             <div class="dashboard-header-section">
                 <div class="dashboard-welcome">
@@ -333,6 +359,7 @@
     </div>
 
     <!-- Scripts -->
+    <script src="../js/accessibility-manager.js"></script>
     <script src="../js/config-global.js"></script>
     <script type="module" src="../js/components/TemplateLoader.js"></script>
     <script>
@@ -352,7 +379,10 @@
             'create-course': 'modules/instructor/create-course-tab.html',
             'published-courses': 'modules/instructor/published-courses-tab.html',
             'course-instances': 'modules/instructor/course-instances-tab.html',
+            'content-generation': 'modules/instructor/content-generation-tab.html',
             'students': 'modules/instructor/students-tab.html',
+            'feedback': 'modules/instructor/feedback-tab.html',
+            'labs': 'modules/instructor/labs-tab.html',
             'analytics': 'modules/instructor/analytics-tab.html',
             'files': 'modules/instructor/files-tab.html'
         };
@@ -376,9 +406,13 @@
                     const tab = link.dataset.tab;
                     const section = link.dataset.section || tab;
 
-                    // Update active state
-                    navLinks.forEach(l => l.classList.remove('active'));
+                    // Update active state and ARIA current
+                    navLinks.forEach(l => {
+                        l.classList.remove('active');
+                        l.removeAttribute('aria-current');
+                    });
                     link.classList.add('active');
+                    link.setAttribute('aria-current', 'page');
 
                     // Update breadcrumb
                     const sectionName = link.querySelector('span').textContent.trim();
@@ -455,7 +489,10 @@
                     initCreateCourseTab,
                     initPublishedCoursesTab,
                     initCourseInstancesTab,
+                    initContentGenerationTab,
                     initStudentsTab,
+                    initFeedbackTab,
+                    initLabsTab,
                     initAnalyticsTab,
                     initFilesTab
                 } = await import('../js/modules/instructor-tab-handlers.js');
@@ -477,8 +514,17 @@
                     case 'course-instances':
                         initCourseInstancesTab();
                         break;
+                    case 'content-generation':
+                        initContentGenerationTab();
+                        break;
                     case 'students':
                         initStudentsTab();
+                        break;
+                    case 'feedback':
+                        initFeedbackTab();
+                        break;
+                    case 'labs':
+                        initLabsTab();
                         break;
                     case 'analytics':
                         initAnalyticsTab();

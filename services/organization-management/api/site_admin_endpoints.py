@@ -27,7 +27,7 @@ from app_dependencies import get_container, get_current_user, verify_site_admin_
 from datetime import datetime
 
 # Import custom exceptions for proper error handling
-from exceptions import (
+from organization_management.exceptions import (
     OrganizationNotFoundException,
     OrganizationException,
     ValidationException,

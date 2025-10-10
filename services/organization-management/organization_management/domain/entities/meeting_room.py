@@ -13,6 +13,7 @@ class MeetingPlatform(Enum):
     """Supported meeting platforms"""
     TEAMS = "teams"
     ZOOM = "zoom"
+    SLACK = "slack"
 
 
 class RoomType(Enum):

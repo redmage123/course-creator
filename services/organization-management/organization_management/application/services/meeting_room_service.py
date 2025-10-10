@@ -1,31 +1,43 @@
 """
 Meeting Room Management Service
-Handles MS Teams and Zoom integration for meeting rooms
+Handles MS Teams, Zoom, and Slack integration for meeting rooms with notification support
 """
 import logging
 from datetime import datetime
 from typing import Dict, List, Optional
 from uuid import UUID
 
-from organization_management.domain.entities.enhanced_role import EnhancedRole, Permission
+from organization_management.domain.entities.enhanced_role import EnhancedRole, Permission, RoleType
 from organization_management.domain.entities.meeting_room import MeetingPlatform, MeetingRoom, RoomType
-from data_access.organization_dao import OrganizationManagementDAO
+from organization_management.data_access.organization_dao import OrganizationManagementDAO
 from organization_management.infrastructure.integrations.teams_integration import TeamsCredentials, TeamsIntegrationService
 from organization_management.infrastructure.integrations.zoom_integration import ZoomCredentials, ZoomIntegrationService
+from organization_management.infrastructure.integrations.slack_integration import SlackCredentials, SlackIntegrationService
 
 
 class MeetingRoomService:
-    """Service for meeting room management with platform integrations"""
+    """
+    Service for meeting room management with platform integrations and notifications
+
+    BUSINESS CONTEXT:
+    This service creates and manages meeting rooms across Zoom, Teams, and Slack.
+    It automatically sends notifications to users when rooms are created for them.
+    Supports bulk room creation for organizations with many instructors/tracks.
+    """
 
     def __init__(
         self,
         organization_dao: OrganizationManagementDAO,
         teams_credentials: Optional[TeamsCredentials] = None,
-        zoom_credentials: Optional[ZoomCredentials] = None
+        zoom_credentials: Optional[ZoomCredentials] = None,
+        slack_credentials: Optional[SlackCredentials] = None,
+        notification_service = None
     ):
         self._organization_dao = organization_dao
         self._teams_credentials = teams_credentials
         self._zoom_credentials = zoom_credentials
+        self._slack_credentials = slack_credentials
+        self._notification_service = notification_service
         self._logger = logging.getLogger(__name__)
 
     async def create_meeting_room(
@@ -64,6 +76,8 @@ class MeetingRoomService:
                 platform_data = await self._create_teams_room(room)
             elif platform == MeetingPlatform.ZOOM:
                 platform_data = await self._create_zoom_room(room)
+            elif platform == MeetingPlatform.SLACK:
+                platform_data = await self._create_slack_room(room)
 
             # Update room with platform data
             if platform_data:
@@ -99,18 +113,33 @@ class MeetingRoomService:
         async with ZoomIntegrationService(self._zoom_credentials) as zoom:
             return await zoom.create_meeting_room(room)
 
+    async def _create_slack_room(self, room: MeetingRoom) -> Dict:
+        """Create channel in Slack"""
+        if not self._slack_credentials:
+            raise ValueError("Slack credentials not configured")
+
+        async with SlackIntegrationService(self._slack_credentials) as slack:
+            return await slack.create_meeting_room(room)
+
     async def create_track_room(
         self,
         track_id: UUID,
         organization_id: UUID,
         platform: MeetingPlatform,
         created_by: UUID,
-        name: Optional[str] = None
+        name: Optional[str] = None,
+        send_notification: bool = True
     ) -> MeetingRoom:
-        """Create meeting room for a track"""
+        """
+        Create meeting room for a track with optional notification
+
+        BUSINESS CONTEXT:
+        When org admin creates a room for a track, all students and instructors
+        in that track are automatically notified with room details
+        """
         room_name = name or f"Track Room - {track_id}"
 
-        return await self.create_meeting_room(
+        room = await self.create_meeting_room(
             organization_id=organization_id,
             name=room_name,
             platform=platform,
@@ -119,18 +148,39 @@ class MeetingRoomService:
             track_id=track_id
         )
 
+        # Send notification to all track participants
+        if send_notification and self._notification_service and room.join_url:
+            try:
+                await self._notification_service.send_track_room_notification(
+                    track_id=track_id,
+                    room_name=room.name,
+                    join_url=room.join_url,
+                    organization_id=organization_id
+                )
+            except Exception as e:
+                self._logger.warning(f"Failed to send track room notification: {e}")
+
+        return room
+
     async def create_instructor_room(
         self,
         instructor_id: UUID,
         organization_id: UUID,
         platform: MeetingPlatform,
         created_by: UUID,
-        name: Optional[str] = None
+        name: Optional[str] = None,
+        send_notification: bool = True
     ) -> MeetingRoom:
-        """Create personal room for instructor"""
+        """
+        Create personal room for instructor with optional notification
+
+        BUSINESS CONTEXT:
+        When org admin creates a room for an instructor, the instructor
+        is automatically notified with room details and join URL
+        """
         room_name = name or f"Instructor Room - {instructor_id}"
 
-        return await self.create_meeting_room(
+        room = await self.create_meeting_room(
             organization_id=organization_id,
             name=room_name,
             platform=platform,
@@ -138,6 +188,21 @@ class MeetingRoomService:
             created_by=created_by,
             instructor_id=instructor_id
         )
+
+        # Send notification to instructor
+        if send_notification and self._notification_service and room.join_url:
+            try:
+                await self._notification_service.send_instructor_room_notification(
+                    instructor_id=instructor_id,
+                    room_id=room.id,
+                    room_name=room.name,
+                    join_url=room.join_url,
+                    organization_id=organization_id
+                )
+            except Exception as e:
+                self._logger.warning(f"Failed to send instructor room notification: {e}")
+
+        return room
 
     async def create_project_room(
         self,
@@ -185,6 +250,8 @@ class MeetingRoomService:
                 await self._update_teams_room(room)
             elif room.platform == MeetingPlatform.ZOOM:
                 await self._update_zoom_room(room)
+            elif room.platform == MeetingPlatform.SLACK:
+                await self._update_slack_room(room)
 
             # Save to database
             updated_room = await self._organization_dao.update_room(room)
@@ -212,6 +279,14 @@ class MeetingRoomService:
         async with ZoomIntegrationService(self._zoom_credentials) as zoom:
             await zoom.update_meeting_room(room, {})
 
+    async def _update_slack_room(self, room: MeetingRoom):
+        """Update channel in Slack"""
+        if not self._slack_credentials:
+            return
+
+        async with SlackIntegrationService(self._slack_credentials) as slack:
+            await slack.update_meeting_room(room, {})
+
     async def delete_meeting_room(self, room_id: UUID) -> bool:
         """Delete meeting room"""
         try:
@@ -226,6 +301,8 @@ class MeetingRoomService:
                     await self._delete_teams_room(room.external_room_id)
                 elif room.platform == MeetingPlatform.ZOOM:
                     await self._delete_zoom_room(room.external_room_id)
+                elif room.platform == MeetingPlatform.SLACK:
+                    await self._delete_slack_room(room.external_room_id)
 
             # Delete from database
             db_success = await self._organization_dao.delete_room(room_id)
@@ -261,6 +338,18 @@ class MeetingRoomService:
                 return await zoom.delete_meeting_room(external_room_id)
         except Exception as e:
             self._logger.warning(f"Failed to delete Zoom room: {e}")
+            return False
+
+    async def _delete_slack_room(self, external_room_id: str) -> bool:
+        """Archive channel in Slack"""
+        if not self._slack_credentials:
+            return True
+
+        try:
+            async with SlackIntegrationService(self._slack_credentials) as slack:
+                return await slack.delete_meeting_room(external_room_id)
+        except Exception as e:
+            self._logger.warning(f"Failed to delete Slack channel: {e}")
             return False
 
     async def get_organization_rooms(
@@ -343,6 +432,8 @@ class MeetingRoomService:
                 success = await self._send_teams_invitation(room, invitee_emails)
             elif room.platform == MeetingPlatform.ZOOM:
                 success = await self._send_zoom_invitation(room, invitee_emails)
+            elif room.platform == MeetingPlatform.SLACK:
+                success = await self._send_slack_invitation(room, invitee_emails)
 
             if success:
                 self._logger.info(f"Sent room invitations for room {room_id}")
@@ -375,6 +466,18 @@ class MeetingRoomService:
                 return await zoom.send_meeting_invitation(room.external_room_id, emails)
         except Exception as e:
             self._logger.warning(f"Failed to send Zoom invitation: {e}")
+            return False
+
+    async def _send_slack_invitation(self, room: MeetingRoom, emails: List[str]) -> bool:
+        """Send Slack channel invitation"""
+        if not self._slack_credentials or not room.external_room_id:
+            return False
+
+        try:
+            async with SlackIntegrationService(self._slack_credentials) as slack:
+                return await slack.send_meeting_invitation(room.external_room_id, emails)
+        except Exception as e:
+            self._logger.warning(f"Failed to send Slack invitation: {e}")
             return False
 
     async def get_room_statistics(self, organization_id: UUID) -> Dict:
@@ -414,5 +517,147 @@ class MeetingRoomService:
             return self._teams_credentials is not None and TeamsIntegrationService(self._teams_credentials).validate_configuration()
         elif platform == MeetingPlatform.ZOOM:
             return self._zoom_credentials is not None and ZoomIntegrationService(self._zoom_credentials).validate_configuration()
+        elif platform == MeetingPlatform.SLACK:
+            return self._slack_credentials is not None and SlackIntegrationService(self._slack_credentials).validate_configuration()
 
         return False
+
+    async def create_rooms_for_all_instructors(
+        self,
+        organization_id: UUID,
+        platform: MeetingPlatform,
+        created_by: UUID,
+        send_notifications: bool = True
+    ) -> Dict[str, int]:
+        """
+        Create meeting rooms for all instructors in organization
+
+        BUSINESS CONTEXT:
+        Org admins can bulk-create rooms for all instructors at once.
+        This is useful when setting up a new organization or onboarding
+        multiple instructors.
+
+        Returns dictionary with:
+        - total: Total number of instructors
+        - created: Number of rooms successfully created
+        - failed: Number of rooms that failed to create
+        """
+        try:
+            # Get all instructors in organization
+            memberships = await self._organization_dao.get_organization_members(organization_id)
+            instructors = [
+                m for m in memberships
+                if m.role and m.role.role_type == RoleType.INSTRUCTOR
+            ]
+
+            results = {
+                "total": len(instructors),
+                "created": 0,
+                "failed": 0,
+                "errors": []
+            }
+
+            for membership in instructors:
+                try:
+                    # Check if instructor already has a room
+                    existing_rooms = await self.get_instructor_rooms(membership.user_id)
+                    has_platform_room = any(r.platform == platform for r in existing_rooms)
+
+                    if not has_platform_room:
+                        await self.create_instructor_room(
+                            instructor_id=membership.user_id,
+                            organization_id=organization_id,
+                            platform=platform,
+                            created_by=created_by,
+                            send_notification=send_notifications
+                        )
+                        results["created"] += 1
+                        self._logger.info(f"Created {platform.value} room for instructor {membership.user_id}")
+
+                except Exception as e:
+                    results["failed"] += 1
+                    results["errors"].append({
+                        "instructor_id": str(membership.user_id),
+                        "error": str(e)
+                    })
+                    self._logger.error(f"Failed to create room for instructor {membership.user_id}: {e}")
+
+            self._logger.info(
+                f"Bulk room creation completed: {results['created']}/{results['total']} created, "
+                f"{results['failed']} failed"
+            )
+
+            return results
+
+        except Exception as e:
+            self._logger.error(f"Failed to create rooms for all instructors: {e}")
+            raise
+
+    async def create_rooms_for_all_tracks(
+        self,
+        organization_id: UUID,
+        platform: MeetingPlatform,
+        created_by: UUID,
+        send_notifications: bool = True
+    ) -> Dict[str, int]:
+        """
+        Create meeting rooms for all tracks in organization
+
+        BUSINESS CONTEXT:
+        Org admins can bulk-create rooms for all tracks at once.
+        This ensures every track has a dedicated meeting space for
+        synchronous learning and collaboration.
+
+        Returns dictionary with:
+        - total: Total number of tracks
+        - created: Number of rooms successfully created
+        - failed: Number of rooms that failed to create
+        """
+        try:
+            # Get all tracks in organization
+            tracks = await self._organization_dao.get_organization_tracks(organization_id)
+
+            results = {
+                "total": len(tracks),
+                "created": 0,
+                "failed": 0,
+                "errors": []
+            }
+
+            for track in tracks:
+                try:
+                    # Check if track already has a room
+                    existing_rooms = await self.get_track_rooms(track.id)
+                    has_platform_room = any(r.platform == platform for r in existing_rooms)
+
+                    if not has_platform_room:
+                        await self.create_track_room(
+                            track_id=track.id,
+                            organization_id=organization_id,
+                            platform=platform,
+                            created_by=created_by,
+                            name=f"{track.name} - {platform.value.title()} Room",
+                            send_notification=send_notifications
+                        )
+                        results["created"] += 1
+                        self._logger.info(f"Created {platform.value} room for track {track.id}")
+
+                except Exception as e:
+                    results["failed"] += 1
+                    results["errors"].append({
+                        "track_id": str(track.id),
+                        "track_name": track.name if hasattr(track, 'name') else "Unknown",
+                        "error": str(e)
+                    })
+                    self._logger.error(f"Failed to create room for track {track.id}: {e}")
+
+            self._logger.info(
+                f"Bulk track room creation completed: {results['created']}/{results['total']} created, "
+                f"{results['failed']} failed"
+            )
+
+            return results
+
+        except Exception as e:
+            self._logger.error(f"Failed to create rooms for all tracks: {e}")
+            raise

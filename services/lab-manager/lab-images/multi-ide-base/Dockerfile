@@ -48,6 +48,9 @@ USER labuser
 # Install IntelliJ IDEA Community Edition via Projector
 RUN projector install --accept-license --no-auto-run 'IntelliJ IDEA Community Edition' --port 8082
 
+# Install PyCharm Community Edition via Projector
+RUN projector install --accept-license --no-auto-run 'PyCharm Community Edition' --port 8084
+
 # Create VSCode configuration
 RUN mkdir -p /home/labuser/.local/share/code-server/User \
     && echo '{"workbench.colorTheme": "Default Dark+", "workbench.startupEditor": "none"}' > /home/labuser/.local/share/code-server/User/settings.json

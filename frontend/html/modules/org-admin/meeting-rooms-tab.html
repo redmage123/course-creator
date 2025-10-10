@@ -1,0 +1,274 @@
+<!-- Org Admin - Meeting Rooms Tab Content -->
+<div id="meeting-rooms-panel" class="tab-content-wrapper">
+    <!-- Page Header -->
+    <div class="section-header">
+        <div class="section-title-group">
+            <h2 class="section-title">
+                <i class="fas fa-video"></i>
+                <span>Meeting Rooms & Notifications</span>
+            </h2>
+            <p class="section-description">Manage meeting rooms and send notifications to your organization</p>
+        </div>
+        <div class="section-actions">
+            <button class="btn btn-outline" onclick="refreshMeetingRooms()">
+                <i class="fas fa-sync"></i>
+                Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters and Actions -->
+    <section class="section-card">
+        <div class="section-content">
+            <div class="filters-row">
+                <div class="filter-group">
+                    <label for="platformFilter">Platform:</label>
+                    <select id="platformFilter" class="form-control" onchange="filterMeetingRooms()">
+                        <option value="">All Platforms</option>
+                        <option value="teams">Microsoft Teams</option>
+                        <option value="zoom">Zoom</option>
+                        <option value="slack">Slack</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="roomTypeFilter">Room Type:</label>
+                    <select id="roomTypeFilter" class="form-control" onchange="filterMeetingRooms()">
+                        <option value="">All Types</option>
+                        <option value="instructor">Instructor Rooms</option>
+                        <option value="track">Track Rooms</option>
+                    </select>
+                </div>
+                <div class="action-buttons" style="margin-left: auto; display: flex; gap: 0.5rem;">
+                    <button class="btn btn-primary" onclick="openCreateRoomModal()">
+                        <i class="fas fa-plus"></i>
+                        Create Room
+                    </button>
+                    <button class="btn btn-success" onclick="openBulkCreateModal()">
+                        <i class="fas fa-layer-group"></i>
+                        Bulk Create
+                    </button>
+                    <button class="btn btn-info" onclick="openSendNotificationModal()">
+                        <i class="fas fa-bell"></i>
+                        Send Notification
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick Actions Section -->
+    <section class="section-card quick-actions-section">
+        <div class="section-header">
+            <div class="section-title-group">
+                <h3 class="section-title">
+                    <i class="fas fa-bolt"></i>
+                    <span>Quick Bulk Actions</span>
+                </h3>
+                <p class="section-description">Create meeting rooms for all instructors or tracks at once</p>
+            </div>
+        </div>
+        <div class="section-content">
+            <div class="quick-actions-grid">
+                <!-- Instructor Room Creation -->
+                <div class="quick-action-group">
+                    <h4><i class="fas fa-chalkboard-teacher"></i> Instructor Rooms</h4>
+                    <div class="action-buttons-vertical">
+                        <button class="btn btn-outline-primary" onclick="bulkCreateInstructorRooms('teams')">
+                            <i class="fab fa-microsoft"></i>
+                            Create Teams Rooms for All Instructors
+                        </button>
+                        <button class="btn btn-outline-primary" onclick="bulkCreateInstructorRooms('zoom')">
+                            <i class="fas fa-video"></i>
+                            Create Zoom Rooms for All Instructors
+                        </button>
+                        <button class="btn btn-outline-primary" onclick="bulkCreateInstructorRooms('slack')">
+                            <i class="fab fa-slack"></i>
+                            Create Slack Channels for All Instructors
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Track Room Creation -->
+                <div class="quick-action-group">
+                    <h4><i class="fas fa-road"></i> Track Rooms</h4>
+                    <div class="action-buttons-vertical">
+                        <button class="btn btn-outline-success" onclick="bulkCreateTrackRooms('teams')">
+                            <i class="fab fa-microsoft"></i>
+                            Create Teams Rooms for All Tracks
+                        </button>
+                        <button class="btn btn-outline-success" onclick="bulkCreateTrackRooms('zoom')">
+                            <i class="fas fa-video"></i>
+                            Create Zoom Rooms for All Tracks
+                        </button>
+                        <button class="btn btn-outline-success" onclick="bulkCreateTrackRooms('slack')">
+                            <i class="fab fa-slack"></i>
+                            Create Slack Channels for All Tracks
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Meeting Rooms List -->
+    <section class="section-card">
+        <div class="section-header">
+            <div class="section-title-group">
+                <h3 class="section-title">
+                    <i class="fas fa-list"></i>
+                    <span>All Meeting Rooms</span>
+                </h3>
+                <p class="section-description">View and manage existing meeting rooms</p>
+            </div>
+        </div>
+        <div class="section-content">
+            <div id="meetingRoomsList">
+                <div class="empty-state-container">
+                    <div class="empty-state-icon">
+                        <i class="fas fa-video"></i>
+                    </div>
+                    <h3 class="empty-state-title">No Meeting Rooms Yet</h3>
+                    <p class="empty-state-description">Create meeting rooms using the buttons above</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p id="loadingMessage">Processing...</p>
+        </div>
+    </div>
+
+    <!-- Success/Error Notification -->
+    <div id="notification" class="notification" style="display: none;">
+        <i class="fas fa-check-circle"></i>
+        <span id="notificationText">Action completed successfully</span>
+    </div>
+</div>
+
+<style>
+.filters-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 200px;
+}
+
+.filter-group label {
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 2rem;
+}
+
+.quick-action-group {
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--surface-secondary);
+}
+
+.quick-action-group h4 {
+    margin: 0 0 1rem 0;
+    font-size: 1.125rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.action-buttons-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.action-buttons-vertical .btn {
+    justify-content: flex-start;
+    text-align: left;
+}
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.loading-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid var(--border-color);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 1rem 1.5rem;
+    background: var(--success-color);
+    color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    z-index: 10000;
+    animation: slideIn 0.3s ease-out;
+}
+
+.notification.error {
+    background: var(--error-color);
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+</style>

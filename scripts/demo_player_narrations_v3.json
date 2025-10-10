@@ -1,0 +1,88 @@
+{
+  "slides": [
+    {
+      "id": 1,
+      "title": "Introduction",
+      "duration": 25,
+      "narration": "Welcome to Course Creator Platform, built specifically for corporate training teams and professional instructors who need to create courses fast. Our AI-powered system transforms what used to take weeks into just minutes. In the next ten minutes, you'll see how artificial intelligence handles the heavy lifting while you focus on your expertise."
+    },
+    {
+      "id": 2,
+      "title": "Organization Dashboard",
+      "duration": 45,
+      "narration": "Every great learning program starts with a solid foundation. Watch as we create an organization. We'll enter the name, website, and a brief description. Then add contact details like the business email and address. Finally, set up the admin account with username, email, and password. In under a minute, you've created a complete organizational structure ready to host unlimited courses and manage hundreds of users. This is effortless setup."
+    },
+    {
+      "id": 3,
+      "title": "Projects & Tracks",
+      "duration": 30,
+      "narration": "Now, let's talk about structure. Projects let you organize related courses, think Web Development Bootcamp or Data Science Foundations. Tracks? They're your secret weapon for personalization. Create customized learning paths for beginners, intermediates, or advanced students, all within the same program. One platform, infinite possibilities."
+    },
+    {
+      "id": 4,
+      "title": "Adding Instructors",
+      "duration": 30,
+      "narration": "Your instructors are your greatest asset. Bring them onboard in seconds, assign them to specific projects or tracks. In the next step, we'll connect them to your Slack, Teams, and Zoom environments for seamless collaboration across the tools they already use."
+    },
+    {
+      "id": 5,
+      "title": "Third Party Integrations",
+      "duration": 60,
+      "narration": "Now here's where collaboration gets powerful. From the Meeting Rooms tab, organization admins can instantly connect the platform with the tools their teams already use. Create Microsoft Teams channels, Zoom rooms, or Slack channels for every instructor with a single click. Need meeting spaces for all your learning tracks? Bulk creation generates them in seconds. But it doesn't stop there. Send notifications to specific Slack channels about course updates, or broadcast announcements to your entire organization across Teams. Whether it's urgent maintenance alerts or celebrating student achievements, reach your team where they're already working. This integration means instructors collaborate on course development in Slack, launch live sessions via Zoom, and coordinate schedules in Teams, all without leaving their workflow. That's seamless collaboration."
+    },
+    {
+      "id": 6,
+      "title": "Instructor Dashboard",
+      "duration": 60,
+      "narration": "Here's where the AI magic happens. Tell our system your learning objectives, your target audience, and your key topics. Then watch as artificial intelligence generates a complete course structure, suggested modules, learning outcomes, even quiz questions. You review, refine, and approve. What used to take days of curriculum design now takes minutes. And when you schedule live sessions? Automatic Zoom or Teams integration means one click launches your class."
+    },
+    {
+      "id": 7,
+      "title": "Course Content",
+      "duration": 45,
+      "narration": "Here's where AI really shines. Need lesson content? Describe your topic and the AI generates a complete lesson draft, you just add your expertise and real-world examples. Creating quizzes? AI suggests questions based on your content, multiple choice, code challenges, scenario-based problems. You spend your time refining and personalizing, not starting from scratch. Upload presentations, embed videos, add code exercises with real-time feedback. The AI accelerates creation, you ensure quality."
+    },
+    {
+      "id": 8,
+      "title": "Enroll Employees",
+      "duration": 45,
+      "narration": "Your course is ready, now organizations enroll their employees. One employee? Easy. One hundred employees? Even easier. Upload a CSV file and enroll an entire cohort in seconds. Organize by department, group by skill level, track by training initiative. However you structure corporate training, we adapt. Because managing employee enrollment should be effortless, not exhausting."
+    },
+    {
+      "id": 9,
+      "title": "Student Dashboard",
+      "duration": 30,
+      "narration": "Now let's see what your students experience. They log in and immediately, everything they need is right there. Their courses, their progress, upcoming deadlines, recent achievements. No confusion, no hunting for information. Just a clear path forward and the motivation to keep going."
+    },
+    {
+      "id": 10,
+      "title": "Course Browsing",
+      "duration": 75,
+      "narration": "Here's where things get really exciting. Students browse the catalog, discover courses, and enroll with one click. But here's the game changer for technical training. When they hit a coding lesson? Professional development environments open right in their browser. VSCode for web development, PyCharm for Python, JupyterLab for data science, full Linux terminal for system administration. No installation, no configuration, no IT headaches. This is why corporate training teams choose us, their developers learn with real professional tools, no setup time wasted."
+    },
+    {
+      "id": 11,
+      "title": "Taking Quizzes",
+      "duration": 45,
+      "narration": "Assessment shouldn't feel like a gotcha moment, it should be a learning opportunity. Our quiz system delivers multiple question formats, multiple choice for quick checks, coding challenges for hands-on validation, short answer for deeper understanding. But here's what matters most, instant feedback. Not just a score, but detailed explanations that turn mistakes into mastery. Because real learning happens when students understand why."
+    },
+    {
+      "id": 12,
+      "title": "Student Progress",
+      "duration": 30,
+      "narration": "Progress should be visible and celebrated. Every quiz completed, every module mastered, every achievement unlocked. Students see their journey unfold in real time. Completion rates, quiz scores, time invested, it all adds up to something powerful, proof of growth. And that's what keeps them coming back."
+    },
+    {
+      "id": 13,
+      "title": "Instructor Analytics",
+      "duration": 45,
+      "narration": "Here's where we go beyond basic LMS reporting. Our AI-powered analytics don't just show you data, they surface insights. Which students are at risk of falling behind? AI flags them automatically. What content drives the most engagement? AI identifies patterns across all your courses. Which quiz questions are too easy or too hard? AI analyzes performance trends and suggests adjustments. Export reports to Slack or Teams so your entire training team stays informed. This isn't just analytics, it's intelligent course optimization."
+    },
+    {
+      "id": 14,
+      "title": "Summary & Next Steps",
+      "duration": 15,
+      "narration": "So that's Course Creator Platform. AI handles course development, content generation, and intelligent analytics. Your team collaborates in Slack, meets in Zoom, and gets instant notifications in Teams, with automatic room creation and seamless integration. Multi-IDE labs provide professional coding environments, and everything works together flawlessly. Whether you're building corporate training programs or teaching as an independent instructor, we turn weeks of work into minutes of guided setup. Ready to see it in action? Visit our site to get started."
+    }
+  ]
+}

@@ -11,6 +11,7 @@ from organization_management.application.services.organization_service import Or
 from organization_management.application.services.auth_service import AuthService
 from organization_management.application.services.membership_service import MembershipService
 from organization_management.application.services.meeting_room_service import MeetingRoomService
+from organization_management.application.services.notification_service import NotificationService
 from organization_management.domain.entities.enhanced_role import Permission
 
 security = HTTPBearer()
@@ -99,6 +100,12 @@ async def get_meeting_room_service() -> MeetingRoomService:
     """Get meeting room service for FastAPI dependency injection"""
     container = get_container()
     return await container.get_meeting_room_service()
+
+
+async def get_notification_service() -> NotificationService:
+    """Get notification service for FastAPI dependency injection"""
+    container = get_container()
+    return await container.get_notification_service()
 
 
 async def verify_permission(user_id: UUID, organization_id: UUID, permission: Permission) -> bool:

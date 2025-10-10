@@ -514,6 +514,16 @@ class RAGService:
                     "assessment_type": "string",
                     "effectiveness_score": "float"
                 }
+            },
+            {
+                "name": "demo_tour_guide",
+                "description": "Demo platform knowledge base for AI tour guide Q&A",
+                "metadata_schema": {
+                    "section": "string",  # Platform Overview, Features, Q&A, etc.
+                    "file": "string",  # Source file name
+                    "type": "string",  # documentation, faq, feature_description
+                    "category": "string"  # pricing, integrations, target_audience, etc.
+                }
             }
         ]
         

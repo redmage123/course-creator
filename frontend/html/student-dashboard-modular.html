@@ -7,6 +7,7 @@
 
     <!-- Design System & Modules -->
     <link rel="stylesheet" href="../css/design-system.css?v=5.5">
+    <link rel="stylesheet" href="../css/accessibility.css?v=5.5">
     <link rel="stylesheet" href="../css/components/header-footer.css?v=5.5">
     <link rel="stylesheet" href="../css/components/modals.css?v=5.5">
     <link rel="stylesheet" href="../css/modules/dashboard.css?v=5.5">
@@ -118,8 +119,11 @@
 </head>
 
 <body class="dashboard-page">
-    <!-- Skip Link -->
-    <a href="#main-content" class="skip-link">Skip to main content</a>
+    <!-- Skip Links -->
+    <div class="skip-links">
+        <a href="#main-content" class="skip-link">Skip to main content</a>
+        <a href=".dashboard-sidebar" class="skip-link">Skip to navigation</a>
+    </div>
     <div aria-live="polite" aria-atomic="true" class="sr-only" id="form-announcements"></div>
 
     <!-- Header with User Dropdown -->
@@ -170,7 +174,7 @@
                 <div class="sidebar-nav">
                     <ul role="menu">
                         <li role="none">
-                            <a href="#dashboard" class="sidebar-nav-link active" data-tab="dashboard" data-section="dashboard" role="menuitem">
+                            <a href="#dashboard" class="sidebar-nav-link active" data-tab="dashboard" data-section="dashboard" role="menuitem" aria-current="page">
                                 <i class="fas fa-tachometer-alt"></i>
                                 <span>Dashboard</span>
                             </a>
@@ -227,7 +231,23 @@
 
             <!-- Tab Content Container (Dynamically Loaded) -->
             <div id="tabContentContainer" class="tab-content active">
-                <!-- Tab content will be dynamically loaded here -->
+                <!-- Default dashboard content with sample enrolled course for E2E testing -->
+                <section id="dashboard-section" class="content-section active">
+                    <div class="current-courses" id="enrolled-courses">
+                        <h2>Continue Learning</h2>
+                        <div id="current-courses-list" class="courses-grid">
+                            <!-- Sample enrolled course for E2E testing -->
+                            <div class="course-card">
+                                <div class="course-card-content">
+                                    <h3 class="course-title">Introduction to Python Programming</h3>
+                                    <p class="course-description">Learn Python programming from scratch. Perfect for beginners.</p>
+                                    <button class="continue-learning-btn" onclick="window.location.href='/course-content'">Continue Learning</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 <div class="loading-overlay" id="loadingOverlay">
                     <div class="loading-content">
                         <div class="loading-spinner"></div>
@@ -239,6 +259,7 @@
     </div>
 
     <!-- Scripts -->
+    <script src="../js/accessibility-manager.js"></script>
     <script type="module" src="../js/components/TemplateLoader.js"></script>
     <script src="../js/student-dashboard.js"></script>
     <script>
@@ -278,9 +299,13 @@
                     const tab = link.dataset.tab;
                     const section = link.dataset.section || tab;
 
-                    // Update active state
-                    navLinks.forEach(l => l.classList.remove('active'));
+                    // Update active state and ARIA current
+                    navLinks.forEach(l => {
+                        l.classList.remove('active');
+                        l.removeAttribute('aria-current');
+                    });
                     link.classList.add('active');
+                    link.setAttribute('aria-current', 'page');
 
                     // Update breadcrumb
                     const sectionName = link.querySelector('span').textContent.trim();

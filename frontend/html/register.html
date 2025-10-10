@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Registration - Course Creator Platform</title>
     <link rel="stylesheet" href="../css/main.css?v=3.0">
+    <link rel="stylesheet" href="../css/design-system.css">
+    <link rel="stylesheet" href="../css/accessibility.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         .registration-container {
@@ -157,8 +159,15 @@
     </style>
 </head>
 <body>
-    <a href="#main-content" class="skip-link">Skip to main content</a>
-    <div aria-live="polite" aria-atomic="true" class="sr-only" id="form-announcements"></div>
+    <!-- Skip Navigation Links -->
+    <div class="skip-links">
+        <a href="#main-content" class="skip-link">Skip to main content</a>
+    </div>
+
+    <!-- ARIA Live Regions -->
+    <div id="errorMessageAria" role="alert" aria-live="assertive" style="position: absolute; left: -9999px;"></div>
+    <div id="successMessageAria" role="status" aria-live="polite" style="position: absolute; left: -9999px;"></div>
+
     <header role="banner">
         <div class="container">
             <div class="header-content">
@@ -185,31 +194,32 @@
             <form id="registrationForm">
                 <div class="form-group">
                     <label for="fullName">Full Name <span class="required">*</span></label>
-                    <input type="text" id="fullName" name="fullName" required>
+                    <input type="text" id="fullName" name="fullName" required aria-required="true">
                 </div>
 
                 <div class="form-group">
                     <label for="email">Email Address <span class="required">*</span></label>
-                    <input type="email" id="email" name="email" required>
+                    <input type="email" id="email" name="email" required aria-required="true">
                 </div>
 
                 <div class="form-group">
                     <label for="password">Password <span class="required">*</span></label>
-                    <input type="password" id="password" name="password" required>
+                    <input type="password" id="password" name="password" required aria-required="true" aria-describedby="passwordHelp">
+                    <small id="passwordHelp" style="display: block; margin-top: 5px; color: #6c757d;">Must be at least 8 characters long</small>
                 </div>
 
                 <div class="form-group">
                     <label for="confirmPassword">Confirm Password <span class="required">*</span></label>
-                    <input type="password" id="confirmPassword" name="confirmPassword" required>
+                    <input type="password" id="confirmPassword" name="confirmPassword" required aria-required="true">
                 </div>
 
                 <div class="checkbox-group">
                     <h3 style="margin-top: 0; margin-bottom: 15px;">Privacy & Consent</h3>
 
                     <div class="checkbox-item">
-                        <input type="checkbox" id="gdprConsent" name="gdprConsent" required>
+                        <input type="checkbox" id="gdprConsent" name="gdprConsent" required aria-required="true">
                         <label for="gdprConsent">
-                            <span class="required">*</span> I agree to the <a href="/public/privacy-policy.html" target="_blank">Privacy Policy</a> and Terms of Service (Required)
+                            <span class="required">*</span> I agree to the <a href="/public/privacy-policy.html" target="_blank" aria-label="Privacy Policy (opens in new window)">Privacy Policy</a> and Terms of Service (Required)
                         </label>
                     </div>
 
@@ -264,26 +274,34 @@
 
             // Validation
             if (!fullName || !email || !password || !confirmPassword) {
-                errorMessage.textContent = 'Please fill in all required fields';
+                const msg = 'Please fill in all required fields';
+                errorMessage.textContent = msg;
                 errorMessage.classList.add('show');
+                document.getElementById('errorMessageAria').textContent = msg;
                 return;
             }
 
             if (password !== confirmPassword) {
-                errorMessage.textContent = 'Passwords do not match';
+                const msg = 'Passwords do not match';
+                errorMessage.textContent = msg;
                 errorMessage.classList.add('show');
+                document.getElementById('errorMessageAria').textContent = msg;
                 return;
             }
 
             if (password.length < 8) {
-                errorMessage.textContent = 'Password must be at least 8 characters long';
+                const msg = 'Password must be at least 8 characters long';
+                errorMessage.textContent = msg;
                 errorMessage.classList.add('show');
+                document.getElementById('errorMessageAria').textContent = msg;
                 return;
             }
 
             if (!gdprConsent) {
-                errorMessage.textContent = 'You must accept the Privacy Policy to register';
+                const msg = 'You must accept the Privacy Policy to register';
+                errorMessage.textContent = msg;
                 errorMessage.classList.add('show');
+                document.getElementById('errorMessageAria').textContent = msg;
                 return;
             }
 
@@ -321,23 +339,29 @@
                         timestamp: new Date().toISOString()
                     }));
 
-                    successMessage.textContent = 'Registration successful! Redirecting to login...';
+                    const msg = 'Registration successful! Redirecting to login...';
+                    successMessage.textContent = msg;
                     successMessage.classList.add('show');
+                    document.getElementById('successMessageAria').textContent = msg;
 
                     // Redirect to login after 1.5 seconds
                     setTimeout(() => {
                         window.location.href = '/html/login.html?email=' + encodeURIComponent(email);
                     }, 1500);
                 } else {
-                    errorMessage.textContent = data.detail || data.error || 'Registration failed. Please try again.';
+                    const msg = data.detail || data.error || 'Registration failed. Please try again.';
+                    errorMessage.textContent = msg;
                     errorMessage.classList.add('show');
+                    document.getElementById('errorMessageAria').textContent = msg;
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Create Account';
                 }
             } catch (error) {
                 console.error('Registration error:', error);
-                errorMessage.textContent = 'Network error. Please check your connection and try again.';
+                const msg = 'Network error. Please check your connection and try again.';
+                errorMessage.textContent = msg;
                 errorMessage.classList.add('show');
+                document.getElementById('errorMessageAria').textContent = msg;
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Create Account';
             }
@@ -353,7 +377,9 @@
         }
     </script>
     <script src="../js/focus-manager.js"></script>
-
     <script src="../js/inline-validation.js"></script>
+
+    <!-- Accessibility Manager -->
+    <script src="/js/accessibility-manager.js"></script>
 </body>
 </html>
