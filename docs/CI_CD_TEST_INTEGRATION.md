@@ -413,6 +413,32 @@ HEADLESS=true TEST_BASE_URL=https://localhost:3000 \
 **Fact #436** (Added 2025-10-10):
 > Integrated comprehensive test suite with CI/CD: Updated tests/run_all_tests.py to include critical E2E tests (instructor/student journeys, org admin notifications). Updated .github/workflows/ci.yml with 3 new jobs: unit-tests, integration-tests, e2e-tests. All tests now run automatically on push/PR to main/master/develop branches.
 
+**Fact #438** (Added 2025-10-10):
+> Fixed CI/CD artifact upload failures: Added if-no-files-found: warn parameter to all 4 artifact upload steps in .github/workflows/ci.yml. This prevents job failures when bandit-report.json or tests/reports/ don't exist. Resolved security-scan and unit-tests job failures (commit c3ff3e6).
+
+---
+
+## Troubleshooting
+
+### Issue: Jobs Fail in 3-4 Seconds
+
+**Symptoms**: security-scan or unit-tests jobs fail very quickly (3-4 seconds) with "1 annotation"
+
+**Root Cause**: Artifact upload steps fail when expected files/directories don't exist (bandit-report.json, tests/reports/)
+
+**Solution**: Add `if-no-files-found: warn` parameter to artifact upload steps
+
+**Fix Applied** (commit c3ff3e6):
+```yaml
+- name: Upload Bandit report
+  uses: actions/upload-artifact@v3
+  if: always()
+  with:
+    name: bandit-security-report
+    path: bandit-report.json
+    if-no-files-found: warn  # ← Prevents failure if file doesn't exist
+```
+
 ---
 
 ## Success Criteria
@@ -426,9 +452,10 @@ HEADLESS=true TEST_BASE_URL=https://localhost:3000 \
 ✅ Build summary includes test results
 ✅ Sequential test execution prevents resource conflicts
 ✅ All tests triggered on push/PR to main branches
+✅ Artifact upload failures handled gracefully with if-no-files-found parameter
 
 ---
 
-**Document Version**: 1.0
+**Document Version**: 1.1 (Updated 2025-10-10)
 **Author**: Claude Code Integration
 **Status**: ✅ COMPLETE
