@@ -385,28 +385,56 @@ async def slide_05_third_party_integrations(page, recorder, duration):
     except Exception as e:
         logger.warning(f"Dashboard sidebar not visible: {e}")
 
-    # Navigate to Meeting Rooms tab using JavaScript as fallback
+    # Navigate to Meeting Rooms tab
     try:
-        # First try clicking the tab normally
-        meeting_rooms_tab = await page.query_selector('#meeting-rooms-tab')
-        if meeting_rooms_tab and await meeting_rooms_tab.is_visible():
-            logger.info("Clicking Meeting Rooms tab...")
-            await meeting_rooms_tab.click()
-            await asyncio.sleep(3)
-        else:
-            # Fallback: Use JavaScript like the E2E tests do
-            logger.info("Tab not visible, using JavaScript to load content...")
-            await page.evaluate("loadTabContent('meeting-rooms')")
-            await asyncio.sleep(3)
+        # Wait for tabs to be ready
+        await page.wait_for_selector('#meeting-rooms-tab', state='visible', timeout=10000)
+        logger.info("Meeting Rooms tab found, clicking...")
+
+        # Click the meeting rooms tab
+        await page.click('#meeting-rooms-tab')
+        await asyncio.sleep(2)
 
         # Wait for meeting rooms content to load
         try:
-            await page.wait_for_selector('#meeting-rooms-panel', state='visible', timeout=5000)
+            await page.wait_for_selector('#meeting-rooms-panel', state='visible', timeout=10000)
             logger.info("Meeting rooms panel loaded successfully")
-        except:
-            logger.warning("Meeting rooms panel not visible after loading")
+            await asyncio.sleep(2)
+        except Exception as panel_e:
+            # Fallback: Manually show the panel using JavaScript
+            logger.warning(f"Panel not visible after click, using JavaScript fallback: {panel_e}")
+            await page.evaluate("""
+                () => {
+                    // Hide all panels
+                    document.querySelectorAll('.tab-panel').forEach(panel => {
+                        panel.style.display = 'none';
+                        panel.setAttribute('aria-hidden', 'true');
+                    });
+
+                    // Show meeting rooms panel
+                    const meetingRoomsPanel = document.getElementById('meeting-rooms-panel');
+                    if (meetingRoomsPanel) {
+                        meetingRoomsPanel.style.display = 'block';
+                        meetingRoomsPanel.setAttribute('aria-hidden', 'false');
+                    }
+
+                    // Update tab states
+                    document.querySelectorAll('.nav-tab').forEach(tab => {
+                        tab.setAttribute('aria-selected', 'false');
+                        tab.classList.remove('active');
+                    });
+
+                    const meetingRoomsTab = document.getElementById('meeting-rooms-tab');
+                    if (meetingRoomsTab) {
+                        meetingRoomsTab.setAttribute('aria-selected', 'true');
+                        meetingRoomsTab.classList.add('active');
+                    }
+                }
+            """)
+            await asyncio.sleep(2)
     except Exception as e:
-        logger.warning(f"Could not navigate to meeting rooms: {e}")
+        logger.error(f"Could not navigate to meeting rooms: {e}")
+        # Continue anyway - recorder will capture whatever is visible
 
     recorder.start_recording(VIDEOS_DIR / "slide_05_third_party_integrations.mp4")
     await asyncio.sleep(1)
