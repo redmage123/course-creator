@@ -59,6 +59,7 @@ jobs:
       with:
         name: bandit-security-report
         path: bandit-report.json
+        if-no-files-found: warn
 
   # Frontend Linting
   frontend-lint:
@@ -142,6 +143,7 @@ jobs:
       with:
         name: unit-test-logs
         path: tests/reports/
+        if-no-files-found: warn
 
   # Integration Tests
   integration-tests:
@@ -189,6 +191,7 @@ jobs:
       with:
         name: integration-test-logs
         path: tests/reports/
+        if-no-files-found: warn
 
   # E2E Tests (Selenium)
   e2e-tests:
@@ -238,6 +241,7 @@ jobs:
       with:
         name: e2e-test-artifacts
         path: tests/reports/
+        if-no-files-found: warn
 
     - name: Stop Docker services
       if: always()
