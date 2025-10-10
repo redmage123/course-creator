@@ -223,7 +223,7 @@
                         <a href="/html/password-change.html"><i class="fas fa-key"></i> Change Password</a>
                         <a href="#" onclick="showProfileModal()"><i class="fas fa-user"></i> Profile</a>
                         <a href="#" onclick="showSettingsModal()"><i class="fas fa-cog"></i> Settings</a>
-                        <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                        <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a>
                     </div>
                 </div>
             </div>
@@ -592,13 +592,27 @@
         /**
          * Logout function
          */
-        function logout() {
+        // Logout handler - uses event listener (no inline onclick)
+        function handleLogout(event) {
+            event.preventDefault();
+
             if (confirm('Are you sure you want to logout?')) {
+                // Clear all session data
                 localStorage.clear();
                 sessionStorage.clear();
-                window.location.href = '/html/index.html';
+
+                // Redirect to login page
+                window.location.href = '/html/student-login.html';
             }
         }
+
+        // Attach logout handler on DOM load
+        document.addEventListener('DOMContentLoaded', function() {
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', handleLogout);
+            }
+        });
 
         // Global function wrappers for backward compatibility
         function filterCourses() { if (window.instructor) window.instructor.filterCourses(); }
