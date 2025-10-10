@@ -25,6 +25,12 @@ from models.course_video import (
 )
 from data_access.course_video_dao import CourseVideoDAO
 
+# JWT Authentication - Import from auth module
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from auth import get_current_user_id as get_authenticated_user_id
+
 
 router = APIRouter(prefix="/courses", tags=["videos"])
 
@@ -46,15 +52,43 @@ def get_video_dao() -> CourseVideoDAO:
     return video_dao
 
 
+# DEPRECATED: This function has been replaced by JWT authentication middleware
+# Use: from auth import get_current_user_id (as FastAPI Depends)
+#
+# Migration Guide:
+# OLD: user_id = get_current_user_id()
+# NEW: async def endpoint(user_id: str = Depends(get_authenticated_user_id)):
+#
+# This function will be removed in v4.0
 def get_current_user_id() -> str:
     """
-    Extract current user ID from authentication token.
+    DEPRECATED: Use get_authenticated_user_id from auth module with FastAPI Depends.
 
-    TODO: Implement actual JWT token validation
-    For now, returns mock user ID for development
+    This mock function returns a hardcoded user ID for backward compatibility.
+    All new code should use the JWT authentication middleware:
+
+    from auth import get_current_user_id
+    from fastapi import Depends
+
+    @router.get("/endpoint")
+    async def my_endpoint(user_id: str = Depends(get_current_user_id)):
+        # user_id is now authenticated from JWT token
+        pass
+
+    Returns:
+        str: Mock user ID (for backward compatibility only)
+
+    Warnings:
+        DeprecationWarning: This function is deprecated
     """
-    # This should be replaced with actual auth token parsing
-    return "current-user-id"
+    import warnings
+    warnings.warn(
+        "get_current_user_id() mock function is deprecated. "
+        "Use JWT authentication: from auth import get_current_user_id with FastAPI Depends()",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    return "current-user-id"  # Mock ID for backward compatibility
 
 
 def get_storage_path(course_id: str, filename: str) -> str:

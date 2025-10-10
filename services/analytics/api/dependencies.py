@@ -278,12 +278,31 @@ def get_risk_service() -> IRiskAssessmentService:
     return container.get_risk_assessment_service()
 
 
+# DEPRECATED: Replaced by JWT authentication middleware in analytics.auth module
+# This function maintained for backward compatibility - will be removed in v4.0
+#
+# Migration Guide:
+# OLD: user_id = get_current_user_id()
+# NEW: from analytics.auth import get_current_user_id
+#      async def endpoint(user_id: str = Depends(get_current_user_id)):
+#
 def get_current_user_id() -> str:
     """
-    Extract user ID from JWT authentication token.
+    DEPRECATED: Use JWT authentication middleware from analytics.auth module.
 
-    This function provides secure user identification for educational analytics
-    while maintaining privacy and security best practices.
+    This mock function returns a hardcoded user ID for backward compatibility only.
+    All new analytics endpoints should use the JWT authentication middleware:
+
+    ```python
+    from analytics.auth import get_current_user_id
+    from fastapi import Depends
+
+    @router.get("/analytics")
+    async def analytics_endpoint(user_id: str = Depends(get_current_user_id)):
+        # user_id is now authenticated from JWT token
+        # Includes validation, expiration checking, and role extraction
+        pass
+    ```
 
     Security and Privacy Implementation:
     - JWT token validation for authenticated access
@@ -297,21 +316,32 @@ def get_current_user_id() -> str:
     - Facilitates secure multi-tenant educational platforms
     - Maintains user context for educational recommendations
 
-    Production Implementation:
+    Production JWT Authentication Features:
     - Validates JWT token signature and expiration
     - Extracts user ID and role information
     - Implements rate limiting per authenticated user
     - Logs access for security and compliance auditing
+    - Distributed authentication via user-management service
+    - Proper error handling with HTTP 401/403/503 status codes
 
     Returns:
-        str: Authenticated user identifier
+        str: Mock user ID ("user_123") - for backward compatibility only
 
-    Note:
-        Current implementation returns mock user ID for development.
-        Production deployment requires JWT validation implementation.
+    Warnings:
+        DeprecationWarning: This function will be removed in v4.0
 
-    TODO: Implement JWT validation with proper authentication
+    See Also:
+        analytics.auth.jwt_middleware: Full JWT authentication implementation
+        analytics.auth.get_current_user: Complete user data extraction
+        analytics.auth.require_role: Role-based access control
     """
-    # Mock implementation for development
-    # Production: Extract from Authorization header, validate JWT, return user_id
+    import warnings
+    warnings.warn(
+        "analytics.api.dependencies.get_current_user_id() is deprecated. "
+        "Use JWT authentication: from analytics.auth import get_current_user_id with FastAPI Depends()",
+        DeprecationWarning,
+        stacklevel=2
+    )
+    # Mock implementation for backward compatibility
+    # Production: Use analytics.auth.get_current_user_id with FastAPI Depends()
     return "user_123"
