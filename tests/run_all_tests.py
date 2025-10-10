@@ -237,6 +237,12 @@ def main():
                 "command": "python -m pytest tests/integration/test_student_login_gdpr.py -v --tb=short",
                 "description": "Integration Tests - Student Login GDPR Compliance",
                 "timeout": 600
+            },
+            "authentication": {
+                "path": "tests/integration/test_authentication_integration.py",
+                "command": "python -m pytest tests/integration/test_authentication_integration.py -v --tb=short",
+                "description": "Integration Tests - Authentication & JWT Middleware (Login, Password Reset, Token Validation)",
+                "timeout": 600
             }
         },
         "frontend": {
