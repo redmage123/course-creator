@@ -28,9 +28,67 @@ class LoginRequest(BaseModel):
 
 
 class PasswordResetRequest(BaseModel):
-    """Password reset request model."""
+    """
+    DEPRECATED: Use PasswordResetRequestModel instead.
+    This model is kept for backward compatibility only.
+    """
     email: EmailStr
     new_password: str
+
+
+class PasswordResetRequestModel(BaseModel):
+    """
+    Request model for initiating password reset flow.
+
+    Security Context:
+    Implements OWASP password reset best practices with no user enumeration.
+    Returns generic success message regardless of email validity.
+    """
+    email: EmailStr = Field(..., description="Email address for password reset")
+
+
+class PasswordResetVerifyRequest(BaseModel):
+    """
+    Request model for verifying password reset token validity.
+
+    Security Context:
+    Validates token before allowing password change form to be displayed.
+    Implements time-based token expiration (1-hour window).
+    """
+    token: str = Field(..., min_length=32, max_length=64, description="Password reset token")
+
+
+class PasswordResetCompleteRequest(BaseModel):
+    """
+    Request model for completing password reset with new password.
+
+    Security Context:
+    - Validates token and password strength
+    - Implements single-use tokens (auto-invalidated after success)
+    - Enforces password strength requirements (min 8 chars, 3 of 4 character types)
+    - Uses bcrypt hashing with automatic salt generation
+    """
+    token: str = Field(..., min_length=32, max_length=64, description="Password reset token")
+    new_password: str = Field(..., min_length=8, description="New password (min 8 characters)")
+
+
+class PasswordResetRequestResponse(BaseModel):
+    """Response for password reset request."""
+    message: str
+    success: bool
+
+
+class PasswordResetVerifyResponse(BaseModel):
+    """Response for password reset token verification."""
+    valid: bool
+    user_id: Optional[str] = None
+    error: Optional[str] = None
+
+
+class PasswordResetCompleteResponse(BaseModel):
+    """Response for password reset completion."""
+    success: bool
+    message: str
 
 
 class TokenPayload(BaseModel):

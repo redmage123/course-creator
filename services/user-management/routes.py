@@ -12,7 +12,15 @@ logger = logging.getLogger(__name__)
 
 # Pydantic models for API (Data Transfer Objects)
 from pydantic import BaseModel, EmailStr, Field
-from models.auth import LoginRequest
+from models.auth import (
+    LoginRequest,
+    PasswordResetRequestModel,
+    PasswordResetVerifyRequest,
+    PasswordResetCompleteRequest,
+    PasswordResetRequestResponse,
+    PasswordResetVerifyResponse,
+    PasswordResetCompleteResponse
+)
 
 # Domain entities and services
 from user_management.domain.entities.user import User, UserRole, UserStatus
@@ -523,7 +531,15 @@ def setup_auth_routes(app: FastAPI) -> None:
         request: PasswordResetRequest,
         auth_service: IAuthenticationService = Depends(get_auth_service)
     ):
-        """Reset user password"""
+        """
+        DEPRECATED: Reset user password (insecure - returns temp password)
+
+        This endpoint is deprecated and will be removed in v4.0.
+        Use the new token-based password reset flow instead:
+        1. POST /auth/password/reset/request - Request reset token
+        2. POST /auth/password/reset/verify - Validate token
+        3. POST /auth/password/reset/complete - Complete reset
+        """
         try:
             temp_password = await auth_service.reset_password(request.email)
 
@@ -538,6 +554,267 @@ def setup_auth_routes(app: FastAPI) -> None:
         except Exception as e:
             logging.error("Error resetting password: %s", e)
             raise HTTPException(status_code=500, detail="Internal server error") from e
+
+    @app.post("/auth/password/reset/request", response_model=PasswordResetRequestResponse)
+    async def request_password_reset(
+        request: PasswordResetRequestModel,
+        auth_service: IAuthenticationService = Depends(get_auth_service)
+    ):
+        """
+        Request Password Reset Token (Step 1 of 3)
+
+        Security Implementation:
+        Implements OWASP password reset best practices with anti-enumeration protection.
+        Returns generic success message regardless of whether email exists in system.
+
+        Business Context:
+        Initiates secure password reset flow by generating time-limited cryptographic token.
+        Token is generated server-side and would typically be sent via email (email integration pending).
+        This prevents user enumeration attacks by returning identical response for valid/invalid emails.
+
+        Flow:
+        1. User submits email address
+        2. System generates secure 256-bit token (if email exists)
+        3. Token stored with 1-hour expiration
+        4. Email sent with reset link (production - not implemented yet)
+        5. Generic success message returned (prevents user enumeration)
+
+        Security Features:
+        - No user enumeration (same response for valid/invalid emails)
+        - Cryptographically secure tokens (secrets.token_urlsafe)
+        - Time-limited tokens (1-hour expiration)
+        - Single-use tokens (invalidated after use)
+        - No sensitive data in response
+
+        Example Request:
+        ```json
+        {
+            "email": "user@example.com"
+        }
+        ```
+
+        Example Response:
+        ```json
+        {
+            "message": "If an account with that email exists, password reset instructions have been sent.",
+            "success": true
+        }
+        ```
+
+        Error Codes:
+        - 200: Success (generic response regardless of email validity)
+        - 500: Internal server error
+        """
+        try:
+            # Generate reset token (service handles user existence check internally)
+            await auth_service.request_password_reset(request.email)
+
+            # Generic success message (prevents user enumeration)
+            return PasswordResetRequestResponse(
+                message="If an account with that email exists, password reset instructions have been sent.",
+                success=True
+            )
+
+        except Exception as e:
+            logging.error("Error requesting password reset: %s", e)
+            # Return generic success even on error to prevent enumeration
+            return PasswordResetRequestResponse(
+                message="If an account with that email exists, password reset instructions have been sent.",
+                success=True
+            )
+
+    @app.post("/auth/password/reset/verify", response_model=PasswordResetVerifyResponse)
+    async def verify_password_reset_token(
+        request: PasswordResetVerifyRequest,
+        auth_service: IAuthenticationService = Depends(get_auth_service)
+    ):
+        """
+        Verify Password Reset Token Validity (Step 2 of 3)
+
+        Security Implementation:
+        Validates reset token before displaying password change form. Implements time-based
+        token expiration and single-use token pattern for security.
+
+        Business Context:
+        Validates password reset token to ensure it is:
+        - Valid (exists in database)
+        - Not expired (within 1-hour window)
+        - Associated with an active user account
+
+        This endpoint is called before showing the password reset form to the user,
+        providing immediate feedback on token validity without requiring password submission.
+
+        Flow:
+        1. User clicks reset link with token parameter
+        2. Frontend calls this endpoint to validate token
+        3. If valid, display password reset form
+        4. If invalid, display error message with option to request new token
+
+        Security Features:
+        - Time-based token expiration (1-hour window)
+        - Token validation before password change form display
+        - Clear error messages for expired/invalid tokens
+        - No sensitive user data in response (only user_id)
+
+        Example Request:
+        ```json
+        {
+            "token": "abc123def456ghi789jkl012mno345pqr"
+        }
+        ```
+
+        Example Success Response:
+        ```json
+        {
+            "valid": true,
+            "user_id": "user-12345"
+        }
+        ```
+
+        Example Error Response:
+        ```json
+        {
+            "valid": false,
+            "error": "Password reset token has expired. Please request a new reset link."
+        }
+        ```
+
+        Error Codes:
+        - 200: Success (check 'valid' field in response)
+        - 500: Internal server error
+        """
+        try:
+            # Validate token and get user ID
+            user_id = await auth_service.validate_password_reset_token(request.token)
+
+            return PasswordResetVerifyResponse(
+                valid=True,
+                user_id=user_id
+            )
+
+        except ValueError as e:
+            # Token validation failed (invalid or expired)
+            return PasswordResetVerifyResponse(
+                valid=False,
+                error=str(e)
+            )
+        except Exception as e:
+            logging.error("Error verifying password reset token: %s", e)
+            return PasswordResetVerifyResponse(
+                valid=False,
+                error="Unable to verify token. Please try again or request a new reset link."
+            )
+
+    @app.post("/auth/password/reset/complete", response_model=PasswordResetCompleteResponse)
+    async def complete_password_reset(
+        request: PasswordResetCompleteRequest,
+        auth_service: IAuthenticationService = Depends(get_auth_service)
+    ):
+        """
+        Complete Password Reset (Step 3 of 3)
+
+        Security Implementation:
+        Completes password reset with comprehensive validation: token validity, expiration,
+        password strength, and single-use token enforcement. Implements OWASP password
+        storage best practices with bcrypt hashing.
+
+        Business Context:
+        Completes the password reset flow by:
+        1. Validating reset token (must be valid and not expired)
+        2. Validating new password strength (min 8 chars, 3 of 4 character types)
+        3. Hashing password with bcrypt (automatic salt generation)
+        4. Updating user password in database
+        5. Invalidating reset token (single-use pattern)
+        6. Clearing password reset flags
+
+        This endpoint ensures secure password reset completion with proper validation
+        at every step and automatic cleanup of temporary reset data.
+
+        Flow:
+        1. User submits valid token + new password
+        2. System validates token (checks validity and expiration)
+        3. System validates password strength requirements
+        4. Password is hashed with bcrypt (secure storage)
+        5. User record updated with new password
+        6. Reset token invalidated (single-use)
+        7. Password reset flags cleared
+        8. Success response returned
+
+        Security Features:
+        - Token validation (valid, not expired, associated with user)
+        - Password strength validation (min 8 chars, complexity requirements)
+        - bcrypt password hashing (OWASP recommended)
+        - Single-use tokens (auto-invalidated after success)
+        - Automatic cleanup of reset metadata
+        - Clear password reset flags (require_password_change, password_reset)
+
+        Password Strength Requirements:
+        - Minimum 8 characters
+        - At least 3 of 4 character types:
+          - Uppercase letters (A-Z)
+          - Lowercase letters (a-z)
+          - Digits (0-9)
+          - Special characters (!@#$%^&*...)
+
+        Example Request:
+        ```json
+        {
+            "token": "abc123def456ghi789jkl012mno345pqr",
+            "new_password": "MyNewP@ssw0rd123"
+        }
+        ```
+
+        Example Success Response:
+        ```json
+        {
+            "success": true,
+            "message": "Password reset successful. You can now log in with your new password."
+        }
+        ```
+
+        Example Error Response:
+        ```json
+        {
+            "success": false,
+            "message": "Password does not meet strength requirements (min 8 chars, 3 of 4 character types)"
+        }
+        ```
+
+        Error Codes:
+        - 200: Success
+        - 400: Validation error (weak password, invalid token, expired token)
+        - 500: Internal server error
+        """
+        try:
+            # Complete password reset (validates token, password strength, updates user)
+            success = await auth_service.complete_password_reset(
+                request.token,
+                request.new_password
+            )
+
+            if success:
+                return PasswordResetCompleteResponse(
+                    success=True,
+                    message="Password reset successful. You can now log in with your new password."
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Password reset failed. Please try again."
+                )
+
+        except ValueError as e:
+            # Validation errors (token invalid/expired, weak password)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e)
+            )
+        except Exception as e:
+            logging.error("Error completing password reset: %s", e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Unable to complete password reset. Please try again or request a new reset link."
+            )
 
     @app.get("/auth/me", response_model=UserResponse)
     async def get_authenticated_user(current_user: User = Depends(get_current_user)):
