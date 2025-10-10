@@ -237,7 +237,7 @@ class TestPasswordResetTokenValidation:
         user.add_metadata('password_reset_token', reset_token)
         user.add_metadata('password_reset_expires', datetime.now(timezone.utc) + timedelta(minutes=30))
 
-        user_dao.get_user_by_metadata = AsyncMock(return_value=user)
+        user_dao.get_user_by_metadata_value = AsyncMock(return_value=user)
 
         auth_service = AuthenticationService(user_dao)
 
@@ -273,7 +273,7 @@ class TestPasswordResetTokenValidation:
         user.add_metadata('password_reset_token', reset_token)
         user.add_metadata('password_reset_expires', datetime.now(timezone.utc) - timedelta(minutes=5))  # Expired 5 min ago
 
-        user_dao.get_user_by_metadata = AsyncMock(return_value=user)
+        user_dao.get_user_by_metadata_value = AsyncMock(return_value=user)
 
         auth_service = AuthenticationService(user_dao)
 
@@ -297,7 +297,7 @@ class TestPasswordResetTokenValidation:
         """
         # Arrange
         user_dao = Mock(spec=UserManagementDAO)
-        user_dao.get_user_by_metadata = AsyncMock(return_value=None)  # Token not found
+        user_dao.get_user_by_metadata_value = AsyncMock(return_value=None)  # Token not found
 
         auth_service = AuthenticationService(user_dao)
 
@@ -350,7 +350,8 @@ class TestPasswordResetCompletion:
         user.add_metadata('password_reset_expires', datetime.now(timezone.utc) + timedelta(minutes=30))
         user.add_metadata('hashed_password', 'old-hashed-password')
 
-        user_dao.get_user_by_metadata = AsyncMock(return_value=user)
+        user_dao.get_user_by_metadata_value = AsyncMock(return_value=user)
+        user_dao.get_by_id = AsyncMock(return_value=user)
         user_dao.update = AsyncMock(return_value=user)
 
         auth_service = AuthenticationService(user_dao)
@@ -403,7 +404,9 @@ class TestPasswordResetCompletion:
         user.add_metadata('password_reset_token', reset_token)
         user.add_metadata('password_reset_expires', datetime.now(timezone.utc) + timedelta(minutes=30))
 
-        user_dao.get_user_by_metadata = AsyncMock(return_value=user)
+        user_dao.get_user_by_metadata_value = AsyncMock(return_value=user)
+        user_dao.get_by_id = AsyncMock(return_value=user)
+        user_dao.update = AsyncMock(return_value=user)
 
         auth_service = AuthenticationService(user_dao)
 
@@ -444,7 +447,8 @@ class TestPasswordResetCompletion:
         user.add_metadata('password_reset_token', reset_token)
         user.add_metadata('password_reset_expires', datetime.now(timezone.utc) - timedelta(hours=2))  # Expired
 
-        user_dao.get_user_by_metadata = AsyncMock(return_value=user)
+        user_dao.get_user_by_metadata_value = AsyncMock(return_value=user)
+        user_dao.update = AsyncMock(return_value=user)
 
         auth_service = AuthenticationService(user_dao)
 
@@ -469,7 +473,8 @@ class TestPasswordResetCompletion:
         """
         # Arrange
         user_dao = Mock(spec=UserManagementDAO)
-        user_dao.get_user_by_metadata = AsyncMock(return_value=None)  # Token not found
+        user_dao.get_user_by_metadata_value = AsyncMock(return_value=None)  # Token not found
+        user_dao.update = AsyncMock(return_value=None)
 
         auth_service = AuthenticationService(user_dao)
 
@@ -562,7 +567,8 @@ class TestPasswordResetEdgeCases:
         user.add_metadata('password_reset_token', reset_token)
         user.add_metadata('password_reset_expires', datetime.now(timezone.utc) + timedelta(minutes=30))
 
-        user_dao.get_user_by_metadata = AsyncMock(return_value=user)
+        user_dao.get_user_by_metadata_value = AsyncMock(return_value=user)
+        user_dao.get_by_id = AsyncMock(return_value=user)
         user_dao.update = AsyncMock(return_value=user)
 
         auth_service = AuthenticationService(user_dao)
@@ -576,7 +582,7 @@ class TestPasswordResetEdgeCases:
         assert updated_user.metadata.get('password_reset_token') is None, "Token should be cleared after use"
 
         # Act - Second use (simulate user finding token in email and trying again)
-        user_dao.get_user_by_metadata = AsyncMock(return_value=None)  # Token no longer exists
+        user_dao.get_user_by_metadata_value = AsyncMock(return_value=None)  # Token no longer exists
 
         # Assert - Second use fails
         with pytest.raises(ValueError) as exc_info:
