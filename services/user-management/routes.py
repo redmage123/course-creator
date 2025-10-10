@@ -615,9 +615,26 @@ def setup_auth_routes(app: FastAPI) -> None:
                 success=True
             )
 
-        except Exception as e:
-            logging.error("Error requesting password reset: %s", e)
-            # Return generic success even on error to prevent enumeration
+        except DatabaseException as e:
+            # Database error during token generation
+            logging.error(f"Database error requesting password reset: {e.message}", exc_info=True)
+            # Return generic success to prevent user enumeration even on database errors
+            return PasswordResetRequestResponse(
+                message="If an account with that email exists, password reset instructions have been sent.",
+                success=True
+            )
+        except UserManagementException as e:
+            # User management error during token generation
+            logging.error(f"User management error requesting password reset: {e.message}", exc_info=True)
+            # Return generic success to prevent user enumeration
+            return PasswordResetRequestResponse(
+                message="If an account with that email exists, password reset instructions have been sent.",
+                success=True
+            )
+        except EmailServiceException as e:
+            # Email service error (future - when email integration added)
+            logging.error(f"Email service error during password reset: {e.message}", exc_info=True)
+            # Still return success to user (token was generated even if email failed)
             return PasswordResetRequestResponse(
                 message="If an account with that email exists, password reset instructions have been sent.",
                 success=True
@@ -694,12 +711,35 @@ def setup_auth_routes(app: FastAPI) -> None:
 
         except ValueError as e:
             # Token validation failed (invalid or expired)
+            logging.warning(f"Password reset token validation failed: {str(e)}")
             return PasswordResetVerifyResponse(
                 valid=False,
                 error=str(e)
             )
-        except Exception as e:
-            logging.error("Error verifying password reset token: %s", e)
+        except UserNotFoundException as e:
+            # User associated with token not found
+            logging.warning(f"User not found for password reset token: {e.message}")
+            return PasswordResetVerifyResponse(
+                valid=False,
+                error="Invalid password reset token"
+            )
+        except AuthenticationException as e:
+            # Authentication error during token validation
+            logging.warning(f"Authentication error verifying token: {e.message}")
+            return PasswordResetVerifyResponse(
+                valid=False,
+                error="Invalid password reset token"
+            )
+        except DatabaseException as e:
+            # Database error during token lookup
+            logging.error(f"Database error verifying password reset token: {e.message}", exc_info=True)
+            return PasswordResetVerifyResponse(
+                valid=False,
+                error="Unable to verify token. Please try again or request a new reset link."
+            )
+        except UserManagementException as e:
+            # General user management error
+            logging.error(f"User management error verifying token: {e.message}", exc_info=True)
             return PasswordResetVerifyResponse(
                 valid=False,
                 error="Unable to verify token. Please try again or request a new reset link."
@@ -798,19 +838,51 @@ def setup_auth_routes(app: FastAPI) -> None:
                     message="Password reset successful. You can now log in with your new password."
                 )
             else:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Password reset failed. Please try again."
+                # Should not reach here - service raises exceptions on failure
+                raise AuthenticationException(
+                    message="Password reset failed unexpectedly",
+                    error_code="PASSWORD_RESET_FAILED",
+                    details={"token_provided": bool(request.token)}
                 )
 
         except ValueError as e:
             # Validation errors (token invalid/expired, weak password)
+            logging.warning(f"Password reset validation error: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=str(e)
             )
-        except Exception as e:
-            logging.error("Error completing password reset: %s", e)
+        except UserNotFoundException as e:
+            # User associated with token not found
+            logging.warning(f"User not found during password reset: {e.message}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid password reset token"
+            )
+        except AuthenticationException as e:
+            # Authentication error during password reset
+            logging.error(f"Authentication error during password reset: {e.message}", exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=e.message
+            )
+        except UserValidationException as e:
+            # User validation error (password strength, user status)
+            logging.warning(f"User validation error during password reset: {e.message}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=e.message
+            )
+        except DatabaseException as e:
+            # Database error during password update
+            logging.error(f"Database error completing password reset: {e.message}", exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Unable to complete password reset due to a system error. Please try again."
+            )
+        except UserManagementException as e:
+            # General user management error
+            logging.error(f"User management error completing password reset: {e.message}", exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Unable to complete password reset. Please try again or request a new reset link."
