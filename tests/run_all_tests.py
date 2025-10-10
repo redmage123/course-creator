@@ -295,6 +295,24 @@ def main():
                 "command": "python -m pytest tests/e2e/test_student_login_e2e.py -v --tb=short -s",
                 "description": "End-to-End Tests - Student Login Complete Workflows",
                 "timeout": 900
+            },
+            "critical_instructor_journey": {
+                "path": "tests/e2e/critical_user_journeys/test_instructor_complete_journey.py",
+                "command": "python -m pytest tests/e2e/critical_user_journeys/test_instructor_complete_journey.py -v --tb=short",
+                "description": "End-to-End Tests - Critical Instructor User Journey",
+                "timeout": 1200
+            },
+            "critical_student_journey": {
+                "path": "tests/e2e/critical_user_journeys/test_student_complete_journey.py",
+                "command": "python -m pytest tests/e2e/critical_user_journeys/test_student_complete_journey.py -v --tb=short",
+                "description": "End-to-End Tests - Critical Student User Journey",
+                "timeout": 1200
+            },
+            "org_admin_notifications": {
+                "path": "tests/e2e/test_org_admin_notifications_e2e.py",
+                "command": "python -m pytest tests/e2e/test_org_admin_notifications_e2e.py -v --tb=short",
+                "description": "End-to-End Tests - Org Admin Notifications & Meeting Rooms",
+                "timeout": 900
             }
         },
         "security": {

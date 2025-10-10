@@ -67,7 +67,10 @@ class SyllabusGenerator:
         self.prompt_templates = PromptTemplates()
         self.logger = logging.getLogger(self.__class__.__name__)
         self.rag_enabled = True  # Enable RAG integration by default
-        
+
+        # Track background learning tasks for graceful shutdown
+        self._background_tasks = set()
+
         # Initialize caching for performance optimization
         self._cache_ttl = 86400  # 24 hours - AI content is expensive and relatively static
         
@@ -145,14 +148,20 @@ class SyllabusGenerator:
                 if validated_syllabus:
                     generation_method = "rag_enhanced" if rag_context_used else "standard"
                     self.logger.info(f"Successfully generated syllabus using {generation_method} AI")
-                    
-                    # Learn from successful generation asynchronously
+
+                    # Learn from successful generation asynchronously with error handling
                     if self.rag_enabled:
                         import asyncio
-                        asyncio.create_task(self._learn_from_successful_generation(
-                            course_info, validated_syllabus, rag_context_used
-                        ))
-                    
+                        task = asyncio.create_task(
+                            self._learn_from_successful_generation_safe(
+                                course_info, validated_syllabus, rag_context_used
+                            )
+                        )
+                        # Track task for graceful shutdown
+                        self._background_tasks.add(task)
+                        # Remove from set when done
+                        task.add_done_callback(self._background_tasks.discard)
+
                     return validated_syllabus
                 else:
                     self.logger.warning("AI generated invalid syllabus structure")
@@ -554,4 +563,58 @@ class SyllabusGenerator:
                 max_tokens=max_tokens,
                 temperature=temperature,
                 system_prompt=system_prompt
+            )
+
+    async def _learn_from_successful_generation_safe(
+        self,
+        course_info: Dict[str, Any],
+        syllabus: Dict[str, Any],
+        rag_enhanced: bool
+    ) -> None:
+        """
+        Error-safe wrapper for background learning task
+
+        RACE CONDITION FIX:
+        Wraps learning task with try/except to prevent silent failures.
+        Tracks task in _background_tasks for graceful shutdown.
+        Logs all errors for monitoring and debugging.
+
+        Args:
+            course_info: Course information for learning context
+            syllabus: Generated syllabus to learn from
+            rag_enhanced: Whether RAG was used in generation
+        """
+        try:
+            await self._learn_from_successful_generation(
+                course_info, syllabus, rag_enhanced
+            )
+            self.logger.info("Successfully learned from syllabus generation")
+        except Exception as e:
+            self.logger.error(
+                f"Error in background learning task: {e}",
+                exc_info=True
+            )
+
+    async def wait_for_background_tasks(self, timeout: float = 30.0) -> None:
+        """
+        Wait for all background tasks to complete (for graceful shutdown)
+
+        Args:
+            timeout: Maximum seconds to wait for task completion
+        """
+        if not self._background_tasks:
+            return
+
+        self.logger.info(f"Waiting for {len(self._background_tasks)} background tasks...")
+
+        try:
+            import asyncio
+            await asyncio.wait_for(
+                asyncio.gather(*self._background_tasks, return_exceptions=True),
+                timeout=timeout
+            )
+            self.logger.info("All background tasks completed")
+        except asyncio.TimeoutError:
+            self.logger.warning(
+                f"Background tasks did not complete within {timeout}s timeout"
             )

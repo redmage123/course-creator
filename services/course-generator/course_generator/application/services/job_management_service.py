@@ -23,15 +23,17 @@ class JobPriority(Enum):
 class JobManagementService(IJobManagementService):
     """
     Job management service implementation with business logic
+    Race Condition Fix: asyncio.Lock protects shared state (_running_jobs)
     """
-    
-    def __init__(self, 
+
+    def __init__(self,
                  dao: CourseGeneratorDAO,
                  ai_service: IAIService):
         self._dao = dao
         self._ai_service = ai_service
         self._job_processors: Dict[ContentType, Callable] = {}
         self._running_jobs: Dict[str, asyncio.Task] = {}
+        self._jobs_lock = asyncio.Lock()  # Protect concurrent access to _running_jobs
         self._max_concurrent_jobs = 5
         self._job_timeout_minutes = 30
     
@@ -99,13 +101,14 @@ class JobManagementService(IJobManagementService):
             'retry_count': job.metadata.get('retry_count', 0),
             'estimated_completion': self._estimate_completion_time(job)
         }
-        
-        # Add running job info if applicable
-        if job.id in self._running_jobs:
-            task = self._running_jobs[job.id]
-            status_info['is_running'] = not task.done()
-            status_info['time_running'] = (datetime.utcnow() - job.started_at).total_seconds() if job.started_at else 0
-        
+
+        # Add running job info if applicable (lock-protected read)
+        async with self._jobs_lock:
+            if job.id in self._running_jobs:
+                task = self._running_jobs[job.id]
+                status_info['is_running'] = not task.done()
+                status_info['time_running'] = (datetime.utcnow() - job.started_at).total_seconds() if job.started_at else 0
+
         return status_info
     
     async def cancel_job(self, job_id: str, reason: str = None) -> bool:
@@ -120,18 +123,19 @@ class JobManagementService(IJobManagementService):
         # Check if job can be cancelled
         if job.status in [JobStatus.COMPLETED, JobStatus.FAILED, JobStatus.CANCELLED]:
             return False
-        
-        # Cancel running task if exists
-        if job_id in self._running_jobs:
-            task = self._running_jobs[job_id]
-            task.cancel()
-            del self._running_jobs[job_id]
-        
+
+        # Cancel running task if exists (atomic check-and-delete with lock)
+        async with self._jobs_lock:
+            if job_id in self._running_jobs:
+                task = self._running_jobs[job_id]
+                task.cancel()
+                del self._running_jobs[job_id]
+
         # Update job status
         job.status = JobStatus.CANCELLED
         job.completed_at = datetime.utcnow()
         job.error_message = reason or "Job cancelled by user"
-        
+
         await self._dao.update(job)
         return True
     
@@ -248,15 +252,23 @@ class JobManagementService(IJobManagementService):
     
     # Helper methods
     async def _queue_job(self, job: GenerationJob) -> None:
-        """Queue a job for processing"""
-        if job.id in self._running_jobs:
-            return  # Job already running
-        
-        # Create processing task
-        task = asyncio.create_task(self._process_job(job))
-        self._running_jobs[job.id] = task
-        
-        # Set up task completion callback
+        """
+        Queue a job for processing with race condition protection
+
+        RACE CONDITION FIX:
+        Uses asyncio.Lock to ensure atomic check-and-add operation.
+        Without lock, two coroutines could both pass the check and create
+        duplicate tasks for the same job_id.
+        """
+        async with self._jobs_lock:
+            if job.id in self._running_jobs:
+                return  # Job already running
+
+            # Create processing task
+            task = asyncio.create_task(self._process_job(job))
+            self._running_jobs[job.id] = task
+
+        # Set up task completion callback (outside lock - doesn't access shared state)
         task.add_done_callback(lambda t: self._on_job_completed(job.id, t))
     
     async def _process_job(self, job: GenerationJob) -> None:
@@ -321,9 +333,20 @@ class JobManagementService(IJobManagementService):
         }
     
     def _on_job_completed(self, job_id: str, task: asyncio.Task) -> None:
-        """Callback when job task is completed"""
-        if job_id in self._running_jobs:
-            del self._running_jobs[job_id]
+        """
+        Callback when job task is completed
+
+        RACE CONDITION FIX:
+        Callbacks run synchronously but need async lock for thread safety.
+        Create async task to properly acquire lock before dict deletion.
+        """
+        async def cleanup():
+            async with self._jobs_lock:
+                if job_id in self._running_jobs:
+                    del self._running_jobs[job_id]
+
+        # Schedule cleanup as async task
+        asyncio.create_task(cleanup())
     
     async def _get_prioritized_pending_jobs(self) -> List[GenerationJob]:
         """Get pending jobs sorted by priority and creation time"""

@@ -100,10 +100,12 @@ window.fabAction = Events.fabAction;
 
 /**
  * Logout function
+ * ASYNC: Auth.logout() performs server-side session invalidation and lab cleanup
+ * WHY: Must await to ensure operations complete before navigation
  */
-function logout() {
+async function logout() {
     if (confirm('Are you sure you want to logout?')) {
-        Auth.logout();
+        await Auth.logout();
         window.location.href = '../index.html';
     }
 }
