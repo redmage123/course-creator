@@ -19,7 +19,7 @@
 set -e  # Exit on error
 
 # Configure Python path for all services
-export PYTHONPATH="services/analytics:services/content-management:services/content-storage:services/course-generator:services/course-management:services/demo-service:services/knowledge-graph-service:services/lab-manager:services/metadata-service:services/nlp-preprocessing:services/organization-management:services/rag-service:services/user-management:$PYTHONPATH"
+export PYTHONPATH="services/analytics:services/content-management:services/content-storage:services/course-generator:services/course-management:services/demo-service:services/knowledge-graph-service:services/lab-manager:services/local-llm-service:services/metadata-service:services/nlp-preprocessing:services/organization-management:services/rag-service:services/user-management:$PYTHONPATH"
 
 # Colors for output
 RED='\033[0;31m'

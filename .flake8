@@ -94,7 +94,8 @@ per-file-ignores =
     # Allow star imports and unused imports in settings files
     */settings/*.py:F401,F403,F405,
     # Allow unused imports in main.py files (FastAPI dependencies)
-    main.py:F401,
+    # Allow imports not at top in main.py (needed for sys.path setup)
+    main.py:F401,E402,
     # Allow long lines in generated files
     *_pb2.py:E501,
     # Configuration files can have unused imports

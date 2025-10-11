@@ -180,3 +180,20 @@ postgres_data/
 redis_data/
 lab-storage/
 .aider*
+
+# LLM Models and Ollama
+models/
+*.gguf
+*.ggml
+*.bin
+*.safetensors
+*.pt
+*.pth
+*.onnx
+*.h5
+*.pkl
+*.pickle
+*.model
+*.weights
+ollama_data/
+.ollama/

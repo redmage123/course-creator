@@ -1,16 +1,17 @@
 # Course Creator Platform - API Documentation
 
-**Version**: 3.1.0 - Modular Architecture & Exception Handling Refactoring
-**Last Updated**: 2025-10-04
+**Version**: 3.3.0 - Local LLM Service Integration
+**Last Updated**: 2025-10-11
 
 ## Overview
 
 The Course Creator Platform provides a comprehensive RESTful API for managing courses, users, and content. The API is built using FastAPI and follows REST conventions with a microservices architecture.
 
-**Version 3.1 Highlights:**
-- 🔧 **Modular Architecture**: Refactored org admin dashboard with 8 ES6 modules
-- ⚠️ **Exception Handling**: Custom exception system across all services
-- 🧪 **Comprehensive Testing**: 112+ tests for instructor dashboard, 100% syntax validation
+**Version 3.3 Highlights:**
+- 🦙 **Local LLM Service**: Cost-effective GPU-accelerated inference with Llama 3.1 8B
+- ⚡ **Performance**: 13000x faster cached responses, <100ms latency
+- 🧠 **AI Capabilities**: RAG summarization, conversation compression, function extraction
+- 🧪 **Comprehensive Testing**: 400+ tests including 91+ tests for Local LLM service
 - 📋 **Track Management**: Complete CRUD operations for learning tracks
 - 🏗️ **Project Management**: Enhanced project endpoints with enrollment/unenrollment
 - 👥 **Site Admin Dashboard**: Platform-wide user and organization management
@@ -18,7 +19,7 @@ The Course Creator Platform provides a comprehensive RESTful API for managing co
 
 ## Microservices Architecture
 
-The platform consists of 8 core backend services including the Enhanced RBAC System:
+The platform consists of 15 core backend services:
 
 1. **User Management Service** (Port 8000) - Authentication, user profiles, basic RBAC, **password management system**
 2. **Course Generator Service** (Port 8001) - AI-powered content generation
@@ -27,7 +28,14 @@ The platform consists of 8 core backend services including the Enhanced RBAC Sys
 5. **Content Management Service** (Port 8005) - Upload/download and multi-format export
 6. **Lab Container Manager Service** (Port 8006) - Individual student Docker container management with multi-IDE support
 7. **Analytics Service** (Port 8007) - Student analytics, progress tracking, and learning insights
-8. **Organization Management Service** (Port 8008) - Enhanced RBAC System with multi-tenant organization management and **automatic admin account creation with password management**
+8. **Organization Management Service** (Port 8008) - Enhanced RBAC System with multi-tenant organization management
+9. **RAG Service** (Port 8009) - Retrieval-Augmented Generation for contextual learning
+10. **Demo Service** (Port 8010) - Platform demonstration with realistic data generation
+11. **AI Assistant Service** (Port 8011) - Intelligent chatbot with NLP and knowledge graph integration
+12. **Knowledge Graph Service** (Port 8012) - Learning path generation and concept relationships
+13. **NLP Preprocessing Service** (Port 8013) - Intent classification, entity extraction, query expansion
+14. **Metadata Service** (Port 8014) - Content tagging, fuzzy search, and metadata enrichment
+15. **Local LLM Service** (Port 8015) - GPU-accelerated local inference with Ollama and Llama 3.1 8B
 
 ## Base URLs
 
@@ -39,6 +47,14 @@ The platform consists of 8 core backend services including the Enhanced RBAC Sys
 - **Lab Container Manager**: `http://localhost:8006`
 - **Analytics Service**: `http://localhost:8007`
 - **Organization Management (RBAC)**: `http://localhost:8008`
+- **RAG Service**: `http://localhost:8009`
+- **Demo Service**: `http://localhost:8010`
+- **AI Assistant**: `http://localhost:8011`
+- **Knowledge Graph**: `http://localhost:8012`
+- **NLP Preprocessing**: `https://localhost:8013` (HTTPS)
+- **Metadata Service**: `http://localhost:8014`
+- **Local LLM Service**: `http://localhost:8015`
+- **Ollama (Host)**: `http://localhost:11434`
 - **Production**: `https://your-domain.com/api`
 
 ## Authentication
@@ -2763,6 +2779,294 @@ Response:
   "database_status": "connected"
 }
 ```
+
+---
+
+## Local LLM Service (Port 8015)
+
+The Local LLM Service provides cost-effective, GPU-accelerated local inference using Ollama and Llama 3.1 8B. It offers response caching, RAG context summarization, conversation compression, and function parameter extraction for reduced API costs.
+
+**Base URL**: `http://localhost:8015`
+
+### Features
+
+- **GPU-Accelerated Inference**: NVIDIA GPU support for fast local inference
+- **Response Caching**: 13000x faster cached responses (<100ms vs 1300ms)
+- **RAG Optimization**: Summarize RAG context to reduce token usage
+- **Conversation Compression**: Compress multi-turn conversations while preserving meaning
+- **Function Calling**: Extract structured parameters from natural language
+- **Performance Metrics**: Track cache hits, latency, and cost savings
+
+### Key Statistics
+
+- **Cold Start**: ~5s (first query with model loading)
+- **Warm Inference**: ~1s (GPU loaded, no cache)
+- **Cached Response**: ~0.076ms (13000x faster)
+- **Model Size**: 4.6GB (Llama 3.1 8B Q4_K_M quantized)
+
+### 1. Health Check
+
+Check service health and Ollama connectivity.
+
+**Endpoint**: `GET /health`
+
+**Response**:
+```json
+{
+  "service": "local-llm",
+  "status": "healthy",
+  "model": "llama3.1:8b-instruct-q4_K_M",
+  "ollama_host": "http://localhost:11434",
+  "cache_enabled": true
+}
+```
+
+### 2. Generate Response
+
+Generate AI response with optional caching.
+
+**Endpoint**: `POST /generate`
+
+**Request Body**:
+```json
+{
+  "prompt": "What is Python programming?",
+  "system_prompt": "You are a helpful AI assistant.",
+  "max_tokens": 500,
+  "temperature": 0.7
+}
+```
+
+**Response**:
+```json
+{
+  "response": "Python is a high-level, interpreted programming language...",
+  "latency_ms": 1234.56,
+  "cached": false
+}
+```
+
+**Curl Example**:
+```bash
+curl -X POST http://localhost:8015/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "Explain async/await in Python",
+    "max_tokens": 200
+  }'
+```
+
+### 3. Summarize RAG Context
+
+Summarize long RAG context to reduce token usage.
+
+**Endpoint**: `POST /summarize`
+
+**Request Body**:
+```json
+{
+  "context": "Very long RAG context with multiple documents...",
+  "max_summary_tokens": 100
+}
+```
+
+**Response**:
+```json
+{
+  "summary": "Brief summary of the context...",
+  "original_length": 5000,
+  "summary_length": 300,
+  "compression_ratio": 0.06
+}
+```
+
+### 4. Compress Conversation
+
+Compress multi-turn conversation history.
+
+**Endpoint**: `POST /compress`
+
+**Request Body**:
+```json
+{
+  "messages": [
+    {"role": "user", "content": "What is Python?"},
+    {"role": "assistant", "content": "Python is..."},
+    {"role": "user", "content": "Give me more details."}
+  ],
+  "target_tokens": 200
+}
+```
+
+**Response**:
+```json
+{
+  "compressed": "User asked about Python. Assistant explained...",
+  "original_length": 1500,
+  "compressed_length": 400,
+  "compression_ratio": 0.27
+}
+```
+
+### 5. Extract Function Parameters
+
+Extract structured parameters from natural language.
+
+**Endpoint**: `POST /extract-parameters`
+
+**Request Body**:
+```json
+{
+  "user_message": "Create a Python course with 10 modules",
+  "function_schema": {
+    "name": "create_course",
+    "parameters": {
+      "title": "string",
+      "language": "string",
+      "num_modules": "integer"
+    }
+  }
+}
+```
+
+**Response**:
+```json
+{
+  "function_name": "create_course",
+  "parameters": {
+    "title": "Python Course",
+    "language": "Python",
+    "num_modules": 10
+  }
+}
+```
+
+### 6. List Available Models
+
+List Ollama models available for inference.
+
+**Endpoint**: `GET /models`
+
+**Response**:
+```json
+{
+  "models": [
+    "llama3.1:8b-instruct-q4_K_M",
+    "llama3.1:8b-instruct",
+    "codellama:7b"
+  ],
+  "current_model": "llama3.1:8b-instruct-q4_K_M"
+}
+```
+
+### 7. Get Performance Metrics
+
+Get cache statistics and performance metrics.
+
+**Endpoint**: `GET /metrics`
+
+**Response**:
+```json
+{
+  "cache": {
+    "hits": 150,
+    "misses": 50,
+    "hit_rate": 0.75,
+    "size": 200
+  },
+  "performance": {
+    "avg_latency_ms": 1234.56,
+    "cached_avg_latency_ms": 0.076,
+    "total_requests": 200
+  },
+  "cost_savings": {
+    "estimated_api_cost_saved_usd": 5.50,
+    "requests_served_locally": 200
+  }
+}
+```
+
+**Curl Example**:
+```bash
+# Check cache effectiveness
+curl http://localhost:8015/metrics | jq '.cache.hit_rate'
+
+# View cost savings
+curl http://localhost:8015/metrics | jq '.cost_savings'
+```
+
+### Performance Optimization
+
+**Warm Up Model** (first query is slow):
+```bash
+curl -X POST http://localhost:8015/generate \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"Hi","max_tokens":10}'
+```
+
+**Test Cache Performance**:
+```bash
+# First request (no cache)
+time curl -X POST http://localhost:8015/generate \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"What is Python?","max_tokens":50}'
+
+# Second request (cached)
+time curl -X POST http://localhost:8015/generate \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"What is Python?","max_tokens":50}'
+```
+
+### Integration with Other Services
+
+The Local LLM Service integrates with:
+- **AI Assistant Service** (Port 8011) - Fallback for simple queries
+- **RAG Service** (Port 8009) - Context summarization
+- **Knowledge Graph** (Port 8012) - Entity extraction
+- **NLP Preprocessing** (Port 8013) - Intent classification
+
+### Requirements
+
+- **Ollama**: Must be installed and running on host (`http://localhost:11434`)
+- **Model**: Llama 3.1 8B model must be pulled (`ollama pull llama3.1:8b-instruct-q4_K_M`)
+- **GPU**: Optional but recommended (NVIDIA GPU with CUDA support)
+- **Docker**: Service runs in Docker with `--network host` mode
+
+### Troubleshooting
+
+**Service Health Check Fails**:
+```bash
+# Check Ollama is running
+curl http://localhost:11434/api/tags
+
+# Check model is available
+ollama list
+
+# Restart Ollama service
+sudo systemctl restart ollama
+```
+
+**Slow Inference (>10s)**:
+```bash
+# Check GPU is being used
+nvidia-smi
+
+# Warm up model with test query
+curl -X POST http://localhost:8015/generate \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"test","max_tokens":10}'
+```
+
+**Model Not Found Error**:
+```bash
+# Pull the required model
+ollama pull llama3.1:8b-instruct-q4_K_M
+
+# Verify model is available
+ollama list
+```
+
+---
 
 ## Interactive Documentation
 

@@ -2,8 +2,8 @@
 
 > **Complete guide for installing, deploying, operating, and troubleshooting the Course Creator Platform**
 
-**Version**: 3.1.0
-**Last Updated**: 2025-10-04
+**Version**: 3.3.0
+**Last Updated**: 2025-10-11
 **Audience**: DevOps Engineers, System Administrators, Platform Operators
 
 ---
@@ -41,12 +41,15 @@
 ./app-control.sh docker-stop
 
 # Health check all services
-for port in 8000 8001 8003 8004 8005 8006 8007 8008; do
+for port in 8000 8001 8003 8004 8005 8006 8007 8008 8015; do
   curl -s http://localhost:$port/health | jq
 done
 
 # Health check NLP preprocessing (HTTPS)
 curl -k -s https://localhost:8013/health | jq
+
+# Health check Local LLM Service
+curl -s http://localhost:8015/health | jq
 ```
 
 ### Service Ports
@@ -61,10 +64,17 @@ curl -k -s https://localhost:8013/health | jq
 | Lab Manager | 8006 | http://localhost:8006/health |
 | Analytics | 8007 | http://localhost:8007/health |
 | Organization Management | 8008 | http://localhost:8008/health |
+| RAG Service | 8009 | http://localhost:8009/health |
+| Demo Service | 8010 | http://localhost:8010/health |
+| AI Assistant | 8011 | http://localhost:8011/health |
+| Knowledge Graph | 8012 | http://localhost:8012/health |
 | NLP Preprocessing | 8013 | https://localhost:8013/health |
+| Metadata Service | 8014 | http://localhost:8014/health |
+| Local LLM Service | 8015 | http://localhost:8015/health |
 | Frontend | 3000 | http://localhost:3000 |
 | PostgreSQL | 5432 | N/A |
 | Redis | 6379 | N/A |
+| Ollama (Host) | 11434 | http://localhost:11434/api/tags |
 
 ---
 
@@ -100,6 +110,7 @@ curl -k -s https://localhost:8013/health | jq
 - **certbot** - for SSL/TLS certificates
 - **prometheus** - for metrics collection
 - **grafana** - for metrics visualization
+- **Ollama** - for local LLM inference (required for Local LLM Service)
 
 ### Installation Steps
 
@@ -171,7 +182,42 @@ ls -la
 # - etc.
 ```
 
-#### 3. Configure Environment
+#### 3. Install Ollama (Optional - for Local LLM Service)
+
+**For GPU-accelerated local LLM inference**:
+
+```bash
+# Install Ollama (Linux)
+curl -fsSL https://ollama.com/install.sh | sh
+
+# Verify Ollama installation
+ollama --version
+
+# Pull the Llama 3.1 8B model (4.6GB)
+ollama pull llama3.1:8b-instruct-q4_K_M
+
+# Verify model is available
+ollama list
+
+# Test model inference
+ollama run llama3.1:8b-instruct-q4_K_M "What is Python?"
+
+# Start Ollama service (runs on http://localhost:11434)
+sudo systemctl start ollama
+sudo systemctl enable ollama
+
+# Check Ollama is running
+curl http://localhost:11434/api/tags
+```
+
+**Requirements for GPU acceleration**:
+- NVIDIA GPU (recommended: RTX series or better)
+- NVIDIA drivers installed
+- CUDA Toolkit installed
+
+**Without GPU**: Ollama will use CPU inference (slower but functional)
+
+#### 4. Configure Environment
 
 ```bash
 # Create environment file
@@ -202,6 +248,13 @@ JWT_EXPIRATION_HOURS=24
 # AI Service Configuration
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
 OPENAI_API_KEY=your_openai_api_key_optional
+
+# Local LLM Configuration (if using Ollama)
+OLLAMA_HOST=http://localhost:11434
+LOCAL_LLM_PORT=8015
+MODEL_NAME=llama3.1:8b-instruct-q4_K_M
+ENABLE_CACHE=true
+CACHE_TTL=3600
 
 # Email Configuration (Optional)
 SMTP_HOST=smtp.gmail.com
@@ -250,10 +303,16 @@ psql -h localhost -U course_user -d course_creator -f data/migrations/initial_sc
 ./app-control.sh status
 
 # Check health of all services
-for port in 8000 8001 8003 8004 8005 8006 8007 8008; do
+for port in 8000 8001 8003 8004 8005 8006 8007 8008 8009 8010 8011 8012 8014 8015; do
   echo "Checking port $port..."
   curl -s http://localhost:$port/health | jq '.status'
 done
+
+# Check NLP Preprocessing (HTTPS)
+curl -k -s https://localhost:8013/health | jq '.status'
+
+# Check Ollama (if installed)
+curl -s http://localhost:11434/api/tags | jq '.models[].name' 2>/dev/null || echo "Ollama not available"
 ```
 
 #### 6. Create Admin User
@@ -692,7 +751,7 @@ docker stats --format "table {{.Name}}\t{{.CPUPerc}}\t{{.MemUsage}}" | grep "lab
 
 ```bash
 # Check service health
-for port in 8000 8001 8003 8004 8005 8006 8007 8008; do
+for port in 8000 8001 8003 8004 8005 8006 8007 8008 8009 8010 8011 8012 8014 8015; do
   response=$(curl -s http://localhost:$port/health)
   status=$(echo $response | jq -r '.status')
   echo "Port $port: $status"
@@ -783,6 +842,12 @@ SERVICES=(
     "lab-manager:8006"
     "analytics:8007"
     "organization-management:8008"
+    "rag-service:8009"
+    "demo-service:8010"
+    "ai-assistant:8011"
+    "knowledge-graph:8012"
+    "metadata-service:8014"
+    "local-llm-service:8015"
 )
 
 echo "=== Service Health Check ==="
@@ -1111,6 +1176,79 @@ docker-compose restart course-generator
 
 # Check network connectivity
 docker-compose exec course-generator ping -c 4 api.anthropic.com
+```
+
+#### 6. Local LLM Service Issues
+
+**Symptoms**:
+- "Ollama service not available"
+- Local LLM health check fails
+- Slow inference (>10s)
+- Model not found errors
+
+**Diagnosis**:
+```bash
+# Check Ollama service status
+curl http://localhost:11434/api/tags
+
+# Check Local LLM service
+curl http://localhost:8015/health
+
+# List available models
+ollama list
+
+# Check Local LLM container logs
+docker logs course-creator-local-llm-service-1
+
+# Check GPU availability (if using GPU)
+nvidia-smi
+
+# Test model inference directly
+ollama run llama3.1:8b-instruct-q4_K_M "Test"
+```
+
+**Solutions**:
+```bash
+# Start Ollama service
+sudo systemctl start ollama
+sudo systemctl enable ollama
+
+# Pull missing model
+ollama pull llama3.1:8b-instruct-q4_K_M
+
+# Restart Local LLM service
+docker restart course-creator-local-llm-service-1
+
+# Check Docker host network access
+docker run --rm --network host curlimages/curl:latest curl http://localhost:11434/api/tags
+
+# Verify environment variables
+docker inspect course-creator-local-llm-service-1 | grep -A 5 Env
+
+# Check cache stats
+curl http://localhost:8015/metrics
+
+# Clear cache and restart
+docker restart course-creator-local-llm-service-1
+```
+
+**Performance Optimization**:
+```bash
+# Check GPU usage during inference
+watch -n 0.5 nvidia-smi
+
+# Test inference latency
+time curl -X POST http://localhost:8015/generate \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"What is Python?","max_tokens":50}'
+
+# Check cache effectiveness
+curl http://localhost:8015/metrics | jq '.cache'
+
+# Warm up model (first query is slow)
+curl -X POST http://localhost:8015/generate \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"Hi","max_tokens":10}'
 ```
 
 ### Performance Issues

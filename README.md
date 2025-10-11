@@ -3,7 +3,7 @@
 > **Enterprise-grade learning management system** with AI-powered content generation, isolated lab environments, and comprehensive analytics.
 
 [![Production Ready](https://img.shields.io/badge/status-production%20ready-brightgreen)](https://github.com/yourusername/course-creator)
-[![Version](https://img.shields.io/badge/version-3.1.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.3.0-blue)](CHANGELOG.md)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](tests/)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
@@ -28,10 +28,11 @@ The **Course Creator Platform** is a comprehensive, enterprise-ready learning ma
 ### What Makes It Special
 
 - **🤖 AI-Powered**: Generate complete courses from simple descriptions using Claude AI
+- **🦙 Cost-Effective Local LLM**: GPU-accelerated local inference with Llama 3.1 (13000x faster cached responses)
 - **🔬 Isolated Labs**: Individual Docker containers per student with multi-IDE support
 - **📊 Advanced Analytics**: Real-time engagement tracking, proficiency metrics, and predictive insights
 - **🏢 Enterprise RBAC**: Multi-tenant organization management with granular permissions
-- **🧪 100% Tested**: Comprehensive test coverage with 300+ tests across all services
+- **🧪 100% Tested**: Comprehensive test coverage with 400+ tests across all services
 - **🚀 Production Ready**: Battle-tested with Docker orchestration and CI/CD pipeline
 
 ---
@@ -188,15 +189,32 @@ python create-admin.py
 │  │  (Port 8000) │  │ (Port 8001)  │  │ (Port 8005)  │          │
 │  └──────────────┘  └──────────────┘  └──────────────┘          │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
-│  │   Course     │  │     Lab      │  │  Analytics   │          │
-│  │  Management  │  │   Manager    │  │   Service    │          │
-│  │ (Port 8004)  │  │ (Port 8006)  │  │ (Port 8007)  │          │
+│  │   Content    │  │   Course     │  │     Lab      │          │
+│  │   Storage    │  │  Management  │  │   Manager    │          │
+│  │ (Port 8003)  │  │ (Port 8004)  │  │ (Port 8006)  │          │
 │  └──────────────┘  └──────────────┘  └──────────────┘          │
-│  ┌──────────────┐  ┌──────────────┐                            │
-│  │Organization  │  │   Content    │                            │
-│  │  Management  │  │   Storage    │                            │
-│  │ (Port 8008)  │  │ (Port 8003)  │                            │
-│  └──────────────┘  └──────────────┘                            │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│  │  Analytics   │  │Organization  │  │     RAG      │          │
+│  │   Service    │  │  Management  │  │   Service    │          │
+│  │ (Port 8007)  │  │ (Port 8008)  │  │ (Port 8009)  │          │
+│  └──────────────┘  └──────────────┘  └──────────────┘          │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│  │     Demo     │  │     AI       │  │  Knowledge   │          │
+│  │   Service    │  │  Assistant   │  │    Graph     │          │
+│  │ (Port 8010)  │  │ (Port 8011)  │  │ (Port 8012)  │          │
+│  └──────────────┘  └──────────────┘  └──────────────┘          │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
+│  │     NLP      │  │  Metadata    │  │  Local LLM   │          │
+│  │Preprocessing │  │   Service    │  │   Service    │          │
+│  │ (Port 8013)  │  │ (Port 8014)  │  │ (Port 8015)  │          │
+│  └──────────────┘  └──────────────┘  └──────────────┘          │
+│                              │                                   │
+│                              ▼                                   │
+│  ┌──────────────────────────────────────────────────┐           │
+│  │           Ollama (Host) - Port 11434             │           │
+│  │    GPU-Accelerated Local LLM Inference Engine    │           │
+│  │         (Llama 3.1 8B - 13000x cache boost)      │           │
+│  └──────────────────────────────────────────────────┘           │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               ▼
@@ -228,9 +246,10 @@ python create-admin.py
 | **Backend** | Python 3.10+, FastAPI, asyncio, Uvicorn |
 | **Database** | PostgreSQL 15, asyncpg, Redis |
 | **AI** | Anthropic Claude, OpenAI (fallback) |
+| **Local LLM** | Ollama, Llama 3.1 8B (Q4_K_M), GPU acceleration (NVIDIA) |
 | **NLP** | Numba (JIT compilation), NumPy (vectorization) |
 | **Infrastructure** | Docker, Docker Compose, Nginx |
-| **Testing** | pytest, Jest, Selenium, Playwright |
+| **Testing** | pytest, Jest, Selenium, Playwright (400+ tests) |
 | **CI/CD** | GitHub Actions, pre-commit hooks |
 
 ---
