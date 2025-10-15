@@ -29,16 +29,32 @@ class DifficultyLevel(str, Enum):
     ADVANCED = "advanced"
 
 @dataclass
-
 class Track:
     """
-    Track entity representing a learning path within a project
-    Examples: App Developer Track, Business Analyst Track, Operations Engineer Track
+    Track entity representing a learning path within a project or sub-project
+
+    BUSINESS PURPOSE:
+    Tracks organize courses into structured learning paths. They can belong to either
+    a main project OR a sub-project (XOR constraint enforced at database level).
+
+    EXAMPLES:
+    - App Developer Track
+    - Business Analyst Track
+    - Operations Engineer Track
+
+    FLEXIBLE HIERARCHY:
+    - Track → Main Project (project_id set, sub_project_id NULL)
+    - Track → Sub-Project → Main Project (sub_project_id set, project_id NULL)
     """
-    project_id: UUID
-    name: str
-    slug: str
+    organization_id: UUID           # Required for multi-tenancy
+    name: str                       # Display name
+    slug: str                       # URL-safe identifier
     id: Optional[UUID] = None
+
+    # Flexible parent reference (XOR: project_id OR sub_project_id, not both)
+    project_id: Optional[UUID] = None       # If track belongs to main project
+    sub_project_id: Optional[UUID] = None   # If track belongs to sub-project
+
     description: Optional[str] = None
     track_type: TrackType = TrackType.SEQUENTIAL
     target_audience: List[str] = None  # ['Application Developer', 'Junior Developer']
@@ -48,7 +64,8 @@ class Track:
     learning_objectives: List[str] = None
     skills_taught: List[str] = None   # ['React', 'Node.js', 'Docker']
     difficulty_level: str = "beginner"  # beginner, intermediate, advanced
-    sequence_order: int = 0           # Order within project
+    estimated_hours: Optional[int] = None  # Estimated completion time in hours
+    display_order: int = 0           # Order within parent project/sub-project
     auto_enroll_enabled: bool = True  # Automatic enrollment when student joins project
     status: TrackStatus = TrackStatus.DRAFT
     settings: Dict[str, Any] = None
@@ -146,6 +163,24 @@ class Track:
         valid_levels = ["beginner", "intermediate", "advanced"]
         return self.difficulty_level in valid_levels
 
+    def validate_parent_reference(self) -> bool:
+        """
+        Validate XOR constraint: Track must reference EITHER project OR sub-project
+
+        BUSINESS RULE:
+        A track can belong to a main project OR a sub-project, but not both
+        and not neither. This is enforced at the database level but we also
+        validate it at the domain level for early error detection.
+
+        Returns:
+            bool: True if exactly one parent reference is set, False otherwise
+        """
+        has_project = self.project_id is not None
+        has_subproject = self.sub_project_id is not None
+
+        # XOR: exactly one must be True
+        return (has_project and not has_subproject) or (not has_project and has_subproject)
+
     def is_valid(self) -> bool:
         """Check if track data is valid"""
         return (
@@ -154,7 +189,8 @@ class Track:
             self.validate_slug() and
             self.validate_duration() and
             self.validate_enrollment_limit() and
-            self.validate_difficulty_level()
+            self.validate_difficulty_level() and
+            self.validate_parent_reference()  # XOR constraint validation
         )
 
     def can_activate(self) -> bool:
@@ -205,3 +241,136 @@ class Track:
                 return f"{months} month{'s' if months > 1 else ''}"
             else:
                 return f"{months} month{'s' if months > 1 else ''}, {remaining_weeks} week{'s' if remaining_weeks > 1 else ''}"
+
+
+@dataclass
+class TrackInstructor:
+    """
+    Track Instructor Assignment Entity
+
+    BUSINESS PURPOSE:
+    Represents the assignment of an instructor to a track with communication
+    links for student-instructor interaction (Zoom, Teams, Slack).
+
+    BUSINESS RULES:
+    - One instructor can only be assigned once per track (unique constraint)
+    - Minimum 1 instructor per track (enforced via database trigger)
+    - Communication links are optional but recommended
+
+    USAGE:
+    Org admins assign instructors to tracks. Students assigned to the track
+    will be distributed among the instructors (load balancing).
+    """
+    track_id: UUID              # Track this instructor teaches
+    user_id: UUID               # Instructor user ID
+    id: Optional[UUID] = None
+
+    # Communication links for student-instructor interaction
+    zoom_link: Optional[str] = None         # Office hours, lectures
+    teams_link: Optional[str] = None        # Microsoft Teams meetings
+    slack_links: List[str] = None           # Slack channels or DMs
+
+    # Assignment metadata
+    assigned_at: Optional[datetime] = None
+    assigned_by: Optional[UUID] = None      # Org admin who made assignment
+
+    def __post_init__(self):
+        if self.id is None:
+            self.id = uuid4()
+        if self.slack_links is None:
+            self.slack_links = []
+        if self.assigned_at is None:
+            self.assigned_at = datetime.utcnow()
+
+    def has_communication_links(self) -> bool:
+        """Check if instructor has at least one communication link"""
+        return bool(
+            self.zoom_link or
+            self.teams_link or
+            (self.slack_links and len(self.slack_links) > 0)
+        )
+
+    def add_slack_link(self, slack_link: str) -> None:
+        """Add a Slack channel or DM link"""
+        if slack_link and slack_link not in self.slack_links:
+            self.slack_links.append(slack_link)
+
+    def remove_slack_link(self, slack_link: str) -> None:
+        """Remove a Slack channel or DM link"""
+        if slack_link in self.slack_links:
+            self.slack_links.remove(slack_link)
+
+    def update_communication_links(
+        self,
+        zoom_link: Optional[str] = None,
+        teams_link: Optional[str] = None,
+        slack_links: Optional[List[str]] = None
+    ) -> None:
+        """Update instructor communication links"""
+        if zoom_link is not None:
+            self.zoom_link = zoom_link
+        if teams_link is not None:
+            self.teams_link = teams_link
+        if slack_links is not None:
+            self.slack_links = slack_links
+
+
+@dataclass
+class TrackStudent:
+    """
+    Track Student Enrollment Entity
+
+    BUSINESS PURPOSE:
+    Represents the enrollment of a student in a track with optional instructor
+    assignment for load balancing.
+
+    BUSINESS RULES:
+    - One student can only be enrolled once per track (unique constraint)
+    - Student can be assigned to a specific instructor for that track
+    - Assigned instructor must be teaching that track (enforced via database trigger)
+    - Load balancing can automatically distribute students across instructors
+
+    USAGE:
+    Org admins enroll students in tracks. If auto-balance is enabled for the
+    project/sub-project, students are automatically assigned to instructors
+    with the lowest student count.
+    """
+    track_id: UUID              # Track the student is enrolled in
+    student_id: UUID            # Student user ID
+    id: Optional[UUID] = None
+
+    # Instructor assignment for load balancing
+    assigned_instructor_id: Optional[UUID] = None  # Which instructor teaches this student
+
+    # Assignment metadata
+    enrolled_at: Optional[datetime] = None
+    assigned_by: Optional[UUID] = None             # Org admin who made assignment
+    last_reassigned_at: Optional[datetime] = None  # Last reassignment timestamp
+
+    def __post_init__(self):
+        if self.id is None:
+            self.id = uuid4()
+        if self.enrolled_at is None:
+            self.enrolled_at = datetime.utcnow()
+
+    def has_instructor(self) -> bool:
+        """Check if student is assigned to an instructor"""
+        return self.assigned_instructor_id is not None
+
+    def assign_instructor(self, instructor_id: UUID, assigned_by: Optional[UUID] = None) -> None:
+        """
+        Assign student to a specific instructor
+
+        BUSINESS LOGIC:
+        Updates the assigned instructor and records the reassignment timestamp
+        for audit trail purposes.
+        """
+        self.assigned_instructor_id = instructor_id
+        self.last_reassigned_at = datetime.utcnow()
+        if assigned_by is not None:
+            self.assigned_by = assigned_by
+
+    def unassign_instructor(self) -> None:
+        """Remove instructor assignment (not recommended but allowed)"""
+        self.assigned_instructor_id = None
+        self.last_reassigned_at = datetime.utcnow()
