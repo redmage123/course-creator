@@ -993,9 +993,14 @@
                     <span data-nav-text>Students</span>
                 </a>
 
-                <a href="#tracks" class="nav-link" data-tab="tracks" data-nav-item data-active="false">
+                <a href="#tracks" id="tracksTab" class="nav-link" data-tab="tracks" data-nav-item data-active="false">
                     <span data-nav-icon>🎓</span>
-                    <span data-nav-text>Tracks</span>
+                    <span data-nav-text">Tracks</span>
+                </a>
+
+                <a href="#locations" id="locationsTab" class="nav-link" data-tab="locations" data-nav-item data-active="false">
+                    <span data-nav-icon>📍</span>
+                    <span data-nav-text>Locations</span>
                 </a>
 
                 <a href="#files" class="nav-link" data-tab="files" data-nav-item data-active="false">
@@ -1124,7 +1129,7 @@
                         <button class="btn btn-outline" onclick="window.OrgAdmin.Projects.showDraftsList()" title="Continue editing a saved draft">
                             📂 Continue from Draft
                         </button>
-                        <button class="btn btn-primary" onclick="showCreateProjectModal()">
+                        <button id="createProjectBtn" class="btn btn-primary" onclick="showCreateProjectModal()">
                             ➕ Create Project
                         </button>
                     </div>
@@ -1236,7 +1241,7 @@
             <div id="tracks" class="tab-content">
                 <div class="tab-section-header">
                     <h2 class="tab-section-header__title">Learning Tracks</h2>
-                    <button class="btn btn-primary" onclick="showCreateTrackModal()">
+                    <button id="createTrackBtn" class="btn btn-primary" onclick="showCreateTrackModal()">
                         ➕ Create New Track
                     </button>
                 </div>
@@ -1284,6 +1289,67 @@
                         <!-- Track data will be loaded here -->
                     </tbody>
                 </table>
+            </div>
+
+            <!-- Locations Tab -->
+            <div id="locations" class="tab-content">
+                <div class="tab-section-header">
+                    <h2 class="tab-section-header__title">Location Management</h2>
+                    <div class="text-sm text-muted">
+                        Manage location instances and their custom tracks
+                    </div>
+                    <button id="createLocationBtn" class="btn btn-primary btn-sm">
+                        + Create Location
+                    </button>
+                </div>
+
+                <!-- Locations Table -->
+                <table class="data-table" id="locationsTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Country</th>
+                            <th>City</th>
+                            <th>Start Date</th>
+                            <th>Status</th>
+                            <th>Participants</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="locationsTableBody">
+                        <!-- Location data will be loaded here -->
+                    </tbody>
+                </table>
+
+                <!-- Location Tracks Section (nested CRUD for tracks at location level) -->
+                <div id="locationTracksSection" class="mt-lg" style="display: none;">
+                    <div class="tab-section-header">
+                        <h3 class="tab-section-header__title">Location Tracks</h3>
+                        <div class="text-sm text-muted">
+                            Custom tracks for <span id="currentLocationName">this location</span>
+                        </div>
+                        <button id="createTrackAtLocationBtn" class="btn btn-primary btn-sm">
+                            + Create Track
+                        </button>
+                    </div>
+
+                    <table class="data-table" id="locationTracksTable">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Difficulty</th>
+                                <th>Duration</th>
+                                <th>Max Students</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="locationTracksTableBody">
+                            <!-- Track data for current location will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Files Tab -->
@@ -1866,6 +1932,7 @@
 
                     <!-- Add Location Button -->
                     <button
+                        id="addLocationBtn"
                         type="button"
                         class="btn btn-primary mb-2rem"
                         onclick="window.OrgAdmin.Projects.showAddCohortForm()">
@@ -1904,10 +1971,10 @@
                         </div>
 
                         <div class="flex-gap-mt">
-                            <button type="button" class="btn btn-primary" onclick="window.OrgAdmin.Projects.saveCohort()">
-                                ✓ Add Cohort
+                            <button id="saveCohortBtn" type="button" class="btn btn-primary" onclick="window.OrgAdmin.Projects.saveCohort()">
+                                ✓ Add Location
                             </button>
-                            <button type="button" class="btn btn-secondary" onclick="window.OrgAdmin.Projects.cancelCohortForm()">
+                            <button id="cancelCohortBtn" type="button" class="btn btn-secondary" onclick="window.OrgAdmin.Projects.cancelCohortForm()">
                                 Cancel
                             </button>
                         </div>
@@ -2093,9 +2160,8 @@
                             onclick="closeModal('createProjectModal')">
                         Save as Draft
                     </button>
-                    <button type="button" class="btn btn-success px-lg py-md"
-                            class="min-w-200 whitespace-nowrap"
-                            onclick="window.OrgAdmin.Projects.finalizeProjectCreation()">
+                    <button id="submitProjectBtn" type="submit" class="btn btn-success px-lg py-md min-w-200 whitespace-nowrap"
+                            onclick="window.OrgAdmin.Projects.finalizeProjectCreation(); return false;">
                         ✓ Create Project & Tracks
                     </button>
                 </div>
@@ -2737,81 +2803,171 @@
     </div>
 
     <!-- Create/Edit Track Modal -->
-    <div id="trackModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="trackModalTitle">
+    <!--
+    ========================================
+    CREATE TRACK MODAL
+    ========================================
+
+    BUSINESS PURPOSE:
+    Allows organization admins to create new learning tracks that group related courses
+    together. Tracks define learning pathways with estimated duration, prerequisites,
+    and difficulty levels.
+
+    DATABASE MAPPING:
+    - Maps to course_creator.tracks table
+    - prerequisites and learning_objectives are JSONB arrays
+    - difficulty_level enum: beginner, intermediate, advanced
+    - estimated_duration_hours: integer (1-10000)
+
+    ACCESSIBILITY:
+    - ARIA labels for screen readers
+    - Keyboard navigation support
+    - Form validation with clear error messages
+
+    CSS CLASSES:
+    - modal-backdrop: Full-screen overlay
+    - modal-content--md: Medium-width modal (600px)
+    - form-group: Standard form field container
+    - form-group--full: Full-width form field (spans 2 columns)
+    - form-input/form-select: Consistent input styling
+
+    JAVASCRIPT INTEGRATION:
+    - Form submission handled by submitTrack() in org-admin-dashboard.js
+    - Modal close handled by closeModal() utility function
+    - Uses data-modal attribute for modal management
+    -->
+    <div id="createTrackModal" class="modal-backdrop" role="dialog" aria-modal="true"
+         aria-labelledby="createTrackModalTitle" data-modal="createTrack">
         <div class="modal-content modal-content--md">
-            <span class="close" onclick="closeModal('trackModal')">&times;</span>
-            <h2 id="trackModalTitle">Create New Track</h2>
+            <!-- Close Button: Triggers modal close via data-dismiss attribute -->
+            <span class="close" data-dismiss="modal" data-modal-id="createTrackModal" aria-label="Close modal">&times;</span>
 
-            <form id="trackForm" onsubmit="submitTrack(event)">
-                <input type="hidden" id="trackId" name="trackId">
+            <h2 id="createTrackModalTitle">Create New Track</h2>
+            <p class="subtitle-text">Create a new learning track for your organization</p>
 
+            <!--
+            FORM SUBMISSION:
+            - Submits via submitTrack() handler in JavaScript
+            - Validates JSONB fields before submission
+            - Shows loading state during API call
+            - Closes modal and refreshes table on success
+            -->
+            <form id="createTrackForm" data-form-type="createTrack">
                 <div class="grid-2-cols">
+                    <!--
+                    TRACK NAME FIELD
+                    - Required field (DB constraint: NOT NULL)
+                    - Max length: 255 characters
+                    - Used for display in track listings and navigation
+                    - Should be descriptive and unique within organization
+                    -->
                     <div class="form-group form-group--full">
                         <label for="trackName" class="form-label required">Track Name</label>
-                        <input type="text" id="trackName" name="name" required maxlength="200"
-                               placeholder="e.g., Python Fundamentals" class="form-input">
+                        <input type="text" id="trackName" name="name" required maxlength="255"
+                               placeholder="e.g., Python Fundamentals" class="form-input"
+                               aria-required="true" aria-describedby="trackNameHelp">
                     </div>
 
+                    <!--
+                    DESCRIPTION FIELD
+                    - Optional field (DB allows NULL)
+                    - Provides context about track content and objectives
+                    - Displayed in track details view
+                    -->
                     <div class="form-group form-group--full">
                         <label for="trackDescription" class="form-label">Description</label>
-                        <textarea id="trackDescription" name="description" rows="4" maxlength="1000"
-                                  placeholder="Describe the track objectives and content..." class="form-input"></textarea>
+                        <textarea id="trackDescription" name="description" rows="4"
+                                  placeholder="Describe the track objectives and content..." class="form-input"
+                                  aria-describedby="trackDescHelp"></textarea>
                     </div>
 
+                    <!--
+                    DIFFICULTY LEVEL FIELD
+                    - Enum field in DB: beginner | intermediate | advanced
+                    - Default: intermediate
+                    - Helps students select appropriate tracks for their skill level
+                    -->
                     <div class="form-group">
-                        <label for="trackProject" class="form-label required">Project</label>
-                        <select id="trackProject" name="project_id" required class="form-select">
-                            <option value="">Select Project</option>
-                            <!-- Projects will be populated here -->
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="trackDifficulty" class="form-label">Difficulty Level</label>
-                        <select id="trackDifficulty" name="difficulty_level" class="form-select">
+                        <label for="trackDifficultyLevel" class="form-label">Difficulty Level</label>
+                        <select id="trackDifficultyLevel" name="difficulty_level" class="form-select"
+                                aria-describedby="trackDifficultyHelp">
                             <option value="beginner">Beginner</option>
-                            <option value="intermediate">Intermediate</option>
+                            <option value="intermediate" selected>Intermediate</option>
                             <option value="advanced">Advanced</option>
                         </select>
                     </div>
 
+                    <!--
+                    ESTIMATED DURATION FIELD
+                    - Integer field: total learning hours (1-10000)
+                    - Used for planning and student time management
+                    - Includes all courses, assessments, and practice time
+                    -->
                     <div class="form-group">
-                        <label for="trackDuration" class="form-label">Duration (weeks)</label>
-                        <input type="number" id="trackDuration" name="duration_weeks" min="1" max="52"
-                               placeholder="e.g., 8" class="form-input">
+                        <label for="trackDurationHours" class="form-label">Estimated Duration (hours)</label>
+                        <input type="number" id="trackDurationHours" name="estimated_duration_hours"
+                               min="1" max="10000" placeholder="e.g., 40" class="form-input"
+                               aria-describedby="trackDurationHelp">
+                        <small id="trackDurationHelp">Total estimated learning time in hours</small>
                     </div>
 
-                    <div class="form-group">
-                        <label for="trackMaxStudents" class="form-label">Max Students</label>
-                        <input type="number" id="trackMaxStudents" name="max_students" min="1" max="1000"
-                               placeholder="e.g., 30" class="form-input">
-                    </div>
-
+                    <!--
+                    PREREQUISITES FIELD (JSONB)
+                    - PostgreSQL JSONB array stored as: ["item1", "item2", ...]
+                    - Default: [] (empty array)
+                    - JavaScript must validate JSON format before submission
+                    - Displayed as bullet list in track details
+                    - Example: ["Python basics", "Git fundamentals", "SQL knowledge"]
+                    -->
                     <div class="form-group form-group--full">
-                        <label for="trackAudience" class="form-label">Target Audience (comma-separated)</label>
-                        <input type="text" id="trackAudience" name="target_audience"
-                               placeholder="e.g., Beginners, Students, Professionals" class="form-input">
-                        <small>Enter audience types separated by commas</small>
+                        <label for="trackPrerequisites" class="form-label">Prerequisites (JSON Array)</label>
+                        <textarea id="trackPrerequisites" name="prerequisites" rows="3" class="form-input"
+                                  placeholder='["Python basics", "Git fundamentals", "SQL knowledge"]'
+                                  aria-describedby="trackPrereqHelp" data-json-field="true">[]</textarea>
+                        <small id="trackPrereqHelp">Enter as JSON array. Example: ["Item 1", "Item 2", "Item 3"]</small>
                     </div>
 
+                    <!--
+                    LEARNING OBJECTIVES FIELD (JSONB)
+                    - PostgreSQL JSONB array stored as: ["objective1", "objective2", ...]
+                    - Default: [] (empty array)
+                    - JavaScript must validate JSON format before submission
+                    - Displayed as learning outcomes in track details
+                    - Example: ["Master Django framework", "Build REST APIs", "Deploy to production"]
+                    -->
                     <div class="form-group form-group--full">
-                        <label for="trackPrerequisites" class="form-label">Prerequisites (comma-separated)</label>
-                        <input type="text" id="trackPrerequisites" name="prerequisites"
-                               placeholder="e.g., Basic programming, Computer literacy" class="form-input">
-                        <small>Enter prerequisites separated by commas</small>
+                        <label for="trackLearningObjectives" class="form-label">Learning Objectives (JSON Array)</label>
+                        <textarea id="trackLearningObjectives" name="learning_objectives" rows="3" class="form-input"
+                                  placeholder='["Master Django framework", "Build REST APIs", "Deploy to production"]'
+                                  aria-describedby="trackObjectivesHelp" data-json-field="true">[]</textarea>
+                        <small id="trackObjectivesHelp">Enter as JSON array. Example: ["Objective 1", "Objective 2", "Objective 3"]</small>
                     </div>
 
+                    <!--
+                    IS ACTIVE CHECKBOX
+                    - Boolean field, default: true
+                    - Controls track visibility and enrollment availability
+                    - Inactive tracks hidden from student view but preserved in DB
+                    -->
                     <div class="form-group form-group--full">
-                        <label for="trackObjectives" class="form-label">Learning Objectives (comma-separated)</label>
-                        <textarea id="trackObjectives" name="learning_objectives" rows="3"
-                                  placeholder="e.g., Understand Python syntax, Build simple applications, Debug code" class="form-input"></textarea>
-                        <small>Enter learning objectives separated by commas</small>
+                        <label class="form-label">
+                            <input type="checkbox" id="trackIsActive" name="is_active" checked
+                                   aria-describedby="trackActiveHelp">
+                            <span>Track is Active</span>
+                        </label>
+                        <small id="trackActiveHelp">Active tracks are visible to students and can accept enrollments</small>
                     </div>
                 </div>
 
+                <!--
+                MODAL FOOTER ACTIONS
+                - Cancel: Closes modal without saving (data-dismiss pattern)
+                - Create Track: Submits form (type="submit" triggers form submission)
+                -->
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline" onclick="closeModal('trackModal')">Cancel</button>
-                    <button type="submit" class="btn btn-primary" id="trackSubmitBtn">Create Track</button>
+                    <button type="button" class="btn btn-outline" data-dismiss="modal"
+                            data-modal-id="createTrackModal" aria-label="Cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="submitCreateTrackBtn">Create Track</button>
                 </div>
             </form>
         </div>
@@ -3100,20 +3256,649 @@
         </div>
     </div>
 
-    <!-- Delete Track Confirmation Modal -->
-    <div id="deleteTrackModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="deleteTrackModalTitle">
-        <div class="modal-content" class="modal-w-500">
-            <span class="close" onclick="closeModal('deleteTrackModal')">&times;</span>
-            <h2>Delete Track</h2>
+    <!-- Edit Track Modal -->
+    <!--
+    ========================================
+    EDIT TRACK MODAL
+    ========================================
 
+    BUSINESS PURPOSE:
+    Allows organization admins to modify existing track details including metadata,
+    difficulty level, prerequisites, and learning objectives. Changes propagate to
+    all associated courses and sub-projects using this track.
+
+    DATABASE MAPPING:
+    - Updates course_creator.tracks table by track.id
+    - All fields except organization_id and created_at are editable
+    - prerequisites and learning_objectives are JSONB arrays
+    - difficulty_level enum: beginner, intermediate, advanced
+    - estimated_duration_hours: integer (1-10000)
+
+    WORKFLOW:
+    1. User clicks "Edit" button on track row in table
+    2. JavaScript populates form fields with existing track data
+    3. User modifies desired fields
+    4. Form submission triggers PUT request to /api/v1/tracks/{id}
+    5. Success: Modal closes, table refreshes, success message displayed
+    6. Failure: Validation errors displayed inline
+
+    ACCESSIBILITY:
+    - ARIA labels for screen readers
+    - Keyboard navigation support
+    - Pre-populated fields maintain accessibility context
+    - Hidden ID field preserves track identity
+
+    CSS CLASSES:
+    - modal-backdrop: Full-screen overlay (z-index: 1000)
+    - modal-content--md: Medium-width modal (600px)
+    - form-group: Standard form field container
+    - form-group--full: Full-width form field (spans 2 columns)
+    - grid-2-cols: Two-column responsive grid layout
+
+    JAVASCRIPT INTEGRATION:
+    - Form submission handled by submitEditTrack() in org-admin-dashboard.js
+    - Modal populated by populateEditTrackForm(trackData) function
+    - Modal close handled by closeModal() utility function
+    - Uses data-form-type attribute for form identification
+    -->
+    <div id="editTrackModal" class="modal-backdrop" role="dialog" aria-modal="true"
+         aria-labelledby="editTrackModalTitle" data-modal="editTrack">
+        <div class="modal-content modal-content--md">
+            <!-- Close Button: Triggers modal close via data-dismiss attribute -->
+            <span class="close" data-dismiss="modal" data-modal-id="editTrackModal"
+                  aria-label="Close modal">&times;</span>
+
+            <h2 id="editTrackModalTitle">Edit Track</h2>
+            <p class="subtitle-text">Update track information</p>
+
+            <form id="editTrackForm" data-form-type="editTrack">
+                <!--
+                HIDDEN TRACK ID FIELD
+                - Stores UUID of track being edited
+                - Required for PUT request to correct endpoint
+                - Populated by JavaScript when modal opens
+                -->
+                <input type="hidden" id="editTrackId" name="id" aria-hidden="true">
+
+                <div class="grid-2-cols">
+                    <!--
+                    TRACK NAME FIELD
+                    - Required field (DB constraint: NOT NULL)
+                    - Max length: 255 characters
+                    - Pre-populated with existing track name
+                    - Changes reflect immediately in track listings
+                    -->
+                    <div class="form-group form-group--full">
+                        <label for="editTrackName" class="form-label required">Track Name</label>
+                        <input type="text" id="editTrackName" name="name" required maxlength="255"
+                               placeholder="e.g., Python Fundamentals" class="form-input"
+                               aria-required="true" aria-describedby="editTrackNameHelp">
+                    </div>
+
+                    <!--
+                    DESCRIPTION FIELD
+                    - Optional field (DB allows NULL)
+                    - Textarea for longer text content
+                    - Pre-populated with existing description
+                    - Displayed in track details view and catalog
+                    -->
+                    <div class="form-group form-group--full">
+                        <label for="editTrackDescription" class="form-label">Description</label>
+                        <textarea id="editTrackDescription" name="description" rows="4"
+                                  placeholder="Describe the track objectives and content..."
+                                  class="form-input" aria-describedby="editTrackDescHelp"></textarea>
+                    </div>
+
+                    <!--
+                    DIFFICULTY LEVEL FIELD
+                    - Enum field: beginner, intermediate, advanced
+                    - Default: intermediate (if not set)
+                    - Used for filtering and student recommendations
+                    - Pre-selected based on existing value
+                    -->
+                    <div class="form-group">
+                        <label for="editTrackDifficultyLevel" class="form-label">Difficulty Level</label>
+                        <select id="editTrackDifficultyLevel" name="difficulty_level"
+                                class="form-select" aria-describedby="editTrackDiffHelp">
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate">Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                        </select>
+                    </div>
+
+                    <!--
+                    ESTIMATED DURATION FIELD
+                    - Integer field (hours)
+                    - Range: 1-10000 hours
+                    - Used for planning and time estimates
+                    - Pre-populated with existing duration
+                    -->
+                    <div class="form-group">
+                        <label for="editTrackDurationHours" class="form-label">Estimated Duration (hours)</label>
+                        <input type="number" id="editTrackDurationHours" name="estimated_duration_hours"
+                               min="1" max="10000" placeholder="e.g., 40" class="form-input"
+                               aria-describedby="editTrackDurationHelp">
+                        <small id="editTrackDurationHelp">Total estimated learning time in hours</small>
+                    </div>
+
+                    <!--
+                    PREREQUISITES FIELD (JSONB)
+                    - PostgreSQL JSONB array stored as: ["item1", "item2", ...]
+                    - Pre-populated with existing array stringified
+                    - JavaScript validates JSON format before submission
+                    - Displayed as bullet list in track details
+                    -->
+                    <div class="form-group form-group--full">
+                        <label for="editTrackPrerequisites" class="form-label">Prerequisites (JSON Array)</label>
+                        <textarea id="editTrackPrerequisites" name="prerequisites" rows="3"
+                                  class="form-input" data-json-field="true"
+                                  placeholder='["Python basics", "Git fundamentals", "SQL knowledge"]'
+                                  aria-describedby="editTrackPrereqHelp"></textarea>
+                        <small id="editTrackPrereqHelp">Enter as JSON array. Example: ["Item 1", "Item 2", "Item 3"]</small>
+                    </div>
+
+                    <!--
+                    LEARNING OBJECTIVES FIELD (JSONB)
+                    - PostgreSQL JSONB array stored as: ["objective1", "objective2", ...]
+                    - Pre-populated with existing array stringified
+                    - JavaScript validates JSON format before submission
+                    - Displayed as bullet list to students
+                    -->
+                    <div class="form-group form-group--full">
+                        <label for="editTrackLearningObjectives" class="form-label">Learning Objectives (JSON Array)</label>
+                        <textarea id="editTrackLearningObjectives" name="learning_objectives"
+                                  rows="3" class="form-input" data-json-field="true"
+                                  placeholder='["Master Django framework", "Build REST APIs", "Deploy to production"]'
+                                  aria-describedby="editTrackObjHelp"></textarea>
+                        <small id="editTrackObjHelp">Enter as JSON array. Example: ["Objective 1", "Objective 2", "Objective 3"]</small>
+                    </div>
+
+                    <!--
+                    IS ACTIVE CHECKBOX
+                    - Boolean field (DB default: true)
+                    - Controls track visibility to students
+                    - Inactive tracks: Hidden from catalog, cannot enroll
+                    - Active tracks: Visible in catalog, enrollments open
+                    - Pre-checked based on existing value
+                    -->
+                    <div class="form-group form-group--full">
+                        <label class="form-label">
+                            <input type="checkbox" id="editTrackIsActive" name="is_active"
+                                   aria-describedby="editTrackActiveHelp">
+                            <span>Track is Active</span>
+                        </label>
+                        <small id="editTrackActiveHelp">Active tracks are visible to students and can accept enrollments</small>
+                    </div>
+                </div>
+
+                <!--
+                MODAL FOOTER ACTIONS
+                - Cancel: Closes modal without saving (data-dismiss pattern)
+                - Update Track: Submits form (type="submit" triggers form submission)
+                - Form submission sends PUT request to /api/v1/tracks/{id}
+                -->
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" data-dismiss="modal"
+                            data-modal-id="editTrackModal" aria-label="Cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="submitEditTrackBtn">Update Track</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!--
+    ========================================
+    DELETE TRACK CONFIRMATION MODAL
+    ========================================
+
+    BUSINESS PURPOSE:
+    Provides a confirmation dialog before permanently deleting a track. This is a
+    critical operation that affects all associated courses, sub-projects, and student
+    enrollments. The modal displays warnings about data loss and cascading effects.
+
+    DATABASE MAPPING:
+    - Deletes row from course_creator.tracks table by track.id
+    - CASCADE behavior depends on foreign key constraints
+    - May soft-delete (is_deleted flag) or hard-delete depending on implementation
+    - Related enrollments and progress data handling varies
+
+    WORKFLOW:
+    1. User clicks "Delete" button on track row in table
+    2. Modal opens with track name and warning message
+    3. JavaScript populates deleteTrackWarning with impact details
+    4. User confirms or cancels deletion
+    5. Confirmation triggers DELETE request to /api/v1/tracks/{id}
+    6. Success: Modal closes, table refreshes, track removed
+    7. Failure: Error message displayed (e.g., "Track has active enrollments")
+
+    SAFETY FEATURES:
+    - Explicit confirmation required (two-step process)
+    - Warning message displays potential impact
+    - Danger-styled button (red) indicates destructive action
+    - Cancel button equally prominent for easy abort
+
+    ACCESSIBILITY:
+    - ARIA labels for screen readers
+    - Keyboard navigation support (Escape key closes modal)
+    - Clear warning text for impact visibility
+    - Hidden ID field preserves track identity
+
+    CSS CLASSES:
+    - modal-backdrop: Full-screen overlay
+    - modal-w-500: Medium-width modal (500px)
+    - text-error-bold: Red bold text for warnings
+    - btn-danger: Red button indicating destructive action
+
+    JAVASCRIPT INTEGRATION:
+    - Modal opened by showDeleteTrackModal(trackId, trackName)
+    - Deletion confirmed by confirmDeleteTrack() in org-admin-dashboard.js
+    - Modal close handled by closeModal() utility function
+    - Uses data-modal attribute for modal management
+    -->
+    <div id="deleteTrackModal" class="modal-backdrop" role="dialog" aria-modal="true"
+         aria-labelledby="deleteTrackModalTitle" data-modal="deleteTrack">
+        <div class="modal-content modal-w-500">
+            <!-- Close Button: Triggers modal close via data-dismiss attribute -->
+            <span class="close" data-dismiss="modal" data-modal-id="deleteTrackModal"
+                  aria-label="Close modal">&times;</span>
+
+            <h2 id="deleteTrackModalTitle">Delete Track</h2>
+
+            <!--
+            CONFIRMATION MESSAGE
+            - Clear question prompts user decision
+            - Warning paragraph displays impact details (populated by JavaScript)
+            - text-error-bold class makes warning highly visible
+            -->
             <p>Are you sure you want to delete this track?</p>
-            <p id="deleteTrackWarning" class="text-error-bold"></p>
+            <p id="deleteTrackWarning" class="text-error-bold" role="alert"></p>
 
-            <input type="hidden" id="deleteTrackId">
+            <!--
+            HIDDEN TRACK ID FIELD
+            - Stores UUID of track to be deleted
+            - Required for DELETE request to correct endpoint
+            - Populated by JavaScript when modal opens
+            -->
+            <input type="hidden" id="deleteTrackId" aria-hidden="true">
 
+            <!--
+            MODAL FOOTER ACTIONS
+            - Cancel: Closes modal without deleting (data-dismiss pattern)
+            - Delete Track: Confirms deletion (data-action triggers confirmDeleteTrack)
+            - Danger button styling emphasizes destructive nature
+            -->
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline" onclick="closeModal('deleteTrackModal')">Cancel</button>
-                <button type="button" class="btn btn-danger" onclick="confirmDeleteTrack()">Delete Track</button>
+                <button type="button" class="btn btn-outline" data-dismiss="modal"
+                        data-modal-id="deleteTrackModal" aria-label="Cancel">Cancel</button>
+                <button type="button" id="confirmDeleteTrackBtn" class="btn btn-danger"
+                        data-action="deleteTrack" aria-label="Confirm deletion">Delete Track</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================
+         LOCATION MANAGEMENT MODALS
+         Purpose: Full CRUD operations for location instances
+         ======================================================================== -->
+
+    <!-- Create Location Modal -->
+    <div id="createLocationModal" class="modal-backdrop" role="dialog" aria-modal="true"
+         aria-labelledby="createLocationModalTitle" data-modal="createLocation">
+        <div class="modal-content modal-w-700">
+            <span class="close" data-dismiss="modal" data-modal-id="createLocationModal" aria-label="Close modal">&times;</span>
+            
+            <h2 id="createLocationModalTitle">Create New Location</h2>
+            
+            <form id="createLocationForm">
+                <!-- Basic Information -->
+                <div class="form-group">
+                    <label for="locationName" class="form-label required">Location Name</label>
+                    <input type="text" id="locationName" name="name" required maxlength="255"
+                           placeholder="e.g., New York Training Center" class="form-input">
+                </div>
+
+                <div class="form-group">
+                    <label for="locationSlug" class="form-label required">URL Slug</label>
+                    <input type="text" id="locationSlug" name="slug" required maxlength="100"
+                           placeholder="e.g., ny-training-center" class="form-input">
+                </div>
+
+                <div class="form-group">
+                    <label for="locationDescription" class="form-label">Description</label>
+                    <textarea id="locationDescription" name="description" rows="3" class="form-input"
+                              placeholder="Describe this location instance"></textarea>
+                </div>
+
+                <!-- Location Details -->
+                <div class="grid grid-cols-2 gap-md">
+                    <div class="form-group">
+                        <label for="locationCountry" class="form-label required">Country</label>
+                        <input type="text" id="locationCountry" name="country" required maxlength="100"
+                               placeholder="e.g., United States" class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="locationRegion" class="form-label">Region/State</label>
+                        <input type="text" id="locationRegion" name="region" maxlength="100"
+                               placeholder="e.g., New York" class="form-input">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-md">
+                    <div class="form-group">
+                        <label for="locationCity" class="form-label">City</label>
+                        <input type="text" id="locationCity" name="city" maxlength="100"
+                               placeholder="e.g., Manhattan" class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="locationTimezone" class="form-label required">Timezone</label>
+                        <select id="locationTimezone" name="timezone" required class="form-select">
+                            <option value="UTC">UTC</option>
+                            <option value="America/New_York">Eastern Time (ET)</option>
+                            <option value="America/Chicago">Central Time (CT)</option>
+                            <option value="America/Denver">Mountain Time (MT)</option>
+                            <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                            <option value="Europe/London">London (GMT)</option>
+                            <option value="Europe/Paris">Paris (CET)</option>
+                            <option value="Asia/Tokyo">Tokyo (JST)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Schedule -->
+                <div class="grid grid-cols-2 gap-md">
+                    <div class="form-group">
+                        <label for="locationStartDate" class="form-label">Start Date</label>
+                        <input type="date" id="locationStartDate" name="start_date" class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="locationEndDate" class="form-label">End Date</label>
+                        <input type="date" id="locationEndDate" name="end_date" class="form-input">
+                    </div>
+                </div>
+
+                <!-- Capacity -->
+                <div class="form-group">
+                    <label for="locationMaxParticipants" class="form-label">Max Participants</label>
+                    <input type="number" id="locationMaxParticipants" name="max_participants" min="1"
+                           placeholder="e.g., 100" class="form-input">
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" data-dismiss="modal"
+                            data-modal-id="createLocationModal" aria-label="Cancel">Cancel</button>
+                    <button type="submit" id="submitCreateLocationBtn" class="btn btn-primary"
+                            data-action="createLocation" aria-label="Create location">Create Location</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Location Modal -->
+    <div id="editLocationModal" class="modal-backdrop" role="dialog" aria-modal="true"
+         aria-labelledby="editLocationModalTitle" data-modal="editLocation">
+        <div class="modal-content modal-w-700">
+            <span class="close" data-dismiss="modal" data-modal-id="editLocationModal"
+                  aria-label="Close modal">&times;</span>
+            
+            <h2 id="editLocationModalTitle">Edit Location</h2>
+            
+            <form id="editLocationForm">
+                <input type="hidden" id="editLocationId" name="id">
+
+                <div class="form-group">
+                    <label for="editLocationName" class="form-label required">Location Name</label>
+                    <input type="text" id="editLocationName" name="name" required maxlength="255" class="form-input">
+                </div>
+
+                <div class="form-group">
+                    <label for="editLocationDescription" class="form-label">Description</label>
+                    <textarea id="editLocationDescription" name="description" rows="3" class="form-input"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-md">
+                    <div class="form-group">
+                        <label for="editLocationCountry" class="form-label required">Country</label>
+                        <input type="text" id="editLocationCountry" name="country" required class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editLocationRegion" class="form-label">Region/State</label>
+                        <input type="text" id="editLocationRegion" name="region" class="form-input">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-md">
+                    <div class="form-group">
+                        <label for="editLocationCity" class="form-label">City</label>
+                        <input type="text" id="editLocationCity" name="city" class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editLocationTimezone" class="form-label required">Timezone</label>
+                        <select id="editLocationTimezone" name="timezone" required class="form-select">
+                            <option value="UTC">UTC</option>
+                            <option value="America/New_York">Eastern Time (ET)</option>
+                            <option value="America/Chicago">Central Time (CT)</option>
+                            <option value="America/Denver">Mountain Time (MT)</option>
+                            <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-md">
+                    <div class="form-group">
+                        <label for="editLocationStartDate" class="form-label">Start Date</label>
+                        <input type="date" id="editLocationStartDate" name="start_date" class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editLocationEndDate" class="form-label">End Date</label>
+                        <input type="date" id="editLocationEndDate" name="end_date" class="form-input">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="editLocationMaxParticipants" class="form-label">Max Participants</label>
+                    <input type="number" id="editLocationMaxParticipants" name="max_participants" min="1" class="form-input">
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" data-dismiss="modal"
+                            data-modal-id="editLocationModal" aria-label="Cancel">Cancel</button>
+                    <button type="submit" id="submitEditLocationBtn" class="btn btn-primary"
+                            data-action="updateLocation" aria-label="Update location">Update Location</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Location Modal -->
+    <div id="deleteLocationModal" class="modal-backdrop" role="dialog" aria-modal="true"
+         aria-labelledby="deleteLocationModalTitle" data-modal="deleteLocation">
+        <div class="modal-content modal-w-500">
+            <span class="close" data-dismiss="modal" data-modal-id="deleteLocationModal"
+                  aria-label="Close modal">&times;</span>
+            
+            <h2 id="deleteLocationModalTitle">Delete Location</h2>
+            
+            <p class="mb-md">
+                Are you sure you want to delete <strong id="deleteLocationName"></strong>?
+                This will also delete all tracks associated with this location.
+            </p>
+            
+            <input type="hidden" id="deleteLocationId">
+            
+            <div class="modal-actions">
+                <button type="button" class="btn btn-outline" data-dismiss="modal"
+                        data-modal-id="deleteLocationModal" aria-label="Cancel">Cancel</button>
+                <button type="button" id="confirmDeleteLocationBtn" class="btn btn-danger"
+                        data-action="deleteLocation" aria-label="Confirm deletion">Delete Location</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================
+         TRACK AT LOCATION LEVEL MODALS
+         Purpose: Create custom tracks for specific location instances
+         User Requirement: "locations dashboard should be able to add or delete tracks"
+         ======================================================================== -->
+
+    <!-- Create Track at Location Modal -->
+    <div id="createTrackAtLocationModal" class="modal-backdrop" role="dialog" aria-modal="true"
+         aria-labelledby="createTrackAtLocationModalTitle" data-modal="createTrackAtLocation">
+        <div class="modal-content modal-w-700">
+            <span class="close" data-dismiss="modal" data-modal-id="createTrackAtLocationModal"
+                  aria-label="Close modal">&times;</span>
+            
+            <h2 id="createTrackAtLocationModalTitle">Create Track for Location</h2>
+            
+            <form id="createTrackAtLocationForm">
+                <input type="hidden" id="locationTrackLocationId" name="location_id">
+
+                <div class="form-group">
+                    <label for="locationTrackName" class="form-label required">Track Name</label>
+                    <input type="text" id="locationTrackName" name="name" required maxlength="255"
+                           placeholder="e.g., Local Business Analyst Track" class="form-input">
+                </div>
+
+                <div class="form-group">
+                    <label for="locationTrackDescription" class="form-label">Description</label>
+                    <textarea id="locationTrackDescription" name="description" rows="3" class="form-input"
+                              placeholder="Describe this custom track for the location"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-md">
+                    <div class="form-group">
+                        <label for="locationTrackType" class="form-label required">Track Type</label>
+                        <select id="locationTrackType" name="track_type" required class="form-select">
+                            <option value="sequential">Sequential</option>
+                            <option value="flexible">Flexible</option>
+                            <option value="milestone_based">Milestone Based</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="locationTrackDifficultyLevel" class="form-label required">Difficulty Level</label>
+                        <select id="locationTrackDifficultyLevel" name="difficulty_level" required class="form-select">
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate">Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-md">
+                    <div class="form-group">
+                        <label for="locationTrackDurationWeeks" class="form-label">Duration (weeks)</label>
+                        <input type="number" id="locationTrackDurationWeeks" name="duration_weeks" min="1" max="104"
+                               placeholder="e.g., 12" class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="locationTrackMaxStudents" class="form-label">Max Students</label>
+                        <input type="number" id="locationTrackMaxStudents" name="max_students" min="1"
+                               placeholder="e.g., 30" class="form-input">
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" data-dismiss="modal"
+                            data-modal-id="createTrackAtLocationModal" aria-label="Cancel">Cancel</button>
+                    <button type="submit" id="submitCreateTrackAtLocationBtn" class="btn btn-primary"
+                            data-action="createTrackAtLocation" aria-label="Create track">Create Track</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Track at Location Modal -->
+    <div id="editTrackAtLocationModal" class="modal-backdrop" role="dialog" aria-modal="true"
+         aria-labelledby="editTrackAtLocationModalTitle" data-modal="editTrackAtLocation">
+        <div class="modal-content modal-w-700">
+            <span class="close" data-dismiss="modal" data-modal-id="editTrackAtLocationModal"
+                  aria-label="Close modal">&times;</span>
+            
+            <h2 id="editTrackAtLocationModalTitle">Edit Track</h2>
+            
+            <form id="editTrackAtLocationForm">
+                <input type="hidden" id="editLocationTrackId" name="id">
+
+                <div class="form-group">
+                    <label for="editLocationTrackName" class="form-label required">Track Name</label>
+                    <input type="text" id="editLocationTrackName" name="name" required maxlength="255" class="form-input">
+                </div>
+
+                <div class="form-group">
+                    <label for="editLocationTrackDescription" class="form-label">Description</label>
+                    <textarea id="editLocationTrackDescription" name="description" rows="3" class="form-input"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-md">
+                    <div class="form-group">
+                        <label for="editLocationTrackType" class="form-label required">Track Type</label>
+                        <select id="editLocationTrackType" name="track_type" required class="form-select">
+                            <option value="sequential">Sequential</option>
+                            <option value="flexible">Flexible</option>
+                            <option value="milestone_based">Milestone Based</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editLocationTrackDifficultyLevel" class="form-label required">Difficulty Level</label>
+                        <select id="editLocationTrackDifficultyLevel" name="difficulty_level" required class="form-select">
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate">Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-md">
+                    <div class="form-group">
+                        <label for="editLocationTrackDurationWeeks" class="form-label">Duration (weeks)</label>
+                        <input type="number" id="editLocationTrackDurationWeeks" name="duration_weeks" min="1" max="104" class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editLocationTrackMaxStudents" class="form-label">Max Students</label>
+                        <input type="number" id="editLocationTrackMaxStudents" name="max_students" min="1" class="form-input">
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" data-dismiss="modal"
+                            data-modal-id="editTrackAtLocationModal" aria-label="Cancel">Cancel</button>
+                    <button type="submit" id="submitEditTrackAtLocationBtn" class="btn btn-primary"
+                            data-action="updateTrackAtLocation" aria-label="Update track">Update Track</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Track at Location Modal -->
+    <div id="deleteTrackAtLocationModal" class="modal-backdrop" role="dialog" aria-modal="true"
+         aria-labelledby="deleteTrackAtLocationModalTitle" data-modal="deleteTrackAtLocation">
+        <div class="modal-content modal-w-500">
+            <span class="close" data-dismiss="modal" data-modal-id="deleteTrackAtLocationModal"
+                  aria-label="Close modal">&times;</span>
+            
+            <h2 id="deleteTrackAtLocationModalTitle">Delete Track</h2>
+            
+            <p class="mb-md">
+                Are you sure you want to delete <strong id="deleteLocationTrackName"></strong>?
+                This action cannot be undone.
+            </p>
+            
+            <input type="hidden" id="deleteLocationTrackId">
+            
+            <div class="modal-actions">
+                <button type="button" class="btn btn-outline" data-dismiss="modal"
+                        data-modal-id="deleteTrackAtLocationModal" aria-label="Cancel">Cancel</button>
+                <button type="button" id="confirmDeleteTrackAtLocationBtn" class="btn btn-danger"
+                        data-action="deleteTrackAtLocation" aria-label="Confirm deletion">Delete Track</button>
             </div>
         </div>
     </div>
@@ -4371,9 +5156,12 @@ If everything looks good and you approve, I'll proceed with automated project cr
     <!-- Cohort Wizard Module (Wave 5 - WizardFramework) -->
     <script type="module" src="../js/modules/cohort-wizard.js"></script>
 
+    <!-- Tracks CRUD Module (TDD Implementation - Matches course_creator.tracks Schema) -->
+    <script type="module" src="../js/modules/org-admin/tracks-crud.js"></script>
+
     <!-- Modular JavaScript Architecture -->
-    <script type="module" src="../js/org-admin-main.js?v=20251017-fix-401-auth"></script>
-    <script src="../js/focus-manager.js?v=20251016-auth-debug"></script>
+    <script type="module" src="../js/org-admin-main.js?v=20251017-fix-projects-endpoint"></script>
+    <script src="../js/focus-manager.js?v=20251017-fix-projects-endpoint"></script>
 
 </body>
 </html>

@@ -611,7 +611,8 @@ export function showAddCohortForm() {
     const button = document.querySelector('button[onclick*="showAddCohortForm"]');
 
     if (form) {
-        form.style.display = 'block';
+        // Remove the hidden class (which has !important CSS)
+        form.classList.remove('cohort-form-hidden');
         if (button) button.style.display = 'none';
 
         // Clear form fields
@@ -621,7 +622,7 @@ export function showAddCohortForm() {
         document.getElementById('cohortEndDate').value = '';
         document.getElementById('cohortMaxStudents').value = '';
 
-        console.log('📝 Cohort form displayed');
+        console.log('📝 Location form displayed');
     }
 }
 
@@ -632,10 +633,11 @@ export function cancelCohortForm() {
     const form = document.getElementById('addCohortForm');
     const button = document.querySelector('button[onclick*="showAddCohortForm"]');
 
-    if (form) form.style.display = 'none';
+    // Re-add the hidden class (which has !important CSS)
+    if (form) form.classList.add('cohort-form-hidden');
     if (button) button.style.display = 'block';
 
-    console.log('❌ Cohort form cancelled');
+    console.log('❌ Location form cancelled');
 }
 
 /**
