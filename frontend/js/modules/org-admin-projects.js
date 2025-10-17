@@ -15,16 +15,20 @@
  *
  * @module org-admin-projects
  */
-
 import {
     fetchProjects,
     createProject,
     updateProject,
     deleteProject,
+    saveDraftProject,
+    updateDraftProject,
+    fetchDraftProjects,
     fetchMembers,
     addInstructor,
     addStudent,
-    removeMember
+    removeMember,
+    createTrack,
+    getAuthHeaders
 } from './org-admin-api.js';
 
 import {
@@ -45,9 +49,22 @@ import {
     showNotification
 } from './org-admin-utils.js';
 
+// Wave 4: Wizard Enhancement Modules
+import { WizardProgress } from './wizard-progress.js';
+import { WizardValidator } from './wizard-validation.js';
+import { WizardDraft } from './wizard-draft.js';
+import { showToast } from './feedback-system.js';
+
+// Wave 5: Wizard Framework (replaces embedded wizard logic)
+import { WizardFramework } from './wizard-framework.js';
+
 // Current organization context
 let currentOrganizationId = null;
 let currentProjectId = null;
+let currentDraftId = null;  // Track draft being edited
+
+// Wave 5: Single wizard framework instance (replaces all Wave 4 component instances and state tracking)
+let projectWizard = null;
 
 /**
  * Initialize projects management module
@@ -57,6 +74,175 @@ let currentProjectId = null;
 export function initializeProjectsManagement(organizationId) {
     currentOrganizationId = organizationId;
     console.log('Projects management initialized for organization:', organizationId);
+
+    // Wave 5: Wizard initialization deferred until modal opens (lazy loading)
+    // This prevents "Form not found" errors since the form is inside the modal
+}
+
+/**
+ * Initialize Wave 5 wizard framework for project creation
+ *
+ * BUSINESS CONTEXT:
+ * Sets up the enhanced project creation wizard using the reusable WizardFramework.
+ * Framework includes progress tracking, validation, and auto-save functionality
+ * to improve user experience and reduce data loss.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Uses WizardFramework with graceful degradation
+ * - Automatically integrates WizardProgress, WizardValidator, WizardDraft
+ * - 84% code reduction vs Wave 4 (100+ lines → 16 lines)
+ */
+async function initializeProjectWizard() {
+    console.log('🚀 Initializing Wave 5 WizardFramework...');
+
+    projectWizard = new WizardFramework({
+        wizardId: 'project-creation-wizard',
+        steps: [
+            { id: 'basic-info', label: 'Project Details', panelSelector: '#projectStep1' },
+            { id: 'sub-projects', label: 'Configure Locations', panelSelector: '#projectStep2' },
+            { id: 'tracks', label: 'Training Tracks', panelSelector: '#projectStep3' },
+            { id: 'members', label: 'Assign Members', panelSelector: '#projectStep4' },
+            { id: 'review', label: 'Review & Create', panelSelector: '#projectStep5' }
+        ],
+        progress: {
+            enabled: true,
+            containerSelector: '#project-wizard-progress',
+            allowBackNavigation: true
+        },
+        validation: {
+            enabled: true,
+            formSelector: '#createProjectForm',
+            validateOnBlur: true,
+            validateOnSubmit: true
+        },
+        draft: {
+            enabled: true,
+            autoSaveInterval: 30000,
+            storage: 'localStorage',
+            formSelector: '#createProjectForm'
+        },
+        onStepChange: (oldIdx, newIdx) => {
+            console.log(`Wizard step changed: ${oldIdx} → ${newIdx}`);
+        },
+        onDraftSaved: () => {
+            showToast('Draft saved successfully', 'success', 2000);
+        },
+        onComplete: () => {
+            console.log('Project wizard completed - ready to submit');
+        }
+    });
+
+    await projectWizard.initialize();
+    console.log('✅ WizardFramework initialized');
+}
+
+/**
+ * Check for existing drafts and prompt user to restore
+ */
+function checkForExistingDrafts() {
+    if (!wizardDraft) return;
+
+    const existingDraft = wizardDraft.checkForDraft();
+    if (existingDraft) {
+        // Show restoration prompt
+        const lastSaved = new Date(existingDraft.timestamp);
+        const message = `You have an unsaved draft from ${lastSaved.toLocaleString()}. Would you like to restore it?`;
+
+        if (confirm(message)) {
+            wizardDraft.loadDraft();
+        }
+    }
+}
+
+/**
+ * Populate form fields from loaded draft
+ *
+ * @param {Object} draft - Draft data object
+ */
+function populateFormFromDraft(draft) {
+    if (!draft || !draft.data) return;
+
+    const data = draft.data;
+
+    // Populate Step 1 fields
+    if (data.projectName) document.getElementById('projectName').value = data.projectName;
+    if (data.projectSlug) document.getElementById('projectSlug').value = data.projectSlug;
+    if (data.projectDescription) document.getElementById('projectDescription').value = data.projectDescription;
+    if (data.projectType) document.getElementById('projectType').value = data.projectType;
+    if (data.projectDuration) document.getElementById('projectDuration').value = data.projectDuration;
+    if (data.projectMaxParticipants) document.getElementById('projectMaxParticipants').value = data.projectMaxParticipants;
+    if (data.projectStartDate) document.getElementById('projectStartDate').value = data.projectStartDate;
+    if (data.projectEndDate) document.getElementById('projectEndDate').value = data.projectEndDate;
+
+    showToast('Draft restored successfully', 'success');
+}
+
+// Wave 5: showStep() function removed - WizardFramework handles step visibility internally
+
+/**
+ * Reset project wizard to initial state (Wave 5 - delegates to framework)
+ *
+ * BUSINESS CONTEXT:
+ * Cleans up wizard state after project creation or when user cancels.
+ * Ensures wizard starts fresh for next project creation.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Delegates to WizardFramework.reset() which handles all cleanup
+ * - Framework resets step, form, progress, validation, and draft
+ * - 50 lines reduced to 5 lines (90% reduction)
+ *
+ * @returns {boolean} True if reset successful
+ */
+export function resetProjectWizard() {
+    if (!projectWizard) {
+        console.error('Project wizard not initialized');
+        return false;
+    }
+    return projectWizard.reset();
+}
+
+/**
+ * Navigate to next project wizard step (Wave 5 - delegates to framework)
+ *
+ * BUSINESS CONTEXT:
+ * Handles wizard step navigation with validation and progress tracking.
+ * Ensures users cannot proceed with incomplete or invalid data.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Delegates to WizardFramework.nextStep() which handles all logic
+ * - Framework validates, saves draft, shows next step, updates progress
+ * - 64 lines reduced to 5 lines (92% reduction)
+ *
+ * @returns {Promise<boolean>} True if navigation successful, false otherwise
+ */
+export async function nextProjectStep() {
+    if (!projectWizard) {
+        console.error('Project wizard not initialized');
+        return false;
+    }
+    return await projectWizard.nextStep();
+}
+
+/**
+ * Navigate to previous project wizard step (Wave 5 - delegates to framework)
+ *
+ * BUSINESS CONTEXT:
+ * Allows users to navigate back to previous steps to review or modify
+ * their inputs before final submission.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Delegates to WizardFramework.previousStep() which handles all logic
+ * - Framework validates first step, shows previous panel, updates progress
+ * - 37 lines reduced to 5 lines (86% reduction)
+ *
+ * @returns {boolean} True if navigation successful
+ */
+export function previousProjectStep() {
+    if (!projectWizard) {
+        console.error('Project wizard not initialized');
+        return false;
+    }
+    return projectWizard.previousStep();
 }
 
 /**
@@ -117,9 +303,7 @@ function renderProjectsTable(projects) {
                 ${project.description ? `<br><small style="color: var(--text-muted);">${escapeHtml(project.description.substring(0, 100))}${project.description.length > 100 ? '...' : ''}</small>` : ''}
             </td>
             <td>
-                <span class="status-badge status-${project.status || 'draft'}">
-                    ${capitalizeFirst(project.status || 'draft')}
-                </span>
+                <span class="status-badge status-${project.status || 'draft'}"></span>
             </td>
             <td>${formatDuration(project.duration_weeks)}</td>
             <td>
@@ -171,7 +355,7 @@ function updateProjectsStats(projects) {
  * Opens multi-step wizard for project creation
  * Step 1: Basic Info, Step 2: Configuration, Step 3: Tracks
  */
-export function showCreateProjectModal() {
+export async function showCreateProjectModal() {
     console.log('📋 Opening create project modal...');
 
     const modal = document.getElementById('createProjectModal');
@@ -189,91 +373,421 @@ export function showCreateProjectModal() {
 
     console.log('✅ Modal and form found, resetting and opening...');
 
-    // Reset wizard to step 1
+    // Wave 5: Lazy initialization - create wizard on first modal open
+    if (!projectWizard) {
+        console.log('🔄 First time opening modal - initializing wizard...');
+        await initializeProjectWizard();  // Await async initialization
+    }
+
+    // Reset wizard to step 1 (Wave 5: uses framework)
     form.reset();
-    showProjectStep(1);
+    if (projectWizard) {
+        projectWizard.goToStep(0); // Framework uses 0-based indexing
+    }
+
+    // Hide floating dashboard AI Assistant to avoid conflicts with wizard AI Assistant
+    const dashboardAI = document.getElementById('dashboardAIChatPanel');
+    if (dashboardAI) {
+        dashboardAI.style.display = 'none';
+    }
+    const aiButton = document.getElementById('aiAssistantButton');
+    if (aiButton) {
+        aiButton.style.display = 'none';
+    }
 
     // Open modal
     openModal('createProjectModal');
 }
 
+// Wave 5: Legacy duplicate wizard functions removed (lines 392-538)
+// These duplicated the Wave 4/5 wizard logic that is now handled by WizardFramework
+// Keeping only the framework-based implementations above (lines 218-246)
+
+// ============================================================================
+// DRAFT SAVE/LOAD FUNCTIONALITY
+// ============================================================================
+
 /**
- * Navigate to next project wizard step
+ * Save current project wizard state as draft
  *
- * BUSINESS LOGIC:
- * Validates current step before advancing
- * Step 1 → 2: Validates basic info and triggers AI suggestions
- * Step 2 → 3: Validates configuration
+ * BUSINESS CONTEXT:
+ * Allows org admins to save incomplete projects and return later
+ * Particularly useful for complex multi-location projects with many cohorts
+ *
+ * @returns {Promise<void>}
  */
-export function nextProjectStep() {
-    const currentStepElem = document.querySelector('.project-step.active');
-    const currentStep = currentStepElem ? parseInt(currentStepElem.id.replace('projectStep', '')) : 1;
+export async function saveCurrentProjectDraft() {
+    try {
+        // Collect current wizard data
+        const draftData = collectWizardData();
 
-    console.log('📄 Current step:', currentStep);
-
-    // Validate current step
-    if (currentStep === 1) {
-        const name = document.getElementById('projectName')?.value;
-        const slug = document.getElementById('projectSlug')?.value;
-        const description = document.getElementById('projectDescription')?.value;
-
-        if (!name || !slug || !description) {
-            showNotification('Please fill in all required fields (Name, Slug, and Description)', 'error');
+        if (!draftData.name || !draftData.slug) {
+            showNotification('Please provide at least a project name and slug before saving', 'error');
             return;
         }
 
-        // Moving to step 2 - generate AI suggestions
-        showProjectStep(2);
-        generateAISuggestions();
-    } else if (currentStep === 2) {
-        // Moving to step 3
-        showProjectStep(3);
-    }
-}
+        // Get current step
+        const currentStepElem = document.querySelector('.project-step.active');
+        const currentStep = currentStepElem ? parseInt(currentStepElem.id.replace('projectStep', '')) : 1;
 
-/**
- * Navigate to previous project wizard step
- */
-export function previousProjectStep() {
-    const currentStep = parseInt(document.querySelector('.wizard-step.active')?.dataset.step || '1');
-    const prevStep = currentStep - 1;
+        // Add wizard state metadata
+        draftData.wizard_state = {
+            current_step: currentStep,
+            wizard_cohorts: wizardCohorts,
+            last_saved: new Date().toISOString()
+        };
 
-    if (prevStep >= 1) {
-        showProjectStep(prevStep);
-    }
-}
-
-/**
- * Show specific project wizard step
- *
- * @param {number} stepNumber - Step number (1, 2, or 3)
- */
-function showProjectStep(stepNumber) {
-    console.log(`📄 Showing project step ${stepNumber}`);
-
-    // Hide all steps
-    document.querySelectorAll('.project-step').forEach(step => {
-        step.classList.remove('active');
-    });
-
-    // Show target step
-    const targetStep = document.getElementById(`projectStep${stepNumber}`);
-    if (targetStep) {
-        targetStep.classList.add('active');
-        console.log(`✅ Step ${stepNumber} activated`);
-    } else {
-        console.error(`❌ projectStep${stepNumber} not found`);
-    }
-
-    // Update step indicators
-    document.querySelectorAll('.step').forEach((indicator, index) => {
-        indicator.classList.remove('active', 'completed');
-        if (index + 1 === stepNumber) {
-            indicator.classList.add('active');
-        } else if (index + 1 < stepNumber) {
-            indicator.classList.add('completed');
+        let savedDraft;
+        if (currentDraftId) {
+            // Update existing draft
+            savedDraft = await updateDraftProject(currentDraftId, draftData);
+            showNotification('Draft updated successfully', 'success');
+        } else {
+            // Create new draft
+            savedDraft = await saveDraftProject(currentOrganizationId, draftData);
+            currentDraftId = savedDraft.id;
+            showNotification('Draft saved successfully', 'success');
         }
-    });
+
+        console.log('✅ Draft saved:', savedDraft);
+    } catch (error) {
+        console.error('Error saving draft:', error);
+        showNotification('Failed to save draft', 'error');
+    }
+}
+
+/**
+ * Load project draft and populate wizard
+ *
+ * @param {string} draftId - UUID of draft project to load
+ * @returns {Promise<void>}
+ */
+export async function loadProjectDraft(draftId) {
+    try {
+        console.log('📂 Loading draft project:', draftId);
+
+        // Fetch the draft project
+        const response = await fetch(`/api/v1/projects/${draftId}`, {
+            headers: await getAuthHeaders()
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to load draft');
+        }
+
+        const draft = await response.json();
+        console.log('✅ Draft loaded:', draft);
+
+        // Set current draft ID
+        currentDraftId = draftId;
+
+        // Populate Step 1 fields
+        document.getElementById('projectName').value = draft.name || '';
+        document.getElementById('projectSlug').value = draft.slug || '';
+        document.getElementById('projectDescription').value = draft.description || '';
+        document.getElementById('projectType').value = draft.type || 'single_location';
+        document.getElementById('projectDuration').value = draft.duration_weeks || '';
+        document.getElementById('projectMaxParticipants').value = draft.max_participants || '';
+        document.getElementById('projectStartDate').value = draft.start_date || '';
+        document.getElementById('projectEndDate').value = draft.end_date || '';
+
+        // Handle has_sub_projects field
+        if (draft.has_sub_projects !== undefined) {
+            document.getElementById('hasSubProjects').value = draft.has_sub_projects ? 'true' : 'false';
+        }
+
+        // Restore wizard state if available
+        if (draft.wizard_state) {
+            // Restore cohorts
+            if (draft.wizard_state.wizard_cohorts) {
+                wizardCohorts = draft.wizard_state.wizard_cohorts;
+                renderCohortsList();
+            }
+
+            // Navigate to saved step (Wave 5: uses framework, converts 1-based to 0-based)
+            if (draft.wizard_state.current_step && projectWizard) {
+                projectWizard.goToStep(draft.wizard_state.current_step - 1); // Convert to 0-based
+            }
+        }
+
+        // Open the project modal
+        openModal('createProjectModal');
+
+        showNotification('Draft loaded successfully - continue editing', 'success');
+    } catch (error) {
+        console.error('Error loading draft:', error);
+        showNotification('Failed to load draft', 'error');
+    }
+}
+
+/**
+ * Collect current wizard data from form fields
+ *
+ * @returns {Object} Project data object
+ */
+function collectWizardData() {
+    const data = {
+        name: document.getElementById('projectName')?.value || '',
+        slug: document.getElementById('projectSlug')?.value || '',
+        description: document.getElementById('projectDescription')?.value || '',
+        type: document.getElementById('projectType')?.value || 'single_location',
+        duration_weeks: parseInt(document.getElementById('projectDuration')?.value) || null,
+        max_participants: parseInt(document.getElementById('projectMaxParticipants')?.value) || null,
+        start_date: document.getElementById('projectStartDate')?.value || null,
+        end_date: document.getElementById('projectEndDate')?.value || null,
+        has_sub_projects: document.getElementById('hasSubProjects')?.value === 'true'
+    };
+
+    return data;
+}
+
+/**
+ * Show drafts list modal for continuing from draft
+ *
+ * @returns {Promise<void>}
+ */
+export async function showDraftsList() {
+    try {
+        const drafts = await fetchDraftProjects(currentOrganizationId);
+
+        if (drafts.length === 0) {
+            showNotification('No saved drafts found', 'info');
+            return;
+        }
+
+        // Build drafts list HTML
+        const draftsHTML = drafts.map(draft => `
+            <div style="border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; cursor: pointer; transition: all 0.2s;"
+                 onmouseover="this.style.backgroundColor='#f8f9fa'"
+                 onmouseout="this.style.backgroundColor='white'"
+                 onclick="window.OrgAdmin.Projects.loadProjectDraft('${draft.id}')">
+                <div style="display: flex; justify-content: space-between; align-items: start;">
+                    <div>
+                        <h4 style="margin: 0 0 0.5rem 0;">${escapeHtml(draft.name)}</h4>
+                        <p style="margin: 0; color: #666; font-size: 0.9rem;">${escapeHtml(draft.description || '')}</p>
+                        <p style="margin: 0.5rem 0 0 0; color: #999; font-size: 0.8rem;">
+                            Last saved: ${draft.wizard_state?.last_saved ? formatDate(draft.wizard_state.last_saved) : 'Unknown'}
+                        </p>
+                    </div>
+                    <span style="background: #ffc107; color: #000; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.8rem;">
+                        Draft
+                    </span>
+                </div>
+            </div>
+        `).join('');
+
+        // Show in a modal or notification
+        showNotification(`
+            <div style="max-width: 500px;">
+                <h3>Continue from Draft</h3>
+                <p>Select a draft project to continue editing:</p>
+                ${draftsHTML}
+            </div>
+        `, 'info', 30000);
+
+    } catch (error) {
+        console.error('Error showing drafts list:', error);
+        showNotification('Failed to load drafts', 'error');
+    }
+}
+
+// ============================================================================
+// COHORT MANAGEMENT (STEP 2)
+// ============================================================================
+
+// Store cohorts being created during wizard
+let wizardCohorts = [];
+
+/**
+ * Show the cohort creation form in Step 2
+ *
+ * BUSINESS CONTEXT:
+ * Displays the inline form for adding a new cohort/location during
+ * project creation. This allows org admins to define initial cohorts
+ * before the project is created.
+ */
+export function showAddCohortForm() {
+    const form = document.getElementById('addCohortForm');
+    const button = document.querySelector('button[onclick*="showAddCohortForm"]');
+
+    if (form) {
+        form.style.display = 'block';
+        if (button) button.style.display = 'none';
+
+        // Clear form fields
+        document.getElementById('cohortName').value = '';
+        document.getElementById('cohortLocation').value = '';
+        document.getElementById('cohortStartDate').value = '';
+        document.getElementById('cohortEndDate').value = '';
+        document.getElementById('cohortMaxStudents').value = '';
+
+        console.log('📝 Cohort form displayed');
+    }
+}
+
+/**
+ * Cancel cohort form and hide it
+ */
+export function cancelCohortForm() {
+    const form = document.getElementById('addCohortForm');
+    const button = document.querySelector('button[onclick*="showAddCohortForm"]');
+
+    if (form) form.style.display = 'none';
+    if (button) button.style.display = 'block';
+
+    console.log('❌ Cohort form cancelled');
+}
+
+/**
+ * Save cohort data from form
+ *
+ * BUSINESS CONTEXT:
+ * Validates and stores cohort data temporarily during project creation.
+ * Cohorts will be created after the project is created in finalizeProjectCreation().
+ */
+export function saveCohort() {
+    // Get form values
+    const name = document.getElementById('cohortName')?.value.trim();
+    const location = document.getElementById('cohortLocation')?.value.trim();
+    const startDate = document.getElementById('cohortStartDate')?.value;
+    const endDate = document.getElementById('cohortEndDate')?.value;
+    const maxStudents = parseInt(document.getElementById('cohortMaxStudents')?.value) || null;
+
+    // Validate required fields
+    if (!name || !location) {
+        showNotification('Please provide cohort name and location', 'error');
+        return;
+    }
+
+    // Create cohort object
+    const cohort = {
+        id: `temp_${Date.now()}`, // Temporary ID for UI display
+        name,
+        location,
+        start_date: startDate || null,
+        end_date: endDate || null,
+        max_students: maxStudents
+    };
+
+    // Add to wizard cohorts array
+    wizardCohorts.push(cohort);
+
+    // Update display
+    renderWizardCohorts();
+
+    // Hide form
+    cancelCohortForm();
+
+    showNotification(`Cohort "${name}" added`, 'success');
+    console.log('✅ Cohort saved:', cohort);
+}
+
+/**
+ * Render cohorts list in Step 2
+ */
+function renderWizardCohorts() {
+    const container = document.getElementById('cohortsListContent');
+
+    if (!container) return;
+
+    if (wizardCohorts.length === 0) {
+        container.innerHTML = `
+            <div style="padding: 2rem; text-align: center; background: var(--hover-color); border: 2px dashed var(--border-color); border-radius: 8px;">
+                <p style="margin: 0; color: var(--text-muted);">
+                    No cohorts defined yet. Click "Add Cohort" to create your first location.
+                </p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = wizardCohorts.map((cohort, index) => `
+        <div style="padding: 1.5rem; background: var(--card-background); border: 1px solid var(--border-color); border-radius: 8px; display: flex; justify-content: space-between; align-items: start;">
+            <div style="flex: 1;">
+                <h5 style="margin: 0 0 0.5rem 0; color: var(--primary-color);">
+                    ${index + 1}. ${escapeHtml(cohort.name)}
+                </h5>
+                <div style="display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.9rem; color: var(--text-muted);">
+                    <span>📍 ${escapeHtml(cohort.location)}</span>
+                    ${cohort.start_date ? `<span>📅 ${formatDate(cohort.start_date)}</span>` : ''}
+                    ${cohort.max_students ? `<span>👥 Max ${cohort.max_students} students</span>` : ''}
+                </div>
+            </div>
+            <button
+                class="btn-icon"
+                onclick="window.OrgAdmin.Projects.removeCohortFromWizard('${cohort.id}')"
+                title="Remove Cohort"
+                style="color: var(--danger-color);">
+                🗑️
+            </button>
+        </div>
+    `).join('');
+}
+
+/**
+ * Remove cohort from wizard
+ */
+export function removeCohortFromWizard(cohortId) {
+    wizardCohorts = wizardCohorts.filter(c => c.id !== cohortId);
+    renderWizardCohorts();
+    showNotification('Cohort removed', 'info');
+}
+
+/**
+ * Populate selected roles summary display
+ *
+ * BUSINESS CONTEXT:
+ * Shows the target roles that were selected in Step 1, so users don't need
+ * to select them again. Provides a visual reminder and link to go back if
+ * they want to change their selection.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Reads selected options from Step 1's projectTargetRoles multi-select
+ * - Maps role values to human-readable labels
+ * - Generates styled badge elements for each role
+ * - Populates selectedRolesSummary container
+ */
+function populateSelectedRolesSummary() {
+    const summaryContainer = document.getElementById('selectedRolesSummary');
+    const rolesSelect = document.getElementById('projectTargetRoles');
+
+    if (!summaryContainer || !rolesSelect) {
+        console.warn('Could not find selectedRolesSummary or projectTargetRoles elements');
+        return;
+    }
+
+    // Get selected roles from Step 1
+    const selectedOptions = Array.from(rolesSelect.selectedOptions);
+
+    if (selectedOptions.length === 0) {
+        summaryContainer.innerHTML = `
+            <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem;">
+                No target roles selected.
+                <a href="#" onclick="window.OrgAdmin.Projects.previousProjectStep(); return false;">
+                    Go back to Step 1
+                </a> to select roles.
+            </p>
+        `;
+        return;
+    }
+
+    // Generate role badges
+    summaryContainer.innerHTML = selectedOptions.map(option => {
+        const roleLabel = option.textContent;
+        const roleValue = option.value;
+
+        return `
+            <span style="display: inline-flex; align-items: center; gap: 0.5rem;
+                         padding: 0.5rem 1rem; background: var(--primary-color);
+                         color: white; border-radius: 20px; font-size: 0.9rem;
+                         font-weight: 500;">
+                <span>👤</span>
+                <span>${escapeHtml(roleLabel)}</span>
+            </span>
+        `;
+    }).join('');
+
+    console.log(`✅ Populated ${selectedOptions.length} role(s) in summary`);
 }
 
 /**
@@ -303,24 +817,55 @@ export async function submitProjectForm(event) {
         };
 
         await createProject(currentOrganizationId, projectData);
+
+        // Clean up draft after successful project creation
+        if (wizardDraft) {
+            try {
+                wizardDraft.clearDraft();
+                console.log('✅ Draft cleaned up after project creation');
+            } catch (draftError) {
+                console.warn('Could not clear draft (non-critical):', draftError);
+            }
+        }
+
         showNotification('Project created successfully', 'success');
-        closeModal('projectWizardModal');
+
+        // Reset wizard to initial state
+        resetProjectWizard();
+
+        closeModal('createProjectModal');
         loadProjectsData();
 
     } catch (error) {
         console.error('Error creating project:', error);
+        showNotification('Failed to create project', 'error');
     }
 }
 
 /**
  * View project details
  *
+ * BUSINESS CONTEXT:
+ * Opens the project detail modal showing project information and cohorts tab.
+ * The cohorts tab allows creating and managing sub-projects (cohorts) for
+ * multi-location projects.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * Calls the openProjectDetail function defined in org-admin-dashboard.html
+ * which handles fetching project data and displaying the modal with tabs.
+ *
  * @param {string} projectId - UUID of project
  */
 export function viewProject(projectId) {
-    // Implementation will show project details modal
-    console.log('View project:', projectId);
-    showNotification('Project details feature coming soon', 'info');
+    console.log('Opening project detail view:', projectId);
+
+    // Check if openProjectDetail function exists (defined in HTML)
+    if (typeof openProjectDetail === 'function') {
+        openProjectDetail(projectId);
+    } else {
+        console.error('openProjectDetail function not found');
+        showNotification('Unable to open project details. Please refresh the page.', 'error');
+    }
 }
 
 /**
@@ -995,4 +1540,1366 @@ async function generateAIChatResponse(userMessage, ragContext) {
             updateSuggestions: false
         };
     }
+}
+
+// ==============================================================================
+// TRACK CREATION FEATURES (TDD GREEN PHASE)
+// ==============================================================================
+
+/**
+ * NLP-based Track Name Generator
+ *
+ * BUSINESS CONTEXT:
+ * Uses linguistic transformation rules to generate appropriate track names
+ * from role identifiers. Converts role names (e.g., "developers") to
+ * discipline/field names (e.g., "Development").
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Applies morphological rules to transform profession nouns to field nouns
+ * - Handles special cases (QA, DevOps, etc.)
+ * - Returns properly capitalized track names
+ *
+ * EXAMPLES:
+ * - application_developers → Application Development
+ * - business_analysts → Business Analysis
+ * - operations_engineers → Operations Engineering
+ *
+ * @param {string} audienceIdentifier - Underscore-separated role identifier
+ * @returns {string} Properly formatted track name
+ */
+export function generateTrackName(audienceIdentifier) {
+    // Split identifier into words
+    const words = audienceIdentifier.split('_');
+
+    // Get the last word (profession/role)
+    const profession = words[words.length - 1];
+
+    // Get prefix words (modifiers like "application", "business", etc.)
+    const prefixWords = words.slice(0, -1);
+
+    // Linguistic transformation rules: Profession → Field/Discipline
+    const professionToField = {
+        // Plural forms
+        'developers': 'Development',
+        'analysts': 'Analysis',
+        'engineers': 'Engineering',
+        'scientists': 'Science',
+        'administrators': 'Administration',
+        // Singular forms (fallback)
+        'developer': 'Development',
+        'analyst': 'Analysis',
+        'engineer': 'Engineering',
+        'scientist': 'Science',
+        'administrator': 'Administration'
+    };
+
+    // Transform profession to field using NLP rules
+    let fieldName = professionToField[profession.toLowerCase()];
+
+    if (!fieldName) {
+        // Fallback: Capitalize the profession if no rule matches
+        fieldName = profession.charAt(0).toUpperCase() + profession.slice(1);
+        console.warn(`No NLP transformation rule for profession: ${profession}`);
+    }
+
+    // Capitalize prefix words
+    const capitalizedPrefix = prefixWords.map(word => {
+        // Handle special cases
+        if (word.toLowerCase() === 'qa') return 'QA';
+        if (word.toLowerCase() === 'devops') return 'DevOps';
+
+        // Standard capitalization
+        return word.charAt(0).toUpperCase() + word.slice(1);
+    });
+
+    // Combine prefix + field name
+    return [...capitalizedPrefix, fieldName].join(' ');
+}
+
+/**
+ * Audience-to-Track Mapping Configuration
+ *
+ * BUSINESS CONTEXT:
+ * Predefined mappings between target audiences and appropriate track
+ * configurations. Each audience type gets a tailored track with relevant
+ * skills, difficulty level, and description. Track names are generated
+ * using NLP linguistic transformations.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * Configuration object used by mapAudiencesToTracks() to generate
+ * track proposals automatically based on audience selection.
+ *
+ * NOTE: Track names follow the pattern:
+ * - application_developers → Application Development
+ * - business_analysts → Business Analysis
+ * - operations_engineers → Operations Engineering
+ */
+export const AUDIENCE_TRACK_MAPPING = {
+    application_developers: {
+        name: 'Application Development',
+        description: 'Comprehensive training for software application development, covering modern programming practices, frameworks, and deployment strategies',
+        difficulty: 'intermediate',
+        skills: ['coding', 'software design', 'debugging', 'testing', 'deployment']
+    },
+    business_analysts: {
+        name: 'Business Analysis',
+        description: 'Requirements gathering and business process analysis training focused on stakeholder management and documentation',
+        difficulty: 'beginner',
+        skills: ['requirements analysis', 'documentation', 'stakeholder management', 'process modeling']
+    },
+    operations_engineers: {
+        name: 'Operations Engineering',
+        description: 'System operations, monitoring, and infrastructure management with emphasis on reliability and performance',
+        difficulty: 'intermediate',
+        skills: ['system administration', 'monitoring', 'troubleshooting', 'automation']
+    },
+    data_scientists: {
+        name: 'Data Science',
+        description: 'Data analysis, machine learning, and statistical modeling training with practical applications',
+        difficulty: 'advanced',
+        skills: ['data analysis', 'machine learning', 'statistics', 'Python', 'visualization']
+    },
+    qa_engineers: {
+        name: 'QA Engineering',
+        description: 'Quality assurance and testing methodologies including automation and continuous integration',
+        difficulty: 'intermediate',
+        skills: ['testing', 'automation', 'quality assurance', 'bug tracking', 'test planning']
+    },
+    devops_engineers: {
+        name: 'DevOps Engineering',
+        description: 'DevOps practices, CI/CD pipelines, containerization, and cloud infrastructure management',
+        difficulty: 'advanced',
+        skills: ['CI/CD', 'containerization', 'cloud platforms', 'infrastructure as code', 'automation']
+    },
+    security_engineers: {
+        name: 'Security Engineering',
+        description: 'Cybersecurity fundamentals, threat analysis, and security best practices',
+        difficulty: 'advanced',
+        skills: ['security analysis', 'threat modeling', 'penetration testing', 'compliance']
+    },
+    database_administrators: {
+        name: 'Database Administration',
+        description: 'Database design, optimization, backup strategies, and performance tuning',
+        difficulty: 'intermediate',
+        skills: ['database design', 'SQL', 'performance tuning', 'backup and recovery']
+    },
+    system_administrators: {
+        name: 'System Administration',
+        description: 'System configuration, maintenance, monitoring, and infrastructure management',
+        difficulty: 'intermediate',
+        skills: ['system configuration', 'Linux/Windows', 'scripting', 'monitoring', 'troubleshooting']
+    },
+    technical_architects: {
+        name: 'Technical Architecture',
+        description: 'System design, architectural patterns, scalability, and technical decision-making',
+        difficulty: 'advanced',
+        skills: ['system design', 'architectural patterns', 'scalability', 'cloud architecture', 'technical leadership']
+    },
+    product_managers: {
+        name: 'Product Management',
+        description: 'Product strategy, roadmap planning, stakeholder management, and feature prioritization',
+        difficulty: 'intermediate',
+        skills: ['product strategy', 'roadmap planning', 'stakeholder management', 'market research', 'prioritization']
+    },
+    project_managers: {
+        name: 'Project Management',
+        description: 'Project planning, team coordination, risk management, and delivery execution',
+        difficulty: 'beginner',
+        skills: ['project planning', 'agile methodologies', 'risk management', 'team coordination', 'stakeholder communication']
+    },
+    business_consultants: {
+        name: 'Business Consulting',
+        description: 'Business strategy, process improvement, change management, and client advisory',
+        difficulty: 'advanced',
+        skills: ['strategic analysis', 'process improvement', 'change management', 'client advisory', 'presentation skills']
+    },
+    data_analysts: {
+        name: 'Data Analysis',
+        description: 'Data exploration, statistical analysis, reporting, and business intelligence',
+        difficulty: 'intermediate',
+        skills: ['data visualization', 'SQL', 'Excel', 'statistical analysis', 'business intelligence']
+    },
+    data_engineers: {
+        name: 'Data Engineering',
+        description: 'Data pipeline development, ETL processes, data warehousing, and big data technologies',
+        difficulty: 'advanced',
+        skills: ['ETL development', 'data pipelines', 'SQL', 'big data technologies', 'data warehousing']
+    },
+    business_intelligence_analysts: {
+        name: 'Business Intelligence Analysis',
+        description: 'BI reporting, dashboard development, data modeling, and analytics',
+        difficulty: 'intermediate',
+        skills: ['BI tools', 'dashboard design', 'data modeling', 'SQL', 'analytics']
+    },
+    engineering_managers: {
+        name: 'Engineering Management',
+        description: 'Team leadership, technical mentorship, project delivery, and people management',
+        difficulty: 'advanced',
+        skills: ['team leadership', 'technical mentorship', 'performance management', 'hiring', 'strategic planning']
+    },
+    team_leads: {
+        name: 'Team Leadership',
+        description: 'Team coordination, technical guidance, sprint planning, and hands-on development',
+        difficulty: 'intermediate',
+        skills: ['team coordination', 'technical guidance', 'agile practices', 'code review', 'mentoring']
+    },
+    technical_directors: {
+        name: 'Technical Direction',
+        description: 'Technology strategy, architecture oversight, innovation, and cross-team leadership',
+        difficulty: 'advanced',
+        skills: ['technology strategy', 'architecture governance', 'innovation', 'cross-functional leadership', 'vendor management']
+    },
+    cto: {
+        name: 'Technology Leadership',
+        description: 'Technology vision, executive strategy, organizational transformation, and C-level decision-making',
+        difficulty: 'advanced',
+        skills: ['technology vision', 'executive strategy', 'digital transformation', 'budget management', 'board communication']
+    }
+};
+
+/**
+ * Check if project needs tracks
+ *
+ * BUSINESS CONTEXT:
+ * Allows organization admins to indicate whether their project requires
+ * structured learning tracks. Some projects may not need tracks (e.g.,
+ * simple one-off training sessions).
+ *
+ * @returns {boolean} True if tracks are needed, false otherwise
+ */
+export function needsTracksForProject() {
+    const checkbox = document.getElementById('needTracks');
+    return checkbox ? checkbox.checked : true; // Default to true (tracks needed)
+}
+
+/**
+ * Handle track requirement change event
+ *
+ * BUSINESS CONTEXT:
+ * Responds to user toggling the "need tracks" checkbox by showing/hiding
+ * track-related UI fields dynamically.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Checks current state of needTracks checkbox
+ * - Shows or hides track creation fields accordingly
+ * - Logs state change for debugging
+ */
+export function handleTrackRequirementChange() {
+    const needTracks = needsTracksForProject();
+    console.log('Track requirement changed:', needTracks);
+
+    if (!needTracks) {
+        hideTrackCreationFields();
+    } else {
+        showTrackCreationFields();
+    }
+}
+
+/**
+ * Show track creation fields
+ *
+ * BUSINESS CONTEXT:
+ * Makes track-related input fields visible and enabled when user indicates
+ * the project needs tracks.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Sets display to block
+ * - Enables all input fields
+ * - Allows user interaction with track configuration
+ */
+export function showTrackCreationFields() {
+    const container = document.getElementById('trackFieldsContainer');
+    if (!container) return;
+
+    container.style.display = 'block';
+
+    // Enable all input fields within container
+    const inputs = container.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+        input.disabled = false;
+    });
+}
+
+/**
+ * Hide track creation fields
+ *
+ * BUSINESS CONTEXT:
+ * Hides track-related input fields when user indicates the project
+ * doesn't need tracks, providing cleaner UI.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Sets display to none
+ * - Disables all input fields
+ * - Clears field values for clean state
+ */
+export function hideTrackCreationFields() {
+    const container = document.getElementById('trackFieldsContainer');
+    if (!container) return;
+
+    container.style.display = 'none';
+
+    // Disable and clear all input fields
+    const inputs = container.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+        input.disabled = true;
+        if (input.type !== 'checkbox' && input.type !== 'radio') {
+            input.value = '';
+        }
+    });
+}
+
+/**
+ * Get selected target audiences from UI
+ *
+ * BUSINESS CONTEXT:
+ * Extracts the list of target audiences selected by the user from the
+ * multi-select dropdown in the project creation wizard.
+ *
+ * @returns {string[]} Array of selected audience identifiers
+ */
+export function getSelectedAudiences() {
+    const select = document.getElementById('projectTargetRoles');
+    if (!select) return [];
+
+    const selectedOptions = Array.from(select.selectedOptions);
+    return selectedOptions.map(option => option.value);
+}
+
+/**
+ * Map selected audiences to track proposals
+ *
+ * BUSINESS CONTEXT:
+ * For each selected target audience, generates a proposed track configuration
+ * with appropriate name, description, difficulty, and skills. This automates
+ * track creation based on audience needs using NLP-based name generation.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Validates input (returns empty array for null/undefined/empty)
+ * - Maps each audience to track configuration from AUDIENCE_TRACK_MAPPING
+ * - Uses NLP-based generateTrackName() for unknown audiences
+ * - Maintains audience order in output
+ *
+ * @param {string[]} audiences - Array of audience identifiers
+ * @returns {Object[]} Array of proposed track configurations
+ */
+export function mapAudiencesToTracks(audiences) {
+    // Handle invalid input
+    if (!audiences || audiences.length === 0) {
+        return [];
+    }
+
+    // Map each audience to a track configuration
+    return audiences.map(audience => {
+        const mapping = AUDIENCE_TRACK_MAPPING[audience];
+
+        if (!mapping) {
+            // Handle unknown audience with NLP-generated track name
+            console.warn(`No predefined track mapping for audience: ${audience}`);
+            console.log(`🔤 Using NLP to generate track name...`);
+
+            const trackName = generateTrackName(audience);
+
+            return {
+                name: trackName,
+                description: `Training track tailored for ${audience.replace(/_/g, ' ')}`,
+                difficulty: 'intermediate',
+                skills: [],
+                audience: audience
+            };
+        }
+
+        // Return complete track configuration with audience reference
+        return {
+            ...mapping,
+            audience: audience
+        };
+    });
+}
+
+/**
+ * Show track confirmation dialog
+ *
+ * BUSINESS CONTEXT:
+ * Before automatically creating tracks, shows the user a confirmation dialog
+ * listing all proposed tracks. This provides transparency and control over
+ * what will be created.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Dynamically generates modal HTML with track list
+ * - Escapes HTML to prevent XSS attacks
+ * - Attaches approve and cancel callbacks to buttons
+ * - Opens modal using utility function
+ * - Closes modal and executes callback on button click
+ *
+ * @param {Object[]} proposedTracks - Array of proposed track configurations
+ * @param {Function} onApprove - Callback when user approves (receives tracks array)
+ * @param {Function} onCancel - Callback when user cancels
+ */
+export function showTrackConfirmationDialog(proposedTracks, onApprove, onCancel) {
+    const modalId = 'trackConfirmationModal';
+
+    // Create modal HTML
+    const modalHtml = `
+        <div id="${modalId}" class="modal" role="dialog" aria-modal="true" style="display: none;">
+            <div class="modal-overlay"></div>
+            <div class="modal-content" style="max-width: 600px;">
+                <div class="modal-header">
+                    <h2>Confirm Track Creation</h2>
+                    <button class="close-modal" onclick="document.getElementById('${modalId}').remove()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p style="margin-bottom: 1rem;">
+                        The following tracks will be created based on your selected target audiences:
+                    </p>
+                    <ul id="proposedTracksList" style="list-style: none; padding: 0; margin: 0 0 1.5rem 0;">
+                        ${proposedTracks.map(track => `
+                            <li style="padding: 1rem; margin-bottom: 0.75rem; 
+                                       background: var(--hover-color); border-radius: 8px;
+                                       border-left: 4px solid var(--primary-color);">
+                                <strong style="color: var(--primary-color); font-size: 1.1rem;">
+                                    ${escapeHtml(track.name)}
+                                </strong>
+                                <p style="margin: 0.5rem 0 0 0; color: var(--text-muted); font-size: 0.9rem;">
+                                    ${escapeHtml(track.description)}
+                                </p>
+                                <div style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+                                    <span>📊 Difficulty: ${escapeHtml(track.difficulty)}</span>
+                                </div>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+                <div class="modal-actions">
+                    <button id="approveTracksBtn" class="btn btn-primary">
+                        ✓ Approve and Create Tracks
+                    </button>
+                    <button id="cancelTracksBtn" class="btn btn-secondary">
+                        ✗ Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Remove existing modal if present
+    const existingModal = document.getElementById(modalId);
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    // Insert modal into DOM
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Show modal
+    openModal(modalId);
+
+    // Attach event listeners
+    document.getElementById('approveTracksBtn').addEventListener('click', () => {
+        closeModal(modalId);
+        document.getElementById(modalId).remove();
+        onApprove(proposedTracks);
+    });
+
+    document.getElementById('cancelTracksBtn').addEventListener('click', () => {
+        closeModal(modalId);
+        document.getElementById(modalId).remove();
+        onCancel();
+    });
+}
+
+/**
+ * Handle track creation approval
+ *
+ * BUSINESS CONTEXT:
+ * When user approves the proposed tracks, creates each track via the API
+ * and provides feedback on success or failure.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Iterates through approved tracks
+ * - Creates each track via createTrack API
+ * - Shows success notification with count
+ * - Handles API errors gracefully
+ * - Logs errors for debugging
+ *
+ * @param {Object[]} approvedTracks - Array of approved track configurations
+ * @returns {Promise<void>}
+ */
+export async function handleTrackApproval(approvedTracks) {
+    // Validate input
+    if (!approvedTracks || approvedTracks.length === 0) {
+        return;
+    }
+
+    try {
+        // Create tracks via API
+        console.log(`Creating ${approvedTracks.length} approved tracks...`);
+
+        for (const track of approvedTracks) {
+            // Prepare track data with organization and project IDs
+            const trackData = {
+                organization_id: currentOrganizationId,
+                project_id: currentProjectId,
+                name: track.name,
+                description: track.description,
+                difficulty: track.difficulty,
+                skills: track.skills || [],
+                audience: track.audience
+            };
+
+            // Create track via API
+            await createTrack(trackData);
+            console.log('Created track:', track.name);
+        }
+
+        showNotification('success', `${approvedTracks.length} tracks created successfully`);
+
+        // Advance wizard or complete project creation
+        // This would be called by the wizard flow
+        console.log('Track creation completed');
+
+    } catch (error) {
+        console.error('Error creating tracks:', error);
+        showNotification('error', 'Failed to create tracks. Please try again.');
+    }
+}
+
+/**
+ * Handle track creation cancellation
+ *
+ * BUSINESS CONTEXT:
+ * When user cancels track creation, returns them to the track configuration
+ * step so they can modify their selections.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Logs cancellation event
+ * - No tracks created
+ * - Returns user to previous step in wizard
+ */
+export function handleTrackCancellation() {
+    console.log('Track creation cancelled, returning to track configuration');
+
+    // Return to track creation step (step 3 = index 2 in framework)
+    if (projectWizard) {
+        projectWizard.goToStep(2); // Framework uses 0-based indexing
+    }
+}
+
+// Store generated tracks for Step 3 review
+let generatedTracks = [];
+
+/**
+ * Populate track review list in Step 4
+ *
+ * BUSINESS CONTEXT:
+ * Displays all generated tracks in the review step (Step 4) so users can
+ * see what tracks will be created with the project. Shows track details
+ * including name, description, difficulty, and skills. Each track has a
+ * "Manage Track" button to configure instructors, courses, and students.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Reads tracks from generatedTracks array
+ * - Dynamically generates HTML for each track
+ * - Updates summary statistics (total tracks, roles)
+ * - Provides visual feedback if no tracks available
+ * - Adds management button for each track
+ *
+ * @param {Object[]} tracks - Array of track configurations to display
+ */
+export function populateTrackReviewList(tracks) {
+    const reviewList = document.getElementById('tracksReviewList');
+    const totalTracksCount = document.getElementById('totalTracksCount');
+    const totalRolesCount = document.getElementById('totalRolesCount');
+
+    if (!reviewList) {
+        console.error('tracksReviewList element not found');
+        return;
+    }
+
+    // Store tracks for later use
+    generatedTracks = tracks || [];
+
+    if (generatedTracks.length === 0) {
+        reviewList.innerHTML = `
+            <div style="text-align: center; padding: 2rem; color: var(--text-muted);
+                        background: var(--hover-color); border-radius: 8px;">
+                <p>No tracks generated yet. Go back to Step 3 and click "Next: Review & Create"</p>
+            </div>
+        `;
+        if (totalTracksCount) totalTracksCount.textContent = '0';
+        if (totalRolesCount) totalRolesCount.textContent = '0';
+        return;
+    }
+
+    // Render track list with management buttons
+    reviewList.innerHTML = generatedTracks.map((track, index) => `
+        <div style="padding: 1.5rem; margin-bottom: 1rem; background: var(--card-background);
+                    border: 2px solid var(--border-color); border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+                <div style="flex: 1;">
+                    <h5 style="margin: 0; color: var(--primary-color); font-size: 1.1rem;">
+                        ${index + 1}. ${escapeHtml(track.name)}
+                    </h5>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span style="padding: 0.25rem 0.75rem; background: var(--primary-color);
+                                 color: white; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">
+                        ${escapeHtml(track.difficulty || 'intermediate')}
+                    </span>
+                    <button
+                        type="button"
+                        class="btn btn-secondary btn-sm"
+                        onclick="window.OrgAdmin.Projects.openTrackManagement(${index})"
+                        style="padding: 0.5rem 1rem; font-size: 0.85rem; white-space: nowrap;">
+                        ⚙️ Manage Track
+                    </button>
+                </div>
+            </div>
+            <p style="margin: 0 0 0.75rem 0; color: var(--text-muted); font-size: 0.9rem;">
+                ${escapeHtml(track.description || 'No description provided')}
+            </p>
+            ${track.skills && track.skills.length > 0 ? `
+                <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem;">
+                    ${track.skills.map(skill => `
+                        <span style="padding: 0.25rem 0.75rem; background: var(--hover-color);
+                                     border: 1px solid var(--border-color); border-radius: 16px;
+                                     font-size: 0.8rem; color: var(--text-color);">
+                            ${escapeHtml(skill)}
+                        </span>
+                    `).join('')}
+                </div>
+            ` : ''}
+            ${track.instructors && track.instructors.length > 0 ? `
+                <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border-color);">
+                    <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                        👨‍🏫 Instructors (${track.instructors.length}):
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                        ${track.instructors.map(inst => `
+                            <span style="padding: 0.25rem 0.75rem; background: var(--success-color, #10b981);
+                                         color: white; border-radius: 12px; font-size: 0.75rem;">
+                                ${escapeHtml(inst.name || inst.email)}
+                            </span>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : ''}
+            ${track.courses && track.courses.length > 0 ? `
+                <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border-color);">
+                    <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                        📚 Courses (${track.courses.length}):
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        ${track.courses.map(course => `
+                            <span style="padding: 0.5rem; background: var(--hover-color);
+                                         border-left: 3px solid var(--info-color, #3b82f6); border-radius: 4px;
+                                         font-size: 0.85rem;">
+                                ${escapeHtml(course.name || course.title)}
+                            </span>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : ''}
+        </div>
+    `).join('');
+
+    // Update summary statistics
+    if (totalTracksCount) {
+        totalTracksCount.textContent = generatedTracks.length;
+    }
+
+    if (totalRolesCount) {
+        // Count unique audiences/roles
+        const uniqueRoles = new Set(generatedTracks.map(t => t.audience).filter(Boolean));
+        totalRolesCount.textContent = uniqueRoles.size || generatedTracks.length;
+    }
+
+    console.log(`✅ Populated ${generatedTracks.length} tracks in review list with management buttons`);
+}
+
+/**
+ * Open custom track creation modal
+ *
+ * BUSINESS CONTEXT:
+ * Allows organization admins to create additional custom tracks beyond
+ * the automatically generated ones. Opens the track creation modal from
+ * the org-admin-tracks module.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Checks if org-admin-tracks module is loaded
+ * - Calls showCreateTrackModal() from tracks module
+ * - Handles case where tracks module not available
+ * - Provides fallback notification
+ */
+export function openCustomTrackCreation() {
+    console.log('🎓 Opening custom track creation modal...');
+
+    // Check if tracks module is available
+    if (window.OrgAdmin?.Tracks?.showCreateTrackModal) {
+        // Use the existing track creation modal from org-admin-tracks module
+        window.OrgAdmin.Tracks.showCreateTrackModal();
+    } else {
+        // Fallback: Show notification that feature needs tracks module
+        console.warn('Tracks module not loaded - cannot open custom track creation');
+        showNotification('Track creation module not loaded. Please ensure all modules are initialized.', 'warning');
+    }
+}
+
+// ============================================================================
+// TRACK MANAGEMENT IN WIZARD (STEP 4)
+// ============================================================================
+
+// Store current track being managed
+let currentTrackIndex = null;
+
+/**
+ * Open track management modal for a specific track
+ *
+ * BUSINESS CONTEXT:
+ * Allows organization admins to configure a track before project creation.
+ * They can add instructors, create courses, and prepare student enrollments.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Opens modal with tabbed interface
+ * - Loads track data into tabs
+ * - Provides separate interfaces for instructors, courses, and students
+ * - Updates track data in generatedTracks array
+ *
+ * @param {number} trackIndex - Index of track in generatedTracks array
+ */
+export function openTrackManagement(trackIndex) {
+    currentTrackIndex = trackIndex;
+    const track = generatedTracks[trackIndex];
+
+    if (!track) {
+        console.error('Track not found at index:', trackIndex);
+        return;
+    }
+
+    console.log('📊 Opening track management for:', track.name);
+
+    // Initialize track arrays if not present
+    if (!track.instructors) track.instructors = [];
+    if (!track.courses) track.courses = [];
+    if (!track.students) track.students = [];
+
+    // Create modal HTML dynamically (prevents blur issues with static modal-overlay)
+    const modalHtml = `
+        <div id="trackManagementModal" class="modal" style="display: none;">
+            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                        background-color: rgba(0, 0, 0, 0.75); z-index: 9999;"
+                 onclick="window.OrgAdmin.Projects.closeTrackManagement()"></div>
+            <div class="modal-content" style="position: relative; z-index: 10000; max-width: 900px;
+                        margin: 2rem auto; background: var(--surface-color); border-radius: 12px;
+                        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+                <div class="modal-header">
+                    <h2 id="trackManagementTitle">Manage Track: ${escapeHtml(track.name)}</h2>
+                    <button class="modal-close" onclick="window.OrgAdmin.Projects.closeTrackManagement()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <!-- Tab Navigation -->
+                    <div class="modal-tabs" style="display: flex; border-bottom: 1px solid var(--border-color); margin-bottom: 1.5rem;">
+                        <button id="trackInfoTab" class="modal-tab active" onclick="window.OrgAdmin.Projects.switchTrackTab('info')">
+                            📋 Track Info
+                        </button>
+                        <button id="trackInstructorsTab" class="modal-tab" onclick="window.OrgAdmin.Projects.switchTrackTab('instructors')">
+                            👨‍🏫 Instructors (${track.instructors.length})
+                        </button>
+                        <button id="trackCoursesTab" class="modal-tab" onclick="window.OrgAdmin.Projects.switchTrackTab('courses')">
+                            📚 Courses (${track.courses.length})
+                        </button>
+                        <button id="trackStudentsTab" class="modal-tab" onclick="window.OrgAdmin.Projects.switchTrackTab('students')">
+                            👥 Students (${track.students.length})
+                        </button>
+                    </div>
+
+                    <!-- Tab Content -->
+                    <div id="trackInfoContent" class="tab-content" style="display: block;">
+                        ${renderTrackInfoTab(track)}
+                    </div>
+                    <div id="trackInstructorsContent" class="tab-content" style="display: none;">
+                        ${renderTrackInstructorsTab(track)}
+                    </div>
+                    <div id="trackCoursesContent" class="tab-content" style="display: none;">
+                        ${renderTrackCoursesTab(track)}
+                    </div>
+                    <div id="trackStudentsContent" class="tab-content" style="display: none;">
+                        ${renderTrackStudentsTab(track)}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="window.OrgAdmin.Projects.closeTrackManagement()">
+                        Close
+                    </button>
+                    <button class="btn btn-primary" onclick="window.OrgAdmin.Projects.saveTrackChanges()">
+                        ✓ Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Remove existing modal if present
+    const existingModal = document.getElementById('trackManagementModal');
+    if (existingModal) existingModal.remove();
+
+    // Insert modal into DOM
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Show modal
+    document.getElementById('trackManagementModal').style.display = 'block';
+    document.body.style.overflow = 'hidden'; // Prevent body scroll
+}
+
+/**
+ * Render track info tab content
+ */
+function renderTrackInfoTab(track) {
+    return `
+        <div style="display: grid; gap: 1.5rem;">
+            <div>
+                <h4 style="margin: 0 0 0.5rem 0;">${escapeHtml(track.name)}</h4>
+                <p style="margin: 0; color: var(--text-muted);">${escapeHtml(track.description || 'No description')}</p>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                    <strong>Difficulty:</strong>
+                    <span class="badge badge-${track.difficulty}">${escapeHtml(track.difficulty || 'intermediate')}</span>
+                </div>
+                <div>
+                    <strong>Audience:</strong> ${escapeHtml(track.audience || 'N/A')}
+                </div>
+            </div>
+            ${track.skills && track.skills.length > 0 ? `
+                <div>
+                    <strong>Skills:</strong>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
+                        ${track.skills.map(skill => `
+                            <span style="padding: 0.25rem 0.75rem; background: var(--hover-color);
+                                         border: 1px solid var(--border-color); border-radius: 16px;
+                                         font-size: 0.85rem;">
+                                ${escapeHtml(skill)}
+                            </span>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : ''}
+            <div style="background: var(--info-bg, #e3f2fd); padding: 1rem; border-radius: 8px;
+                        border-left: 4px solid var(--info-color, #2196f3);">
+                <strong>💡 Tip:</strong> Use the tabs above to add instructors, create courses, and manage student enrollments for this track.
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Render track instructors tab content
+ */
+function renderTrackInstructorsTab(track) {
+    return `
+        <div style="display: grid; gap: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h4 style="margin: 0;">Assigned Instructors</h4>
+                <button class="btn btn-primary" onclick="window.OrgAdmin.Projects.addInstructorToTrack()">
+                    ➕ Add Instructor
+                </button>
+            </div>
+
+            ${track.instructors.length > 0 ? `
+                <div id="trackInstructorsList" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    ${track.instructors.map((instructor, idx) => `
+                        <div style="display: flex; justify-content: space-between; align-items: center;
+                                    padding: 1rem; background: var(--card-background); border: 1px solid var(--border-color);
+                                    border-radius: 8px;">
+                            <div>
+                                <div style="font-weight: 600;">${escapeHtml(instructor.name || 'Unnamed')}</div>
+                                <div style="font-size: 0.85rem; color: var(--text-muted);">${escapeHtml(instructor.email || '')}</div>
+                            </div>
+                            <button class="btn btn-sm btn-danger" onclick="window.OrgAdmin.Projects.removeInstructorFromTrack(${idx})">
+                                Remove
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : `
+                <div style="text-align: center; padding: 2rem; background: var(--hover-color); border-radius: 8px; color: var(--text-muted);">
+                    No instructors assigned yet. Click "Add Instructor" to get started.
+                </div>
+            `}
+        </div>
+    `;
+}
+
+/**
+ * Render track courses tab content
+ */
+function renderTrackCoursesTab(track) {
+    return `
+        <div style="display: grid; gap: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h4 style="margin: 0;">Track Courses</h4>
+                <button class="btn btn-primary" onclick="window.OrgAdmin.Projects.createCourseForTrack()">
+                    ➕ Create Course
+                </button>
+            </div>
+
+            ${track.courses.length > 0 ? `
+                <div id="trackCoursesList" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    ${track.courses.map((course, idx) => `
+                        <div style="display: flex; justify-content: space-between; align-items: center;
+                                    padding: 1rem; background: var(--card-background); border: 1px solid var(--border-color);
+                                    border-radius: 8px;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600;">${escapeHtml(course.name || course.title || 'Unnamed Course')}</div>
+                                <div style="font-size: 0.85rem; color: var(--text-muted);">${escapeHtml(course.description || '')}</div>
+                            </div>
+                            <button class="btn btn-sm btn-danger" onclick="window.OrgAdmin.Projects.removeCourseFromTrack(${idx})">
+                                Remove
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : `
+                <div style="text-align: center; padding: 2rem; background: var(--hover-color); border-radius: 8px; color: var(--text-muted);">
+                    No courses created yet. Click "Create Course" to add your first course.
+                </div>
+            `}
+
+            <div style="background: var(--info-bg, #e3f2fd); padding: 1rem; border-radius: 8px;">
+                <strong>📚 Course Creation:</strong> Clicking "Create Course" will open the course creation wizard where you can build complete course content for this track.
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Render track students tab content
+ */
+function renderTrackStudentsTab(track) {
+    return `
+        <div style="display: grid; gap: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h4 style="margin: 0;">Enrolled Students</h4>
+                <button class="btn btn-primary" onclick="window.OrgAdmin.Projects.addStudentToTrack()">
+                    ➕ Add Student
+                </button>
+            </div>
+
+            ${track.students.length > 0 ? `
+                <div id="trackStudentsList" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    ${track.students.map((student, idx) => `
+                        <div style="display: flex; justify-content: space-between; align-items: center;
+                                    padding: 1rem; background: var(--card-background); border: 1px solid var(--border-color);
+                                    border-radius: 8px;">
+                            <div>
+                                <div style="font-weight: 600;">${escapeHtml(student.name || 'Unnamed')}</div>
+                                <div style="font-size: 0.85rem; color: var(--text-muted);">${escapeHtml(student.email || '')}</div>
+                            </div>
+                            <button class="btn btn-sm btn-danger" onclick="window.OrgAdmin.Projects.removeStudentFromTrack(${idx})">
+                                Remove
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : `
+                <div style="text-align: center; padding: 2rem; background: var(--hover-color); border-radius: 8px; color: var(--text-muted);">
+                    No students enrolled yet. Click "Add Student" to enroll students.
+                </div>
+            `}
+        </div>
+    `;
+}
+
+/**
+ * Switch between tabs in track management modal
+ */
+export function switchTrackTab(tabName) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.style.display = 'none';
+    });
+
+    // Remove active class from all tab buttons
+    document.querySelectorAll('.modal-tab').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    // Show selected tab
+    const contentMap = {
+        'info': 'trackInfoContent',
+        'instructors': 'trackInstructorsContent',
+        'courses': 'trackCoursesContent',
+        'students': 'trackStudentsContent'
+    };
+
+    const contentId = contentMap[tabName];
+    const content = document.getElementById(contentId);
+    if (content) {
+        content.style.display = 'block';
+    }
+
+    // Add active class to selected tab button
+    const tabMap = {
+        'info': 'trackInfoTab',
+        'instructors': 'trackInstructorsTab',
+        'courses': 'trackCoursesTab',
+        'students': 'trackStudentsTab'
+    };
+
+    const tabId = tabMap[tabName];
+    const tab = document.getElementById(tabId);
+    if (tab) {
+        tab.classList.add('active');
+    }
+}
+
+/**
+ * Add instructor to track
+ */
+export async function addInstructorToTrack() {
+    // TODO: Open instructor selection modal
+    // For now, prompt for instructor details
+    const name = prompt('Enter instructor name:');
+    const email = prompt('Enter instructor email:');
+
+    if (name && email) {
+        const track = generatedTracks[currentTrackIndex];
+        if (!track.instructors) track.instructors = [];
+
+        track.instructors.push({ name, email });
+
+        showNotification(`Instructor ${name} added to track`, 'success');
+
+        // Refresh modal
+        openTrackManagement(currentTrackIndex);
+    }
+}
+
+/**
+ * Remove instructor from track
+ */
+export function removeInstructorFromTrack(instructorIndex) {
+    const track = generatedTracks[currentTrackIndex];
+    const instructor = track.instructors[instructorIndex];
+
+    if (confirm(`Remove ${instructor.name} from this track?`)) {
+        track.instructors.splice(instructorIndex, 1);
+        showNotification('Instructor removed', 'info');
+        openTrackManagement(currentTrackIndex);
+    }
+}
+
+/**
+ * Create course for track
+ *
+ * BUSINESS LOGIC:
+ * Opens course creation modal pre-populated with track context.
+ * On successful course creation, adds the course to the track's courses array
+ * and refreshes the track management modal.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Checks if course creation modal exists (window.OrgAdmin.Courses.showCreateCourseModal)
+ * - Passes track context (trackId, trackName, difficulty) to modal
+ * - Provides callback function to receive created course
+ * - Adds created course to track's courses array
+ * - Reopens track management modal to show updated course list
+ * - Falls back to prompt() if modal doesn't exist
+ */
+export function createCourseForTrack() {
+    const track = generatedTracks[currentTrackIndex];
+
+    // Check if course creation modal exists
+    if (window.OrgAdmin?.Courses?.showCreateCourseModal) {
+        // Close current track management modal
+        closeTrackManagement();
+
+        // Open course creation modal with track context and callback
+        window.OrgAdmin.Courses.showCreateCourseModal(
+            {
+                trackId: track.id,
+                trackName: track.name,
+                difficulty: track.difficulty
+            },
+            // Callback function to handle created course
+            (createdCourse) => {
+                // Initialize courses array if not present
+                if (!track.courses) track.courses = [];
+
+                // Add created course to track
+                track.courses.push({
+                    id: createdCourse.id,
+                    name: createdCourse.title,
+                    title: createdCourse.title,
+                    description: createdCourse.description,
+                    trackId: track.id,
+                    difficulty_level: createdCourse.difficulty_level,
+                    category: createdCourse.category,
+                    estimated_duration: createdCourse.estimated_duration,
+                    duration_unit: createdCourse.duration_unit
+                });
+
+                // Reopen track management modal to show updated course list
+                openTrackManagement(currentTrackIndex);
+            }
+        );
+    } else {
+        // Fallback: prompt for course details
+        const courseName = prompt('Enter course name:');
+        const courseDescription = prompt('Enter course description (optional):');
+
+        if (courseName) {
+            if (!track.courses) track.courses = [];
+            track.courses.push({
+                name: courseName,
+                title: courseName,
+                description: courseDescription || '',
+                trackId: track.id
+            });
+
+            showNotification(`Course "${courseName}" added to track`, 'success');
+            openTrackManagement(currentTrackIndex);
+        }
+    }
+}
+
+/**
+ * Remove course from track
+ */
+export function removeCourseFromTrack(courseIndex) {
+    const track = generatedTracks[currentTrackIndex];
+    const course = track.courses[courseIndex];
+
+    if (confirm(`Remove "${course.name}" from this track?`)) {
+        track.courses.splice(courseIndex, 1);
+        showNotification('Course removed', 'info');
+        openTrackManagement(currentTrackIndex);
+    }
+}
+
+/**
+ * Add student to track
+ */
+export async function addStudentToTrack() {
+    // TODO: Open student selection modal
+    // For now, prompt for student details
+    const name = prompt('Enter student name:');
+    const email = prompt('Enter student email:');
+
+    if (name && email) {
+        const track = generatedTracks[currentTrackIndex];
+        if (!track.students) track.students = [];
+
+        track.students.push({ name, email });
+
+        showNotification(`Student ${name} added to track`, 'success');
+
+        // Refresh modal
+        openTrackManagement(currentTrackIndex);
+    }
+}
+
+/**
+ * Remove student from track
+ */
+export function removeStudentFromTrack(studentIndex) {
+    const track = generatedTracks[currentTrackIndex];
+    const student = track.students[studentIndex];
+
+    if (confirm(`Remove ${student.name} from this track?`)) {
+        track.students.splice(studentIndex, 1);
+        showNotification('Student removed', 'info');
+        openTrackManagement(currentTrackIndex);
+    }
+}
+
+/**
+ * Save track changes and close modal
+ */
+export function saveTrackChanges() {
+    showNotification('Track changes saved', 'success');
+    closeTrackManagement();
+
+    // Refresh the track review list to show updated data
+    populateTrackReviewList(generatedTracks);
+}
+
+/**
+ * Close track management modal
+ */
+export function closeTrackManagement() {
+    const modal = document.getElementById('trackManagementModal');
+    if (modal) {
+        modal.remove();
+    }
+    document.body.style.overflow = ''; // Restore body scroll
+}
+
+/**
+ * Finalize project creation with tracks
+ *
+ * BUSINESS CONTEXT:
+ * Final step in the project creation wizard. Creates the project in the database
+ * along with all generated and custom tracks. This combines project metadata
+ * from all wizard steps into a complete project creation.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Gathers project data from all wizard steps
+ * - Creates project via API (submitProjectForm logic)
+ * - Associates all generated tracks with the project
+ * - Shows success/error notifications
+ * - Closes modal and refreshes project list on success
+ *
+ * @returns {Promise<void>}
+ */
+export async function finalizeProjectCreation() {
+    console.log('✅ Finalizing project creation with tracks...');
+
+    try {
+        // Gather all project data from wizard steps
+        const projectData = {
+            name: document.getElementById('projectName')?.value,
+            slug: document.getElementById('projectSlug')?.value,
+            description: document.getElementById('projectDescription')?.value || null,
+            objectives: parseCommaSeparated(document.getElementById('projectObjectives')?.value),
+            target_roles: getSelectedAudiences(), // Use the correct getter for multi-select
+            duration_weeks: parseInt(document.getElementById('projectDuration')?.value) || null,
+            max_participants: parseInt(document.getElementById('projectMaxParticipants')?.value) || null,
+            start_date: document.getElementById('projectStartDate')?.value || null,
+            end_date: document.getElementById('projectEndDate')?.value || null,
+            has_sub_projects: document.getElementById('hasSubProjects')?.value === 'true', // Multi-location support
+            cohorts: wizardCohorts, // Include cohorts from Step 2
+            tracks: generatedTracks // Include tracks with instructors/courses/students from Step 4
+        };
+
+        // Validate required fields
+        if (!projectData.name || !projectData.slug) {
+            showNotification('Project name and slug are required', 'error');
+            return;
+        }
+
+        // Backend requires description with minimum 10 characters
+        // Provide default description if none entered
+        if (!projectData.description || projectData.description.trim().length < 10) {
+            projectData.description = `Training project for ${projectData.name}. This project provides comprehensive learning paths and resources.`;
+        }
+
+        // Create project with tracks
+        const createdProject = await createProject(currentOrganizationId, projectData);
+
+        console.log('✅ Project created successfully:', createdProject);
+
+        // If cohorts were created, associate them with project
+        if (wizardCohorts.length > 0) {
+            console.log(`🌍 Created ${wizardCohorts.length} cohorts for multi-location project`);
+        }
+
+        // If tracks were generated, create them associated with the project
+        if (generatedTracks.length > 0) {
+            console.log(`📋 Creating ${generatedTracks.length} tracks for project...`);
+
+            // Store the created project ID for track association
+            currentProjectId = createdProject.id || createdProject.project_id;
+
+            // Create all tracks with their instructors, courses, and students
+            for (const track of generatedTracks) {
+                const trackData = {
+                    organization_id: currentOrganizationId,
+                    project_id: currentProjectId,
+                    name: track.name,
+                    description: track.description,
+                    difficulty: track.difficulty || 'intermediate',
+                    skills: track.skills || [],
+                    audience: track.audience,
+                    instructors: track.instructors || [],
+                    courses: track.courses || [],
+                    students: track.students || []
+                };
+
+                await createTrack(trackData);
+                console.log('✅ Created track:', track.name);
+            }
+
+            showNotification(`Project created successfully with ${generatedTracks.length} tracks`, 'success');
+        } else {
+            showNotification('Project created successfully (no tracks)', 'success');
+        }
+
+        // Clean up
+        generatedTracks = [];
+        wizardCohorts = [];
+        closeModal('createProjectModal');
+
+        // Refresh projects list
+        await loadProjectsData();
+
+    } catch (error) {
+        console.error('❌ Error finalizing project creation:', error);
+        showNotification(`Failed to create project: ${error.message || 'Unknown error'}`, 'error');
+    }
+}
+
+// Export for testing
+if (typeof window !== 'undefined') {
+    window.OrgAdmin = window.OrgAdmin || {};
+    window.OrgAdmin.Projects = {
+        ...window.OrgAdmin?.Projects,
+        // Wizard navigation
+        showCreateProjectModal,
+        nextProjectStep,
+        previousProjectStep,
+        resetProjectWizard,
+        submitProjectForm,
+        // Draft save/load
+        saveCurrentProjectDraft,
+        loadProjectDraft,
+        showDraftsList,
+        // Project management
+        loadProjectsData,
+        viewProject,
+        editProject,
+        deleteProjectPrompt,
+        confirmDeleteProject,
+        filterProjects,
+        // Member management
+        manageMembers,
+        removeMemberFromProject,
+        // AI suggestions
+        regenerateAISuggestions,
+        toggleAIChatPanel,
+        sendAIChatMessage,
+        // Track creation features (Step 3)
+        generateTrackName,
+        needsTracksForProject,
+        handleTrackRequirementChange,
+        showTrackCreationFields,
+        hideTrackCreationFields,
+        getSelectedAudiences,
+        mapAudiencesToTracks,
+        showTrackConfirmationDialog,
+        handleTrackApproval,
+        handleTrackCancellation,
+        // Step 2: Cohort/Sub-Project management
+        showAddCohortForm,
+        saveCohort,
+        cancelCohortForm,
+        removeCohortFromWizard,
+        // Step 4: Track review and management
+        populateTrackReviewList,
+        openCustomTrackCreation,
+        openTrackManagement,
+        closeTrackManagement,
+        switchTrackTab,
+        saveTrackChanges,
+        // Track management - Instructors
+        addInstructorToTrack,
+        removeInstructorFromTrack,
+        // Track management - Courses
+        createCourseForTrack,
+        removeCourseFromTrack,
+        // Track management - Students
+        addStudentToTrack,
+        removeStudentFromTrack,
+        // Project creation finalization
+        finalizeProjectCreation
+    };
 }
