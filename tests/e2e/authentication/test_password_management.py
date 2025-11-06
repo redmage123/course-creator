@@ -1026,10 +1026,10 @@ class TestPasswordSecurity:
     async def test_password_different_from_username_email(self, driver, test_base_url):
         """
         E2E TEST: Password must be different from username/email
-        
+
         BUSINESS REQUIREMENT:
         Passwords cannot be the same as username or email for security.
-        
+
         TEST SCENARIO:
         1. Navigate to registration page
         2. Enter email and username
@@ -1042,20 +1042,20 @@ class TestPasswordSecurity:
         """
         test_email = "test@example.com"
         test_username = "testuser123"
-        
+
         # Navigate to registration page
         driver.get(f"{test_base_url}/register")
-        
+
         wait = WebDriverWait(driver, 10)
         email_input = wait.until(EC.presence_of_element_located((By.ID, "email")))
         username_input = driver.find_element(By.ID, "username")
         password_input = driver.find_element(By.ID, "password")
         confirm_input = driver.find_element(By.ID, "confirm-password")
-        
+
         # Enter email and username
         email_input.send_keys(test_email)
         username_input.send_keys(test_username)
-        
+
         # Try to use email as password
         password_input.clear()
         password_input.send_keys(test_email)
@@ -1063,14 +1063,14 @@ class TestPasswordSecurity:
         confirm_input.send_keys(test_email)
         password_input.send_keys(Keys.TAB)
         time.sleep(0.5)
-        
+
         # VERIFICATION 1: Error for email as password
         try:
             error_msg = driver.find_element(By.CLASS_NAME, "password-error")
             assert "email" in error_msg.text.lower(), "Should indicate password cannot be email"
         except NoSuchElementException:
             pytest.fail("No error shown when password matches email")
-        
+
         # Try to use username as password
         password_input.clear()
         password_input.send_keys(test_username)
@@ -1078,14 +1078,14 @@ class TestPasswordSecurity:
         confirm_input.send_keys(test_username)
         password_input.send_keys(Keys.TAB)
         time.sleep(0.5)
-        
+
         # VERIFICATION 2: Error for username as password
         try:
             error_msg = driver.find_element(By.CLASS_NAME, "password-error")
             assert "username" in error_msg.text.lower(), "Should indicate password cannot be username"
         except NoSuchElementException:
             pytest.fail("No error shown when password matches username")
-        
+
         # Use different password (should work)
         different_password = "DifferentPass123!"
         password_input.clear()
@@ -1094,7 +1094,7 @@ class TestPasswordSecurity:
         confirm_input.send_keys(different_password)
         password_input.send_keys(Keys.TAB)
         time.sleep(0.5)
-        
+
         # VERIFICATION 3: No error for different password
         try:
             error_msg = driver.find_element(By.CLASS_NAME, "password-error")
@@ -1102,3 +1102,382 @@ class TestPasswordSecurity:
                 pytest.fail(f"Valid password rejected: {error_msg.text}")
         except NoSuchElementException:
             pass  # Expected - no error
+
+    @pytest.mark.asyncio
+    @pytest.mark.priority_high
+    async def test_10_password_cannot_be_same_as_last_3_passwords(self, driver, test_base_url, db_connection):
+        """
+        E2E TEST: Password cannot be same as last 3 passwords (comprehensive workflow)
+
+        BUSINESS REQUIREMENT:
+        For security compliance, users cannot reuse their last 3 passwords.
+        This prevents password rotation attacks and enforces true password changes.
+
+        TEST SCENARIO:
+        1. Login as student with password1
+        2. Record current password (password1)
+        3. Navigate to password change page
+        4. Change password to password2 (should succeed)
+        5. Change password to password3 (should succeed)
+        6. Change password to password4 (should succeed)
+        7. Attempt to change password back to password1 (should fail)
+        8. Attempt to change password to password2 (should fail)
+        9. Attempt to change password to password3 (should fail)
+        10. Verify error message: "Cannot reuse your last 3 passwords"
+        11. Verify database stores password history correctly
+        12. Change to password5 (new password not in history - should succeed)
+
+        VALIDATION:
+        - Password history enforced across 3 password changes
+        - Last 3 passwords rejected with appropriate error message
+        - Error message clearly states password reuse policy
+        - Database contains password history hashes (3 most recent)
+        - New password not in history is accepted
+        """
+        # Setup: Create test user with initial password
+        test_email = f"password_history_{uuid.uuid4()}@example.com"
+        test_username = f"pwd_hist_{uuid.uuid4().hex[:8]}"
+        password1 = "Password1!Initial"
+        password2 = "Password2!Second"
+        password3 = "Password3!Third"
+        password4 = "Password4!Fourth"
+        password5 = "Password5!Fifth"
+
+        # Step 1: Create test user in database with password1
+        async with db_connection.transaction():
+            user_id = await db_connection.fetchval("""
+                INSERT INTO course_creator.users (email, username, password_hash, role)
+                VALUES ($1, $2, crypt($3, gen_salt('bf')), 'student')
+                RETURNING id
+            """, test_email, test_username, password1)
+
+        # Step 2: Login with password1
+        login_page = LoginPage(driver)
+        login_page.navigate(test_base_url)
+        login_page.enter_email(test_email)
+        login_page.enter_password(password1)
+        login_page.submit()
+
+        wait = WebDriverWait(driver, 10)
+        wait.until(EC.url_contains("/dashboard"))
+
+        # Step 3: Navigate to password change page
+        change_page = PasswordChangePage(driver)
+        change_page.navigate(test_base_url)
+
+        # Step 4: Change password to password2 (should succeed)
+        change_page.enter_current_password(password1)
+        change_page.enter_new_password(password2)
+        change_page.enter_confirm_password(password2)
+        change_page.submit()
+
+        # VERIFICATION 1: First password change succeeds
+        success_message = change_page.get_success_message()
+        assert success_message is not None, "First password change should succeed"
+
+        # Re-login with password2 (password change logs user out)
+        wait.until(EC.url_contains("/login"))
+        login_page.enter_email(test_email)
+        login_page.enter_password(password2)
+        login_page.submit()
+        wait.until(EC.url_contains("/dashboard"))
+
+        # Step 5: Change password to password3 (should succeed)
+        change_page.navigate(test_base_url)
+        change_page.enter_current_password(password2)
+        change_page.enter_new_password(password3)
+        change_page.enter_confirm_password(password3)
+        change_page.submit()
+
+        # VERIFICATION 2: Second password change succeeds
+        success_message = change_page.get_success_message()
+        assert success_message is not None, "Second password change should succeed"
+
+        # Re-login with password3
+        wait.until(EC.url_contains("/login"))
+        login_page.enter_email(test_email)
+        login_page.enter_password(password3)
+        login_page.submit()
+        wait.until(EC.url_contains("/dashboard"))
+
+        # Step 6: Change password to password4 (should succeed)
+        change_page.navigate(test_base_url)
+        change_page.enter_current_password(password3)
+        change_page.enter_new_password(password4)
+        change_page.enter_confirm_password(password4)
+        change_page.submit()
+
+        # VERIFICATION 3: Third password change succeeds
+        success_message = change_page.get_success_message()
+        assert success_message is not None, "Third password change should succeed"
+
+        # Re-login with password4
+        wait.until(EC.url_contains("/login"))
+        login_page.enter_email(test_email)
+        login_page.enter_password(password4)
+        login_page.submit()
+        wait.until(EC.url_contains("/dashboard"))
+
+        # Step 7: Attempt to change back to password1 (should FAIL - in history)
+        change_page.navigate(test_base_url)
+        change_page.enter_current_password(password4)
+        change_page.enter_new_password(password1)
+        change_page.enter_confirm_password(password1)
+        change_page.submit()
+
+        # VERIFICATION 4: Password reuse rejected (password1)
+        error_message = change_page.get_error_message()
+        assert error_message is not None, "Should show error for password1 reuse"
+        assert "last 3" in error_message.lower() or "recent" in error_message.lower() or "history" in error_message.lower(), \
+            f"Error should mention password history policy, got: {error_message}"
+
+        # Step 8: Attempt to change to password2 (should FAIL - in history)
+        change_page.enter_current_password(password4)
+        change_page.enter_new_password(password2)
+        change_page.enter_confirm_password(password2)
+        change_page.submit()
+
+        # VERIFICATION 5: Password reuse rejected (password2)
+        error_message = change_page.get_error_message()
+        assert error_message is not None, "Should show error for password2 reuse"
+        assert "last 3" in error_message.lower() or "recent" in error_message.lower() or "history" in error_message.lower(), \
+            f"Error should mention password history policy, got: {error_message}"
+
+        # Step 9: Attempt to change to password3 (should FAIL - in history)
+        change_page.enter_current_password(password4)
+        change_page.enter_new_password(password3)
+        change_page.enter_confirm_password(password3)
+        change_page.submit()
+
+        # VERIFICATION 6: Password reuse rejected (password3)
+        error_message = change_page.get_error_message()
+        assert error_message is not None, "Should show error for password3 reuse"
+        assert "last 3" in error_message.lower() or "recent" in error_message.lower() or "history" in error_message.lower(), \
+            f"Error should mention password history policy, got: {error_message}"
+
+        # Step 10: VERIFICATION 7 - Check database password history
+        password_history = await db_connection.fetchval("""
+            SELECT metadata->'password_history'
+            FROM course_creator.users
+            WHERE id = $1
+        """, user_id)
+
+        assert password_history is not None, "Password history should exist in database"
+        # Password history should contain hashes for password2, password3, password4 (last 3)
+        # Note: Cannot verify exact hashes as bcrypt is one-way, but should have 3 entries
+        history_list = await db_connection.fetch("""
+            SELECT jsonb_array_length(metadata->'password_history') as history_count
+            FROM course_creator.users
+            WHERE id = $1
+        """, user_id)
+        assert history_list[0]['history_count'] == 3, "Should store exactly 3 password hashes in history"
+
+        # Step 11: Change to password5 (new password not in history - should SUCCEED)
+        change_page.enter_current_password(password4)
+        change_page.enter_new_password(password5)
+        change_page.enter_confirm_password(password5)
+        change_page.submit()
+
+        # VERIFICATION 8: New password accepted
+        success_message = change_page.get_success_message()
+        assert success_message is not None, "New password (not in history) should be accepted"
+
+        # VERIFICATION 9: Can login with password5
+        wait.until(EC.url_contains("/login"))
+        login_page.enter_email(test_email)
+        login_page.enter_password(password5)
+        login_page.submit()
+        wait.until(EC.url_contains("/dashboard"))
+        assert "/dashboard" in driver.current_url, "Should login successfully with new password"
+
+    @pytest.mark.asyncio
+    @pytest.mark.priority_high
+    async def test_11_password_must_differ_from_username_and_email(self, driver, test_base_url, db_connection):
+        """
+        E2E TEST: Password must differ from username and email (comprehensive validation)
+
+        BUSINESS REQUIREMENT:
+        Passwords must not match username or email for security.
+        This prevents trivial password guessing attacks.
+
+        TEST SCENARIO:
+        1. Create new user with unique username and email
+        2. Navigate to registration page
+        3. Attempt to register with password = username (should fail)
+        4. Verify error: "Password cannot be the same as your username"
+        5. Attempt to register with password = email (should fail)
+        6. Verify error: "Password cannot be the same as your email"
+        7. Attempt to register with password = part of email (should fail if enabled)
+        8. Register with valid password that differs from username/email (succeeds)
+        9. Login and navigate to password change page
+        10. Attempt to change password to username (should fail)
+        11. Attempt to change password to email (should fail)
+        12. Verify same validation rules apply to password changes
+        13. Change to valid different password (succeeds)
+
+        VALIDATION:
+        - Username as password rejected at registration with clear error
+        - Email as password rejected at registration with clear error
+        - Appropriate error messages shown for each case
+        - Valid different password accepted at registration
+        - Same rules enforced at password change
+        - Username as password rejected at password change
+        - Email as password rejected at password change
+        - Valid different password accepted at password change
+        """
+        # Setup: Generate unique test data
+        test_username = f"testuser_{uuid.uuid4().hex[:8]}"
+        test_email = f"testuser_{uuid.uuid4().hex[:8]}@example.com"
+        valid_password = "ValidPassword123!"
+
+        # PHASE 1: REGISTRATION VALIDATION
+
+        # Step 1-2: Navigate to registration page
+        driver.get(f"{test_base_url}/register")
+
+        wait = WebDriverWait(driver, 10)
+        email_input = wait.until(EC.presence_of_element_located((By.ID, "email")))
+        username_input = driver.find_element(By.ID, "username")
+        password_input = driver.find_element(By.ID, "password")
+        confirm_input = driver.find_element(By.ID, "confirm-password")
+
+        # Enter email and username
+        email_input.clear()
+        email_input.send_keys(test_email)
+        username_input.clear()
+        username_input.send_keys(test_username)
+
+        # Step 3: Attempt to register with password = username (should FAIL)
+        password_input.clear()
+        password_input.send_keys(test_username)
+        confirm_input.clear()
+        confirm_input.send_keys(test_username)
+        password_input.send_keys(Keys.TAB)
+        time.sleep(0.5)  # Allow validation to trigger
+
+        # Step 4: VERIFICATION 1 - Error for username as password
+        try:
+            error_msg = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "password-error")))
+            assert "username" in error_msg.text.lower(), \
+                f"Error should mention username, got: {error_msg.text}"
+        except TimeoutException:
+            pytest.fail("No error shown when password matches username")
+
+        # Step 5: Attempt to register with password = email (should FAIL)
+        password_input.clear()
+        password_input.send_keys(test_email)
+        confirm_input.clear()
+        confirm_input.send_keys(test_email)
+        password_input.send_keys(Keys.TAB)
+        time.sleep(0.5)
+
+        # Step 6: VERIFICATION 2 - Error for email as password
+        try:
+            error_msg = driver.find_element(By.CLASS_NAME, "password-error")
+            assert error_msg.is_displayed(), "Error should be visible"
+            assert "email" in error_msg.text.lower(), \
+                f"Error should mention email, got: {error_msg.text}"
+        except NoSuchElementException:
+            pytest.fail("No error shown when password matches email")
+
+        # Step 7: Attempt to register with password = email prefix (optional check)
+        email_prefix = test_email.split('@')[0]
+        password_input.clear()
+        password_input.send_keys(email_prefix)
+        confirm_input.clear()
+        confirm_input.send_keys(email_prefix)
+        password_input.send_keys(Keys.TAB)
+        time.sleep(0.5)
+
+        # Note: This may or may not fail depending on business rules
+        # We'll check if error is shown but won't fail test if not
+        try:
+            error_msg = driver.find_element(By.CLASS_NAME, "password-error")
+            if error_msg.is_displayed():
+                # Stricter validation detected email prefix - good!
+                pass
+        except NoSuchElementException:
+            # Email prefix allowed - acceptable
+            pass
+
+        # Step 8: Register with valid password (should SUCCEED)
+        password_input.clear()
+        password_input.send_keys(valid_password)
+        confirm_input.clear()
+        confirm_input.send_keys(valid_password)
+        password_input.send_keys(Keys.TAB)
+        time.sleep(0.5)
+
+        # VERIFICATION 3: No error for valid password
+        try:
+            error_msg = driver.find_element(By.CLASS_NAME, "password-error")
+            if error_msg.is_displayed():
+                pytest.fail(f"Valid password rejected during registration: {error_msg.text}")
+        except NoSuchElementException:
+            pass  # Expected - no error
+
+        # Complete registration
+        submit_btn = driver.find_element(By.ID, "register-submit")
+        submit_btn.click()
+
+        # Wait for registration to complete (redirects to login or dashboard)
+        time.sleep(2)  # Allow registration processing
+
+        # If redirected to login, login with new credentials
+        if "/login" in driver.current_url:
+            login_page = LoginPage(driver)
+            login_page.enter_email(test_email)
+            login_page.enter_password(valid_password)
+            login_page.submit()
+
+        wait.until(EC.url_contains("/dashboard"))
+
+        # PHASE 2: PASSWORD CHANGE VALIDATION
+
+        # Step 9: Navigate to password change page
+        change_page = PasswordChangePage(driver)
+        change_page.navigate(test_base_url)
+
+        # Step 10: Attempt to change password to username (should FAIL)
+        change_page.enter_current_password(valid_password)
+        change_page.enter_new_password(test_username)
+        change_page.enter_confirm_password(test_username)
+        change_page.submit()
+
+        # Step 11: VERIFICATION 4 - Error for username as new password
+        error_message = change_page.get_error_message()
+        assert error_message is not None, "Should show error when changing password to username"
+        assert "username" in error_message.lower(), \
+            f"Error should mention username, got: {error_message}"
+
+        # Step 12: Attempt to change password to email (should FAIL)
+        change_page.enter_current_password(valid_password)
+        change_page.enter_new_password(test_email)
+        change_page.enter_confirm_password(test_email)
+        change_page.submit()
+
+        # Step 13: VERIFICATION 5 - Error for email as new password
+        error_message = change_page.get_error_message()
+        assert error_message is not None, "Should show error when changing password to email"
+        assert "email" in error_message.lower(), \
+            f"Error should mention email, got: {error_message}"
+
+        # Step 14: Change to valid different password (should SUCCEED)
+        new_valid_password = "NewValidPassword456!"
+        change_page.enter_current_password(valid_password)
+        change_page.enter_new_password(new_valid_password)
+        change_page.enter_confirm_password(new_valid_password)
+        change_page.submit()
+
+        # VERIFICATION 6: Success with valid new password
+        success_message = change_page.get_success_message()
+        assert success_message is not None, "Valid password change should succeed"
+
+        # VERIFICATION 7: Can login with new password
+        wait.until(EC.url_contains("/login"))
+        login_page = LoginPage(driver)
+        login_page.enter_email(test_email)
+        login_page.enter_password(new_valid_password)
+        login_page.submit()
+        wait.until(EC.url_contains("/dashboard"))
+        assert "/dashboard" in driver.current_url, "Should login successfully with new password"
