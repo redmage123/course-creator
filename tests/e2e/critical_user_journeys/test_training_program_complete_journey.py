@@ -44,16 +44,28 @@ def driver():
     - Class-scoped driver for efficiency
     - Headless mode for CI/CD
     - Explicit waits for reliability
+    - Supports Selenium Grid via SELENIUM_REMOTE environment variable
     """
     options = webdriver.ChromeOptions()
     options.add_argument('--headless')
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--remote-debugging-port=0')  # Avoid port conflicts in Grid
     options.add_argument('--ignore-certificate-errors')  # For HTTPS
 
-    driver = webdriver.Chrome(options=options)
-    driver.implicitly_wait(10)
-    driver.set_page_load_timeout(30)
+    # Check for Selenium Grid configuration
+    selenium_remote = os.getenv('SELENIUM_REMOTE')
+    if selenium_remote:
+        from selenium import webdriver as remote_wd
+        driver = remote_wd.Remote(
+            command_executor=selenium_remote,
+            options=options
+        )
+    else:
+        driver = webdriver.Chrome(options=options)
+
+    driver.implicitly_wait(20)  # Increased from 10 for Grid reliability
+    driver.set_page_load_timeout(45)  # Increased from 30 for Grid reliability
 
     yield driver
 

@@ -42,7 +42,7 @@ class TestOrgAdminDashboardDataLoading:
 
     @pytest.fixture(scope="function")
     def driver(self):
-        """Setup Selenium WebDriver with Chromium snap"""
+        """Setup Selenium WebDriver with Grid support and Chromium snap fallback"""
         from selenium.webdriver.chrome.service import Service
         import tempfile
         import shutil
@@ -51,6 +51,7 @@ class TestOrgAdminDashboardDataLoading:
         chrome_options.add_argument('--headless')
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--disable-dev-shm-usage')
+        chrome_options.add_argument('--remote-debugging-port=0')  # Avoid port conflicts
         chrome_options.add_argument('--ignore-certificate-errors')
         chrome_options.add_argument('--disable-gpu')
 
@@ -58,12 +59,20 @@ class TestOrgAdminDashboardDataLoading:
         user_data_dir = tempfile.mkdtemp(prefix='chromium_test_', dir='/home/bbrelin')
         chrome_options.add_argument(f'--user-data-dir={user_data_dir}')
 
-        # Use snap's chromium and chromedriver
-        chrome_options.binary_location = '/snap/bin/chromium'
-        service = Service('/snap/bin/chromium.chromedriver')
+        # Check for Selenium Grid configuration
+        selenium_remote = os.getenv('SELENIUM_REMOTE')
+        if selenium_remote:
+            driver = webdriver.Remote(
+                command_executor=selenium_remote,
+                options=chrome_options
+            )
+        else:
+            # Use snap's chromium and chromedriver
+            chrome_options.binary_location = '/snap/bin/chromium'
+            service = Service('/snap/bin/chromium.chromedriver')
+            driver = webdriver.Chrome(service=service, options=chrome_options)
 
-        driver = webdriver.Chrome(service=service, options=chrome_options)
-        driver.set_page_load_timeout(30)
+        driver.set_page_load_timeout(45)  # Increased for Grid reliability
         yield driver
         driver.quit()
 
@@ -76,7 +85,7 @@ class TestOrgAdminDashboardDataLoading:
     @pytest.fixture
     def test_base_url(self):
         """Test base URL"""
-        return 'https://176.9.99.103:3000'
+        return 'https://localhost:3000'
 
     @pytest.fixture
     def authenticated_driver(self, driver, test_base_url):
@@ -482,22 +491,32 @@ class TestAPIResponseTimes:
 
     @pytest.fixture(scope="function")
     def driver(self):
-        """Setup Selenium WebDriver"""
+        """Setup Selenium WebDriver with Grid support"""
         chrome_options = Options()
         chrome_options.add_argument('--headless')
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--disable-dev-shm-usage')
+        chrome_options.add_argument('--remote-debugging-port=0')  # Avoid port conflicts
         chrome_options.add_argument('--ignore-certificate-errors')
 
-        driver = webdriver.Chrome(options=chrome_options)
-        driver.set_page_load_timeout(30)
+        # Check for Selenium Grid configuration
+        selenium_remote = os.getenv('SELENIUM_REMOTE')
+        if selenium_remote:
+            driver = webdriver.Remote(
+                command_executor=selenium_remote,
+                options=chrome_options
+            )
+        else:
+            driver = webdriver.Chrome(options=chrome_options)
+
+        driver.set_page_load_timeout(45)  # Increased for Grid reliability
         yield driver
         driver.quit()
 
     @pytest.fixture(scope="session")
     def base_url(self):
         """Base URL for tests"""
-        return os.getenv('TEST_BASE_URL', 'https://176.9.99.103:3000')
+        return os.getenv('TEST_BASE_URL', 'https://localhost:3000')
 
     def test_dashboard_loads_within_timeout(self, driver, test_base_url):
         """

@@ -38,7 +38,7 @@ import io
 
 @pytest.fixture(scope="class")
 def driver():
-    """Set up and tear down Chrome driver"""
+    """Set up and tear down Chrome driver with Grid support"""
     options = webdriver.ChromeOptions()
 
     # Headless mode from environment
@@ -47,11 +47,21 @@ def driver():
 
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--remote-debugging-port=0')  # Avoid port conflicts
     options.add_argument('--ignore-certificate-errors')
     options.add_argument('--window-size=1920,1080')
 
-    driver = webdriver.Chrome(options=options)
-    driver.implicitly_wait(10)
+    # Check for Selenium Grid configuration
+    selenium_remote = os.getenv('SELENIUM_REMOTE')
+    if selenium_remote:
+        driver = webdriver.Remote(
+            command_executor=selenium_remote,
+            options=options
+        )
+    else:
+        driver = webdriver.Chrome(options=options)
+
+    driver.implicitly_wait(20)  # Increased for Grid reliability
 
     yield driver
 

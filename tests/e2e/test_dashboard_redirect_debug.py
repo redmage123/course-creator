@@ -32,19 +32,29 @@ class TestDashboardRedirectDebug:
 
     @pytest.fixture(scope="function")
     def driver(self):
-        """Setup Chrome with logging enabled"""
+        """Setup Chrome with logging enabled and Grid support"""
         chrome_options = Options()
         chrome_options.add_argument('--headless')
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--disable-dev-shm-usage')
+        chrome_options.add_argument('--remote-debugging-port=0')  # Avoid port conflicts
         chrome_options.add_argument('--ignore-certificate-errors')
         chrome_options.add_argument('--disable-gpu')
 
         # Enable browser logging
         chrome_options.set_capability('goog:loggingPrefs', {'browser': 'ALL'})
 
-        driver = webdriver.Chrome(options=chrome_options)
-        driver.set_page_load_timeout(30)
+        # Check for Selenium Grid configuration
+        selenium_remote = os.getenv('SELENIUM_REMOTE')
+        if selenium_remote:
+            driver = webdriver.Remote(
+                command_executor=selenium_remote,
+                options=chrome_options
+            )
+        else:
+            driver = webdriver.Chrome(options=chrome_options)
+
+        driver.set_page_load_timeout(45)  # Increased for Grid reliability
         yield driver
         driver.quit()
 
@@ -52,7 +62,7 @@ class TestDashboardRedirectDebug:
         """
         TEST: Reproduce the exact user flow and capture redirect behavior
         """
-        BASE_URL = 'https://176.9.99.103:3000'
+        BASE_URL = 'https://localhost:3000'
 
         print("\n" + "="*80)
         print("STARTING DASHBOARD REDIRECT DEBUG TEST")

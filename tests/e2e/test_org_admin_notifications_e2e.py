@@ -23,17 +23,27 @@ HEADLESS = os.getenv('HEADLESS', 'true').lower() == 'true'
 
 @pytest.fixture
 def driver():
-    """Setup Selenium WebDriver"""
+    """Setup Selenium WebDriver with Grid support"""
     options = webdriver.ChromeOptions()
     if HEADLESS:
         options.add_argument('--headless')
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--remote-debugging-port=0')  # Avoid port conflicts
     options.add_argument('--ignore-certificate-errors')
     options.add_argument('--window-size=1920,1080')
 
-    driver = webdriver.Chrome(options=options)
-    driver.implicitly_wait(10)
+    # Check for Selenium Grid configuration
+    selenium_remote = os.getenv('SELENIUM_REMOTE')
+    if selenium_remote:
+        driver = webdriver.Remote(
+            command_executor=selenium_remote,
+            options=options
+        )
+    else:
+        driver = webdriver.Chrome(options=options)
+
+    driver.implicitly_wait(20)  # Increased for Grid reliability
 
     yield driver
 

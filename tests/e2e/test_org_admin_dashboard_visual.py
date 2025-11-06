@@ -40,26 +40,36 @@ class TestOrgAdminDashboardVisual:
 
     @pytest.fixture(scope="function")
     def driver(self):
-        """Setup Selenium WebDriver"""
+        """Setup Selenium WebDriver with Grid support"""
         import tempfile
         chrome_options = Options()
         chrome_options.add_argument('--headless')
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--disable-dev-shm-usage')
+        chrome_options.add_argument('--remote-debugging-port=0')  # Avoid port conflicts
         chrome_options.add_argument('--ignore-certificate-errors')
         chrome_options.add_argument('--disable-gpu')
         chrome_options.add_argument('--window-size=1920,1080')
         chrome_options.add_argument(f'--user-data-dir={tempfile.mkdtemp()}')
 
-        driver = webdriver.Chrome(options=chrome_options)
-        driver.set_page_load_timeout(30)
+        # Check for Selenium Grid configuration
+        selenium_remote = os.getenv('SELENIUM_REMOTE')
+        if selenium_remote:
+            driver = webdriver.Remote(
+                command_executor=selenium_remote,
+                options=chrome_options
+            )
+        else:
+            driver = webdriver.Chrome(options=chrome_options)
+
+        driver.set_page_load_timeout(45)  # Increased for Grid reliability
         yield driver
         driver.quit()
 
     @pytest.fixture(scope="session")
     def base_url(self):
         """Base URL for tests"""
-        return os.getenv('TEST_BASE_URL', 'https://176.9.99.103:3000')
+        return os.getenv('TEST_BASE_URL', 'https://localhost:3000')
 
     @pytest.fixture
     def authenticated_driver(self, driver, base_url):
@@ -402,23 +412,33 @@ class TestVisualRegression:
 
     @pytest.fixture(scope="function")
     def driver(self):
-        """Setup Selenium WebDriver"""
+        """Setup Selenium WebDriver with Grid support"""
         chrome_options = Options()
         chrome_options.add_argument('--headless')
         chrome_options.add_argument('--no-sandbox')
         chrome_options.add_argument('--disable-dev-shm-usage')
+        chrome_options.add_argument('--remote-debugging-port=0')  # Avoid port conflicts
         chrome_options.add_argument('--ignore-certificate-errors')
         chrome_options.add_argument('--window-size=1920,1080')
 
-        driver = webdriver.Chrome(options=chrome_options)
-        driver.set_page_load_timeout(30)
+        # Check for Selenium Grid configuration
+        selenium_remote = os.getenv('SELENIUM_REMOTE')
+        if selenium_remote:
+            driver = webdriver.Remote(
+                command_executor=selenium_remote,
+                options=chrome_options
+            )
+        else:
+            driver = webdriver.Chrome(options=chrome_options)
+
+        driver.set_page_load_timeout(45)  # Increased for Grid reliability
         yield driver
         driver.quit()
 
     @pytest.fixture(scope="session")
     def base_url(self):
         """Base URL for tests"""
-        return os.getenv('TEST_BASE_URL', 'https://176.9.99.103:3000')
+        return os.getenv('TEST_BASE_URL', 'https://localhost:3000')
 
     def test_header_height_is_reasonable(self, driver, base_url):
         """

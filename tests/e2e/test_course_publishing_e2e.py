@@ -27,7 +27,7 @@ DATABASE_URL = os.getenv('TEST_DATABASE_URL', 'postgresql://postgres:postgres_pa
 
 @pytest.fixture(scope='session')
 def driver():
-    """Create Selenium WebDriver instance."""
+    """Create Selenium WebDriver instance with Grid support."""
     chrome_options = Options()
     chrome_options.add_argument('--headless=new')  # Use new headless mode for better compatibility
     chrome_options.add_argument('--no-sandbox')
@@ -36,9 +36,18 @@ def driver():
     chrome_options.add_argument('--remote-debugging-port=0')  # Auto-assign random port
     chrome_options.add_argument('--disable-extensions')
     chrome_options.add_argument('--window-size=1920,1080')
-    
-    driver = webdriver.Chrome(options=chrome_options)
-    driver.implicitly_wait(15)
+
+    # Check for Selenium Grid configuration
+    selenium_remote = os.getenv('SELENIUM_REMOTE')
+    if selenium_remote:
+        driver = webdriver.Remote(
+            command_executor=selenium_remote,
+            options=chrome_options
+        )
+    else:
+        driver = webdriver.Chrome(options=chrome_options)
+
+    driver.implicitly_wait(20)  # Increased for Grid reliability
     yield driver
     driver.quit()
 
