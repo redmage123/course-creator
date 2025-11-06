@@ -939,3 +939,19 @@ def driver(selenium_config):
         driver.quit()
     except Exception as e:
         print(f"Warning: Error closing driver: {e}")
+
+
+@pytest.fixture(scope="function")
+def browser(driver):
+    """
+    Alias for driver fixture to support tests expecting 'browser' parameter.
+
+    BUSINESS CONTEXT:
+    Some E2E tests use 'browser' parameter name instead of 'driver'.
+    This fixture provides compatibility without changing existing tests.
+
+    TECHNICAL IMPLEMENTATION:
+    - Simply returns the driver fixture
+    - Both 'browser' and 'driver' parameters work in tests
+    """
+    return driver
