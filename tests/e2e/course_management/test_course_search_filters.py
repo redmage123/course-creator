@@ -590,7 +590,7 @@ class TestCourseSearchFilters(BaseTest):
         leading to higher course discovery and enrollment rates.
         """
         login_page = LoginPage(self.driver, self.config)
-        search_page = CourseSearchPage(self.driver)
+        search_page = CourseSearchPage(self.driver, self.config)
 
         # Step 1: Create test courses
         test_org_id = str(uuid.uuid4())
@@ -707,8 +707,8 @@ class TestCourseSearchFilters(BaseTest):
         all their courses, improving student retention and satisfaction.
         """
         login_page = LoginPage(self.driver, self.config)
-        filters_page = CourseFiltersPage(self.driver)
-        search_page = CourseSearchPage(self.driver)
+        filters_page = CourseFiltersPage(self.driver, self.config)
+        search_page = CourseSearchPage(self.driver, self.config)
 
         # Step 1-2: Create test data
         test_org_id = str(uuid.uuid4())
@@ -820,8 +820,8 @@ class TestCourseSearchFilters(BaseTest):
         intelligence leaks in multi-tenant SaaS environment.
         """
         login_page = LoginPage(self.driver, self.config)
-        filters_page = CourseFiltersPage(self.driver)
-        search_page = CourseSearchPage(self.driver)
+        filters_page = CourseFiltersPage(self.driver, self.config)
+        search_page = CourseSearchPage(self.driver, self.config)
 
         # Step 1-2: Create test data for 2 organizations
         org_a_id = str(uuid.uuid4())
@@ -962,9 +962,9 @@ class TestCourseSearchFilters(BaseTest):
         reducing frustration and support tickets for full/closed courses.
         """
         login_page = LoginPage(self.driver, self.config)
-        filters_page = CourseFiltersPage(self.driver)
-        search_page = CourseSearchPage(self.driver)
-        list_page = CourseListPage(self.driver)
+        filters_page = CourseFiltersPage(self.driver, self.config)
+        search_page = CourseSearchPage(self.driver, self.config)
+        list_page = CourseListPage(self.driver, self.config)
 
         # Step 1: Create test courses with different statuses
         test_org_id = str(uuid.uuid4())
@@ -1120,8 +1120,8 @@ class TestCourseSearchFilters(BaseTest):
         enrollment in top courses and improving platform engagement metrics.
         """
         login_page = LoginPage(self.driver, self.config)
-        list_page = CourseListPage(self.driver)
-        search_page = CourseSearchPage(self.driver)
+        list_page = CourseListPage(self.driver, self.config)
+        search_page = CourseSearchPage(self.driver, self.config)
 
         # Step 1: Create test courses with different popularity
         test_org_id = str(uuid.uuid4())

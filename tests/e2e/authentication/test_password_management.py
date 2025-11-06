@@ -340,7 +340,7 @@ class TestPasswordResetWorkflow:
         # Create test user in database
         async with db_connection.transaction():
             user_id = await db_connection.fetchval("""
-                INSERT INTO course_creator.users (email, username, password_hash, role)
+                INSERT INTO users (email, username, password_hash, role_name)
                 VALUES ($1, $2, crypt($3, gen_salt('bf')), 'student')
                 RETURNING id
             """, test_email, "password_reset_test", old_password)
@@ -363,10 +363,10 @@ class TestPasswordResetWorkflow:
         
         # Step 6: VERIFICATION 2 - Token in database
         token_row = await db_connection.fetchrow("""
-            SELECT 
+            SELECT
                 metadata->>'password_reset_token' as token,
                 (metadata->>'password_reset_expires')::timestamp as expires_at
-            FROM course_creator.users
+            FROM users
             WHERE id = $1
         """, user_id)
         
@@ -409,7 +409,7 @@ class TestPasswordResetWorkflow:
         # Step 13: VERIFICATION 6 - Token marked as used
         token_after = await db_connection.fetchval("""
             SELECT metadata->>'password_reset_token'
-            FROM course_creator.users
+            FROM users
             WHERE id = $1
         """, user_id)
         assert token_after is None, "Token should be cleared after use"
@@ -445,8 +445,8 @@ class TestPasswordResetWorkflow:
         # Create user with expired token (16 minutes ago)
         async with db_connection.transaction():
             user_id = await db_connection.fetchval("""
-                INSERT INTO course_creator.users (
-                    email, username, password_hash, role, metadata
+                INSERT INTO users (
+                    email, username, password_hash, role_name, metadata
                 )
                 VALUES (
                     $1, $2, crypt('TestPassword123!', gen_salt('bf')), 'student',
@@ -500,7 +500,7 @@ class TestPasswordResetWorkflow:
         
         async with db_connection.transaction():
             user_id = await db_connection.fetchval("""
-                INSERT INTO course_creator.users (email, username, password_hash, role)
+                INSERT INTO users (email, username, password_hash, role_name)
                 VALUES ($1, $2, crypt($3, gen_salt('bf')), 'student')
                 RETURNING id
             """, test_email, "single_use_test", old_password)
@@ -652,7 +652,7 @@ class TestPasswordChange:
         
         async with db_connection.transaction():
             await db_connection.execute("""
-                INSERT INTO course_creator.users (email, username, password_hash, role)
+                INSERT INTO users (email, username, password_hash, role_name)
                 VALUES ($1, $2, crypt($3, gen_salt('bf')), 'student')
             """, test_email, "change_pwd_test", old_password)
         
@@ -716,7 +716,7 @@ class TestPasswordChange:
         
         async with db_connection.transaction():
             await db_connection.execute("""
-                INSERT INTO course_creator.users (email, username, password_hash, role)
+                INSERT INTO users (email, username, password_hash, role_name)
                 VALUES ($1, $2, crypt($3, gen_salt('bf')), 'student')
             """, test_email, "incorrect_pwd_test", correct_password)
         
@@ -768,7 +768,7 @@ class TestPasswordChange:
         
         async with db_connection.transaction():
             await db_connection.execute("""
-                INSERT INTO course_creator.users (email, username, password_hash, role)
+                INSERT INTO users (email, username, password_hash, role_name)
                 VALUES ($1, $2, crypt($3, gen_salt('bf')), 'student')
             """, test_email, "relogin_test", old_password)
         
@@ -825,7 +825,7 @@ class TestPasswordChange:
         
         async with db_connection.transaction():
             user_id = await db_connection.fetchval("""
-                INSERT INTO course_creator.users (email, username, password_hash, role)
+                INSERT INTO users (email, username, password_hash, role_name)
                 VALUES ($1, $2, crypt($3, gen_salt('bf')), 'student')
                 RETURNING id
             """, test_email, "multi_session_test", old_password)
@@ -846,7 +846,7 @@ class TestPasswordChange:
         # Create second session in database (simulate Device 2)
         async with db_connection.transaction():
             session_id_2 = await db_connection.fetchval("""
-                INSERT INTO course_creator.user_sessions (
+                INSERT INTO user_sessions (
                     user_id, token, expires_at, created_at, last_activity
                 )
                 VALUES (
@@ -866,7 +866,7 @@ class TestPasswordChange:
         # VERIFICATION: Session 2 should be invalidated in database
         session_2_status = await db_connection.fetchval("""
             SELECT status
-            FROM course_creator.user_sessions
+            FROM user_sessions
             WHERE id = $1
         """, session_id_2)
         
@@ -974,8 +974,8 @@ class TestPasswordSecurity:
         
         async with db_connection.transaction():
             user_id = await db_connection.fetchval("""
-                INSERT INTO course_creator.users (
-                    email, username, password_hash, role, metadata
+                INSERT INTO users (
+                    email, username, password_hash, role_name, metadata
                 )
                 VALUES (
                     $1, $2, crypt($3, gen_salt('bf')), 'student',
@@ -984,7 +984,7 @@ class TestPasswordSecurity:
                     )
                 )
                 RETURNING id
-            """, test_email, "password_history_test", current_password, 
+            """, test_email, "password_history_test", current_password,
                 [f"$2b$12$hashed_{pwd}" for pwd in old_passwords])
         
         # Login
@@ -1146,7 +1146,7 @@ class TestPasswordSecurity:
         # Step 1: Create test user in database with password1
         async with db_connection.transaction():
             user_id = await db_connection.fetchval("""
-                INSERT INTO course_creator.users (email, username, password_hash, role)
+                INSERT INTO users (email, username, password_hash, role_name)
                 VALUES ($1, $2, crypt($3, gen_salt('bf')), 'student')
                 RETURNING id
             """, test_email, test_username, password1)
@@ -1258,7 +1258,7 @@ class TestPasswordSecurity:
         # Step 10: VERIFICATION 7 - Check database password history
         password_history = await db_connection.fetchval("""
             SELECT metadata->'password_history'
-            FROM course_creator.users
+            FROM users
             WHERE id = $1
         """, user_id)
 
@@ -1267,7 +1267,7 @@ class TestPasswordSecurity:
         # Note: Cannot verify exact hashes as bcrypt is one-way, but should have 3 entries
         history_list = await db_connection.fetch("""
             SELECT jsonb_array_length(metadata->'password_history') as history_count
-            FROM course_creator.users
+            FROM users
             WHERE id = $1
         """, user_id)
         assert history_list[0]['history_count'] == 3, "Should store exactly 3 password hashes in history"

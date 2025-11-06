@@ -305,7 +305,7 @@ class TestStudentSuccessPrediction(BaseTest):
 
     @pytest.mark.asyncio
     async def test_01_predict_at_risk_students_based_on_engagement(
-        self, browser, test_base_url, instructor_credentials, db_connection
+        self, browser, selenium_config, instructor_credentials, db_connection
     ):
         """
         E2E TEST: Predict student at-risk status based on engagement metrics
@@ -331,7 +331,7 @@ class TestStudentSuccessPrediction(BaseTest):
         page = PredictiveAnalyticsPage(browser)
 
         # Login as instructor
-        page.navigate_to(f"{test_base_url}/login")
+        page.navigate_to(f"{selenium_config}/login")
         wait = WebDriverWait(browser, 10)
 
         email_input = wait.until(EC.presence_of_element_located((By.ID, "login-email")))
@@ -404,7 +404,7 @@ class TestStudentSuccessPrediction(BaseTest):
 
     @pytest.mark.asyncio
     async def test_02_early_warning_system_for_struggling_students(
-        self, browser, test_base_url, instructor_credentials, db_connection
+        self, browser, selenium_config, instructor_credentials, db_connection
     ):
         """
         E2E TEST: Early warning system alerts instructors about struggling students
@@ -430,7 +430,7 @@ class TestStudentSuccessPrediction(BaseTest):
         page = PredictiveAnalyticsPage(browser)
 
         # Login as instructor
-        page.navigate_to(f"{test_base_url}/login")
+        page.navigate_to(f"{selenium_config}/login")
         wait = WebDriverWait(browser, 10)
 
         email_input = wait.until(EC.presence_of_element_located((By.ID, "login-email")))
@@ -484,7 +484,7 @@ class TestStudentSuccessPrediction(BaseTest):
 
     @pytest.mark.asyncio
     async def test_03_success_probability_calculation(
-        self, browser, test_base_url, instructor_credentials, db_connection
+        self, browser, selenium_config, instructor_credentials, db_connection
     ):
         """
         E2E TEST: Calculate and display success probability for each student
@@ -511,7 +511,7 @@ class TestStudentSuccessPrediction(BaseTest):
         page = PredictiveAnalyticsPage(browser)
 
         # Login as instructor
-        page.navigate_to(f"{test_base_url}/login")
+        page.navigate_to(f"{selenium_config}/login")
         wait = WebDriverWait(browser, 10)
 
         email_input = wait.until(EC.presence_of_element_located((By.ID, "login-email")))
@@ -606,7 +606,7 @@ class TestTrendAnalysis(BaseTest):
 
     @pytest.mark.asyncio
     async def test_04_course_completion_trend_prediction_over_time(
-        self, browser, test_base_url, instructor_credentials, db_connection
+        self, browser, selenium_config, instructor_credentials, db_connection
     ):
         """
         E2E TEST: Predict course completion trends over time
@@ -634,7 +634,7 @@ class TestTrendAnalysis(BaseTest):
         page = PredictiveAnalyticsPage(browser)
 
         # Login as instructor
-        page.navigate_to(f"{test_base_url}/login")
+        page.navigate_to(f"{selenium_config}/login")
         wait = WebDriverWait(browser, 10)
 
         email_input = wait.until(EC.presence_of_element_located((By.ID, "login-email")))
@@ -763,7 +763,7 @@ class TestTrendAnalysis(BaseTest):
 
     @pytest.mark.asyncio
     async def test_05_enrollment_growth_forecasting(
-        self, browser, test_base_url, org_admin_credentials, db_connection
+        self, browser, selenium_config, org_admin_credentials, db_connection
     ):
         """
         E2E TEST: Forecast enrollment growth for capacity planning
@@ -793,7 +793,7 @@ class TestTrendAnalysis(BaseTest):
         page = PredictiveAnalyticsPage(browser)
 
         # Login as organization admin (not instructor)
-        page.navigate_to(f"{test_base_url}/login")
+        page.navigate_to(f"{selenium_config}/login")
         wait = WebDriverWait(browser, 10)
 
         email_input = wait.until(EC.presence_of_element_located((By.ID, "login-email")))
@@ -925,7 +925,7 @@ class TestTrendAnalysis(BaseTest):
 
     @pytest.mark.asyncio
     async def test_06_resource_utilization_forecasting(
-        self, browser, test_base_url, site_admin_credentials, db_connection
+        self, browser, selenium_config, site_admin_credentials, db_connection
     ):
         """
         E2E TEST: Forecast resource utilization (CPU, memory, storage, labs)
@@ -957,7 +957,7 @@ class TestTrendAnalysis(BaseTest):
         page = PredictiveAnalyticsPage(browser)
 
         # Login as site admin (not instructor)
-        page.navigate_to(f"{test_base_url}/login")
+        page.navigate_to(f"{selenium_config}/login")
         wait = WebDriverWait(browser, 10)
 
         email_input = wait.until(EC.presence_of_element_located((By.ID, "login-email")))
@@ -1147,7 +1147,7 @@ class TestCustomAnalytics(BaseTest):
 
     @pytest.mark.asyncio
     async def test_07_custom_metric_creation_workflow(
-        self, browser, test_base_url, instructor_credentials, db_connection
+        self, browser, selenium_config, instructor_credentials, db_connection
     ):
         """
         E2E TEST: Complete custom metric creation workflow
@@ -1180,7 +1180,7 @@ class TestCustomAnalytics(BaseTest):
         page = PredictiveAnalyticsPage(browser)
 
         # Login as instructor
-        page.navigate_to(f"{test_base_url}/login")
+        page.navigate_to(f"{selenium_config}/login")
         wait = WebDriverWait(browser, 10)
 
         email_input = wait.until(EC.presence_of_element_located((By.ID, "login-email")))
@@ -1343,7 +1343,7 @@ class TestCustomAnalytics(BaseTest):
 
     @pytest.mark.asyncio
     async def test_08_custom_dashboard_configuration(
-        self, browser, test_base_url, instructor_credentials, db_connection
+        self, browser, selenium_config, instructor_credentials, db_connection
     ):
         """
         E2E TEST: Complete custom dashboard configuration workflow
@@ -1376,7 +1376,7 @@ class TestCustomAnalytics(BaseTest):
         page = PredictiveAnalyticsPage(browser)
 
         # Login as instructor
-        page.navigate_to(f"{test_base_url}/login")
+        page.navigate_to(f"{selenium_config}/login")
         wait = WebDriverWait(browser, 10)
 
         email_input = wait.until(EC.presence_of_element_located((By.ID, "login-email")))

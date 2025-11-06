@@ -335,8 +335,8 @@ class LoginPage(BasePage):
         """Perform login."""
         self.navigate_to("/login")
         time.sleep(1)
-        self.type_text(*self.EMAIL_INPUT, email)
-        self.type_text(*self.PASSWORD_INPUT, password)
+        self.enter_text(*self.EMAIL_INPUT, email)
+        self.enter_text(*self.PASSWORD_INPUT, password)
         self.click_element(*self.SUBMIT_BUTTON)
         time.sleep(2)
 
@@ -359,7 +359,7 @@ class TestStudentAnalyticsDashboard(BaseTest):
     """
 
     @pytest.mark.asyncio
-    async def test_student_views_personal_progress_dashboard(self, browser, test_base_url, student_credentials, db_connection):
+    async def test_student_views_personal_progress_dashboard(self, browser, selenium_config, student_credentials, db_connection):
         """
         E2E TEST: Student views personal progress dashboard
 
@@ -379,10 +379,10 @@ class TestStudentAnalyticsDashboard(BaseTest):
         - Progress chart visible
         - Key metric cards present
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(student_credentials["email"], student_credentials["password"])
 
-        analytics_page = StudentAnalyticsPage(browser, test_base_url)
+        analytics_page = StudentAnalyticsPage(browser, selenium_config)
         analytics_page.navigate_to_dashboard()
 
         # VERIFICATION 1: Dashboard loads
@@ -402,7 +402,7 @@ class TestStudentAnalyticsDashboard(BaseTest):
             "Quiz scores section should be present"
 
     @pytest.mark.asyncio
-    async def test_course_completion_percentage_accurate(self, browser, test_base_url, student_credentials, db_connection):
+    async def test_course_completion_percentage_accurate(self, browser, selenium_config, student_credentials, db_connection):
         """
         E2E TEST: Course completion percentage matches database
 
@@ -422,10 +422,10 @@ class TestStudentAnalyticsDashboard(BaseTest):
         - UI percentage matches database calculation
         - Calculation accuracy < 1% tolerance
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(student_credentials["email"], student_credentials["password"])
 
-        analytics_page = StudentAnalyticsPage(browser, test_base_url)
+        analytics_page = StudentAnalyticsPage(browser, selenium_config)
         analytics_page.navigate_to_dashboard()
 
         # Get student ID from credentials
@@ -450,7 +450,7 @@ class TestStudentAnalyticsDashboard(BaseTest):
             f"Completion percentage mismatch: UI={ui_completion}%, DB={db_completion}%"
 
     @pytest.mark.asyncio
-    async def test_time_spent_tracking_accurate(self, browser, test_base_url, student_credentials, db_connection):
+    async def test_time_spent_tracking_accurate(self, browser, selenium_config, student_credentials, db_connection):
         """
         E2E TEST: Time spent tracking matches database
 
@@ -469,10 +469,10 @@ class TestStudentAnalyticsDashboard(BaseTest):
         - UI time matches database total
         - Time calculated from student_activities table
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(student_credentials["email"], student_credentials["password"])
 
-        analytics_page = StudentAnalyticsPage(browser, test_base_url)
+        analytics_page = StudentAnalyticsPage(browser, selenium_config)
         analytics_page.navigate_to_dashboard()
 
         # Get student ID
@@ -496,7 +496,7 @@ class TestStudentAnalyticsDashboard(BaseTest):
             f"Time spent mismatch: UI={ui_time_hours}h, DB={db_time_hours}h"
 
     @pytest.mark.asyncio
-    async def test_quiz_scores_displayed_correctly(self, browser, test_base_url, student_credentials, db_connection):
+    async def test_quiz_scores_displayed_correctly(self, browser, selenium_config, student_credentials, db_connection):
         """
         E2E TEST: Quiz scores displayed accurately
 
@@ -516,10 +516,10 @@ class TestStudentAnalyticsDashboard(BaseTest):
         - Number of quizzes matches database
         - Each score matches database value
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(student_credentials["email"], student_credentials["password"])
 
-        analytics_page = StudentAnalyticsPage(browser, test_base_url)
+        analytics_page = StudentAnalyticsPage(browser, selenium_config)
         analytics_page.navigate_to_dashboard()
 
         # Get student ID
@@ -550,7 +550,7 @@ class TestStudentAnalyticsDashboard(BaseTest):
                 f"Quiz score mismatch: UI={ui_quiz['score']}%, DB={db_score}%"
 
     @pytest.mark.asyncio
-    async def test_certificate_achievements_visible(self, browser, test_base_url, student_credentials, db_connection):
+    async def test_certificate_achievements_visible(self, browser, selenium_config, student_credentials, db_connection):
         """
         E2E TEST: Certificate achievements are visible
 
@@ -570,10 +570,10 @@ class TestStudentAnalyticsDashboard(BaseTest):
         - Certificate section visible
         - Certificate count matches database
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(student_credentials["email"], student_credentials["password"])
 
-        analytics_page = StudentAnalyticsPage(browser, test_base_url)
+        analytics_page = StudentAnalyticsPage(browser, selenium_config)
         analytics_page.navigate_to_dashboard()
 
         # Get student ID
@@ -616,7 +616,7 @@ class TestInstructorAnalyticsDashboard(BaseTest):
     """
 
     @pytest.mark.asyncio
-    async def test_instructor_views_course_analytics_dashboard(self, browser, test_base_url, instructor_credentials, db_connection):
+    async def test_instructor_views_course_analytics_dashboard(self, browser, selenium_config, instructor_credentials, db_connection):
         """
         E2E TEST: Instructor views course analytics dashboard
 
@@ -636,10 +636,10 @@ class TestInstructorAnalyticsDashboard(BaseTest):
         - Charts are visible
         - Metric cards present
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(instructor_credentials["email"], instructor_credentials["password"])
 
-        analytics_page = InstructorAnalyticsPage(browser, test_base_url)
+        analytics_page = InstructorAnalyticsPage(browser, selenium_config)
         analytics_page.navigate_to_analytics()
 
         # VERIFICATION 1: Analytics section loaded
@@ -657,7 +657,7 @@ class TestInstructorAnalyticsDashboard(BaseTest):
             "Completion rate should be present"
 
     @pytest.mark.asyncio
-    async def test_student_enrollment_numbers_accurate(self, browser, test_base_url, instructor_credentials, db_connection):
+    async def test_student_enrollment_numbers_accurate(self, browser, selenium_config, instructor_credentials, db_connection):
         """
         E2E TEST: Student enrollment numbers match database
 
@@ -676,10 +676,10 @@ class TestInstructorAnalyticsDashboard(BaseTest):
         VALIDATION:
         - UI count matches database count exactly
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(instructor_credentials["email"], instructor_credentials["password"])
 
-        analytics_page = InstructorAnalyticsPage(browser, test_base_url)
+        analytics_page = InstructorAnalyticsPage(browser, selenium_config)
         analytics_page.navigate_to_analytics()
 
         # Get instructor's first course
@@ -716,7 +716,7 @@ class TestInstructorAnalyticsDashboard(BaseTest):
                 f"Enrollment count mismatch: UI={ui_enrollment}, DB={db_enrollment}"
 
     @pytest.mark.asyncio
-    async def test_course_completion_rates_displayed(self, browser, test_base_url, instructor_credentials, db_connection):
+    async def test_course_completion_rates_displayed(self, browser, selenium_config, instructor_credentials, db_connection):
         """
         E2E TEST: Course completion rates calculated correctly
 
@@ -736,10 +736,10 @@ class TestInstructorAnalyticsDashboard(BaseTest):
         - UI rate matches database calculation
         - Calculation uses correct formula
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(instructor_credentials["email"], instructor_credentials["password"])
 
-        analytics_page = InstructorAnalyticsPage(browser, test_base_url)
+        analytics_page = InstructorAnalyticsPage(browser, selenium_config)
         analytics_page.navigate_to_analytics()
 
         # Get course ID
@@ -773,7 +773,7 @@ class TestInstructorAnalyticsDashboard(BaseTest):
                 f"Completion rate mismatch: UI={ui_completion}%, DB={db_completion}%"
 
     @pytest.mark.asyncio
-    async def test_average_quiz_scores_calculated_correctly(self, browser, test_base_url, instructor_credentials, db_connection):
+    async def test_average_quiz_scores_calculated_correctly(self, browser, selenium_config, instructor_credentials, db_connection):
         """
         E2E TEST: Average quiz scores calculated accurately
 
@@ -793,10 +793,10 @@ class TestInstructorAnalyticsDashboard(BaseTest):
         - UI average matches database calculation
         - Only completed quizzes included
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(instructor_credentials["email"], instructor_credentials["password"])
 
-        analytics_page = InstructorAnalyticsPage(browser, test_base_url)
+        analytics_page = InstructorAnalyticsPage(browser, selenium_config)
         analytics_page.navigate_to_analytics()
 
         # Get course ID
@@ -828,7 +828,7 @@ class TestInstructorAnalyticsDashboard(BaseTest):
                 f"Average quiz score mismatch: UI={ui_avg_score}%, DB={db_avg_score}%"
 
     @pytest.mark.asyncio
-    async def test_student_engagement_metrics_displayed(self, browser, test_base_url, instructor_credentials, db_connection):
+    async def test_student_engagement_metrics_displayed(self, browser, selenium_config, instructor_credentials, db_connection):
         """
         E2E TEST: Student engagement metrics (views, time spent) accurate
 
@@ -848,10 +848,10 @@ class TestInstructorAnalyticsDashboard(BaseTest):
         - UI views match database count
         - UI average time matches database calculation
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(instructor_credentials["email"], instructor_credentials["password"])
 
-        analytics_page = InstructorAnalyticsPage(browser, test_base_url)
+        analytics_page = InstructorAnalyticsPage(browser, selenium_config)
         analytics_page.navigate_to_analytics()
 
         # Get course ID
@@ -896,7 +896,7 @@ class TestInstructorAnalyticsDashboard(BaseTest):
                 f"Average time spent mismatch: UI={ui_avg_time} min, DB={db_avg_time} min"
 
     @pytest.mark.asyncio
-    async def test_struggling_students_identification(self, browser, test_base_url, instructor_credentials, db_connection):
+    async def test_struggling_students_identification(self, browser, selenium_config, instructor_credentials, db_connection):
         """
         E2E TEST: Struggling students identified correctly (score < 60%)
 
@@ -916,10 +916,10 @@ class TestInstructorAnalyticsDashboard(BaseTest):
         - UI count matches database count
         - Same students identified in both UI and database
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(instructor_credentials["email"], instructor_credentials["password"])
 
-        analytics_page = InstructorAnalyticsPage(browser, test_base_url)
+        analytics_page = InstructorAnalyticsPage(browser, selenium_config)
         analytics_page.navigate_to_analytics()
 
         # Get course ID
@@ -969,7 +969,7 @@ class TestOrgAdminAnalyticsDashboard(BaseTest):
     """
 
     @pytest.mark.asyncio
-    async def test_org_admin_views_organization_wide_analytics(self, browser, test_base_url, org_admin_credentials, db_connection):
+    async def test_org_admin_views_organization_wide_analytics(self, browser, selenium_config, org_admin_credentials, db_connection):
         """
         E2E TEST: Org admin views organization-wide analytics
 
@@ -989,10 +989,10 @@ class TestOrgAdminAnalyticsDashboard(BaseTest):
         - Organization-wide metrics displayed
         - Charts visible
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(org_admin_credentials["email"], org_admin_credentials["password"])
 
-        analytics_page = OrgAdminAnalyticsPage(browser, test_base_url)
+        analytics_page = OrgAdminAnalyticsPage(browser, selenium_config)
         analytics_page.navigate_to_analytics()
 
         # VERIFICATION 1: Analytics section loaded
@@ -1010,7 +1010,7 @@ class TestOrgAdminAnalyticsDashboard(BaseTest):
             "Member activity chart should be visible"
 
     @pytest.mark.asyncio
-    async def test_all_courses_overview_with_metrics(self, browser, test_base_url, org_admin_credentials, db_connection):
+    async def test_all_courses_overview_with_metrics(self, browser, selenium_config, org_admin_credentials, db_connection):
         """
         E2E TEST: All courses overview displays accurate metrics
 
@@ -1031,10 +1031,10 @@ class TestOrgAdminAnalyticsDashboard(BaseTest):
         - Course count matches database
         - Each course has metrics displayed
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(org_admin_credentials["email"], org_admin_credentials["password"])
 
-        analytics_page = OrgAdminAnalyticsPage(browser, test_base_url)
+        analytics_page = OrgAdminAnalyticsPage(browser, selenium_config)
         analytics_page.navigate_to_analytics()
 
         # Get org admin's organization ID
@@ -1060,7 +1060,7 @@ class TestOrgAdminAnalyticsDashboard(BaseTest):
             f"Courses count mismatch: UI={ui_courses_count}, DB={db_courses_count}"
 
     @pytest.mark.asyncio
-    async def test_member_activity_tracking(self, browser, test_base_url, org_admin_credentials, db_connection):
+    async def test_member_activity_tracking(self, browser, selenium_config, org_admin_credentials, db_connection):
         """
         E2E TEST: Member activity tracking accurate
 
@@ -1080,10 +1080,10 @@ class TestOrgAdminAnalyticsDashboard(BaseTest):
         - Total members count accurate
         - Active members count accurate
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(org_admin_credentials["email"], org_admin_credentials["password"])
 
-        analytics_page = OrgAdminAnalyticsPage(browser, test_base_url)
+        analytics_page = OrgAdminAnalyticsPage(browser, selenium_config)
         analytics_page.navigate_to_analytics()
 
         # Get organization ID
@@ -1122,7 +1122,7 @@ class TestOrgAdminAnalyticsDashboard(BaseTest):
             f"Active members mismatch: UI={ui_active_members}, DB={db_active_members}"
 
     @pytest.mark.asyncio
-    async def test_resource_utilization_stats(self, browser, test_base_url, org_admin_credentials, db_connection):
+    async def test_resource_utilization_stats(self, browser, selenium_config, org_admin_credentials, db_connection):
         """
         E2E TEST: Resource utilization statistics displayed
 
@@ -1141,10 +1141,10 @@ class TestOrgAdminAnalyticsDashboard(BaseTest):
         - Resource utilization card visible
         - Key metrics displayed
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(org_admin_credentials["email"], org_admin_credentials["password"])
 
-        analytics_page = OrgAdminAnalyticsPage(browser, test_base_url)
+        analytics_page = OrgAdminAnalyticsPage(browser, selenium_config)
         analytics_page.navigate_to_analytics()
 
         # VERIFICATION 1: Resource utilization card present
@@ -1187,7 +1187,7 @@ class TestSiteAdminAnalyticsDashboard(BaseTest):
     """
 
     @pytest.mark.asyncio
-    async def test_site_admin_views_platform_wide_analytics(self, browser, test_base_url, site_admin_credentials, db_connection):
+    async def test_site_admin_views_platform_wide_analytics(self, browser, selenium_config, site_admin_credentials, db_connection):
         """
         E2E TEST: Site admin views platform-wide analytics
 
@@ -1207,10 +1207,10 @@ class TestSiteAdminAnalyticsDashboard(BaseTest):
         - Cross-organization metrics displayed
         - System health status visible
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(site_admin_credentials["email"], site_admin_credentials["password"])
 
-        analytics_page = SiteAdminAnalyticsPage(browser, test_base_url)
+        analytics_page = SiteAdminAnalyticsPage(browser, selenium_config)
         analytics_page.navigate_to_analytics()
 
         # VERIFICATION 1: Analytics section loaded
@@ -1226,7 +1226,7 @@ class TestSiteAdminAnalyticsDashboard(BaseTest):
             "Platform health status should be present"
 
     @pytest.mark.asyncio
-    async def test_cross_organization_metrics(self, browser, test_base_url, site_admin_credentials, db_connection):
+    async def test_cross_organization_metrics(self, browser, selenium_config, site_admin_credentials, db_connection):
         """
         E2E TEST: Cross-organization metrics accurate
 
@@ -1247,10 +1247,10 @@ class TestSiteAdminAnalyticsDashboard(BaseTest):
         - Total users count accurate
         - Total courses count accurate
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(site_admin_credentials["email"], site_admin_credentials["password"])
 
-        analytics_page = SiteAdminAnalyticsPage(browser, test_base_url)
+        analytics_page = SiteAdminAnalyticsPage(browser, selenium_config)
         analytics_page.navigate_to_analytics()
 
         cursor = db_connection.cursor()
@@ -1274,7 +1274,7 @@ class TestSiteAdminAnalyticsDashboard(BaseTest):
         assert ui_courses == db_courses, f"Courses count mismatch: UI={ui_courses}, DB={db_courses}"
 
     @pytest.mark.asyncio
-    async def test_system_health_and_usage_stats(self, browser, test_base_url, site_admin_credentials, db_connection):
+    async def test_system_health_and_usage_stats(self, browser, selenium_config, site_admin_credentials, db_connection):
         """
         E2E TEST: System health and usage statistics
 
@@ -1295,10 +1295,10 @@ class TestSiteAdminAnalyticsDashboard(BaseTest):
         - Active users count matches database
         - Cross-org chart rendered
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(site_admin_credentials["email"], site_admin_credentials["password"])
 
-        analytics_page = SiteAdminAnalyticsPage(browser, test_base_url)
+        analytics_page = SiteAdminAnalyticsPage(browser, selenium_config)
         analytics_page.navigate_to_analytics()
 
         # VERIFICATION 1: Platform health status

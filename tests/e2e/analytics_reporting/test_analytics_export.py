@@ -285,8 +285,8 @@ class LoginPage(BasePage):
         """Perform login."""
         self.navigate_to("/login")
         time.sleep(1)
-        self.type_text(*self.EMAIL_INPUT, email)
-        self.type_text(*self.PASSWORD_INPUT, password)
+        self.enter_text(*self.EMAIL_INPUT, email)
+        self.enter_text(*self.PASSWORD_INPUT, password)
         self.click_element(*self.SUBMIT_BUTTON)
         time.sleep(2)
 
@@ -341,7 +341,7 @@ class TestAnalyticsExport(BaseTest):
     """
 
     @pytest.mark.asyncio
-    async def test_export_student_grades_to_csv(self, browser, test_base_url, instructor_credentials, db_connection, tmp_path):
+    async def test_export_student_grades_to_csv(self, browser, selenium_config, instructor_credentials, db_connection, tmp_path):
         """
         E2E TEST: Export student grades to CSV
 
@@ -365,12 +365,12 @@ class TestAnalyticsExport(BaseTest):
         - Row count matches database enrollment count
         - Data accuracy verified against database
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(instructor_credentials["email"], instructor_credentials["password"])
 
         # Navigate to instructor dashboard and export section
-        export_page = ExportPage(browser, test_base_url)
-        browser.get(f"{test_base_url}/instructor-dashboard")
+        export_page = ExportPage(browser, selenium_config)
+        browser.get(f"{selenium_config}/instructor-dashboard")
         time.sleep(2)
         export_page.navigate_to_export()
 
@@ -422,7 +422,7 @@ class TestAnalyticsExport(BaseTest):
         assert expected_count >= 0, "Database query should return valid count"
 
     @pytest.mark.asyncio
-    async def test_export_course_analytics_to_csv(self, browser, test_base_url, instructor_credentials, db_connection):
+    async def test_export_course_analytics_to_csv(self, browser, selenium_config, instructor_credentials, db_connection):
         """
         E2E TEST: Export course analytics to CSV
 
@@ -444,11 +444,11 @@ class TestAnalyticsExport(BaseTest):
         - Row per course taught by instructor
         - Metrics match database calculations
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(instructor_credentials["email"], instructor_credentials["password"])
 
-        export_page = ExportPage(browser, test_base_url)
-        browser.get(f"{test_base_url}/instructor-dashboard")
+        export_page = ExportPage(browser, selenium_config)
+        browser.get(f"{selenium_config}/instructor-dashboard")
         time.sleep(2)
         export_page.navigate_to_export()
 
@@ -487,7 +487,7 @@ class TestAnalyticsExport(BaseTest):
         assert expected_course_count >= 0, "Should have valid course count"
 
     @pytest.mark.asyncio
-    async def test_export_quiz_results_to_csv(self, browser, test_base_url, instructor_credentials, db_connection):
+    async def test_export_quiz_results_to_csv(self, browser, selenium_config, instructor_credentials, db_connection):
         """
         E2E TEST: Export quiz results to CSV
 
@@ -508,11 +508,11 @@ class TestAnalyticsExport(BaseTest):
         - Data matches quiz_performance table
         - Includes all required fields
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(instructor_credentials["email"], instructor_credentials["password"])
 
-        export_page = ExportPage(browser, test_base_url)
-        browser.get(f"{test_base_url}/instructor-dashboard")
+        export_page = ExportPage(browser, selenium_config)
+        browser.get(f"{selenium_config}/instructor-dashboard")
         time.sleep(2)
         export_page.navigate_to_export()
 
@@ -551,7 +551,7 @@ class TestAnalyticsExport(BaseTest):
         assert expected_quiz_count >= 0, "Should have valid quiz count"
 
     @pytest.mark.asyncio
-    async def test_export_user_activity_logs_to_csv(self, browser, test_base_url, org_admin_credentials, db_connection):
+    async def test_export_user_activity_logs_to_csv(self, browser, selenium_config, org_admin_credentials, db_connection):
         """
         E2E TEST: Export user activity logs to CSV
 
@@ -572,11 +572,11 @@ class TestAnalyticsExport(BaseTest):
         - Data matches student_activities table
         - Privacy-sensitive data properly anonymized
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(org_admin_credentials["email"], org_admin_credentials["password"])
 
-        export_page = ExportPage(browser, test_base_url)
-        browser.get(f"{test_base_url}/org-admin-dashboard")
+        export_page = ExportPage(browser, selenium_config)
+        browser.get(f"{selenium_config}/org-admin-dashboard")
         time.sleep(2)
         export_page.navigate_to_export()
 
@@ -616,7 +616,7 @@ class TestAnalyticsExport(BaseTest):
         assert expected_activity_count >= 0, "Should have valid activity count"
 
     @pytest.mark.asyncio
-    async def test_csv_format_validation(self, browser, test_base_url, instructor_credentials):
+    async def test_csv_format_validation(self, browser, selenium_config, instructor_credentials):
         """
         E2E TEST: CSV format validation (headers, data types)
 
@@ -636,11 +636,11 @@ class TestAnalyticsExport(BaseTest):
         - No missing or extra columns
         - Data types correct (numeric scores, ISO dates)
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(instructor_credentials["email"], instructor_credentials["password"])
 
-        export_page = ExportPage(browser, test_base_url)
-        browser.get(f"{test_base_url}/instructor-dashboard")
+        export_page = ExportPage(browser, selenium_config)
+        browser.get(f"{selenium_config}/instructor-dashboard")
         time.sleep(2)
         export_page.navigate_to_export()
 
@@ -678,7 +678,7 @@ class TestAnalyticsExport(BaseTest):
         assert download_url.endswith('.csv'), "Download should be CSV format"
 
     @pytest.mark.asyncio
-    async def test_csv_data_accuracy(self, browser, test_base_url, instructor_credentials, db_connection):
+    async def test_csv_data_accuracy(self, browser, selenium_config, instructor_credentials, db_connection):
         """
         E2E TEST: CSV data accuracy (compare to database)
 
@@ -699,11 +699,11 @@ class TestAnalyticsExport(BaseTest):
         - Numeric values match (no rounding errors)
         - Dates formatted correctly (ISO 8601)
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(instructor_credentials["email"], instructor_credentials["password"])
 
-        export_page = ExportPage(browser, test_base_url)
-        browser.get(f"{test_base_url}/instructor-dashboard")
+        export_page = ExportPage(browser, selenium_config)
+        browser.get(f"{selenium_config}/instructor-dashboard")
         time.sleep(2)
         export_page.navigate_to_export()
 
@@ -761,7 +761,7 @@ class TestReportGeneration(BaseTest):
     """
 
     @pytest.mark.asyncio
-    async def test_generate_student_progress_report_pdf(self, browser, test_base_url, instructor_credentials, db_connection):
+    async def test_generate_student_progress_report_pdf(self, browser, selenium_config, instructor_credentials, db_connection):
         """
         E2E TEST: Generate student progress report (PDF)
 
@@ -784,11 +784,11 @@ class TestReportGeneration(BaseTest):
         - Download link available
         - Preview visible
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(instructor_credentials["email"], instructor_credentials["password"])
 
-        report_page = ReportPage(browser, test_base_url)
-        browser.get(f"{test_base_url}/instructor-dashboard")
+        report_page = ReportPage(browser, selenium_config)
+        browser.get(f"{selenium_config}/instructor-dashboard")
         time.sleep(2)
         report_page.navigate_to_reports()
 
@@ -817,7 +817,7 @@ class TestReportGeneration(BaseTest):
         # assert validate_pdf_exists(pdf_path)
 
     @pytest.mark.asyncio
-    async def test_generate_course_completion_report(self, browser, test_base_url, instructor_credentials):
+    async def test_generate_course_completion_report(self, browser, selenium_config, instructor_credentials):
         """
         E2E TEST: Generate course completion report
 
@@ -837,11 +837,11 @@ class TestReportGeneration(BaseTest):
         - Contains completion rate chart
         - Lists completed students
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(instructor_credentials["email"], instructor_credentials["password"])
 
-        report_page = ReportPage(browser, test_base_url)
-        browser.get(f"{test_base_url}/instructor-dashboard")
+        report_page = ReportPage(browser, selenium_config)
+        browser.get(f"{selenium_config}/instructor-dashboard")
         time.sleep(2)
         report_page.navigate_to_reports()
 
@@ -862,7 +862,7 @@ class TestReportGeneration(BaseTest):
             "Download link should be available"
 
     @pytest.mark.asyncio
-    async def test_generate_organization_summary_report(self, browser, test_base_url, org_admin_credentials):
+    async def test_generate_organization_summary_report(self, browser, selenium_config, org_admin_credentials):
         """
         E2E TEST: Generate organization summary report
 
@@ -882,11 +882,11 @@ class TestReportGeneration(BaseTest):
         - Contains organization-wide metrics
         - Professional formatting
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(org_admin_credentials["email"], org_admin_credentials["password"])
 
-        report_page = ReportPage(browser, test_base_url)
-        browser.get(f"{test_base_url}/org-admin-dashboard")
+        report_page = ReportPage(browser, selenium_config)
+        browser.get(f"{selenium_config}/org-admin-dashboard")
         time.sleep(2)
         report_page.navigate_to_reports()
 
@@ -907,7 +907,7 @@ class TestReportGeneration(BaseTest):
             "Report preview should be visible"
 
     @pytest.mark.asyncio
-    async def test_custom_date_range_reports(self, browser, test_base_url, instructor_credentials):
+    async def test_custom_date_range_reports(self, browser, selenium_config, instructor_credentials):
         """
         E2E TEST: Custom date range reports
 
@@ -928,11 +928,11 @@ class TestReportGeneration(BaseTest):
         - Report generated for specified dates only
         - Date range displayed in report header
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(instructor_credentials["email"], instructor_credentials["password"])
 
-        report_page = ReportPage(browser, test_base_url)
-        browser.get(f"{test_base_url}/instructor-dashboard")
+        report_page = ReportPage(browser, selenium_config)
+        browser.get(f"{selenium_config}/instructor-dashboard")
         time.sleep(2)
         report_page.navigate_to_reports()
 
@@ -952,7 +952,7 @@ class TestReportGeneration(BaseTest):
         assert "Ready" in status, f"Report should be ready: {status}"
 
     @pytest.mark.asyncio
-    async def test_report_scheduling(self, browser, test_base_url, instructor_credentials):
+    async def test_report_scheduling(self, browser, selenium_config, instructor_credentials):
         """
         E2E TEST: Report scheduling (daily/weekly/monthly)
 
@@ -975,11 +975,11 @@ class TestReportGeneration(BaseTest):
         - Confirmation message displayed
         - Schedule stored in database
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(instructor_credentials["email"], instructor_credentials["password"])
 
-        report_page = ReportPage(browser, test_base_url)
-        browser.get(f"{test_base_url}/instructor-dashboard")
+        report_page = ReportPage(browser, selenium_config)
+        browser.get(f"{selenium_config}/instructor-dashboard")
         time.sleep(2)
         report_page.navigate_to_reports()
 
@@ -1000,7 +1000,7 @@ class TestReportGeneration(BaseTest):
             "Schedule section should be accessible"
 
     @pytest.mark.asyncio
-    async def test_email_report_delivery(self, browser, test_base_url, instructor_credentials, db_connection):
+    async def test_email_report_delivery(self, browser, selenium_config, instructor_credentials, db_connection):
         """
         E2E TEST: Email report delivery
 
@@ -1021,11 +1021,11 @@ class TestReportGeneration(BaseTest):
         - PDF attachment size reasonable (< 5MB)
         - Email record in email_queue table
         """
-        login_page = LoginPage(browser, test_base_url)
+        login_page = LoginPage(browser, selenium_config)
         login_page.login(instructor_credentials["email"], instructor_credentials["password"])
 
-        report_page = ReportPage(browser, test_base_url)
-        browser.get(f"{test_base_url}/instructor-dashboard")
+        report_page = ReportPage(browser, selenium_config)
+        browser.get(f"{selenium_config}/instructor-dashboard")
         time.sleep(2)
         report_page.navigate_to_reports()
 

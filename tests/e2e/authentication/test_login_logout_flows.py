@@ -199,8 +199,8 @@ async def test_user_student(db_connection):
     # Note: This is simplified - actual implementation uses bcrypt
     await db_connection.execute(
         """
-        INSERT INTO course_creator.users (email, username, password_hash, role, email_verified, is_active)
-        VALUES ($1, $2, crypt($3, gen_salt('bf')), 'student', true, true)
+        INSERT INTO users (email, username, password_hash, role_name, is_active)
+        VALUES ($1, $2, crypt($3, gen_salt('bf')), 'student', true)
         """,
         email, username, password
     )
@@ -208,7 +208,7 @@ async def test_user_student(db_connection):
     yield {"email": email, "username": username, "password": password, "role": "student"}
 
     # Cleanup: Delete test user
-    await db_connection.execute("DELETE FROM course_creator.users WHERE email = $1", email)
+    await db_connection.execute("DELETE FROM users WHERE email = $1", email)
 
 
 @pytest_asyncio.fixture
@@ -221,15 +221,15 @@ async def test_user_instructor(db_connection):
 
     await db_connection.execute(
         """
-        INSERT INTO course_creator.users (email, username, password_hash, role, email_verified, is_active)
-        VALUES ($1, $2, crypt($3, gen_salt('bf')), 'instructor', true, true)
+        INSERT INTO users (email, username, password_hash, role_name, is_active)
+        VALUES ($1, $2, crypt($3, gen_salt('bf')), 'instructor', true)
         """,
         email, username, password
     )
 
     yield {"email": email, "username": username, "password": password, "role": "instructor"}
 
-    await db_connection.execute("DELETE FROM course_creator.users WHERE email = $1", email)
+    await db_connection.execute("DELETE FROM users WHERE email = $1", email)
 
 
 @pytest_asyncio.fixture
@@ -243,7 +243,7 @@ async def test_user_org_admin(db_connection):
     # Create organization first
     org_id = await db_connection.fetchval(
         """
-        INSERT INTO course_creator.organizations (name, subdomain)
+        INSERT INTO organizations (name, subdomain)
         VALUES ($1, $2)
         RETURNING id
         """,
@@ -253,16 +253,16 @@ async def test_user_org_admin(db_connection):
     # Create user linked to organization
     await db_connection.execute(
         """
-        INSERT INTO course_creator.users (email, username, password_hash, role, organization_id, email_verified, is_active)
-        VALUES ($1, $2, crypt($3, gen_salt('bf')), 'org_admin', $4, true, true)
+        INSERT INTO users (email, username, password_hash, role_name, organization_id, is_active)
+        VALUES ($1, $2, crypt($3, gen_salt('bf')), 'org_admin', $4, true)
         """,
         email, username, password, org_id
     )
 
     yield {"email": email, "username": username, "password": password, "role": "org_admin", "org_id": org_id}
 
-    await db_connection.execute("DELETE FROM course_creator.users WHERE email = $1", email)
-    await db_connection.execute("DELETE FROM course_creator.organizations WHERE id = $1", org_id)
+    await db_connection.execute("DELETE FROM users WHERE email = $1", email)
+    await db_connection.execute("DELETE FROM organizations WHERE id = $1", org_id)
 
 
 @pytest_asyncio.fixture
@@ -275,15 +275,15 @@ async def test_user_site_admin(db_connection):
 
     await db_connection.execute(
         """
-        INSERT INTO course_creator.users (email, username, password_hash, role, email_verified, is_active)
-        VALUES ($1, $2, crypt($3, gen_salt('bf')), 'site_admin', true, true)
+        INSERT INTO users (email, username, password_hash, role_name, is_active)
+        VALUES ($1, $2, crypt($3, gen_salt('bf')), 'site_admin', true)
         """,
         email, username, password
     )
 
     yield {"email": email, "username": username, "password": password, "role": "site_admin"}
 
-    await db_connection.execute("DELETE FROM course_creator.users WHERE email = $1", email)
+    await db_connection.execute("DELETE FROM users WHERE email = $1", email)
 
 
 # ============================================================================

@@ -286,7 +286,7 @@ class TestRealTimeUpdates(BaseTest):
 
     @pytest.mark.asyncio
     async def test_01_student_enrollment_updates_analytics_immediately(
-        self, browser, test_base_url, instructor_credentials, db_connection
+        self, browser, selenium_config, instructor_credentials, db_connection
     ):
         """
         E2E TEST: Student enrollment updates instructor analytics in real-time
@@ -313,7 +313,7 @@ class TestRealTimeUpdates(BaseTest):
         ws_monitor = WebSocketMonitor(browser)
 
         # Login as instructor
-        page.navigate_to(f"{test_base_url}/login")
+        page.navigate_to(f"{selenium_config}/login")
         wait = WebDriverWait(browser, 10)
 
         email_input = wait.until(EC.presence_of_element_located((By.ID, "login-email")))
@@ -356,7 +356,7 @@ class TestRealTimeUpdates(BaseTest):
             }
 
             register_response = await client.post(
-                f"{test_base_url}/api/v1/auth/register",
+                f"{selenium_config}/api/v1/auth/register",
                 json=student_data
             )
             assert register_response.status_code == 201, "Student registration failed"
@@ -366,7 +366,7 @@ class TestRealTimeUpdates(BaseTest):
 
             # Enroll student in course
             enroll_response = await client.post(
-                f"{test_base_url}/api/v1/enrollments",
+                f"{selenium_config}/api/v1/enrollments",
                 json={"course_id": course_id},
                 headers={"Authorization": f"Bearer {student_token}"}
             )
@@ -401,7 +401,7 @@ class TestRealTimeUpdates(BaseTest):
 
     @pytest.mark.asyncio
     async def test_02_quiz_submission_updates_analytics_immediately(
-        self, browser, test_base_url, instructor_credentials, student_credentials, db_connection
+        self, browser, selenium_config, instructor_credentials, student_credentials, db_connection
     ):
         """
         E2E TEST: Quiz submission updates instructor analytics in real-time
@@ -429,7 +429,7 @@ class TestRealTimeUpdates(BaseTest):
         ws_monitor = WebSocketMonitor(browser)
 
         # Login as instructor
-        page.navigate_to(f"{test_base_url}/login")
+        page.navigate_to(f"{selenium_config}/login")
         wait = WebDriverWait(browser, 10)
 
         email_input = wait.until(EC.presence_of_element_located((By.ID, "login-email")))
@@ -464,7 +464,7 @@ class TestRealTimeUpdates(BaseTest):
         async with httpx.AsyncClient(verify=False) as client:
             # Student login
             login_response = await client.post(
-                f"{test_base_url}/api/v1/auth/login",
+                f"{selenium_config}/api/v1/auth/login",
                 json={
                     "email": student_credentials["email"],
                     "password": student_credentials["password"]
@@ -474,7 +474,7 @@ class TestRealTimeUpdates(BaseTest):
 
             # Get quiz ID for course
             quiz_response = await client.get(
-                f"{test_base_url}/api/v1/courses/{course_id}/quizzes",
+                f"{selenium_config}/api/v1/courses/{course_id}/quizzes",
                 headers={"Authorization": f"Bearer {student_token}"}
             )
             quizzes = quiz_response.json()
@@ -483,7 +483,7 @@ class TestRealTimeUpdates(BaseTest):
 
             # Submit quiz with perfect score (100%)
             submit_response = await client.post(
-                f"{test_base_url}/api/v1/quizzes/{quiz_id}/submit",
+                f"{selenium_config}/api/v1/quizzes/{quiz_id}/submit",
                 json={
                     "answers": [
                         {"question_id": i, "answer": "correct_answer"}
@@ -522,7 +522,7 @@ class TestRealTimeUpdates(BaseTest):
 
     @pytest.mark.asyncio
     async def test_03_course_completion_updates_dashboard(
-        self, browser, test_base_url, instructor_credentials, student_credentials, db_connection
+        self, browser, selenium_config, instructor_credentials, student_credentials, db_connection
     ):
         """
         E2E TEST: Course completion updates analytics dashboard in real-time
@@ -547,7 +547,7 @@ class TestRealTimeUpdates(BaseTest):
         page = RealTimeAnalyticsPage(browser)
 
         # Login as instructor
-        page.navigate_to(f"{test_base_url}/login")
+        page.navigate_to(f"{selenium_config}/login")
         wait = WebDriverWait(browser, 10)
 
         email_input = wait.until(EC.presence_of_element_located((By.ID, "login-email")))
@@ -576,7 +576,7 @@ class TestRealTimeUpdates(BaseTest):
         async with httpx.AsyncClient(verify=False) as client:
             # Student login
             login_response = await client.post(
-                f"{test_base_url}/api/v1/auth/login",
+                f"{selenium_config}/api/v1/auth/login",
                 json={
                     "email": student_credentials["email"],
                     "password": student_credentials["password"]
@@ -586,7 +586,7 @@ class TestRealTimeUpdates(BaseTest):
 
             # Mark course as completed
             complete_response = await client.post(
-                f"{test_base_url}/api/v1/courses/{course_id}/complete",
+                f"{selenium_config}/api/v1/courses/{course_id}/complete",
                 headers={"Authorization": f"Bearer {student_token}"}
             )
             assert complete_response.status_code in [200, 201], "Course completion failed"
@@ -613,7 +613,7 @@ class TestRealTimeUpdates(BaseTest):
 
     @pytest.mark.asyncio
     async def test_04_user_activity_tracking_updates_engagement(
-        self, browser, test_base_url, instructor_credentials, student_credentials, db_connection
+        self, browser, selenium_config, instructor_credentials, student_credentials, db_connection
     ):
         """
         E2E TEST: User activity tracking updates engagement metrics in real-time
@@ -638,7 +638,7 @@ class TestRealTimeUpdates(BaseTest):
         page = RealTimeAnalyticsPage(browser)
 
         # Login as instructor
-        page.navigate_to(f"{test_base_url}/login")
+        page.navigate_to(f"{selenium_config}/login")
         wait = WebDriverWait(browser, 10)
 
         email_input = wait.until(EC.presence_of_element_located((By.ID, "login-email")))
@@ -667,7 +667,7 @@ class TestRealTimeUpdates(BaseTest):
         async with httpx.AsyncClient(verify=False) as client:
             # Student login
             login_response = await client.post(
-                f"{test_base_url}/api/v1/auth/login",
+                f"{selenium_config}/api/v1/auth/login",
                 json={
                     "email": student_credentials["email"],
                     "password": student_credentials["password"]
@@ -696,7 +696,7 @@ class TestRealTimeUpdates(BaseTest):
 
             for activity in activities:
                 await client.post(
-                    f"{test_base_url}/api/v1/analytics/activities/track",
+                    f"{selenium_config}/api/v1/analytics/activities/track",
                     json=activity,
                     headers={"Authorization": f"Bearer {student_token}"}
                 )
@@ -721,7 +721,7 @@ class TestRealTimeUpdates(BaseTest):
 
     @pytest.mark.asyncio
     async def test_05_page_view_tracking_updates_analytics(
-        self, browser, test_base_url, instructor_credentials, student_credentials, db_connection
+        self, browser, selenium_config, instructor_credentials, student_credentials, db_connection
     ):
         """
         E2E TEST: Page view tracking updates analytics in real-time
@@ -746,7 +746,7 @@ class TestRealTimeUpdates(BaseTest):
         page = RealTimeAnalyticsPage(browser)
 
         # Login as instructor
-        page.navigate_to(f"{test_base_url}/login")
+        page.navigate_to(f"{selenium_config}/login")
         wait = WebDriverWait(browser, 10)
 
         email_input = wait.until(EC.presence_of_element_located((By.ID, "login-email")))
@@ -775,7 +775,7 @@ class TestRealTimeUpdates(BaseTest):
         async with httpx.AsyncClient(verify=False) as client:
             # Student login
             login_response = await client.post(
-                f"{test_base_url}/api/v1/auth/login",
+                f"{selenium_config}/api/v1/auth/login",
                 json={
                     "email": student_credentials["email"],
                     "password": student_credentials["password"]
@@ -787,7 +787,7 @@ class TestRealTimeUpdates(BaseTest):
             pages = ["overview", "syllabus", "week1", "week2", "resources"]
             for page_name in pages:
                 await client.post(
-                    f"{test_base_url}/api/v1/analytics/activities/track",
+                    f"{selenium_config}/api/v1/analytics/activities/track",
                     json={
                         "activity_type": "page_view",
                         "course_id": course_id,
@@ -805,7 +805,7 @@ class TestRealTimeUpdates(BaseTest):
 
     @pytest.mark.asyncio
     async def test_06_video_watch_time_updates_realtime(
-        self, browser, test_base_url, instructor_credentials, student_credentials, db_connection
+        self, browser, selenium_config, instructor_credentials, student_credentials, db_connection
     ):
         """
         E2E TEST: Video watch time updates in real-time
@@ -830,7 +830,7 @@ class TestRealTimeUpdates(BaseTest):
         page = RealTimeAnalyticsPage(browser)
 
         # Login as instructor
-        page.navigate_to(f"{test_base_url}/login")
+        page.navigate_to(f"{selenium_config}/login")
         wait = WebDriverWait(browser, 10)
 
         email_input = wait.until(EC.presence_of_element_located((By.ID, "login-email")))
@@ -859,7 +859,7 @@ class TestRealTimeUpdates(BaseTest):
         async with httpx.AsyncClient(verify=False) as client:
             # Student login
             login_response = await client.post(
-                f"{test_base_url}/api/v1/auth/login",
+                f"{selenium_config}/api/v1/auth/login",
                 json={
                     "email": student_credentials["email"],
                     "password": student_credentials["password"]
@@ -869,7 +869,7 @@ class TestRealTimeUpdates(BaseTest):
 
             # Track video watching (10 minutes)
             await client.post(
-                f"{test_base_url}/api/v1/analytics/activities/track",
+                f"{selenium_config}/api/v1/analytics/activities/track",
                 json={
                     "activity_type": "video_watch",
                     "course_id": course_id,
@@ -909,7 +909,7 @@ class TestWebSocketIntegration(BaseTest):
     """
 
     def test_07_analytics_dashboard_uses_websocket(
-        self, browser, test_base_url, instructor_credentials
+        self, browser, selenium_config, instructor_credentials
     ):
         """
         E2E TEST: Analytics dashboard uses WebSocket for real-time updates
@@ -936,7 +936,7 @@ class TestWebSocketIntegration(BaseTest):
         ws_monitor = WebSocketMonitor(browser)
 
         # Login as instructor
-        page.navigate_to(f"{test_base_url}/login")
+        page.navigate_to(f"{selenium_config}/login")
         wait = WebDriverWait(browser, 10)
 
         email_input = wait.until(EC.presence_of_element_located((By.ID, "login-email")))
@@ -973,7 +973,7 @@ class TestWebSocketIntegration(BaseTest):
         assert page.is_websocket_connected(), "UI should show WebSocket connected status"
 
     def test_08_poll_interval_configurable(
-        self, browser, test_base_url, instructor_credentials
+        self, browser, selenium_config, instructor_credentials
     ):
         """
         E2E TEST: Poll interval is configurable with 5 second default
@@ -999,7 +999,7 @@ class TestWebSocketIntegration(BaseTest):
         page = RealTimeAnalyticsPage(browser)
 
         # Login as instructor
-        page.navigate_to(f"{test_base_url}/login")
+        page.navigate_to(f"{selenium_config}/login")
         wait = WebDriverWait(browser, 10)
 
         email_input = wait.until(EC.presence_of_element_located((By.ID, "login-email")))
@@ -1036,7 +1036,7 @@ class TestWebSocketIntegration(BaseTest):
         assert persisted_interval == 10, "Interval should persist after page refresh"
 
     def test_09_connection_loss_handling_and_reconnect(
-        self, browser, test_base_url, instructor_credentials
+        self, browser, selenium_config, instructor_credentials
     ):
         """
         E2E TEST: Connection loss handling and automatic reconnect
@@ -1064,7 +1064,7 @@ class TestWebSocketIntegration(BaseTest):
         page = RealTimeAnalyticsPage(browser)
 
         # Login as instructor
-        page.navigate_to(f"{test_base_url}/login")
+        page.navigate_to(f"{selenium_config}/login")
         wait = WebDriverWait(browser, 10)
 
         email_input = wait.until(EC.presence_of_element_located((By.ID, "login-email")))
@@ -1128,7 +1128,7 @@ class TestPerformanceMetrics(BaseTest):
     """
 
     def test_10_analytics_queries_execute_under_500ms(
-        self, browser, test_base_url, instructor_credentials
+        self, browser, selenium_config, instructor_credentials
     ):
         """
         E2E TEST: Analytics queries execute under 500ms
@@ -1152,7 +1152,7 @@ class TestPerformanceMetrics(BaseTest):
         page = RealTimeAnalyticsPage(browser)
 
         # Login as instructor
-        page.navigate_to(f"{test_base_url}/login")
+        page.navigate_to(f"{selenium_config}/login")
         wait = WebDriverWait(browser, 10)
 
         email_input = wait.until(EC.presence_of_element_located((By.ID, "login-email")))
@@ -1217,7 +1217,7 @@ class TestPerformanceMetrics(BaseTest):
             print(f"  Min duration: {min(p['duration'] for p in performance_data):.2f}ms")
 
     def test_11_dashboard_loads_within_3_seconds(
-        self, browser, test_base_url, instructor_credentials
+        self, browser, selenium_config, instructor_credentials
     ):
         """
         E2E TEST: Analytics dashboard loads within 3 seconds
@@ -1242,7 +1242,7 @@ class TestPerformanceMetrics(BaseTest):
         page = RealTimeAnalyticsPage(browser)
 
         # Login as instructor
-        page.navigate_to(f"{test_base_url}/login")
+        page.navigate_to(f"{selenium_config}/login")
         wait = WebDriverWait(browser, 10)
 
         email_input = wait.until(EC.presence_of_element_located((By.ID, "login-email")))
@@ -1284,7 +1284,7 @@ class TestPerformanceMetrics(BaseTest):
             "Dashboard should be fully loaded and interactive"
 
     def test_12_realtime_updates_dont_slow_ui(
-        self, browser, test_base_url, instructor_credentials, student_credentials
+        self, browser, selenium_config, instructor_credentials, student_credentials
     ):
         """
         E2E TEST: Real-time updates don't slow down UI interactions
@@ -1309,7 +1309,7 @@ class TestPerformanceMetrics(BaseTest):
         page = RealTimeAnalyticsPage(browser)
 
         # Login as instructor
-        page.navigate_to(f"{test_base_url}/login")
+        page.navigate_to(f"{selenium_config}/login")
         wait = WebDriverWait(browser, 10)
 
         email_input = wait.until(EC.presence_of_element_located((By.ID, "login-email")))
@@ -1355,7 +1355,7 @@ class TestPerformanceMetrics(BaseTest):
             async with httpx.AsyncClient(verify=False) as client:
                 # Student login
                 login_response = await client.post(
-                    f"{test_base_url}/api/v1/auth/login",
+                    f"{selenium_config}/api/v1/auth/login",
                     json={
                         "email": student_credentials["email"],
                         "password": student_credentials["password"]
@@ -1366,7 +1366,7 @@ class TestPerformanceMetrics(BaseTest):
                 # Trigger 20 rapid activities
                 for i in range(20):
                     await client.post(
-                        f"{test_base_url}/api/v1/analytics/activities/track",
+                        f"{selenium_config}/api/v1/analytics/activities/track",
                         json={
                             "activity_type": "page_view",
                             "course_id": course_id,

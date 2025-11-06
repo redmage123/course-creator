@@ -93,10 +93,10 @@ class CourseCloneDatabase:
     def __init__(self):
         self.conn = psycopg2.connect(
             host="localhost",
-            port=5432,
-            database="course_management_db",
-            user="admin",
-            password="admin123"
+            port=5433,
+            database="course_creator",
+            user="postgres",
+            password="postgres_password"
         )
 
     def get_course_with_dependencies(self, course_id: str) -> Dict:
@@ -771,7 +771,7 @@ class CloneValidationPage(BasePage):
 
 @pytest.mark.e2e
 @pytest.mark.course_management
-class TestCourseCloning:
+class TestCourseCloning(BaseTest):
     """
     Test suite for course cloning workflows.
 
@@ -786,8 +786,17 @@ class TestCourseCloning:
     - Time savings (no need to recreate course structure)
     """
 
+    @pytest.fixture(autouse=True)
+    def setup_pages(self):
+        """Set up page objects for each test."""
+        self.login_page = InstructorLoginPage(self.driver, self.config)
+        self.clone_page = CourseCloningPage(self.driver, self.config)
+        self.customize_page = CloneCustomizationPage(self.driver, self.config)
+        self.validation_page = CloneValidationPage(self.driver, self.config)
+        self.db = CourseCloneDatabase()
+
     @pytest.mark.priority_high
-    def test_01_clone_course_within_same_organization(self, driver):
+    def test_01_clone_course_within_same_organization(self):
         """
         Test cloning a course within the same organization.
 
@@ -820,32 +829,27 @@ class TestCourseCloning:
 
         PRIORITY: HIGH - Core course reuse functionality
         """
-        # Setup
-        login_page = InstructorLoginPage(driver, config)
-        clone_page = CourseCloningPage(driver)
-        db = CourseCloneDatabase()
-
         try:
             # 1. Login as instructor
-            login_page.navigate()
-            login_page.login("instructor@example.com", "password123")
+            self.login_page.navigate()
+            self.login_page.login("instructor@example.com", "password123")
 
             # 2. Navigate to courses dashboard
-            clone_page.navigate_to("/instructor/courses")
+            self.clone_page.navigate_to("/instructor/courses")
             time.sleep(2)
 
             # 3. Get original course data from database
             original_course_id = "12345678-1234-1234-1234-123456789012"  # Test course ID
-            original_course = db.get_course_with_dependencies(original_course_id)
+            original_course = self.db.get_course_with_dependencies(original_course_id)
             assert original_course is not None, "Original course not found in database"
 
             # 4. Open clone modal
-            clone_page.open_clone_modal("Python Fundamentals")
+            self.clone_page.open_clone_modal("Python Fundamentals")
 
             # 5. Configure clone
             new_title = f"Python Fundamentals - Advanced Cohort {uuid.uuid4().hex[:8]}"
-            clone_page.set_new_course_title(new_title)
-            clone_page.configure_clone_options(
+            self.clone_page.set_new_course_title(new_title)
+            self.clone_page.configure_clone_options(
                 clone_content=True,
                 clone_modules=True,
                 clone_quizzes=True,
@@ -864,7 +868,7 @@ class TestCourseCloning:
             assert cloned_course_id != original_course_id, "Cloned course has same ID as original"
 
             # 9. Verify cloned course in database
-            cloned_course = db.get_course_with_dependencies(cloned_course_id)
+            cloned_course = self.db.get_course_with_dependencies(cloned_course_id)
             assert cloned_course is not None, "Cloned course not found in database"
             assert cloned_course['title'] == new_title, "Cloned course title mismatch"
             assert cloned_course['organization_id'] == original_course['organization_id'], \
@@ -881,15 +885,15 @@ class TestCourseCloning:
                 f"Lab count mismatch: expected {original_course['labs_count']}, got {cloned_course['labs_count']}"
 
             # 11. Verify original course unchanged
-            original_course_check = db.get_course_with_dependencies(original_course_id)
+            original_course_check = self.db.get_course_with_dependencies(original_course_id)
             assert original_course_check['updated_at'] == original_course['updated_at'], \
                 "Original course was modified during clone"
 
         finally:
-            db.close()
+            self.db.close()
 
     @pytest.mark.priority_high
-    def test_02_clone_course_to_different_organization_site_admin(self, driver):
+    def test_02_clone_course_to_different_organization_site_admin(self):
         """
         Test cloning a course to a different organization (site admin only).
 
@@ -941,7 +945,7 @@ class TestCourseCloning:
 
             # 3. Get original course data
             original_course_id = "11111111-1111-1111-1111-111111111111"
-            original_course = db.get_course_with_dependencies(original_course_id)
+            original_course = self.db.get_course_with_dependencies(original_course_id)
             assert original_course is not None
             original_org_id = original_course['organization_id']
 
@@ -962,7 +966,7 @@ class TestCourseCloning:
 
             # 8. Verify cloned course
             cloned_course_id = clone_page.get_cloned_course_id()
-            cloned_course = db.get_course_with_dependencies(cloned_course_id)
+            cloned_course = self.db.get_course_with_dependencies(cloned_course_id)
 
             assert cloned_course is not None
             assert cloned_course['organization_id'] != original_org_id, \
@@ -970,14 +974,14 @@ class TestCourseCloning:
             assert cloned_course['title'] == new_title
 
             # 9. Verify original course unchanged and still in original org
-            original_check = db.get_course_with_dependencies(original_course_id)
+            original_check = self.db.get_course_with_dependencies(original_course_id)
             assert original_check['organization_id'] == original_org_id
 
         finally:
-            db.close()
+            self.db.close()
 
     @pytest.mark.priority_medium
-    def test_03_clone_course_with_customization_rename_change_instructor(self, driver):
+    def test_03_clone_course_with_customization_rename_change_instructor(self):
         """
         Test cloning a course with customization (rename, change instructor).
 
@@ -1040,17 +1044,17 @@ class TestCourseCloning:
 
             # 6. Get cloned course
             cloned_course_id = clone_page.get_cloned_course_id()
-            cloned_course = db.get_course_with_dependencies(cloned_course_id)
+            cloned_course = self.db.get_course_with_dependencies(cloned_course_id)
 
             # 7. Verify customizations
             assert cloned_course['title'] == new_title
             # Verify instructor assignment (would need instructor_id from test data)
 
         finally:
-            db.close()
+            self.db.close()
 
     @pytest.mark.priority_medium
-    def test_04_clone_course_structure_only_no_content(self, driver):
+    def test_04_clone_course_structure_only_no_content(self):
         """
         Test cloning course structure only without content.
 
@@ -1102,8 +1106,8 @@ class TestCourseCloning:
 
             # 3. Get original course
             original_course_id = "22222222-2222-2222-2222-222222222222"
-            original_course = db.get_course_with_dependencies(original_course_id)
-            original_modules = db.get_modules_for_course(original_course_id)
+            original_course = self.db.get_course_with_dependencies(original_course_id)
+            original_modules = self.db.get_modules_for_course(original_course_id)
 
             # 4. Open clone modal
             clone_page.open_clone_modal("Web Development Fundamentals")
@@ -1128,7 +1132,7 @@ class TestCourseCloning:
 
             # 8. Verify structure-only clone
             cloned_course_id = clone_page.get_cloned_course_id()
-            cloned_course = db.get_course_with_dependencies(cloned_course_id)
+            cloned_course = self.db.get_course_with_dependencies(cloned_course_id)
 
             # Modules should be cloned
             assert cloned_course['modules_count'] == original_course['modules_count'], \
@@ -1140,13 +1144,13 @@ class TestCourseCloning:
             assert cloned_course['labs_count'] == 0, "Labs cloned when they shouldn't be"
 
             # 9. Verify module titles match
-            cloned_modules = db.get_modules_for_course(cloned_course_id)
+            cloned_modules = self.db.get_modules_for_course(cloned_course_id)
             original_titles = [m['title'] for m in original_modules]
             cloned_titles = [m['title'] for m in cloned_modules]
             assert original_titles == cloned_titles, "Module titles don't match"
 
         finally:
-            db.close()
+            self.db.close()
 
 
 # ============================================================================
@@ -1155,7 +1159,7 @@ class TestCourseCloning:
 
 @pytest.mark.e2e
 @pytest.mark.course_management
-class TestCourseCloneValidation:
+class TestCourseCloneValidation(BaseTest):
     """
     Test suite for validating cloned course content.
 
@@ -1170,8 +1174,16 @@ class TestCourseCloneValidation:
     - Content data fully duplicated
     """
 
+    @pytest.fixture(autouse=True)
+    def setup_pages(self):
+        """Set up page objects for each test."""
+        self.login_page = InstructorLoginPage(self.driver, self.config)
+        self.clone_page = CourseCloningPage(self.driver, self.config)
+        self.validation_page = CloneValidationPage(self.driver, self.config)
+        self.db = CourseCloneDatabase()
+
     @pytest.mark.priority_critical
-    def test_05_verify_all_modules_cloned_correctly(self, driver):
+    def test_05_verify_all_modules_cloned_correctly(self):
         """
         Test verification that all modules are cloned correctly.
 
@@ -1206,8 +1218,8 @@ class TestCourseCloneValidation:
             original_course_id = "12345678-1234-1234-1234-123456789012"
             cloned_course_id = "87654321-4321-4321-4321-210987654321"  # From clone operation
 
-            original_modules = db.get_modules_for_course(original_course_id)
-            cloned_modules = db.get_modules_for_course(cloned_course_id)
+            original_modules = self.db.get_modules_for_course(original_course_id)
+            cloned_modules = self.db.get_modules_for_course(cloned_course_id)
 
             # 4. Verify module count
             assert len(cloned_modules) == len(original_modules), \
@@ -1223,10 +1235,10 @@ class TestCourseCloneValidation:
                     f"Module {i} has same UUID as original"
 
         finally:
-            db.close()
+            self.db.close()
 
     @pytest.mark.priority_critical
-    def test_06_verify_all_quizzes_cloned_with_questions(self, driver):
+    def test_06_verify_all_quizzes_cloned_with_questions(self):
         """
         Test verification that all quizzes are cloned with questions.
 
@@ -1250,8 +1262,8 @@ class TestCourseCloneValidation:
             original_course_id = "12345678-1234-1234-1234-123456789012"
             cloned_course_id = "87654321-4321-4321-4321-210987654321"
 
-            original_quizzes = db.get_quizzes_for_course(original_course_id)
-            cloned_quizzes = db.get_quizzes_for_course(cloned_course_id)
+            original_quizzes = self.db.get_quizzes_for_course(original_course_id)
+            cloned_quizzes = self.db.get_quizzes_for_course(cloned_course_id)
 
             # Verify quiz count
             assert len(cloned_quizzes) == len(original_quizzes)
@@ -1265,10 +1277,10 @@ class TestCourseCloneValidation:
                 assert clone['id'] != orig['id']
 
         finally:
-            db.close()
+            self.db.close()
 
     @pytest.mark.priority_high
-    def test_07_verify_all_videos_cloned_with_metadata(self, driver):
+    def test_07_verify_all_videos_cloned_with_metadata(self):
         """
         Test verification that all videos are cloned with metadata.
 
@@ -1292,8 +1304,8 @@ class TestCourseCloneValidation:
             original_course_id = "12345678-1234-1234-1234-123456789012"
             cloned_course_id = "87654321-4321-4321-4321-210987654321"
 
-            original_videos = db.get_videos_for_course(original_course_id)
-            cloned_videos = db.get_videos_for_course(cloned_course_id)
+            original_videos = self.db.get_videos_for_course(original_course_id)
+            cloned_videos = self.db.get_videos_for_course(cloned_course_id)
 
             # Verify video count
             assert len(cloned_videos) == len(original_videos)
@@ -1306,10 +1318,10 @@ class TestCourseCloneValidation:
                 assert clone['id'] != orig['id']
 
         finally:
-            db.close()
+            self.db.close()
 
     @pytest.mark.priority_high
-    def test_08_verify_lab_environments_cloned_with_configurations(self, driver):
+    def test_08_verify_lab_environments_cloned_with_configurations(self):
         """
         Test verification that lab environments are cloned with configurations.
 
@@ -1349,7 +1361,7 @@ class TestCourseCloneValidation:
                 assert clone['id'] != orig['id']
 
         finally:
-            db.close()
+            self.db.close()
 
 
 # ============================================================================

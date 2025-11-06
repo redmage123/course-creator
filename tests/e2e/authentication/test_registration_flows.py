@@ -332,21 +332,21 @@ class TestStudentRegistration:
 
         # DATABASE VERIFICATION: Check user created
         user = await db_connection.fetchrow(
-            "SELECT id, email, username, role, email_verified, gdpr_consent_date, created_at "
-            "FROM course_creator.users WHERE email = $1",
+            "SELECT id, email, username, role_name, email_verified, gdpr_consent_date, created_at "
+            "FROM users WHERE email = $1",
             email
         )
 
         assert user is not None, "User should be created in database"
         assert user['email'] == email, "Email should match"
         assert user['username'] == username, "Username should match"
-        assert user['role'] == 'student', "Role should be student"
+        assert user['role_name'] == 'student', "Role should be student"
         assert user['email_verified'] is False, "Email should not be verified yet"
         assert user['gdpr_consent_date'] is not None, "GDPR consent date should be recorded"
 
         # Verify email verification token created
         token = await db_connection.fetchval(
-            "SELECT token FROM course_creator.email_verification_tokens "
+            "SELECT token FROM email_verification_tokens "
             "WHERE user_id = $1 AND used = false",
             user['id']
         )
@@ -400,7 +400,7 @@ class TestStudentRegistration:
 
         # DATABASE VERIFICATION
         user = await db_connection.fetchrow(
-            "SELECT id, email, username, full_name FROM course_creator.users WHERE email = $1",
+            "SELECT id, email, username, full_name FROM users WHERE email = $1",
             email
         )
 
@@ -457,10 +457,10 @@ class TestStudentRegistration:
 
         # Get verification token from DB
         user_id = await db_connection.fetchval(
-            "SELECT id FROM course_creator.users WHERE email = $1", email
+            "SELECT id FROM users WHERE email = $1", email
         )
         token = await db_connection.fetchval(
-            "SELECT token FROM course_creator.email_verification_tokens "
+            "SELECT token FROM email_verification_tokens "
             "WHERE user_id = $1 AND used = false",
             user_id
         )
@@ -475,13 +475,13 @@ class TestStudentRegistration:
 
         # Verify email_verified flag set in DB
         email_verified = await db_connection.fetchval(
-            "SELECT email_verified FROM course_creator.users WHERE id = $1", user_id
+            "SELECT email_verified FROM users WHERE id = $1", user_id
         )
         assert email_verified is True, "Email should be verified"
 
         # Verify token marked as used
         token_used = await db_connection.fetchval(
-            "SELECT used FROM course_creator.email_verification_tokens WHERE token = $1", token
+            "SELECT used FROM email_verification_tokens WHERE token = $1", token
         )
         assert token_used is True, "Token should be marked as used"
 
@@ -597,7 +597,7 @@ class TestStudentRegistration:
 
         # DATABASE VERIFICATION: Only one user exists
         user_count = await db_connection.fetchval(
-            "SELECT COUNT(*) FROM course_creator.users WHERE email = $1", email
+            "SELECT COUNT(*) FROM users WHERE email = $1", email
         )
         assert user_count == 1, "Only first registration should succeed"
 
@@ -662,7 +662,7 @@ class TestOrganizationRegistration:
 
         # DATABASE VERIFICATION: Organization created
         org = await db_connection.fetchrow(
-            "SELECT id, name, subdomain FROM course_creator.organizations WHERE subdomain = $1",
+            "SELECT id, name, subdomain FROM organizations WHERE subdomain = $1",
             subdomain
         )
 
@@ -671,12 +671,12 @@ class TestOrganizationRegistration:
 
         # DATABASE VERIFICATION: Admin user created
         admin_user = await db_connection.fetchrow(
-            "SELECT id, email, username, role, organization_id FROM course_creator.users WHERE email = $1",
+            "SELECT id, email, username, role_name, organization_id FROM users WHERE email = $1",
             admin_email
         )
 
         assert admin_user is not None, "Admin user should be created"
-        assert admin_user['role'] == 'org_admin', "Admin should have org_admin role"
+        assert admin_user['role_name'] == 'org_admin', "Admin should have org_admin role"
         assert admin_user['organization_id'] == org['id'], "Admin should be linked to organization"
 
     @pytest.mark.asyncio
@@ -769,7 +769,7 @@ class TestOrganizationRegistration:
 
         # DATABASE VERIFICATION
         org_settings = await db_connection.fetchrow(
-            "SELECT timezone, language, features_enabled FROM course_creator.organizations WHERE subdomain = $1",
+            "SELECT timezone, language, features_enabled FROM organizations WHERE subdomain = $1",
             subdomain
         )
 
@@ -819,12 +819,12 @@ class TestOrganizationRegistration:
 
         # DATABASE VERIFICATION
         admin_user = await db_connection.fetchrow(
-            "SELECT id, role, organization_id, is_active FROM course_creator.users WHERE email = $1",
+            "SELECT id, role_name, organization_id, is_active FROM users WHERE email = $1",
             admin_email
         )
 
         assert admin_user is not None, "Admin user should exist"
-        assert admin_user['role'] == 'org_admin', "Should have org_admin role"
+        assert admin_user['role_name'] == 'org_admin', "Should have org_admin role"
         assert admin_user['organization_id'] is not None, "Should be linked to organization"
         assert admin_user['is_active'] is True, "Should be active"
 
@@ -1114,7 +1114,7 @@ class TestRegistrationFeatures:
 
         # DATABASE VERIFICATION
         gdpr_consent = await db_connection.fetchrow(
-            "SELECT gdpr_consent_date, gdpr_consent_version FROM course_creator.users WHERE email = $1",
+            "SELECT gdpr_consent_date, gdpr_consent_version FROM users WHERE email = $1",
             email
         )
 

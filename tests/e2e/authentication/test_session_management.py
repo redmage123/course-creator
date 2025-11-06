@@ -205,7 +205,7 @@ class TestSessionCreation:
         
         async with db_connection.transaction():
             user_id = await db_connection.fetchval("""
-                INSERT INTO course_creator.users (email, username, password_hash, role)
+                INSERT INTO users (email, username, password_hash, role_name)
                 VALUES ($1, $2, crypt($3, gen_salt('bf')), 'student')
                 RETURNING id
             """, test_email, "session_test", test_password)
@@ -229,7 +229,7 @@ class TestSessionCreation:
         # Step 6: VERIFICATION 3 - Session in database
         session_row = await db_connection.fetchrow("""
             SELECT id, user_id, token, expires_at, created_at, last_activity, status
-            FROM course_creator.user_sessions
+            FROM user_sessions
             WHERE user_id = $1 AND status = 'active'
             ORDER BY created_at DESC
             LIMIT 1
@@ -282,7 +282,7 @@ class TestSessionCreation:
         
         async with db_connection.transaction():
             await db_connection.execute("""
-                INSERT INTO course_creator.users (email, username, password_hash, role)
+                INSERT INTO users (email, username, password_hash, role_name)
                 VALUES ($1, $2, crypt($3, gen_salt('bf')), 'student')
             """, test_email, "localstorage_test", test_password)
         
@@ -360,7 +360,7 @@ class TestSessionValidation:
         
         async with db_connection.transaction():
             user_id = await db_connection.fetchval("""
-                INSERT INTO course_creator.users (email, username, password_hash, role)
+                INSERT INTO users (email, username, password_hash, role_name)
                 VALUES ($1, $2, crypt($3, gen_salt('bf')), 'student')
                 RETURNING id
             """, test_email, test_username, test_password)
@@ -439,18 +439,18 @@ class TestSessionValidation:
         
         async with db_connection.transaction():
             user_id = await db_connection.fetchval("""
-                INSERT INTO course_creator.users (email, username, password_hash, role)
+                INSERT INTO users (email, username, password_hash, role_name)
                 VALUES ($1, $2, crypt($3, gen_salt('bf')), 'student')
                 RETURNING id
             """, test_email, "expired_session_test", test_password)
             
             # Create expired session (expired 1 hour ago)
             await db_connection.execute("""
-                INSERT INTO course_creator.user_sessions (
+                INSERT INTO user_sessions (
                     user_id, token, expires_at, created_at, last_activity, status
                 )
                 VALUES (
-                    $1, $2, NOW() - INTERVAL '1 hour', NOW() - INTERVAL '3 hours', 
+                    $1, $2, NOW() - INTERVAL '1 hour', NOW() - INTERVAL '3 hours',
                     NOW() - INTERVAL '1 hour', 'expired'
                 )
             """, user_id, expired_token)
@@ -571,7 +571,7 @@ class TestSessionSecurity:
         
         async with db_connection.transaction():
             user_id = await db_connection.fetchval("""
-                INSERT INTO course_creator.users (email, username, password_hash, role)
+                INSERT INTO users (email, username, password_hash, role_name)
                 VALUES ($1, $2, crypt($3, gen_salt('bf')), 'student')
                 RETURNING id
             """, test_email, "timeout_test", test_password)
@@ -602,7 +602,7 @@ class TestSessionSecurity:
         # VERIFICATION 2: Session marked as expired in database
         session_status = await db_connection.fetchval("""
             SELECT status
-            FROM course_creator.user_sessions
+            FROM user_sessions
             WHERE user_id = $1
             ORDER BY created_at DESC
             LIMIT 1
@@ -640,7 +640,7 @@ class TestSessionSecurity:
         
         async with db_connection.transaction():
             user_id = await db_connection.fetchval("""
-                INSERT INTO course_creator.users (email, username, password_hash, role)
+                INSERT INTO users (email, username, password_hash, role_name)
                 VALUES ($1, $2, crypt($3, gen_salt('bf')), 'student')
                 RETURNING id
             """, test_email, "activity_test", test_password)
@@ -677,7 +677,7 @@ class TestSessionSecurity:
         # VERIFICATION 3: Database session updated
         db_last_activity = await db_connection.fetchval("""
             SELECT last_activity
-            FROM course_creator.user_sessions
+            FROM user_sessions
             WHERE user_id = $1
             ORDER BY created_at DESC
             LIMIT 1
@@ -718,7 +718,7 @@ class TestSessionSecurity:
         
         async with db_connection.transaction():
             user_id = await db_connection.fetchval("""
-                INSERT INTO course_creator.users (email, username, password_hash, role)
+                INSERT INTO users (email, username, password_hash, role_name)
                 VALUES ($1, $2, crypt($3, gen_salt('bf')), 'student')
                 RETURNING id
             """, test_email, "ip_binding_test", test_password)
@@ -734,7 +734,7 @@ class TestSessionSecurity:
         # VERIFICATION 1: Session has IP address recorded
         session_ip = await db_connection.fetchval("""
             SELECT metadata->>'ip_address'
-            FROM course_creator.user_sessions
+            FROM user_sessions
             WHERE user_id = $1
             ORDER BY created_at DESC
             LIMIT 1
@@ -749,7 +749,7 @@ class TestSessionSecurity:
         # VERIFICATION 2: Simulate IP change (update database)
         async with db_connection.transaction():
             await db_connection.execute("""
-                UPDATE course_creator.user_sessions
+                UPDATE user_sessions
                 SET metadata = jsonb_set(
                     COALESCE(metadata, '{}'::jsonb),
                     '{ip_address}',

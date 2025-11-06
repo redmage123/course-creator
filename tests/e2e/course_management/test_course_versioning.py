@@ -1041,13 +1041,15 @@ class TestVersionCreation(BaseTest):
     def setup_pages(self):
         """Set up page objects for each test."""
         self.login_page = InstructorLoginPage(self.driver, self.config)
-        self.versioning_page = CourseVersioningPage(self.driver)
+        self.versioning_page = CourseVersioningPage(self.driver, self.config)
+        self.comparison_page = VersionComparisonPage(self.driver, self.config)
+        self.migration_page = VersionMigrationPage(self.driver, self.config)
         self.db_helper = CourseVersionDatabase({
             'host': 'localhost',
-            'port': 5432,
+            'port': 5433,
             'database': 'course_creator',
             'user': 'postgres',
-            'password': 'postgres'
+            'password': 'postgres_password'
         })
 
     def test_01_create_major_version(self):
@@ -1221,7 +1223,7 @@ class TestVersionCreation(BaseTest):
         self.login_page.login("instructor@example.com", "password123")
 
         # Assume v1.0 and v2.0 already exist with different content
-        comparison_page = VersionComparisonPage(self.driver)
+        comparison_page = VersionComparisonPage(self.driver, self.config)
         comparison_page.navigate()
 
         # Select versions for comparison
@@ -1332,13 +1334,15 @@ class TestVersionManagement(BaseTest):
     def setup_pages(self):
         """Set up page objects for each test."""
         self.login_page = InstructorLoginPage(self.driver, self.config)
-        self.versioning_page = CourseVersioningPage(self.driver)
+        self.versioning_page = CourseVersioningPage(self.driver, self.config)
+        self.comparison_page = VersionComparisonPage(self.driver, self.config)
+        self.migration_page = VersionMigrationPage(self.driver, self.config)
         self.db_helper = CourseVersionDatabase({
             'host': 'localhost',
-            'port': 5432,
+            'port': 5433,
             'database': 'course_creator',
             'user': 'postgres',
-            'password': 'postgres'
+            'password': 'postgres_password'
         })
 
     def test_05_multiple_versions_active_simultaneously(self):
@@ -1477,7 +1481,7 @@ class TestVersionManagement(BaseTest):
         self.versioning_page.navigate_to_course(course_id)
 
         # Navigate to migration interface
-        migration_page = VersionMigrationPage(self.driver)
+        migration_page = VersionMigrationPage(self.driver, self.config)
         migration_page.navigate_to_migration_tab()
 
         # Select source and target versions
@@ -1541,13 +1545,15 @@ class TestVersionMetadata(BaseTest):
     def setup_pages(self):
         """Set up page objects for each test."""
         self.login_page = InstructorLoginPage(self.driver, self.config)
-        self.versioning_page = CourseVersioningPage(self.driver)
+        self.versioning_page = CourseVersioningPage(self.driver, self.config)
+        self.comparison_page = VersionComparisonPage(self.driver, self.config)
+        self.migration_page = VersionMigrationPage(self.driver, self.config)
         self.db_helper = CourseVersionDatabase({
             'host': 'localhost',
-            'port': 5432,
+            'port': 5433,
             'database': 'course_creator',
             'user': 'postgres',
-            'password': 'postgres'
+            'password': 'postgres_password'
         })
 
     def test_08_version_changelog_instructor_notes(self):
