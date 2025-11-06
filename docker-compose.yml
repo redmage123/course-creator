@@ -785,7 +785,7 @@ services:
       - "7900:7900"  # VNC viewer port for debugging
     shm_size: "2g"
     environment:
-      - SE_NODE_MAX_SESSIONS=5
+      - SE_NODE_MAX_SESSIONS=10
       - SE_NODE_SESSION_TIMEOUT=300
       - SE_START_XVFB=true
       - SE_SCREEN_WIDTH=1920
