@@ -283,7 +283,7 @@ class TestPasswordReset(BaseTest):
             login_page.click_element(*forgot_link)
 
             # Enter email
-            email_input = (By.ID, "reset-email")
+            email_input = (By.ID, "email")
             login_page.enter_text(*email_input, "student@example.com")
 
             # Submit

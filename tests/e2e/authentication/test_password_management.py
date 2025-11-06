@@ -67,8 +67,8 @@ class ForgotPasswordPage:
         self.wait = WebDriverWait(driver, 10)
     
     # Locators
-    EMAIL_INPUT = (By.ID, "reset-email")
-    SUBMIT_BUTTON = (By.ID, "reset-submit")
+    EMAIL_INPUT = (By.ID, "email")
+    SUBMIT_BUTTON = (By.ID, "requestBtn")
     SUCCESS_MESSAGE = (By.CLASS_NAME, "success-message")
     ERROR_MESSAGE = (By.CLASS_NAME, "error-message")
     BACK_TO_LOGIN_LINK = (By.LINK_TEXT, "Back to Login")
@@ -120,9 +120,9 @@ class PasswordResetPage:
         self.wait = WebDriverWait(driver, 10)
     
     # Locators
-    NEW_PASSWORD_INPUT = (By.ID, "new-password")
-    CONFIRM_PASSWORD_INPUT = (By.ID, "confirm-password")
-    SUBMIT_BUTTON = (By.ID, "reset-password-submit")
+    NEW_PASSWORD_INPUT = (By.ID, "newPassword")
+    CONFIRM_PASSWORD_INPUT = (By.ID, "confirmPassword")
+    SUBMIT_BUTTON = (By.ID, "completeBtn")
     SUCCESS_MESSAGE = (By.CLASS_NAME, "success-message")
     ERROR_MESSAGE = (By.CLASS_NAME, "error-message")
     TOKEN_EXPIRED_MESSAGE = (By.CLASS_NAME, "token-expired-message")
@@ -188,10 +188,10 @@ class PasswordChangePage:
         self.wait = WebDriverWait(driver, 10)
     
     # Locators
-    CURRENT_PASSWORD_INPUT = (By.ID, "current-password")
-    NEW_PASSWORD_INPUT = (By.ID, "new-password")
-    CONFIRM_PASSWORD_INPUT = (By.ID, "confirm-password")
-    SUBMIT_BUTTON = (By.ID, "change-password-submit")
+    CURRENT_PASSWORD_INPUT = (By.ID, "currentPassword")
+    NEW_PASSWORD_INPUT = (By.ID, "newPassword")
+    CONFIRM_PASSWORD_INPUT = (By.ID, "confirmPassword")
+    SUBMIT_BUTTON = (By.ID, "submitBtn")
     SUCCESS_MESSAGE = (By.CLASS_NAME, "success-message")
     ERROR_MESSAGE = (By.CLASS_NAME, "error-message")
     
@@ -914,7 +914,7 @@ class TestPasswordSecurity:
         
         wait = WebDriverWait(driver, 10)
         password_input = wait.until(EC.presence_of_element_located((By.ID, "password")))
-        confirm_input = driver.find_element(By.ID, "confirm-password")
+        confirm_input = driver.find_element(By.ID, "confirmPassword")
         
         for weak_pwd, reason in weak_passwords:
             # Enter weak password
@@ -1050,7 +1050,7 @@ class TestPasswordSecurity:
         email_input = wait.until(EC.presence_of_element_located((By.ID, "email")))
         username_input = driver.find_element(By.ID, "username")
         password_input = driver.find_element(By.ID, "password")
-        confirm_input = driver.find_element(By.ID, "confirm-password")
+        confirm_input = driver.find_element(By.ID, "confirmPassword")
 
         # Enter email and username
         email_input.send_keys(test_email)
@@ -1339,7 +1339,7 @@ class TestPasswordSecurity:
         email_input = wait.until(EC.presence_of_element_located((By.ID, "email")))
         username_input = driver.find_element(By.ID, "username")
         password_input = driver.find_element(By.ID, "password")
-        confirm_input = driver.find_element(By.ID, "confirm-password")
+        confirm_input = driver.find_element(By.ID, "confirmPassword")
 
         # Enter email and username
         email_input.clear()
