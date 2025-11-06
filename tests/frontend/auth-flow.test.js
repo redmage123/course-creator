@@ -6,8 +6,8 @@
 // Mock fetch for API calls
 global.fetch = jest.fn();
 
-// Mock window.location
-Object.defineProperty(window, 'location', {
+// Mock window.locations
+Object.defineProperty(window, 'locations', {
   value: {
     href: 'http://localhost:3000',
     pathname: '/login.html',
@@ -36,8 +36,8 @@ describe('Authentication Flow Frontend', () => {
     storageMock.getItem.mockClear();
     storageMock.setItem.mockClear();
     storageMock.removeItem.mockClear();
-    window.location.assign.mockClear();
-    window.location.replace.mockClear();
+    window.locations.assign.mockClear();
+    window.locations.replace.mockClear();
     
     // Setup basic login form DOM
     document.body.innerHTML = `
@@ -238,14 +238,14 @@ describe('Authentication Flow Frontend', () => {
       window.logout = function() {
         localStorage.removeItem('authToken');
         localStorage.removeItem('currentUser');
-        window.location.assign('/login.html');
+        window.locations.assign('/login.html');
       };
 
       window.logout();
 
       expect(storageMock.removeItem).toHaveBeenCalledWith('authToken');
       expect(storageMock.removeItem).toHaveBeenCalledWith('currentUser');
-      expect(window.location.assign).toHaveBeenCalledWith('/login.html');
+      expect(window.locations.assign).toHaveBeenCalledWith('/login.html');
     });
   });
 
@@ -313,24 +313,24 @@ describe('Authentication Flow Frontend', () => {
         };
         
         const destination = redirectMap[role] || '/login.html';
-        window.location.assign(destination);
+        window.locations.assign(destination);
       };
 
       // Test instructor redirect
       window.redirectAfterLogin('instructor');
-      expect(window.location.assign).toHaveBeenCalledWith('/instructor-dashboard.html');
+      expect(window.locations.assign).toHaveBeenCalledWith('/instructor-dashboard.html');
 
       // Test student redirect
       window.redirectAfterLogin('student');
-      expect(window.location.assign).toHaveBeenCalledWith('/student-dashboard.html');
+      expect(window.locations.assign).toHaveBeenCalledWith('/student-dashboard.html');
 
       // Test admin redirect
       window.redirectAfterLogin('admin');
-      expect(window.location.assign).toHaveBeenCalledWith('/admin.html');
+      expect(window.locations.assign).toHaveBeenCalledWith('/admin.html');
 
       // Test unknown role redirect
       window.redirectAfterLogin('unknown');
-      expect(window.location.assign).toHaveBeenCalledWith('/login.html');
+      expect(window.locations.assign).toHaveBeenCalledWith('/login.html');
     });
   });
 

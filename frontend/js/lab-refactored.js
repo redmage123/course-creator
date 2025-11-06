@@ -4,7 +4,6 @@
  * This replaces the monolithic lab-template.js (1,824 lines) with a modular,
  * maintainable architecture following SOLID principles.
  */
-
 import { LabController } from './lab/lab-controller.js';
 
 // Global lab instance
@@ -46,6 +45,11 @@ async function initializeLab(options = {}) {
 }
 
 // Set up event handlers for UI integration
+    /**
+     * SET LAB EVENT HANDLERS VALUE
+     * PURPOSE: Set lab event handlers value
+     * WHY: Maintains data integrity through controlled mutation
+     */
 function setupLabEventHandlers() {
     if (!labController) return;
 
@@ -79,6 +83,15 @@ function setupLabEventHandlers() {
 }
 
 // UI Integration Functions
+    /**
+     * UPDATE EXERCISES LIST STATE
+     * PURPOSE: Update exercises list state
+     * WHY: Keeps application state synchronized with user actions and data changes
+     *
+     * @param {*} exercises - Exercises parameter
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
 function updateExercisesList(exercises) {
     const exercisesList = document.getElementById('exercises-list');
     if (!exercisesList) return;
@@ -91,6 +104,17 @@ function updateExercisesList(exercises) {
     });
 }
 
+    /**
+     * CREATE NEW EXERCISE ELEMENT INSTANCE
+     * PURPOSE: Create new exercise element instance
+     * WHY: Factory method pattern for consistent object creation
+     *
+     * @param {*} exercise - Exercise parameter
+     *
+     * @returns {Object} Newly created instance
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
 function createExerciseElement(exercise) {
     const div = document.createElement('div');
     div.className = 'exercise-item';
@@ -118,6 +142,13 @@ function createExerciseElement(exercise) {
     return div;
 }
 
+    /**
+     * DISPLAY EXERCISE INTERFACE
+     * PURPOSE: Display exercise interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} exercise - Exercise parameter
+     */
 function displayExercise(exercise) {
     const exerciseDetail = document.getElementById('exercise-detail');
     if (!exerciseDetail) return;
@@ -149,6 +180,14 @@ function displayExercise(exercise) {
     `;
 }
 
+    /**
+     * DISPLAY TERMINAL OUTPUT INTERFACE
+     * PURPOSE: Display terminal output interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} output - Output parameter
+     * @param {*} command - Command parameter
+     */
 function displayTerminalOutput(output, command) {
     const terminalOutput = document.getElementById('terminal-output');
     if (!terminalOutput) return;
@@ -175,6 +214,16 @@ function displayTerminalOutput(output, command) {
     terminalOutput.scrollTop = terminalOutput.scrollHeight;
 }
 
+    /**
+     * UPDATE PANEL BUTTON STATE
+     * PURPOSE: Update panel button state
+     * WHY: Keeps application state synchronized with user actions and data changes
+     *
+     * @param {*} panelName - Panelname parameter
+     * @param {*} visible - Visible parameter
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
 function updatePanelButton(panelName, visible) {
     const button = document.getElementById(`toggle-${panelName}`);
     if (button) {
@@ -183,6 +232,13 @@ function updatePanelButton(panelName, visible) {
     }
 }
 
+    /**
+     * UPDATE PROGRESS DISPLAY STATE
+     * PURPOSE: Update progress display state
+     * WHY: Keeps application state synchronized with user actions and data changes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
 function updateProgressDisplay() {
     const stats = labController.getProgressStats();
     const progressElement = document.getElementById('progress-stats');
@@ -266,6 +322,15 @@ window.loadLabState = function(sessionId) {
 };
 
 // Utility functions
+    /**
+     * FORMAT TIME FOR DISPLAY
+     * PURPOSE: Format time for display
+     * WHY: Consistent data presentation improves user experience
+     *
+     * @param {*} milliseconds - Milliseconds parameter
+     *
+     * @returns {string} Formatted string
+     */
 function formatTime(milliseconds) {
     const seconds = Math.floor(milliseconds / 1000);
     const minutes = Math.floor(seconds / 60);
@@ -280,6 +345,13 @@ function formatTime(milliseconds) {
     }
 }
 
+    /**
+     * HANDLE EXERCISE SUBMISSION EVENT
+     * PURPOSE: Handle exercise submission event
+     * WHY: Encapsulates event handling logic for better code organization
+     *
+     * @param {Object} data - Data object
+     */
 function handleExerciseSubmission(data) {
     const { exerciseId, result } = data;
     

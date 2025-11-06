@@ -10,7 +10,31 @@ from content_management.domain.entities.base_content import BaseContent, Content
 
 
 class SlideType(Enum):
-    """Slide type enumeration"""
+    """
+    Presentation slide type classification for educational content delivery.
+
+    Comprehensive enumeration of slide types supporting diverse instructional
+    delivery methods and multimedia educational content presentation.
+
+    Slide Type Categories:
+    - **TITLE**: Course/section title slides for clear organization
+    - **CONTENT**: Text-based instructional content for concept presentation
+    - **SECTION_BREAK**: Transition slides for logical content segmentation
+    - **BULLET_POINTS**: List-based content for key point emphasis
+    - **IMAGE**: Visual content for illustration and engagement
+    - **CODE**: Programming code examples for technical instruction
+    - **CHART**: Data visualization for analytics and statistics presentation
+    - **VIDEO**: Multimedia content for demonstration and engagement
+    - **INTERACTIVE**: Interactive elements for active learning
+    - **SUMMARY**: Recap slides for knowledge consolidation
+
+    Educational Benefits:
+    - Diverse content presentation formats for varied learning styles
+    - Clear content organization and structure
+    - Multimedia integration for engagement
+    - Technical content support (code, charts)
+    - Interactive elements for active learning
+    """
     TITLE = "title"
     CONTENT = "content"
     SECTION_BREAK = "section_break"
@@ -24,7 +48,27 @@ class SlideType(Enum):
 
 
 class SlideLayout(Enum):
-    """Slide layout enumeration"""
+    """
+    Slide layout templates for consistent presentation design.
+
+    Standardized layout templates supporting professional presentation design,
+    consistent visual structure, and effective information organization.
+
+    Layout Templates:
+    - **TITLE_ONLY**: Title-focused layout for section headers
+    - **TITLE_CONTENT**: Standard layout with title and content area
+    - **TITLE_TWO_COLUMN**: Split content layout for comparisons
+    - **TITLE_IMAGE**: Image-focused layout with title
+    - **TITLE_VIDEO**: Video-focused layout with title
+    - **FULL_IMAGE**: Full-screen image for maximum visual impact
+    - **BLANK**: Custom layout for flexible design
+
+    Design Benefits:
+    - Consistent visual presentation across slides
+    - Professional appearance and structure
+    - Appropriate layout for content type
+    - Flexibility for custom designs
+    """
     TITLE_ONLY = "title_only"
     TITLE_CONTENT = "title_content"
     TITLE_TWO_COLUMN = "title_two_column"
@@ -35,8 +79,27 @@ class SlideLayout(Enum):
 
 
 class SlideContent:
-    """Slide content value object"""
-    
+    """
+    Slide content value object supporting multimedia educational content.
+
+    BUSINESS REQUIREMENT:
+    Educational slides require flexible content support including text,
+    images, code examples, bullet points, and charts for effective
+    instructional delivery and student engagement.
+
+    CONTENT FRAMEWORK:
+    - Text content for instructional narrative
+    - Image support with alt text for accessibility
+    - Code examples with syntax highlighting
+    - Bullet points for key concepts
+    - Charts and visualizations for data presentation
+
+    ACCESSIBILITY CONSIDERATIONS:
+    - Alt text for images (screen reader support)
+    - Caption support for multimedia
+    - Clear text structure for comprehension
+    """
+
     def __init__(
         self,
         text: Optional[str] = None,
@@ -84,8 +147,26 @@ class SlideContent:
 
 
 class SlideAnimation:
-    """Slide animation value object"""
-    
+    """
+    Slide animation specification for engagement and emphasis.
+
+    BUSINESS REQUIREMENT:
+    Educational presentations benefit from controlled animations for
+    student attention management, content emphasis, and professional
+    delivery pacing during instructional sessions.
+
+    ANIMATION TYPES:
+    - Entrance animations for content reveal
+    - Emphasis animations for key point highlighting
+    - Exit animations for content transitions
+    - Duration control for appropriate pacing
+
+    EDUCATIONAL DESIGN:
+    - Attention-directing animations for key concepts
+    - Professional, non-distracting animation choices
+    - Consistent timing for predictable delivery
+    """
+
     def __init__(
         self,
         entrance: Optional[str] = None,
@@ -117,10 +198,42 @@ class SlideAnimation:
 
 class Slide(BaseContent):
     """
-    Slide domain entity following SOLID principles
-    Single Responsibility: Slide-specific business logic
+    Slide domain entity - educational presentation slide with multimedia support.
+
+    BUSINESS REQUIREMENT:
+    Educational presentations require individual slide management with multimedia
+    content support, speaker notes, layout templates, visual customization, and
+    timing information for effective instructional delivery and student engagement.
+
+    EDUCATIONAL METHODOLOGY:
+    Implements evidence-based presentation design principles including clear slide
+    organization, appropriate multimedia integration, speaker note support for
+    instructor guidance, and time estimation for proper pacing.
+
+    TECHNICAL IMPLEMENTATION:
+    - Extends BaseContent for lifecycle management
+    - Uses SlideContent value object for multimedia support
+    - Supports SlideAnimation for engagement and emphasis
+    - Provides layout templates for consistent design
+    - Includes speaker notes for instructor support
+
+    DOMAIN OPERATIONS:
+    - Slide numbering and sequencing
+    - Content management (text, images, code, bullets)
+    - Speaker note management for instructor guidance
+    - Layout and visual customization
+    - Animation specification for emphasis
+    - Duration estimation for timing
+
+    PRESENTATION FEATURES:
+    - Multiple slide types for diverse content
+    - Layout templates for consistent design
+    - Background customization (color, image, gradient)
+    - Speaker notes for instructor support
+    - Reading time estimation for pacing
+    - Animation support for engagement
     """
-    
+
     def __init__(
         self,
         title: str,

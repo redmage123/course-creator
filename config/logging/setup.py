@@ -39,8 +39,8 @@ class SyslogFormatter(logging.Formatter):
         
         # Include filename and line number for detailed logging
         if hasattr(record, 'filename') and hasattr(record, 'lineno'):
-            location = f"{record.filename}:{record.lineno}"
-            message = f"{formatted_time} {self.hostname} {self.service_name}[{os.getpid()}]: {level_name} - {location} - {record.getMessage()}"
+            locations = f"{record.filename}:{record.lineno}"
+            message = f"{formatted_time} {self.hostname} {self.service_name}[{os.getpid()}]: {level_name} - {locations} - {record.getMessage()}"
         else:
             message = f"{formatted_time} {self.hostname} {self.service_name}[{os.getpid()}]: {level_name} - {record.getMessage()}"
         

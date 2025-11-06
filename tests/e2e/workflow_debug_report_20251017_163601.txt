@@ -1,0 +1,22 @@
+
+============================================================
+AUTOMATED WORKFLOW DEBUGGING REPORT
+============================================================
+
+Generated: 2025-10-17T16:36:01.804690
+Base URL: https://localhost:3000
+Workflow Attempts: 5
+Workflow Complete: ❌ NO
+
+📊 ERRORS DETECTED: 5
+
+Error Summary:
+  1. [WARNING] https://localhost:3000/index.html - This site does not have a valid SSL certificate! Without SSL, yo...
+  2. [WARNING] https://localhost:3000/index.html - This site does not have a valid SSL certificate! Without SSL, yo...
+  3. [WARNING] https://localhost:3000/index.html - This site does not have a valid SSL certificate! Without SSL, yo...
+  4. [WARNING] https://localhost:3000/index.html - This site does not have a valid SSL certificate! Without SSL, yo...
+  5. [WARNING] https://localhost:3000/index.html - This site does not have a valid SSL certificate! Without SSL, yo...
+
+🔧 FIXES APPLIED: 0
+
+============================================================

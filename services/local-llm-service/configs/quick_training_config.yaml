@@ -1,0 +1,36 @@
+# Quick Training Configuration for LLama 3 Fine-tuning
+# Course Creator Platform - Local LLM Service
+# This config uses reduced settings for fast testing with the quick dataset
+
+# Model Configuration
+model_name: "meta-llama/Meta-Llama-3-8B"
+output_dir: "./models/llama3-course-creator-quick"
+training_data: "./training_data/quick_training_data.jsonl"
+
+# Training Hyperparameters (Reduced for quick testing)
+num_train_epochs: 1
+per_device_train_batch_size: 2
+gradient_accumulation_steps: 2  # Effective batch size = 2 * 2 = 4
+learning_rate: 2e-5
+max_seq_length: 512  # Reduced from 2048 for faster training
+
+# LoRA Configuration (Parameter-Efficient Fine-Tuning)
+use_lora: true
+lora_r: 8              # Rank - reduced from 16 for faster testing
+lora_alpha: 16         # Scaling factor (usually 2x the rank)
+lora_dropout: 0.05
+lora_target_modules:
+  - "q_proj"
+  - "v_proj"
+
+# Quantization (Memory Efficiency)
+use_4bit: true
+bnb_4bit_compute_dtype: "float16"
+bnb_4bit_quant_type: "nf4"
+
+# Logging and Checkpointing
+warmup_steps: 50       # Reduced from 100
+logging_steps: 10
+save_steps: 250
+report_to: "tensorboard"
+logging_dir: "./logs/llama3-course-creator-quick"

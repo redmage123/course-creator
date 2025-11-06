@@ -46,7 +46,7 @@ async def db_pool():
     """
     database_url = os.getenv(
         'TEST_DATABASE_URL',
-        'postgresql://test_user:test_pass@localhost:5432/course_creator_test'
+        'postgresql://postgres:postgres_password@localhost:5433/course_creator_test'
     )
 
     pool = await asyncpg.create_pool(database_url)

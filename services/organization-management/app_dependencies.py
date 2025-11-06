@@ -13,6 +13,7 @@ from organization_management.application.services.membership_service import Memb
 from organization_management.application.services.meeting_room_service import MeetingRoomService
 from organization_management.application.services.notification_service import NotificationService
 from organization_management.domain.entities.enhanced_role import Permission
+from organization_management.data_access.organization_dao import OrganizationManagementDAO
 
 security = HTTPBearer()
 
@@ -106,6 +107,23 @@ async def get_notification_service() -> NotificationService:
     """Get notification service for FastAPI dependency injection"""
     container = get_container()
     return await container.get_notification_service()
+
+
+async def get_dao() -> OrganizationManagementDAO:
+    """
+    Get organization DAO for FastAPI dependency injection
+
+    BUSINESS CONTEXT:
+    Provides direct access to data access layer for endpoints that need
+    to perform low-level database operations not exposed through services.
+
+    TECHNICAL IMPLEMENTATION:
+    Returns the OrganizationManagementDAO instance from the container.
+    Used for specialized endpoints like activity logging that operate
+    directly on the database layer.
+    """
+    container = get_container()
+    return await container.get_organization_dao()
 
 
 async def verify_permission(user_id: UUID, organization_id: UUID, permission: Permission) -> bool:

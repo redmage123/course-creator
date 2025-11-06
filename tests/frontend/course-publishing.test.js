@@ -77,7 +77,7 @@ describe('Course Publishing Frontend', () => {
         });
 
         test('getUrlParameter should extract token from URL', () => {
-            // Function from student login page - test it directly without mocking window.location
+            // Function from student login page - test it directly without mocking window.locations
             function getUrlParameter(name) {
                 // For testing, use a hardcoded search string
                 const testSearch = '?token=abc123&other=value';

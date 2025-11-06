@@ -1,0 +1,182 @@
+/**
+ * Registration Page Styles
+ *
+ * BUSINESS CONTEXT:
+ * Implements centered authentication layout for user registration.
+ * Provides clean, professional design for onboarding new users.
+ *
+ * DESIGN PRINCIPLES:
+ * - Centered layout with gradient background
+ * - Platform blue (#2563eb) for links
+ * - 8px border radius (design system standard)
+ * - Responsive design for mobile/desktop
+ * - Clear visual hierarchy for form sections
+ */
+
+/* ============================================================================
+ * PAGE CONTAINER
+ * ============================================================================ */
+
+.registration-page {
+  /* Layout */
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+/* ============================================================================
+ * CONTENT CONTAINER
+ * ============================================================================ */
+
+.registration-container {
+  width: 100%;
+  max-width: 540px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ============================================================================
+ * HEADER
+ * ============================================================================ */
+
+.registration-header {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.registration-subtitle {
+  /* Typography */
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #64748b;
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
+/* ============================================================================
+ * FORM
+ * ============================================================================ */
+
+.registration-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ============================================================================
+ * ERROR BANNER
+ * ============================================================================ */
+
+.registration-error-banner {
+  /* Layout */
+  padding: 12px 16px;
+  border-radius: 8px;
+
+  /* Background */
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+
+  /* Typography */
+  color: #dc2626;
+  font-size: 14px;
+  line-height: 1.5;
+
+  /* Animation */
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================================
+ * LEGAL SECTION (TERMS & PRIVACY)
+ * ============================================================================ */
+
+.registration-legal {
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 8px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+/* ============================================================================
+ * LINKS
+ * ============================================================================ */
+
+.registration-link {
+  /* Typography */
+  font-size: inherit;
+  font-weight: 500;
+  color: #2563eb;
+  text-decoration: none;
+
+  /* Transitions */
+  transition: color 0.2s ease;
+}
+
+.registration-link:hover {
+  color: #1e40af;
+  text-decoration: underline;
+}
+
+.registration-link:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ============================================================================
+ * FOOTER
+ * ============================================================================ */
+
+.registration-footer {
+  /* Layout */
+  margin-top: 8px;
+  text-align: center;
+}
+
+.registration-footer-text {
+  /* Typography */
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #64748b;
+  margin: 0;
+}
+
+/* ============================================================================
+ * RESPONSIVE
+ * ============================================================================ */
+
+@media (max-width: 640px) {
+  .registration-page {
+    padding: 16px;
+    align-items: flex-start;
+    padding-top: 40px;
+  }
+
+  .registration-container {
+    max-width: 100%;
+  }
+
+  .registration-legal {
+    padding: 12px;
+  }
+}

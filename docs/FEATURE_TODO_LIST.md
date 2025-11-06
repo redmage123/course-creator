@@ -193,7 +193,7 @@
 - [ ] Custom report builder
 - [ ] Export to multiple formats (CSV, PDF, Excel)
 - [ ] Scheduled reports
-- [ ] Comparative analytics (cohort analysis)
+- [ ] Comparative analytics (location analysis)
 - [ ] Learning velocity metrics
 - [ ] ROI calculations
 - [ ] Data visualization library

@@ -32,6 +32,18 @@ class Permission(Enum):
     ASSIGN_INSTRUCTORS_TO_TRACKS = "assign_instructors_to_tracks"
     MANAGE_TRACK_MODULES = "manage_track_modules"
 
+    # Course Management Powers
+    VIEW_COURSES = "view_courses"
+    MANAGE_COURSES = "manage_courses"
+
+    # Instructor Assignment Powers
+    MANAGE_INSTRUCTORS = "manage_instructors"
+    VIEW_INSTRUCTORS = "view_instructors"
+
+    # Scheduling Powers
+    VIEW_SCHEDULES = "view_schedules"
+    MANAGE_SCHEDULES = "manage_schedules"
+
     # Meeting Room Integration Powers
     CREATE_TEAMS_ROOMS = "create_teams_rooms"
     CREATE_ZOOM_ROOMS = "create_zoom_rooms"
@@ -114,6 +126,12 @@ class EnhancedRole:
                 Permission.ASSIGN_STUDENTS_TO_TRACKS,
                 Permission.ASSIGN_INSTRUCTORS_TO_TRACKS,
                 Permission.MANAGE_TRACK_MODULES,
+                Permission.VIEW_COURSES,
+                Permission.MANAGE_COURSES,
+                Permission.MANAGE_INSTRUCTORS,
+                Permission.VIEW_INSTRUCTORS,
+                Permission.VIEW_SCHEDULES,
+                Permission.MANAGE_SCHEDULES,
                 Permission.CREATE_TEAMS_ROOMS,
                 Permission.CREATE_ZOOM_ROOMS,
                 Permission.CREATE_SLACK_ROOMS,
@@ -135,6 +153,12 @@ class EnhancedRole:
                 Permission.ASSIGN_STUDENTS_TO_TRACKS,
                 Permission.ASSIGN_INSTRUCTORS_TO_TRACKS,
                 Permission.MANAGE_TRACK_MODULES,
+                Permission.VIEW_COURSES,
+                Permission.MANAGE_COURSES,
+                Permission.MANAGE_INSTRUCTORS,
+                Permission.VIEW_INSTRUCTORS,
+                Permission.VIEW_SCHEDULES,
+                Permission.MANAGE_SCHEDULES,
                 Permission.CREATE_TEAMS_ROOMS,
                 Permission.CREATE_ZOOM_ROOMS,
                 Permission.CREATE_SLACK_ROOMS,
@@ -148,16 +172,21 @@ class EnhancedRole:
                 Permission.GRADE_STUDENTS,
                 Permission.VIEW_ASSIGNED_STUDENTS,
                 Permission.MANAGE_ASSIGNED_CONTENT,
-                Permission.VIEW_STUDENT_PROGRESS
+                Permission.VIEW_STUDENT_PROGRESS,
+                Permission.VIEW_COURSES,
+                Permission.VIEW_INSTRUCTORS,
+                Permission.VIEW_SCHEDULES
             },
             RoleType.STUDENT: {
                 Permission.ACCESS_ASSIGNED_TRACKS,
                 Permission.SUBMIT_ASSIGNMENTS,
-                Permission.VIEW_OWN_PROGRESS
+                Permission.VIEW_OWN_PROGRESS,
+                Permission.VIEW_COURSES
             },
             RoleType.GUEST: {
                 Permission.ACCESS_DEMO_SERVICE,
                 Permission.VIEW_PUBLIC_COURSES,
+                Permission.VIEW_COURSES,
                 Permission.USE_AI_ASSISTANT_LIMITED,
                 Permission.BROWSE_COURSE_CATALOG
             }
@@ -286,20 +315,85 @@ class OrganizationMembership:
     status: str = "pending"  # pending, active, inactive
 
     def accept_invitation(self):
-        """Accept membership invitation"""
+        """
+        Accept membership invitation to join organization
+
+        BUSINESS PURPOSE:
+        Transitions membership from pending to active status when user accepts
+        invitation. Users must explicitly accept to comply with consent requirements.
+
+        WHY THIS APPROACH:
+        - Records acceptance timestamp for audit trail
+        - Status change enables access to organization resources
+        - Explicit acceptance ensures user awareness of membership
+
+        Returns:
+            None - updates entity in place
+        """
         self.status = "active"
         self.accepted_at = datetime.utcnow()
 
     def deactivate(self):
-        """Deactivate membership"""
+        """
+        Deactivate organization membership
+
+        BUSINESS PURPOSE:
+        Suspends user access to organization without deleting membership record.
+        Used for temporary suspensions, role changes, or voluntary departures.
+
+        WHY THIS APPROACH:
+        - Preserves membership history for audit trail
+        - Reversible operation (can be reactivated)
+        - Does not delete user data or progress
+
+        MULTI-TENANT CONSIDERATION:
+        User retains memberships in other organizations. Only this specific
+        organization membership is deactivated.
+
+        Returns:
+            None - updates entity in place
+        """
         self.status = "inactive"
 
     def is_active(self) -> bool:
-        """Check if membership is active"""
+        """
+        Check if membership is currently active
+
+        BUSINESS PURPOSE:
+        Quick status check for permission validation. Inactive members cannot
+        access organization resources even if they have valid roles.
+
+        WHY THIS APPROACH:
+        - Simple boolean for readability
+        - Encapsulates status check logic
+        - Used throughout permission checks
+
+        Returns:
+            bool: True if status is "active", False otherwise
+        """
         return self.status == "active"
 
     def is_valid(self) -> bool:
-        """Validate membership"""
+        """
+        Validate membership entity data integrity
+
+        BUSINESS PURPOSE:
+        Ensures membership has all required references before creation or updates.
+        Prevents orphaned memberships or invalid role assignments.
+
+        WHY THIS APPROACH:
+        - Validates foreign key relationships (user, organization)
+        - Delegates role validation to EnhancedRole.is_valid()
+        - Comprehensive check prevents data corruption
+
+        VALIDATION RULES:
+        - user_id must be set (valid user reference)
+        - organization_id must be set (valid organization reference)
+        - role must be set and pass role.is_valid() check
+
+        Returns:
+            bool: True if all validations pass, False otherwise
+        """
         return (
             self.user_id is not None and
             self.organization_id is not None and
@@ -320,23 +414,107 @@ class TrackAssignment:
     status: str = "active"  # active, inactive, completed
 
     def is_instructor_assignment(self) -> bool:
-        """Check if this is an instructor assignment"""
+        """
+        Check if this is an instructor assignment to track
+
+        BUSINESS PURPOSE:
+        Determines if assignment represents an instructor teaching assignment.
+        Used for filtering and permission checks.
+
+        WHY THIS APPROACH:
+        - Simple role type check for readability
+        - Returns boolean for conditional logic
+        - Encapsulates role type comparison
+
+        Returns:
+            bool: True if role_type is INSTRUCTOR, False otherwise
+        """
         return self.role_type == RoleType.INSTRUCTOR
 
     def is_student_assignment(self) -> bool:
-        """Check if this is a student assignment"""
+        """
+        Check if this is a student enrollment to track
+
+        BUSINESS PURPOSE:
+        Determines if assignment represents a student enrollment.
+        Used for filtering and permission checks.
+
+        WHY THIS APPROACH:
+        - Simple role type check for readability
+        - Returns boolean for conditional logic
+        - Encapsulates role type comparison
+
+        Returns:
+            bool: True if role_type is STUDENT, False otherwise
+        """
         return self.role_type == RoleType.STUDENT
 
     def complete(self):
-        """Mark assignment as completed"""
+        """
+        Mark track assignment as completed
+
+        BUSINESS PURPOSE:
+        Records that user has finished the track (student completion or
+        instructor teaching term ended).
+
+        WHY THIS APPROACH:
+        - Status change preserves assignment record
+        - No timestamp update (assigned_at remains original)
+        - Allows analytics on completion rates
+
+        BUSINESS RULE:
+        Completed assignments remain in system for progress tracking and
+        certificate generation. Do not delete completed assignments.
+
+        Returns:
+            None - updates entity in place
+        """
         self.status = "completed"
 
     def deactivate(self):
-        """Deactivate assignment"""
+        """
+        Deactivate track assignment
+
+        BUSINESS PURPOSE:
+        Suspends user access to track without deleting assignment record.
+        Used for temporary removals or role changes.
+
+        WHY THIS APPROACH:
+        - Preserves assignment history for audit trail
+        - Reversible operation (can be reactivated)
+        - Does not delete progress data
+
+        BUSINESS RULE:
+        Deactivated students cannot access track materials.
+        Deactivated instructors cannot grade assignments.
+
+        Returns:
+            None - updates entity in place
+        """
         self.status = "inactive"
 
     def is_valid(self) -> bool:
-        """Validate assignment"""
+        """
+        Validate track assignment data integrity
+
+        BUSINESS PURPOSE:
+        Ensures assignment has all required references before creation.
+        Prevents orphaned assignments or invalid role assignments.
+
+        WHY THIS APPROACH:
+        - Validates foreign key relationships (user, track)
+        - Ensures role type is set (INSTRUCTOR or STUDENT)
+        - Requires assigned_by for audit trail
+
+        VALIDATION RULES:
+        - user_id must be set (valid user reference)
+        - track_id must be set (valid track reference)
+        - role_type must be INSTRUCTOR or STUDENT
+        - assigned_by must be set (org admin who created assignment)
+
+        Returns:
+            bool: True if all validations pass, False otherwise
+        """
         return (
             self.user_id is not None and
             self.track_id is not None and

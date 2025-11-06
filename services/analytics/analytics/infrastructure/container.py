@@ -488,7 +488,7 @@ class MockAnalyticsAggregationRepository:
     async def get_performance_distributions(self, course_id: str) -> Dict[str, Any]:
         return {"mean": 75.0, "std": 12.5}  # Mock data
     
-    async def get_cohort_comparisons(self, course_ids: List[str]) -> Dict[str, Any]:
+    async def get_location_comparisons(self, course_ids: List[str]) -> Dict[str, Any]:
         return {"course_1": {"avg_score": 75.0}, "course_2": {"avg_score": 80.0}}  # Mock data
     
     async def get_content_effectiveness(self, course_id: str) -> List[Dict[str, Any]]:
@@ -655,7 +655,7 @@ class MockPersonalizationService(IPersonalizationService):
 class MockPerformanceComparisonService(IPerformanceComparisonService):
     """Mock performance comparison service"""
     
-    async def compare_to_cohort(self, student_id: str, course_id: str) -> Dict[str, Any]:
+    async def compare_to_location(self, student_id: str, course_id: str) -> Dict[str, Any]:
         return {"percentile": 60}
     
     async def compare_to_historical(self, student_id: str, course_id: str) -> Dict[str, Any]:

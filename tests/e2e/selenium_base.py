@@ -70,9 +70,12 @@ class SeleniumConfig:
         self.window_width = int(os.getenv('WINDOW_WIDTH', '1920'))
         self.window_height = int(os.getenv('WINDOW_HEIGHT', '1080'))
 
-        # Auto-detect Chrome/Chromium binary
+        # Auto-detect Chrome/Chromium binary (only for local execution, not remote Selenium Grid)
+        selenium_remote = os.getenv('SELENIUM_REMOTE')
         chrome_binary = os.getenv('CHROME_BINARY', None)
-        if not chrome_binary:
+
+        # Skip binary detection when using remote Selenium Grid
+        if not selenium_remote and not chrome_binary:
             # Check for snap chromium
             if os.path.exists('/snap/bin/chromium'):
                 chrome_binary = '/snap/bin/chromium'
@@ -173,7 +176,10 @@ class ChromeDriverSetup:
         # options.add_argument('--user-agent=Your Custom User Agent')
 
         # Chrome binary path (if specified)
-        if config.chrome_binary:
+        # Skip setting binary_location when using remote Selenium Grid (Docker)
+        # because the host's Chrome path doesn't exist in the Grid container
+        selenium_remote = os.getenv('SELENIUM_REMOTE')
+        if config.chrome_binary and not selenium_remote:
             options.binary_location = config.chrome_binary
 
         # Set unique user data directory for each session

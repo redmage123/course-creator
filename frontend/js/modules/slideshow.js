@@ -10,8 +10,14 @@
  * - Pause/resume functionality
  * - Touch-friendly interface
  */
-
 class Slideshow {
+    /**
+     * INITIALIZE CLASS INSTANCE WITH DEFAULT STATE
+     * PURPOSE: Initialize class instance with default state
+     * WHY: Establishes initial state required for class functionality
+     *
+     * @param {*} containerSelector - Containerselector parameter
+     */
     constructor(containerSelector) {
         this.container = document.querySelector(containerSelector);
         if (!this.container) {
@@ -130,11 +136,29 @@ class Slideshow {
         this.updateSlideshow();
     }
 
+    /**
+     * Navigate to previous slide
+     *
+     * PURPOSE: Moves slideshow to the previous slide with wrapping
+     * BUSINESS CONTEXT: Provides backward navigation through feature showcase,
+     * allowing users to review previous content. Uses modulo arithmetic to
+     * wrap from first slide to last, creating seamless circular navigation.
+     */
     prevSlide() {
         this.currentSlide = (this.currentSlide - 1 + this.totalSlides) % this.totalSlides;
         this.updateSlideshow();
     }
 
+    /**
+     * Navigate to specific slide by index
+     *
+     * PURPOSE: Jump directly to any slide in the slideshow
+     * BUSINESS CONTEXT: Enables quick access to specific features via slide
+     * indicators or programmatic control. Validates index bounds to prevent
+     * errors and maintains slideshow integrity.
+     *
+     * @param {number} index - Zero-based slide index to navigate to
+     */
     goToSlide(index) {
         if (index >= 0 && index < this.totalSlides) {
             this.currentSlide = index;
@@ -161,14 +185,23 @@ class Slideshow {
         if (this.autoplayInterval) {
             clearInterval(this.autoplayInterval);
         }
-        
+
         this.autoplayInterval = setInterval(() => {
             this.nextSlide();
         }, this.autoplayDelay);
-        
+
         this.isPlaying = true;
     }
 
+    /**
+     * Pause automatic slideshow progression
+     *
+     * PURPOSE: Temporarily stops auto-play without losing state
+     * BUSINESS CONTEXT: Called when user hovers over slideshow, when tab loses
+     * visibility, or when slideshow scrolls out of viewport. Improves UX by
+     * preventing unwanted slide changes during interaction and conserves
+     * resources when content is not visible.
+     */
     pauseAutoplay() {
         if (this.autoplayInterval) {
             clearInterval(this.autoplayInterval);
@@ -177,12 +210,28 @@ class Slideshow {
         this.isPlaying = false;
     }
 
+    /**
+     * Resume automatic slideshow progression
+     *
+     * PURPOSE: Restart auto-play after pause, maintaining slide position
+     * BUSINESS CONTEXT: Called when user stops hovering, when tab becomes
+     * visible, or when slideshow scrolls into viewport. Only resumes if
+     * slideshow was previously playing to respect user's explicit pause actions.
+     */
     resumeAutoplay() {
         if (!this.isPlaying && !this.autoplayInterval) {
             this.startAutoplay();
         }
     }
 
+    /**
+     * Toggle autoplay state between playing and paused
+     *
+     * PURPOSE: Provides user control over automatic slide progression
+     * BUSINESS CONTEXT: Bound to spacebar key for accessibility, allowing users
+     * to freeze slideshow on interesting content or resume when ready to
+     * continue. Essential for users who need more time to read slide content.
+     */
     toggleAutoplay() {
         if (this.isPlaying) {
             this.pauseAutoplay();
@@ -199,14 +248,33 @@ class Slideshow {
         this.touchStartX = e.changedTouches[0].screenX;
     }
 
+    /**
+     * Handle touch end event for swipe gesture detection
+     *
+     * PURPOSE: Capture end position of touch gesture
+     * BUSINESS CONTEXT: Second phase of swipe gesture detection for mobile
+     * users. Records final touch position and triggers gesture analysis to
+     * determine if user performed a valid swipe for navigation.
+     *
+     * @param {TouchEvent} e - Touch event containing touch point data
+     */
     handleTouchEnd(e) {
         this.touchEndX = e.changedTouches[0].screenX;
         this.handleSwipeGesture();
     }
 
+    /**
+     * Process swipe gesture and trigger appropriate navigation
+     *
+     * PURPOSE: Determine swipe direction and navigate accordingly
+     * BUSINESS CONTEXT: Provides intuitive mobile navigation by detecting
+     * horizontal swipe gestures. Left swipes advance to next slide, right
+     * swipes return to previous slide. Minimum distance threshold (50px)
+     * prevents accidental navigation from taps or small movements.
+     */
     handleSwipeGesture() {
         const swipeDistance = this.touchStartX - this.touchEndX;
-        
+
         if (Math.abs(swipeDistance) > this.minSwipeDistance) {
             if (swipeDistance > 0) {
                 // Swiped left - go to next slide
@@ -257,14 +325,44 @@ class Slideshow {
         return this.currentSlide;
     }
 
+    /**
+     * Get total number of slides in slideshow
+     *
+     * PURPOSE: Provides read-only access to slide count
+     * BUSINESS CONTEXT: Used by external components to render slide indicators,
+     * validate navigation bounds, or display progress (e.g., "Slide 2 of 5").
+     * Encapsulates internal state for better maintainability.
+     *
+     * @returns {number} Total number of slides
+     */
     getTotalSlides() {
         return this.totalSlides;
     }
 
+    /**
+     * Check if autoplay is currently active
+     *
+     * PURPOSE: Query autoplay state without direct property access
+     * BUSINESS CONTEXT: Allows UI components to reflect autoplay state (e.g.,
+     * play/pause button icons) and external logic to make decisions based on
+     * playback status. Provides clean API for state inspection.
+     *
+     * @returns {boolean} True if autoplay is running, false otherwise
+     */
     isAutoplayActive() {
         return this.isPlaying;
     }
 
+    /**
+     * Update autoplay timing interval
+     *
+     * PURPOSE: Dynamically adjust slide duration during runtime
+     * BUSINESS CONTEXT: Enables user preferences for slide timing or adaptive
+     * behavior based on content type. If autoplay is active, immediately
+     * restarts with new timing to ensure consistency.
+     *
+     * @param {number} delay - New delay in milliseconds between slides
+     */
     setAutoplayDelay(delay) {
         this.autoplayDelay = delay;
         if (this.isPlaying) {

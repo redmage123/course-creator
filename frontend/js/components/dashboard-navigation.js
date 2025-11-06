@@ -38,7 +38,6 @@
  * - Responsive sidebar with mobile optimization
  * - Section-specific lazy loading and initialization
  */
-
 export class DashboardNavigation {
     /**
      * DASHBOARD NAVIGATION CONSTRUCTOR
@@ -242,7 +241,7 @@ export class DashboardNavigation {
             this.currentSection = sectionName;
             
             // SYNCHRONIZE UI INDICATORS: Update navigation highlighting and page title
-            // WHY: Users need visual feedback about current location in the application
+            // WHY: Users need visual feedback about current locations in the application
             this.updateNavigationState(sectionName);
             
             // PERSIST NAVIGATION STATE: Save for session continuity
@@ -269,7 +268,7 @@ export class DashboardNavigation {
     /**
      * NAVIGATION UI STATE SYNCHRONIZATION
      * PURPOSE: Update all UI indicators to reflect the current active section
-     * WHY: Users need clear visual feedback about their current location in the application
+     * WHY: Users need clear visual feedback about their current locations in the application
      * 
      * UI UPDATES PERFORMED:
      * 1. Sidebar navigation: Highlight active section link
@@ -482,20 +481,62 @@ export class DashboardNavigation {
         this.showSection(targetSection, false);
     }
 
+    /**
+     * Get current active dashboard section
+     *
+     * PURPOSE: Provide external access to current navigation state
+     * WHY: External modules may need to know which section is currently displayed
+     *
+     * @returns {string} Current section name ('overview', 'courses', etc.)
+     */
     getCurrentSection() {
         return this.currentSection;
     }
 
+    /**
+     * Check if sidebar is currently collapsed
+     *
+     * PURPOSE: Query sidebar state for UI decisions
+     * WHY: Components may need to adjust layout based on sidebar visibility
+     *
+     * @returns {boolean} True if sidebar is collapsed, false if expanded
+     */
     isSidebarCollapsed() {
         return this.sidebarCollapsed;
     }
 
-    // Public API for external access
+    /**
+     * Navigate to specified dashboard section (Public API)
+     *
+     * PURPOSE: Provide external interface for programmatic navigation
+     * WHY: External modules need to trigger section changes programmatically
+     *
+     * BUSINESS LOGIC:
+     * - Delegates to showSection for consistent navigation behavior
+     * - Maintains single point of navigation logic
+     * - Enables inter-module navigation coordination
+     *
+     * @param {string} section - Target section name to navigate to
+     * @returns {void}
+     */
     navigateTo(section) {
         this.showSection(section);
     }
 
-    // Breadcrumb navigation support
+    /**
+     * Get breadcrumb trail for current section
+     *
+     * PURPOSE: Generate navigation breadcrumb path for current section
+     * WHY: Breadcrumbs provide hierarchical context and improve navigation UX
+     *
+     * BUSINESS LOGIC:
+     * - Returns array of breadcrumb segments from root to current section
+     * - Supports nested navigation hierarchy (Dashboard > My Courses > Course Content)
+     * - Enables breadcrumb UI component rendering
+     * - Provides user orientation within dashboard structure
+     *
+     * @returns {Array<string>} Array of breadcrumb labels from root to current section
+     */
     getBreadcrumbs() {
         const breadcrumbPaths = {
             'overview': ['Dashboard'],

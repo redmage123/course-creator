@@ -3,8 +3,14 @@
  * Single Responsibility: Handle course creation, editing, and management
  * Following SOLID principles with clean API abstraction
  */
-
 export class CourseManager {
+    /**
+     * INITIALIZE CLASS INSTANCE WITH DEFAULT STATE
+     * PURPOSE: Initialize class instance with default state
+     * WHY: Establishes initial state required for class functionality
+     *
+     * @param {Object} config - Configuration options
+     */
     constructor(config) {
         this.config = config;
         this.courses = [];
@@ -17,11 +23,32 @@ export class CourseManager {
         this.initialize();
     }
 
+    /**
+     * Initialize course manager system
+     *
+     * PURPOSE: Set up event listeners and load initial course data
+     * WHY: Two-phase initialization separates construction from async operations
+     *
+     * @returns {void}
+     */
     initialize() {
         this.setupEventListeners();
         this.loadCourses();
     }
 
+    /**
+     * Set up all event listeners for course management
+     *
+     * PURPOSE: Establish user interaction handlers for course operations
+     * WHY: Centralizes event management for maintainability
+     *
+     * BUSINESS LOGIC:
+     * - Course creation form submission
+     * - Search and filter interactions
+     * - Section change notifications for course display refresh
+     *
+     * @returns {void}
+     */
     setupEventListeners() {
         // Course creation form
         const courseForm = document.getElementById('courseForm');
@@ -48,6 +75,23 @@ export class CourseManager {
         });
     }
 
+    /**
+     * Handle course creation form submission
+     *
+     * PURPOSE: Process new course creation with validation and API submission
+     * WHY: Centralized form handling ensures consistent course creation workflow
+     *
+     * BUSINESS LOGIC:
+     * - Extracts form data including title, description, category, level, duration, price, tags
+     * - Submits to course creation API endpoint
+     * - Shows success/error notifications
+     * - Resets form on success
+     * - Navigates to courses section after creation
+     *
+     * @param {Event} e - Form submission event
+     * @returns {Promise<void>}
+     * @throws {Error} If course creation fails
+     */
     async handleCourseSubmission(e) {
         e.preventDefault();
         
@@ -78,8 +122,19 @@ export class CourseManager {
         }
     }
 
+    /**
+     * CREATE NEW COURSE INSTANCE
+     * PURPOSE: Create new course instance
+     * WHY: Factory method pattern for consistent object creation
+     *
+     * @param {*} courseData - Coursedata parameter
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async createCourse(courseData) {
-        const response = await fetch(`${this.config.ENDPOINTS.COURSE_SERVICE}/courses`, {
+        const response = await fetch(this.config.ENDPOINTS.COURSE_SERVICE, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -101,9 +156,18 @@ export class CourseManager {
         return result.course;
     }
 
+    /**
+     * LOAD COURSES DATA FROM SERVER
+     * PURPOSE: Load courses data from server
+     * WHY: Dynamic data loading enables real-time content updates
+     *
+     * @returns {Promise<void>} Promise resolving when loading completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async loadCourses() {
         try {
-            const response = await fetch(`${this.config.ENDPOINTS.COURSE_SERVICE}/courses`, {
+            const response = await fetch(this.config.ENDPOINTS.COURSE_SERVICE, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('authToken')}`
                 }
@@ -114,7 +178,7 @@ export class CourseManager {
             }
 
             const data = await response.json();
-            this.courses = data.courses || [];
+            this.courses = Array.isArray(data) ? data : [];
             
             this.updateCoursesDisplay();
             this.updateOverviewStats();
@@ -125,6 +189,13 @@ export class CourseManager {
         }
     }
 
+    /**
+     * UPDATE COURSES DISPLAY STATE
+     * PURPOSE: Update courses display state
+     * WHY: Keeps application state synchronized with user actions and data changes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     updateCoursesDisplay() {
         const coursesContainer = document.getElementById('courses-list');
         const emptyState = document.getElementById('courses-empty');
@@ -146,6 +217,13 @@ export class CourseManager {
         coursesContainer.innerHTML = filteredCourses.map(course => this.createCourseCard(course)).join('');
     }
 
+    /**
+     * RETRIEVE FILTERED COURSES INFORMATION
+     * PURPOSE: Retrieve filtered courses information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
     getFilteredCourses() {
         return this.courses.filter(course => {
             // Status filter
@@ -171,6 +249,17 @@ export class CourseManager {
         });
     }
 
+    /**
+     * CREATE NEW COURSE CARD INSTANCE
+     * PURPOSE: Create new course card instance
+     * WHY: Factory method pattern for consistent object creation
+     *
+     * @param {*} course - Course parameter
+     *
+     * @returns {Object} Newly created instance
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     createCourseCard(course) {
         const statusBadge = course.is_published ? 
             '<span class="status-badge published">Published</span>' :
@@ -241,16 +330,37 @@ export class CourseManager {
         `;
     }
 
+    /**
+     * HANDLE SEARCH EVENT
+     * PURPOSE: Handle search event
+     * WHY: Encapsulates event handling logic for better code organization
+     *
+     * @param {*} searchTerm - Searchterm parameter
+     */
     handleSearch(searchTerm) {
         this.filters.search = searchTerm;
         this.updateCoursesDisplay();
     }
 
+    /**
+     * HANDLE FILTER EVENT
+     * PURPOSE: Handle filter event
+     * WHY: Encapsulates event handling logic for better code organization
+     *
+     * @param {*} status - Status parameter
+     */
     handleFilter(status) {
         this.filters.status = status;
         this.updateCoursesDisplay();
     }
 
+    /**
+     * EXECUTE VIEWCOURSE OPERATION
+     * PURPOSE: Execute viewCourse operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} courseId - Unique identifier
+     */
     viewCourse(courseId) {
         const course = this.courses.find(c => c.id === courseId);
         if (course) {
@@ -264,6 +374,13 @@ export class CourseManager {
         }
     }
 
+    /**
+     * EXECUTE EDITCOURSE OPERATION
+     * PURPOSE: Execute editCourse operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} courseId - Unique identifier
+     */
     editCourse(courseId) {
         const course = this.courses.find(c => c.id === courseId);
         if (course) {
@@ -273,6 +390,17 @@ export class CourseManager {
         }
     }
 
+    /**
+     * REMOVE COURSE FROM SYSTEM
+     * PURPOSE: Remove course from system
+     * WHY: Manages resource cleanup and data consistency
+     *
+     * @param {string|number} courseId - Unique identifier
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async deleteCourse(courseId) {
         if (!confirm('Are you sure you want to delete this course? This action cannot be undone.')) {
             return;
@@ -303,6 +431,13 @@ export class CourseManager {
         }
     }
 
+    /**
+     * UPDATE OVERVIEW STATS STATE
+     * PURPOSE: Update overview stats state
+     * WHY: Keeps application state synchronized with user actions and data changes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     updateOverviewStats() {
         // Update overview section statistics
         const totalCoursesEl = document.getElementById('total-courses');
@@ -318,10 +453,23 @@ export class CourseManager {
         }
     }
 
+    /**
+     * EXECUTE REFRESHCOURSESDISPLAY OPERATION
+     * PURPOSE: Execute refreshCoursesDisplay operation
+     * WHY: Implements required business logic for system functionality
+     */
     refreshCoursesDisplay() {
         this.loadCourses();
     }
 
+    /**
+     * DISPLAY NOTIFICATION INTERFACE
+     * PURPOSE: Display notification interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} message - Message parameter
+     * @param {*} type - Type identifier
+     */
     showNotification(message, type = 'info') {
         // Use existing notification system or create simple notification
         if (typeof window.showNotification === 'function') {
@@ -331,14 +479,37 @@ export class CourseManager {
     }
 
     // Public API
+    /**
+     * RETRIEVE COURSES INFORMATION
+     * PURPOSE: Retrieve courses information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
     getCourses() {
         return this.courses;
     }
 
+    /**
+     * RETRIEVE CURRENT COURSE INFORMATION
+     * PURPOSE: Retrieve current course information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
     getCurrentCourse() {
         return this.currentCourse;
     }
 
+    /**
+     * RETRIEVE COURSE BY ID INFORMATION
+     * PURPOSE: Retrieve course by id information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @param {string|number} courseId - Unique identifier
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
     getCourseById(courseId) {
         return this.courses.find(c => c.id === courseId);
     }

@@ -92,7 +92,8 @@
     --spacing-xl: 2rem;
     --spacing-2xl: 3rem;
     --spacing-3xl: 4rem;
-    
+    --spacing-4xl: 5rem;
+
     /* Typography Scale */
     --font-size-xs: clamp(0.75rem, 0.8vw, 0.875rem);
     --font-size-sm: clamp(0.875rem, 0.9vw, 1rem);

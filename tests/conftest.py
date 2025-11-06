@@ -18,6 +18,16 @@ from datetime import datetime, timedelta
 import uuid
 import json
 
+
+def pytest_addoption(parser):
+    """Add custom command-line options for pytest."""
+    parser.addoption(
+        "--run-integration",
+        action="store_true",
+        default=False,
+        help="Run integration tests that require external services (DB, Redis, etc.)"
+    )
+
 # Add ALL services to path for imports
 service_paths = [
     'analytics',
@@ -39,6 +49,12 @@ for service in service_paths:
     service_path = os.path.abspath(service_path)  # Make absolute
     if os.path.exists(service_path):
         sys.path.insert(0, service_path)
+
+# Add tests/e2e to path so selenium_base can be imported directly
+e2e_path = os.path.join(os.path.dirname(__file__), 'e2e')
+e2e_path = os.path.abspath(e2e_path)
+if os.path.exists(e2e_path):
+    sys.path.insert(0, e2e_path)
 
 
 @pytest.fixture(scope="session")
@@ -235,6 +251,126 @@ def mock_storage_service():
         quota_percentage=50.0
     )
     return mock_service
+
+
+@pytest.fixture
+def docker_client():
+    """
+    Create Docker client for container verification in E2E tests.
+
+    BUSINESS CONTEXT:
+    E2E tests need to verify actual Docker container state (not just UI state)
+    to ensure lab environments are properly created, managed, and cleaned up.
+
+    TECHNICAL IMPLEMENTATION:
+    Uses docker-py library to interact with Docker daemon.
+    Provides automatic cleanup of test containers after each test session.
+
+    USAGE:
+    - Tests can use this fixture to inspect container state
+    - Tests can verify resource limits, volumes, network isolation
+    - Tests can simulate container failures and recovery
+
+    Returns:
+        docker.DockerClient: Docker client instance
+    """
+    try:
+        import docker
+        client = docker.from_env()
+        yield client
+
+        # Cleanup: Remove any test containers that weren't cleaned up
+        try:
+            test_containers = client.containers.list(all=True, filters={"label": "test"})
+            for container in test_containers:
+                try:
+                    container.stop(timeout=1)
+                    container.remove()
+                except Exception as e:
+                    print(f"Error cleaning up test container {container.name}: {e}")
+        except Exception as e:
+            print(f"Error during docker fixture cleanup: {e}")
+
+    except ImportError:
+        pytest.skip("docker-py library not installed. Install with: pip install docker")
+    except Exception as e:
+        pytest.skip(f"Docker not available: {e}")
+
+
+@pytest.fixture
+def student_credentials():
+    """
+    Provide student credentials for E2E authentication tests.
+
+    BUSINESS CONTEXT:
+    E2E tests need realistic student credentials to test authentication,
+    authorization, and lab access workflows.
+
+    SECURITY NOTE:
+    These are test credentials only, used in isolated test environments.
+    Never use production credentials in tests.
+
+    Returns:
+        dict: Student credentials with username, email, and password
+    """
+    return {
+        "username": "test_student",
+        "email": "student.test@example.com",
+        "password": "password123",
+        "role": "student"
+    }
+
+
+@pytest.fixture
+def instructor_credentials():
+    """
+    Provide instructor credentials for E2E authentication tests.
+
+    BUSINESS CONTEXT:
+    Instructors need different permissions than students (can view student labs,
+    create courses, manage content). Tests verify these role-based permissions.
+
+    Returns:
+        dict: Instructor credentials with username, email, and password
+    """
+    return {
+        "username": "test_instructor",
+        "email": "instructor@example.com",
+        "password": "password123",
+        "role": "instructor"
+    }
+
+
+@pytest.fixture
+def test_base_url():
+    """
+    Provide base URL for E2E tests.
+
+    BUSINESS CONTEXT:
+    All E2E tests must use HTTPS (as per CLAUDE.md requirements).
+    Default is https://localhost:3000 but can be overridden with env var.
+
+    IMPORTANT: Platform is HTTPS-only, HTTP is not supported.
+
+    Returns:
+        str: Base URL for E2E tests (always HTTPS)
+    """
+    return os.getenv('TEST_BASE_URL', 'https://localhost:3000')
+
+
+@pytest.fixture
+def selenium_config():
+    """
+    Provide Selenium configuration for E2E tests.
+
+    BUSINESS CONTEXT:
+    Provides configured SeleniumConfig object for Page Object Model classes.
+
+    Returns:
+        SeleniumConfig: Configuration object with test settings
+    """
+    from tests.e2e.selenium_base import SeleniumConfig
+    return SeleniumConfig()
 
 
 @pytest.fixture
@@ -773,3 +909,33 @@ def instructor_token():
 def student_token():
     """Create a mock student authentication token."""
     return "mock-token-student-id"
+
+
+@pytest.fixture(scope="function")
+def driver(selenium_config):
+    """
+    Create Selenium WebDriver for E2E tests with proper Chrome configuration.
+
+    BUSINESS CONTEXT:
+    E2E tests need a real browser to verify user workflows work correctly.
+    Chrome is used for consistency across test environments.
+
+    TECHNICAL IMPLEMENTATION:
+    - Uses selenium_base.ChromeDriverSetup for consistent configuration
+    - Supports both local Chrome and Docker Selenium Grid (SELENIUM_REMOTE)
+    - Configures Chrome options for headless operation when HEADLESS=true
+    - Disables GPU for stability in CI/CD environments
+    - Cleans up driver after test
+    """
+    from tests.e2e.selenium_base import ChromeDriverSetup
+
+    # Create driver using ChromeDriverSetup which handles remote/local automatically
+    driver = ChromeDriverSetup.create_driver(selenium_config)
+
+    yield driver
+
+    # Cleanup: Quit driver
+    try:
+        driver.quit()
+    except Exception as e:
+        print(f"Warning: Error closing driver: {e}")

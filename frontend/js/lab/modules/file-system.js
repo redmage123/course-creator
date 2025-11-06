@@ -2,14 +2,25 @@
  * File System Module
  * Single Responsibility: Handle virtual file system operations
  */
-
 export class VirtualFileSystem {
+    /**
+     * INITIALIZE CLASS INSTANCE WITH DEFAULT STATE
+     * PURPOSE: Initialize class instance with default state
+     * WHY: Establishes initial state required for class functionality
+     *
+     * @param {*} sandboxRoot - Sandboxroot parameter
+     */
     constructor(sandboxRoot = '/home/student') {
         this.sandboxRoot = sandboxRoot;
         this.currentDirectory = sandboxRoot;
         this.fileSystem = this.initializeFileSystem();
     }
 
+    /**
+     * INITIALIZE FILE SYSTEM COMPONENT
+     * PURPOSE: Initialize file system component
+     * WHY: Proper initialization ensures component reliability and correct state
+     */
     initializeFileSystem() {
         return {
             '/home/student': {
@@ -34,6 +45,13 @@ int main() {
     }
 
     // Normalize path to absolute path within sandbox
+    /**
+     * EXECUTE NORMALIZEPATH OPERATION
+     * PURPOSE: Execute normalizePath operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} path - Path parameter
+     */
     normalizePath(path) {
         if (!path.startsWith('/')) {
             // Relative path - resolve from current directory
@@ -66,11 +84,27 @@ int main() {
         return normalizedPath;
     }
 
+    /**
+     * EXECUTE JOINPATHS OPERATION
+     * PURPOSE: Execute joinPaths operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} ...paths - ...paths parameter
+     */
     joinPaths(...paths) {
         return paths.join('/').replace(/\/+/g, '/');
     }
 
     // Get file or directory at path
+    /**
+     * RETRIEVE ITEM INFORMATION
+     * PURPOSE: Retrieve item information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @param {*} path - Path parameter
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
     getItem(path) {
         const normalizedPath = this.normalizePath(path);
         const parts = normalizedPath.split('/').filter(part => part !== '');
@@ -88,6 +122,13 @@ int main() {
     }
 
     // Check if path exists
+    /**
+     * EXECUTE EXISTS OPERATION
+     * PURPOSE: Execute exists operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} path - Path parameter
+     */
     exists(path) {
         try {
             return this.getItem(path) !== null;
@@ -97,18 +138,43 @@ int main() {
     }
 
     // Check if path is a directory
+    /**
+     * EXECUTE ISDIRECTORY OPERATION
+     * PURPOSE: Execute isDirectory operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} path - Path parameter
+     *
+     * @returns {boolean} True if condition is met, false otherwise
+     */
     isDirectory(path) {
         const item = this.getItem(path);
         return item !== null && typeof item === 'object' && typeof item !== 'string';
     }
 
     // Check if path is a file
+    /**
+     * EXECUTE ISFILE OPERATION
+     * PURPOSE: Execute isFile operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} path - Path parameter
+     *
+     * @returns {boolean} True if condition is met, false otherwise
+     */
     isFile(path) {
         const item = this.getItem(path);
         return typeof item === 'string';
     }
 
     // List directory contents
+    /**
+     * EXECUTE LISTDIRECTORY OPERATION
+     * PURPOSE: Execute listDirectory operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} path - Path parameter
+     */
     listDirectory(path = null) {
         const targetPath = path || this.currentDirectory;
         const item = this.getItem(targetPath);
@@ -125,6 +191,13 @@ int main() {
     }
 
     // Read file content
+    /**
+     * EXECUTE READFILE OPERATION
+     * PURPOSE: Execute readFile operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} path - Path parameter
+     */
     readFile(path) {
         const item = this.getItem(path);
         
@@ -140,6 +213,14 @@ int main() {
     }
 
     // Write file content
+    /**
+     * EXECUTE WRITEFILE OPERATION
+     * PURPOSE: Execute writeFile operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} path - Path parameter
+     * @param {*} content - Content parameter
+     */
     writeFile(path, content) {
         try {
             const normalizedPath = this.normalizePath(path);
@@ -164,6 +245,17 @@ int main() {
     }
 
     // Create directory
+    /**
+     * CREATE NEW DIRECTORY INSTANCE
+     * PURPOSE: Create new directory instance
+     * WHY: Factory method pattern for consistent object creation
+     *
+     * @param {*} path - Path parameter
+     *
+     * @returns {Object} Newly created instance
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     createDirectory(path) {
         try {
             const normalizedPath = this.normalizePath(path);
@@ -192,6 +284,13 @@ int main() {
     }
 
     // Change current directory
+    /**
+     * EXECUTE CHANGEDIRECTORY OPERATION
+     * PURPOSE: Execute changeDirectory operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} path - Path parameter
+     */
     changeDirectory(path) {
         const normalizedPath = this.normalizePath(path);
         
@@ -208,11 +307,27 @@ int main() {
     }
 
     // Get current directory
+    /**
+     * RETRIEVE CURRENT DIRECTORY INFORMATION
+     * PURPOSE: Retrieve current directory information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
     getCurrentDirectory() {
         return this.currentDirectory;
     }
 
     // Delete file or directory
+    /**
+     * REMOVE  FROM SYSTEM
+     * PURPOSE: Remove  from system
+     * WHY: Manages resource cleanup and data consistency
+     *
+     * @param {*} path - Path parameter
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     delete(path) {
         try {
             const normalizedPath = this.normalizePath(path);
@@ -240,6 +355,11 @@ int main() {
     }
 
     // Get file system state for persistence
+    /**
+     * EXECUTE SERIALIZE OPERATION
+     * PURPOSE: Execute serialize operation
+     * WHY: Implements required business logic for system functionality
+     */
     serialize() {
         return {
             fileSystem: this.fileSystem,
@@ -249,6 +369,13 @@ int main() {
     }
 
     // Restore file system state
+    /**
+     * EXECUTE DESERIALIZE OPERATION
+     * PURPOSE: Execute deserialize operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} state - State parameter
+     */
     deserialize(state) {
         this.fileSystem = state.fileSystem || this.initializeFileSystem();
         this.currentDirectory = state.currentDirectory || this.sandboxRoot;

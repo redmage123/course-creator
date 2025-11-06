@@ -1,0 +1,283 @@
+/**
+ * Input Component Styles - Tami Design System
+ *
+ * BUSINESS CONTEXT:
+ * Implements Tami design system input styles with platform blue color scheme.
+ * Provides consistent, professional input styling across all user roles.
+ *
+ * CRITICAL: Uses OUR blue (#2563eb), NOT Tami purple/orange
+ */
+
+/* ============================================================================
+ * CONTAINER STYLES
+ * ============================================================================ */
+
+.input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.input-full-width {
+  width: 100%;
+}
+
+/* ============================================================================
+ * LABEL STYLES
+ * ============================================================================ */
+
+.label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a202c;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.required {
+  color: #dc2626;
+  margin-left: 4px;
+  font-weight: 700;
+}
+
+/* ============================================================================
+ * INPUT WRAPPER (for icons)
+ * ============================================================================ */
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* ============================================================================
+ * BASE INPUT STYLES
+ * ============================================================================ */
+
+.input {
+  /* Reset */
+  margin: 0;
+  font-family: inherit;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+
+  /* Layout */
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+
+  /* Typography */
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #1a202c;
+
+  /* Sizing */
+  padding: 12px 16px;
+  height: 44px;
+  border-radius: 8px;
+
+  /* Border */
+  border: 2px solid #e2e8f0;
+  background-color: #ffffff;
+
+  /* Transitions */
+  transition: all 0.2s ease;
+
+  /* Placeholder */
+  &::placeholder {
+    color: #94a3b8;
+  }
+}
+
+/* Focus state */
+.input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Hover state (not disabled) */
+.input:hover:not(:disabled) {
+  border-color: #cbd5e1;
+}
+
+/* Disabled state */
+.input:disabled {
+  background-color: #f8fafc;
+  border-color: #e2e8f0;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.input-disabled {
+  opacity: 0.6;
+}
+
+/* ============================================================================
+ * VARIANT STYLES
+ * ============================================================================ */
+
+/* Default variant (already in base styles) */
+.input-default {
+  /* Inherits base styles */
+}
+
+/* Success variant */
+.input-success {
+  border-color: #16a34a;
+  background-color: #f0fdf4;
+}
+
+.input-success:focus {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+}
+
+/* Error variant */
+.input-error {
+  border-color: #dc2626;
+  background-color: #fef2f2;
+}
+
+.input-error:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+/* Warning variant */
+.input-warning {
+  border-color: #f59e0b;
+  background-color: #fffbeb;
+}
+
+.input-warning:focus {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+/* ============================================================================
+ * SIZE VARIANTS
+ * ============================================================================ */
+
+/* Small */
+.input-small {
+  padding: 8px 12px;
+  font-size: 14px;
+  height: 36px;
+}
+
+/* Medium (default - already in base) */
+.input-medium {
+  padding: 12px 16px;
+  font-size: 15px;
+  height: 44px;
+}
+
+/* Large */
+.input-large {
+  padding: 16px 20px;
+  font-size: 16px;
+  height: 52px;
+}
+
+/* ============================================================================
+ * ICON SUPPORT
+ * ============================================================================ */
+
+.input-icon-left,
+.input-icon-right {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  pointer-events: none;
+}
+
+.input-icon-left {
+  left: 12px;
+}
+
+.input-icon-right {
+  right: 12px;
+}
+
+/* Adjust input padding when icons are present */
+.input-with-left-icon {
+  padding-left: 44px;
+}
+
+.input-with-right-icon {
+  padding-right: 44px;
+}
+
+/* Small size icon adjustments */
+.input-small.input-with-left-icon {
+  padding-left: 36px;
+}
+
+.input-small.input-with-right-icon {
+  padding-right: 36px;
+}
+
+/* Large size icon adjustments */
+.input-large.input-with-left-icon {
+  padding-left: 52px;
+}
+
+.input-large.input-with-right-icon {
+  padding-right: 52px;
+}
+
+/* ============================================================================
+ * HELPER TEXT
+ * ============================================================================ */
+
+.helper-text {
+  display: block;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-top: 4px;
+}
+
+.helper-text-default {
+  color: #64748b;
+}
+
+.helper-text-success {
+  color: #16a34a;
+}
+
+.helper-text-error {
+  color: #dc2626;
+}
+
+.helper-text-warning {
+  color: #f59e0b;
+}
+
+/* ============================================================================
+ * ACCESSIBILITY
+ * ============================================================================ */
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .input {
+    border-width: 3px;
+  }
+
+  .input:focus {
+    outline: 3px solid currentColor;
+    outline-offset: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .input {
+    transition: none;
+  }
+}

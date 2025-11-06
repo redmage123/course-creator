@@ -10,12 +10,15 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import json
 
 # Import the analytics service components
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / 'services' / 'analytics'))
 
-from main import (
-    app, StudentActivity, LabUsageMetrics, QuizPerformance, 
-    StudentProgress, LearningAnalytics, AnalyticsRequest, AnalyticsResponse
+from analytics.domain.entities.student_analytics import (
+    StudentActivity, LabUsageMetrics, QuizPerformance,
+    StudentProgress, LearningAnalytics
 )
-from analytics_endpoints import calculate_engagement_score, generate_recommendations
+from api.models import AnalyticsRequest, LearningAnalyticsResponse
 
 class TestAnalyticsModels:
     """Test analytics data models"""
@@ -348,7 +351,7 @@ class TestAnalyticsIntegration:
     
     def test_analytics_response_model(self):
         """Test analytics response model"""
-        response = AnalyticsResponse(
+        response = LearningAnalyticsResponse(
             data_range={
                 "start": datetime.utcnow() - timedelta(days=30),
                 "end": datetime.utcnow()

@@ -110,7 +110,7 @@ async def test_instructor_database_integration():
             # Mock course instance data
             mock_instance = {
                 'course_title': 'Advanced Python Programming',
-                'instance_name': 'Winter 2025 Cohort',
+                'instance_name': 'Winter 2025 Locations',
                 'start_date': datetime(2025, 1, 15, 9, 0),
                 'end_date': datetime(2025, 4, 30, 17, 0),
                 'timezone': 'EST',

@@ -9,8 +9,12 @@
  * - API integration with backend organization service
  * - Professional business requirements enforcement
  */
-
 class OrganizationRegistration {
+    /**
+     * INITIALIZE CLASS INSTANCE WITH DEFAULT STATE
+     * PURPOSE: Initialize class instance with default state
+     * WHY: Establishes initial state required for class functionality
+     */
     constructor() {
         this.form = document.getElementById('organizationRegistrationForm');
         this.submitBtn = document.getElementById('submitBtn');
@@ -28,6 +32,11 @@ class OrganizationRegistration {
         this.initializeLogoUpload();
     }
 
+    /**
+     * INITIALIZE EVENT LISTENERS COMPONENT
+     * PURPOSE: Initialize event listeners component
+     * WHY: Proper initialization ensures component reliability and correct state
+     */
     initializeEventListeners() {
         // Form submission
         this.form.addEventListener('submit', (e) => this.handleSubmit(e));
@@ -86,6 +95,11 @@ class OrganizationRegistration {
         }
     }
 
+    /**
+     * INITIALIZE COUNTRY DROPDOWNS COMPONENT
+     * PURPOSE: Initialize country dropdowns component
+     * WHY: Proper initialization ensures component reliability and correct state
+     */
     initializeCountryDropdowns() {
         /**
          * Initialize enhanced country dropdowns with keyboard navigation
@@ -112,6 +126,13 @@ class OrganizationRegistration {
         });
     }
 
+    /**
+     * EXECUTE ENHANCECOUNTRYSELECT OPERATION
+     * PURPOSE: Execute enhanceCountrySelect operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} selectElement - Selectelement parameter
+     */
     enhanceCountrySelect(selectElement) {
         /**
          * Enhance a country select element with keyboard navigation and search
@@ -170,6 +191,15 @@ class OrganizationRegistration {
         selectElement._originalOptions = originalOptions;
     }
 
+    /**
+     * HANDLE COUNTRY SEARCH EVENT
+     * PURPOSE: Handle country search event
+     * WHY: Encapsulates event handling logic for better code organization
+     *
+     * @param {*} key - Key parameter
+     * @param {*} selectElement - Selectelement parameter
+     * @param {*} originalOptions - Originaloptions parameter
+     */
     handleCountrySearch(key, selectElement, originalOptions) {
         /**
          * Handle typing in country dropdown for type-ahead functionality
@@ -218,6 +248,13 @@ class OrganizationRegistration {
         }, 1500);
     }
 
+    /**
+     * EXECUTE HIGHLIGHTSELECTEDCOUNTRY OPERATION
+     * PURPOSE: Execute highlightSelectedCountry operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} selectElement - Selectelement parameter
+     */
     highlightSelectedCountry(selectElement) {
         /**
          * Visual feedback when country is selected via keyboard
@@ -228,6 +265,16 @@ class OrganizationRegistration {
         }, 200);
     }
 
+    /**
+     * DISPLAY COUNTRY SEARCH FEEDBACK INTERFACE
+     * PURPOSE: Display country search feedback interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} selectElement - Selectelement parameter
+     * @param {*} searchString - Searchstring parameter
+     * @param {*} matchCount - Matchcount parameter
+     * @param {*} searchType - Searchtype parameter
+     */
     showCountrySearchFeedback(selectElement, searchString, matchCount, searchType = 'starts_with') {
         /**
          * Show search feedback to user with enhanced messaging
@@ -272,6 +319,13 @@ class OrganizationRegistration {
         feedbackElement.style.display = 'block';
     }
 
+    /**
+     * HIDE COUNTRY SEARCH FEEDBACK INTERFACE
+     * PURPOSE: Hide country search feedback interface
+     * WHY: Improves UX by managing interface visibility and state
+     *
+     * @param {*} selectElement - Selectelement parameter
+     */
     hideCountrySearchFeedback(selectElement) {
         /**
          * Hide search feedback
@@ -282,6 +336,11 @@ class OrganizationRegistration {
         }
     }
 
+    /**
+     * INITIALIZE PASSWORD FIELDS COMPONENT
+     * PURPOSE: Initialize password fields component
+     * WHY: Proper initialization ensures component reliability and correct state
+     */
     initializePasswordFields() {
         /**
          * Initialize password functionality including strength checking and toggle visibility
@@ -308,6 +367,13 @@ class OrganizationRegistration {
         }
     }
 
+    /**
+     * EXECUTE CHECKPASSWORDSTRENGTH OPERATION
+     * PURPOSE: Execute checkPasswordStrength operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} password - Password parameter
+     */
     checkPasswordStrength(password) {
         /**
          * Check and display password strength
@@ -358,6 +424,15 @@ class OrganizationRegistration {
         strengthElement.appendChild(strengthBar);
     }
 
+    /**
+     * EXECUTE CALCULATEPASSWORDSTRENGTH OPERATION
+     * PURPOSE: Execute calculatePasswordStrength operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} password - Password parameter
+     *
+     * @returns {number} Calculated value
+     */
     calculatePasswordStrength(password) {
         /**
          * Calculate password strength score and provide feedback matching backend requirements
@@ -403,6 +478,15 @@ class OrganizationRegistration {
         return { score, feedback };
     }
 
+    /**
+     * VALIDATE PASSWORD MATCH INPUT
+     * PURPOSE: Validate password match input
+     * WHY: Ensures data integrity and prevents invalid states
+     *
+     * @returns {boolean} True if validation passes, false otherwise
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     validatePasswordMatch() {
         /**
          * Validate that passwords match
@@ -430,6 +514,11 @@ class OrganizationRegistration {
         }
     }
 
+    /**
+     * INITIALIZE REAL TIME VALIDATION COMPONENT
+     * PURPOSE: Initialize real time validation component
+     * WHY: Proper initialization ensures component reliability and correct state
+     */
     initializeRealTimeValidation() {
         // Add real-time validation to all form inputs
         const inputs = this.form.querySelectorAll('input, textarea');
@@ -453,6 +542,13 @@ class OrganizationRegistration {
         });
     }
 
+    /**
+     * INITIALIZE LOGO UPLOAD COMPONENT
+     * PURPOSE: Initialize logo upload component
+     * WHY: Proper initialization ensures component reliability and correct state
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     initializeLogoUpload() {
         const uploadArea = document.getElementById('logoUploadArea');
         const fileInput = document.getElementById('orgLogo');
@@ -519,6 +615,15 @@ class OrganizationRegistration {
         };
     }
 
+    /**
+     * HANDLE FILE UPLOAD EVENT
+     * PURPOSE: Handle file upload event
+     * WHY: Encapsulates event handling logic for better code organization
+     *
+     * @param {*} file - File parameter
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     handleFileUpload(file) {
         const { uploadArea, preview, previewImage, fileName } = this.logoUpload;
         const errorElement = document.getElementById('orgLogo-error');
@@ -579,6 +684,11 @@ class OrganizationRegistration {
         reader.readAsDataURL(file);
     }
 
+    /**
+     * REMOVE LOGO FROM SYSTEM
+     * PURPOSE: Remove logo from system
+     * WHY: Manages resource cleanup and data consistency
+     */
     removeLogo() {
         const { uploadArea, preview, fileInput } = this.logoUpload;
         const errorElement = document.getElementById('orgLogo-error');
@@ -598,6 +708,15 @@ class OrganizationRegistration {
         this.selectedLogo = null;
     }
 
+    /**
+     * FORMAT FILE SIZE FOR DISPLAY
+     * PURPOSE: Format file size for display
+     * WHY: Consistent data presentation improves user experience
+     *
+     * @param {*} bytes - Bytes parameter
+     *
+     * @returns {string} Formatted string
+     */
     formatFileSize(bytes) {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
@@ -606,6 +725,15 @@ class OrganizationRegistration {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
+    /**
+     * EXECUTE GENERATESLUG OPERATION
+     * PURPOSE: Execute generateSlug operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} name - Name value
+     *
+     * @returns {string|Object} Generated content
+     */
     generateSlug(name) {
         return name
             .toLowerCase()
@@ -615,6 +743,15 @@ class OrganizationRegistration {
             .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
     }
 
+    /**
+     * UPDATE SLUG PREVIEW STATE
+     * PURPOSE: Update slug preview state
+     * WHY: Keeps application state synchronized with user actions and data changes
+     *
+     * @param {*} slug - Slug parameter
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     updateSlugPreview(slug) {
         const preview = document.getElementById('slug-preview');
         const previewText = document.getElementById('slug-preview-text');
@@ -627,6 +764,15 @@ class OrganizationRegistration {
         }
     }
 
+    /**
+     * FORMAT PHONE NUMBER FOR DISPLAY
+     * PURPOSE: Format phone number for display
+     * WHY: Consistent data presentation improves user experience
+     *
+     * @param {Event} event - Event object
+     *
+     * @returns {string} Formatted string
+     */
     formatPhoneNumber(event) {
         // Only keep digits, hyphens, spaces, and parentheses
         let value = event.target.value.replace(/[^\d\-\(\)\s]/g, '');
@@ -662,6 +808,17 @@ class OrganizationRegistration {
         }
     }
 
+    /**
+     * VALIDATE PROFESSIONAL EMAIL INPUT
+     * PURPOSE: Validate professional email input
+     * WHY: Ensures data integrity and prevents invalid states
+     *
+     * @param {*} input - Input parameter
+     *
+     * @returns {boolean} True if validation passes, false otherwise
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     validateProfessionalEmail(input) {
         const email = input.value.trim().toLowerCase();
         const errorElement = document.getElementById(`${input.id}-error`);
@@ -702,6 +859,17 @@ class OrganizationRegistration {
         return true;
     }
 
+    /**
+     * VALIDATE FIELD INPUT
+     * PURPOSE: Validate field input
+     * WHY: Ensures data integrity and prevents invalid states
+     *
+     * @param {*} input - Input parameter
+     *
+     * @returns {boolean} True if validation passes, false otherwise
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     validateField(input) {
         const errorElement = document.getElementById(`${input.id}-error`);
         const value = input.value.trim();
@@ -791,11 +959,29 @@ class OrganizationRegistration {
         return true;
     }
 
+    /**
+     * RETRIEVE FIELD LABEL INFORMATION
+     * PURPOSE: Retrieve field label information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @param {*} input - Input parameter
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
     getFieldLabel(input) {
         const label = input.closest('.form-group')?.querySelector('.form-label');
         return label ? label.textContent.replace(' *', '') : 'Field';
     }
 
+    /**
+     * DISPLAY FIELD ERROR INTERFACE
+     * PURPOSE: Display field error interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} input - Input parameter
+     * @param {*} errorElement - Errorelement parameter
+     * @param {*} message - Message parameter
+     */
     showFieldError(input, errorElement, message) {
         input.classList.remove('success');
         input.classList.add('error');
@@ -805,6 +991,15 @@ class OrganizationRegistration {
         }
     }
 
+    /**
+     * DISPLAY FIELD SUCCESS INTERFACE
+     * PURPOSE: Display field success interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} input - Input parameter
+     * @param {*} errorElement - Errorelement parameter
+     * @param {*} message - Message parameter
+     */
     showFieldSuccess(input, errorElement, message = '') {
         input.classList.remove('error');
         input.classList.add('success');
@@ -813,6 +1008,14 @@ class OrganizationRegistration {
         }
     }
 
+    /**
+     * EXECUTE CLEARFIELDERROR OPERATION
+     * PURPOSE: Execute clearFieldError operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} input - Input parameter
+     * @param {*} errorElement - Errorelement parameter
+     */
     clearFieldError(input, errorElement) {
         input.classList.remove('error');
         if (errorElement) {
@@ -820,6 +1023,15 @@ class OrganizationRegistration {
         }
     }
 
+    /**
+     * VALIDATE FORM INPUT
+     * PURPOSE: Validate form input
+     * WHY: Ensures data integrity and prevents invalid states
+     *
+     * @returns {boolean} True if validation passes, false otherwise
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     validateForm() {
         let isValid = true;
         const inputs = this.form.querySelectorAll('input[required], input[pattern], input[type="email"]');
@@ -852,6 +1064,15 @@ class OrganizationRegistration {
         return isValid;
     }
 
+    /**
+     * VALIDATE PASSWORDS INPUT
+     * PURPOSE: Validate passwords input
+     * WHY: Ensures data integrity and prevents invalid states
+     *
+     * @returns {boolean} True if validation passes, false otherwise
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     validatePasswords() {
         /**
          * Comprehensive password validation for admin user
@@ -909,6 +1130,14 @@ class OrganizationRegistration {
         return true;
     }
 
+    /**
+     * DISPLAY FIELD ERROR INTERFACE
+     * PURPOSE: Display field error interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {string|number} fieldId - Fieldid parameter
+     * @param {*} message - Message parameter
+     */
     showFieldError(fieldId, message) {
         /**
          * Show error message for a specific field
@@ -920,6 +1149,13 @@ class OrganizationRegistration {
         }
     }
 
+    /**
+     * EXECUTE CLEARFIELDERROR OPERATION
+     * PURPOSE: Execute clearFieldError operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} fieldId - Fieldid parameter
+     */
     clearFieldError(fieldId) {
         /**
          * Clear error message for a specific field
@@ -931,6 +1167,17 @@ class OrganizationRegistration {
         }
     }
 
+    /**
+     * HANDLE SUBMIT EVENT
+     * PURPOSE: Handle submit event
+     * WHY: Encapsulates event handling logic for better code organization
+     *
+     * @param {Event} event - Event object
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async handleSubmit(event) {
         event.preventDefault();
 
@@ -1050,6 +1297,17 @@ class OrganizationRegistration {
         }
     }
 
+    /**
+     * EXECUTE SUBMITORGANIZATION OPERATION
+     * PURPOSE: Execute submitOrganization operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {Object} data - Data object
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async submitOrganization(data) {
         try {
             // Use CONFIG system for proper protocol and URL handling
@@ -1090,6 +1348,17 @@ class OrganizationRegistration {
         }
     }
 
+    /**
+     * EXECUTE SUBMITORGANIZATIONWITHFILE OPERATION
+     * PURPOSE: Execute submitOrganizationWithFile operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} formData - Formdata parameter
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async submitOrganizationWithFile(formData) {
         try {
             // Use current hostname for API calls instead of hardcoded localhost
@@ -1125,6 +1394,13 @@ class OrganizationRegistration {
         }
     }
 
+    /**
+     * HANDLE VALIDATION ERRORS EVENT
+     * PURPOSE: Handle validation errors event
+     * WHY: Encapsulates event handling logic for better code organization
+     *
+     * @param {*} errors - Errors parameter
+     */
     handleValidationErrors(errors) {
         errors.forEach(error => {
             const fieldPath = error.loc ? error.loc.join('.') : '';
@@ -1160,11 +1436,27 @@ class OrganizationRegistration {
         });
     }
 
+    /**
+     * SET SUBMIT LOADING VALUE
+     * PURPOSE: Set submit loading value
+     * WHY: Maintains data integrity through controlled mutation
+     *
+     * @param {*} loading - Loading parameter
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     setSubmitLoading(loading) {
         this.submitBtn.disabled = loading;
         this.submitBtn.classList.toggle('loading', loading);
     }
 
+    /**
+     * DISPLAY SUCCESS INTERFACE
+     * PURPOSE: Display success interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {Object} data - Data object
+     */
     showSuccess(data) {
         console.log('🎉 Showing success message with data:', data);
         
@@ -1240,6 +1532,13 @@ class OrganizationRegistration {
         console.log('Success message displayed successfully');
     }
 
+    /**
+     * DISPLAY GENERAL ERROR INTERFACE
+     * PURPOSE: Display general error interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} message - Message parameter
+     */
     showGeneralError(message) {
         // Create or update general error message
         let errorDiv = document.getElementById('general-error');
@@ -1267,6 +1566,11 @@ class OrganizationRegistration {
 // Initialize when DOM is loaded and CONFIG is available
 document.addEventListener('DOMContentLoaded', () => {
     // Wait for CONFIG to be available
+    /**
+     * INITIALIZE REGISTRATION COMPONENT
+     * PURPOSE: Initialize registration component
+     * WHY: Proper initialization ensures component reliability and correct state
+     */
     const initializeRegistration = () => {
         if (typeof CONFIG !== 'undefined' || typeof window.CONFIG !== 'undefined') {
             new OrganizationRegistration();

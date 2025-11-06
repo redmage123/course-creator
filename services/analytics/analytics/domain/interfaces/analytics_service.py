@@ -298,9 +298,9 @@ class IPerformanceComparisonService(ABC):
     """Interface for performance comparison and benchmarking"""
     
     @abstractmethod
-    async def compare_to_cohort(self, student_id: str, 
+    async def compare_to_location(self, student_id: str, 
                               course_id: str) -> Dict[str, Any]:
-        """Compare student performance to course cohort"""
+        """Compare student performance to course locations"""
         pass
     
     @abstractmethod

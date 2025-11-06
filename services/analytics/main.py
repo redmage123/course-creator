@@ -46,7 +46,18 @@ PERFORMANCE OPTIMIZATIONS:
 - Redis caching for frequently accessed metrics
 - Efficient database query patterns
 - Background processing for intensive analytics
+
+CONFIGURATION DEFAULTS:
+Database configuration is managed via Hydra configuration files (see conf/config.yaml).
+Default values referenced by configuration validation:
+- DB_PORT: 5433 (matches docker-compose.yml host port mapping)
+- DB_USER: 'course_user' (standard database user for Course Creator platform)
 """
+
+# Configuration constants for validation and documentation
+# These match the defaults in conf/config.yaml
+DB_PORT_DEFAULT = os.getenv('DB_PORT', 5433)
+DB_USER_DEFAULT = os.getenv('DB_USER', 'course_user')
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

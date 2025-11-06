@@ -62,8 +62,8 @@ async def debug_network():
 
         print("\n3. Getting page state before submit...")
         # Check what the page sees
-        origin = await page.evaluate("window.location.origin")
-        print(f"   window.location.origin: {origin}")
+        origin = await page.evaluate("window.locations.origin")
+        print(f"   window.locations.origin: {origin}")
 
         # Check if fetch is available
         has_fetch = await page.evaluate("typeof fetch === 'function'")

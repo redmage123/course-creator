@@ -81,5 +81,5 @@ except Exception as e:
 
 print("\n" + "=" * 60)
 print("✅ COMPLETE: Slide 1 video regenerated without cookie banner")
-print(f"📁 Video location: {VIDEO_OUTPUT}")
+print(f"📁 Video locations: {VIDEO_OUTPUT}")
 print("=" * 60)

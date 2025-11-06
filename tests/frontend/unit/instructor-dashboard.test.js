@@ -105,24 +105,24 @@ describe('InstructorDashboard', () => {
             const { Auth } = require('../../../frontend/js/modules/auth.js');
             Auth.isAuthenticated.mockReturnValue(false);
 
-            delete window.location;
-            window.location = { href: '' };
+            delete window.locations;
+            window.locations = { href: '' };
 
             dashboard = new InstructorDashboard();
 
-            expect(window.location.href).toBe('html/index.html');
+            expect(window.locations.href).toBe('html/index.html');
         });
 
         test('should redirect if not instructor role', () => {
             const { Auth } = require('../../../frontend/js/modules/auth.js');
             Auth.hasRole.mockReturnValue(false);
 
-            delete window.location;
-            window.location = { href: '' };
+            delete window.locations;
+            window.locations = { href: '' };
 
             dashboard = new InstructorDashboard();
 
-            expect(window.location.href).toBe('html/index.html');
+            expect(window.locations.href).toBe('html/index.html');
         });
     });
 

@@ -12,7 +12,7 @@ const mockLocalStorage = {
     removeItem: jest.fn()
 };
 
-// Mock window.location
+// Mock window.locations
 const mockLocation = {
     href: '',
     assign: jest.fn(),
@@ -23,7 +23,7 @@ const mockLocation = {
 global.fetch = mockFetch;
 global.showNotification = mockShowNotification;
 global.localStorage = mockLocalStorage;
-global.window = { ...global.window, location: mockLocation };
+global.window = { ...global.window, locations: mockLocation };
 
 describe('Demo Functionality Frontend Tests', () => {
     
@@ -95,7 +95,7 @@ describe('Demo Functionality Frontend Tests', () => {
                     );
                     
                     setTimeout(() => {
-                        window.location.href = `html/instructor-dashboard.html?demo=true&session=${demoData.session_id}`;
+                        window.locations.href = `html/instructor-dashboard.html?demo=true&session=${demoData.session_id}`;
                     }, 2000);
                     
                 } catch (error) {
@@ -284,7 +284,7 @@ describe('Demo Functionality Frontend Tests', () => {
                 );
                 
                 // Redirect to home page
-                window.location.href = '/';
+                window.locations.href = '/';
             };
 
             handleSessionExpiration();

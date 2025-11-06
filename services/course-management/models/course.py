@@ -34,7 +34,19 @@ class DurationUnit(str, Enum):
 
 
 class CourseBase(BaseModel):
-    """Base course model with common fields."""
+    """
+    Base course model with common fields.
+
+    BUSINESS CONTEXT:
+    Supports both standalone courses (single instructors) and organizational
+    courses (corporate training programs). Organizational fields are optional
+    to provide maximum flexibility.
+
+    USE CASES:
+    1. Standalone Course: instructor creates course without organization context
+    2. Organizational Course: course belongs to organization/project/track hierarchy
+    3. Hybrid: course can be added to tracks later via track_classes junction table
+    """
     title: str = Field(..., min_length=1, max_length=200)
     description: str = Field(..., min_length=1, max_length=1000)
     category: Optional[str] = Field(None, max_length=100)
@@ -43,6 +55,20 @@ class CourseBase(BaseModel):
     duration_unit: DurationUnit = DurationUnit.WEEKS  # duration unit
     price: float = Field(0.0, ge=0)
     thumbnail_url: Optional[str] = None
+
+    # Optional organizational context (for enterprise/corporate training)
+    organization_id: Optional[str] = Field(
+        None,
+        description="Organization ID (optional - for corporate training programs)"
+    )
+    project_id: Optional[str] = Field(
+        None,
+        description="Project ID (optional - for project-based courses)"
+    )
+    track_id: Optional[str] = Field(
+        None,
+        description="Track ID (optional - for track-based learning paths)"
+    )
     
     @validator('title')
     def validate_title(cls, v):
@@ -63,7 +89,13 @@ class CourseCreate(CourseBase):
 
 
 class CourseUpdate(BaseModel):
-    """Course update model."""
+    """
+    Course update model.
+
+    BUSINESS CONTEXT:
+    Allows updating course metadata and organizational associations.
+    Instructors can move courses between organizations/projects/tracks.
+    """
     title: Optional[str] = Field(None, min_length=1, max_length=200)
     description: Optional[str] = Field(None, min_length=1, max_length=1000)
     category: Optional[str] = Field(None, max_length=100)
@@ -73,6 +105,11 @@ class CourseUpdate(BaseModel):
     price: Optional[float] = Field(None, ge=0)
     is_published: Optional[bool] = None
     thumbnail_url: Optional[str] = None
+
+    # Optional organizational context updates
+    organization_id: Optional[str] = Field(None, description="Update organization association")
+    project_id: Optional[str] = Field(None, description="Update project association")
+    track_id: Optional[str] = Field(None, description="Update track association")
     
     @validator('title')
     def validate_title(cls, v):

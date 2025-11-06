@@ -16,10 +16,14 @@
  * - Configuration-based endpoints
  * - Integration with both course-generator (creation) and course-management (publication)
  */
-
 import { Auth } from '../modules/auth.js';
 
 export class QuizService {
+    /**
+     * INITIALIZE CLASS INSTANCE WITH DEFAULT STATE
+     * PURPOSE: Initialize class instance with default state
+     * WHY: Establishes initial state required for class functionality
+     */
     constructor() {
         this.contentUrl = window.CONFIG?.API_URLS?.CONTENT_MANAGEMENT || 'https://localhost:8002';
         this.courseUrl = window.CONFIG?.API_URLS?.COURSE_MANAGEMENT || 'https://localhost:8004';

@@ -2,8 +2,14 @@
  * Exercise Manager Module
  * Single Responsibility: Handle exercise loading, tracking, and management
  */
-
 export class ExerciseManager {
+    /**
+     * INITIALIZE CLASS INSTANCE WITH DEFAULT STATE
+     * PURPOSE: Initialize class instance with default state
+     * WHY: Establishes initial state required for class functionality
+     *
+     * @param {Object} config - Configuration options
+     */
     constructor(config) {
         this.config = config;
         this.exercises = [];
@@ -13,6 +19,17 @@ export class ExerciseManager {
     }
 
     // Load exercises for a course
+    /**
+     * LOAD EXERCISES DATA FROM SERVER
+     * PURPOSE: Load exercises data from server
+     * WHY: Dynamic data loading enables real-time content updates
+     *
+     * @param {string|number} courseId - Unique identifier
+     *
+     * @returns {Promise<void>} Promise resolving when loading completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async loadExercises(courseId) {
         try {
             const endpoint = this.config.getEndpoint('exercises', courseId);
@@ -36,6 +53,11 @@ export class ExerciseManager {
     }
 
     // Initialize progress tracking for all exercises
+    /**
+     * INITIALIZE PROGRESS COMPONENT
+     * PURPOSE: Initialize progress component
+     * WHY: Proper initialization ensures component reliability and correct state
+     */
     initializeProgress() {
         this.exercises.forEach(exercise => {
             if (!this.exerciseProgress[exercise.id]) {
@@ -51,16 +73,39 @@ export class ExerciseManager {
     }
 
     // Get all exercises
+    /**
+     * RETRIEVE EXERCISES INFORMATION
+     * PURPOSE: Retrieve exercises information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
     getExercises() {
         return this.exercises;
     }
 
     // Get exercise by ID
+    /**
+     * RETRIEVE EXERCISE BY ID INFORMATION
+     * PURPOSE: Retrieve exercise by id information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @param {string|number} exerciseId - Exerciseid parameter
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
     getExerciseById(exerciseId) {
         return this.exercises.find(exercise => exercise.id === exerciseId);
     }
 
     // Set current exercise
+    /**
+     * SET CURRENT EXERCISE VALUE
+     * PURPOSE: Set current exercise value
+     * WHY: Maintains data integrity through controlled mutation
+     *
+     * @param {string|number} exerciseId - Exerciseid parameter
+     */
     setCurrentExercise(exerciseId) {
         const exercise = this.getExerciseById(exerciseId);
         if (exercise) {
@@ -72,11 +117,25 @@ export class ExerciseManager {
     }
 
     // Get current exercise
+    /**
+     * RETRIEVE CURRENT EXERCISE INFORMATION
+     * PURPOSE: Retrieve current exercise information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
     getCurrentExercise() {
         return this.currentExercise;
     }
 
     // Start working on an exercise
+    /**
+     * EXECUTE STARTEXERCISE OPERATION
+     * PURPOSE: Execute startExercise operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} exerciseId - Exerciseid parameter
+     */
     startExercise(exerciseId) {
         const progress = this.exerciseProgress[exerciseId];
         if (progress && progress.status === 'not_started') {
@@ -87,6 +146,13 @@ export class ExerciseManager {
     }
 
     // Mark exercise as completed
+    /**
+     * EXECUTE COMPLETEEXERCISE OPERATION
+     * PURPOSE: Execute completeExercise operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} exerciseId - Exerciseid parameter
+     */
     completeExercise(exerciseId) {
         const progress = this.exerciseProgress[exerciseId];
         if (progress) {
@@ -101,6 +167,13 @@ export class ExerciseManager {
     }
 
     // Reset exercise progress
+    /**
+     * EXECUTE RESETEXERCISE OPERATION
+     * PURPOSE: Execute resetExercise operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} exerciseId - Exerciseid parameter
+     */
     resetExercise(exerciseId) {
         if (this.exerciseProgress[exerciseId]) {
             this.exerciseProgress[exerciseId] = {
@@ -114,11 +187,27 @@ export class ExerciseManager {
     }
 
     // Get exercise progress
+    /**
+     * RETRIEVE EXERCISE PROGRESS INFORMATION
+     * PURPOSE: Retrieve exercise progress information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @param {string|number} exerciseId - Exerciseid parameter
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
     getExerciseProgress(exerciseId) {
         return this.exerciseProgress[exerciseId] || null;
     }
 
     // Get overall progress statistics
+    /**
+     * RETRIEVE PROGRESS STATS INFORMATION
+     * PURPOSE: Retrieve progress stats information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
     getProgressStats() {
         const total = this.exercises.length;
         let completed = 0;
@@ -152,6 +241,15 @@ export class ExerciseManager {
     }
 
     // Filter exercises by criteria
+    /**
+     * FILTER EXERCISES BASED ON CRITERIA
+     * PURPOSE: Filter exercises based on criteria
+     * WHY: Enables users to find relevant data quickly
+     *
+     * @param {*} criteria - Criteria parameter
+     *
+     * @returns {Array} Filtered array
+     */
     filterExercises(criteria) {
         return this.exercises.filter(exercise => {
             // Filter by difficulty
@@ -185,29 +283,75 @@ export class ExerciseManager {
     }
 
     // Show/hide solution for an exercise
+    /**
+     * TOGGLE SOLUTION STATE
+     * PURPOSE: Toggle solution state
+     * WHY: Provides binary state management for UI elements
+     *
+     * @param {string|number} exerciseId - Exerciseid parameter
+     */
     toggleSolution(exerciseId) {
         this.showingSolution[exerciseId] = !this.showingSolution[exerciseId];
         return this.showingSolution[exerciseId];
     }
 
     // Check if solution is showing for an exercise
+    /**
+     * EXECUTE ISSOLUTIONSHOWING OPERATION
+     * PURPOSE: Execute isSolutionShowing operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} exerciseId - Exerciseid parameter
+     *
+     * @returns {boolean} True if condition is met, false otherwise
+     */
     isSolutionShowing(exerciseId) {
         return this.showingSolution[exerciseId] || false;
     }
 
     // Get exercise hints
+    /**
+     * RETRIEVE HINTS INFORMATION
+     * PURPOSE: Retrieve hints information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @param {string|number} exerciseId - Exerciseid parameter
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
     getHints(exerciseId) {
         const exercise = this.getExerciseById(exerciseId);
         return exercise ? exercise.hints || [] : [];
     }
 
     // Get exercise test cases
+    /**
+     * RETRIEVE TEST CASES INFORMATION
+     * PURPOSE: Retrieve test cases information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @param {string|number} exerciseId - Exerciseid parameter
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
     getTestCases(exerciseId) {
         const exercise = this.getExerciseById(exerciseId);
         return exercise ? exercise.testCases || [] : [];
     }
 
     // Validate exercise solution
+    /**
+     * VALIDATE SOLUTION INPUT
+     * PURPOSE: Validate solution input
+     * WHY: Ensures data integrity and prevents invalid states
+     *
+     * @param {string|number} exerciseId - Exerciseid parameter
+     * @param {*} userCode - Usercode parameter
+     *
+     * @returns {boolean} True if validation passes, false otherwise
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     validateSolution(exerciseId, userCode) {
         const exercise = this.getExerciseById(exerciseId);
         if (!exercise || !exercise.testCases) {
@@ -246,6 +390,18 @@ export class ExerciseManager {
     }
 
     // Submit exercise solution
+    /**
+     * EXECUTE SUBMITSOLUTION OPERATION
+     * PURPOSE: Execute submitSolution operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} exerciseId - Exerciseid parameter
+     * @param {*} userCode - Usercode parameter
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async submitSolution(exerciseId, userCode) {
         const validation = this.validateSolution(exerciseId, userCode);
         
@@ -266,6 +422,11 @@ export class ExerciseManager {
     }
 
     // Export progress data
+    /**
+     * EXECUTE EXPORTPROGRESS OPERATION
+     * PURPOSE: Execute exportProgress operation
+     * WHY: Implements required business logic for system functionality
+     */
     exportProgress() {
         return {
             exercises: this.exercises,
@@ -276,6 +437,13 @@ export class ExerciseManager {
     }
 
     // Import progress data
+    /**
+     * EXECUTE IMPORTPROGRESS OPERATION
+     * PURPOSE: Execute importProgress operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {Object} data - Data object
+     */
     importProgress(data) {
         if (data.exercises) {
             this.exercises = data.exercises;

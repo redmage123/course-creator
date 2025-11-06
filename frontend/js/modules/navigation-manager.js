@@ -2,8 +2,18 @@
  * Enhanced Navigation Manager
  * Advanced navigation UX with search, breadcrumbs, and shortcuts
  */
-
 class NavigationManager {
+    /**
+     * Creates a new NavigationManager instance with enhanced UX features.
+     *
+     * Initializes the navigation system with search, breadcrumbs, keyboard shortcuts, and scroll
+     * indicators. Manages tab navigation state, history tracking, and accessibility features.
+     *
+     * WHY: Provides a centralized navigation management system with advanced UX features like search,
+     * keyboard shortcuts, and breadcrumb navigation, improving user productivity and accessibility.
+     *
+     * @constructor
+     */
     constructor() {
         this.currentTab = 'overview';
         this.navigationHistory = ['overview'];
@@ -73,7 +83,15 @@ class NavigationManager {
     }
 
     /**
-     * Initialize navigation manager
+     * Initializes all navigation manager features and event listeners.
+     *
+     * Sets up navigation search, scroll indicators, keyboard shortcuts, tab enhancements,
+     * and initial breadcrumb display. Called once during constructor initialization.
+     *
+     * WHY: Centralizes all initialization logic to ensure features are activated in the
+     * correct order and all event listeners are properly registered.
+     *
+     * @returns {void}
      */
     init() {
         this.setupNavigationSearch();
@@ -86,7 +104,15 @@ class NavigationManager {
     }
 
     /**
-     * Setup navigation search functionality
+     * Sets up the navigation search input with debounced search and keyboard event handling.
+     *
+     * Adds event listeners for input (debounced search), Enter key (execute search), and
+     * Escape key (clear search). Implements 300ms debounce to avoid excessive searches.
+     *
+     * WHY: Search functionality helps users quickly find specific sections without manually
+     * scanning through all tabs, especially useful for dashboards with many sections.
+     *
+     * @returns {void}
      */
     setupNavigationSearch() {
         const searchInput = document.getElementById('navSearchInput');
@@ -111,7 +137,16 @@ class NavigationManager {
     }
 
     /**
-     * Handle navigation search
+     * Handles navigation search by filtering and highlighting matching tabs.
+     *
+     * Searches through all tab titles and descriptions for the query string (case-insensitive).
+     * Adds 'search-highlight' class to matching tabs and announces results to screen readers.
+     *
+     * WHY: Visual highlighting helps users identify matching sections at a glance, while
+     * screen reader announcements ensure accessibility for vision-impaired users.
+     *
+     * @param {string} query - The search query entered by the user
+     * @returns {void}
      */
     handleNavigationSearch(query) {
         if (!query.trim()) {
@@ -146,7 +181,16 @@ class NavigationManager {
     }
 
     /**
-     * Execute search and navigate to first match
+     * Executes the search by navigating to the first highlighted match.
+     *
+     * Finds the first tab with 'search-highlight' class, navigates to it, clears the search
+     * input, and removes all highlights. Triggered when user presses Enter in search input.
+     *
+     * WHY: Enter key should perform an action (navigate) rather than just highlighting,
+     * providing a faster keyboard-based workflow for power users.
+     *
+     * @param {string} query - The search query (unused but kept for interface consistency)
+     * @returns {void}
      */
     executeSearch(query) {
         const highlightedTab = document.querySelector('.nav-tab.search-highlight');
@@ -161,7 +205,15 @@ class NavigationManager {
     }
 
     /**
-     * Clear search highlights
+     * Removes the 'search-highlight' class from all tabs.
+     *
+     * Clears visual highlighting from tabs after search is executed or cancelled.
+     * Used when user presses Escape or completes a search.
+     *
+     * WHY: Highlighted tabs should only show during active search to avoid visual clutter
+     * and confusion about the current navigation state.
+     *
+     * @returns {void}
      */
     clearSearchHighlights() {
         document.querySelectorAll('.nav-tab.search-highlight').forEach(tab => {
@@ -170,12 +222,27 @@ class NavigationManager {
     }
 
     /**
-     * Setup scroll indicators for navigation tabs
+     * Sets up visual indicators showing when tab navigation is scrollable.
+     *
+     * Adds CSS classes 'scrollable-left' and 'scrollable-right' to indicate scroll availability.
+     * Updates indicators on scroll and window resize events to reflect current state.
+     *
+     * WHY: Users need visual feedback when tab navigation extends beyond viewport width,
+     * indicating that more tabs are available by scrolling horizontally.
+     *
+     * @returns {void}
      */
     setupScrollIndicators() {
         const navTabs = document.querySelector('.nav-tabs');
         if (!navTabs) return;
 
+    /**
+     * UPDATE SCROLL INDICATORS STATE
+     * PURPOSE: Update scroll indicators state
+     * WHY: Keeps application state synchronized with user actions and data changes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
         const updateScrollIndicators = () => {
             const canScrollLeft = navTabs.scrollLeft > 0;
             const canScrollRight = navTabs.scrollLeft < (navTabs.scrollWidth - navTabs.clientWidth);
@@ -192,7 +259,16 @@ class NavigationManager {
     }
 
     /**
-     * Setup enhanced keyboard shortcuts
+     * Sets up global keyboard shortcuts for navigation and search.
+     *
+     * Registers shortcuts: Alt+1-7 (navigate to specific tabs), Ctrl+/ (focus search),
+     * Shift+? (show shortcuts help), and Escape (hide shortcuts). Skips shortcuts when
+     * user is typing in input fields.
+     *
+     * WHY: Keyboard shortcuts dramatically improve productivity for power users who prefer
+     * keyboard navigation over mouse clicks, reducing time to switch between sections.
+     *
+     * @returns {void}
      */
     setupKeyboardShortcuts() {
         document.addEventListener('keydown', (event) => {
@@ -229,7 +305,15 @@ class NavigationManager {
     }
 
     /**
-     * Focus on search input
+     * Focuses and selects all text in the navigation search input.
+     *
+     * Programmatically focuses the search input and selects its current content for easy
+     * replacement. Triggered by Ctrl+/ keyboard shortcut.
+     *
+     * WHY: Quick access to search via keyboard shortcut enables faster navigation workflow,
+     * and selecting existing text allows immediate typing without manual clearing.
+     *
+     * @returns {void}
      */
     focusSearch() {
         const searchInput = document.getElementById('navSearchInput');
@@ -240,7 +324,15 @@ class NavigationManager {
     }
 
     /**
-     * Setup tab enhancements
+     * Enhances all navigation tabs with tooltips, click handlers, and context menus.
+     *
+     * Adds title attributes with descriptions for tooltips, click event handlers for
+     * navigation, and right-click context menus for additional actions.
+     *
+     * WHY: Tooltips provide helpful descriptions on hover, click handlers centralize navigation
+     * logic, and context menus offer power-user features like bookmarking and section info.
+     *
+     * @returns {void}
      */
     setupTabEnhancements() {
         const tabs = document.querySelectorAll('.nav-tab');
@@ -269,7 +361,17 @@ class NavigationManager {
     }
 
     /**
-     * Navigate to tab with enhanced UX
+     * Navigates to the specified tab with enhanced UX features.
+     *
+     * Updates navigation history, scrolls tab into view if needed, updates breadcrumbs,
+     * triggers the actual tab change via orgAdmin.showTab(), and announces navigation to
+     * screen readers for accessibility.
+     *
+     * WHY: Centralized navigation method ensures consistent behavior across all navigation
+     * triggers (clicks, keyboard shortcuts, search) and handles all UX concerns in one place.
+     *
+     * @param {string} tabName - The tab identifier to navigate to (e.g., 'overview', 'projects')
+     * @returns {void}
      */
     navigateToTab(tabName) {
         const tab = document.querySelector(`[data-tab="${tabName}"]`);
@@ -304,7 +406,16 @@ class NavigationManager {
     }
 
     /**
-     * Scroll tab into view
+     * Smoothly scrolls a tab into view if it's outside the visible navigation area.
+     *
+     * Checks if the tab is partially or fully outside the navigation container's viewport
+     * and smoothly scrolls it to center if needed. Uses smooth scrolling for better UX.
+     *
+     * WHY: When navigating via keyboard shortcuts or search, the target tab may be off-screen.
+     * Auto-scrolling ensures the active tab is always visible without manual scrolling.
+     *
+     * @param {HTMLElement} tab - The tab element to scroll into view
+     * @returns {void}
      */
     scrollTabIntoView(tab) {
         const navTabs = document.querySelector('.nav-tabs');
@@ -322,7 +433,15 @@ class NavigationManager {
     }
 
     /**
-     * Update breadcrumb navigation
+     * Updates the breadcrumb navigation trail based on the current tab.
+     *
+     * Shows hierarchical breadcrumb trail for nested pages (e.g., Dashboard > Projects > Project Details).
+     * Hides breadcrumbs for top-level pages. Adds click handlers to breadcrumb links.
+     *
+     * WHY: Breadcrumbs help users understand their current locations in the hierarchy and provide
+     * quick navigation back to parent sections without using browser back button.
+     *
+     * @returns {void}
      */
     updateBreadcrumbs() {
         const breadcrumbNav = document.getElementById('breadcrumbNav');
@@ -365,7 +484,17 @@ class NavigationManager {
     }
 
     /**
-     * Show tab context menu
+     * Displays a right-click context menu for a navigation tab.
+     *
+     * Shows a menu with options to open the tab, bookmark it, or view section info.
+     * Positions the menu at cursor locations and handles outside clicks for auto-close.
+     *
+     * WHY: Context menus provide power-user features and alternative navigation methods
+     * without cluttering the main interface with additional buttons.
+     *
+     * @param {MouseEvent} event - The contextmenu event containing cursor position
+     * @param {HTMLElement} tab - The tab element that was right-clicked
+     * @returns {void}
      */
     showTabContextMenu(event, tab) {
         // Remove existing context menu
@@ -425,6 +554,13 @@ class NavigationManager {
         });
 
         // Close menu on outside click
+    /**
+     * HIDE MENU INTERFACE
+     * PURPOSE: Hide menu interface
+     * WHY: Improves UX by managing interface visibility and state
+     *
+     * @param {Event} e - Event object
+     */
         const closeMenu = (e) => {
             if (!contextMenu.contains(e.target)) {
                 contextMenu.remove();
@@ -438,7 +574,15 @@ class NavigationManager {
     }
 
     /**
-     * Show keyboard shortcuts overlay
+     * Displays an overlay showing all available keyboard shortcuts.
+     *
+     * Shows a modal overlay listing all keyboard shortcuts with their functions. Auto-hides
+     * after 10 seconds. Toggles off if called again while visible.
+     *
+     * WHY: Users need a way to discover and learn keyboard shortcuts without consulting
+     * documentation. The overlay provides in-app help that's always accessible via Shift+?.
+     *
+     * @returns {void}
      */
     showKeyboardShortcuts() {
         // Remove existing shortcuts overlay
@@ -508,7 +652,15 @@ class NavigationManager {
     }
 
     /**
-     * Hide keyboard shortcuts overlay
+     * Hides the keyboard shortcuts overlay with smooth fade-out animation.
+     *
+     * Removes the 'active' class for CSS transition, then removes the element from DOM
+     * after animation completes (300ms delay).
+     *
+     * WHY: Smooth fade-out provides better UX than instant removal, and delayed DOM
+     * removal allows CSS transitions to complete.
+     *
+     * @returns {void}
      */
     hideKeyboardShortcuts() {
         const overlay = document.querySelector('.nav-shortcuts');
@@ -519,7 +671,16 @@ class NavigationManager {
     }
 
     /**
-     * Bookmark tab (placeholder for future feature)
+     * Bookmarks a tab for quick access (placeholder for future feature).
+     *
+     * Currently logs the bookmark action and announces it to screen readers. Intended
+     * for future implementation of a bookmark/favorites system.
+     *
+     * WHY: Bookmarking frequently accessed sections would improve workflow efficiency.
+     * Placeholder ensures consistent interface for future feature implementation.
+     *
+     * @param {string} tabName - The tab identifier to bookmark
+     * @returns {void}
      */
     bookmarkTab(tabName) {
         const tabMeta = this.tabMeta[tabName];
@@ -530,7 +691,16 @@ class NavigationManager {
     }
 
     /**
-     * Show tab information
+     * Shows detailed information about a specific tab section.
+     *
+     * Announces the tab's title and description to screen readers and logs to console.
+     * Triggered from context menu "Section Info" option.
+     *
+     * WHY: Provides additional context about a section's purpose and contents, helpful
+     * for new users or when section names are abbreviated.
+     *
+     * @param {string} tabName - The tab identifier to show info for
+     * @returns {void}
      */
     showTabInfo(tabName) {
         const tabMeta = this.tabMeta[tabName];
@@ -541,14 +711,30 @@ class NavigationManager {
     }
 
     /**
-     * Get navigation history
+     * Returns a copy of the navigation history array.
+     *
+     * Provides access to the user's navigation path through the application. Returns a copy
+     * to prevent external modification of the internal history state.
+     *
+     * WHY: Navigation history enables features like "back" navigation, analytics tracking
+     * of user paths, and breadcrumb generation. Copy prevents external code from breaking state.
+     *
+     * @returns {Array<string>} Array of tab names in navigation order (most recent last)
      */
     getNavigationHistory() {
         return [...this.navigationHistory];
     }
 
     /**
-     * Go back to previous tab
+     * Navigates back to the previously visited tab.
+     *
+     * Removes the current tab from history and navigates to the previous entry. Only works
+     * if history contains more than one entry (current tab).
+     *
+     * WHY: Provides browser-like back navigation within the application, allowing users to
+     * retrace their steps without manually clicking tabs or using browser back button.
+     *
+     * @returns {void}
      */
     goBack() {
         if (this.navigationHistory.length > 1) {
@@ -559,7 +745,17 @@ class NavigationManager {
     }
 
     /**
-     * Add notification badge to tab
+     * Adds or updates a notification badge on a tab showing the notification count.
+     *
+     * Creates a badge element if it doesn't exist, updates the count display (shows "99+"
+     * for counts over 99), and shows/hides based on count. Used for alerts, unread items, etc.
+     *
+     * WHY: Notification badges provide at-a-glance awareness of pending items or alerts in
+     * other sections without navigating away from the current tab.
+     *
+     * @param {string} tabName - The tab identifier to add badge to
+     * @param {number} count - The notification count to display (0 hides badge)
+     * @returns {void}
      */
     addNotificationBadge(tabName, count) {
         const tab = document.querySelector(`[data-tab="${tabName}"]`);
@@ -577,7 +773,16 @@ class NavigationManager {
     }
 
     /**
-     * Remove notification badge from tab
+     * Removes the notification badge from a tab.
+     *
+     * Finds and removes the badge element from the specified tab. Used when notifications
+     * are cleared or read by the user.
+     *
+     * WHY: Badges should be removed when no longer relevant to avoid badge fatigue and
+     * maintain clean UI when there are no pending notifications.
+     *
+     * @param {string} tabName - The tab identifier to remove badge from
+     * @returns {void}
      */
     removeNotificationBadge(tabName) {
         const tab = document.querySelector(`[data-tab="${tabName}"]`);

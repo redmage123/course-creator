@@ -1,0 +1,366 @@
+/**
+ * Lab Environment Styles
+ *
+ * Modern, dark-themed lab interface inspired by VSCode
+ * Follows platform design system and accessibility guidelines
+ */
+
+/* Container Styles */
+.labContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  background: #1e1e1e;
+  color: #ffffff;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow: hidden;
+}
+
+/* Header Styles */
+.labHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background: #2d2d30;
+  border-bottom: 2px solid #3e3e42;
+  min-height: 60px;
+  z-index: 1000;
+}
+
+.labTitle {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.labTitle h1 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.courseId {
+  font-size: 0.85rem;
+  color: #cccccc;
+  padding: 4px 12px;
+  background: #3e3e42;
+  border-radius: 4px;
+}
+
+.headerControls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Session Info Styles */
+.sessionTimer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: #3e3e42;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+}
+
+.timerIcon {
+  font-size: 1rem;
+}
+
+.timerValue {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.sessionStatus {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: #3e3e42;
+  border-radius: 4px;
+}
+
+.statusIndicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.statusIndicator.stopped {
+  background: #6c757d;
+  animation: none;
+}
+
+.statusIndicator.starting,
+.statusIndicator.stopping {
+  background: #ffc107;
+}
+
+.statusIndicator.running {
+  background: #28a745;
+}
+
+.statusIndicator.paused {
+  background: #fd7e14;
+}
+
+.statusText {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sessionId {
+  font-size: 0.8rem;
+  color: #999999;
+  font-family: 'Courier New', monospace;
+}
+
+/* Main Content Layout */
+.labContent {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* File Explorer Panel */
+.fileExplorerPanel {
+  width: 250px;
+  min-width: 200px;
+  max-width: 400px;
+  background: #252526;
+  border-right: 1px solid #3e3e42;
+  overflow-y: auto;
+  resize: horizontal;
+}
+
+/* Editor Panel */
+.editorPanel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.ideContainer {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  background: #1e1e1e;
+}
+
+.vscodeContainer,
+.jupyterContainer,
+.terminalFullContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.jupyterIframe {
+  flex: 1;
+  border: none;
+  width: 100%;
+  height: 100%;
+  background: #ffffff;
+}
+
+/* Terminal Panel (Bottom) */
+.terminalPanel {
+  height: 250px;
+  min-height: 100px;
+  max-height: 60vh;
+  background: #1e1e1e;
+  border-top: 1px solid #3e3e42;
+  display: flex;
+  flex-direction: column;
+  resize: vertical;
+  overflow: hidden;
+}
+
+.terminalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: #2d2d30;
+  border-bottom: 1px solid #3e3e42;
+}
+
+.terminalHeader span {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #cccccc;
+}
+
+/* Right Sidebar */
+.rightSidebar {
+  width: 300px;
+  min-width: 250px;
+  max-width: 500px;
+  background: #252526;
+  border-left: 1px solid #3e3e42;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  resize: horizontal;
+}
+
+.resourcePanel {
+  padding: 16px;
+  border-bottom: 1px solid #3e3e42;
+}
+
+.aiAssistantToggle {
+  padding: 12px;
+  border-bottom: 1px solid #3e3e42;
+}
+
+.aiAssistantPanel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Loading State */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: #1e1e1e;
+  color: #ffffff;
+  gap: 16px;
+}
+
+.loadingContainer p {
+  font-size: 1rem;
+  color: #cccccc;
+}
+
+/* Error State */
+.errorContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: #1e1e1e;
+  padding: 24px;
+}
+
+.errorContainer h2 {
+  color: #dc3545;
+  margin-bottom: 16px;
+}
+
+.errorContainer p {
+  color: #cccccc;
+  margin-bottom: 24px;
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .rightSidebar {
+    width: 250px;
+  }
+
+  .fileExplorerPanel {
+    width: 200px;
+  }
+}
+
+@media (max-width: 768px) {
+  .labHeader {
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .headerControls {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .fileExplorerPanel {
+    display: none;
+  }
+
+  .rightSidebar {
+    display: none;
+  }
+
+  .terminalPanel {
+    height: 180px;
+  }
+}
+
+/* Accessibility */
+.labContainer:focus-within {
+  outline: none;
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .labHeader {
+    border-bottom-width: 3px;
+  }
+
+  .statusIndicator {
+    border: 2px solid currentColor;
+  }
+
+  .fileExplorerPanel,
+  .terminalPanel,
+  .rightSidebar {
+    border-width: 2px;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .statusIndicator {
+    animation: none;
+  }
+
+  * {
+    transition: none !important;
+  }
+}
+
+/* Dark Mode (Default) - No changes needed as lab is already dark */
+
+/* Print Styles */
+@media print {
+  .labHeader,
+  .fileExplorerPanel,
+  .rightSidebar,
+  .terminalPanel {
+    display: none;
+  }
+
+  .labContainer {
+    background: white;
+    color: black;
+  }
+}

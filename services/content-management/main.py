@@ -231,22 +231,22 @@ class SyllabusUpdateRequest(BaseModel):
 class ContentSearchRequest(BaseModel):
     """
     Data Transfer Object for content search and discovery operations.
-    
+
     Enables sophisticated search across all educational content types,
     supporting instructors in finding and reusing educational materials.
-    
+
     Search Capabilities:
     - Full-text search across uploaded documents and generated content
     - Tag-based filtering for content categorization
     - Content type filtering (syllabi, slides, exercises, quizzes)
     - Course-specific content discovery
-    
+
     Educational Use Cases:
     - Finding existing materials for course development
     - Discovering reusable educational components
     - Content recommendation based on similarity
     - Cross-course content analysis and alignment
-    
+
     Performance Optimization:
     - Efficient indexing for fast educational content retrieval
     - Optimized queries for large educational content databases
@@ -257,40 +257,8 @@ class ContentSearchRequest(BaseModel):
     course_id: Optional[str] = None
     filters: Optional[Dict[str, Any]] = None
 
-class ContentResponse(BaseModel):
-    """
-    Standardized response model for all educational content types.
-    
-    Provides consistent data structure for educational content presentation
-    across different panes and content management operations.
-    
-    Content Lifecycle Support:
-    - Tracks content creation and modification timestamps
-    - Maintains content status (draft, published, archived)
-    - Provides consistent metadata structure
-    - Supports content versioning and audit trails
-    
-    Integration Benefits:
-    - Uniform API response structure across all content types
-    - Simplified client-side content handling
-    - Consistent metadata representation
-    - Standardized content identification and linking
-    
-    Educational Context:
-    - Enables content relationship mapping and dependency tracking
-    - Supports educational content analytics and usage monitoring
-    - Facilitates content quality assessment and improvement
-    """
-    id: str
-    title: str
-    description: Optional[str] = None
-    course_id: str
-    created_by: str
-    tags: List[str] = []
-    status: str
-    content_type: str
-    created_at: datetime
-    updated_at: datetime
+# Import shared response model from centralized models module
+from models import ContentResponse
 
 # Global container
 container: Optional[ContentManagementContainer] = None
@@ -450,6 +418,12 @@ def create_app(config: DictConfig = None) -> FastAPI:
             content=response_data
         )
     
+    # Include modular routers (following Open/Closed Principle)
+    from api import syllabus_router, content_router, analytics_router
+    app.include_router(syllabus_router)
+    app.include_router(content_router)
+    app.include_router(analytics_router)
+
     # Health check endpoint
     @app.get("/health")
     async def health_check():
@@ -460,7 +434,7 @@ def create_app(config: DictConfig = None) -> FastAPI:
             "version": "2.0.0",
             "timestamp": datetime.utcnow()
         }
-    
+
     return app
 
 app = create_app()
@@ -594,302 +568,6 @@ async def health_check():
         "version": "2.0.0",
         "timestamp": datetime.utcnow()
     }
-
-# Syllabus Endpoints
-@app.post("/api/v1/syllabi", response_model=ContentResponse)
-async def create_syllabus(
-    request: SyllabusCreateRequest,
-    current_user: str = Depends(get_current_user),
-    syllabus_service: ISyllabusService = Depends(get_syllabus_service)
-):
-    """Create a new syllabus"""
-    try:
-        syllabus = await syllabus_service.create_syllabus(
-            request.dict(), current_user
-        )
-        return _content_to_response(syllabus)
-        
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:
-        logging.error("Error creating syllabus: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
-
-@app.get("/api/v1/syllabi/{syllabus_id}", response_model=ContentResponse)
-async def get_syllabus(
-    syllabus_id: str,
-    syllabus_service: ISyllabusService = Depends(get_syllabus_service)
-):
-    """Get syllabus by ID"""
-    try:
-        syllabus = await syllabus_service.get_syllabus(syllabus_id)
-        if not syllabus:
-            raise HTTPException(status_code=404, detail="Syllabus not found")
-        return _content_to_response(syllabus)
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logging.error("Error getting syllabus: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
-
-@app.put("/api/v1/syllabi/{syllabus_id}", response_model=ContentResponse)
-async def update_syllabus(
-    syllabus_id: str,
-    request: SyllabusUpdateRequest,
-    current_user: str = Depends(get_current_user),
-    syllabus_service: ISyllabusService = Depends(get_syllabus_service)
-):
-    """Update syllabus"""
-    try:
-        syllabus = await syllabus_service.update_syllabus(
-            syllabus_id, request.dict(exclude_unset=True), current_user
-        )
-        if not syllabus:
-            raise HTTPException(status_code=404, detail="Syllabus not found")
-        return _content_to_response(syllabus)
-        
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:
-        logging.error("Error updating syllabus: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
-
-@app.delete("/api/v1/syllabi/{syllabus_id}")
-async def delete_syllabus(
-    syllabus_id: str,
-    current_user: str = Depends(get_current_user),
-    syllabus_service: ISyllabusService = Depends(get_syllabus_service)
-):
-    """Delete syllabus"""
-    try:
-        success = await syllabus_service.delete_syllabus(syllabus_id, current_user)
-        if not success:
-            raise HTTPException(status_code=404, detail="Syllabus not found")
-        return {"message": "Syllabus deleted successfully"}
-        
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:
-        logging.error("Error deleting syllabus: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
-
-@app.post("/api/v1/syllabi/{syllabus_id}/publish", response_model=ContentResponse)
-async def publish_syllabus(
-    syllabus_id: str,
-    current_user: str = Depends(get_current_user),
-    syllabus_service: ISyllabusService = Depends(get_syllabus_service)
-):
-    """Publish syllabus"""
-    try:
-        syllabus = await syllabus_service.publish_syllabus(syllabus_id, current_user)
-        if not syllabus:
-            raise HTTPException(status_code=404, detail="Syllabus not found")
-        return _content_to_response(syllabus)
-        
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:
-        logging.error("Error publishing syllabus: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
-
-@app.post("/api/v1/syllabi/{syllabus_id}/archive", response_model=ContentResponse)
-async def archive_syllabus(
-    syllabus_id: str,
-    current_user: str = Depends(get_current_user),
-    syllabus_service: ISyllabusService = Depends(get_syllabus_service)
-):
-    """Archive syllabus"""
-    try:
-        syllabus = await syllabus_service.archive_syllabus(syllabus_id, current_user)
-        if not syllabus:
-            raise HTTPException(status_code=404, detail="Syllabus not found")
-        return _content_to_response(syllabus)
-        
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:
-        logging.error("Error archiving syllabus: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
-
-@app.get("/api/v1/courses/{course_id}/syllabi", response_model=List[ContentResponse])
-async def get_course_syllabi(
-    course_id: str,
-    include_drafts: bool = False,
-    syllabus_service: ISyllabusService = Depends(get_syllabus_service)
-):
-    """Get all syllabi for a course"""
-    try:
-        syllabi = await syllabus_service.get_course_syllabi(course_id, include_drafts)
-        return [_content_to_response(syllabus) for syllabus in syllabi]
-        
-    except Exception as e:
-        logging.error("Error getting course syllabi: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
-
-# Content Search Endpoints
-@app.post("/api/v1/content/search")
-async def search_content(
-    request: ContentSearchRequest,
-    search_service: IContentSearchService = Depends(get_content_search_service)
-):
-    """Search content across all types"""
-    try:
-        # Convert string content types to enum
-        content_types = None
-        if request.content_types:
-            content_types = [ContentType(ct) for ct in request.content_types]
-        
-        results = await search_service.search_content(
-            query=request.query,
-            content_types=content_types,
-            course_id=request.course_id,
-            filters=request.filters
-        )
-        
-        return results
-        
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:
-        logging.error("Error searching content: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
-
-@app.get("/api/v1/content/search/tags")
-async def search_by_tags(
-    tags: str,  # Comma-separated tags
-    content_types: Optional[str] = None,  # Comma-separated content types
-    course_id: Optional[str] = None,
-    search_service: IContentSearchService = Depends(get_content_search_service)
-):
-    """Search content by tags"""
-    try:
-        tag_list = [tag.strip() for tag in tags.split(",") if tag.strip()]
-        
-        # Convert string content types to enum
-        content_type_list = None
-        if content_types:
-            content_type_list = [ContentType(ct.strip()) for ct in content_types.split(",") if ct.strip()]
-        
-        results = await search_service.search_by_tags(
-            tags=tag_list,
-            content_types=content_type_list,
-            course_id=course_id
-        )
-        
-        return results
-        
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e)) from e
-    except Exception as e:
-        logging.error("Error searching by tags: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
-
-@app.get("/api/v1/content/recommendations/{content_id}")
-async def get_content_recommendations(
-    content_id: str,
-    limit: int = 5,
-    search_service: IContentSearchService = Depends(get_content_search_service)
-):
-    """Get content recommendations"""
-    try:
-        recommendations = await search_service.get_content_recommendations(content_id, limit)
-        return {"recommendations": recommendations}
-        
-    except Exception as e:
-        logging.error("Error getting recommendations: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
-
-# Content Analytics Endpoints
-@app.get("/api/v1/analytics/content/statistics")
-async def get_content_statistics(
-    course_id: Optional[str] = None,
-    analytics_service: IContentAnalyticsService = Depends(get_content_analytics_service)
-):
-    """Get content statistics"""
-    try:
-        stats = await analytics_service.get_content_statistics(course_id)
-        return stats
-        
-    except Exception as e:
-        logging.error("Error getting content statistics: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
-
-@app.get("/api/v1/analytics/content/{content_id}/metrics")
-async def get_content_metrics(
-    content_id: str,
-    days: int = 30,
-    analytics_service: IContentAnalyticsService = Depends(get_content_analytics_service)
-):
-    """Get content usage metrics"""
-    try:
-        metrics = await analytics_service.get_content_usage_metrics(content_id, days)
-        return metrics
-        
-    except Exception as e:
-        logging.error("Error getting content metrics: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
-
-# Content Validation Endpoints
-@app.post("/api/v1/content/{content_id}/validate")
-async def validate_content(
-    content_id: str,
-    validation_service: IContentValidationService = Depends(get_content_validation_service)
-):
-    """Validate content"""
-    try:
-        # This is a simplified implementation
-        # In a real system, you'd need to load the content first
-        validation_result = {
-            "is_valid": True,
-            "errors": [],
-            "warnings": [],
-            "validation_score": 100
-        }
-        return validation_result
-        
-    except Exception as e:
-        logging.error("Error validating content: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
-
-# Content Export Endpoints
-@app.post("/api/v1/content/{content_id}/export")
-async def export_content(
-    content_id: str,
-    export_format: str,
-    export_service: IContentExportService = Depends(get_content_export_service)
-):
-    """Export content"""
-    try:
-        export_result = await export_service.export_content(content_id, export_format)
-        return export_result
-        
-    except Exception as e:
-        logging.error("Error exporting content: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
-
-@app.post("/api/v1/courses/{course_id}/export")
-async def export_course_content(
-    course_id: str,
-    export_format: str,
-    content_types: Optional[str] = None,
-    export_service: IContentExportService = Depends(get_content_export_service)
-):
-    """Export all content for a course"""
-    try:
-        # Convert string content types to enum
-        content_type_list = None
-        if content_types:
-            content_type_list = [ContentType(ct.strip()) for ct in content_types.split(",") if ct.strip()]
-        
-        export_result = await export_service.export_course_content(
-            course_id, export_format, content_type_list
-        )
-        return export_result
-        
-    except Exception as e:
-        logging.error("Error exporting course content: %s", e)
-        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 # Helper functions (following Single Responsibility)
 def _content_to_response(content) -> ContentResponse:

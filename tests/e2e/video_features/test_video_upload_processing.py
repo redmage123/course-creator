@@ -657,7 +657,7 @@ class TestVideoUploadWorkflows(BaseTest):
     @pytest.fixture(autouse=True)
     def setup_upload_tests(self):
         """Setup for upload tests."""
-        self.login_page = InstructorLoginPage(self.driver)
+        self.login_page = InstructorLoginPage(self.driver, self.config)
         self.upload_page = VideoUploadPage(self.driver)
         self.library_page = VideoLibraryPage(self.driver)
         self.db = VideoDatabase()
@@ -988,7 +988,7 @@ class TestVideoProcessingPipeline(BaseTest):
     @pytest.fixture(autouse=True)
     def setup_processing_tests(self):
         """Setup for processing tests."""
-        self.login_page = InstructorLoginPage(self.driver)
+        self.login_page = InstructorLoginPage(self.driver, self.config)
         self.upload_page = VideoUploadPage(self.driver)
         self.processing_page = VideoProcessingPage(self.driver)
         self.db = VideoDatabase()
@@ -1207,7 +1207,7 @@ class TestVideoUploadErrorHandling(BaseTest):
     @pytest.fixture(autouse=True)
     def setup_error_tests(self):
         """Setup for error handling tests."""
-        self.login_page = InstructorLoginPage(self.driver)
+        self.login_page = InstructorLoginPage(self.driver, self.config)
         self.upload_page = VideoUploadPage(self.driver)
         self.processing_page = VideoProcessingPage(self.driver)
         

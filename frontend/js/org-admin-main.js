@@ -40,6 +40,9 @@ import * as Analytics from './modules/org-admin-analytics.js';
 // Import metadata client for analytics and insights
 import { metadataClient } from './metadata-client.js';
 
+// Import activity-based token manager
+import { activityTokenManager } from './modules/activity-token-manager.js';
+
 /**
  * Global namespace for organization admin dashboard
  *
@@ -75,14 +78,15 @@ window.OrgAdmin = {
         nextProjectStep: Projects.nextProjectStep,
         previousProjectStep: Projects.previousProjectStep,
         resetProjectWizard: Projects.resetProjectWizard,
+        toggleWizardProgress: Projects.toggleWizardProgress,
         regenerateAI: Projects.regenerateAISuggestions,
         toggleChat: Projects.toggleAIChatPanel,
         sendChatMessage: Projects.sendAIChatMessage,
-        // Sub-project/Cohort management (Step 2)
-        showAddCohortForm: Projects.showAddCohortForm,
-        cancelCohortForm: Projects.cancelCohortForm,
-        saveCohort: Projects.saveCohort,
-        removeCohortFromWizard: Projects.removeCohortFromWizard,
+        // Sub-project/Locations management (Step 2)
+        showAddLocationForm: Projects.showAddLocationForm,
+        cancelLocationForm: Projects.cancelLocationForm,
+        saveLocation: Projects.saveLocation,
+        removeLocationFromWizard: Projects.removeLocationFromWizard,
         // Track management (Step 4)
         populateTrackReviewList: Projects.populateTrackReviewList,
         openTrackManagement: Projects.openTrackManagement,
@@ -95,8 +99,12 @@ window.OrgAdmin = {
         removeCourseFromTrack: Projects.removeCourseFromTrack,
         addStudentToTrack: Projects.addStudentToTrack,
         removeStudentFromTrack: Projects.removeStudentFromTrack,
+        // Track management from main list views
+        manageProjectTracks: Projects.manageProjectTracks,
         // Project creation finalization (Step 4 - Create button)
-        finalizeProjectCreation: Projects.finalizeProjectCreation
+        finalizeProjectCreation: Projects.finalizeProjectCreation,
+        // Project summary toggle
+        toggleProjectSummary: Projects.toggleProjectSummary
     },
 
     // Courses module
@@ -113,6 +121,10 @@ window.OrgAdmin = {
         submitAdd: Instructors.submitAddInstructor,
         view: Instructors.viewInstructor,
         assign: Instructors.assignInstructor,
+        assignInstructor: Instructors.assignInstructor,
+        closeAssignmentModal: Instructors.closeAssignmentModal,
+        onTrackSelectionChange: Instructors.onTrackSelectionChange,
+        saveAssignments: Instructors.saveAssignments,
         removePrompt: Instructors.removeInstructorPrompt,
         confirmRemove: Instructors.confirmRemoveInstructor,
         filter: Instructors.filterInstructors
@@ -144,7 +156,8 @@ window.OrgAdmin = {
         editFromDetails: Tracks.editTrackFromDetails,
         editTrack: Tracks.editTrack,
         deleteTrackPrompt: Tracks.deleteTrackPrompt,
-        confirmDelete: Tracks.confirmDeleteTrack
+        confirmDelete: Tracks.confirmDeleteTrack,
+        manageTrack: Tracks.manageTrack
     },
 
     // Settings module
@@ -224,6 +237,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         console.log('Organization Admin Dashboard - Initializing...');
         await initializeDashboard();
+
+        // Start activity-based token refresh
+        // This prevents logout during active use (30 min inactivity timeout)
+        activityTokenManager.start();
+        console.log('🔄 Activity-based token refresh enabled');
 
         // Attach course form event listeners
         const generateCourseForm = document.getElementById('generateCourseForm');

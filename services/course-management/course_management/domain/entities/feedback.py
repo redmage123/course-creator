@@ -77,17 +77,134 @@ from dataclasses import dataclass
 from enum import Enum
 
 class FeedbackStatus(Enum):
+    """
+    Feedback lifecycle management status taxonomy.
+
+    This enumeration controls the visibility, processing state, and administrative
+    workflow for both course feedback and student feedback entities. Each status
+    governs how feedback is displayed, analyzed, and acted upon within the platform.
+
+    STATUS DEFINITIONS:
+
+    ACTIVE:
+        - Default state for newly submitted feedback
+        - Visible to appropriate stakeholders (instructors, students, admins)
+        - Included in analytics and aggregate calculations
+        - Can receive instructor responses
+        - Subject to normal workflow processing
+        - Use Cases: Active feedback processing, normal operations
+
+    ARCHIVED:
+        - Historical feedback preserved for compliance and analysis
+        - Removed from active dashboards and day-to-day views
+        - Retained in database for longitudinal studies
+        - Still accessible via historical reports and queries
+        - Cannot be modified (read-only state)
+        - Use Cases: End-of-term archival, data retention compliance
+
+    FLAGGED:
+        - Marked for administrative review and intervention
+        - Requires moderator attention before standard processing
+        - May indicate inappropriate content or policy violations
+        - Triggers notification to administrative staff
+        - Elevated priority in moderation queues
+        - Use Cases: Content moderation, quality concerns, policy violations
+    """
     ACTIVE = "active"
     ARCHIVED = "archived"
     FLAGGED = "flagged"
 
 class FeedbackType(Enum):
+    """
+    Feedback timing and purpose classification taxonomy.
+
+    This enumeration categorizes student feedback by instructor based on timing
+    within the course lifecycle and the specific purpose of the assessment.
+    Different types enable appropriate workflow handling and stakeholder expectations.
+
+    TYPE DEFINITIONS:
+
+    REGULAR:
+        - Ongoing formative feedback during course progression
+        - Continuous learning support and progress monitoring
+        - Informal check-ins and routine assessments
+        - Can be shared with students for development
+        - Use Cases: Weekly progress updates, module completion feedback
+
+    MIDTERM:
+        - Formal mid-course comprehensive assessment
+        - Identifies at-risk students requiring intervention
+        - Provides course correction opportunities
+        - Often shared with students for improvement
+        - May trigger academic support resources
+        - Use Cases: Midterm evaluations, progress reviews
+
+    FINAL:
+        - Summative end-of-course performance evaluation
+        - Comprehensive assessment of learning outcomes
+        - Typically impacts final grades or certification
+        - May include recommendations for future learning
+        - Permanent record for student transcript
+        - Use Cases: Final evaluations, course completion assessments
+
+    INTERVENTION:
+        - Urgent feedback requiring immediate student attention
+        - Identifies significant academic or behavioral concerns
+        - Triggers support workflows and escalation processes
+        - Requires documented follow-up actions
+        - May involve multiple stakeholders (advisors, administrators)
+        - Use Cases: Academic integrity issues, at-risk student alerts
+    """
     REGULAR = "regular"
-    MIDTERM = "midterm" 
+    MIDTERM = "midterm"
     FINAL = "final"
     INTERVENTION = "intervention"
 
 class ProgressAssessment(Enum):
+    """
+    Qualitative student progress evaluation taxonomy.
+
+    This enumeration provides standardized qualitative descriptors for student
+    learning progress and development trajectory. Enables consistent assessment
+    language across instructors and supports data-driven intervention strategies.
+
+    ASSESSMENT LEVELS:
+
+    EXCELLENT:
+        - Exceptional progress and learning velocity
+        - Consistently exceeds expectations
+        - Demonstrates mastery and deep understanding
+        - Minimal instructor intervention needed
+        - May qualify for advanced content or acceleration
+
+    GOOD:
+        - Solid progress with strong comprehension
+        - Meets all expectations with some excellence
+        - Engaged and proactive in learning
+        - Minimal support requirements
+        - On track for successful completion
+
+    SATISFACTORY:
+        - Adequate progress meeting baseline expectations
+        - Demonstrates fundamental understanding
+        - May require occasional support or clarification
+        - Progress sufficient for course completion
+        - Room for improvement in engagement or depth
+
+    NEEDS_IMPROVEMENT:
+        - Concerning progress patterns requiring attention
+        - Gaps in understanding or engagement
+        - Requires targeted support and intervention
+        - At risk without corrective action
+        - May benefit from additional resources or tutoring
+
+    POOR:
+        - Insufficient progress toward learning objectives
+        - Critical gaps in understanding or participation
+        - Immediate intervention required
+        - High risk of course failure without escalation
+        - May require administrative support or course modification
+    """
     EXCELLENT = "excellent"
     GOOD = "good"
     SATISFACTORY = "satisfactory"
@@ -95,12 +212,80 @@ class ProgressAssessment(Enum):
     POOR = "poor"
 
 class ExpectedOutcome(Enum):
+    """
+    Predictive student success forecast taxonomy.
+
+    This enumeration captures instructor predictions of student final outcomes
+    based on current performance trends, engagement patterns, and demonstrated
+    understanding. Supports early intervention and resource allocation decisions.
+
+    OUTCOME PREDICTIONS:
+
+    EXCEEDS_EXPECTATIONS:
+        - Student trajectory indicates exceptional final performance
+        - Likely to achieve high marks or certification with distinction
+        - Demonstrates accelerated learning and deep engagement
+        - May benefit from enrichment or advanced opportunities
+        - Low intervention risk
+
+    MEETS_EXPECTATIONS:
+        - Student on track for successful course completion
+        - Performance aligns with typical learning progression
+        - Expected to achieve passing grade or certification
+        - Standard support and resources sufficient
+        - Normal risk profile
+
+    BELOW_EXPECTATIONS:
+        - Student performance below anticipated trajectory
+        - Completion likely but with suboptimal outcomes
+        - Requires moderate support and encouragement
+        - May not achieve full learning objectives
+        - Elevated intervention priority
+
+    AT_RISK:
+        - High probability of course failure or dropout
+        - Critical intervention required immediately
+        - May need academic support services or counseling
+        - Requires close monitoring and personalized assistance
+        - Highest priority for instructor attention
+    """
     EXCEEDS_EXPECTATIONS = "exceeds_expectations"
     MEETS_EXPECTATIONS = "meets_expectations"
     BELOW_EXPECTATIONS = "below_expectations"
     AT_RISK = "at_risk"
 
 class AcknowledgmentType(Enum):
+    """
+    Instructor feedback response formality and detail taxonomy.
+
+    This enumeration classifies instructor responses to student course feedback
+    based on the depth, formality, and action commitment level. Different types
+    signal varying degrees of engagement and responsiveness to student concerns.
+
+    ACKNOWLEDGMENT TYPES:
+
+    STANDARD:
+        - Brief acknowledgment of feedback received
+        - Courteous thank-you without detailed analysis
+        - No specific commitments or action items
+        - Appropriate for minor suggestions or positive feedback
+        - Maintains professional communication standards
+
+    DETAILED:
+        - Comprehensive response addressing specific feedback points
+        - Explains reasoning or context for course design decisions
+        - May provide additional information or clarification
+        - Demonstrates thorough consideration of student input
+        - Appropriate for constructive criticism or detailed suggestions
+
+    ACTION_PLAN:
+        - Formal response with concrete action commitments
+        - Specific steps instructor will take to address concerns
+        - Timeline and accountability for implementation
+        - Signals serious consideration and commitment to improvement
+        - Appropriate for significant issues or repeated concerns
+        - May be shared publicly to demonstrate responsiveness
+    """
     STANDARD = "standard"
     DETAILED = "detailed"
     ACTION_PLAN = "action_plan"

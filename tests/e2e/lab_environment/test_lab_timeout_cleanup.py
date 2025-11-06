@@ -211,7 +211,7 @@ class LoginPage(BasePage):
 
 @pytest.mark.e2e
 @pytest.mark.lab_environment
-@pytest.mark.timeout
+@pytest.mark.timeout(300)
 class TestLabTimeoutMechanisms(BaseTest):
     """Test suite for lab timeout mechanisms"""
     

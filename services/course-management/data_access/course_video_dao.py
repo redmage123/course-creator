@@ -419,7 +419,7 @@ class CourseVideoDAO:
 
         Args:
             upload_id: UUID of upload record
-            storage_path: Final storage location of uploaded file
+            storage_path: Final storage locations of uploaded file
 
         POST-PROCESSING:
         After upload completes:

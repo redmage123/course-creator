@@ -23,7 +23,6 @@
  *
  * @module file-explorer
  */
-
 import { CONFIG } from '../config.js';
 
 /**
@@ -918,6 +917,18 @@ export class FileExplorer {
             const dropZone = modal.querySelector('#uploadDropZone');
             new DragDropUpload(dropZone, {
                 uploadEndpoint: this.options.uploadEndpoint,
+    /**
+     * EVENT HANDLER FOR UPLOAD COMPLETE EVENTS
+     * PURPOSE: Event handler for upload complete events
+     * WHY: Responds to user interactions and system events
+     *
+     * @param {*} response - Response parameter
+     * @param {*} file - File parameter
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
                 onUploadComplete: async (response, file) => {
                     await this.loadFiles();
                     this.options.onFileUpload(response, file);

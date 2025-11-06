@@ -1,8 +1,0 @@
-Course Creator Platform - Lint Report
-========================================
-
-Demo Service Python Files: 2
-Frontend JavaScript Files: 32
-CSS Files: 21
-
-Report generated at: /home/bbrelin/course-creator/lint_report.txt

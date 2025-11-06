@@ -41,7 +41,7 @@
     // Create and inject banner HTML
     function createBanner() {
         const bannerHTML = `
-            <div id="cookie-consent-banner" style="
+            <div id="cookie-banner" style="
                 position: fixed;
                 bottom: 0;
                 left: 0;
@@ -185,13 +185,13 @@
                         </p>
                     </div>
                     <div class="cookie-banner-buttons">
-                        <button class="cookie-btn btn-accept-all" onclick="cookieConsent.acceptAll()">
+                        <button id="accept-all-cookies" class="cookie-btn btn-accept-all" onclick="cookieConsent.acceptAll()">
                             ✅ Accept All
                         </button>
-                        <button class="cookie-btn btn-reject-all" onclick="cookieConsent.rejectAll()">
+                        <button id="reject-all-cookies" class="cookie-btn btn-reject-all" onclick="cookieConsent.rejectAll()">
                             ❌ Necessary Only
                         </button>
-                        <button class="cookie-btn btn-customize" onclick="cookieConsent.customize()">
+                        <button id="customize-cookies" class="cookie-btn btn-customize" onclick="cookieConsent.showCustomize()">
                             ⚙️ Customize
                         </button>
                     </div>
@@ -240,7 +240,7 @@
 
     // Hide banner with animation
     function hideBanner() {
-        const banner = document.getElementById('cookie-consent-banner');
+        const banner = document.getElementById('cookie-banner');
         if (banner) {
             banner.style.animation = 'fadeOut 0.3s ease-out';
             setTimeout(() => {
@@ -290,9 +290,183 @@
             }
         },
 
-        // Open customization page
+        // Show customization modal
+        showCustomize: function() {
+            // Create modal if it doesn't exist
+            if (!document.getElementById('cookie-customize-modal')) {
+                const modalHTML = `
+                    <div id="cookie-customize-modal" style="
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background: rgba(0, 0, 0, 0.7);
+                        z-index: 10001;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        animation: fadeIn 0.3s ease-out;
+                    ">
+                        <style>
+                            @keyframes fadeIn {
+                                from { opacity: 0; }
+                                to { opacity: 1; }
+                            }
+                            .cookie-modal-content {
+                                background: white;
+                                padding: 30px;
+                                border-radius: 12px;
+                                max-width: 500px;
+                                width: 90%;
+                                max-height: 80vh;
+                                overflow-y: auto;
+                                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+                            }
+                            .cookie-modal-content h2 {
+                                margin: 0 0 20px 0;
+                                color: #2c3e50;
+                            }
+                            .cookie-option {
+                                margin-bottom: 20px;
+                                padding: 15px;
+                                background: #f8f9fa;
+                                border-radius: 8px;
+                            }
+                            .cookie-option label {
+                                display: flex;
+                                align-items: center;
+                                gap: 12px;
+                                cursor: pointer;
+                                font-weight: 600;
+                                color: #2c3e50;
+                            }
+                            .cookie-option input[type="checkbox"] {
+                                width: 20px;
+                                height: 20px;
+                                cursor: pointer;
+                            }
+                            .cookie-option p {
+                                margin: 8px 0 0 32px;
+                                font-size: 13px;
+                                color: #666;
+                                line-height: 1.4;
+                            }
+                            .modal-buttons {
+                                display: flex;
+                                gap: 10px;
+                                margin-top: 25px;
+                            }
+                            .modal-btn {
+                                flex: 1;
+                                padding: 12px;
+                                border: none;
+                                border-radius: 6px;
+                                font-size: 14px;
+                                font-weight: 600;
+                                cursor: pointer;
+                                transition: all 0.2s;
+                            }
+                            .btn-save {
+                                background: #27ae60;
+                                color: white;
+                            }
+                            .btn-save:hover {
+                                background: #229954;
+                            }
+                            .btn-cancel {
+                                background: #95a5a6;
+                                color: white;
+                            }
+                            .btn-cancel:hover {
+                                background: #7f8c8d;
+                            }
+                        </style>
+                        <div class="cookie-modal-content">
+                            <h2>Cookie Preferences</h2>
+
+                            <div class="cookie-option">
+                                <label>
+                                    <input type="checkbox" id="functional-cookies" checked>
+                                    <span>Functional Cookies</span>
+                                </label>
+                                <p>Essential for the demo to work. Remembers your session and preferences. (Always enabled)</p>
+                            </div>
+
+                            <div class="cookie-option">
+                                <label>
+                                    <input type="checkbox" id="analytics-cookies">
+                                    <span>Analytics Cookies</span>
+                                </label>
+                                <p>Helps us understand which features you use and improve the demo experience.</p>
+                            </div>
+
+                            <div class="cookie-option">
+                                <label>
+                                    <input type="checkbox" id="marketing-cookies">
+                                    <span>Marketing Cookies</span>
+                                </label>
+                                <p>Used for internal lead scoring. We never sell your data to third parties.</p>
+                            </div>
+
+                            <div class="modal-buttons">
+                                <button id="save-cookie-preferences" class="modal-btn btn-save" onclick="cookieConsent.saveCustomPreferences()">
+                                    Save Preferences
+                                </button>
+                                <button class="modal-btn btn-cancel" onclick="cookieConsent.hideCustomize()">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+                // Functional cookies always enabled
+                document.getElementById('functional-cookies').addEventListener('click', function(e) {
+                    e.preventDefault();
+                    this.checked = true;
+                });
+            } else {
+                document.getElementById('cookie-customize-modal').style.display = 'flex';
+            }
+        },
+
+        // Hide customization modal
+        hideCustomize: function() {
+            const modal = document.getElementById('cookie-customize-modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        },
+
+        // Save custom preferences
+        saveCustomPreferences: async function() {
+            const functional = document.getElementById('functional-cookies').checked;
+            const analytics = document.getElementById('analytics-cookies').checked;
+            const marketing = document.getElementById('marketing-cookies').checked;
+
+            const preferences = {
+                functional_cookies: functional,
+                analytics_cookies: analytics,
+                marketing_cookies: marketing
+            };
+
+            const success = await saveConsent(preferences);
+            if (success) {
+                console.log('✅ Custom preferences saved');
+                this.hideCustomize();
+                hideBanner();
+
+                window.dispatchEvent(new CustomEvent('cookieConsentChanged', {
+                    detail: preferences
+                }));
+            }
+        },
+
+        // Keep old customize function for compatibility
         customize: function() {
-            window.location.href = '/public/cookie-consent.html';
+            this.showCustomize();
         },
 
         // CCPA "Do Not Sell" opt-out
@@ -328,7 +502,7 @@
 
         // Show banner programmatically
         show: function() {
-            if (!document.getElementById('cookie-consent-banner')) {
+            if (!document.getElementById('cookie-banner')) {
                 createBanner();
             }
         },
@@ -353,12 +527,12 @@
     // Auto-show banner on page load if consent not given
     if (!hasConsent() && document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
-            // Delay banner by 1 second for better UX
-            setTimeout(createBanner, 1000);
+            // Show banner immediately for testing
+            createBanner();
         });
     } else if (!hasConsent()) {
-        // Document already loaded
-        setTimeout(createBanner, 1000);
+        // Document already loaded - show immediately
+        createBanner();
     }
 
     // Export for module systems

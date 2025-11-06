@@ -15,15 +15,6 @@
  * - Prefer textContent over innerHTML when HTML not needed
  * - Use parameterized approaches when possible
  */
-
-/**
- * HTML escaping function for text-only content
- *
- * Use this when you need to display user input as text (no HTML formatting)
- *
- * @param {string} unsafe - Unsafe user input
- * @returns {string} HTML-escaped safe string
- */
 export function escapeHtml(unsafe) {
     if (typeof unsafe !== 'string') {
         return '';

@@ -19,13 +19,18 @@ module.exports = {
     // Test file patterns
     testMatch: [
         '**/tests/frontend/**/*.test.js',
-        '**/tests/frontend/**/*.spec.js'
+        '**/tests/frontend/**/*.spec.js',
+        '**/tests/unit/frontend/**/*.test.js',
+        '**/tests/unit/frontend/**/*.spec.js',
+        '**/tests/integration/**/*.test.js',
+        '**/tests/integration/**/*.spec.js'
     ],
 
     // Coverage collection
-    collectCoverage: true,
+    collectCoverage: false,
     collectCoverageFrom: [
         'frontend/js/**/*.js',
+        'frontend/static/js/**/*.js',
         '!frontend/js/**/*.min.js',
         '!frontend/js/vendor/**',
         '!frontend/js/lib/**'
@@ -100,17 +105,7 @@ module.exports = {
 
     // Reporter configuration
     reporters: [
-        'default',
-        [
-            'jest-html-reporter',
-            {
-                pageTitle: 'Course Creator - Frontend Test Report',
-                outputPath: 'tests/reports/frontend-test-report.html',
-                includeFailureMsg: true,
-                includeConsoleLog: true,
-                sort: 'status'
-            }
-        ]
+        'default'
     ],
 
     // Error handling

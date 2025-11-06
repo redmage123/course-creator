@@ -1,0 +1,303 @@
+"""
+Pre-Commit Hooks Configuration
+
+BUSINESS CONTEXT:
+Automates code quality checks before commits to prevent issues from entering the codebase.
+Ensures consistent formatting, security, and compliance across all Python code.
+
+TECHNICAL RATIONALE:
+- Runs automatically on 'git commit' to catch issues early
+- Prevents committing code that violates standards
+- Faster feedback loop than CI/CD pipeline
+- Can be bypassed with --no-verify flag if needed (not recommended)
+
+SETUP INSTRUCTIONS:
+1. Install pre-commit: pip install pre-commit
+2. Install hooks: pre-commit install
+3. Run on all files: pre-commit run --all-files
+
+HOOK CATEGORIES:
+1. Basic checks (trailing whitespace, file endings, YAML/JSON syntax)
+2. Python formatting (Black)
+3. Import sorting (isort)
+4. Linting (Flake8)
+5. Type checking (MyPy)
+6. Security scanning (Bandit)
+"""
+
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+  # ============================================================================
+  # Pre-commit built-in hooks
+  # ============================================================================
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      # Prevent committing large files (>500KB)
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+        exclude: ^(tests/.*\.(png|jpg|jpeg|gif|pdf|zip)|.*\.min\.(js|css))$
+
+      # Check for files that would conflict on case-insensitive filesystems
+      - id: check-case-conflict
+
+      # Check for merge conflict strings
+      - id: check-merge-conflict
+
+      # Check executables have shebangs
+      - id: check-executables-have-shebangs
+
+      # Check JSON syntax
+      - id: check-json
+        exclude: ^frontend-react/.*\.json$  # Exclude frontend JSON files
+
+      # Check YAML syntax
+      - id: check-yaml
+        args: ['--safe']
+        exclude: ^\.github/workflows/.*\.yml$  # GitHub workflows validated separately
+
+      # Check TOML syntax
+      - id: check-toml
+
+      # Check XML syntax
+      - id: check-xml
+
+      # Detect private keys
+      - id: detect-private-key
+
+      # Ensure files end with newline
+      - id: end-of-file-fixer
+        exclude: ^(.*\.min\.(js|css)|.*\.(png|jpg|jpeg|gif|pdf|zip))$
+
+      # Remove UTF-8 byte order marker
+      - id: fix-byte-order-marker
+
+      # Fix Python encoding pragma (remove it, not needed in Python 3)
+      - id: fix-encoding-pragma
+        args: ['--remove']
+
+      # Check for debugger imports and breakpoints
+      - id: debug-statements
+
+      # Check docstring is first in file
+      - id: check-docstring-first
+
+      # Trim trailing whitespace
+      - id: trailing-whitespace
+        args: ['--markdown-linebreak-ext=md']
+        exclude: ^(.*\.min\.(js|css)|.*\.(png|jpg|jpeg|gif|pdf|zip))$
+
+      # Sort requirements.txt files
+      - id: requirements-txt-fixer
+        files: requirements.*\.txt$
+
+      # Check Python syntax
+      - id: check-ast
+
+      # Check builtin type constructor use (use [] not list())
+      - id: check-builtin-literals
+
+      # Forbid files with tabs
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+
+
+  # ============================================================================
+  # Python Code Formatting - Black
+  # ============================================================================
+  - repo: https://github.com/psf/black
+    rev: 23.12.1
+    hooks:
+      - id: black
+        language_version: python3.11
+        args:
+          - --line-length=120
+          - --target-version=py311
+        exclude: ^(migrations/|\.backups/|\.venv/|venv/|env/)
+
+
+  # ============================================================================
+  # Python Import Sorting - isort
+  # ============================================================================
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args:
+          - --profile=black
+          - --line-length=120
+        exclude: ^(migrations/|\.backups/|\.venv/|venv/|env/)
+
+
+  # ============================================================================
+  # Python Linting - Flake8
+  # ============================================================================
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        args:
+          - --max-line-length=120
+          - --max-complexity=15
+          - --ignore=E203,W503,E501
+        exclude: ^(migrations/|\.backups/|\.venv/|venv/|env/)
+        additional_dependencies:
+          - flake8-docstrings  # Check docstring presence and format
+          - flake8-bugbear     # Find likely bugs and design problems
+          - flake8-comprehensions  # Check list/dict/set comprehensions
+          - flake8-simplify    # Suggest code simplifications
+          - pep8-naming        # Check PEP 8 naming conventions
+
+
+  # ============================================================================
+  # Python Type Checking - MyPy
+  # ============================================================================
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.8.0
+    hooks:
+      - id: mypy
+        args:
+          - --ignore-missing-imports
+          - --python-version=3.11
+          - --no-strict-optional
+          - --warn-unused-configs
+          - --disallow-untyped-defs
+          - --no-implicit-optional
+        exclude: ^(tests/|migrations/|\.backups/|\.venv/|venv/|env/)
+        additional_dependencies:
+          - types-all
+          - types-requests
+          - types-redis
+          - types-python-jose
+
+
+  # ============================================================================
+  # Security - Bandit
+  # ============================================================================
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.6
+    hooks:
+      - id: bandit
+        args:
+          - -ll  # Only report medium and high severity issues
+          - --recursive
+          - --exclude=tests,migrations,.venv,venv,env,.backups
+        files: ^services/.*\.py$
+
+
+  # ============================================================================
+  # Dependency Security - Safety
+  # ============================================================================
+  - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
+    rev: v1.3.3
+    hooks:
+      - id: python-safety-dependencies-check
+        files: requirements.*\.txt$
+        args: ['--short-report']
+
+
+  # ============================================================================
+  # YAML Linting
+  # ============================================================================
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.33.0
+    hooks:
+      - id: yamllint
+        args:
+          - --format=parsable
+          - --strict
+        exclude: ^\.github/workflows/.*\.yml$
+
+
+  # ============================================================================
+  # Markdown Linting
+  # ============================================================================
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.38.0
+    hooks:
+      - id: markdownlint
+        args: ['--fix']
+        exclude: ^(\.backups/|node_modules/)
+
+
+  # ============================================================================
+  # Shell Script Linting
+  # ============================================================================
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.9.0.6
+    hooks:
+      - id: shellcheck
+        args: ['--severity=warning']
+        files: \.(sh|bash)$
+
+
+  # ============================================================================
+  # Dockerfile Linting
+  # ============================================================================
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint-docker
+        args: ['--ignore=DL3008', '--ignore=DL3018']  # Allow unversioned apt/apk
+
+
+  # ============================================================================
+  # Git-specific checks
+  # ============================================================================
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.13.0
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
+
+
+# ============================================================================
+# Pre-commit configuration
+# ============================================================================
+default_language_version:
+  python: python3.11
+
+default_stages: [commit, push]
+
+# Don't fail on first error, show all errors
+fail_fast: false
+
+# Limit output to only show failed hooks
+verbose: false
+
+# Minimum pre-commit version
+minimum_pre_commit_version: '3.0.0'
+
+# Files to exclude globally
+exclude: |
+  (?x)^(
+      .*\.min\.(js|css)|
+      .*\.map|
+      .*\.(png|jpg|jpeg|gif|svg|ico|pdf|zip|tar|gz)|
+      .*/__pycache__/.*|
+      .*/migrations/.*|
+      .*\.egg-info/.*|
+      .*/\.venv/.*|
+      .*/venv/.*|
+      .*/env/.*|
+      .*/.backups/.*|
+      .*/node_modules/.*|
+      .*/dist/.*|
+      .*/build/.*|
+      htmlcov/.*
+  )$
+
+# CI configuration
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] Auto-fix code quality issues
+
+    Automated fixes from pre-commit.ci
+
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false

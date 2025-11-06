@@ -10,8 +10,16 @@
  * - Use MetadataClient to interact with metadata service
  * - Provides search, recommendations, and content discovery
  */
-
 class MetadataClient {
+    /**
+     * INITIALIZE CLASS INSTANCE WITH DEFAULT STATE
+     * PURPOSE: Initialize class instance with default state
+     * WHY: Establishes initial state required for class functionality
+     *
+     * @param {*} baseUrl - Baseurl parameter
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     constructor(baseUrl = 'https://localhost:8011/api/v1/metadata') {
         this.baseUrl = baseUrl;
         this.cache = new Map(); // Simple in-memory cache
@@ -426,6 +434,13 @@ class MetadataClient {
     }
 
     // Cache helpers
+    /**
+     * EXECUTE  GETFROMCACHE OPERATION
+     * PURPOSE: Execute  getFromCache operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} key - Key parameter
+     */
     _getFromCache(key) {
         const cached = this.cache.get(key);
         if (!cached) return null;
@@ -439,6 +454,14 @@ class MetadataClient {
         return data;
     }
 
+    /**
+     * EXECUTE  SETCACHE OPERATION
+     * PURPOSE: Execute  setCache operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} key - Key parameter
+     * @param {Object} data - Data object
+     */
     _setCache(key, data) {
         this.cache.set(key, {
             data,
@@ -446,11 +469,26 @@ class MetadataClient {
         });
     }
 
+    /**
+     * EXECUTE  INVALIDATEENTITYCACHE OPERATION
+     * PURPOSE: Execute  invalidateEntityCache operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} entityId - Entityid parameter
+     * @param {*} entityType - Entitytype parameter
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     _invalidateEntityCache(entityId, entityType) {
         const cacheKey = `entity:${entityId}:${entityType}`;
         this.cache.delete(cacheKey);
     }
 
+    /**
+     * EXECUTE CLEARCACHE OPERATION
+     * PURPOSE: Execute clearCache operation
+     * WHY: Implements required business logic for system functionality
+     */
     clearCache() {
         this.cache.clear();
     }

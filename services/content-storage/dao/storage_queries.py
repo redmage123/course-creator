@@ -2,7 +2,7 @@
 Storage Queries DAO - Centralized SQL Query Management
 
 BUSINESS REQUIREMENT:
-All SQL queries for storage operations centralized in one location following
+All SQL queries for storage operations centralized in one locations following
 DAO (Data Access Object) pattern for better maintainability and separation of concerns.
 
 TECHNICAL IMPLEMENTATION:

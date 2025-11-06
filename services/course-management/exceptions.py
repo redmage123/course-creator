@@ -129,7 +129,7 @@ class CourseManagementException(CourseCreatorBaseException):
         
         log_context = {
             "error_code": self.error_code,
-            "message": self.message,
+            "error_message": self.message,  # Renamed from "message" to avoid conflict with logging's reserved field
             "details": self.details,
             "timestamp": self.timestamp.isoformat(),
             "service": "course-management"

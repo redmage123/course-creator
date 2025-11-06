@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="../css/modern-ui/modern-ui.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Module Quiz - Course Creator</title>
@@ -154,7 +155,7 @@
 
     <header class="site-header" role="banner">
         <nav aria-label="Quiz navigation">
-            <a href="/dashboard" style="color: var(--primary-600); text-decoration: none;">
+            <a href="/dashboard" class="link-primary">
                 <i class="fas fa-arrow-left"></i> Back to Course
             </a>
         </nav>
@@ -292,10 +293,10 @@
             </div>
 
             <div class="quiz-actions">
-                <button class="btn btn-primary" id="next-question-btn" onclick="nextQuestion()" style="display: none;">
+                <button class="btn btn-primary hidden" id="next-question-btn" onclick="nextQuestion()">
                     Next Question <i class="fas fa-arrow-right"></i>
                 </button>
-                <button class="btn btn-primary" id="submit-quiz-btn" onclick="submitQuiz()" style="display: none;">
+                <button class="btn btn-primary hidden" id="submit-quiz-btn" onclick="submitQuiz()">
                     <i class="fas fa-check"></i> Submit Quiz
                 </button>
             </div>
@@ -310,7 +311,7 @@
         const userAnswers = {};
 
         function startQuiz() {
-            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('quiz-screen').classList.add('active');
             showQuestion(1);
         }
@@ -324,9 +325,9 @@
 
             // Show next/submit button
             if (currentQuestion < totalQuestions) {
-                document.getElementById('next-question-btn').style.display = 'inline-block';
+                document.getElementById('next-question-btn').classList.remove('hidden');
             } else {
-                document.getElementById('submit-quiz-btn').style.display = 'inline-block';
+                document.getElementById('submit-quiz-btn').classList.remove('hidden');
             }
         }
 
@@ -340,7 +341,7 @@
                 showQuestion(currentQuestion);
 
                 // Hide next button until answer selected
-                document.getElementById('next-question-btn').style.display = 'none';
+                document.getElementById('next-question-btn').classList.add('hidden');
             }
         }
 
@@ -356,9 +357,9 @@
                 }
 
                 if (questionNum < totalQuestions) {
-                    document.getElementById('next-question-btn').style.display = 'inline-block';
+                    document.getElementById('next-question-btn').classList.remove('hidden');
                 } else {
-                    document.getElementById('submit-quiz-btn').style.display = 'inline-block';
+                    document.getElementById('submit-quiz-btn').classList.remove('hidden');
                 }
             }
         }

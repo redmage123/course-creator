@@ -10,8 +10,16 @@
  * - Use KnowledgeGraphClient to interact with graph service
  * - Provides graph queries, path finding, and visualization data
  */
-
 class KnowledgeGraphClient {
+    /**
+     * INITIALIZE CLASS INSTANCE WITH DEFAULT STATE
+     * PURPOSE: Initialize class instance with default state
+     * WHY: Establishes initial state required for class functionality
+     *
+     * @param {*} baseUrl - Baseurl parameter
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     constructor(baseUrl = 'https://localhost:8012/api/v1/graph') {
         this.baseUrl = baseUrl;
         this.cache = new Map();
@@ -424,6 +432,13 @@ class KnowledgeGraphClient {
     }
 
     // Cache helpers
+    /**
+     * EXECUTE  GETFROMCACHE OPERATION
+     * PURPOSE: Execute  getFromCache operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} key - Key parameter
+     */
     _getFromCache(key) {
         const cached = this.cache.get(key);
         if (!cached) return null;
@@ -437,6 +452,14 @@ class KnowledgeGraphClient {
         return data;
     }
 
+    /**
+     * EXECUTE  SETCACHE OPERATION
+     * PURPOSE: Execute  setCache operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} key - Key parameter
+     * @param {Object} data - Data object
+     */
     _setCache(key, data) {
         this.cache.set(key, {
             data,
@@ -444,6 +467,11 @@ class KnowledgeGraphClient {
         });
     }
 
+    /**
+     * EXECUTE CLEARCACHE OPERATION
+     * PURPOSE: Execute clearCache operation
+     * WHY: Implements required business logic for system functionality
+     */
     clearCache() {
         this.cache.clear();
     }

@@ -251,7 +251,7 @@ def main(config: DictConfig = None) -> None:
     - **Format**: RFC 3164 syslog format for enterprise monitoring
     - **Levels**: DEBUG (file only), INFO+ (console and file)
     - **Rotation**: 50MB max file size, 10 backup files
-    - **Location**: /var/log/course-creator/course-generator.log
+    - **Locations**: /var/log/course-creator/course-generator.log
     
     PERFORMANCE OPTIMIZATIONS:
     ==========================

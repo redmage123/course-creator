@@ -13,12 +13,6 @@
  * - File management for student work
  * - Feedback system integration for course evaluation
  */
-
-/**
- * MODULE IMPORTS - CORE STUDENT DASHBOARD DEPENDENCIES
- * PURPOSE: Import all required modules for comprehensive student functionality
- * WHY: Modular imports enable clean separation of concerns and better maintainability
- */
                       // Configuration system for API endpoints
 import authManager from './modules/auth.js';           // Authentication and session management
 import { labLifecycleManager } from './modules/lab-lifecycle.js'; // Lab container lifecycle management
@@ -61,6 +55,11 @@ document.addEventListener('DOMContentLoaded', function() {
     loadStudentData();
 });
 
+    /**
+     * INITIALIZE DASHBOARD COMPONENT
+     * PURPOSE: Initialize dashboard component
+     * WHY: Proper initialization ensures component reliability and correct state
+     */
 function initializeDashboard() {
     /*
      * COMPREHENSIVE SESSION VALIDATION ON PAGE LOAD - STUDENT DASHBOARD
@@ -134,6 +133,13 @@ function initializeDashboard() {
     showSection('dashboard');
 }
 
+    /**
+     * UPDATE USER DISPLAY STATE
+     * PURPOSE: Update user display state
+     * WHY: Keeps application state synchronized with user actions and data changes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
 function updateUserDisplay() {
     const elements = [
         { selector: '.user-name', text: currentUser?.full_name || 'Student' },
@@ -151,6 +157,11 @@ function updateUserDisplay() {
 }
 
 // Navigation and section management
+    /**
+     * SET NAVIGATION VALUE
+     * PURPOSE: Set navigation value
+     * WHY: Maintains data integrity through controlled mutation
+     */
 function setupNavigation() {
     // Add click handlers to navigation links
     document.querySelectorAll('.nav-link').forEach(link => {
@@ -165,6 +176,13 @@ function setupNavigation() {
     });
 }
 
+    /**
+     * DISPLAY SECTION INTERFACE
+     * PURPOSE: Display section interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} sectionName - Sectionname parameter
+     */
 function showSection(sectionName) {
     // Hide all sections
     document.querySelectorAll('.content-section').forEach(section => {
@@ -190,6 +208,15 @@ function showSection(sectionName) {
     loadSectionData(sectionName);
 }
 
+    /**
+     * UPDATE NAVIGATION STATE
+     * PURPOSE: Update navigation state
+     * WHY: Keeps application state synchronized with user actions and data changes
+     *
+     * @param {*} activeSection - Activesection parameter
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
 function updateNavigation(activeSection) {
     // Remove active class from all nav links
     document.querySelectorAll('.nav-link').forEach(link => {
@@ -203,6 +230,15 @@ function updateNavigation(activeSection) {
     }
 }
 
+    /**
+     * RETRIEVE SECTION TITLE INFORMATION
+     * PURPOSE: Retrieve section title information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @param {*} sectionName - Sectionname parameter
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
 function getSectionTitle(sectionName) {
     const titles = {
         'dashboard': 'Dashboard',
@@ -213,6 +249,17 @@ function getSectionTitle(sectionName) {
     return titles[sectionName] || 'Dashboard';
 }
 
+    /**
+     * LOAD SECTION DATA DATA FROM SERVER
+     * PURPOSE: Load section data data from server
+     * WHY: Dynamic data loading enables real-time content updates
+     *
+     * @param {*} sectionName - Sectionname parameter
+     *
+     * @returns {*} Operation result
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
 function loadSectionData(sectionName) {
     switch(sectionName) {
         case 'dashboard':
@@ -321,6 +368,13 @@ async function loadStudentProgress() {
     }
 }
 
+    /**
+     * EXECUTE CALCULATEPROGRESSFROMCOURSES OPERATION
+     * PURPOSE: Execute calculateProgressFromCourses operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @returns {number} Calculated value
+     */
 function calculateProgressFromCourses() {
     const totalCourses = enrolledCourses.length;
     const completedCourses = enrolledCourses.filter(course => course.status === 'completed').length;
@@ -337,6 +391,13 @@ function calculateProgressFromCourses() {
 }
 
 // Dashboard data display functions
+    /**
+     * UPDATE DASHBOARD METRICS STATE
+     * PURPOSE: Update dashboard metrics state
+     * WHY: Keeps application state synchronized with user actions and data changes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
 function updateDashboardMetrics() {
     const metrics = {
         enrolledCourses: enrolledCourses.length,
@@ -363,16 +424,40 @@ function updateDashboardMetrics() {
     updateElement('progressLabSessions', metrics.labSessions);
 }
 
+    /**
+     * UPDATE ELEMENT STATE
+     * PURPOSE: Update element state
+     * WHY: Keeps application state synchronized with user actions and data changes
+     *
+     * @param {string|number} id - Unique identifier
+     * @param {*} value - Value to set or process
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
 function updateElement(id, value) {
     const element = document.getElementById(id);
     if (element) element.textContent = value;
 }
 
+    /**
+     * LOAD DASHBOARD DATA DATA FROM SERVER
+     * PURPOSE: Load dashboard data data from server
+     * WHY: Dynamic data loading enables real-time content updates
+     *
+     * @returns {*} Operation result
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
 function loadDashboardData() {
     displayCurrentCourses();
     displayRecentActivity();
 }
 
+    /**
+     * DISPLAY CURRENT COURSES INTERFACE
+     * PURPOSE: Display current courses interface
+     * WHY: Provides user interface for interaction and data visualization
+     */
 function displayCurrentCourses() {
     const container = document.getElementById('current-courses-list');
 
@@ -535,6 +620,11 @@ async function intelligentCourseSearch(query) {
     }
 }
 
+    /**
+     * DISPLAY RECENT ACTIVITY INTERFACE
+     * PURPOSE: Display recent activity interface
+     * WHY: Provides user interface for interaction and data visualization
+     */
 function displayRecentActivity() {
     const container = document.getElementById('studentActivityList');
     // This would come from an activity tracking system
@@ -557,10 +647,24 @@ function displayRecentActivity() {
     `).join('');
 }
 
+    /**
+     * LOAD COURSES DATA DATA FROM SERVER
+     * PURPOSE: Load courses data data from server
+     * WHY: Dynamic data loading enables real-time content updates
+     *
+     * @returns {*} Operation result
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
 function loadCoursesData() {
     displayStudentCourses();
 }
 
+    /**
+     * DISPLAY STUDENT COURSES INTERFACE
+     * PURPOSE: Display student courses interface
+     * WHY: Provides user interface for interaction and data visualization
+     */
 function displayStudentCourses() {
     const container = document.getElementById('student-courses-list');
     
@@ -612,10 +716,24 @@ function displayStudentCourses() {
     `).join('');
 }
 
+    /**
+     * LOAD PROGRESS DATA DATA FROM SERVER
+     * PURPOSE: Load progress data data from server
+     * WHY: Dynamic data loading enables real-time content updates
+     *
+     * @returns {*} Operation result
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
 function loadProgressData() {
     displayCourseProgress();
 }
 
+    /**
+     * DISPLAY COURSE PROGRESS INTERFACE
+     * PURPOSE: Display course progress interface
+     * WHY: Provides user interface for interaction and data visualization
+     */
 function displayCourseProgress() {
     const container = document.getElementById('courseProgressList');
     
@@ -650,6 +768,15 @@ function displayCourseProgress() {
     `).join('');
 }
 
+    /**
+     * LOAD LABS DATA DATA FROM SERVER
+     * PURPOSE: Load labs data data from server
+     * WHY: Dynamic data loading enables real-time content updates
+     *
+     * @returns {*} Operation result
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
 function loadLabsData() {
     // This loads the labs section content - the main lab environment button
     // No additional loading needed as it's static content
@@ -657,6 +784,14 @@ function loadLabsData() {
 
 // Enhanced lab environment with sandboxing (implementation moved to line 1074)
 
+    /**
+     * EXECUTE LAUNCHSANDBOXEDLAB OPERATION
+     * PURPOSE: Execute launchSandboxedLab operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} labAccess - Labaccess parameter
+     * @param {string|number} courseId - Unique identifier
+     */
 function launchSandboxedLab(labAccess, courseId) {
     // Create a secure, sandboxed lab environment
     const labWindow = window.open('', '_blank', 'width=1400,height=900,resizable=yes,scrollbars=yes');
@@ -733,10 +868,25 @@ async function launchStandardLab(courseId) {
     labWindow.location.href = labUrl;
 }
 
+    /**
+     * EXECUTE GENERATESESSIONID OPERATION
+     * PURPOSE: Execute generateSessionId operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @returns {string|Object} Generated content
+     */
 function generateSessionId() {
     return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
+    /**
+     * EXECUTE STORELABSESSION OPERATION
+     * PURPOSE: Execute storeLabSession operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} courseId - Unique identifier
+     * @param {string|number} sessionId - Sessionid parameter
+     */
 function storeLabSession(courseId, sessionId) {
     const labSession = {
         courseId,
@@ -752,6 +902,13 @@ function storeLabSession(courseId, sessionId) {
 }
 
 // Search and filter functions for student courses
+    /**
+     * FILTER STUDENT COURSES BASED ON CRITERIA
+     * PURPOSE: Filter student courses based on criteria
+     * WHY: Enables users to find relevant data quickly
+     *
+     * @returns {Array} Filtered array
+     */
 function filterStudentCourses() {
     const filter = document.getElementById('courseStatusFilter').value;
     const searchTerm = document.getElementById('courseSearch').value.toLowerCase();
@@ -785,6 +942,11 @@ function filterStudentCourses() {
     displayFilteredCourses(filteredCourses);
 }
 
+    /**
+     * SEARCH FOR STUDENT COURSES
+     * PURPOSE: Search for student courses
+     * WHY: Enables efficient data discovery and navigation
+     */
 function searchStudentCourses() {
     const searchTerm = document.getElementById('courseSearch')?.value;
     if (searchTerm && searchTerm.trim().length >= 2) {
@@ -796,6 +958,13 @@ function searchStudentCourses() {
     }
 }
 
+    /**
+     * DISPLAY FILTERED COURSES INTERFACE
+     * PURPOSE: Display filtered courses interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} courses - Courses parameter
+     */
 function displayFilteredCourses(courses) {
     const container = document.getElementById('student-courses-list');
     
@@ -867,6 +1036,13 @@ async function loadLabEnvironments() {
     }
 }
 
+    /**
+     * DISPLAY LAB ENVIRONMENTS INTERFACE
+     * PURPOSE: Display lab environments interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} labs - Labs parameter
+     */
 function displayLabEnvironments(labs) {
     const container = document.getElementById('lab-environments-list');
     
@@ -931,6 +1107,15 @@ async function viewCourseDetails(courseId) {
     }
 }
 
+    /**
+     * DISPLAY COURSE MODAL INTERFACE
+     * PURPOSE: Display course modal interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} course - Course parameter
+     * @param {string|number} slides - Slides parameter
+     * @param {*} exercises - Exercises parameter
+     */
 function displayCourseModal(course, slides, exercises) {
     const modal = document.getElementById('courseModal');
     const title = document.getElementById('modalCourseTitle');
@@ -1011,6 +1196,14 @@ async function accessLabEnvironment(courseId) {
     }
 }
 
+    /**
+     * EXECUTE LAUNCHLABENVIRONMENT OPERATION
+     * PURPOSE: Execute launchLabEnvironment operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} labId - Labid parameter
+     * @param {string|number} courseId - Unique identifier
+     */
 function launchLabEnvironment(labId, courseId) {
     // In a real implementation, this would launch a virtual environment
     // For now, we'll show a simulation
@@ -1023,6 +1216,14 @@ function launchLabEnvironment(labId, courseId) {
     }
 }
 
+    /**
+     * DISPLAY LAB MODAL INTERFACE
+     * PURPOSE: Display lab modal interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} lab - Lab parameter
+     * @param {string|number} courseId - Unique identifier
+     */
 function displayLabModal(lab, courseId) {
     const modal = document.getElementById('labModal');
     const title = document.getElementById('modalLabTitle');
@@ -1109,6 +1310,13 @@ async function loadLabExercises(courseId) {
     }
 }
 
+    /**
+     * DISPLAY LAB EXERCISES INTERFACE
+     * PURPOSE: Display lab exercises interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} exercises - Exercises parameter
+     */
 function displayLabExercises(exercises) {
     const container = document.getElementById('labExercises');
     
@@ -1174,6 +1382,14 @@ async function askAI(courseId) {
     input.value = '';
 }
 
+    /**
+     * DISPLAY A I RESPONSE INTERFACE
+     * PURPOSE: Display a i response interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} question - Question parameter
+     * @param {*} response - Response parameter
+     */
 function displayAIResponse(question, response) {
     const chatContainer = document.querySelector('.ai-chat');
     
@@ -1197,6 +1413,13 @@ function displayAIResponse(question, response) {
 }
 
 // eslint-disable-next-line no-unused-vars
+    /**
+     * EXECUTE VIEWLABDETAILS OPERATION
+     * PURPOSE: Execute viewLabDetails operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} labId - Labid parameter
+     */
 function viewLabDetails(labId) {
     const labAccess = labEnvironments.find(lab => lab.lab_id === labId);
     if (labAccess) {
@@ -1210,16 +1433,34 @@ Type: ${labAccess.lab.environment_type}`);
 
 // Modal management
 // eslint-disable-next-line no-unused-vars
+    /**
+     * HIDE MODAL INTERFACE
+     * PURPOSE: Hide modal interface
+     * WHY: Improves UX by managing interface visibility and state
+     */
 function closeModal() {
     document.getElementById('courseModal').style.display = 'none';
 }
 
 // eslint-disable-next-line no-unused-vars
+    /**
+     * HIDE LAB MODAL INTERFACE
+     * PURPOSE: Hide lab modal interface
+     * WHY: Improves UX by managing interface visibility and state
+     */
 function closeLabModal() {
     document.getElementById('labModal').style.display = 'none';
 }
 
 // Utility functions
+    /**
+     * DISPLAY EMPTY STATE INTERFACE
+     * PURPOSE: Display empty state interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {string|number} containerId - Containerid parameter
+     * @param {*} message - Message parameter
+     */
 function displayEmptyState(containerId, message) {
     const container = document.getElementById(containerId);
     container.innerHTML = `
@@ -1231,11 +1472,28 @@ function displayEmptyState(containerId, message) {
     `;
 }
 
+    /**
+     * RETRIEVE INITIALS INFORMATION
+     * PURPOSE: Retrieve initials information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @param {*} name - Name value
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
 function getInitials(name) {
     if (!name) return 'ST';
     return name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2);
 }
 
+    /**
+     * DISPLAY NOTIFICATION INTERFACE
+     * PURPOSE: Display notification interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} message - Message parameter
+     * @param {*} type - Type identifier
+     */
 function showNotification(message, type = 'info') {
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
@@ -1252,6 +1510,13 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
+    /**
+     * RETRIEVE CURRENT USER INFORMATION
+     * PURPOSE: Retrieve current user information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
 function getCurrentUser() {
     try {
         const userStr = localStorage.getItem('currentUser');
@@ -1340,15 +1605,40 @@ async function openLabEnvironment(courseId) {
     }
 }
 
+    /**
+     * RETRIEVE LAB STATUS INFORMATION
+     * PURPOSE: Retrieve lab status information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @param {string|number} courseId - Unique identifier
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
 function getLabStatus(courseId) {
     return labLifecycleManager.getLabStatus(courseId);
 }
 
+    /**
+     * EXECUTE ISLABREADY OPERATION
+     * PURPOSE: Execute isLabReady operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} courseId - Unique identifier
+     *
+     * @returns {boolean} True if condition is met, false otherwise
+     */
 function isLabReady(courseId) {
     return labLifecycleManager.isLabReady(courseId);
 }
 
 // Update lab status indicators in the UI
+    /**
+     * UPDATE LAB STATUS INDICATORS STATE
+     * PURPOSE: Update lab status indicators state
+     * WHY: Keeps application state synchronized with user actions and data changes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
 function updateLabStatusIndicators() {
     enrolledCourses.forEach(course => {
         const status = getLabStatus(course.id);
@@ -1421,6 +1711,13 @@ async function refreshLabFiles() {
     }
 }
 
+    /**
+     * DISPLAY LAB FILES INTERFACE
+     * PURPOSE: Display lab files interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} files - Files parameter
+     */
 function displayLabFiles(files) {
     const contentEl = document.getElementById('labFilesContent');
     
@@ -1515,6 +1812,13 @@ async function downloadAllFiles() {
     }
 }
 
+    /**
+     * RETRIEVE CURRENT LAB ID INFORMATION
+     * PURPOSE: Retrieve current lab id information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
 function getCurrentLabId() {
     // Try to get from URL parameters or local storage
     const urlParams = new URLSearchParams(window.location.search);
@@ -1536,6 +1840,13 @@ function getCurrentLabId() {
     return labId;
 }
 
+    /**
+     * DISPLAY LAB FILE LOADING INTERFACE
+     * PURPOSE: Display lab file loading interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
 function showLabFileLoading() {
     const contentEl = document.getElementById('labFilesContent');
     contentEl.innerHTML = `
@@ -1546,6 +1857,13 @@ function showLabFileLoading() {
     `;
 }
 
+    /**
+     * DISPLAY LAB FILE ERROR INTERFACE
+     * PURPOSE: Display lab file error interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} message - Message parameter
+     */
 function showLabFileError(message) {
     const contentEl = document.getElementById('labFilesContent');
     contentEl.innerHTML = `
@@ -1559,6 +1877,15 @@ function showLabFileError(message) {
     `;
 }
 
+    /**
+     * RETRIEVE FILE ICON INFORMATION
+     * PURPOSE: Retrieve file icon information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @param {*} filename - Filename parameter
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
 function getFileIcon(filename) {
     const ext = filename.split('.').pop().toLowerCase();
     const iconMap = {
@@ -1569,6 +1896,15 @@ function getFileIcon(filename) {
     return iconMap[ext] || '';
 }
 
+    /**
+     * FORMAT FILE SIZE FOR DISPLAY
+     * PURPOSE: Format file size for display
+     * WHY: Consistent data presentation improves user experience
+     *
+     * @param {*} bytes - Bytes parameter
+     *
+     * @returns {string} Formatted string
+     */
 function formatFileSize(bytes) {
     if (bytes === 0) return '0 B';
     const k = 1024;
@@ -1577,6 +1913,15 @@ function formatFileSize(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
+    /**
+     * FORMAT DATE FOR DISPLAY
+     * PURPOSE: Format date for display
+     * WHY: Consistent data presentation improves user experience
+     *
+     * @param {*} dateString - Datestring parameter
+     *
+     * @returns {string} Formatted string
+     */
 function formatDate(dateString) {
     if (!dateString) return 'Unknown';
     const date = new Date(dateString);
@@ -1584,6 +1929,14 @@ function formatDate(dateString) {
 }
 
 // Feedback form functions
+    /**
+     * EXECUTE OPENCOURSEFEEDBACKFORM OPERATION
+     * PURPOSE: Execute openCourseFeedbackForm operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} courseId - Unique identifier
+     * @param {*} courseName - Coursename parameter
+     */
 function openCourseFeedbackForm(courseId, courseName) {
     if (!feedbackManager) {
         showNotification('Feedback system is still loading. Please try again.', 'warning');
@@ -1617,6 +1970,11 @@ function openCourseFeedbackForm(courseId, courseName) {
     });
 }
 
+    /**
+     * HIDE FEEDBACK FORM INTERFACE
+     * PURPOSE: Hide feedback form interface
+     * WHY: Improves UX by managing interface visibility and state
+     */
 function closeFeedbackForm() {
     const overlay = document.getElementById('feedbackOverlay');
     if (overlay) {
@@ -1624,6 +1982,14 @@ function closeFeedbackForm() {
     }
 }
 
+    /**
+     * EXECUTE OPENSTUDENTFEEDBACKVIEW OPERATION
+     * PURPOSE: Execute openStudentFeedbackView operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} studentId - Studentid parameter
+     * @param {string|number} courseId - Unique identifier
+     */
 function openStudentFeedbackView(studentId, courseId) {
     if (!feedbackManager) {
         showNotification('Feedback system is still loading. Please try again.', 'warning');
@@ -1642,6 +2008,13 @@ function openStudentFeedbackView(studentId, courseId) {
         });
 }
 
+    /**
+     * DISPLAY STUDENT FEEDBACK MODAL INTERFACE
+     * PURPOSE: Display student feedback modal interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} feedback - Feedback parameter
+     */
 function showStudentFeedbackModal(feedback) {
     // Create modal to display instructor feedback to student
     const overlay = document.createElement('div');
@@ -1690,6 +2063,11 @@ function showStudentFeedbackModal(feedback) {
     });
 }
 
+    /**
+     * HIDE STUDENT FEEDBACK VIEW INTERFACE
+     * PURPOSE: Hide student feedback view interface
+     * WHY: Improves UX by managing interface visibility and state
+     */
 function closeStudentFeedbackView() {
     const overlay = document.getElementById('studentFeedbackOverlay');
     if (overlay) {

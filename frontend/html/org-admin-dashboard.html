@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="../css/main.css">
     <link rel="stylesheet" href="../css/drag-drop.css">
     <link rel="stylesheet" href="../css/file-explorer.css">
+    <link rel="stylesheet" href="../css/help-system.css">
     <!-- Tami UI System -->
     
     
@@ -337,6 +338,11 @@
         .project-creation-steps {
             border-bottom: 1px solid var(--border-color);
             padding-bottom: 1rem;
+        }
+
+        /* Progress tracker hidden state */
+        .project-creation-steps.wizard-progress-hidden {
+            display: none !important;
         }
 
         .step-indicator {
@@ -1003,6 +1009,11 @@
                     <span data-nav-text>Locations</span>
                 </a>
 
+                <a href="#schedules" id="schedulesTab" class="nav-link" data-tab="schedules" data-nav-item data-active="false">
+                    <span data-nav-icon>📅</span>
+                    <span data-nav-text>Schedules</span>
+                </a>
+
                 <a href="#files" class="nav-link" data-tab="files" data-nav-item data-active="false">
                     <span data-nav-icon>📁</span>
                     <span data-nav-text>Files</span>
@@ -1099,15 +1110,15 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-xl">
+                <div class="grid grid-cols-2 gap-xl" style="align-items: start;">
                     <div>
-                        <h3>Recent Projects</h3>
+                        <h3 style="margin-top: 0;">Recent Projects</h3>
                         <div id="recentProjects">
                             <!-- Recent projects will be loaded here -->
                         </div>
                     </div>
                     <div>
-                        <h3>Recent Activity</h3>
+                        <h3 style="margin-top: 0;">Recent Activity</h3>
                         <div id="recentActivity">
                             <!-- Recent activity will be loaded here -->
                         </div>
@@ -1294,12 +1305,12 @@
             <!-- Locations Tab -->
             <div id="locations" class="tab-content">
                 <div class="tab-section-header">
-                    <h2 class="tab-section-header__title">Location Management</h2>
+                    <h2 class="tab-section-header__title">Locations Management</h2>
                     <div class="text-sm text-muted">
-                        Manage location instances and their custom tracks
+                        Manage locations instances and their custom tracks
                     </div>
                     <button id="createLocationBtn" class="btn btn-primary btn-sm">
-                        + Create Location
+                        + Create Locations
                     </button>
                 </div>
 
@@ -1317,16 +1328,16 @@
                         </tr>
                     </thead>
                     <tbody id="locationsTableBody">
-                        <!-- Location data will be loaded here -->
+                        <!-- Locations data will be loaded here -->
                     </tbody>
                 </table>
 
-                <!-- Location Tracks Section (nested CRUD for tracks at location level) -->
+                <!-- Locations Tracks Section (nested CRUD for tracks at locations level) -->
                 <div id="locationTracksSection" class="mt-lg" style="display: none;">
                     <div class="tab-section-header">
-                        <h3 class="tab-section-header__title">Location Tracks</h3>
+                        <h3 class="tab-section-header__title">Locations Tracks</h3>
                         <div class="text-sm text-muted">
-                            Custom tracks for <span id="currentLocationName">this location</span>
+                            Custom tracks for <span id="currentLocationName">this locations</span>
                         </div>
                         <button id="createTrackAtLocationBtn" class="btn btn-primary btn-sm">
                             + Create Track
@@ -1346,10 +1357,179 @@
                             </tr>
                         </thead>
                         <tbody id="locationTracksTableBody">
-                            <!-- Track data for current location will be loaded here -->
+                            <!-- Track data for current locations will be loaded here -->
                         </tbody>
                     </table>
                 </div>
+            </div>
+
+            <!-- Schedules Tab -->
+            <div id="schedules" class="tab-content">
+                <div class="tab-section-header">
+                    <h2 class="tab-section-header__title">Course Scheduling</h2>
+                    <div class="text-sm text-muted">
+                        Schedule courses with instructors at specific times and locations
+                    </div>
+                    <button id="createScheduleBtn" class="btn btn-primary">
+                        + Create Schedule
+                    </button>
+                </div>
+
+                <!-- Schedule Filters -->
+                <div class="schedule-filters" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                    <div class="filter-group">
+                        <label for="instructorFilter" style="display: block; margin-bottom: 0.25rem; font-size: 0.875rem;">Instructor</label>
+                        <select id="instructorFilter" class="form-control" style="min-width: 200px;">
+                            <option value="">All Instructors</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="courseFilter" style="display: block; margin-bottom: 0.25rem; font-size: 0.875rem;">Course</label>
+                        <select id="courseFilter" class="form-control" style="min-width: 200px;">
+                            <option value="">All Courses</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="locationFilter" style="display: block; margin-bottom: 0.25rem; font-size: 0.875rem;">Locations</label>
+                        <select id="locationFilter" class="form-control" style="min-width: 200px;">
+                            <option value="">All Locations</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Calendar View Controls -->
+                <div class="calendar-controls" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <div class="view-toggle" style="display: flex; gap: 0.5rem;">
+                        <button id="weeklyViewBtn" class="btn btn-sm btn-secondary active">Weekly</button>
+                        <button id="monthlyViewBtn" class="btn btn-sm btn-secondary">Monthly</button>
+                    </div>
+                    <div class="calendar-navigation" style="display: flex; align-items: center; gap: 1rem;">
+                        <button id="prevPeriodBtn" class="btn btn-sm btn-secondary">&larr; Previous</button>
+                        <h3 id="currentPeriodLabel" style="margin: 0; font-size: 1.125rem;">Week of Jan 1, 2025</h3>
+                        <button id="nextPeriodBtn" class="btn btn-sm btn-secondary">Next &rarr;</button>
+                        <button id="todayBtn" class="btn btn-sm btn-primary">Today</button>
+                    </div>
+                </div>
+
+                <!-- Calendar Grid -->
+                <div id="scheduleCalendar" class="schedule-calendar">
+                    <div class="calendar-grid" id="calendarGrid">
+                        <!-- Calendar content will be dynamically generated -->
+                        <div class="loading-spinner"></div>
+                        <p class="text-center">Loading calendar...</p>
+                    </div>
+                </div>
+
+                <style>
+                    .schedule-calendar {
+                        background: var(--card-background);
+                        border: 1px solid var(--border-color);
+                        border-radius: 8px;
+                        padding: 1.5rem;
+                        min-height: 600px;
+                    }
+
+                    .calendar-grid {
+                        display: grid;
+                        grid-template-columns: 80px repeat(7, 1fr);
+                        grid-template-rows: auto repeat(24, 60px);
+                        gap: 1px;
+                        background: var(--border-color);
+                        border: 1px solid var(--border-color);
+                    }
+
+                    .calendar-header-cell {
+                        background: var(--surface-color);
+                        padding: 1rem 0.5rem;
+                        text-align: center;
+                        font-weight: 600;
+                        border-bottom: 2px solid var(--primary-color);
+                    }
+
+                    .calendar-time-cell {
+                        background: var(--surface-color);
+                        padding: 0.5rem;
+                        text-align: center;
+                        font-size: 0.875rem;
+                        color: var(--text-muted);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    }
+
+                    .calendar-day-cell {
+                        background: white;
+                        position: relative;
+                        min-height: 60px;
+                    }
+
+                    .calendar-day-cell:hover {
+                        background: var(--hover-color, #f5f5f5);
+                    }
+
+                    .schedule-item {
+                        position: absolute;
+                        left: 4px;
+                        right: 4px;
+                        background: var(--primary-color);
+                        color: white;
+                        padding: 0.5rem;
+                        border-radius: 4px;
+                        font-size: 0.75rem;
+                        overflow: hidden;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                    }
+
+                    .schedule-item:hover {
+                        transform: translateY(-2px);
+                        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                        z-index: 10;
+                    }
+
+                    .schedule-item.schedule-conflict {
+                        background: var(--error-color, #dc3545);
+                        border: 2px solid #a71d2a;
+                    }
+
+                    .schedule-item-title {
+                        font-weight: 600;
+                        margin-bottom: 0.25rem;
+                    }
+
+                    .schedule-item-time {
+                        font-size: 0.7rem;
+                        opacity: 0.9;
+                    }
+
+                    .schedule-filters {
+                        background: var(--surface-color);
+                        padding: 1rem;
+                        border-radius: 8px;
+                        border: 1px solid var(--border-color);
+                    }
+
+                    .view-toggle .btn.active {
+                        background: var(--primary-color);
+                        color: white;
+                    }
+
+                    .conflict-indicator {
+                        position: absolute;
+                        top: 4px;
+                        right: 4px;
+                        width: 8px;
+                        height: 8px;
+                        background: #ff0000;
+                        border-radius: 50%;
+                        animation: pulse 2s infinite;
+                    }
+
+                    @keyframes pulse {
+                        0%, 100% { opacity: 1; }
+                        50% { opacity: 0.5; }
+                    }
+                </style>
             </div>
 
             <!-- Files Tab -->
@@ -1589,7 +1769,7 @@
                                     <input type="text" id="newTargetRole" placeholder="e.g., Frontend Developer" required
                                            class="form-input-full">
                                 </div>
-                                <button type="submit" class="btn btn-primary cohort-filter-input">
+                                <button type="submit" class="btn btn-primary locations-filter-input">
                                     ➕ Add Role
                                 </button>
                             </form>
@@ -1645,17 +1825,70 @@
         </div>
     </div>
 
+    <!-- Instructor Assignment Modal -->
+    <div id="instructorAssignmentModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="instructorAssignmentTitle">
+        <div class="modal-dialog">
+            <span class="close" onclick="window.OrgAdmin.Instructors.closeAssignmentModal()">&times;</span>
+            <h2 id="instructorAssignmentTitle">Assign Instructor to Tracks & Locations</h2>
+
+            <div class="modal-body">
+                <div id="assignmentInstructorInfo" class="info-section mb-2rem">
+                    <!-- Instructor info will be populated dynamically -->
+                </div>
+
+                <!-- Track Assignment Section -->
+                <div class="form-section">
+                    <h3>Assign to Tracks</h3>
+                    <div id="trackAssignmentList" class="checkbox-list">
+                        <p class="text-muted">Loading tracks...</p>
+                    </div>
+                </div>
+
+                <!-- Locations Assignment Section -->
+                <div class="form-section" id="locationAssignmentSection" style="display: none;">
+                    <h3>Assign to Locations</h3>
+                    <p class="help-text">Select locations within assigned tracks</p>
+                    <div id="locationAssignmentList" class="checkbox-list">
+                        <!-- Locations checkboxes will be populated dynamically per track -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-end">
+                <button type="button" class="btn btn-secondary" onclick="window.OrgAdmin.Instructors.closeAssignmentModal()">
+                    Cancel
+                </button>
+                <button id="saveAssignmentsBtn" type="button" class="btn btn-primary" onclick="window.OrgAdmin.Instructors.saveAssignments()">
+                    ✓ Save Assignments
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Create Project Modal -->
     <div id="createProjectModal" class="modal-no-backdrop modal-center-fixed" role="dialog" aria-modal="true" aria-labelledby="createProjectModalTitle">
         <div class="modal-content-inner modal-content-flex">
             <!-- Draggable Modal Header -->
             <div class="modal-header draggable-handle modal-header-draggable">
-                <h2 class="modal-header-title">Create New Training Project</h2>
-                <span class="close modal-close-white" onclick="window.OrgAdmin.Projects.resetProjectWizard(); closeModal('createProjectModal')">&times;</span>
+                <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1;">
+                    <span style="font-size: 1.2rem; opacity: 0.6; user-select: none;" title="Drag to move modal">⋮⋮</span>
+                    <h2 class="modal-header-title" style="margin: 0;">Create New Training Project</h2>
+                </div>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button type="button"
+                            id="toggleWizardProgress"
+                            class="btn-icon-header"
+                            onclick="window.OrgAdmin.Projects.toggleWizardProgress()"
+                            title="Show/hide wizard progress tracker"
+                            style="background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.9rem; cursor: pointer; transition: all 0.2s;">
+                        📊 Show Progress
+                    </button>
+                    <button class="close modal-close-white" onclick="window.OrgAdmin.Projects.resetProjectWizard(); closeModal('createProjectModal')" style="cursor: pointer; background: transparent; border: none; color: inherit; font-size: inherit;">&times;</button>
+                </div>
             </div>
 
             <!-- Project Creation Steps - Wave 4 Wizard Progress -->
-            <div id="project-wizard-progress" data-wizard-progress class="project-creation-steps project-steps-container">
+            <div id="project-wizard-progress" data-wizard-progress class="project-creation-steps project-steps-container wizard-progress-hidden">
                 <!-- Wizard progress indicator will render here -->
             </div>
 
@@ -1767,29 +2000,29 @@
                         <div class="project-type-options">
                             <label class="form-label project-type-option-label project-type-option">
                                 <input type="radio" id="projectTypeSingle" name="project_type" value="single_location" checked onchange="handleProjectTypeChange(this.value)" class="project-type-radio">
-                                <div class="multi-location-text">
-                                    <div class="project-type-title">🏢 Single Location Project</div>
-                                    <div class="project-type-description">One location with a single schedule. Best for most training programs.</div>
+                                <div class="multi-locations-text">
+                                    <div class="project-type-title">🏢 Single Locations Project</div>
+                                    <div class="project-type-description">One locations with a single schedule. Best for most training programs.</div>
                                 </div>
                             </label>
                             <label class="form-label project-type-option-label project-type-option">
                                 <input type="radio" id="projectTypeMultiLocation" name="project_type" value="multi_location" onchange="handleProjectTypeChange(this.value)" class="project-type-radio">
-                                <div class="multi-location-text">
-                                    <div class="project-type-title">🌍 Multi-Location Project (Cohorts)</div>
-                                    <div class="project-type-description">Run the same program in multiple locations or at different times. Each cohort has independent scheduling and capacity.</div>
+                                <div class="multi-locations-text">
+                                    <div class="project-type-title">🌍 Multi-Locations Project</div>
+                                    <div class="project-type-description">Run the same program in multiple locations or at different times. Each locations has independent scheduling and capacity.</div>
                                 </div>
                             </label>
                         </div>
                         <input type="hidden" id="hasSubProjects" name="has_sub_projects" value="false">
                     </div>
 
-                    <!-- Multi-Location Note (shown when multi_location is selected) -->
-                    <div id="cohortInfoNote" class="cohort-info-note">
-                        <strong>ℹ️ Multi-Location Setup</strong>
+                    <!-- Multi-Locations Note (shown when multi_location is selected) -->
+                    <div id="locationInfoNote" class="locations-info-note">
+                        <strong>ℹ️ Multi-Locations Setup</strong>
                         <p class="ai-message-text">
-                            You'll be able to create multiple cohorts after setting up the main project. Each cohort will have:
-                            <ul class="cohort-info-list">
-                                <li>Independent location (country, region, city)</li>
+                            You'll be able to create multiple locations after setting up the main project. Each locations will have:
+                            <ul class="locations-info-list">
+                                <li>Independent locations (country, region, city)</li>
                                 <li>Custom start and end dates</li>
                                 <li>Separate enrollment capacity</li>
                                 <li>Customizable track selection</li>
@@ -1800,6 +2033,7 @@
                     <div class="form-group">
                         <label for="projectName" class="form-label">Project Name *</label>
                         <input type="text" id="projectName" name="name" required
+                               oninput="generateProjectSlug()"
                                data-validate="required,minLength:3"
                                data-validate-message="Project name must be at least 3 characters"
                                class="form-input">
@@ -1808,11 +2042,12 @@
                     <div class="form-group">
                         <label for="projectSlug" class="form-label">URL Slug *</label>
                         <input type="text" id="projectSlug" name="slug" required pattern="^[a-z0-9\-]+$"
+                               oninput="validateProjectSlug()"
                                data-validate="required,pattern:^[a-z0-9\-]+$"
                                data-validate-message="Only lowercase letters, numbers, and hyphens allowed"
                                class="form-input">
                         <small>Only lowercase letters, numbers, and hyphens allowed</small>
-                        <div class="validation-error" style="display: none;"></div>
+                        <div id="projectSlugError" class="validation-error" style="display: none; color: #dc2626; margin-top: 0.25rem; font-size: 0.875rem;"></div>
                     </div>
                     <div class="form-group">
                         <label for="projectDescription" class="form-label">Project Description *</label>
@@ -1867,21 +2102,27 @@
                     <div class="grid-2-cols">
                         <div class="form-group">
                             <label for="projectDuration" class="form-label">Duration (weeks)</label>
-                            <input type="number" id="projectDuration" name="duration_weeks" min="1" max="52" class="form-input">
+                            <input type="number" id="projectDuration" name="duration_weeks" min="1" max="52" class="form-input" onchange="calculateProjectEndDate()">
+                            <small class="form-help">Weekends are excluded from duration calculation</small>
                         </div>
                         <div class="form-group">
                             <label for="projectMaxParticipants" class="form-label">Maximum Participants</label>
-                            <input type="number" id="projectMaxParticipants" name="max_participants" min="1" class="form-input">
+                            <input type="number" id="projectMaxParticipants" name="max_participants" min="1"
+                                   oninput="validateMaxParticipants()"
+                                   class="form-input">
+                            <small class="form-help">Leave empty for unlimited capacity</small>
+                            <div id="projectMaxParticipantsError" class="validation-error" style="display: none; color: #dc2626; margin-top: 0.25rem; font-size: 0.875rem;"></div>
                         </div>
                     </div>
                     <div class="grid-2-cols">
                         <div class="form-group">
                             <label for="projectStartDate" class="form-label">Start Date</label>
-                            <input type="date" id="projectStartDate" name="start_date" class="form-input">
+                            <input type="date" id="projectStartDate" name="start_date" class="form-input" onchange="calculateProjectEndDate()">
                         </div>
                         <div class="form-group">
                             <label for="projectEndDate" class="form-label">End Date</label>
                             <input type="date" id="projectEndDate" name="end_date" class="form-input">
+                            <small class="form-help">Auto-calculated from start date + duration (excluding weekends)</small>
                         </div>
                     </div>
                     <div class="flex-space-between">
@@ -1896,85 +2137,85 @@
                 </form>
             </div>
             
-            <!-- Step 2: Subprojects / Cohorts (Multi-Location) -->
+            <!-- Step 2: Subprojects / Locations (Multi-Locations) -->
             <div id="projectStep2" class="project-step">
                 <h3>Configure Locations</h3>
-                <p>Define locations for your multi-location project. Each location represents a separate location or group.</p>
+                <p>Define locations for your multi-locations project. Each locations represents a separate locations or group.</p>
 
-                <!-- Conditional Display: Only for Multi-Location Projects -->
+                <!-- Conditional Display: Only for Multi-Locations Projects -->
                 <div id="subprojectsContent">
                     <!-- Info Box -->
                     <div class="gradient-purple-box">
                         <div class="flex-start-gap-1">
                             <div class="font-size-2rem">🌍</div>
                             <div>
-                                <h4 class="h4-margin-tight">Multi-Location Project Setup</h4>
+                                <h4 class="h4-margin-tight">Multi-Locations Project Setup</h4>
                                 <p class="p-margin-0-white">
-                                    Set up training locations. Each location can have its own schedule,
+                                    Set up training locations. Each locations can have its own schedule,
                                     instructors, and students while sharing the same tracks and content.
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Cohorts List Container -->
-                    <div id="cohortsList" class="cohorts-list-section">
+                    <!-- Locations List Container -->
+                    <div id="locationsList" class="locations-list-section">
                         <h4 class="h4-margin-std">Defined Locations</h4>
-                        <div id="cohortsListContent" class="cohorts-list-content">
-                            <!-- Cohorts will be dynamically added here -->
-                            <div class="cohort-empty-placeholder">
+                        <div id="locationsListContent" class="locations-list-content">
+                            <!-- Locations will be dynamically added here -->
+                            <div class="locations-empty-placeholder">
                                 <p class="p-margin-0-muted">
-                                    No locations defined yet. Click "Add Location" to create your first location.
+                                    No locations defined yet. Click "Add Locations" to create your first locations.
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Add Location Button -->
+                    <!-- Add Locations Button -->
                     <button
                         id="addLocationBtn"
                         type="button"
                         class="btn btn-primary mb-2rem"
-                        onclick="window.OrgAdmin.Projects.showAddCohortForm()">
-                        ➕ Add Location
+                        onclick="window.OrgAdmin.Projects.showAddLocationForm()">
+                        ➕ Add Locations
                     </button>
 
-                    <!-- Add Cohort Form (Hidden by default) -->
-                    <div id="addCohortForm" class="cohort-form-hidden">
-                        <h4 class="h4-margin-std">Add New Location</h4>
+                    <!-- Add Locations Form (Hidden by default) -->
+                    <div id="addLocationForm" class="locations-form-hidden">
+                        <h4 class="h4-margin-std">Add New Locations</h4>
 
                         <div class="form-group">
-                            <label for="cohortName" class="form-label">Location Name *</label>
-                            <input type="text" id="cohortName" class="form-input" placeholder="e.g., New York Campus, Downtown Branch" required>
+                            <label for="locationName" class="form-label">Location Country *</label>
+                            <input type="text" id="locationName" class="form-input" placeholder="e.g., United States, Canada, Germany" required>
                         </div>
 
                         <div class="form-group">
-                            <label for="cohortLocation" class="form-label">Location *</label>
-                            <input type="text" id="cohortLocation" class="form-input" placeholder="e.g., New York, NY" required>
+                            <label for="locationLocation" class="form-label">Locations *</label>
+                            <input type="text" id="locationLocation" class="form-input" placeholder="e.g., New York, NY" required>
                         </div>
 
-                        <div class="form-row cohort-form-row">
+                        <div class="form-row locations-form-row">
                             <div class="form-group">
-                                <label for="cohortStartDate" class="form-label">Start Date</label>
-                                <input type="date" id="cohortStartDate" class="form-input">
+                                <label for="inlineLocationStartDate" class="form-label">Start Date</label>
+                                <input type="date" id="inlineLocationStartDate" class="form-input">
                             </div>
 
                             <div class="form-group">
-                                <label for="cohortEndDate" class="form-label">End Date</label>
-                                <input type="date" id="cohortEndDate" class="form-input">
+                                <label for="inlineLocationEndDate" class="form-label">End Date</label>
+                                <input type="date" id="inlineLocationEndDate" class="form-input">
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label for="cohortMaxStudents" class="form-label">Max Students</label>
-                            <input type="number" id="cohortMaxStudents" class="form-input" placeholder="e.g., 30" min="1">
+                            <label for="inlineLocationMaxStudents" class="form-label">Max Students</label>
+                            <input type="number" id="inlineLocationMaxStudents" class="form-input" placeholder="e.g., 30" min="1">
                         </div>
 
                         <div class="flex-gap-mt">
-                            <button id="saveCohortBtn" type="button" class="btn btn-primary" onclick="window.OrgAdmin.Projects.saveCohort()">
-                                ✓ Add Location
+                            <button id="saveLocationBtn" type="button" class="btn btn-primary" onclick="window.OrgAdmin.Projects.saveLocation()">
+                                ✓ Add Locations
                             </button>
-                            <button id="cancelCohortBtn" type="button" class="btn btn-secondary" onclick="window.OrgAdmin.Projects.cancelCohortForm()">
+                            <button id="cancelLocationBtn" type="button" class="btn btn-secondary" onclick="window.OrgAdmin.Projects.cancelLocationForm()">
                                 Cancel
                             </button>
                         </div>
@@ -2024,35 +2265,42 @@
                     </small>
                 </div>
 
-                <!-- Track Creation Fields Container -->
+                <!-- Auto-Generated Tracks Display Container -->
                 <div id="trackFieldsContainer">
-                    <!-- Selected Roles Summary -->
-                    <div class="track-fields-box">
-                        <h4 class="h4-margin-top-0">
-                            Target Roles from Step 1:
-                        </h4>
-                        <div id="selectedRolesSummary" class="flex-wrap-gap-half">
-                            <!-- Will be populated with selected roles from Step 1 -->
+                    <h4 style="margin-top: 0; margin-bottom: 1rem; color: var(--text-primary);">
+                        Auto-Generated Training Tracks
+                    </h4>
+                    <p style="margin-bottom: 1.5rem; color: var(--text-secondary);">
+                        Based on your target role selection in Step 1, we've automatically generated the following
+                        learning tracks with appropriate difficulty levels, descriptions, and skill requirements.
+                    </p>
+
+                    <!-- Tracks will be displayed here by JavaScript -->
+                    <div id="step3TracksList" class="tracks-preview-container">
+                        <!-- Tracks populated by displayGeneratedTracksInStep3() -->
+                        <div style="text-align: center; padding: 2rem; color: var(--text-muted);
+                                    background: var(--hover-color); border-radius: 8px;">
+                            <p>Loading tracks...</p>
                         </div>
-                        <p class="p-margin-link">
-                            <a href="#" onclick="window.OrgAdmin.Projects.previousProjectStep(); return false;" class="link-primary">
-                                ← Go back to Step 1
-                            </a> to change your role selection
-                        </p>
                     </div>
 
-                    <!-- Track Mapping Info Box -->
-                    <div class="info-box-blue">
-                        <div class="flex-start-gap-half">
-                            <span class="font-size-1-2rem">ℹ️</span>
+                    <!-- Add Custom Track Section -->
+                    <div class="mt-xl" style="border-top: 2px dashed var(--border-color); padding-top: 1.5rem;">
+                        <div class="flex-between-center" style="margin-bottom: 1rem;">
                             <div>
-                                <strong>Automatic Track Mapping</strong>
-                                <p class="p-margin-track">
-                                    Based on your target roles from Step 1, we'll automatically generate pre-configured
-                                    learning tracks with appropriate difficulty level, description, and skill requirements.
-                                    You'll review these tracks before creation.
+                                <h4 style="margin: 0 0 0.25rem 0; color: var(--text-primary);">Need a Custom Track?</h4>
+                                <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">
+                                    Add additional tracks beyond the auto-generated ones
                                 </p>
                             </div>
+                            <button
+                                type="button"
+                                class="btn btn-outline px-lg py-md"
+                                onclick="window.OrgAdmin.Projects.openManageTracksModal()"
+                                style="white-space: nowrap;">
+                                <span style="margin-right: 0.5rem;">➕</span>
+                                Add Custom Track
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -2104,45 +2352,37 @@
                     </div>
                 </div>
 
-                <!-- Summary Statistics -->
-                <div class="summary-card">
-                    <h4 class="summary-card-title">Project Summary:</h4>
-                    <div class="summary-grid">
-                        <div>
-                            <div class="summary-stat-label">Total Tracks</div>
-                            <div id="totalTracksCount" class="summary-stat-value summary-stat-value--primary">0</div>
-                        </div>
-                        <div>
-                            <div class="summary-stat-label">Target Roles</div>
-                            <div id="totalRolesCount" class="summary-stat-value summary-stat-value--success">0</div>
-                        </div>
-                        <div>
-                            <div class="summary-stat-label">Status</div>
-                            <div class="summary-stat-value summary-stat-value--success">✓ Ready</div>
-                        </div>
-                    </div>
+                <!-- Optional Summary Statistics Toggle -->
+                <div class="summary-toggle-container">
+                    <button type="button"
+                            id="toggleProjectSummary"
+                            class="btn btn-outline-small"
+                            onclick="window.OrgAdmin.Projects.toggleProjectSummary()"
+                            title="Show/hide project summary statistics">
+                        📊 Show Project Summary
+                    </button>
                 </div>
 
-                <!-- Multi-Location Cohorts Notice (shown when has_sub_projects is true) -->
-                <div id="multiLocationNotice" class="multi-location-notice">
-                    <div class="multi-location-notice-content">
-                        <div class="multi-location-icon">🌍</div>
-                        <div class="multi-location-text">
-                            <h4 class="multi-location-title">Multi-Location Project Setup</h4>
-                            <p class="multi-location-description">
-                                After creating this project, you'll be able to set up multiple cohorts for different locations or time periods.
-                                Each cohort will have independent scheduling, capacity, and track selection.
+                <!-- Multi-Locations Notice (shown when has_sub_projects is true) -->
+                <div id="multiLocationNotice" class="multi-locations-notice">
+                    <div class="multi-locations-notice-content">
+                        <div class="multi-locations-icon">🌍</div>
+                        <div class="multi-locations-text">
+                            <h4 class="multi-locations-title">Multi-Locations Project Setup</h4>
+                            <p class="multi-locations-description">
+                                After creating this project, you'll be able to set up multiple locations for different sites or time periods.
+                                Each locations will have independent scheduling, capacity, and track selection.
                             </p>
-                            <div class="multi-location-steps">
-                                <strong class="multi-location-steps-title">📋 Next Steps:</strong>
-                                <ol class="multi-location-steps-list">
+                            <div class="multi-locations-steps">
+                                <strong class="multi-locations-steps-title">📋 Next Steps:</strong>
+                                <ol class="multi-locations-steps-list">
                                     <li>Complete project creation by clicking "Create Project & Tracks" below</li>
                                     <li>Navigate to the project detail view</li>
-                                    <li>Click "➕ Create Location" to set up your first location</li>
+                                    <li>Click "➕ Create Locations" to set up your first locations</li>
                                 </ol>
                             </div>
-                            <p class="multi-location-tip">
-                                💡 Tip: You can also access location management from the "Locations" section after project creation.
+                            <p class="multi-locations-tip">
+                                💡 Tip: You can also access locations management from the "Locations" section after project creation.
                             </p>
                         </div>
                     </div>
@@ -2171,22 +2411,49 @@
         </div>
     </div>
 
-    <!-- Create Location Modal (5-Step Wizard) -->
-    <div id="createCohortModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="createCohortModalTitle">
+    <!-- Project Summary Popup (Optional - Hidden by Default) -->
+    <div id="projectSummaryPopup" class="project-summary-popup" style="display: none;">
+        <div class="project-summary-popup-header">
+            <h4 class="project-summary-popup-title">📊 Project Summary</h4>
+            <button type="button"
+                    class="project-summary-close-btn"
+                    onclick="window.OrgAdmin.Projects.toggleProjectSummary()"
+                    title="Close summary">
+                ×
+            </button>
+        </div>
+        <div class="project-summary-popup-body">
+            <div class="project-summary-stat">
+                <div class="project-summary-stat-label">Total Tracks</div>
+                <div id="popupTotalTracksCount" class="project-summary-stat-value project-summary-stat-value--primary">0</div>
+            </div>
+            <div class="project-summary-stat">
+                <div class="project-summary-stat-label">Target Roles</div>
+                <div id="popupTotalRolesCount" class="project-summary-stat-value project-summary-stat-value--success">0</div>
+            </div>
+            <div class="project-summary-stat">
+                <div class="project-summary-stat-label">Status</div>
+                <div id="popupProjectStatus" class="project-summary-stat-value project-summary-stat-value--success">✓ Ready</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Locations Modal (5-Step Wizard) -->
+    <div id="createLocationModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="createLocationModalTitle">
         <div class="modal-content modal-content--lg">
-            <div class="cohort-draggable-handle">
-                <h2 id="createCohortModalTitle" class="cohort-modal-title">🌍 Create New Location</h2>
-                <span class="close" onclick="closeModal('createCohortModal')">&times;</span>
+            <div class="locations-draggable-handle">
+                <h2 id="createLocationModalTitle" class="locations-modal-title">🌍 Create New Locations</h2>
+                <span class="close" onclick="closeModal('createLocationModal')">&times;</span>
             </div>
 
             <!-- Progress indicator -->
-            <div class="cohort-progress-container">
-                <div class="cohort-progress-steps">
+            <div class="locations-progress-container">
+                <div class="locations-progress-steps">
                     <div class="wizard-step-indicator active" data-step="1">
                         1. Basic Info
                     </div>
                     <div class="wizard-step-indicator" data-step="2">
-                        2. Location
+                        2. Locations
                     </div>
                     <div class="wizard-step-indicator" data-step="3">
                         3. Schedule
@@ -2200,39 +2467,39 @@
                 </div>
             </div>
 
-            <div class="cohort-modal-body">
+            <div class="locations-modal-body">
                 <!-- Step 1: Basic Information -->
-                <div id="cohortStep1" class="wizard-step active">
-                    <h3 class="cohort-step-title">📝 Basic Information</h3>
-                    <form id="cohortBasicInfoForm">
+                <div id="locationStep1" class="wizard-step active">
+                    <h3 class="locations-step-title">📝 Basic Information</h3>
+                    <form id="locationBasicInfoForm">
                         <div class="form-group">
-                            <label for="cohortName" class="form-label">Location Name *</label>
-                            <input type="text" id="cohortName" name="name" required placeholder="e.g., Boston Cohort Fall 2025" class="form-input">
-                            <small class="form-help">A descriptive name for this cohort/location</small>
+                            <label for="locationName" class="form-label">Location Country *</label>
+                            <input type="text" id="locationName" name="name" required placeholder="e.g., United States, Canada, Germany" class="form-input">
+                            <small class="form-help">A descriptive name for this locations</small>
                         </div>
                         <div class="form-group">
-                            <label for="cohortSlug" class="form-label">Slug (URL-friendly identifier) *</label>
-                            <input type="text" id="cohortSlug" name="slug" required placeholder="e.g., boston-fall-2025" pattern="[a-z0-9-]+" class="form-input">
+                            <label for="locationSlug" class="form-label">Slug (URL-friendly identifier) *</label>
+                            <input type="text" id="locationSlug" name="slug" required placeholder="e.g., boston-fall-2025" pattern="[a-z0-9-]+" class="form-input">
                             <small class="form-help">Lowercase letters, numbers, and hyphens only</small>
                         </div>
                         <div class="form-group">
-                            <label for="cohortDescription" class="form-label">Description</label>
-                            <textarea id="cohortDescription" name="description" rows="4" placeholder="Describe this cohort and its unique characteristics..." class="form-input"></textarea>
+                            <label for="locationDescription" class="form-label">Description</label>
+                            <textarea id="locationDescription" name="description" rows="4" placeholder="Describe this locations and its unique characteristics..." class="form-input"></textarea>
                         </div>
                     </form>
-                    <div class="cohort-step-nav--end">
-                        <button type="button" class="btn btn-secondary" onclick="closeModal('createCohortModal')">Cancel</button>
-                        <button type="button" class="btn btn-primary next-step-btn" onclick="nextCohortStep()">Next: Location →</button>
+                    <div class="locations-step-nav--end">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('createLocationModal')">Cancel</button>
+                        <button type="button" class="btn btn-primary next-step-btn" onclick="nextLocationStep()">Next: Locations →</button>
                     </div>
                 </div>
 
-                <!-- Step 2: Location Information -->
-                <div id="cohortStep2" class="wizard-step">
-                    <h3 class="cohort-step-title">📍 Location Details</h3>
-                    <form id="cohortLocationForm">
+                <!-- Step 2: Locations Information -->
+                <div id="locationStep2" class="wizard-step">
+                    <h3 class="locations-step-title">📍 Locations Details</h3>
+                    <form id="locationLocationForm">
                         <div class="form-group">
-                            <label for="cohortCountry" class="form-label">Country *</label>
-                            <select id="cohortCountry" name="location_country" required onchange="loadRegionsForCountry(this.value)" class="form-select">
+                            <label for="locationCountry" class="form-label">Country *</label>
+                            <select id="locationCountry" name="location_country" required onchange="loadRegionsForCountry(this.value)" class="form-select">
                                 <option value="">Select Country</option>
                                 <option value="United States">United States</option>
                                 <option value="United Kingdom">United Kingdom</option>
@@ -2247,19 +2514,19 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="cohortRegion" class="form-label">State/Province/Region</label>
-                            <select id="cohortRegion" name="location_region" class="form-select">
+                            <label for="locationRegion" class="form-label">State/Province/Region</label>
+                            <select id="locationRegion" name="location_region" class="form-select">
                                 <option value="">Select Region (optional)</option>
                             </select>
                             <small class="form-help">Will load based on selected country</small>
                         </div>
                         <div class="form-group">
-                            <label for="cohortCity" class="form-label">City</label>
-                            <input type="text" id="cohortCity" name="location_city" placeholder="e.g., Boston" class="form-input">
+                            <label for="locationCity" class="form-label">City</label>
+                            <input type="text" id="locationCity" name="location_city" placeholder="e.g., Boston" class="form-input">
                         </div>
                         <div class="form-group">
-                            <label for="cohortTimezone" class="form-label">Timezone *</label>
-                            <select id="cohortTimezone" name="timezone" required class="form-select">
+                            <label for="locationTimezone" class="form-label">Timezone *</label>
+                            <select id="locationTimezone" name="timezone" required class="form-select">
                                 <option value="UTC">UTC (Coordinated Universal Time)</option>
                                 <option value="America/New_York">America/New York (EST/EDT)</option>
                                 <option value="America/Chicago">America/Chicago (CST/CDT)</option>
@@ -2276,69 +2543,73 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="cohortAddress" class="form-label">Physical Address (optional)</label>
-                            <textarea id="cohortAddress" name="location_address" rows="2" placeholder="Full street address for this location..." class="form-input"></textarea>
+                            <label for="locationAddress" class="form-label">Physical Address (optional)</label>
+                            <textarea id="locationAddress" name="location_address" rows="2" placeholder="Full street address for this locations..." class="form-input"></textarea>
                             <small class="form-help">Optional: Full address if training is at a specific building</small>
                         </div>
                     </form>
-                    <div class="cohort-step-nav">
-                        <button type="button" class="btn btn-secondary" onclick="previousCohortStep()">← Back</button>
-                        <button type="button" class="btn btn-primary next-step-btn" onclick="nextCohortStep()">Next: Schedule →</button>
+                    <div class="locations-step-nav">
+                        <button type="button" class="btn btn-secondary" onclick="previousLocationStep()">← Back</button>
+                        <button type="button" class="btn btn-primary next-step-btn" onclick="nextLocationStep()">Next: Schedule →</button>
                     </div>
                 </div>
 
                 <!-- Step 3: Schedule Configuration -->
-                <div id="cohortStep3" class="wizard-step">
-                    <h3 class="cohort-step-title">📅 Schedule & Capacity</h3>
-                    <form id="cohortScheduleForm">
+                <div id="locationStep3" class="wizard-step">
+                    <h3 class="locations-step-title">📅 Schedule & Capacity</h3>
+                    <form id="locationScheduleForm">
                         <div class="form-group">
-                            <label for="cohortStartDate" class="form-label">Start Date</label>
-                            <input type="date" id="cohortStartDate" name="start_date" onchange="calculateCohortDuration()" class="form-input">
+                            <label for="locationStartDate" class="form-label">Start Date</label>
+                            <input type="date" id="locationStartDate" name="start_date" onchange="calculateLocationEndDate()" class="form-input">
                         </div>
                         <div class="form-group">
-                            <label for="cohortEndDate" class="form-label">End Date</label>
-                            <input type="date" id="cohortEndDate" name="end_date" onchange="calculateCohortDuration()" class="form-input">
+                            <label for="locationDuration" class="form-label">Duration (weeks)</label>
+                            <input type="number" id="locationDuration" name="duration_weeks" min="1" max="52" onchange="calculateLocationEndDate()" class="form-input">
+                            <small class="form-help">Weekends are excluded from duration calculation</small>
                         </div>
                         <div class="form-group">
-                            <label for="cohortDuration" class="form-label">Duration (weeks)</label>
-                            <input type="number" id="cohortDuration" name="duration_weeks" readonly class="readonly-input form-input">
-                            <small class="form-help">Auto-calculated from start and end dates</small>
+                            <label for="locationEndDate" class="form-label">End Date</label>
+                            <input type="date" id="locationEndDate" name="end_date" class="form-input">
+                            <small class="form-help">Auto-calculated from start date + duration (excluding weekends)</small>
                         </div>
                         <div class="form-group">
-                            <label for="cohortMaxParticipants" class="form-label">Maximum Participants</label>
-                            <input type="number" id="cohortMaxParticipants" name="max_participants" min="1" placeholder="e.g., 30" class="form-input">
+                            <label for="locationMaxParticipants" class="form-label">Maximum Participants</label>
+                            <input type="number" id="locationMaxParticipants" name="max_participants" min="1"
+                                   oninput="validateLocationMaxParticipants()"
+                                   placeholder="e.g., 30" class="form-input">
                             <small class="form-help">Leave empty for unlimited capacity</small>
+                            <div id="locationMaxParticipantsError" class="validation-error" style="display: none; color: #dc2626; margin-top: 0.25rem; font-size: 0.875rem;"></div>
                         </div>
                     </form>
-                    <div class="cohort-step-nav">
-                        <button type="button" class="btn btn-secondary" onclick="previousCohortStep()">← Back</button>
-                        <button type="button" class="btn btn-primary next-step-btn" onclick="nextCohortStep()">Next: Tracks →</button>
+                    <div class="locations-step-nav">
+                        <button type="button" class="btn btn-secondary" onclick="previousLocationStep()">← Back</button>
+                        <button type="button" class="btn btn-primary next-step-btn" onclick="nextLocationStep()">Next: Tracks →</button>
                     </div>
                 </div>
 
                 <!-- Step 4: Track Selection -->
-                <div id="cohortStep4" class="wizard-step">
-                    <h3 class="cohort-step-title">📚 Select Tracks</h3>
+                <div id="locationStep4" class="wizard-step">
+                    <h3 class="locations-step-title">📚 Select Tracks</h3>
                     <p class="text-muted mb-md">
-                        Choose which tracks from the parent project will be included in this cohort.
+                        Choose which tracks from the parent project will be included in this locations.
                         You can customize start/end dates and instructors for each track.
                     </p>
-                    <div id="availableTracksList" class="cohort-tracks-list">
+                    <div id="availableTracksList" class="locations-tracks-list">
                         <!-- Track items will be loaded dynamically -->
-                        <div class="cohort-tracks-placeholder">
+                        <div class="locations-tracks-placeholder">
                             <p>Loading tracks from parent project...</p>
                         </div>
                     </div>
-                    <div class="cohort-step-nav">
-                        <button type="button" class="btn btn-secondary" onclick="previousCohortStep()">← Back</button>
-                        <button type="button" class="btn btn-primary next-step-btn" onclick="nextCohortStep()">Next: Review →</button>
+                    <div class="locations-step-nav">
+                        <button type="button" class="btn btn-secondary" onclick="previousLocationStep()">← Back</button>
+                        <button type="button" class="btn btn-primary next-step-btn" onclick="nextLocationStep()">Next: Review →</button>
                     </div>
                 </div>
 
                 <!-- Step 5: Review & Create -->
-                <div id="cohortStep5" class="wizard-step">
-                    <h3 class="cohort-step-title">✅ Review & Create</h3>
-                    <p class="subtitle-text">Review your cohort details before creating.</p>
+                <div id="locationStep5" class="wizard-step">
+                    <h3 class="locations-step-title">✅ Review & Create</h3>
+                    <p class="subtitle-text">Review your locations details before creating.</p>
 
                     <div id="reviewBasicInfo" class="review-section">
                         <h4 class="review-section-title">Basic Information</h4>
@@ -2348,7 +2619,7 @@
                     </div>
 
                     <div id="reviewLocation" class="review-section">
-                        <h4 class="review-section-title">Location</h4>
+                        <h4 class="review-section-title">Locations</h4>
                         <p id="reviewLocationDetails" class="review-text"></p>
                         <p id="reviewTimezone" class="review-text--muted"></p>
                     </div>
@@ -2364,9 +2635,9 @@
                         <div id="reviewTracksList"></div>
                     </div>
 
-                    <div class="cohort-step-nav">
-                        <button type="button" class="btn btn-secondary" onclick="previousCohortStep()">← Back</button>
-                        <button type="button" id="submitCohortBtn" class="btn btn-primary" onclick="submitCohortCreation()">Create Cohort</button>
+                    <div class="locations-step-nav">
+                        <button type="button" class="btn btn-secondary" onclick="previousLocationStep()">← Back</button>
+                        <button type="button" id="submitLocationBtn" class="btn btn-primary" onclick="submitLocationCreation()">Create Locations</button>
                     </div>
                 </div>
             </div>
@@ -2376,7 +2647,7 @@
     <!-- Project Detail View Modal -->
     <div id="projectDetailView" class="modal-backdrop project-detail-modal" role="dialog" aria-modal="true" aria-labelledby="projectDetailTitle">
         <div class="modal-content modal-content--2xl modal-content--full-height">
-            <div class="cohort-draggable-handle">
+            <div class="locations-draggable-handle">
                 <h2 id="projectDetailTitle" class="project-detail-title">📁 Project Details</h2>
                 <span class="close" onclick="closeProjectDetail()">&times;</span>
             </div>
@@ -2387,8 +2658,8 @@
                     <button class="tab-btn active" data-tab="overview" onclick="switchProjectDetailTab('overview')">
                         📊 Overview
                     </button>
-                    <button class="tab-btn" data-tab="cohorts" onclick="switchProjectDetailTab('cohorts')">
-                        🌍 Cohorts
+                    <button class="tab-btn" data-tab="locations" onclick="switchProjectDetailTab('locations')">
+                        🌍 Locations
                     </button>
                     <button class="tab-btn" data-tab="analytics" onclick="switchProjectDetailTab('analytics')">
                         📈 Analytics
@@ -2396,7 +2667,7 @@
                 </div>
             </div>
 
-            <div class="cohort-modal-body">
+            <div class="locations-modal-body">
                 <!-- Overview Tab -->
                 <div id="projectDetailOverview" class="project-detail-tab active">
                     <div id="projectOverviewContent">
@@ -2405,15 +2676,15 @@
                     </div>
                 </div>
 
-                <!-- Cohorts Tab -->
-                <div id="cohortsTabContent" class="project-detail-tab">
+                <!-- Locations Tab -->
+                <div id="locationsTabContent" class="project-detail-tab">
                     <!-- Filters Section -->
-                    <div class="cohort-filters-section">
-                        <h3 class="cohort-filters-title">🔍 Filter Cohorts</h3>
+                    <div class="locations-filters-section">
+                        <h3 class="locations-filters-title">🔍 Filter Locations</h3>
                         <div class="summary-grid">
-                            <div class="form-group cohort-filter-group">
-                                <label for="cohortCountryFilter" class="form-label">Country</label>
-                                <select id="cohortCountryFilter" onchange="applyCohortFilters()" class="cohort-filter-input form-select">
+                            <div class="form-group locations-filter-group">
+                                <label for="locationCountryFilter" class="form-label">Country</label>
+                                <select id="locationCountryFilter" onchange="applyLocationFilters()" class="locations-filter-input form-select">
                                     <option value="">All Countries</option>
                                     <option value="United States">United States</option>
                                     <option value="United Kingdom">United Kingdom</option>
@@ -2427,17 +2698,17 @@
                                     <option value="China">China</option>
                                 </select>
                             </div>
-                            <div class="form-group cohort-filter-group">
-                                <label for="cohortRegionFilter" class="form-label">Region/State</label>
-                                <input type="text" id="cohortRegionFilter" placeholder="e.g., California" onchange="applyCohortFilters()" class="cohort-filter-input form-input">
+                            <div class="form-group locations-filter-group">
+                                <label for="locationRegionFilter" class="form-label">Region/State</label>
+                                <input type="text" id="locationRegionFilter" placeholder="e.g., California" onchange="applyLocationFilters()" class="locations-filter-input form-input">
                             </div>
-                            <div class="form-group cohort-filter-group">
-                                <label for="cohortCityFilter" class="form-label">City</label>
-                                <input type="text" id="cohortCityFilter" placeholder="e.g., Boston" onchange="applyCohortFilters()" class="cohort-filter-input form-input">
+                            <div class="form-group locations-filter-group">
+                                <label for="locationCityFilter" class="form-label">City</label>
+                                <input type="text" id="locationCityFilter" placeholder="e.g., Boston" onchange="applyLocationFilters()" class="locations-filter-input form-input">
                             </div>
-                            <div class="form-group cohort-filter-group">
-                                <label for="cohortStatusFilter" class="form-label">Status</label>
-                                <select id="cohortStatusFilter" onchange="applyCohortFilters()" class="cohort-filter-input form-select">
+                            <div class="form-group locations-filter-group">
+                                <label for="locationStatusFilter" class="form-label">Status</label>
+                                <select id="locationStatusFilter" onchange="applyLocationFilters()" class="locations-filter-input form-select">
                                     <option value="">All Status</option>
                                     <option value="draft">Draft</option>
                                     <option value="active">Active</option>
@@ -2446,71 +2717,71 @@
                                     <option value="archived">Archived</option>
                                 </select>
                             </div>
-                            <div class="form-group cohort-filter-group">
-                                <label for="cohortDateFromFilter" class="form-label">Start Date From</label>
-                                <input type="date" id="cohortDateFromFilter" onchange="applyCohortFilters()" class="cohort-filter-input form-input">
+                            <div class="form-group locations-filter-group">
+                                <label for="locationDateFromFilter" class="form-label">Start Date From</label>
+                                <input type="date" id="locationDateFromFilter" onchange="applyLocationFilters()" class="locations-filter-input form-input">
                             </div>
-                            <div class="form-group cohort-filter-group">
-                                <label for="cohortDateToFilter" class="form-label">Start Date To</label>
-                                <input type="date" id="cohortDateToFilter" onchange="applyCohortFilters()" class="cohort-filter-input form-input">
+                            <div class="form-group locations-filter-group">
+                                <label for="locationDateToFilter" class="form-label">Start Date To</label>
+                                <input type="date" id="locationDateToFilter" onchange="applyLocationFilters()" class="locations-filter-input form-input">
                             </div>
                         </div>
-                        <div class="cohort-filters-actions">
-                            <button id="clearCohortsFiltersBtn" class="btn btn-secondary" onclick="clearCohortFilters()">Clear Filters</button>
+                        <div class="locations-filters-actions">
+                            <button id="clearLocationsFiltersBtn" class="btn btn-secondary" onclick="clearLocationFilters()">Clear Filters</button>
                         </div>
                     </div>
 
                     <!-- View Toggle and Create Button -->
-                    <div class="cohort-view-controls">
+                    <div class="locations-view-controls">
                         <div class="chat-input-container">
-                            <button id="cohortListViewBtn" class="btn btn-secondary active cohort-view-btn" onclick="showCohortListView()">
+                            <button id="locationListViewBtn" class="btn btn-secondary active locations-view-btn" onclick="showLocationListView()">
                                 📋 List View
                             </button>
-                            <button id="cohortTimelineViewBtn" class="btn btn-secondary cohort-view-btn" onclick="showCohortTimelineView()">
+                            <button id="locationTimelineViewBtn" class="btn btn-secondary locations-view-btn" onclick="showLocationTimelineView()">
                                 📅 Timeline View
                             </button>
                         </div>
-                        <button id="createCohortBtn" class="btn btn-primary" onclick="openCreateCohortModal()">
-                            ➕ Create Cohort
+                        <button id="createLocationBtn" class="btn btn-primary" onclick="openCreateLocationModal()">
+                            ➕ Create Locations
                         </button>
                     </div>
 
                     <!-- List View Container -->
-                    <div id="cohortListViewContainer">
-                        <!-- Cohorts List -->
-                        <div id="cohortsList">
-                            <!-- Cohort items will be loaded here dynamically -->
+                    <div id="locationListViewContainer">
+                        <!-- Locations List -->
+                        <div id="locationsList">
+                            <!-- Locations items will be loaded here dynamically -->
                         </div>
 
                         <!-- Empty State -->
-                        <div id="cohortsEmptyState" class="cohort-empty-state">
-                            <div class="cohort-empty-icon">🌍</div>
-                            <h3 class="cohort-empty-title">No Cohorts Created Yet</h3>
+                        <div id="locationsEmptyState" class="locations-empty-state">
+                            <div class="locations-empty-icon">🌍</div>
+                            <h3 class="locations-empty-title">No Locations Created Yet</h3>
                             <p class="subtitle-text">
-                                This project doesn't have any cohorts yet. Create your first cohort to run this training program in multiple locations.
+                                This project doesn't have any locations yet. Create your first locations to run this training program in multiple locations.
                             </p>
-                            <button class="btn btn-primary" onclick="openCreateCohortModal()">Create First Cohort</button>
+                            <button class="btn btn-primary" onclick="openCreateLocationModal()">Create First Locations</button>
                         </div>
                     </div>
 
                     <!-- Timeline View Container (Hidden by default) -->
-                    <div id="cohortTimelineContainer" class="cohort-timeline-container">
-                        <div class="cohort-timeline-content">
+                    <div id="locationTimelineContainer" class="locations-timeline-container">
+                        <div class="locations-timeline-content">
                             <div id="timelineContent">
                                 <!-- Timeline will be rendered here -->
-                                <p class="cohort-timeline-placeholder">Timeline view will display cohorts on a visual calendar.</p>
+                                <p class="locations-timeline-placeholder">Timeline view will display locations on a visual calendar.</p>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Comparison Controls (When cohorts selected) -->
-                    <div id="cohortComparisonControls" class="cohort-comparison-controls">
-                        <div class="cohort-comparison-inner">
-                            <span id="selectedCohortCount">0 cohorts selected</span>
-                            <button id="compareCohortsBtn" class="btn cohort-comparison-btn" onclick="openCohortComparison()">
+                    <!-- Comparison Controls (When locations selected) -->
+                    <div id="locationComparisonControls" class="locations-comparison-controls">
+                        <div class="locations-comparison-inner">
+                            <span id="selectedLocationCount">0 locations selected</span>
+                            <button id="compareLocationsBtn" class="btn locations-comparison-btn" onclick="openLocationComparison()">
                                 Compare
                             </button>
-                            <button class="btn cohort-comparison-btn--clear" onclick="clearCohortSelection()">
+                            <button class="btn locations-comparison-btn--clear" onclick="clearLocationSelection()">
                                 Clear
                             </button>
                         </div>
@@ -2528,15 +2799,15 @@
         </div>
     </div>
 
-    <!-- Cohort Comparison Modal -->
-    <div id="cohortComparisonModal" class="modal-backdrop cohort-comparison-modal" role="dialog" aria-modal="true" aria-labelledby="cohortComparisonTitle">
+    <!-- Locations Comparison Modal -->
+    <div id="locationComparisonModal" class="modal-backdrop locations-comparison-modal" role="dialog" aria-modal="true" aria-labelledby="locationComparisonTitle">
         <div class="modal-content modal-content--xl">
-            <div class="cohort-comparison-header">
-                <h2 id="cohortComparisonTitle" class="cohort-comparison-title">📊 Compare Cohorts</h2>
-                <span class="close" onclick="closeModal('cohortComparisonModal')">&times;</span>
+            <div class="locations-comparison-header">
+                <h2 id="locationComparisonTitle" class="locations-comparison-title">📊 Compare Locations</h2>
+                <span class="close" onclick="closeModal('locationComparisonModal')">&times;</span>
             </div>
-            <div class="cohort-comparison-body">
-                <table id="comparisonTable" class="data-table" class="cohort-filter-input">
+            <div class="locations-comparison-body">
+                <table id="comparisonTable" class="data-table" class="locations-filter-input">
                     <!-- Comparison table will be populated dynamically -->
                 </table>
             </div>
@@ -3537,63 +3808,63 @@
     </div>
 
     <!-- ========================================================================
-         LOCATION MANAGEMENT MODALS
-         Purpose: Full CRUD operations for location instances
+         LOCATIONS MANAGEMENT MODALS
+         Purpose: Full CRUD operations for locations instances
          ======================================================================== -->
 
-    <!-- Create Location Modal -->
-    <div id="createLocationModal" class="modal-backdrop" role="dialog" aria-modal="true"
-         aria-labelledby="createLocationModalTitle" data-modal="createLocation">
+    <!-- Create Locations Modal -->
+    <div id="createStandaloneLocationModal" class="modal-backdrop" role="dialog" aria-modal="true"
+         aria-labelledby="createStandaloneLocationModalTitle" data-modal="createStandaloneLocation">
         <div class="modal-content modal-w-700">
-            <span class="close" data-dismiss="modal" data-modal-id="createLocationModal" aria-label="Close modal">&times;</span>
-            
-            <h2 id="createLocationModalTitle">Create New Location</h2>
-            
-            <form id="createLocationForm">
+            <span class="close" data-dismiss="modal" data-modal-id="createStandaloneLocationModal" aria-label="Close modal">&times;</span>
+
+            <h2 id="createStandaloneLocationModalTitle">Create New Locations</h2>
+
+            <form id="createStandaloneLocationForm">
                 <!-- Basic Information -->
                 <div class="form-group">
-                    <label for="locationName" class="form-label required">Location Name</label>
-                    <input type="text" id="locationName" name="name" required maxlength="255"
+                    <label for="standaloneLocationName" class="form-label required">Locations Name</label>
+                    <input type="text" id="standaloneLocationName" name="name" required maxlength="255"
                            placeholder="e.g., New York Training Center" class="form-input">
                 </div>
 
                 <div class="form-group">
-                    <label for="locationSlug" class="form-label required">URL Slug</label>
-                    <input type="text" id="locationSlug" name="slug" required maxlength="100"
+                    <label for="standaloneLocationSlug" class="form-label required">URL Slug</label>
+                    <input type="text" id="standaloneLocationSlug" name="slug" required maxlength="100"
                            placeholder="e.g., ny-training-center" class="form-input">
                 </div>
 
                 <div class="form-group">
-                    <label for="locationDescription" class="form-label">Description</label>
-                    <textarea id="locationDescription" name="description" rows="3" class="form-input"
-                              placeholder="Describe this location instance"></textarea>
+                    <label for="standaloneLocationDescription" class="form-label">Description</label>
+                    <textarea id="standaloneLocationDescription" name="description" rows="3" class="form-input"
+                              placeholder="Describe this locations instance"></textarea>
                 </div>
 
-                <!-- Location Details -->
+                <!-- Locations Details -->
                 <div class="grid grid-cols-2 gap-md">
                     <div class="form-group">
-                        <label for="locationCountry" class="form-label required">Country</label>
-                        <input type="text" id="locationCountry" name="country" required maxlength="100"
+                        <label for="standaloneLocationCountry" class="form-label required">Country</label>
+                        <input type="text" id="standaloneLocationCountry" name="country" required maxlength="100"
                                placeholder="e.g., United States" class="form-input">
                     </div>
 
                     <div class="form-group">
-                        <label for="locationRegion" class="form-label">Region/State</label>
-                        <input type="text" id="locationRegion" name="region" maxlength="100"
+                        <label for="standaloneLocationRegion" class="form-label">Region/State</label>
+                        <input type="text" id="standaloneLocationRegion" name="region" maxlength="100"
                                placeholder="e.g., New York" class="form-input">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-md">
                     <div class="form-group">
-                        <label for="locationCity" class="form-label">City</label>
-                        <input type="text" id="locationCity" name="city" maxlength="100"
+                        <label for="standaloneLocationCity" class="form-label">City</label>
+                        <input type="text" id="standaloneLocationCity" name="city" maxlength="100"
                                placeholder="e.g., Manhattan" class="form-input">
                     </div>
 
                     <div class="form-group">
-                        <label for="locationTimezone" class="form-label required">Timezone</label>
-                        <select id="locationTimezone" name="timezone" required class="form-select">
+                        <label for="standaloneLocationTimezone" class="form-label required">Timezone</label>
+                        <select id="standaloneLocationTimezone" name="timezone" required class="form-select">
                             <option value="UTC">UTC</option>
                             <option value="America/New_York">Eastern Time (ET)</option>
                             <option value="America/Chicago">Central Time (CT)</option>
@@ -3609,47 +3880,50 @@
                 <!-- Schedule -->
                 <div class="grid grid-cols-2 gap-md">
                     <div class="form-group">
-                        <label for="locationStartDate" class="form-label">Start Date</label>
-                        <input type="date" id="locationStartDate" name="start_date" class="form-input">
+                        <label for="standaloneLocationStartDate" class="form-label">Start Date</label>
+                        <input type="date" id="standaloneLocationStartDate" name="start_date" class="form-input">
                     </div>
 
                     <div class="form-group">
-                        <label for="locationEndDate" class="form-label">End Date</label>
-                        <input type="date" id="locationEndDate" name="end_date" class="form-input">
+                        <label for="standaloneLocationEndDate" class="form-label">End Date</label>
+                        <input type="date" id="standaloneLocationEndDate" name="end_date" class="form-input">
                     </div>
                 </div>
 
                 <!-- Capacity -->
                 <div class="form-group">
-                    <label for="locationMaxParticipants" class="form-label">Max Participants</label>
-                    <input type="number" id="locationMaxParticipants" name="max_participants" min="1"
-                           placeholder="e.g., 100" class="form-input">
+                    <label for="standaloneLocationMaxParticipants" class="form-label">Max Participants</label>
+                    <input type="number" id="standaloneLocationMaxParticipants" name="max_participants" min="1"
+                           placeholder="e.g., 100" class="form-input"
+                           data-validate="required,min:1"
+                           data-validate-message="Maximum participants must be at least 1">
+                    <div class="validation-error" style="display: none;"></div>
                 </div>
 
                 <div class="modal-actions">
                     <button type="button" class="btn btn-outline" data-dismiss="modal"
-                            data-modal-id="createLocationModal" aria-label="Cancel">Cancel</button>
-                    <button type="submit" id="submitCreateLocationBtn" class="btn btn-primary"
-                            data-action="createLocation" aria-label="Create location">Create Location</button>
+                            data-modal-id="createStandaloneLocationModal" aria-label="Cancel">Cancel</button>
+                    <button type="submit" id="submitCreateStandaloneLocationBtn" class="btn btn-primary"
+                            data-action="createStandaloneLocation" aria-label="Create locations">Create Locations</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Edit Location Modal -->
+    <!-- Edit Locations Modal -->
     <div id="editLocationModal" class="modal-backdrop" role="dialog" aria-modal="true"
          aria-labelledby="editLocationModalTitle" data-modal="editLocation">
         <div class="modal-content modal-w-700">
             <span class="close" data-dismiss="modal" data-modal-id="editLocationModal"
                   aria-label="Close modal">&times;</span>
             
-            <h2 id="editLocationModalTitle">Edit Location</h2>
+            <h2 id="editLocationModalTitle">Edit Locations</h2>
             
             <form id="editLocationForm">
                 <input type="hidden" id="editLocationId" name="id">
 
                 <div class="form-group">
-                    <label for="editLocationName" class="form-label required">Location Name</label>
+                    <label for="editLocationName" class="form-label required">Locations Name</label>
                     <input type="text" id="editLocationName" name="name" required maxlength="255" class="form-input">
                 </div>
 
@@ -3709,24 +3983,24 @@
                     <button type="button" class="btn btn-outline" data-dismiss="modal"
                             data-modal-id="editLocationModal" aria-label="Cancel">Cancel</button>
                     <button type="submit" id="submitEditLocationBtn" class="btn btn-primary"
-                            data-action="updateLocation" aria-label="Update location">Update Location</button>
+                            data-action="updateLocation" aria-label="Update locations">Update Locations</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Delete Location Modal -->
+    <!-- Delete Locations Modal -->
     <div id="deleteLocationModal" class="modal-backdrop" role="dialog" aria-modal="true"
          aria-labelledby="deleteLocationModalTitle" data-modal="deleteLocation">
         <div class="modal-content modal-w-500">
             <span class="close" data-dismiss="modal" data-modal-id="deleteLocationModal"
                   aria-label="Close modal">&times;</span>
             
-            <h2 id="deleteLocationModalTitle">Delete Location</h2>
+            <h2 id="deleteLocationModalTitle">Delete Locations</h2>
             
             <p class="mb-md">
                 Are you sure you want to delete <strong id="deleteLocationName"></strong>?
-                This will also delete all tracks associated with this location.
+                This will also delete all tracks associated with this locations.
             </p>
             
             <input type="hidden" id="deleteLocationId">
@@ -3735,25 +4009,25 @@
                 <button type="button" class="btn btn-outline" data-dismiss="modal"
                         data-modal-id="deleteLocationModal" aria-label="Cancel">Cancel</button>
                 <button type="button" id="confirmDeleteLocationBtn" class="btn btn-danger"
-                        data-action="deleteLocation" aria-label="Confirm deletion">Delete Location</button>
+                        data-action="deleteLocation" aria-label="Confirm deletion">Delete Locations</button>
             </div>
         </div>
     </div>
 
     <!-- ========================================================================
-         TRACK AT LOCATION LEVEL MODALS
-         Purpose: Create custom tracks for specific location instances
+         TRACK AT LOCATIONS LEVEL MODALS
+         Purpose: Create custom tracks for specific locations instances
          User Requirement: "locations dashboard should be able to add or delete tracks"
          ======================================================================== -->
 
-    <!-- Create Track at Location Modal -->
+    <!-- Create Track at Locations Modal -->
     <div id="createTrackAtLocationModal" class="modal-backdrop" role="dialog" aria-modal="true"
          aria-labelledby="createTrackAtLocationModalTitle" data-modal="createTrackAtLocation">
         <div class="modal-content modal-w-700">
             <span class="close" data-dismiss="modal" data-modal-id="createTrackAtLocationModal"
                   aria-label="Close modal">&times;</span>
             
-            <h2 id="createTrackAtLocationModalTitle">Create Track for Location</h2>
+            <h2 id="createTrackAtLocationModalTitle">Create Track for Locations</h2>
             
             <form id="createTrackAtLocationForm">
                 <input type="hidden" id="locationTrackLocationId" name="location_id">
@@ -3767,7 +4041,7 @@
                 <div class="form-group">
                     <label for="locationTrackDescription" class="form-label">Description</label>
                     <textarea id="locationTrackDescription" name="description" rows="3" class="form-input"
-                              placeholder="Describe this custom track for the location"></textarea>
+                              placeholder="Describe this custom track for the locations"></textarea>
                 </div>
 
                 <div class="grid grid-cols-2 gap-md">
@@ -3800,7 +4074,11 @@
                     <div class="form-group">
                         <label for="locationTrackMaxStudents" class="form-label">Max Students</label>
                         <input type="number" id="locationTrackMaxStudents" name="max_students" min="1"
-                               placeholder="e.g., 30" class="form-input">
+                               placeholder="e.g., 30" class="form-input"
+                               data-validate="required,min:1"
+                               data-validate-message="Maximum number of students must be at least 1"
+                               oninput="validateLocationTrackMaxStudents()">
+                        <div class="validation-error" style="display: none;"></div>
                     </div>
                 </div>
 
@@ -3814,7 +4092,7 @@
         </div>
     </div>
 
-    <!-- Edit Track at Location Modal -->
+    <!-- Edit Track at Locations Modal -->
     <div id="editTrackAtLocationModal" class="modal-backdrop" role="dialog" aria-modal="true"
          aria-labelledby="editTrackAtLocationModalTitle" data-modal="editTrackAtLocation">
         <div class="modal-content modal-w-700">
@@ -3864,7 +4142,11 @@
 
                     <div class="form-group">
                         <label for="editLocationTrackMaxStudents" class="form-label">Max Students</label>
-                        <input type="number" id="editLocationTrackMaxStudents" name="max_students" min="1" class="form-input">
+                        <input type="number" id="editLocationTrackMaxStudents" name="max_students" min="1" class="form-input"
+                               data-validate="required,min:1"
+                               data-validate-message="Maximum number of students must be at least 1"
+                               oninput="validateEditLocationTrackMaxStudents()">
+                        <div class="validation-error" style="display: none;"></div>
                     </div>
                 </div>
 
@@ -3878,7 +4160,7 @@
         </div>
     </div>
 
-    <!-- Delete Track at Location Modal -->
+    <!-- Delete Track at Locations Modal -->
     <div id="deleteTrackAtLocationModal" class="modal-backdrop" role="dialog" aria-modal="true"
          aria-labelledby="deleteTrackAtLocationModalTitle" data-modal="deleteTrackAtLocation">
         <div class="modal-content modal-w-500">
@@ -4072,6 +4354,7 @@
 
         // Make Auth available globally for the dashboard script
         window.Auth = Auth;
+        window.authManager = Auth;  // org-admin-core.js expects window.authManager
         window.showNotification = showNotification;
 
         console.log('✅ Auth module loaded and made global');
@@ -4079,15 +4362,15 @@
         console.log('🔍 Has startSessionMonitoring?', typeof window.Auth?.startSessionMonitoring);
         console.log('🔍 Has activityTracker?', typeof window.Auth?.activityTracker);
 
-        // Start session monitoring immediately since Auth is already initialized
+        // Initialize auth FIRST (loads saved token and starts token refresh)
         if (window.Auth) {
-            console.log('🔐 Starting session monitoring from dashboard HTML...');
+            console.log('🔐 Initializing auth system from dashboard HTML...');
             try {
+                window.Auth.initializeAuth();  // CRITICAL: This starts token refresh!
                 window.Auth.startSessionMonitoring();
-                window.Auth.activityTracker.start();
-                console.log('✅ Session monitoring started successfully');
+                console.log('✅ Auth initialized and session monitoring started');
             } catch (error) {
-                console.error('❌ Error starting session monitoring:', error);
+                console.error('❌ Error initializing auth:', error);
             }
         }
     </script>
@@ -4159,6 +4442,77 @@
     <button id="aiAssistantButton" onclick="toggleDashboardAIChat()" class="ai-assistant-fab" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
         💬
     </button>
+
+    <!-- Help Button (F1) -->
+    <button id="helpButton" onclick="window.HelpSystem.openHelpModal()" class="help-fab" title="Help (Press F1)" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+        ❓
+        <span class="help-fab-hint">Press F1 for Help</span>
+    </button>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="help-modal">
+        <div class="help-modal-content">
+            <!-- Header -->
+            <div class="help-header">
+                <h1>📚 Help & Documentation</h1>
+                <button class="help-close-btn" onclick="window.HelpSystem.closeHelpModal()">&times;</button>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="help-search-bar">
+                <input
+                    type="text"
+                    id="helpSearchInput"
+                    class="help-search-input"
+                    placeholder="🔍 Search help articles..."
+                    oninput="window.HelpSystem.searchHelp(this.value)"
+                >
+            </div>
+
+            <!-- Main Body -->
+            <div class="help-body">
+                <!-- Sidebar with categories -->
+                <div class="help-sidebar">
+                    <button class="help-category-btn active" data-category="gettingStarted" onclick="window.HelpSystem.showHelpCategory('gettingStarted')">
+                        <span class="category-icon">🚀</span> Getting Started
+                    </button>
+                    <button class="help-category-btn" data-category="projects" onclick="window.HelpSystem.showHelpCategory('projects')">
+                        <span class="category-icon">📋</span> Projects
+                    </button>
+                    <button class="help-category-btn" data-category="tracks" onclick="window.HelpSystem.showHelpCategory('tracks')">
+                        <span class="category-icon">🛤️</span> Tracks
+                    </button>
+                    <button class="help-category-btn" data-category="members" onclick="window.HelpSystem.showHelpCategory('members')">
+                        <span class="category-icon">👥</span> Members
+                    </button>
+                    <button class="help-category-btn" data-category="analytics" onclick="window.HelpSystem.showHelpCategory('analytics')">
+                        <span class="category-icon">📊</span> Analytics
+                    </button>
+                    <button class="help-category-btn" data-category="settings" onclick="window.HelpSystem.showHelpCategory('settings')">
+                        <span class="category-icon">⚙️</span> Settings
+                    </button>
+                    <button class="help-category-btn" data-category="shortcuts" onclick="window.HelpSystem.showHelpCategory('shortcuts')">
+                        <span class="category-icon">⌨️</span> Keyboard Shortcuts
+                    </button>
+
+                    <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+
+                    <button class="help-category-btn" onclick="window.HelpSystem.startGuidedTour()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
+                        <span class="category-icon">🎯</span> Guided Tour
+                    </button>
+                </div>
+
+                <!-- Content Area -->
+                <div id="helpContentArea" class="help-content">
+                    <!-- Content loaded dynamically by JavaScript -->
+                    <div class="help-category-header">
+                        <h2>🚀 Getting Started</h2>
+                    </div>
+                    <p>Loading help content...</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         // Toggle dashboard AI chat panel
@@ -4322,6 +4676,9 @@
             }
         }
 
+        // Expose makeDraggable globally so it can be called from modules
+        window.makeDraggable = makeDraggable;
+
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
@@ -4338,79 +4695,79 @@
 
         /**
          * Handle project type selection change
-         * Updates UI to show/hide cohort information and sets has_sub_projects flag
+         * Updates UI to show/hide locations information and sets has_sub_projects flag
          *
          * @param {string} value - The selected project type ('single_location' or 'multi_location')
          */
         function handleProjectTypeChange(value) {
             const hasSubProjectsInput = document.getElementById('hasSubProjects');
-            const cohortInfoNote = document.getElementById('cohortInfoNote');
+            const locationInfoNote = document.getElementById('locationInfoNote');
 
             if (value === 'multi_location') {
-                // Multi-location project selected
+                // Multi-locations project selected
                 if (hasSubProjectsInput) {
                     hasSubProjectsInput.value = 'true';
                 }
-                if (cohortInfoNote) {
-                    cohortInfoNote.style.display = 'block';
+                if (locationInfoNote) {
+                    locationInfoNote.style.display = 'block';
                 }
             } else {
-                // Single location project selected
+                // Single locations project selected
                 if (hasSubProjectsInput) {
                     hasSubProjectsInput.value = 'false';
                 }
-                if (cohortInfoNote) {
-                    cohortInfoNote.style.display = 'none';
+                if (locationInfoNote) {
+                    locationInfoNote.style.display = 'none';
                 }
             }
         }
 
         // ==============================================================================
-        // COHORT CREATION WIZARD FUNCTIONS
+        // LOCATIONS CREATION WIZARD FUNCTIONS
         // ==============================================================================
 
-        let currentCohortStep = 1;
-        const cohortFormData = {};
+        let currentLocationStep = 1;
+        const locationFormData = {};
 
-        // Wave 5: Cohort wizard refactored - functions now in cohort-wizard.js module
-        // Access via window.CohortWizard.nextStep(), window.CohortWizard.previousStep(), etc.
+        // Wave 5: Locations wizard refactored - functions now in locations-wizard.js module
+        // Access via window.LocationWizard.nextStep(), window.LocationWizard.previousStep(), etc.
         
         // Initialize wizard when DOM ready
         document.addEventListener('DOMContentLoaded', async () => {
-            if (typeof window.CohortWizard !== 'undefined') {
-                await window.CohortWizard.initialize();
+            if (typeof window.LocationWizard !== 'undefined') {
+                await window.LocationWizard.initialize();
             }
         });
 
         // Wrapper functions for onclick handlers (delegate to module)
-        function nextCohortStep() {
-            if (window.CohortWizard) window.CohortWizard.nextStep();
+        function nextLocationStep() {
+            if (window.LocationWizard) window.LocationWizard.nextStep();
         }
         
-        function previousCohortStep() {
-            if (window.CohortWizard) window.CohortWizard.previousStep();
+        function previousLocationStep() {
+            if (window.LocationWizard) window.LocationWizard.previousStep();
         }
         
-        function resetCohortWizard() {
-            if (window.CohortWizard) window.CohortWizard.reset();
+        function resetLocationWizard() {
+            if (window.LocationWizard) window.LocationWizard.reset();
         }
         
-        function submitCohortCreation() {
-            if (window.CohortWizard) window.CohortWizard.submit();
+        function submitLocationCreation() {
+            if (window.LocationWizard) window.LocationWizard.submit();
         }
         // ==============================================================================
         // PROJECT DETAIL VIEW FUNCTIONS
         // ==============================================================================
 
-        let currentCohorts = [];
-        let selectedCohortIds = [];
+        let currentLocations = [];
+        let selectedLocationIds = [];
 
         /**
          * Open project detail view modal
          * @param {string} projectId - The project ID to view
          */
         async function openProjectDetail(projectId) {
-            // Store globally for cohort creation
+            // Store globally for locations creation
             window.currentProjectId = projectId;
 
             const modal = document.getElementById('projectDetailView');
@@ -4443,9 +4800,9 @@
                 // Populate overview tab
                 populateProjectOverview(project);
 
-                // Load cohorts if project has sub-projects
+                // Load locations if project has sub-projects
                 if (project.has_sub_projects) {
-                    await loadProjectCohorts(projectId);
+                    await loadProjectLocations(projectId);
                 }
 
             } catch (error) {
@@ -4466,13 +4823,13 @@
             const modal = document.getElementById('projectDetailView');
             modal.style.display = 'none';
             window.currentProjectId = null;
-            currentCohorts = [];
-            selectedCohortIds = [];
+            currentLocations = [];
+            selectedLocationIds = [];
         }
 
         /**
          * Switch between project detail tabs
-         * @param {string} tabName - The tab to switch to (overview, cohorts, analytics)
+         * @param {string} tabName - The tab to switch to (overview, locations, analytics)
          */
         function switchProjectDetailTab(tabName) {
             // Update tab buttons
@@ -4493,8 +4850,8 @@
 
             if (tabName === 'overview') {
                 document.getElementById('projectDetailOverview').style.display = 'block';
-            } else if (tabName === 'cohorts') {
-                document.getElementById('cohortsTabContent').style.display = 'block';
+            } else if (tabName === 'locations') {
+                document.getElementById('locationsTabContent').style.display = 'block';
             } else if (tabName === 'analytics') {
                 document.getElementById('projectDetailAnalytics').style.display = 'block';
             }
@@ -4514,7 +4871,7 @@
                         <p><strong>Slug:</strong> ${project.slug}</p>
                         <p><strong>Description:</strong> ${project.description || 'No description'}</p>
                         <p><strong>Status:</strong> <span class="badge-status">${project.status}</span></p>
-                        <p><strong>Multi-Location:</strong> ${project.has_sub_projects ? '✅ Yes (Cohorts enabled)' : '❌ No'}</p>
+                        <p><strong>Multi-Locations:</strong> ${project.has_sub_projects ? '✅ Yes (Locations enabled)' : '❌ No'}</p>
                     </div>
                     <div class="card-hover-bg">
                         <h3>Schedule</h3>
@@ -4527,22 +4884,22 @@
         }
 
         /**
-         * Load and display project cohorts
+         * Load and display project locations
          * @param {string} projectId - The project ID
          */
-        async function loadProjectCohorts(projectId) {
+        async function loadProjectLocations(projectId) {
             try {
                 const organizationId = localStorage.getItem('organization_id');
                 const token = localStorage.getItem('token');
 
                 // Build query params from filters
                 const params = new URLSearchParams();
-                const country = document.getElementById('cohortCountryFilter').value;
-                const region = document.getElementById('cohortRegionFilter').value;
-                const city = document.getElementById('cohortCityFilter').value;
-                const status = document.getElementById('cohortStatusFilter').value;
-                const dateFrom = document.getElementById('cohortDateFromFilter').value;
-                const dateTo = document.getElementById('cohortDateToFilter').value;
+                const country = document.getElementById('locationCountryFilter').value;
+                const region = document.getElementById('locationRegionFilter').value;
+                const city = document.getElementById('locationCityFilter').value;
+                const status = document.getElementById('locationStatusFilter').value;
+                const dateFrom = document.getElementById('locationDateFromFilter').value;
+                const dateTo = document.getElementById('locationDateToFilter').value;
 
                 if (country) params.append('location_country', country);
                 if (region) params.append('location_region', region);
@@ -4551,7 +4908,7 @@
                 if (dateFrom) params.append('start_date_from', dateFrom);
                 if (dateTo) params.append('start_date_to', dateTo);
 
-                // Fetch cohorts
+                // Fetch locations
                 const response = await fetch(
                     `https://localhost:8004/api/v1/organizations/${organizationId}/projects/${projectId}/sub-projects?${params}`,
                     {
@@ -4563,48 +4920,48 @@
                 );
 
                 if (!response.ok) {
-                    throw new Error('Failed to load cohorts');
+                    throw new Error('Failed to load locations');
                 }
 
-                const cohorts = await response.json();
-                currentCohorts = Array.isArray(cohorts) ? cohorts : [];
+                const locations = await response.json();
+                currentLocations = Array.isArray(locations) ? locations : [];
 
-                // Display cohorts
-                displayCohortsList(currentCohorts);
+                // Display locations
+                displayLocationsList(currentLocations);
 
             } catch (error) {
-                console.error('Error loading cohorts:', error);
-                document.getElementById('cohortsList').innerHTML = `
+                console.error('Error loading locations:', error);
+                document.getElementById('locationsList').innerHTML = `
                     <div class="error-message-block">
-                        <p>Failed to load cohorts: ${error.message}</p>
+                        <p>Failed to load locations: ${error.message}</p>
                     </div>
                 `;
             }
         }
 
         /**
-         * Display cohorts in list view
-         * @param {array} cohorts - Array of cohort objects
+         * Display locations in list view
+         * @param {array} locations - Array of locations objects
          */
-        function displayCohortsList(cohorts) {
-            const cohortsList = document.getElementById('cohortsList');
-            const emptyState = document.getElementById('cohortsEmptyState');
+        function displayLocationsList(locations) {
+            const locationsList = document.getElementById('locationsList');
+            const emptyState = document.getElementById('locationsEmptyState');
 
-            if (!cohorts || cohorts.length === 0) {
-                cohortsList.innerHTML = '';
+            if (!locations || locations.length === 0) {
+                locationsList.innerHTML = '';
                 emptyState.style.display = 'block';
                 return;
             }
 
             emptyState.style.display = 'none';
 
-            cohortsList.innerHTML = cohorts.map(cohort => {
-                const location = [cohort.location_city, cohort.location_region, cohort.location_country]
+            locationsList.innerHTML = locations.map(locationItem => {
+                const locationAddress = [locationItem.location_city, locationItem.location_region, locationItem.location_country]
                     .filter(Boolean)
                     .join(', ');
 
-                const capacity = cohort.max_participants
-                    ? `${cohort.current_participants || 0}/${cohort.max_participants}`
+                const capacity = locationItem.max_participants
+                    ? `${locationItem.current_participants || 0}/${locationItem.max_participants}`
                     : 'Unlimited';
 
                 const statusColors = {
@@ -4616,41 +4973,41 @@
                 };
 
                 return `
-                    <div class="cohort-item card-cohort-item">
+                    <div class="locations-item card-locations-item">
                         <div class="flex-between-start">
                             <div class="flex-1">
                                 <div class="flex-center-gap-1">
-                                    <input type="checkbox" class="cohort-checkbox w-18 h-18" data-cohort-id="${cohort.id}" onchange="toggleCohortSelection('${cohort.id}')">
-                                    <h3 class="h3-no-margin">${cohort.name}</h3>
-                                    <span class="badge-status-dynamic" style="background: ${statusColors[cohort.status] || '#6c757d'};">
-                                        ${cohort.status}
+                                    <input type="checkbox" class="locations-checkbox w-18 h-18" data-locations-id="${locationItem.id}" onchange="toggleLocationSelection('${locationItem.id}')">
+                                    <h3 class="h3-no-margin">${locationItem.name}</h3>
+                                    <span class="badge-status-dynamic" style="background: ${statusColors[locationItem.status] || '#6c757d'};">
+                                        ${locationItem.status}
                                     </span>
                                 </div>
-                                <p class="text-muted text-my-xs text-xs">${cohort.description || 'No description'}</p>
+                                <p class="text-muted text-my-xs text-xs">${locationItem.description || 'No description'}</p>
                                 <div class="grid-auto-fit-200">
                                     <div>
-                                        <strong class="cohort-location">📍 Location:</strong><br>
-                                        <span>${location}</span>
+                                        <strong class="locations-locations">📍 Address:</strong><br>
+                                        <span>${locationAddress}</span>
                                     </div>
                                     <div>
                                         <strong>📅 Schedule:</strong><br>
-                                        <span class="cohort-start-date">${cohort.start_date || 'TBD'}</span> - ${cohort.end_date || 'TBD'}
-                                        ${cohort.duration_weeks ? `<span class="text-muted text-xs">(${cohort.duration_weeks} weeks)</span>` : ''}
+                                        <span class="locations-start-date">${locationItem.start_date || 'TBD'}</span> - ${locationItem.end_date || 'TBD'}
+                                        ${locationItem.duration_weeks ? `<span class="text-muted text-xs">(${locationItem.duration_weeks} weeks)</span>` : ''}
                                     </div>
                                     <div>
-                                        <strong class="cohort-capacity">👥 Capacity:</strong><br>
+                                        <strong class="locations-capacity">👥 Capacity:</strong><br>
                                         <span>${capacity}</span>
                                     </div>
                                     <div>
                                         <strong>🌐 Timezone:</strong><br>
-                                        <span>${cohort.timezone || 'UTC'}</span>
+                                        <span>${locationItem.timezone || 'UTC'}</span>
                                     </div>
                                 </div>
                             </div>
                             <div class="flex-gap-0-5">
-                                <button class="btn btn-secondary btn-padding-sm" onclick="editCohort('${cohort.id}')">✏️ Edit</button>
-                                <button class="btn btn-secondary btn-padding-sm" onclick="viewCohortDetails('${cohort.id}')">👁️ View</button>
-                                <button class="btn btn-secondary btn-padding-sm btn-danger" onclick="deleteCohort('${cohort.id}', '${cohort.name}')">🗑️</button>
+                                <button class="btn btn-secondary btn-padding-sm" onclick="editLocation('${locationItem.id}')">✏️ Edit</button>
+                                <button class="btn btn-secondary btn-padding-sm" onclick="viewLocationDetails('${locationItem.id}')">👁️ View</button>
+                                <button class="btn btn-secondary btn-padding-sm btn-danger" onclick="deleteLocation('${locationItem.id}', '${locationItem.name}')">🗑️</button>
                             </div>
                         </div>
                     </div>
@@ -4659,78 +5016,78 @@
         }
 
         /**
-         * Apply cohort filters
+         * Apply locations filters
          */
-        function applyCohortFilters() {
+        function applyLocationFilters() {
             if (window.currentProjectId) {
-                loadProjectCohorts(window.currentProjectId);
+                loadProjectLocations(window.currentProjectId);
             }
         }
 
         /**
-         * Clear all cohort filters
+         * Clear all locations filters
          */
-        function clearCohortFilters() {
-            document.getElementById('cohortCountryFilter').value = '';
-            document.getElementById('cohortRegionFilter').value = '';
-            document.getElementById('cohortCityFilter').value = '';
-            document.getElementById('cohortStatusFilter').value = '';
-            document.getElementById('cohortDateFromFilter').value = '';
-            document.getElementById('cohortDateToFilter').value = '';
+        function clearLocationFilters() {
+            document.getElementById('locationCountryFilter').value = '';
+            document.getElementById('locationRegionFilter').value = '';
+            document.getElementById('locationCityFilter').value = '';
+            document.getElementById('locationStatusFilter').value = '';
+            document.getElementById('locationDateFromFilter').value = '';
+            document.getElementById('locationDateToFilter').value = '';
 
-            applyCohortFilters();
+            applyLocationFilters();
         }
 
         /**
-         * Show cohort list view
+         * Show locations list view
          */
-        function showCohortListView() {
-            document.getElementById('cohortListViewContainer').style.display = 'block';
-            document.getElementById('cohortTimelineContainer').style.display = 'none';
+        function showLocationListView() {
+            document.getElementById('locationListViewContainer').style.display = 'block';
+            document.getElementById('locationTimelineContainer').style.display = 'none';
 
-            document.getElementById('cohortListViewBtn').classList.add('active');
-            document.getElementById('cohortTimelineViewBtn').classList.remove('active');
+            document.getElementById('locationListViewBtn').classList.add('active');
+            document.getElementById('locationTimelineViewBtn').classList.remove('active');
         }
 
         /**
-         * Show cohort timeline view
+         * Show locations timeline view
          */
-        function showCohortTimelineView() {
-            document.getElementById('cohortListViewContainer').style.display = 'none';
-            document.getElementById('cohortTimelineContainer').style.display = 'block';
+        function showLocationTimelineView() {
+            document.getElementById('locationListViewContainer').style.display = 'none';
+            document.getElementById('locationTimelineContainer').style.display = 'block';
 
-            document.getElementById('cohortListViewBtn').classList.remove('active');
-            document.getElementById('cohortTimelineViewBtn').classList.add('active');
+            document.getElementById('locationListViewBtn').classList.remove('active');
+            document.getElementById('locationTimelineViewBtn').classList.add('active');
 
             // Render timeline
-            renderCohortTimeline(currentCohorts);
+            renderLocationTimeline(currentLocations);
         }
 
         /**
-         * Render cohort timeline visualization
-         * @param {array} cohorts - Array of cohort objects
+         * Render locations timeline visualization
+         * @param {array} locations - Array of locations objects
          */
-        function renderCohortTimeline(cohorts) {
+        function renderLocationTimeline(locations) {
             const timelineContent = document.getElementById('timelineContent');
 
-            if (!cohorts || cohorts.length === 0) {
-                timelineContent.innerHTML = '<p class="timeline-empty-message text-center">No cohorts to display on timeline.</p>';
+            if (!locations || locations.length === 0) {
+                timelineContent.innerHTML = '<p class="timeline-empty-message text-center">No locations to display on timeline.</p>';
                 return;
             }
 
             // Simple timeline visualization (can be enhanced with a library like vis.js)
-            const html = cohorts.map(cohort => {
-                const width = cohort.duration_weeks ? `${Math.min(cohort.duration_weeks * 10, 300)}px` : '100px';
+            const html = locations.map(locations => {
+                const width = locations.duration_weeks ? `${Math.min(locations.duration_weeks * 10, 300)}px` : '100px';
                 return `
                     <div class="timeline-bar card-timeline-bar">
-                        <div class="timeline-label">${cohort.name}</div>
+                        <div class="timeline-label">${locations.name}</div>
                         <div class="flex-gap-2">
-                            <span class="timeline-start"><strong>Start:</strong> ${cohort.start_date || 'TBD'}</span>
+                            <span class="timeline-start"><strong>Start:</strong> ${locations.start_date || 'TBD'}</span>
                             <div class="flex-1 timeline-progress-bar h-8" style="max-width: ${width};"></div>
-                            <span class="timeline-end"><strong>End:</strong> ${cohort.end_date || 'TBD'}</span>
+                            <span class="timeline-end"><strong>End:</strong> ${locations.end_date || 'TBD'}</span>
                         </div>
                         <div class="text-muted text-xs mt-0-5">
-                            📍 ${[cohort.location_city, cohort.location_country].filter(Boolean).join(', ')}
+                            📍 ${[locations.location_city, locations.location_country].filter(Boolean).join(', ')}
                         </div>
                     </div>
                 `;
@@ -4740,76 +5097,76 @@
         }
 
         /**
-         * Open create cohort modal
+         * Open create locations modal
          */
-        function openCreateCohortModal() {
+        function openCreateLocationModal() {
             // Close project detail view
             closeProjectDetail();
 
-            // Open cohort creation modal
-            const modal = document.getElementById('createCohortModal');
+            // Open locations creation modal
+            const modal = document.getElementById('createLocationModal');
             modal.style.display = 'flex';
         }
 
         /**
-         * Toggle cohort selection for comparison
-         * @param {string} cohortId - The cohort ID
+         * Toggle locations selection for comparison
+         * @param {string} locationId - The locations ID
          */
-        function toggleCohortSelection(cohortId) {
-            const checkbox = document.querySelector(`.cohort-checkbox[data-cohort-id="${cohortId}"]`);
+        function toggleLocationSelection(locationId) {
+            const checkbox = document.querySelector(`.locations-checkbox[data-locations-id="${locationId}"]`);
 
             if (checkbox.checked) {
-                if (!selectedCohortIds.includes(cohortId)) {
-                    selectedCohortIds.push(cohortId);
+                if (!selectedLocationIds.includes(locationId)) {
+                    selectedLocationIds.push(locationId);
                 }
             } else {
-                selectedCohortIds = selectedCohortIds.filter(id => id !== cohortId);
+                selectedLocationIds = selectedLocationIds.filter(id => id !== locationId);
             }
 
-            updateCohortSelectionControls();
+            updateLocationSelectionControls();
         }
 
         /**
          * Update comparison controls visibility
          */
-        function updateCohortSelectionControls() {
-            const controls = document.getElementById('cohortComparisonControls');
-            const countSpan = document.getElementById('selectedCohortCount');
+        function updateLocationSelectionControls() {
+            const controls = document.getElementById('locationComparisonControls');
+            const countSpan = document.getElementById('selectedLocationCount');
 
-            if (selectedCohortIds.length > 0) {
+            if (selectedLocationIds.length > 0) {
                 controls.style.display = 'block';
-                countSpan.textContent = `${selectedCohortIds.length} cohort${selectedCohortIds.length > 1 ? 's' : ''} selected`;
+                countSpan.textContent = `${selectedLocationIds.length} locations${selectedLocationIds.length > 1 ? 's' : ''} selected`;
             } else {
                 controls.style.display = 'none';
             }
         }
 
         /**
-         * Clear cohort selection
+         * Clear locations selection
          */
-        function clearCohortSelection() {
-            selectedCohortIds = [];
-            document.querySelectorAll('.cohort-checkbox').forEach(cb => cb.checked = false);
-            updateCohortSelectionControls();
+        function clearLocationSelection() {
+            selectedLocationIds = [];
+            document.querySelectorAll('.locations-checkbox').forEach(cb => cb.checked = false);
+            updateLocationSelectionControls();
         }
 
         /**
-         * Open cohort comparison modal
+         * Open locations comparison modal
          */
-        function openCohortComparison() {
-            if (selectedCohortIds.length < 2) {
-                alert('Please select at least 2 cohorts to compare.');
+        function openLocationComparison() {
+            if (selectedLocationIds.length < 2) {
+                alert('Please select at least 2 locations to compare.');
                 return;
             }
 
-            const selectedCohorts = currentCohorts.filter(c => selectedCohortIds.includes(c.id));
+            const selectedLocations = currentLocations.filter(c => selectedLocationIds.includes(c.id));
 
-            const modal = document.getElementById('cohortComparisonModal');
+            const modal = document.getElementById('locationComparisonModal');
             const table = document.getElementById('comparisonTable');
 
             // Build comparison table
             const metrics = [
-                { label: 'Location', key: 'location', format: (c) => [c.location_city, c.location_region, c.location_country].filter(Boolean).join(', ') },
+                { label: 'Locations', key: 'locations', format: (c) => [c.location_city, c.location_region, c.location_country].filter(Boolean).join(', ') },
                 { label: 'Start Date', key: 'start_date' },
                 { label: 'End Date', key: 'end_date' },
                 { label: 'Duration', key: 'duration_weeks', format: (c) => c.duration_weeks ? `${c.duration_weeks} weeks` : 'N/A' },
@@ -4819,15 +5176,15 @@
             ];
 
             let html = '<thead><tr><th>Metric</th>';
-            selectedCohorts.forEach(cohort => {
-                html += `<th class="cohort-column-header">${cohort.name}</th>`;
+            selectedLocations.forEach(locations => {
+                html += `<th class="locations-column-header">${locations.name}</th>`;
             });
             html += '</tr></thead><tbody>';
 
             metrics.forEach(metric => {
                 html += `<tr data-metric="${metric.key}"><td><strong>${metric.label}</strong></td>`;
-                selectedCohorts.forEach(cohort => {
-                    const value = metric.format ? metric.format(cohort) : (cohort[metric.key] || 'N/A');
+                selectedLocations.forEach(locations => {
+                    const value = metric.format ? metric.format(locations) : (locations[metric.key] || 'N/A');
                     html += `<td>${value}</td>`;
                 });
                 html += '</tr>';
@@ -4840,33 +5197,33 @@
         }
 
         /**
-         * Edit cohort
-         * @param {string} cohortId - The cohort ID
+         * Edit locations
+         * @param {string} locationId - The locations ID
          */
-        function editCohort(cohortId) {
+        function editLocation(locationId) {
             // TODO: Implement edit functionality
-            alert(`Edit cohort ${cohortId} - Feature coming soon`);
+            alert(`Edit locations ${locationId} - Feature coming soon`);
         }
 
         /**
-         * View cohort details
-         * @param {string} cohortId - The cohort ID
+         * View locations details
+         * @param {string} locationId - The locations ID
          */
-        function viewCohortDetails(cohortId) {
+        function viewLocationDetails(locationId) {
             // TODO: Implement view details
-            const cohort = currentCohorts.find(c => c.id === cohortId);
-            if (cohort) {
-                alert(`Cohort Details:\n\nName: ${cohort.name}\nLocation: ${[cohort.location_city, cohort.location_country].filter(Boolean).join(', ')}\nStatus: ${cohort.status}`);
+            const locations = currentLocations.find(c => c.id === locationId);
+            if (locations) {
+                alert(`Locations Details:\n\nName: ${locations.name}\nLocation: ${[locations.location_city, locations.location_country].filter(Boolean).join(', ')}\nStatus: ${locations.status}`);
             }
         }
 
         /**
-         * Delete cohort
-         * @param {string} cohortId - The cohort ID
-         * @param {string} cohortName - The cohort name
+         * Delete locations
+         * @param {string} locationId - The locations ID
+         * @param {string} locationName - The locations name
          */
-        async function deleteCohort(cohortId, cohortName) {
-            if (!confirm(`Are you sure you want to delete "${cohortName}"? This action cannot be undone.`)) {
+        async function deleteLocation(locationId, locationName) {
+            if (!confirm(`Are you sure you want to delete "${locationName}"? This action cannot be undone.`)) {
                 return;
             }
 
@@ -4875,7 +5232,7 @@
                 const token = localStorage.getItem('token');
 
                 const response = await fetch(
-                    `https://localhost:8004/api/v1/organizations/${organizationId}/projects/${window.currentProjectId}/sub-projects/${cohortId}`,
+                    `https://localhost:8004/api/v1/organizations/${organizationId}/projects/${window.currentProjectId}/sub-projects/${locationId}`,
                     {
                         method: 'DELETE',
                         headers: {
@@ -4886,24 +5243,24 @@
                 );
 
                 if (!response.ok) {
-                    throw new Error('Failed to delete cohort');
+                    throw new Error('Failed to delete locations');
                 }
 
                 if (window.OrgAdmin && window.OrgAdmin.Utils && window.OrgAdmin.Utils.showNotification) {
                     window.OrgAdmin.Utils.showNotification(
-                        `Cohort "${cohortName}" deleted successfully`,
+                        `Locations "${locationName}" deleted successfully`,
                         'success'
                     );
                 }
 
-                // Reload cohorts
-                await loadProjectCohorts(window.currentProjectId);
+                // Reload locations
+                await loadProjectLocations(window.currentProjectId);
 
             } catch (error) {
-                console.error('Error deleting cohort:', error);
+                console.error('Error deleting locations:', error);
                 if (window.OrgAdmin && window.OrgAdmin.Utils && window.OrgAdmin.Utils.showNotification) {
                     window.OrgAdmin.Utils.showNotification(
-                        `Failed to delete cohort: ${error.message}`,
+                        `Failed to delete locations: ${error.message}`,
                         'error'
                     );
                 }
@@ -5124,20 +5481,20 @@ If everything looks good and you approve, I'll proceed with automated project cr
 
         // Make modals draggable
         document.addEventListener('DOMContentLoaded', function() {
-            // Make project creation modal draggable from anywhere
+            // Make project creation modal draggable from header
             const projectModal = document.getElementById('createProjectModal');
-            const projectHandle = document.querySelector('#createProjectModal .modal-content-inner');
+            const projectHandle = document.querySelector('#createProjectModal .draggable-handle');
 
             if (projectModal && projectHandle) {
                 makeDraggable(projectModal, projectHandle);
             }
 
-            // Make cohort creation modal draggable
-            const cohortModal = document.getElementById('createCohortModal');
-            const cohortHandle = document.querySelector('#createCohortModal .draggable-handle');
+            // Make locations creation modal draggable
+            const locationModal = document.getElementById('createLocationModal');
+            const locationHandle = document.querySelector('#createLocationModal .draggable-handle');
 
-            if (cohortModal && cohortHandle) {
-                makeDraggable(cohortModal, cohortHandle);
+            if (locationModal && locationHandle) {
+                makeDraggable(locationModal, locationHandle);
             }
 
             // Make project detail view draggable
@@ -5150,18 +5507,1051 @@ If everything looks good and you approve, I'll proceed with automated project cr
         });
     </script>
 
+    <!-- Project Date Calculation Script -->
+    <script>
+    /**
+     * Calculate project end date from start date and duration, excluding weekends
+     *
+     * BUSINESS CONTEXT:
+     * Projects run Monday-Friday only. Duration in weeks means number of business weeks.
+     * Weekends (Saturday, Sunday) are not counted as project days.
+     *
+     * TECHNICAL IMPLEMENTATION:
+     * - Reads start date and duration (weeks) from form fields
+     * - Calculates end date by adding business days (5 days per week)
+     * - Skips weekends during calculation
+     * - Sets calculated end date in readonly field
+     *
+     * USAGE:
+     * Called automatically when:
+     * - User changes project start date
+     * - User changes project duration
+     */
+    function calculateProjectEndDate() {
+        const startDateInput = document.getElementById('projectStartDate');
+        const durationInput = document.getElementById('projectDuration');
+        const endDateInput = document.getElementById('projectEndDate');
+
+        // Validation: require both start date and duration
+        if (!startDateInput || !durationInput || !endDateInput) {
+            return;
+        }
+
+        const startDateValue = startDateInput.value;
+        const durationWeeks = parseInt(durationInput.value);
+
+        // Validation: require valid inputs
+        if (!startDateValue || !durationWeeks || durationWeeks < 1) {
+            endDateInput.value = '';
+            return;
+        }
+
+        // Parse start date
+        const startDate = new Date(startDateValue + 'T00:00:00');
+
+        // Calculate total business days needed (5 days per week)
+        const totalBusinessDays = durationWeeks * 5;
+
+        // Calculate end date by adding business days (excluding weekends)
+        // IMPORTANT: Start date counts as the first business day
+        let currentDate = new Date(startDate);
+        let businessDaysAdded = 1;  // Count start date as day 1
+
+        while (businessDaysAdded < totalBusinessDays) {
+            currentDate.setDate(currentDate.getDate() + 1);
+            const dayOfWeek = currentDate.getDay();
+
+            // Skip weekends (0 = Sunday, 6 = Saturday)
+            if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                businessDaysAdded++;
+            }
+        }
+
+        // Format date as YYYY-MM-DD for date input
+        const year = currentDate.getFullYear();
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const day = String(currentDate.getDate()).padStart(2, '0');
+        const endDateFormatted = `${year}-${month}-${day}`;
+
+        // Set calculated end date
+        endDateInput.value = endDateFormatted;
+    }
+
+    // Make function globally accessible
+    window.calculateProjectEndDate = calculateProjectEndDate;
+
+    /**
+     * Calculate location end date from start date and duration (excluding weekends)
+     *
+     * BUSINESS CONTEXT:
+     * Locations (sub-projects) use the same business day calculation as the main project.
+     * Duration is measured in weeks (5 business days each), excluding weekends.
+     *
+     * TECHNICAL IMPLEMENTATION:
+     * - Reads locationStartDate and locationDuration inputs
+     * - Calculates business days (weeks * 5)
+     * - Iterates through dates, skipping weekends
+     * - Sets the calculated end date in locationEndDate input (readonly)
+     *
+     * USAGE:
+     * Called automatically when:
+     * - User changes location start date
+     * - User changes location duration
+     */
+    function calculateLocationEndDate() {
+        const startDateInput = document.getElementById('locationStartDate');
+        const durationInput = document.getElementById('locationDuration');
+        const endDateInput = document.getElementById('locationEndDate');
+
+        // Validation: require all inputs to exist
+        if (!startDateInput || !durationInput || !endDateInput) {
+            return;
+        }
+
+        const startDateValue = startDateInput.value;
+        const durationWeeks = parseInt(durationInput.value);
+
+        // Validation: require valid inputs
+        if (!startDateValue || !durationWeeks || durationWeeks < 1) {
+            endDateInput.value = '';
+            return;
+        }
+
+        // Parse start date
+        const startDate = new Date(startDateValue + 'T00:00:00');
+
+        // Calculate total business days needed (5 days per week)
+        const totalBusinessDays = durationWeeks * 5;
+
+        // Calculate end date by adding business days (excluding weekends)
+        // IMPORTANT: Start date counts as the first business day
+        let currentDate = new Date(startDate);
+        let businessDaysAdded = 1;  // Count start date as day 1
+
+        while (businessDaysAdded < totalBusinessDays) {
+            currentDate.setDate(currentDate.getDate() + 1);
+            const dayOfWeek = currentDate.getDay();
+
+            // Skip weekends (0 = Sunday, 6 = Saturday)
+            if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                businessDaysAdded++;
+            }
+        }
+
+        // Format date as YYYY-MM-DD for date input
+        const year = currentDate.getFullYear();
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const day = String(currentDate.getDate()).padStart(2, '0');
+        const endDateFormatted = `${year}-${month}-${day}`;
+
+        // Set calculated end date
+        endDateInput.value = endDateFormatted;
+    }
+
+    // Make function globally accessible
+    window.calculateLocationEndDate = calculateLocationEndDate;
+
+    /**
+     * Auto-generate URL slug from project name
+     *
+     * BUSINESS CONTEXT:
+     * URL slugs must be unique, URL-safe identifiers for projects.
+     * Auto-generating from the project name ensures:
+     * - Consistent formatting (lowercase, hyphens)
+     * - Valid characters only (alphanumeric + hyphens)
+     * - User-friendly URLs that reflect the project name
+     *
+     * TECHNICAL IMPLEMENTATION:
+     * - Converts to lowercase
+     * - Replaces spaces and special characters with hyphens
+     * - Removes consecutive hyphens
+     * - Trims leading/trailing hyphens
+     * - Matches pattern: ^[a-z0-9-]+$
+     *
+     * USAGE:
+     * Called automatically when user types in project name field
+     */
+    function generateProjectSlug() {
+        const nameInput = document.getElementById('projectName');
+        const slugInput = document.getElementById('projectSlug');
+
+        if (!nameInput || !slugInput) return;
+
+        const projectName = nameInput.value;
+
+        // Convert to lowercase and replace spaces with hyphens
+        let slug = projectName
+            .toLowerCase()
+            .trim()
+            // Replace spaces with hyphens
+            .replace(/\s+/g, '-')
+            // Replace special characters with hyphens
+            .replace(/[^a-z0-9-]/g, '-')
+            // Remove consecutive hyphens
+            .replace(/-+/g, '-')
+            // Remove leading/trailing hyphens
+            .replace(/^-+|-+$/g, '');
+
+        slugInput.value = slug;
+    }
+
+    // Make function globally accessible
+    window.generateProjectSlug = generateProjectSlug;
+
+    /**
+     * Validate project slug in real-time and show error message
+     *
+     * BUSINESS CONTEXT:
+     * Provides immediate feedback to users when they manually edit the slug field.
+     * Prevents submission of invalid slugs by showing clear validation errors.
+     *
+     * TECHNICAL IMPLEMENTATION:
+     * - Tests slug against pattern: ^[a-z0-9-]+$
+     * - Shows/hides validation error message
+     * - Adds visual feedback (red border on error)
+     *
+     * USAGE:
+     * Called automatically when user types in slug field
+     */
+    function validateProjectSlug() {
+        const slugInput = document.getElementById('projectSlug');
+        const errorDiv = document.getElementById('projectSlugError');
+
+        if (!slugInput || !errorDiv) return true;
+
+        const slug = slugInput.value.trim();
+
+        // Pattern: lowercase letters, numbers, hyphens only
+        const validPattern = /^[a-z0-9-]+$/;
+
+        if (!slug) {
+            // Empty is handled by required validation
+            errorDiv.style.display = 'none';
+            slugInput.style.borderColor = '';
+            return false;
+        }
+
+        if (!validPattern.test(slug)) {
+            // Show error message
+            const invalidChars = slug.replace(/[a-z0-9-]/g, '').split('').filter((v, i, a) => a.indexOf(v) === i);
+            const charList = invalidChars.length > 0 ? ` Invalid characters: ${invalidChars.join(', ')}` : '';
+
+            errorDiv.textContent = `Only lowercase letters (a-z), numbers (0-9), and hyphens (-) are allowed.${charList}`;
+            errorDiv.style.display = 'block';
+            slugInput.style.borderColor = '#dc2626';
+            return false;
+        } else {
+            // Valid slug
+            errorDiv.style.display = 'none';
+            slugInput.style.borderColor = '#10b981'; // Green border for valid
+            return true;
+        }
+    }
+
+    // Make function globally accessible
+    window.validateProjectSlug = validateProjectSlug;
+
+    /**
+     * Validate maximum participants field (project) in real-time
+     *
+     * BUSINESS CONTEXT:
+     * Maximum participants must be a positive integer (whole number).
+     * Provides immediate feedback when users enter invalid data.
+     *
+     * TECHNICAL IMPLEMENTATION:
+     * - Checks if value is a positive integer
+     * - Shows error for negative numbers, decimals, or non-numeric input
+     * - Provides visual feedback (red/green border)
+     *
+     * USAGE:
+     * Called automatically when user types in project max participants field
+     */
+    function validateMaxParticipants() {
+        const input = document.getElementById('projectMaxParticipants');
+        const errorDiv = document.getElementById('projectMaxParticipantsError');
+
+        if (!input || !errorDiv) return true;
+
+        // Check for invalid input first (e.g., non-numeric characters in type="number" field)
+        if (input.validity.badInput) {
+            errorDiv.textContent = 'Invalid input - please enter numbers only';
+            errorDiv.style.display = 'block';
+            input.style.borderColor = '#dc2626';
+            return false;
+        }
+
+        const value = input.value.trim();
+
+        // Empty is allowed (unlimited capacity)
+        if (!value) {
+            errorDiv.style.display = 'none';
+            input.style.borderColor = '';
+            return true;
+        }
+
+        // Check if it's a valid positive integer
+        const num = Number(value);
+        const isValid = !isNaN(num) && num > 0 && Number.isInteger(num);
+
+        if (!isValid) {
+            let errorMsg = 'Must be a positive whole number (e.g., 10, 25, 50)';
+
+            if (num <= 0) {
+                errorMsg = 'Must be greater than 0';
+            } else if (!Number.isInteger(num)) {
+                errorMsg = 'Must be a whole number (no decimals)';
+            }
+
+            errorDiv.textContent = errorMsg;
+            errorDiv.style.display = 'block';
+            input.style.borderColor = '#dc2626';
+            return false;
+        } else {
+            errorDiv.style.display = 'none';
+            input.style.borderColor = '#10b981'; // Green border for valid
+            return true;
+        }
+    }
+
+    // Make function globally accessible
+    window.validateMaxParticipants = validateMaxParticipants;
+
+    /**
+     * Validate maximum participants field (location) in real-time
+     *
+     * BUSINESS CONTEXT:
+     * Location maximum participants must be a positive integer.
+     * Same validation logic as project max participants.
+     *
+     * USAGE:
+     * Called automatically when user types in location max participants field
+     */
+    function validateLocationMaxParticipants() {
+        const input = document.getElementById('locationMaxParticipants');
+        const errorDiv = document.getElementById('locationMaxParticipantsError');
+
+        if (!input || !errorDiv) return true;
+
+        // Check for invalid input first (e.g., non-numeric characters in type="number" field)
+        if (input.validity.badInput) {
+            errorDiv.textContent = 'Invalid input - please enter numbers only';
+            errorDiv.style.display = 'block';
+            input.style.borderColor = '#dc2626';
+            return false;
+        }
+
+        const value = input.value.trim();
+
+        // Empty is allowed (unlimited capacity)
+        if (!value) {
+            errorDiv.style.display = 'none';
+            input.style.borderColor = '';
+            return true;
+        }
+
+        // Check if it's a valid positive integer
+        const num = Number(value);
+        const isValid = !isNaN(num) && num > 0 && Number.isInteger(num);
+
+        if (!isValid) {
+            let errorMsg = 'Must be a positive whole number (e.g., 10, 25, 50)';
+
+            if (num <= 0) {
+                errorMsg = 'Must be greater than 0';
+            } else if (!Number.isInteger(num)) {
+                errorMsg = 'Must be a whole number (no decimals)';
+            }
+
+            errorDiv.textContent = errorMsg;
+            errorDiv.style.display = 'block';
+            input.style.borderColor = '#dc2626';
+            return false;
+        } else {
+            errorDiv.style.display = 'none';
+            input.style.borderColor = '#10b981'; // Green border for valid
+            return true;
+        }
+    }
+
+    // Make function globally accessible
+    window.validateLocationMaxParticipants = validateLocationMaxParticipants;
+
+    /**
+     * Validate locationTrackMaxStudents field (real-time validation)
+     *
+     * BUSINESS PURPOSE:
+     * Provides immediate feedback when user enters max students for a location track
+     * Ensures value is a positive whole number greater than 0 (required field)
+     *
+     * VALIDATION RULES:
+     * - Required (cannot be empty)
+     * - Must be positive integer > 0
+     * - No decimals allowed
+     */
+    function validateLocationTrackMaxStudents() {
+        const input = document.getElementById('locationTrackMaxStudents');
+        const errorDiv = input ? input.nextElementSibling : null;
+
+        if (!input || !errorDiv) return true;
+
+        const value = input.value.trim();
+
+        // Required field - cannot be empty
+        if (!value) {
+            errorDiv.textContent = 'Maximum number of students is required';
+            errorDiv.style.display = 'block';
+            input.style.borderColor = '#dc2626';
+            return false;
+        }
+
+        // Check if it's a valid positive integer
+        const num = Number(value);
+        const isValid = !isNaN(num) && num > 0 && Number.isInteger(num);
+
+        if (!isValid) {
+            let errorMsg = 'Must be a positive whole number (e.g., 10, 25, 50)';
+
+            if (num <= 0) {
+                errorMsg = 'Must be greater than 0';
+            } else if (!Number.isInteger(num)) {
+                errorMsg = 'Must be a whole number (no decimals)';
+            }
+
+            errorDiv.textContent = errorMsg;
+            errorDiv.style.display = 'block';
+            input.style.borderColor = '#dc2626';
+            return false;
+        } else {
+            errorDiv.style.display = 'none';
+            errorDiv.textContent = '';
+            input.style.borderColor = '#10b981'; // Green border for valid
+            return true;
+        }
+    }
+
+    // Make function globally accessible
+    window.validateLocationTrackMaxStudents = validateLocationTrackMaxStudents;
+
+    /**
+     * Validate editLocationTrackMaxStudents field (real-time validation for edit modal)
+     *
+     * BUSINESS PURPOSE:
+     * Provides immediate feedback when user edits max students for an existing location track
+     * Ensures value is a positive whole number greater than 0 (required field)
+     *
+     * VALIDATION RULES:
+     * - Required (cannot be empty)
+     * - Must be positive integer > 0
+     * - No decimals allowed
+     */
+    function validateEditLocationTrackMaxStudents() {
+        const input = document.getElementById('editLocationTrackMaxStudents');
+        const errorDiv = input ? input.nextElementSibling : null;
+
+        if (!input || !errorDiv) return true;
+
+        const value = input.value.trim();
+
+        // Required field - cannot be empty
+        if (!value) {
+            errorDiv.textContent = 'Maximum number of students is required';
+            errorDiv.style.display = 'block';
+            input.style.borderColor = '#dc2626';
+            return false;
+        }
+
+        // Check if it's a valid positive integer
+        const num = Number(value);
+        const isValid = !isNaN(num) && num > 0 && Number.isInteger(num);
+
+        if (!isValid) {
+            let errorMsg = 'Must be a positive whole number (e.g., 10, 25, 50)';
+
+            if (num <= 0) {
+                errorMsg = 'Must be greater than 0';
+            } else if (!Number.isInteger(num)) {
+                errorMsg = 'Must be a whole number (no decimals)';
+            }
+
+            errorDiv.textContent = errorMsg;
+            errorDiv.style.display = 'block';
+            input.style.borderColor = '#dc2626';
+            return false;
+        } else {
+            errorDiv.style.display = 'none';
+            errorDiv.textContent = '';
+            input.style.borderColor = '#10b981'; // Green border for valid
+            return true;
+        }
+    }
+
+    // Make function globally accessible
+    window.validateEditLocationTrackMaxStudents = validateEditLocationTrackMaxStudents;
+    </script>
+
     <!-- Navigation System Module (Wave 4) -->
     <script type="module" src="../js/modules/navigation-system.js"></script>
 
-    <!-- Cohort Wizard Module (Wave 5 - WizardFramework) -->
-    <script type="module" src="../js/modules/cohort-wizard.js"></script>
+    <!-- Locations Wizard Module (Wave 5 - WizardFramework) -->
+    <script type="module" src="../js/modules/locations-wizard.js"></script>
 
     <!-- Tracks CRUD Module (TDD Implementation - Matches course_creator.tracks Schema) -->
     <script type="module" src="../js/modules/org-admin/tracks-crud.js"></script>
 
+    <!-- Course Management Module (TDD Implementation - Course Creation with Locations) -->
+    <script type="module" src="../js/modules/org-admin-courses.js"></script>
+
+    <!-- Scheduling Module (TDD Implementation - Instructor Scheduling with Conflict Detection) -->
+    <script type="module" src="../js/modules/org-admin-scheduling.js"></script>
+
+    <!-- Help System Module (Comprehensive Help with AI Integration) -->
+    <script type="module" src="../js/modules/help-system.js"></script>
+
+    <!-- AI Assistant Chat Widget -->
+    <button class="ai-chat-toggle" id="ai-chat-toggle" onclick="toggleAIChat()">
+        🤖 AI Assistant
+    </button>
+
+    <div class="ai-chat-panel" id="ai-chat-panel">
+        <div class="ai-chat-header">
+            <span>🤖 AI Project Assistant</span>
+            <button class="ai-chat-close" onclick="toggleAIChat()">×</button>
+        </div>
+
+        <div class="ai-quick-actions">
+            <button class="ai-quick-action" onclick="sendQuickQuestion('Help me create a training project')">
+                💡 Project ideas
+            </button>
+            <button class="ai-quick-action" onclick="sendQuickQuestion('Suggest learning tracks')">
+                📚 Suggest tracks
+            </button>
+            <button class="ai-quick-action" onclick="sendQuickQuestion('Best practices for multi-locations projects')">
+                🌍 Multi-locations tips
+            </button>
+        </div>
+
+        <div class="ai-chat-messages" id="ai-chat-messages">
+            <div class="ai-message assistant">
+                <div class="ai-message-bubble">
+                    👋 Hi! I'm your AI project assistant. I can help you with:
+                    <br><br>
+                    • <strong>Project planning</strong> and structure
+                    <br>
+                    • <strong>Learning track</strong> recommendations
+                    <br>
+                    • <strong>Multi-locations</strong> project setup
+                    <br>
+                    • <strong>Best practices</strong> for training programs
+                    <br><br>
+                    Just ask me anything about creating your project!
+                </div>
+            </div>
+            <div class="ai-typing" id="ai-typing" style="display: none;">
+                <div class="ai-typing-dots">
+                    <div class="ai-typing-dot"></div>
+                    <div class="ai-typing-dot"></div>
+                    <div class="ai-typing-dot"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ai-chat-input-container">
+            <input type="text"
+                   class="ai-chat-input"
+                   id="ai-chat-input"
+                   placeholder="Ask me anything about projects..."
+                   onkeypress="handleAIChatKeypress(event)">
+            <button class="ai-chat-send" id="ai-chat-send" onclick="sendAIMessage()">
+                Send
+            </button>
+        </div>
+    </div>
+
+    <style>
+        /* AI Chat Widget Styles */
+        .ai-chat-toggle {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            padding: 1rem 1.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            z-index: 9999;
+        }
+
+        .ai-chat-toggle:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+        }
+
+        .ai-chat-toggle.active {
+            background: #ef4444;
+        }
+
+        .ai-chat-panel {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 400px;
+            height: 600px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            display: none;
+            flex-direction: column;
+            z-index: 9998;
+        }
+
+        .ai-chat-panel.active {
+            display: flex;
+        }
+
+        .ai-chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 12px 12px 0 0;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .ai-chat-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+
+        .ai-chat-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .ai-quick-actions {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            border-bottom: 1px solid #e5e7eb;
+            flex-wrap: wrap;
+        }
+
+        .ai-quick-action {
+            padding: 0.5rem 0.75rem;
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .ai-quick-action:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .ai-chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .ai-message {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .ai-message.assistant {
+            flex-direction: row;
+        }
+
+        .ai-message.user {
+            flex-direction: row-reverse;
+        }
+
+        .ai-message-bubble {
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            max-width: 80%;
+        }
+
+        .ai-message.assistant .ai-message-bubble {
+            background: #f3f4f6;
+            color: #1f2937;
+        }
+
+        .ai-message.user .ai-message-bubble {
+            background: #667eea;
+            color: white;
+        }
+
+        .ai-typing {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .ai-typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .ai-typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #9ca3af;
+            border-radius: 50%;
+            animation: aiTyping 1.4s infinite;
+        }
+
+        .ai-typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .ai-typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes aiTyping {
+            0%, 60%, 100% {
+                opacity: 0.3;
+                transform: translateY(0);
+            }
+            30% {
+                opacity: 1;
+                transform: translateY(-10px);
+            }
+        }
+
+        .ai-chat-input-container {
+            display: flex;
+            gap: 0.5rem;
+            padding: 1rem;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .ai-chat-input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.875rem;
+        }
+
+        .ai-chat-send {
+            padding: 0.75rem 1.5rem;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .ai-chat-send:hover {
+            background: #5568d3;
+        }
+
+        /* Project Summary Popup Styles */
+        .summary-toggle-container {
+            margin: 1rem 0;
+            text-align: center;
+        }
+
+        .btn-outline-small {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-outline-small:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .project-summary-popup {
+            position: fixed;
+            bottom: 30px;
+            right: 120px;
+            width: 320px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            z-index: 9500;
+            animation: slideInRight 0.3s ease;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .project-summary-popup-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .project-summary-popup-title {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .project-summary-close-btn {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            transition: transform 0.2s;
+        }
+
+        .project-summary-close-btn:hover {
+            transform: scale(1.2);
+        }
+
+        .project-summary-popup-body {
+            padding: 1.5rem;
+        }
+
+        .project-summary-stat {
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .project-summary-stat:last-child {
+            margin-bottom: 0;
+        }
+
+        .project-summary-stat-label {
+            font-size: 0.85rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .project-summary-stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .project-summary-stat-value--primary {
+            color: #667eea;
+        }
+
+        .project-summary-stat-value--success {
+            color: #10b981;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .project-summary-popup {
+                right: 10px;
+                left: 10px;
+                width: auto;
+            }
+        }
+    </style>
+
+    <!-- AI Assistant Integration Module -->
+    <script type="module">
+        import { initializeAIAssistant, sendContextAwareMessage, CONTEXT_TYPES } from '../js/modules/ai-assistant.js';
+        import { escapeHtml } from '../js/modules/org-admin-utils.js';
+
+        /**
+         * AI Chat Functions
+         *
+         * BUSINESS CONTEXT:
+         * Provides an AI-powered assistant for project creation with context awareness,
+         * RAG integration, and intelligent suggestions based on the knowledge base.
+         */
+
+        // Initialize AI Assistant on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get current organization and project context
+            const orgId = window.currentOrganizationId || null;
+
+            // Initialize with PROJECT_CREATION context
+            initializeAIAssistant(CONTEXT_TYPES.PROJECT_CREATION, {
+                organizationId: orgId,
+                contextType: 'org_admin_dashboard'
+            });
+
+            console.log('✅ AI Assistant initialized for org-admin dashboard');
+
+            // Initialize Help System with keyboard shortcuts and AI integration
+            if (window.HelpSystem && window.HelpSystem.initializeHelpSystem) {
+                window.HelpSystem.initializeHelpSystem();
+                console.log('✅ Help System initialized with AI integration and F1 keyboard shortcut');
+            }
+        });
+
+        window.toggleAIChat = function() {
+            const toggle = document.getElementById('ai-chat-toggle');
+            const panel = document.getElementById('ai-chat-panel');
+
+            toggle.classList.toggle('active');
+            panel.classList.toggle('active');
+
+            // Focus input when opening
+            if (panel.classList.contains('active')) {
+                document.getElementById('ai-chat-input').focus();
+            }
+        };
+
+        window.sendQuickQuestion = function(question) {
+            const input = document.getElementById('ai-chat-input');
+            input.value = question;
+            window.sendAIMessage();
+        };
+
+        window.handleAIChatKeypress = function(event) {
+            if (event.key === 'Enter') {
+                window.sendAIMessage();
+            }
+        };
+
+        window.sendAIMessage = async function() {
+            const input = document.getElementById('ai-chat-input');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            // Add user message to chat
+            const messagesContainer = document.getElementById('ai-chat-messages');
+            const userMessage = document.createElement('div');
+            userMessage.className = 'ai-message user';
+            userMessage.innerHTML = `<div class="ai-message-bubble">${escapeHtml(message)}</div>`;
+            messagesContainer.appendChild(userMessage);
+
+            // Clear input
+            input.value = '';
+
+            // Show typing indicator
+            const typing = document.getElementById('ai-typing');
+            typing.style.display = 'flex';
+
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+            try {
+                /**
+                 * WHY USE sendContextAwareMessage:
+                 * - Integrates with RAG knowledge base
+                 * - Provides NLP preprocessing for better intent detection
+                 * - Includes metadata service fuzzy search
+                 * - Queries knowledge graph for relationships
+                 * - Falls back gracefully if AI service is unavailable
+                 */
+                const response = await sendContextAwareMessage(message, {
+                    forceWebSearch: false // Only use web search if detected as needed
+                });
+
+                // Hide typing indicator
+                typing.style.display = 'none';
+
+                // Display AI response
+                const assistantMessage = document.createElement('div');
+                assistantMessage.className = 'ai-message assistant';
+
+                let responseHTML = `<div class="ai-message-bubble">${escapeHtml(response.message)}`;
+
+                // Add suggestions if available
+                if (response.suggestions && response.suggestions.length > 0) {
+                    responseHTML += '<br><br><strong>Suggestions:</strong><ul style="margin: 0.5rem 0; padding-left: 1.5rem;">';
+                    response.suggestions.forEach(suggestion => {
+                        responseHTML += `<li>${escapeHtml(suggestion)}</li>`;
+                    });
+                    responseHTML += '</ul>';
+                }
+
+                // Add metadata if web search was used
+                if (response.webSearchUsed) {
+                    responseHTML += '<br><small style="opacity: 0.7;">🌐 Included web research</small>';
+                }
+
+                responseHTML += '</div>';
+                assistantMessage.innerHTML = responseHTML;
+
+                messagesContainer.appendChild(assistantMessage);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+                console.log('✅ AI response received:', {
+                    suggestions: response.suggestions?.length || 0,
+                    webSearchUsed: response.webSearchUsed,
+                    ragSources: response.ragSources?.length || 0
+                });
+
+            } catch (error) {
+                // Hide typing indicator
+                typing.style.display = 'none';
+
+                // Show error message
+                const errorMessage = document.createElement('div');
+                errorMessage.className = 'ai-message assistant';
+                errorMessage.innerHTML = `
+                    <div class="ai-message-bubble" style="background: #fee2e2; color: #991b1b;">
+                        ⚠️ I encountered an error processing your request. Please try again.
+                        <br><small>${escapeHtml(error.message)}</small>
+                    </div>
+                `;
+                messagesContainer.appendChild(errorMessage);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+                console.error('❌ AI chat error:', error);
+            }
+        };
+    </script>
+
     <!-- Modular JavaScript Architecture -->
-    <script type="module" src="../js/org-admin-main.js?v=20251017-fix-projects-endpoint"></script>
-    <script src="../js/focus-manager.js?v=20251017-fix-projects-endpoint"></script>
+    <script type="module" src="../js/org-admin-main.js?v=20251019-location-safe-clear"></script>
+    <script src="../js/focus-manager.js?v=20251019-location-safe-clear"></script>
 
 </body>
 </html>

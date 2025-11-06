@@ -52,7 +52,23 @@ def get_chat_generator() -> ChatGenerator:
 
     if chat_generator is None:
         if ai_client is None:
-            ai_client = AIClient()
+            # Create minimal config for AIClient
+            from omegaconf import OmegaConf
+            import os
+
+            config = OmegaConf.create({
+                'ai': {
+                    'anthropic': {
+                        'api_key': os.getenv('ANTHROPIC_API_KEY', ''),
+                        'default_model': 'claude-3-sonnet-20240229',
+                        'max_tokens': 4000,
+                        'temperature': 0.7,
+                        'timeout': 30.0,
+                        'max_retries': 3
+                    }
+                }
+            })
+            ai_client = AIClient(config)
         chat_generator = ChatGenerator(ai_client)
 
     return chat_generator

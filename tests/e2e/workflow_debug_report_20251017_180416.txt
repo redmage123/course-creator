@@ -1,0 +1,119 @@
+
+============================================================
+AUTOMATED WORKFLOW DEBUGGING REPORT
+============================================================
+
+Generated: 2025-10-17T18:04:16.507300
+Base URL: https://localhost:3000
+Workflow Attempts: 5
+Workflow Complete: ❌ NO
+
+📊 ERRORS DETECTED: 30
+
+Error Summary:
+  1. [SEVERE] https://localhost:3000/api/v1/organizations/550e8400-e29b-41d4-a716-446655440000 - Failed to load re...
+  2. [SEVERE] https://localhost:3000/js/modules/org-admin-api.js 95:16 "Error fetching organization:" Error: Faile...
+  3. [SEVERE] https://localhost:3000/js/modules/org-admin-core.js 124:16 "💥 Error initializing dashboard:" Error: ...
+  4. [SEVERE] https://localhost:3000/js/modules/org-admin-core.js 125:16 "💥 Error stack:" "Error: Failed to fetch ...
+  5. [SEVERE] https://localhost:3000/js/modules/org-admin-core.js 126:16 "💥 Current user:" Object...
+  6. [SEVERE] https://localhost:3000/js/modules/org-admin-core.js 127:16 "💥 Org ID from URL:" "550e8400-e29b-41d4-...
+  7. [SEVERE] https://localhost:3000/api/v1/organizations/550e8400-e29b-41d4-a716-446655440000 - Failed to load re...
+  8. [SEVERE] https://localhost:3000/js/modules/org-admin-api.js 95:16 "Error fetching organization:" Error: Faile...
+  9. [SEVERE] https://localhost:3000/js/modules/org-admin-core.js 124:16 "💥 Error initializing dashboard:" Error: ...
+  10. [SEVERE] https://localhost:3000/js/modules/org-admin-core.js 125:16 "💥 Error stack:" "Error: Failed to fetch ...
+
+🔧 FIXES APPLIED: 45
+
+Fix Summary:
+  1. Network error identified - may be service connectivity issue
+      Success: ✅
+  2. Network error identified - may be service connectivity issue
+      Success: ✅
+  3. Network error identified - may be service connectivity issue
+      Success: ✅
+  4. Network error identified - may be service connectivity issue
+      Success: ✅
+  5. Network error identified - may be service connectivity issue
+      Success: ✅
+  6. Network error identified - may be service connectivity issue
+      Success: ✅
+  7. Network error identified - may be service connectivity issue
+      Success: ✅
+  8. Network error identified - may be service connectivity issue
+      Success: ✅
+  9. Network error identified - may be service connectivity issue
+      Success: ✅
+  10. Network error identified - may be service connectivity issue
+      Success: ✅
+  11. Network error identified - may be service connectivity issue
+      Success: ✅
+  12. Network error identified - may be service connectivity issue
+      Success: ✅
+  13. Network error identified - may be service connectivity issue
+      Success: ✅
+  14. Network error identified - may be service connectivity issue
+      Success: ✅
+  15. Network error identified - may be service connectivity issue
+      Success: ✅
+  16. Network error identified - may be service connectivity issue
+      Success: ✅
+  17. Network error identified - may be service connectivity issue
+      Success: ✅
+  18. Network error identified - may be service connectivity issue
+      Success: ✅
+  19. Network error identified - may be service connectivity issue
+      Success: ✅
+  20. Network error identified - may be service connectivity issue
+      Success: ✅
+  21. Network error identified - may be service connectivity issue
+      Success: ✅
+  22. Network error identified - may be service connectivity issue
+      Success: ✅
+  23. Network error identified - may be service connectivity issue
+      Success: ✅
+  24. Network error identified - may be service connectivity issue
+      Success: ✅
+  25. Network error identified - may be service connectivity issue
+      Success: ✅
+  26. Network error identified - may be service connectivity issue
+      Success: ✅
+  27. Network error identified - may be service connectivity issue
+      Success: ✅
+  28. Network error identified - may be service connectivity issue
+      Success: ✅
+  29. Network error identified - may be service connectivity issue
+      Success: ✅
+  30. Network error identified - may be service connectivity issue
+      Success: ✅
+  31. Network error identified - may be service connectivity issue
+      Success: ✅
+  32. Network error identified - may be service connectivity issue
+      Success: ✅
+  33. Network error identified - may be service connectivity issue
+      Success: ✅
+  34. Network error identified - may be service connectivity issue
+      Success: ✅
+  35. Network error identified - may be service connectivity issue
+      Success: ✅
+  36. Network error identified - may be service connectivity issue
+      Success: ✅
+  37. Network error identified - may be service connectivity issue
+      Success: ✅
+  38. Network error identified - may be service connectivity issue
+      Success: ✅
+  39. Network error identified - may be service connectivity issue
+      Success: ✅
+  40. Network error identified - may be service connectivity issue
+      Success: ✅
+  41. Network error identified - may be service connectivity issue
+      Success: ✅
+  42. Network error identified - may be service connectivity issue
+      Success: ✅
+  43. Network error identified - may be service connectivity issue
+      Success: ✅
+  44. Network error identified - may be service connectivity issue
+      Success: ✅
+  45. Network error identified - may be service connectivity issue
+      Success: ✅
+
+============================================================

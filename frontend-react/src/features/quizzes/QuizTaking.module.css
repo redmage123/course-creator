@@ -1,0 +1,285 @@
+/**
+ * Quiz Taking Styles
+ */
+
+.quizContainer {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+.loadingContainer,
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  gap: 20px;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #e0e0e0;
+  border-top-color: #007acc;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.errorContainer h2 {
+  color: #d32f2f;
+}
+
+.quizHeader {
+  background: #ffffff;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.quizInfo {
+  flex: 1;
+}
+
+.quizInfo h1 {
+  margin: 0 0 12px 0;
+  font-size: 1.8rem;
+  color: #1e1e1e;
+}
+
+.quizDescription {
+  margin: 0;
+  color: #666666;
+  line-height: 1.6;
+}
+
+.progressSection {
+  background: #ffffff;
+  padding: 16px 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+}
+
+.progressBar {
+  width: 100%;
+  height: 12px;
+  background: #e0e0e0;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #007acc, #00a0ff);
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+.progressText {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: #666666;
+}
+
+.questionSection {
+  background: #ffffff;
+  padding: 32px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+  min-height: 300px;
+}
+
+.navigationSection {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.navigationCenter {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.questionIndicator {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e1e1e;
+}
+
+.questionGrid {
+  background: #ffffff;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.questionGrid h3 {
+  margin: 0 0 16px 0;
+  font-size: 1rem;
+  color: #1e1e1e;
+}
+
+.questionButtons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+  gap: 8px;
+}
+
+.questionButton {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 2px solid #e0e0e0;
+  background: #ffffff;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #666666;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.questionButton:hover {
+  border-color: #007acc;
+  background: #f0f8ff;
+}
+
+.questionButton.active {
+  border-color: #007acc;
+  background: #007acc;
+  color: #ffffff;
+}
+
+.questionButton.answered {
+  border-color: #4caf50;
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.questionButton.answered.active {
+  background: #4caf50;
+  color: #ffffff;
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background: #ffffff;
+  padding: 32px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  max-width: 500px;
+  width: 90%;
+}
+
+.modalContent h2 {
+  margin: 0 0 16px 0;
+  font-size: 1.5rem;
+  color: #1e1e1e;
+}
+
+.modalContent p {
+  margin: 0 0 16px 0;
+  color: #666666;
+  line-height: 1.6;
+}
+
+.warningText {
+  color: #ff9800 !important;
+  font-weight: 600;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .quizContainer {
+    padding: 16px;
+  }
+
+  .quizHeader {
+    flex-direction: column;
+    padding: 16px;
+  }
+
+  .quizInfo h1 {
+    font-size: 1.5rem;
+  }
+
+  .questionSection {
+    padding: 20px;
+  }
+
+  .navigationSection {
+    flex-wrap: wrap;
+  }
+
+  .questionButtons {
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+    gap: 6px;
+  }
+
+  .modalContent {
+    padding: 24px;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .quizHeader,
+  .progressSection,
+  .questionSection,
+  .questionGrid {
+    border: 2px solid #000000;
+  }
+
+  .questionButton {
+    border-width: 3px;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  .progressFill,
+  .questionButton,
+  .spinner {
+    animation: none;
+    transition: none;
+  }
+}

@@ -452,19 +452,41 @@ class MembershipService:
     async def _check_permission_direct(self, user_id: UUID, organization_id: UUID, permission: Permission) -> bool:
         """
         Direct permission check without caching (original implementation).
-        
+
         This method contains the original permission checking logic moved from
         check_user_permission to support the caching implementation.
+
+        BUSINESS CONTEXT:
+        The DAO returns a dictionary with membership data, which must be converted
+        to domain entities for permission checking. The role string from the database
+        is converted to RoleType enum, then to EnhancedRole object with permissions.
         """
         try:
-            membership = await self._organization_dao.get_user_membership(
+            # Get membership dictionary from DAO
+            membership_dict = await self._organization_dao.get_user_membership(
                 user_id, organization_id
             )
 
-            if not membership or not membership.is_active():
+            # Check if membership exists and is active
+            if not membership_dict or not membership_dict.get('is_active', False):
                 return False
 
-            return membership.role.has_permission(permission)
+            # Convert role string to RoleType enum
+            role_str = membership_dict.get('role', '')
+            try:
+                role_type = RoleType(role_str)
+            except ValueError:
+                self._logger.error(f"Invalid role type: {role_str}")
+                return False
+
+            # Create EnhancedRole with default permissions for the role type
+            enhanced_role = EnhancedRole(
+                role_type=role_type,
+                organization_id=organization_id
+            )
+
+            # Check if the role has the required permission
+            return enhanced_role.has_permission(permission)
 
         except Exception as e:
             self._logger.error(f"Failed to check user permission: {e}")

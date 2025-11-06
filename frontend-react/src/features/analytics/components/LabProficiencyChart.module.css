@@ -1,0 +1,113 @@
+/**
+ * LabProficiencyChart Component Styles
+ */
+
+.chartContainer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.chartWrapper {
+  width: 100%;
+  max-width: 500px;
+  height: 400px;
+  position: relative;
+  margin: 0 auto;
+}
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  color: #999;
+  font-size: 14px;
+}
+
+.legend {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #666;
+}
+
+.legendDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: block;
+}
+
+.skillsList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.skillItem {
+  padding: 12px;
+  background: #f9f9f9;
+  border-radius: 6px;
+}
+
+.skillHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.skillName {
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+.skillValue {
+  font-weight: 700;
+  color: #9c27b0;
+  font-size: 14px;
+}
+
+.progressBar {
+  width: 100%;
+  height: 8px;
+  background: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.skillMeta {
+  font-size: 12px;
+  color: #666;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .chartWrapper {
+    max-width: 100%;
+    height: 350px;
+  }
+
+  .skillsList {
+    gap: 12px;
+  }
+}

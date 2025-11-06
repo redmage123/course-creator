@@ -27,6 +27,11 @@ from uuid import uuid4
 from datetime import datetime
 from fastapi.testclient import TestClient
 from unittest.mock import Mock, patch, MagicMock
+import sys
+from pathlib import Path
+
+# Add organization-management to path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / 'services' / 'organization-management'))
 
 # Import test base
 from base_test import BaseServiceTest

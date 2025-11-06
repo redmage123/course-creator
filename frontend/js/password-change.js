@@ -35,8 +35,12 @@
  * - Accessibility compliance with ARIA labels and keyboard navigation
  * - Integration with platform authentication and session management
  */
-
 class PasswordChangeManager {
+    /**
+     * INITIALIZE CLASS INSTANCE WITH DEFAULT STATE
+     * PURPOSE: Initialize class instance with default state
+     * WHY: Establishes initial state required for class functionality
+     */
     constructor() {
         this.form = document.getElementById('passwordChangeForm');
         this.submitBtn = document.getElementById('submitBtn');
@@ -45,6 +49,11 @@ class PasswordChangeManager {
         this.init();
     }
 
+    /**
+     * INITIALIZE  COMPONENT
+     * PURPOSE: Initialize  component
+     * WHY: Proper initialization ensures component reliability and correct state
+     */
     init() {
         /**
          * Initialize password change functionality
@@ -54,6 +63,11 @@ class PasswordChangeManager {
         this.initializeValidation();
     }
 
+    /**
+     * INITIALIZE EVENT LISTENERS COMPONENT
+     * PURPOSE: Initialize event listeners component
+     * WHY: Proper initialization ensures component reliability and correct state
+     */
     initializeEventListeners() {
         /**
          * Set up form event listeners
@@ -68,6 +82,11 @@ class PasswordChangeManager {
         });
     }
 
+    /**
+     * INITIALIZE PASSWORD FIELDS COMPONENT
+     * PURPOSE: Initialize password fields component
+     * WHY: Proper initialization ensures component reliability and correct state
+     */
     initializePasswordFields() {
         /**
          * Initialize password-specific functionality
@@ -89,6 +108,11 @@ class PasswordChangeManager {
         }
     }
 
+    /**
+     * INITIALIZE VALIDATION COMPONENT
+     * PURPOSE: Initialize validation component
+     * WHY: Proper initialization ensures component reliability and correct state
+     */
     initializeValidation() {
         /**
          * Set up form validation rules
@@ -96,6 +120,13 @@ class PasswordChangeManager {
         // No additional setup needed for now
     }
 
+    /**
+     * EXECUTE CHECKPASSWORDSTRENGTH OPERATION
+     * PURPOSE: Execute checkPasswordStrength operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} password - Password parameter
+     */
     checkPasswordStrength(password) {
         /**
          * Check and display password strength
@@ -146,6 +177,15 @@ class PasswordChangeManager {
         strengthElement.appendChild(strengthBar);
     }
 
+    /**
+     * EXECUTE CALCULATEPASSWORDSTRENGTH OPERATION
+     * PURPOSE: Execute calculatePasswordStrength operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} password - Password parameter
+     *
+     * @returns {number} Calculated value
+     */
     calculatePasswordStrength(password) {
         /**
          * Calculate password strength score and provide feedback
@@ -180,6 +220,15 @@ class PasswordChangeManager {
         return { score, feedback };
     }
 
+    /**
+     * VALIDATE PASSWORD MATCH INPUT
+     * PURPOSE: Validate password match input
+     * WHY: Ensures data integrity and prevents invalid states
+     *
+     * @returns {boolean} True if validation passes, false otherwise
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     validatePasswordMatch() {
         /**
          * Validate that new passwords match
@@ -207,6 +256,17 @@ class PasswordChangeManager {
         }
     }
 
+    /**
+     * VALIDATE FIELD INPUT
+     * PURPOSE: Validate field input
+     * WHY: Ensures data integrity and prevents invalid states
+     *
+     * @param {*} field - Field parameter
+     *
+     * @returns {boolean} True if validation passes, false otherwise
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     validateField(field) {
         /**
          * Validate individual field
@@ -264,6 +324,15 @@ class PasswordChangeManager {
         return true;
     }
 
+    /**
+     * VALIDATE FORM INPUT
+     * PURPOSE: Validate form input
+     * WHY: Ensures data integrity and prevents invalid states
+     *
+     * @returns {boolean} True if validation passes, false otherwise
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     validateForm() {
         /**
          * Validate entire form
@@ -287,6 +356,17 @@ class PasswordChangeManager {
         return isValid;
     }
 
+    /**
+     * HANDLE SUBMIT EVENT
+     * PURPOSE: Handle submit event
+     * WHY: Encapsulates event handling logic for better code organization
+     *
+     * @param {Event} event - Event object
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async handleSubmit(event) {
         /**
          * Handle form submission
@@ -347,6 +427,13 @@ class PasswordChangeManager {
         }
     }
 
+    /**
+     * RETRIEVE AUTH TOKEN INFORMATION
+     * PURPOSE: Retrieve auth token information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
     getAuthToken() {
         /**
          * Get authentication token from session storage or local storage
@@ -356,6 +443,13 @@ class PasswordChangeManager {
                '';
     }
 
+    /**
+     * DISPLAY SUCCESS INTERFACE
+     * PURPOSE: Display success interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {Object} data - Data object
+     */
     showSuccess(data) {
         /**
          * Show success message and hide form
@@ -374,6 +468,14 @@ class PasswordChangeManager {
         }, 3000);
     }
 
+    /**
+     * DISPLAY FIELD ERROR INTERFACE
+     * PURPOSE: Display field error interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {string|number} fieldId - Fieldid parameter
+     * @param {*} message - Message parameter
+     */
     showFieldError(fieldId, message) {
         /**
          * Show error message for a specific field
@@ -385,6 +487,13 @@ class PasswordChangeManager {
         }
     }
 
+    /**
+     * EXECUTE CLEARFIELDERROR OPERATION
+     * PURPOSE: Execute clearFieldError operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} fieldId - Fieldid parameter
+     */
     clearFieldError(fieldId) {
         /**
          * Clear error message for a specific field
@@ -396,6 +505,13 @@ class PasswordChangeManager {
         }
     }
 
+    /**
+     * DISPLAY GENERAL ERROR INTERFACE
+     * PURPOSE: Display general error interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} message - Message parameter
+     */
     showGeneralError(message) {
         /**
          * Show general form error
@@ -426,6 +542,15 @@ class PasswordChangeManager {
         }, 10000);
     }
 
+    /**
+     * SET SUBMIT LOADING VALUE
+     * PURPOSE: Set submit loading value
+     * WHY: Maintains data integrity through controlled mutation
+     *
+     * @param {*} loading - Loading parameter
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     setSubmitLoading(loading) {
         /**
          * Set loading state for submit button

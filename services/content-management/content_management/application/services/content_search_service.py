@@ -1,6 +1,40 @@
 """
-Content Search Application Service
+Content Search Application Service - Educational Content Discovery and Search
 Single Responsibility: Handle content search and discovery operations
+
+This service implements comprehensive educational content search capabilities including
+full-text search, tag-based filtering, trending content analysis, and personalized
+content recommendations for enhanced educational content discovery.
+
+EDUCATIONAL SEARCH CAPABILITIES:
+================================
+
+Content Discovery Framework:
+- **Multi-Type Search**: Unified search across syllabi, slides, quizzes, exercises, and labs
+- **Relevance Ranking**: Educational content prioritization based on search context
+- **Faceted Search**: Educational taxonomy and classification-based filtering
+- **Personalization**: Student-specific content recommendations and discovery
+
+Search Optimization:
+- **Performance**: Efficient search indexing and query optimization for large content catalogs
+- **Accuracy**: Relevance scoring and educational content quality ranking
+- **Scalability**: Distributed search architecture for institutional scale
+- **Analytics**: Search pattern analysis for content improvement insights
+
+BUSINESS LOGIC IMPLEMENTATION:
+===============================
+
+Why This Service Exists:
+- **Content Discovery**: Students and instructors need efficient ways to find relevant educational materials
+- **Learning Path Optimization**: Recommends next steps and related content for personalized learning
+- **Resource Utilization**: Helps identify underutilized content and optimization opportunities
+- **Educational Effectiveness**: Trending content analysis reveals high-impact educational materials
+
+Service Responsibilities:
+- **Search Operations**: Orchestrates comprehensive content search across multiple criteria
+- **Recommendation Engine**: Generates personalized content suggestions based on context
+- **Trending Analysis**: Identifies popular and effective educational content
+- **Tag Management**: Provides tag-based content organization and discovery
 """
 from typing import List, Optional, Dict, Any
 
@@ -11,20 +45,103 @@ from content_management.domain.entities.base_content import ContentType
 
 class ContentSearchService(IContentSearchService):
     """
-    Application service for content search operations
+    Educational content search and discovery application service.
+
+    Implements comprehensive search capabilities for educational content including
+    multi-criteria search, tag-based filtering, trending analysis, and personalized
+    content recommendations to enhance learning resource discovery.
+
+    ## Educational Search Features:
+
+    ### Content Discovery
+    - **Full-Text Search**: Educational content search across titles, descriptions, and metadata
+    - **Tag-Based Search**: Educational classification and taxonomy-based content filtering
+    - **Advanced Filtering**: Course, content type, and educational context-based discovery
+    - **Relevance Ranking**: Educational content prioritization for optimal learning outcomes
+
+    ### Recommendation System
+    - **Related Content**: Educational content relationship and similarity-based suggestions
+    - **Trending Content**: Popular and effective educational material identification
+    - **Personalized Recommendations**: Student-specific content discovery based on progress
+    - **Learning Path Guidance**: Next-step content suggestions for educational progression
+
+    ### Analytics Integration
+    - **Search Pattern Analysis**: Educational content discovery pattern insights
+    - **Popular Tags**: Most frequently used educational classifications and topics
+    - **Usage Metrics**: Educational content access and utilization tracking
+    - **Optimization Insights**: Content organization and discovery improvement recommendations
+
+    Why This Service Matters:
+    - Enables students to efficiently discover relevant educational resources
+    - Helps instructors identify high-quality and popular educational materials
+    - Supports personalized learning paths through intelligent recommendations
+    - Improves educational content organization and institutional resource utilization
     """
-    
+
     def __init__(self, content_dao: ContentManagementDAO):
+        """
+        Initialize educational content search service with data access.
+
+        Sets up search capabilities with database access for educational content
+        discovery operations across multiple content types and criteria.
+
+        Why Data Access Dependency:
+        - Content search requires database queries across multiple tables
+        - Search operations need efficient indexing and filtering capabilities
+        - Recommendation system requires access to content relationships
+
+        Args:
+            content_dao: Educational content data access object for search operations
+        """
         self._content_dao = content_dao
     
     async def search_content(
-        self, 
-        query: str, 
+        self,
+        query: str,
         content_types: Optional[List[ContentType]] = None,
         course_id: Optional[str] = None,
         filters: Optional[Dict[str, Any]] = None
     ) -> Dict[str, List[Any]]:
-        """Search content across all types with filters"""
+        """
+        Search educational content across multiple types with advanced filtering.
+
+        Performs comprehensive educational content search with multi-criteria filtering,
+        relevance ranking, and metadata enrichment for efficient content discovery.
+
+        Why This Method Exists:
+        - Students need to quickly find relevant learning materials across different content types
+        - Instructors require efficient content discovery for course preparation
+        - Search results must be organized by content type for easy navigation
+        - Educational context filtering ensures relevant and appropriate content
+
+        Search Processing:
+        - **Query Validation**: Ensures meaningful search with minimum length requirements
+        - **Content Type Filtering**: Searches specific content types or all educational materials
+        - **Course Scoping**: Limits search to specific course context when needed
+        - **Result Organization**: Groups results by content type for structured presentation
+        - **Metadata Enrichment**: Adds search context and result statistics
+
+        Args:
+            query: Educational content search query (minimum 2 characters)
+            content_types: Specific educational content types to search (default: all types)
+            course_id: Specific course identifier for scoped search (optional)
+            filters: Additional search filters including status, difficulty, date range
+
+        Returns:
+            Dictionary of search results organized by content type with metadata:
+            - Keys: Content type names (syllabi, slides, quizzes, etc.)
+            - Values: Lists of matching educational content entities
+            - _metadata: Search statistics and context information
+
+        Raises:
+            ValueError: Invalid search query (too short or empty)
+
+        Educational Benefits:
+        - Efficient educational content discovery across all material types
+        - Organized results for easy content navigation and selection
+        - Course-scoped search for contextual learning resource discovery
+        - Search analytics for content organization improvement insights
+        """
         try:
             # Validate query
             if not query or len(query.strip()) < 2:

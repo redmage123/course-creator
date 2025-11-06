@@ -1,0 +1,136 @@
+/**
+ * Spinner Component Styles - Tami Design System
+ *
+ * BUSINESS CONTEXT:
+ * Implements Tami design system spinner styles with smooth animations.
+ * Provides consistent loading indicators across all user experiences.
+ *
+ * CRITICAL: Uses OUR blue (#2563eb), NOT Tami purple/orange
+ */
+
+/* ============================================================================
+ * SPINNER CONTAINER
+ * ============================================================================ */
+
+.spinner-container {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner-centered {
+  display: flex;
+  width: 100%;
+  min-height: 100px;
+}
+
+/* ============================================================================
+ * SPINNER SVG
+ * ============================================================================ */
+
+.spinner {
+  animation: rotate 0.8s linear infinite;
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================================================
+ * SIZE VARIANTS
+ * ============================================================================ */
+
+.spinner-small {
+  width: 20px;
+  height: 20px;
+}
+
+.spinner-medium {
+  width: 40px;
+  height: 40px;
+}
+
+.spinner-large {
+  width: 60px;
+  height: 60px;
+}
+
+/* ============================================================================
+ * SPINNER CIRCLE
+ * ============================================================================ */
+
+.spinner-circle {
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-dasharray: 90, 150;
+  stroke-dashoffset: 0;
+  animation: dash 1.5s ease-in-out infinite;
+}
+
+@keyframes dash {
+  0% {
+    stroke-dasharray: 1, 150;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -35;
+  }
+  100% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -124;
+  }
+}
+
+/* ============================================================================
+ * COLOR VARIANTS
+ * ============================================================================ */
+
+.spinner-primary {
+  color: #2563eb;
+}
+
+.spinner-secondary {
+  color: #64748b;
+}
+
+.spinner-white {
+  color: #ffffff;
+}
+
+/* ============================================================================
+ * ACCESSIBLE LABEL
+ * ============================================================================ */
+
+.spinner-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ============================================================================
+ * ACCESSIBILITY
+ * ============================================================================ */
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+
+  .spinner-circle {
+    animation: none;
+    stroke-dasharray: 90, 150;
+  }
+}

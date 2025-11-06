@@ -197,3 +197,6 @@ models/
 *.weights
 ollama_data/
 .ollama/
+
+# Development documentation and progress reports
+devel_docs/

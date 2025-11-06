@@ -16,7 +16,6 @@
  * - Open/Closed: Easy to extend with new tab handlers
  * - Dependency Inversion: Depends on service abstractions, not direct API calls
  */
-
 import { FileExplorer } from './file-explorer.js';
 import { courseService } from '../services/CourseService.js';
 import { studentService } from '../services/StudentService.js';
@@ -28,7 +27,22 @@ import { courseInstanceService } from '../services/CourseInstanceService.js';
 /**
  * Initialize Create Course Tab Functionality
  *
- * Handles course creation form submission and AI generation
+ * BUSINESS REQUIREMENT:
+ * Provides instructors with the ability to create new courses using AI-powered
+ * content generation. This is the primary entry point for course creation workflow.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Sets up course creation form event listeners
+ * - Handles form validation and submission
+ * - Integrates with CourseService for AI-powered course generation
+ * - Manages loading states and user feedback
+ * - Provides navigation controls (reset, cancel)
+ *
+ * WHY THIS MATTERS:
+ * Course creation is a core instructor workflow. This function ensures a smooth,
+ * user-friendly experience with proper error handling and feedback.
+ *
+ * @returns {void}
  */
 export function initCreateCourseTab() {
     console.log('🎓 Initializing Create Course Tab');
@@ -107,7 +121,21 @@ export function initCreateCourseTab() {
 /**
  * Initialize Students Tab Functionality
  *
- * Handles student enrollment (single and bulk) and student listing
+ * BUSINESS REQUIREMENT:
+ * Enables instructors to view and manage all enrolled students across their courses.
+ * Supports both individual and bulk student enrollment operations.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Loads and displays student data from StudentService
+ * - Sets up Add Student button and modal functionality
+ * - Exposes global functions for modal interactions
+ * - Handles student enrollment workflows
+ *
+ * WHY THIS MATTERS:
+ * Student management is critical for instructors to track enrollment,
+ * monitor progress, and manage class sizes effectively.
+ *
+ * @returns {void}
  */
 export function initStudentsTab() {
     console.log('👥 Initializing Students Tab');
@@ -129,7 +157,25 @@ export function initStudentsTab() {
 }
 
 /**
- * Load all students across all courses
+ * Load All Students Across All Courses
+ *
+ * BUSINESS LOGIC:
+ * Fetches and displays all students enrolled in any course taught by the instructor.
+ * Provides a consolidated view for multi-course management.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Fetches student data via StudentService
+ * - Renders student table with progress indicators
+ * - Displays loading and error states
+ * - Shows empty state if no students enrolled
+ *
+ * WHY THIS MATTERS:
+ * Instructors teaching multiple courses need a unified view of all their students
+ * to track overall teaching load and identify students needing attention.
+ *
+ * @async
+ * @returns {Promise<void>}
+ * @throws {Error} If student data cannot be loaded from the service
  */
 async function loadAllStudents() {
     const tbody = document.getElementById('studentsTableBody');
@@ -196,7 +242,22 @@ async function loadAllStudents() {
 }
 
 /**
- * Open the Add Student modal
+ * Open Add Student Modal
+ *
+ * BUSINESS LOGIC:
+ * Displays the modal interface for enrolling a single student in a course.
+ * Pre-loads available courses for selection.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Shows the enrollment modal dialog
+ * - Loads courses into the course selection dropdown
+ * - Prepares the form for user input
+ *
+ * WHY THIS MATTERS:
+ * Provides a user-friendly interface for individual student enrollment,
+ * essential for small classes or one-off enrollments.
+ *
+ * @returns {void}
  */
 function openAddStudentModal() {
     const modal = document.getElementById('addStudentModal');
@@ -210,7 +271,22 @@ function openAddStudentModal() {
 }
 
 /**
- * Close the Add Student modal
+ * Close Add Student Modal
+ *
+ * BUSINESS LOGIC:
+ * Closes the student enrollment modal and clears form data to prevent
+ * accidental data retention on next open.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Hides the modal by setting display to none
+ * - Clears course selection and email input fields
+ * - Resets form state to prevent data leakage
+ *
+ * WHY THIS MATTERS:
+ * Proper cleanup prevents user confusion and ensures fresh state
+ * when the modal is reopened.
+ *
+ * @returns {void}
  */
 function closeAddStudentModal() {
     const modal = document.getElementById('addStudentModal');
@@ -226,7 +302,24 @@ function closeAddStudentModal() {
 }
 
 /**
- * Load courses for student modal
+ * Load Courses for Student Enrollment Modal
+ *
+ * BUSINESS LOGIC:
+ * Populates the course selection dropdown with all courses the instructor teaches.
+ * Students can only be enrolled in courses that exist.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Fetches instructor's courses from CourseService
+ * - Populates dropdown with course titles and IDs
+ * - Handles errors gracefully with user-friendly messages
+ *
+ * WHY THIS MATTERS:
+ * Ensures instructors can only enroll students in valid courses,
+ * preventing invalid enrollments and maintaining data integrity.
+ *
+ * @async
+ * @returns {Promise<void>}
+ * @throws {Error} If courses cannot be loaded from the service
  */
 async function loadCoursesForStudentModal() {
     const courseSelect = document.getElementById('studentCourseSelect');
@@ -251,7 +344,25 @@ async function loadCoursesForStudentModal() {
 }
 
 /**
- * Submit add student form
+ * Submit Add Student Form
+ *
+ * BUSINESS LOGIC:
+ * Validates and processes student enrollment request. Adds the student
+ * to the selected course and updates the UI accordingly.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Validates required fields (course ID and email)
+ * - Submits enrollment request to backend API
+ * - Shows success/error feedback to user
+ * - Closes modal and refreshes student list on success
+ *
+ * WHY THIS MATTERS:
+ * Proper validation prevents incomplete enrollments and ensures
+ * data integrity while providing good user experience.
+ *
+ * @async
+ * @returns {Promise<void>}
+ * @throws {Error} If enrollment submission fails
  */
 async function submitAddStudent() {
     const courseSelect = document.getElementById('studentCourseSelect');
@@ -288,7 +399,24 @@ window.viewStudentDetails = function(studentId) {
 };
 
 /**
- * Load instructor's courses into select dropdown
+ * Load Instructor's Courses into Select Dropdown
+ *
+ * BUSINESS LOGIC:
+ * Populates a generic course selection dropdown with all courses taught
+ * by the current instructor. Used across multiple tabs.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Fetches courses from CourseService
+ * - Populates select element with course options
+ * - Handles empty state and errors gracefully
+ *
+ * WHY THIS MATTERS:
+ * Many instructor operations require course selection. This reusable
+ * function ensures consistent course loading across the dashboard.
+ *
+ * @async
+ * @returns {Promise<void>}
+ * @throws {Error} If courses cannot be loaded
  */
 async function loadInstructorCourses() {
     const selectElement = document.getElementById('selectedCourse');
@@ -312,7 +440,26 @@ async function loadInstructorCourses() {
 }
 
 /**
- * Enroll a single student
+ * Enroll a Single Student
+ *
+ * BUSINESS LOGIC:
+ * Enrolls a student identified by email address into the currently selected course.
+ * Validates course selection before proceeding.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Validates that a course is selected
+ * - Calls StudentService to create enrollment
+ * - Shows success/error feedback
+ * - Refreshes enrolled students list on success
+ *
+ * WHY THIS MATTERS:
+ * Individual enrollment is critical for targeted student management
+ * and provides flexibility beyond bulk operations.
+ *
+ * @async
+ * @param {string} email - Student's email address for enrollment
+ * @returns {Promise<void>}
+ * @throws {Error} If course not selected or enrollment fails
  */
 async function enrollStudent(email) {
     const courseId = document.getElementById('selectedCourse').value;
@@ -335,7 +482,26 @@ async function enrollStudent(email) {
 }
 
 /**
- * Enroll multiple students in bulk
+ * Enroll Multiple Students in Bulk
+ *
+ * BUSINESS LOGIC:
+ * Processes bulk student enrollment by iterating through an array of email addresses.
+ * Provides aggregate success/failure reporting.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Validates course selection before processing
+ * - Iterates through email list, enrolling each student individually
+ * - Tracks success and failure counts
+ * - Reports final statistics to user
+ *
+ * WHY THIS MATTERS:
+ * Bulk enrollment is essential for large classes and organizational efficiency.
+ * Individual processing allows partial success scenarios.
+ *
+ * @async
+ * @param {string[]} emails - Array of student email addresses to enroll
+ * @returns {Promise<void>}
+ * @throws {Error} If course not selected
  */
 async function enrollStudentsBulk(emails) {
     const courseId = document.getElementById('selectedCourse').value;
@@ -360,7 +526,26 @@ async function enrollStudentsBulk(emails) {
 }
 
 /**
- * Load enrolled students for a course
+ * Load Enrolled Students for a Specific Course
+ *
+ * BUSINESS LOGIC:
+ * Fetches and displays all students enrolled in a particular course.
+ * Provides course-specific student management view.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Fetches students by course ID from StudentService
+ * - Renders students in a table format with enrollment details
+ * - Shows empty state if no students enrolled
+ * - Provides unenroll actions for each student
+ *
+ * WHY THIS MATTERS:
+ * Course-specific student views allow instructors to focus on
+ * individual course management and identify course-specific issues.
+ *
+ * @async
+ * @param {number|string} courseId - Unique identifier for the course
+ * @returns {Promise<void>}
+ * @throws {Error} If students cannot be loaded for the course
  */
 async function loadEnrolledStudents(courseId) {
     const container = document.getElementById('enrolled-students-list');
@@ -415,7 +600,21 @@ async function loadEnrolledStudents(courseId) {
 /**
  * Initialize Analytics Tab Functionality
  *
- * Handles analytics data loading and chart rendering
+ * BUSINESS REQUIREMENT:
+ * Provides instructors with comprehensive analytics and insights about student
+ * performance, engagement, and course effectiveness.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Sets up course filter dropdown for analytics selection
+ * - Configures refresh, export, and PDF download buttons
+ * - Initializes time range selector for historical data
+ * - Loads initial analytics data and renders charts
+ *
+ * WHY THIS MATTERS:
+ * Data-driven insights help instructors identify struggling students,
+ * improve course content, and demonstrate educational outcomes.
+ *
+ * @returns {void}
  */
 export function initAnalyticsTab() {
     console.log('📊 Initializing Analytics Tab');
@@ -460,7 +659,24 @@ export function initAnalyticsTab() {
 }
 
 /**
- * Load courses for analytics filter
+ * Load Courses for Analytics Filter Dropdown
+ *
+ * BUSINESS LOGIC:
+ * Populates the analytics course filter with instructor's courses to enable
+ * course-specific or aggregated analytics views.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Fetches instructor's courses from CourseService
+ * - Populates dropdown with "All Courses" option plus individual courses
+ * - Handles loading errors gracefully
+ *
+ * WHY THIS MATTERS:
+ * Allows instructors to drill down into specific course analytics or
+ * view aggregate data across all courses they teach.
+ *
+ * @async
+ * @returns {Promise<void>}
+ * @throws {Error} If courses cannot be loaded
  */
 async function loadAnalyticsCourses() {
     const selectElement = document.getElementById('analyticsCourseFilter') || document.getElementById('analyticsCourseSelect');
@@ -484,7 +700,26 @@ async function loadAnalyticsCourses() {
 }
 
 /**
- * Load analytics data
+ * Load Analytics Data for Selected Course and Time Range
+ *
+ * BUSINESS LOGIC:
+ * Fetches comprehensive analytics data including student counts, quiz scores,
+ * lab completion rates, and engagement metrics for visualization.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Retrieves selected course and time range from UI
+ * - Fetches analytics from AnalyticsService
+ * - Updates overview stat cards (total students, active students, avg quiz score)
+ * - Triggers chart rendering with fresh data
+ * - Manages loading and error states
+ *
+ * WHY THIS MATTERS:
+ * Real-time, accurate analytics are crucial for instructors to make
+ * informed decisions about course adjustments and student interventions.
+ *
+ * @async
+ * @returns {Promise<void>}
+ * @throws {Error} If analytics data cannot be loaded
  */
 async function loadAnalyticsData() {
     const courseSelect = document.getElementById('analyticsCourseFilter') || document.getElementById('analyticsCourseSelect');
@@ -532,13 +767,28 @@ async function loadAnalyticsData() {
 }
 
 /**
- * Render analytics charts using Chart.js
+ * Render All Analytics Charts Using Chart.js
  *
- * Creates 4 interactive charts:
- * 1. Student Engagement Over Time (Line chart)
- * 2. Lab Completion Status (Doughnut chart)
- * 3. Quiz Score Distribution (Bar chart)
- * 4. Content Progress Distribution (Horizontal bar chart)
+ * BUSINESS LOGIC:
+ * Orchestrates the rendering of all four analytics visualization charts
+ * to provide comprehensive course performance insights.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Validates Chart.js library is loaded
+ * - Destroys existing charts to prevent canvas reuse errors
+ * - Renders 4 charts in sequence:
+ *   1. Student Engagement Over Time (Line chart)
+ *   2. Lab Completion Status (Doughnut chart)
+ *   3. Quiz Score Distribution (Bar chart)
+ *   4. Content Progress Distribution (Horizontal bar chart)
+ * - Logs rendering progress for debugging
+ *
+ * WHY THIS MATTERS:
+ * Comprehensive visualizations help instructors quickly grasp course health,
+ * identify trends, and spot areas needing intervention.
+ *
+ * @param {Object} data - Complete analytics data containing all chart data structures
+ * @returns {void}
  */
 function renderAnalyticsCharts(data) {
     console.log('📊 Rendering analytics charts with data:', data);
@@ -577,7 +827,22 @@ let chartInstances = {
 };
 
 /**
- * Destroy existing charts before creating new ones
+ * Destroy Existing Chart Instances Before Creating New Ones
+ *
+ * BUSINESS LOGIC:
+ * Prevents Chart.js canvas reuse errors and memory leaks by properly
+ * destroying chart instances before re-rendering.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Iterates through all global chart instances
+ * - Calls Chart.js destroy() method on each
+ * - Resets instances to null to free memory
+ *
+ * WHY THIS MATTERS:
+ * Chart.js throws errors if you try to create a chart on a canvas that
+ * already has one. Proper cleanup ensures smooth re-rendering.
+ *
+ * @returns {void}
  */
 function destroyExistingCharts() {
     Object.keys(chartInstances).forEach(key => {
@@ -589,7 +854,28 @@ function destroyExistingCharts() {
 }
 
 /**
- * Render Student Engagement Over Time Chart (Line)
+ * Render Student Engagement Over Time Chart (Line Chart)
+ *
+ * BUSINESS LOGIC:
+ * Visualizes student engagement trends over time using three key metrics:
+ * active students, course completions, and lab submissions.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Creates a multi-line Chart.js line chart
+ * - Uses sample data structure from API response
+ * - Applies smooth tension curves for readability
+ * - Configures interactive tooltips and legends
+ *
+ * WHY THIS MATTERS:
+ * Temporal engagement data helps instructors identify drop-off points,
+ * successful interventions, and overall course health trends.
+ *
+ * @param {Object} data - Analytics data containing engagement_over_time object
+ * @param {string[]} data.engagement_over_time.labels - Time period labels (e.g., weeks)
+ * @param {number[]} data.engagement_over_time.active_students - Active student counts per period
+ * @param {number[]} data.engagement_over_time.course_completions - Completion counts per period
+ * @param {number[]} data.engagement_over_time.lab_submissions - Lab submission counts per period
+ * @returns {void}
  */
 function renderEngagementChart(data) {
     const ctx = document.getElementById('engagementChart');
@@ -667,7 +953,28 @@ function renderEngagementChart(data) {
 }
 
 /**
- * Render Lab Completion Status Chart (Doughnut)
+ * Render Lab Completion Status Chart (Doughnut Chart)
+ *
+ * BUSINESS LOGIC:
+ * Displays the distribution of lab statuses (completed, in progress, not started, overdue)
+ * to help instructors identify students needing assistance.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Creates a Chart.js doughnut chart
+ * - Maps lab completion data to color-coded segments
+ * - Calculates and displays percentages in tooltips
+ * - Uses semantic colors (green=completed, red=overdue)
+ *
+ * WHY THIS MATTERS:
+ * Lab completion is a key indicator of hands-on learning. Overdue labs
+ * signal students at risk of falling behind.
+ *
+ * @param {Object} data - Analytics data containing lab_completion object
+ * @param {number} data.lab_completion.completed - Count of completed labs
+ * @param {number} data.lab_completion.in_progress - Count of in-progress labs
+ * @param {number} data.lab_completion.not_started - Count of not started labs
+ * @param {number} data.lab_completion.overdue - Count of overdue labs
+ * @returns {void}
  */
 function renderLabCompletionChart(data) {
     const ctx = document.getElementById('labCompletionChart');
@@ -725,7 +1032,26 @@ function renderLabCompletionChart(data) {
 }
 
 /**
- * Render Quiz Score Distribution Chart (Bar)
+ * Render Quiz Score Distribution Chart (Bar Chart)
+ *
+ * BUSINESS LOGIC:
+ * Shows how quiz scores are distributed across performance ranges to identify
+ * overall class performance and outliers.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Creates a Chart.js bar chart with 5 score ranges
+ * - Uses color gradients from red (poor) to green (excellent)
+ * - Displays student counts and percentages in tooltips
+ * - Configures y-axis for whole number counts
+ *
+ * WHY THIS MATTERS:
+ * Quiz score distribution reveals if the course is too difficult/easy,
+ * if content needs clarification, or if students are excelling.
+ *
+ * @param {Object} data - Analytics data containing quiz_scores object
+ * @param {string[]} data.quiz_scores.ranges - Score range labels (e.g., "0-20%", "81-100%")
+ * @param {number[]} data.quiz_scores.counts - Student counts in each range
+ * @returns {void}
  */
 function renderQuizPerformanceChart(data) {
     const ctx = document.getElementById('quizPerformanceChart');
@@ -801,7 +1127,26 @@ function renderQuizPerformanceChart(data) {
 }
 
 /**
- * Render Content Progress Distribution Chart (Horizontal Bar)
+ * Render Content Progress Distribution Chart (Horizontal Bar Chart)
+ *
+ * BUSINESS LOGIC:
+ * Visualizes how far students have progressed through course content,
+ * helping instructors identify pacing issues or struggling locations.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Creates a horizontal Chart.js bar chart
+ * - Groups students by progress percentage ranges
+ * - Displays student counts and percentages in tooltips
+ * - Uses horizontal orientation for better label readability
+ *
+ * WHY THIS MATTERS:
+ * Progress distribution shows if students are keeping pace with the course.
+ * Large groups stuck at low progress indicate potential content blockers.
+ *
+ * @param {Object} data - Analytics data containing progress_distribution object
+ * @param {string[]} data.progress_distribution.ranges - Progress range labels (e.g., "0-20%")
+ * @param {number[]} data.progress_distribution.counts - Student counts in each range
+ * @returns {void}
  */
 function renderProgressDistributionChart(data) {
     const ctx = document.getElementById('progressDistributionChart');
@@ -867,7 +1212,22 @@ function renderProgressDistributionChart(data) {
 }
 
 /**
- * Export analytics data to CSV
+ * Export Analytics Data to CSV Format
+ *
+ * BUSINESS LOGIC:
+ * Allows instructors to download analytics data for offline analysis,
+ * reporting to administration, or integration with other tools.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Currently shows placeholder alert
+ * - TODO: Implement CSV generation from analytics data
+ * - Should include all chart data and summary statistics
+ *
+ * WHY THIS MATTERS:
+ * Instructors often need to share analytics with department heads,
+ * accreditation bodies, or for research purposes.
+ *
+ * @returns {void}
  */
 function exportAnalyticsData() {
     alert('Analytics export functionality coming soon!');
@@ -875,7 +1235,22 @@ function exportAnalyticsData() {
 }
 
 /**
- * Download PDF report
+ * Download Analytics Report as PDF
+ *
+ * BUSINESS LOGIC:
+ * Generates a formatted PDF report of analytics data for professional
+ * presentation, archival, or sharing with stakeholders.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Currently shows placeholder alert
+ * - TODO: Implement PDF generation with charts and tables
+ * - Should include all visualizations and statistical summaries
+ *
+ * WHY THIS MATTERS:
+ * PDF reports are essential for formal documentation, accreditation,
+ * performance reviews, and stakeholder communication.
+ *
+ * @returns {void}
  */
 function downloadPDFReport() {
     alert('PDF report generation coming soon!');
@@ -885,7 +1260,20 @@ function downloadPDFReport() {
 /**
  * Initialize Courses Tab Functionality
  *
- * Handles course listing and management
+ * BUSINESS REQUIREMENT:
+ * Provides instructors with a centralized view of all their courses
+ * for quick access and management.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Triggers initial course list loading
+ * - Sets up view mode (grid/list)
+ * - Prepares course management actions
+ *
+ * WHY THIS MATTERS:
+ * The courses tab is often the instructor's starting point for
+ * daily work, requiring fast, reliable access to course information.
+ *
+ * @returns {void}
  */
 export function initCoursesTab() {
     console.log('📚 Initializing Courses Tab');
@@ -897,7 +1285,26 @@ export function initCoursesTab() {
 }
 
 /**
- * Load instructor's courses list
+ * Load Instructor's Courses List
+ *
+ * BUSINESS LOGIC:
+ * Fetches all courses taught by the instructor and renders them in
+ * an organized, actionable format.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Fetches courses from CourseService
+ * - Renders courses in grid layout with metadata
+ * - Shows empty state if no courses exist
+ * - Provides edit and view actions for each course
+ * - Displays course status, student count, and duration
+ *
+ * WHY THIS MATTERS:
+ * Course overview is the primary navigation hub for instructors.
+ * Clear presentation enables efficient course management.
+ *
+ * @async
+ * @returns {Promise<void>}
+ * @throws {Error} If courses cannot be loaded from the service
  */
 async function loadCoursesList() {
     const container = document.getElementById('courses-list');
@@ -959,7 +1366,22 @@ async function loadCoursesList() {
 }
 
 /**
- * Initialize Overview Tab (default tab)
+ * Initialize Overview Tab (Default Dashboard View)
+ *
+ * BUSINESS REQUIREMENT:
+ * Provides instructors with a quick summary dashboard showing key metrics
+ * at a glance when they first access the instructor dashboard.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Loads high-level statistics (total students, active courses)
+ * - Displays summary cards for quick insights
+ * - Serves as landing page for instructor dashboard
+ *
+ * WHY THIS MATTERS:
+ * The overview tab gives instructors immediate situational awareness
+ * of their teaching workload and student engagement.
+ *
+ * @returns {void}
  */
 export function initOverviewTab() {
     console.log('📊 Initializing Overview Tab');
@@ -971,7 +1393,25 @@ export function initOverviewTab() {
 }
 
 /**
- * Load overview statistics
+ * Load Overview Statistics
+ *
+ * BUSINESS LOGIC:
+ * Fetches aggregate statistics across all instructor's courses to populate
+ * the overview dashboard summary cards.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Retrieves current user from localStorage
+ * - Fetches overview stats from AnalyticsService
+ * - Updates stat card elements (total students, active courses)
+ * - Handles missing elements gracefully
+ *
+ * WHY THIS MATTERS:
+ * Quick stats help instructors assess workload and identify trends
+ * without navigating to detailed analytics.
+ *
+ * @async
+ * @returns {Promise<void>}
+ * @throws {Error} If overview stats cannot be loaded
  */
 async function loadOverviewStats() {
     try {
@@ -1062,12 +1502,28 @@ export function initPublishedCoursesTab() {
 }
 
 /**
- * Load and display published courses
+ * Load and Display Published Courses
  *
  * BUSINESS LOGIC:
- * - Fetches all published courses from API
- * - Applies current visibility filter
- * - Renders course cards with metadata
+ * Fetches all published courses from the platform and displays them according
+ * to the selected visibility filter (all/public/private). Instructors can view
+ * courses they can instantiate for their classes.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Fetches published courses from CourseService
+ * - Applies visibility filter (public/private/all)
+ * - Filters private courses to show only instructor's own
+ * - Renders course cards with metadata and action buttons
+ * - Shows loading, error, and empty states
+ *
+ * WHY THIS MATTERS:
+ * Instructors need to browse available course templates to create
+ * course instances for their students without building from scratch.
+ *
+ * @async
+ * @param {string} [filterValue='all'] - Visibility filter: 'all', 'public', or 'private'
+ * @returns {Promise<void>}
+ * @throws {Error} If published courses cannot be loaded
  */
 async function loadPublishedCourses(filterValue = 'all') {
     const container = document.getElementById('publishedCoursesContainer');
@@ -1150,9 +1606,22 @@ async function loadPublishedCourses(filterValue = 'all') {
 }
 
 /**
- * Filter published courses by visibility
+ * Filter Published Courses by Visibility
  *
- * Called by inline event handler in HTML
+ * BUSINESS LOGIC:
+ * Updates the published courses display to show only courses matching
+ * the selected visibility filter (all/public/private).
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Reads filter value from UI dropdown
+ * - Triggers reload of published courses with new filter
+ * - Called by inline event handler in HTML
+ *
+ * WHY THIS MATTERS:
+ * Visibility filtering helps instructors find relevant courses,
+ * separating public templates from their own private courses.
+ *
+ * @returns {void}
  */
 function filterPublishedCourses() {
     const filterSelect = document.getElementById('courseVisibilityFilter');
@@ -1166,13 +1635,24 @@ function filterPublishedCourses() {
 }
 
 /**
- * Create a course instance from a published course
+ * Create Course Instance from Published Course
  *
  * BUSINESS LOGIC:
- * Navigates to course instances tab and initiates instance creation
- * with the selected course pre-filled
+ * Initiates the course instance creation workflow by navigating to the
+ * course instances tab and pre-selecting the specified published course.
  *
- * @param {number} courseId - Published course ID
+ * TECHNICAL IMPLEMENTATION:
+ * - Stores selected course ID in localStorage for modal pre-filling
+ * - Programmatically switches to course instances tab
+ * - Triggers instance creation modal after tab switch delay
+ * - Handles case where instances tab is not found
+ *
+ * WHY THIS MATTERS:
+ * Provides seamless workflow from browsing published courses to creating
+ * instances, reducing clicks and improving UX.
+ *
+ * @param {number} courseId - ID of the published course to instantiate
+ * @returns {void}
  */
 function createCourseInstance(courseId) {
     console.log(`Creating instance for course ${courseId}`);
@@ -1197,13 +1677,27 @@ function createCourseInstance(courseId) {
 }
 
 /**
- * View detailed information about a published course
+ * View Detailed Information About a Published Course
  *
  * BUSINESS LOGIC:
- * Shows a modal with comprehensive course details including
- * syllabus, prerequisites, materials, and enrollment info
+ * Displays a comprehensive modal with full course details including
+ * description, metadata, prerequisites, learning objectives, and enrollment info.
  *
- * @param {number} courseId - Course ID to view
+ * TECHNICAL IMPLEMENTATION:
+ * - Fetches full course details from CourseService
+ * - Creates and dynamically injects modal HTML into DOM
+ * - Displays all course metadata in organized sections
+ * - Provides "Create Instance" action button in modal
+ * - Auto-removes modal on close
+ *
+ * WHY THIS MATTERS:
+ * Instructors need full course information before deciding to create an instance.
+ * Detailed preview helps them choose the right course for their needs.
+ *
+ * @async
+ * @param {number} courseId - ID of the course to view details for
+ * @returns {Promise<void>}
+ * @throws {Error} If course details cannot be loaded
  */
 async function viewCourseDetails(courseId) {
     console.log(`Viewing details for course ${courseId}`);
@@ -1319,12 +1813,29 @@ export function initCourseInstancesTab() {
 }
 
 /**
- * Load and display course instances
+ * Load and Display Course Instances
  *
  * BUSINESS LOGIC:
- * - Fetches all course instances for the instructor
- * - Applies status filter and search query
- * - Renders instance cards with metadata
+ * Fetches all course instances (scheduled course sessions) for the instructor
+ * and displays them with filtering and search capabilities.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Fetches instances from CourseInstanceService
+ * - Applies status filter (all/scheduled/active/completed/cancelled)
+ * - Applies search query filter (course title or code)
+ * - Renders instance cards with metadata (dates, enrollment, status)
+ * - Shows loading, error, and empty states
+ * - Provides view details and manage enrollment actions
+ *
+ * WHY THIS MATTERS:
+ * Course instances represent actual teaching sessions. Instructors need clear
+ * visibility into upcoming, active, and past sessions for planning and management.
+ *
+ * @async
+ * @param {string} [filterValue='all'] - Status filter: 'all', 'scheduled', 'active', 'completed', 'cancelled'
+ * @param {string} [searchQuery=''] - Search query to filter by course title or code
+ * @returns {Promise<void>}
+ * @throws {Error} If course instances cannot be loaded
  */
 async function loadCourseInstances(filterValue = 'all', searchQuery = '') {
     const container = document.getElementById('courseInstancesContainer');
@@ -1427,7 +1938,23 @@ async function loadCourseInstances(filterValue = 'all', searchQuery = '') {
 }
 
 /**
- * Format date for display
+ * Format Date String for User-Friendly Display
+ *
+ * BUSINESS LOGIC:
+ * Converts ISO date strings to localized, human-readable format
+ * for consistent date presentation across the UI.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Handles null/undefined dates gracefully
+ * - Uses JavaScript Date object for parsing
+ * - Formats as "Mon DD, YYYY" (e.g., "Jan 15, 2025")
+ *
+ * WHY THIS MATTERS:
+ * Consistent date formatting improves UX and prevents confusion
+ * from ISO timestamps or inconsistent formats.
+ *
+ * @param {string|null} dateString - ISO date string to format
+ * @returns {string} Formatted date string or 'N/A' if invalid
  */
 function formatDate(dateString) {
     if (!dateString) return 'N/A';
@@ -1436,9 +1963,23 @@ function formatDate(dateString) {
 }
 
 /**
- * Filter course instances by status
+ * Filter Course Instances by Status
  *
- * Called by inline event handler in HTML
+ * BUSINESS LOGIC:
+ * Updates the course instances display to show only instances matching
+ * the selected status filter (all/scheduled/active/completed/cancelled).
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Reads status filter value from UI dropdown
+ * - Reads search query from search input
+ * - Triggers reload of instances with both filters applied
+ * - Called by inline event handler in HTML
+ *
+ * WHY THIS MATTERS:
+ * Status filtering helps instructors focus on relevant course instances,
+ * such as currently active courses or upcoming scheduled sessions.
+ *
+ * @returns {void}
  */
 function filterInstances() {
     const filterSelect = document.getElementById('instanceStatusFilter');
@@ -1456,9 +1997,23 @@ function filterInstances() {
 }
 
 /**
- * Search course instances
+ * Search Course Instances by Title or Code
  *
- * Called by inline event handler in HTML
+ * BUSINESS LOGIC:
+ * Filters course instances based on user's search query, matching against
+ * course title and course code for flexible search.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Reads search query from input field
+ * - Reads current status filter value
+ * - Triggers reload with search and filter applied
+ * - Called by inline event handler in HTML
+ *
+ * WHY THIS MATTERS:
+ * Search functionality enables quick navigation in large lists of
+ * course instances, improving instructor efficiency.
+ *
+ * @returns {void}
  */
 function searchInstances() {
     const searchInput = document.getElementById('instanceSearch');
@@ -1476,9 +2031,24 @@ function searchInstances() {
 }
 
 /**
- * Show modal for creating a new course instance
+ * Show Create Course Instance Modal
  *
- * Called by inline event handler in HTML
+ * BUSINESS LOGIC:
+ * Displays the modal interface for creating a new course instance from
+ * a published course. Includes form for dates, enrollment limits, etc.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Creates and injects modal HTML into DOM
+ * - Loads available courses into dropdown
+ * - Sets up form validation and event handlers
+ * - Makes close/submit functions globally accessible
+ * - Called by inline event handler in HTML
+ *
+ * WHY THIS MATTERS:
+ * Course instances represent scheduled sessions of a course. This modal
+ * enables instructors to plan and schedule their teaching calendar.
+ *
+ * @returns {void}
  */
 function showCreateInstanceModal() {
     console.log('Opening create instance modal...');
@@ -1538,7 +2108,24 @@ function showCreateInstanceModal() {
 }
 
 /**
- * Load available courses for instance creation dropdown
+ * Load Available Published Courses for Instance Creation Dropdown
+ *
+ * BUSINESS LOGIC:
+ * Populates the course selection dropdown in the create instance modal
+ * with all published courses available for instantiation.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Fetches published courses from CourseService
+ * - Populates select element with course options
+ * - Handles errors gracefully without blocking modal
+ *
+ * WHY THIS MATTERS:
+ * Instructors can only create instances of published courses.
+ * This ensures they're working with approved, complete content.
+ *
+ * @async
+ * @returns {Promise<void>}
+ * @throws {Error} If courses cannot be loaded (error logged, not thrown)
  */
 async function loadCoursesForInstanceCreation() {
     const select = document.getElementById('instanceCourseSelect');
@@ -1558,7 +2145,22 @@ async function loadCoursesForInstanceCreation() {
 }
 
 /**
- * Close create instance modal
+ * Close Create Instance Modal
+ *
+ * BUSINESS LOGIC:
+ * Removes the create instance modal from the DOM and cleans up
+ * any temporary state.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Finds and removes modal element from DOM
+ * - Clears any form data
+ * - Frees memory by removing DOM elements
+ *
+ * WHY THIS MATTERS:
+ * Proper cleanup prevents DOM pollution and memory leaks,
+ * especially when modals are opened/closed multiple times.
+ *
+ * @returns {void}
  */
 function closeCreateInstanceModal() {
     const modal = document.getElementById('createInstanceModal');
@@ -1568,7 +2170,23 @@ function closeCreateInstanceModal() {
 }
 
 /**
- * Close modal when clicking outside
+ * Close Modal When Clicking Outside Content Area
+ *
+ * BUSINESS LOGIC:
+ * Provides intuitive UX pattern where clicking the modal overlay (outside
+ * the modal content) closes the modal.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Checks if click target is the overlay element
+ * - Closes modal only if clicking overlay, not content
+ * - Prevents accidental closes from clicks inside modal
+ *
+ * WHY THIS MATTERS:
+ * Standard UX pattern that users expect. Improves usability
+ * by providing multiple ways to close modals.
+ *
+ * @param {MouseEvent} event - Click event from user interaction
+ * @returns {void}
  */
 function closeModalOnOutsideClick(event) {
     if (event.target.classList.contains('modal-overlay')) {
@@ -1577,7 +2195,26 @@ function closeModalOnOutsideClick(event) {
 }
 
 /**
- * Submit create instance form
+ * Submit Create Course Instance Form
+ *
+ * BUSINESS LOGIC:
+ * Validates and processes course instance creation request. Creates a scheduled
+ * instance of a published course with specified dates and enrollment limits.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Validates form completion using HTML5 validation
+ * - Collects form data (course_id, dates, max_students)
+ * - Submits to CourseInstanceService
+ * - Shows success/error feedback
+ * - Closes modal and refreshes instance list on success
+ *
+ * WHY THIS MATTERS:
+ * Course instances enable scheduled delivery of courses. Proper validation
+ * prevents scheduling conflicts and data integrity issues.
+ *
+ * @async
+ * @returns {Promise<void>}
+ * @throws {Error} If instance creation fails
  */
 async function submitCreateInstance() {
     const form = document.getElementById('createInstanceForm');
@@ -1609,13 +2246,28 @@ async function submitCreateInstance() {
 }
 
 /**
- * View detailed information about a course instance
+ * View Detailed Information About a Course Instance
  *
  * BUSINESS LOGIC:
- * Shows comprehensive instance details including enrolled students,
- * schedule, status, and management options
+ * Displays a comprehensive modal showing instance details including
+ * schedule, enrollment status, enrolled students list, and management options.
  *
- * @param {number} instanceId - Instance ID to view
+ * TECHNICAL IMPLEMENTATION:
+ * - Fetches instance details and student list from CourseInstanceService
+ * - Creates and injects modal HTML dynamically
+ * - Displays instance metadata (dates, status, capacity)
+ * - Lists all enrolled students with contact information
+ * - Provides "Manage Enrollment" action button
+ * - Auto-removes modal on close
+ *
+ * WHY THIS MATTERS:
+ * Instructors need quick access to instance details and enrolled student lists
+ * for session planning, communication, and enrollment management.
+ *
+ * @async
+ * @param {number} instanceId - ID of the course instance to view
+ * @returns {Promise<void>}
+ * @throws {Error} If instance details cannot be loaded
  */
 async function viewInstanceDetails(instanceId) {
     console.log(`Viewing details for instance ${instanceId}`);
@@ -1701,13 +2353,29 @@ async function viewInstanceDetails(instanceId) {
 }
 
 /**
- * Manage student enrollment for a course instance
+ * Manage Student Enrollment for a Course Instance
  *
  * BUSINESS LOGIC:
- * Provides interface for adding/removing students from instance
- * Shows current enrollment and available actions
+ * Provides a comprehensive interface for adding and removing students from
+ * a course instance, with real-time enrollment status updates.
  *
- * @param {number} instanceId - Instance ID
+ * TECHNICAL IMPLEMENTATION:
+ * - Fetches instance details, enrolled students, and all available students
+ * - Filters out already-enrolled students from available list
+ * - Creates dynamic enrollment management modal
+ * - Provides dropdown to select and enroll available students
+ * - Lists currently enrolled students with removal actions
+ * - Exposes global functions for enrollment/unenrollment
+ * - Refreshes modal after enrollment changes
+ *
+ * WHY THIS MATTERS:
+ * Flexible enrollment management is critical for instructors to add late
+ * registrants, remove dropouts, and maintain accurate class rosters.
+ *
+ * @async
+ * @param {number} instanceId - ID of the course instance to manage enrollment for
+ * @returns {Promise<void>}
+ * @throws {Error} If enrollment data cannot be loaded
  */
 async function manageEnrollment(instanceId) {
     console.log(`Managing enrollment for instance ${instanceId}`);
@@ -1874,7 +2542,24 @@ export function initContentGenerationTab() {
 }
 
 /**
- * Load courses for content generation selection
+ * Load Courses for AI Content Generation Selection
+ *
+ * BUSINESS LOGIC:
+ * Populates the course dropdown in the content generation tab so instructors
+ * can select which course to generate content for.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Fetches instructor's courses from CourseService
+ * - Populates select element with course options
+ * - Shows error message if loading fails
+ *
+ * WHY THIS MATTERS:
+ * AI content generation requires course context. This ensures instructors
+ * can only generate content for courses they own/teach.
+ *
+ * @async
+ * @returns {Promise<void>}
+ * @throws {Error} If courses cannot be loaded (error logged, not thrown)
  */
 async function loadCoursesForContentGeneration() {
     const courseSelect = document.getElementById('contentGenCourseSelect');
@@ -1903,9 +2588,27 @@ async function loadCoursesForContentGeneration() {
 }
 
 /**
- * Generate content using AI
+ * Generate Course Content Using AI
  *
- * @param {string} contentType - Type of content to generate (syllabus, slides, quiz)
+ * BUSINESS LOGIC:
+ * Uses AI to automatically generate course materials (syllabus, presentation slides,
+ * or quiz questions) based on the course description and learning objectives.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Validates course selection
+ * - Shows loading state during generation
+ * - Simulates AI generation (TODO: integrate with real AI service)
+ * - Displays generated content in preview section
+ * - Stores content type and course ID for saving
+ *
+ * WHY THIS MATTERS:
+ * AI content generation dramatically reduces instructor workload for creating
+ * course materials, allowing focus on teaching rather than content creation.
+ *
+ * @async
+ * @param {string} contentType - Type of content to generate: 'syllabus', 'slides', or 'quiz'
+ * @returns {Promise<void>}
+ * @throws {Error} If content generation fails
  */
 async function generateContent(contentType) {
     const courseSelect = document.getElementById('contentGenCourseSelect');
@@ -1990,7 +2693,25 @@ async function generateContent(contentType) {
 }
 
 /**
- * Save generated content to the course
+ * Save AI-Generated Content to Course
+ *
+ * BUSINESS LOGIC:
+ * Persists the AI-generated content (syllabus, slides, or quiz) to the course
+ * after instructor review and approval.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Retrieves content type and course ID from preview element
+ * - Validates that content exists
+ * - Submits content to backend API (TODO: implement real API call)
+ * - Shows success/error feedback
+ *
+ * WHY THIS MATTERS:
+ * Instructors need to review AI-generated content before committing it.
+ * Save functionality preserves approved content for student access.
+ *
+ * @async
+ * @returns {Promise<void>}
+ * @throws {Error} If content saving fails
  */
 async function saveGeneratedContent() {
     const previewContent = document.getElementById('contentPreview');
@@ -2014,7 +2735,22 @@ async function saveGeneratedContent() {
 }
 
 /**
- * Regenerate content
+ * Regenerate AI Content
+ *
+ * BUSINESS LOGIC:
+ * Allows instructors to request new AI-generated content if they're not satisfied
+ * with the initial generation, without changing parameters.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Retrieves current content type from preview element
+ * - Calls generateContent() again with same parameters
+ * - Overwrites previous preview with new generation
+ *
+ * WHY THIS MATTERS:
+ * AI generation isn't always perfect on first try. Regeneration gives
+ * instructors multiple options to choose from.
+ *
+ * @returns {void}
  */
 function regenerateContent() {
     const previewContent = document.getElementById('contentPreview');
@@ -2060,7 +2796,22 @@ export function initFeedbackTab() {
 }
 
 /**
- * Filter feedback by status
+ * Filter Student Feedback by Status
+ *
+ * BUSINESS LOGIC:
+ * Filters the feedback list to show only items matching the selected status
+ * (all/pending/responded/resolved), helping instructors prioritize responses.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Reads filter value from status dropdown
+ * - Shows/hides feedback items based on status match
+ * - Uses CSS display property for filtering
+ *
+ * WHY THIS MATTERS:
+ * Instructors need to prioritize pending feedback. Status filtering
+ * ensures urgent student questions don't get lost in resolved items.
+ *
+ * @returns {void}
  */
 function filterFeedback() {
     const statusFilter = document.getElementById('feedbackStatusFilter');
@@ -2083,9 +2834,24 @@ function filterFeedback() {
 }
 
 /**
- * Respond to feedback
+ * Respond to Student Feedback
  *
- * @param {number} feedbackId - ID of the feedback to respond to
+ * BUSINESS LOGIC:
+ * Opens the response modal for a specific feedback item, allowing
+ * the instructor to compose and send a reply to student questions.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Displays the feedback response modal
+ * - Loads feedback context (student name, question)
+ * - Stores feedback ID in modal data attribute for submission
+ * - Prepares textarea for instructor response
+ *
+ * WHY THIS MATTERS:
+ * Timely, personalized responses to student feedback improve engagement
+ * and learning outcomes while building instructor-student rapport.
+ *
+ * @param {number} feedbackId - ID of the feedback item to respond to
+ * @returns {void}
  */
 function respondToFeedback(feedbackId) {
     console.log('Responding to feedback:', feedbackId);
@@ -2110,7 +2876,22 @@ function respondToFeedback(feedbackId) {
 }
 
 /**
- * Close feedback response modal
+ * Close Feedback Response Modal
+ *
+ * BUSINESS LOGIC:
+ * Closes the feedback response modal and clears the response textarea
+ * to prevent accidental data retention.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Hides modal by setting display to none
+ * - Clears textarea value
+ * - Resets form state
+ *
+ * WHY THIS MATTERS:
+ * Proper cleanup prevents instructors from accidentally sending
+ * old responses to new feedback items.
+ *
+ * @returns {void}
  */
 function closeFeedbackResponseModal() {
     const modal = document.getElementById('feedbackResponseModal');
@@ -2126,7 +2907,26 @@ function closeFeedbackResponseModal() {
 }
 
 /**
- * Submit feedback response
+ * Submit Response to Student Feedback
+ *
+ * BUSINESS LOGIC:
+ * Sends instructor's response to student feedback/questions, enabling
+ * asynchronous communication and support.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Validates response text is not empty
+ * - Retrieves feedback ID from modal data attribute
+ * - Submits response to backend API (TODO: implement real API)
+ * - Shows success/error feedback
+ * - Closes modal and updates feedback list
+ *
+ * WHY THIS MATTERS:
+ * Timely instructor responses improve student satisfaction and learning
+ * outcomes. This feature enables scalable student support.
+ *
+ * @async
+ * @returns {Promise<void>}
+ * @throws {Error} If response submission fails
  */
 async function submitFeedbackResponse() {
     const modal = document.getElementById('feedbackResponseModal');
@@ -2158,9 +2958,26 @@ async function submitFeedbackResponse() {
 }
 
 /**
- * Mark feedback as resolved
+ * Mark Feedback as Resolved
  *
- * @param {number} feedbackId - ID of the feedback to mark as resolved
+ * BUSINESS LOGIC:
+ * Changes the status of a feedback item to "resolved" after the instructor
+ * has adequately addressed the student's question or concern.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Sends resolve request to backend API (TODO: implement real API)
+ * - Shows success/error feedback to user
+ * - Triggers feedback list reload to reflect new status
+ * - Simulates API call with timeout
+ *
+ * WHY THIS MATTERS:
+ * Marking feedback as resolved helps instructors track which student
+ * questions still need attention and maintain organized support workflows.
+ *
+ * @async
+ * @param {number} feedbackId - ID of the feedback item to mark as resolved
+ * @returns {Promise<void>}
+ * @throws {Error} If resolve operation fails
  */
 async function markFeedbackResolved(feedbackId) {
     console.log('Marking feedback as resolved:', feedbackId);

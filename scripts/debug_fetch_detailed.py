@@ -114,7 +114,7 @@ async def debug_fetch():
                     return {
                         success: true,
                         fetchCalls: window.fetchCalls,
-                        currentUrl: window.location.href
+                        currentUrl: window.locations.href
                     };
                 } catch (error) {
                     console.log('[TEST] handleCredentialsLogin threw error:', error.message);
@@ -124,7 +124,7 @@ async def debug_fetch():
                         errorName: error.name,
                         errorStack: error.stack,
                         fetchCalls: window.fetchCalls,
-                        currentUrl: window.location.href
+                        currentUrl: window.locations.href
                     };
                 }
             }

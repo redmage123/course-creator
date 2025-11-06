@@ -25,6 +25,7 @@ import numpy as np
 import logging
 
 from nlp_preprocessing.application.nlp_preprocessor import NLPPreprocessor
+from nlp_preprocessing.application.linguistic_transformer import LinguisticTransformer
 from nlp_preprocessing.domain.entities import ConversationMessage
 
 # Configure logging
@@ -50,8 +51,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize NLP preprocessor
+# Initialize NLP preprocessor and linguistic transformer
 preprocessor = NLPPreprocessor()
+linguistic_transformer = LinguisticTransformer()
 
 
 # Request/Response models
@@ -226,15 +228,131 @@ async def get_stats():
             "intent_classifier": "active",
             "entity_extractor": "active",
             "query_expander": "active",
-            "similarity_algorithms": "active"
+            "similarity_algorithms": "active",
+            "linguistic_transformer": "active"
         },
         "capabilities": {
             "intent_types": 9,
             "entity_types": 6,
             "synonyms": 40,
-            "performance_target_ms": 20
+            "performance_target_ms": 20,
+            "transformation_rules": 12
         }
     }
+
+
+# Track Name Generation Request/Response Models
+class TrackNameRequest(BaseModel):
+    """Request for track name generation"""
+    role_identifier: str = Field(..., min_length=1, max_length=100, description="Role identifier (e.g., 'application_developers')")
+
+
+class TrackNameBatchRequest(BaseModel):
+    """Request for batch track name generation"""
+    role_identifiers: List[str] = Field(..., min_items=1, max_items=50, description="List of role identifiers")
+
+
+class TrackNameResponse(BaseModel):
+    """Response with generated track name"""
+    role_identifier: str
+    track_name: str
+    processing_time_ms: float
+
+
+class TrackNameBatchResponse(BaseModel):
+    """Response with batch generated track names"""
+    results: Dict[str, str]
+    count: int
+    processing_time_ms: float
+
+
+@app.post("/api/v1/transform/track-name", response_model=TrackNameResponse)
+async def generate_track_name(request: TrackNameRequest):
+    """
+    Generate professional track name from role identifier using NLP.
+
+    BUSINESS VALUE:
+    - Consistent, professional track naming across platform
+    - Automated name generation reduces manual work
+    - Linguistic transformation rules ensure proper formatting
+
+    EXAMPLES:
+    - application_developers → Application Development
+    - business_analysts → Business Analysis
+    - qa_engineers → QA Engineering
+    - devops_engineers → DevOps Engineering
+
+    Args:
+        request: Role identifier to transform
+
+    Returns:
+        Generated track name with processing time
+    """
+    try:
+        import time
+        start_time = time.time()
+
+        logger.info(f"Generating track name for: {request.role_identifier}")
+
+        track_name = linguistic_transformer.generate_track_name(request.role_identifier)
+
+        processing_time_ms = (time.time() - start_time) * 1000
+
+        logger.info(
+            f"Track name generated: '{request.role_identifier}' → '{track_name}' "
+            f"({processing_time_ms:.2f}ms)"
+        )
+
+        return TrackNameResponse(
+            role_identifier=request.role_identifier,
+            track_name=track_name,
+            processing_time_ms=processing_time_ms
+        )
+
+    except Exception as e:
+        logger.error(f"Error generating track name: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/v1/transform/track-names/batch", response_model=TrackNameBatchResponse)
+async def generate_track_names_batch(request: TrackNameBatchRequest):
+    """
+    Generate professional track names for multiple role identifiers in batch.
+
+    BUSINESS VALUE:
+    - Efficient batch processing for multiple roles
+    - Consistent naming across all tracks
+
+    Args:
+        request: List of role identifiers to transform
+
+    Returns:
+        Dictionary mapping role identifiers to track names
+    """
+    try:
+        import time
+        start_time = time.time()
+
+        logger.info(f"Batch generating {len(request.role_identifiers)} track names")
+
+        results = linguistic_transformer.batch_generate_track_names(request.role_identifiers)
+
+        processing_time_ms = (time.time() - start_time) * 1000
+
+        logger.info(
+            f"Batch track names generated: {len(results)} results "
+            f"({processing_time_ms:.2f}ms)"
+        )
+
+        return TrackNameBatchResponse(
+            results=results,
+            count=len(results),
+            processing_time_ms=processing_time_ms
+        )
+
+    except Exception as e:
+        logger.error(f"Error batch generating track names: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 if __name__ == "__main__":

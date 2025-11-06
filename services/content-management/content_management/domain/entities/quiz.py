@@ -10,7 +10,26 @@ from content_management.domain.entities.base_content import BaseContent, Content
 
 
 class QuestionType(Enum):
-    """Question type enumeration"""
+    """
+    Educational quiz question type classification.
+
+    Comprehensive enumeration of pedagogically-validated question types supporting
+    diverse assessment methodologies and educational measurement approaches.
+
+    Educational Assessment Types:
+    - **MULTIPLE_CHOICE**: Single or multiple correct answers from predefined options
+    - **TRUE_FALSE**: Binary truth assessment for conceptual understanding validation
+    - **SHORT_ANSWER**: Brief free-text responses for knowledge demonstration
+    - **ESSAY**: Extended free-text responses for critical thinking and analysis
+    - **MATCHING**: Paired association questions for relationship understanding
+    - **FILL_IN_BLANK**: Cloze testing for vocabulary and concept retention
+
+    Educational Benefits:
+    - Diverse cognitive skill assessment (recall, comprehension, application, analysis)
+    - Automated grading for objective questions, manual review for subjective
+    - Bloom's Taxonomy alignment for comprehensive learning evaluation
+    - Accessibility through varied response formats
+    """
     MULTIPLE_CHOICE = "multiple_choice"
     TRUE_FALSE = "true_false"
     SHORT_ANSWER = "short_answer"
@@ -20,15 +39,55 @@ class QuestionType(Enum):
 
 
 class DifficultyLevel(Enum):
-    """Difficulty level enumeration"""
+    """
+    Educational content difficulty classification system.
+
+    Standardized difficulty levels supporting adaptive learning, proper scaffolding,
+    and personalized educational pathways based on student proficiency.
+
+    Difficulty Levels:
+    - **EASY**: Introductory level, foundational concepts, minimal prerequisites
+    - **MEDIUM**: Intermediate level, building on fundamentals, some prerequisites required
+    - **HARD**: Advanced level, complex concepts, significant prerequisite knowledge required
+
+    Educational Applications:
+    - Adaptive quiz generation based on student performance
+    - Progressive difficulty scaffolding in learning paths
+    - Performance analytics and difficulty-adjusted scoring
+    - Student confidence building through appropriate challenge levels
+    """
     EASY = "easy"
     MEDIUM = "medium"
     HARD = "hard"
 
 
 class QuizQuestion:
-    """Quiz question value object"""
-    
+    """
+    Quiz question value object with comprehensive validation and educational metadata.
+
+    BUSINESS REQUIREMENT:
+    Individual quiz questions require rich metadata, flexible question types,
+    and comprehensive validation to support diverse assessment methodologies
+    and automated grading workflows.
+
+    EDUCATIONAL DESIGN:
+    Implements evidence-based assessment design principles including clear
+    question structure, difficulty calibration, hint scaffolding, and
+    detailed explanations for learning reinforcement.
+
+    VALIDATION FRAMEWORK:
+    - Question text completeness and clarity validation
+    - Question type-specific answer validation rules
+    - Points allocation and grading criteria validation
+    - Educational metadata consistency checking
+
+    ACCESSIBILITY CONSIDERATIONS:
+    - Clear question text for screen reader compatibility
+    - Multiple response formats for diverse learning needs
+    - Hint scaffolding for learning support
+    - Comprehensive explanations for knowledge reinforcement
+    """
+
     def __init__(
         self,
         question_text: str,
@@ -52,7 +111,29 @@ class QuizQuestion:
         self.validate()
     
     def validate(self) -> None:
-        """Validate question"""
+        """
+        Validate quiz question business rules and educational requirements.
+
+        Implements comprehensive validation including question completeness,
+        point allocation validation, and question type-specific validation
+        rules to ensure assessment integrity and educational effectiveness.
+
+        Validation Rules:
+        - Question text must be present and non-empty
+        - Points must be positive for fair grading
+        - Multiple choice questions require minimum 2 options
+        - True/False questions must have exactly True and False options
+        - All questions must have correct answers defined
+
+        Raises:
+            ValueError: When validation fails with specific context
+
+        Educational Quality Assurance:
+        - Prevents incomplete or malformed questions
+        - Ensures fair point allocation
+        - Validates answer key completeness
+        - Maintains assessment integrity
+        """
         if not self.question_text:
             raise ValueError("Question text is required")
         if self.points <= 0:
@@ -86,7 +167,24 @@ class QuizQuestion:
             self.correct_answers.append(answer)
     
     def is_correct_answer(self, answer: str) -> bool:
-        """Check if answer is correct"""
+        """
+        Validate student answer against correct answer key.
+
+        Implements automated grading logic for objective question types,
+        enabling immediate feedback and efficient assessment processing.
+
+        Args:
+            answer: Student's submitted answer
+
+        Returns:
+            bool: True if answer is correct, False otherwise
+
+        Educational Applications:
+        - Automated grading for objective assessments
+        - Immediate student feedback for formative learning
+        - Performance analytics and item analysis
+        - Adaptive quiz generation based on answer patterns
+        """
         return answer in self.correct_answers
     
     def get_max_points(self) -> float:
@@ -108,8 +206,34 @@ class QuizQuestion:
 
 
 class QuizSettings:
-    """Quiz settings value object"""
-    
+    """
+    Quiz configuration and behavior settings value object.
+
+    BUSINESS REQUIREMENT:
+    Flexible quiz configuration supporting diverse assessment scenarios including
+    timed assessments, multiple attempts for mastery learning, randomization for
+    assessment security, and accessibility through password protection.
+
+    EDUCATIONAL DESIGN:
+    Implements pedagogically-sound quiz configuration options including:
+    - Time limits for high-stakes assessments or pacing control
+    - Multiple attempts for mastery-based learning and practice quizzes
+    - Question/option randomization for academic integrity
+    - Immediate feedback vs. delayed results for different learning contexts
+
+    SECURITY CONSIDERATIONS:
+    - Password protection for controlled quiz access
+    - Randomization to prevent answer sharing
+    - Attempt limits to prevent gaming the system
+    - Result timing to prevent answer key exploitation
+
+    ACCESSIBILITY FEATURES:
+    - Flexible time limits for accommodations
+    - Immediate feedback for formative learning
+    - Multiple attempts for learning support
+    - Comprehensive answer explanations
+    """
+
     def __init__(
         self,
         time_limit_minutes: Optional[int] = None,
@@ -133,7 +257,27 @@ class QuizSettings:
         self.validate()
     
     def validate(self) -> None:
-        """Validate quiz settings"""
+        """
+        Validate quiz settings business rules and educational requirements.
+
+        Implements comprehensive validation ensuring quiz configuration supports
+        valid assessment scenarios and maintains educational integrity.
+
+        Validation Rules:
+        - Time limits must be positive when set
+        - Attempts allowed must be positive
+        - Password required when password protection enabled
+        - All settings must support valid educational use cases
+
+        Raises:
+            ValueError: When validation fails with specific context
+
+        Educational Quality Assurance:
+        - Prevents invalid quiz configurations
+        - Ensures fair assessment conditions
+        - Maintains academic integrity
+        - Supports diverse pedagogical approaches
+        """
         if self.time_limit_minutes is not None and self.time_limit_minutes <= 0:
             raise ValueError("Time limit must be positive")
         if self.attempts_allowed <= 0:
@@ -157,10 +301,43 @@ class QuizSettings:
 
 class Quiz(BaseContent):
     """
-    Quiz domain entity following SOLID principles
-    Single Responsibility: Quiz-specific business logic
+    Quiz domain entity with comprehensive assessment management capabilities.
+
+    BUSINESS REQUIREMENT:
+    Quizzes are fundamental assessment tools requiring comprehensive question
+    management, flexible settings, automated grading, and detailed performance
+    analytics to support formative and summative educational assessment.
+
+    EDUCATIONAL METHODOLOGY:
+    Implements evidence-based assessment design principles including:
+    - Multiple question type support for diverse cognitive skill assessment
+    - Difficulty-adjusted scoring for fair evaluation
+    - Passing score thresholds for competency-based progression
+    - Comprehensive feedback for learning reinforcement
+    - Time estimation for proper assessment planning
+
+    TECHNICAL IMPLEMENTATION:
+    - Extends BaseContent for lifecycle management and metadata
+    - Aggregates QuizQuestion value objects for question management
+    - Uses QuizSettings for flexible quiz configuration
+    - Implements automated scoring and grading algorithms
+    - Provides comprehensive quiz analytics and metadata
+
+    DOMAIN OPERATIONS:
+    - Question addition, removal, and updating
+    - Settings configuration and validation
+    - Automated score calculation
+    - Performance level determination
+    - Difficulty and time estimation
+    - Quiz completeness validation
+
+    SECURITY CONSIDERATIONS:
+    - Correct answers protected in value objects
+    - Settings validation prevents gaming
+    - Passing score enforcement for progression
+    - Academic integrity through randomization support
     """
-    
+
     def __init__(
         self,
         title: str,

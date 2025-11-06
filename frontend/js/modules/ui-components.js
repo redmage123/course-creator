@@ -617,6 +617,11 @@ export class UIComponents {
     static debounce(func, wait) {
         let timeout;
         return function executedFunction(...args) {
+    /**
+     * EXECUTE LATER OPERATION
+     * PURPOSE: Execute later operation
+     * WHY: Implements required business logic for system functionality
+     */
             const later = () => {
                 clearTimeout(timeout);
                 func(...args);

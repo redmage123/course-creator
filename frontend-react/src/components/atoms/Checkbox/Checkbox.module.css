@@ -1,0 +1,329 @@
+/**
+ * Checkbox Component Styles - Tami Design System
+ *
+ * BUSINESS CONTEXT:
+ * Implements Tami design system checkbox styles with custom visuals.
+ * Provides consistent checkbox styling across the platform.
+ *
+ * CRITICAL: Platform blue (#2563eb) for checked states
+ */
+
+/* ============================================================================
+ * CONTAINER
+ * ============================================================================ */
+
+.checkbox-container {
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: fit-content;
+}
+
+/* ============================================================================
+ * WRAPPER
+ * ============================================================================ */
+
+.checkbox-wrapper {
+  /* Layout */
+  position: relative;
+  display: inline-flex;
+  align-items: flex-start;
+}
+
+/* ============================================================================
+ * HIDDEN INPUT
+ * ============================================================================ */
+
+.checkbox-input {
+  /* Hide visually but keep accessible for tests and assistive tech */
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  /* Note: pointer-events NOT set to none to allow programmatic clicks */
+}
+
+/* ============================================================================
+ * LABEL WRAPPER
+ * ============================================================================ */
+
+.checkbox-label-wrapper {
+  /* Layout */
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+
+  /* Typography */
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #1a202c;
+
+  /* User select */
+  user-select: none;
+}
+
+/* ============================================================================
+ * CUSTOM CHECKBOX VISUAL
+ * ============================================================================ */
+
+.checkbox-custom {
+  /* Layout */
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+
+  /* Background */
+  background-color: #ffffff;
+  border: 2px solid #cbd5e0;
+  border-radius: 4px;
+
+  /* Transitions */
+  transition: all 0.2s ease;
+}
+
+.checkbox-label-wrapper:hover .checkbox-custom {
+  border-color: #a0aec0;
+}
+
+.checkbox-input:focus-visible + .checkbox-label-wrapper .checkbox-custom {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  border-color: #2563eb;
+}
+
+/* ============================================================================
+ * CHECKED STATE
+ * ============================================================================ */
+
+.checkbox-input:checked + .checkbox-label-wrapper .checkbox-custom {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+
+.checkbox-input:checked:hover + .checkbox-label-wrapper .checkbox-custom {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+/* ============================================================================
+ * ICONS (CHECKMARK AND INDETERMINATE DASH)
+ * ============================================================================ */
+
+.checkbox-icon,
+.checkbox-indeterminate-icon {
+  /* Hidden by default */
+  opacity: 0;
+  transform: scale(0.8);
+  color: #ffffff;
+
+  /* Transitions */
+  transition: all 0.15s ease;
+}
+
+/* Show checkmark when checked (not indeterminate) */
+.checkbox-input:checked:not(:indeterminate) + .checkbox-label-wrapper .checkbox-icon {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Show dash when indeterminate */
+.checkbox-input:indeterminate + .checkbox-label-wrapper .checkbox-indeterminate-icon {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Hide checkmark when indeterminate */
+.checkbox-input:indeterminate + .checkbox-label-wrapper .checkbox-icon {
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+/* Indeterminate background */
+.checkbox-input:indeterminate + .checkbox-label-wrapper .checkbox-custom {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+
+.checkbox-input:indeterminate:hover + .checkbox-label-wrapper .checkbox-custom {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+/* ============================================================================
+ * LABEL TEXT
+ * ============================================================================ */
+
+.checkbox-label {
+  /* Typography */
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+
+/* ============================================================================
+ * SIZE VARIANTS
+ * ============================================================================ */
+
+.checkbox-small .checkbox-custom {
+  width: 16px;
+  height: 16px;
+}
+
+.checkbox-small .checkbox-icon,
+.checkbox-small .checkbox-indeterminate-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.checkbox-small .checkbox-label-wrapper {
+  font-size: 13px;
+  gap: 6px;
+}
+
+.checkbox-medium .checkbox-custom {
+  width: 20px;
+  height: 20px;
+}
+
+.checkbox-medium .checkbox-icon,
+.checkbox-medium .checkbox-indeterminate-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.checkbox-medium .checkbox-label-wrapper {
+  font-size: 14px;
+  gap: 8px;
+}
+
+.checkbox-large .checkbox-custom {
+  width: 24px;
+  height: 24px;
+}
+
+.checkbox-large .checkbox-icon,
+.checkbox-large .checkbox-indeterminate-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.checkbox-large .checkbox-label-wrapper {
+  font-size: 15px;
+  gap: 10px;
+}
+
+/* ============================================================================
+ * ERROR STATE
+ * ============================================================================ */
+
+.checkbox-error .checkbox-custom {
+  border-color: #dc2626;
+}
+
+.checkbox-error .checkbox-label-wrapper:hover .checkbox-custom {
+  border-color: #b91c1c;
+}
+
+.checkbox-error .checkbox-input:checked + .checkbox-label-wrapper .checkbox-custom,
+.checkbox-error .checkbox-input:indeterminate + .checkbox-label-wrapper .checkbox-custom {
+  background-color: #dc2626;
+  border-color: #dc2626;
+}
+
+.checkbox-error .checkbox-input:checked:hover + .checkbox-label-wrapper .checkbox-custom,
+.checkbox-error .checkbox-input:indeterminate:hover + .checkbox-label-wrapper .checkbox-custom {
+  background-color: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.checkbox-error .checkbox-input:focus-visible + .checkbox-label-wrapper .checkbox-custom {
+  outline-color: #dc2626;
+  border-color: #dc2626;
+}
+
+/* ============================================================================
+ * DISABLED STATE
+ * ============================================================================ */
+
+.checkbox-disabled .checkbox-label-wrapper {
+  cursor: not-allowed;
+  color: #a0aec0;
+}
+
+.checkbox-disabled .checkbox-custom {
+  background-color: #f7fafc;
+  border-color: #e2e8f0;
+}
+
+.checkbox-disabled .checkbox-label-wrapper:hover .checkbox-custom {
+  border-color: #e2e8f0;
+}
+
+.checkbox-disabled .checkbox-input:checked + .checkbox-label-wrapper .checkbox-custom,
+.checkbox-disabled .checkbox-input:indeterminate + .checkbox-label-wrapper .checkbox-custom {
+  background-color: #e2e8f0;
+  border-color: #e2e8f0;
+}
+
+.checkbox-disabled .checkbox-icon,
+.checkbox-disabled .checkbox-indeterminate-icon {
+  color: #a0aec0;
+}
+
+/* ============================================================================
+ * MESSAGE (HELPER TEXT / ERROR)
+ * ============================================================================ */
+
+.checkbox-message {
+  /* Layout */
+  margin-left: 28px; /* Align with label text (checkbox width + gap) */
+
+  /* Typography */
+  font-size: 13px;
+  line-height: 1.5;
+  min-height: 20px;
+}
+
+.checkbox-small .checkbox-message {
+  margin-left: 22px; /* Small checkbox alignment */
+}
+
+.checkbox-large .checkbox-message {
+  margin-left: 34px; /* Large checkbox alignment */
+}
+
+.checkbox-helper-text {
+  color: #64748b;
+}
+
+.checkbox-error-text {
+  color: #dc2626;
+}
+
+/* ============================================================================
+ * ACCESSIBILITY
+ * ============================================================================ */
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .checkbox-custom {
+    border-width: 3px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .checkbox-custom,
+  .checkbox-icon,
+  .checkbox-indeterminate-icon {
+    transition: none;
+  }
+}

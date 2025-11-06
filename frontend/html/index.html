@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="../css/modern-ui/modern-ui.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Course Creator Platform - AI-Powered Course Creation</title>
@@ -23,8 +24,8 @@
     </div>
 
     <!-- ARIA Live Regions -->
-    <div id="errorMessage" role="alert" aria-live="assertive" style="position: absolute; left: -9999px;"></div>
-    <div id="successMessage" role="status" aria-live="polite" style="position: absolute; left: -9999px;"></div>
+    <div id="errorMessage" role="alert" aria-live="assertive" class="sr-only"></div>
+    <div id="successMessage" role="status" aria-live="polite" class="sr-only"></div>
 
     <!-- HEADER - Consistent across all pages -->
     <header class="site-header" role="banner">
@@ -113,7 +114,7 @@
                 <button class="header-btn header-btn-register" id="registerBtn">Register</button>
 
                 <!-- User Dropdown (hidden by default, shown when logged in) -->
-                <div id="userDropdown" class="user-dropdown" style="display: none;">
+                <div id="userDropdown" class="user-dropdown hidden">
                     <button class="user-trigger" aria-expanded="false" aria-haspopup="true">
                         <div class="user-avatar">
                             <span id="userInitials">U</span>
@@ -125,7 +126,7 @@
                         <a href="#dashboard"><i class="fas fa-th-large"></i> Dashboard</a>
                         <a href="#profile"><i class="fas fa-user"></i> Profile</a>
                         <a href="#settings"><i class="fas fa-cog"></i> Settings</a>
-                        <hr style="margin: var(--space-2) 0; border: none; border-top: 1px solid var(--border);">
+                        <hr class="user-menu-divider">
                         <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
                     </div>
                 </div>
@@ -134,7 +135,7 @@
     </header>
 
     <!-- Main Content -->
-    <main id="main-content" role="main" style="padding-top: 80px;">
+    <main id="main-content" role="main" class="main-content-offset">
 
         <!-- HERO SECTION - Bold, Centered, Professional -->
         <section class="hero">
@@ -333,7 +334,7 @@
     </footer>
 
     <!-- PRIVACY CONSENT MODAL -->
-    <div id="privacyModal" class="modal-backdrop privacy-consent-backdrop" role="dialog" aria-labelledby="privacyModalTitle" aria-hidden="true" style="display: none;">
+    <div id="privacyModal" class="modal-backdrop privacy-consent-backdrop hidden" role="dialog" aria-labelledby="privacyModalTitle" aria-hidden="true">
         <div class="modal modal-md privacy-consent-modal">
             <div class="modal-header">
                 <h2 id="privacyModalTitle" class="modal-title">Privacy & Data Protection</h2>
@@ -447,15 +448,13 @@
             localStorage.removeItem('userRole');
             localStorage.removeItem('userName');
             localStorage.removeItem('isGuest');
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('sessionStart');
+            localStorage.removeItem('lastActivity');
 
-            // Show login/register buttons
-            const loginDropdown = document.getElementById('loginDropdown');
-            const registerBtn = document.getElementById('registerBtn');
+            // Hide user dropdown (login/register buttons stay visible)
             const userDropdown = document.getElementById('userDropdown');
-
-            if (loginDropdown) loginDropdown.style.display = 'block';
-            if (registerBtn) registerBtn.style.display = 'block';
-            if (userDropdown) userDropdown.style.display = 'none';
+            if (userDropdown) userDropdown.classList.add('hidden');
 
             window.location.href = '/html/index.html';
         };
@@ -479,9 +478,8 @@
         // Check if user is logged in
         const authToken = localStorage.getItem('authToken');
         if (authToken) {
-            document.getElementById('loginDropdown').style.display = 'none';
-            document.getElementById('registerBtn').style.display = 'none';
-            document.getElementById('userDropdown').style.display = 'block';
+            // Show user dropdown when logged in (but keep login/register buttons visible)
+            document.getElementById('userDropdown').classList.remove('hidden');
 
             // Set user info
             const userName = localStorage.getItem('userName') || 'User';
@@ -555,11 +553,9 @@
             const usernameOrEmail = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
 
-            // Determine if input is email or username
-            const isEmail = usernameOrEmail.includes('@');
-            const loginData = isEmail
-                ? { email: usernameOrEmail, password }
-                : { username: usernameOrEmail, password };
+            // Backend accepts username field for both username and email
+            // Per models/auth.py LoginRequest: username can be "Username or email address"
+            const loginData = { username: usernameOrEmail, password };
 
             try {
                 // Call authentication API through nginx proxy
@@ -726,5 +722,8 @@
 
     <!-- Accessibility Manager -->
     <script src="/js/accessibility-manager.js"></script>
+
+    <!-- GDPR/CCPA Cookie Consent Banner -->
+    <script src="/public/js/cookie-consent-banner.js"></script>
 </body>
 </html>

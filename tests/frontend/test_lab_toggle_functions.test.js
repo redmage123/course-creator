@@ -27,7 +27,7 @@ describe('Lab Toggle Functions', () => {
         };
         
         mockWindow = {
-            location: {
+            locations: {
                 search: '?courseId=test-course&course=Test%20Course'
             }
         };

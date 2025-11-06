@@ -103,7 +103,7 @@
 
 > Your course is ready. [0.5s] Now it's time to **welcome your students**. [0.8s]
 >
-> One student? [0.3s] Easy. [0.5s] One **hundred** students? [0.3s] Even easier. [0.6s] Upload a CSV file and enroll an entire cohort in **seconds**. [0.7s]
+> One student? [0.3s] Easy. [0.5s] One **hundred** students? [0.3s] Even easier. [0.6s] Upload a CSV file and enroll an entire location in **seconds**. [0.7s]
 >
 > Organize by section... [0.4s] group by skill level... [0.4s] track by semester. [0.5s] However you teach, [0.3s] we **adapt**. [0.7s]
 >

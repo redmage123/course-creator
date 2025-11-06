@@ -93,7 +93,7 @@ class TestRBACDashboardFrontend:
     def mock_window(self):
         """Create mock window object."""
         window = Mock()
-        window.location = Mock()
+        window.locations = Mock()
         window.localStorage = Mock()
         window.localStorage.getItem = Mock(return_value="test_jwt_token")
         window.localStorage.removeItem = Mock()

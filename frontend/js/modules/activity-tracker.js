@@ -29,7 +29,6 @@
  * - Uses notification system for user feedback
  * - Coordinates with lab lifecycle for resource cleanup
  */
-
 import { showNotification } from './notifications.js';
 
 export class ActivityTracker {

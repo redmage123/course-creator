@@ -1040,7 +1040,7 @@ class TestVersionCreation(BaseTest):
     @pytest.fixture(autouse=True)
     def setup_pages(self):
         """Set up page objects for each test."""
-        self.login_page = InstructorLoginPage(self.driver)
+        self.login_page = InstructorLoginPage(self.driver, self.config)
         self.versioning_page = CourseVersioningPage(self.driver)
         self.db_helper = CourseVersionDatabase({
             'host': 'localhost',
@@ -1331,7 +1331,7 @@ class TestVersionManagement(BaseTest):
     @pytest.fixture(autouse=True)
     def setup_pages(self):
         """Set up page objects for each test."""
-        self.login_page = InstructorLoginPage(self.driver)
+        self.login_page = InstructorLoginPage(self.driver, self.config)
         self.versioning_page = CourseVersioningPage(self.driver)
         self.db_helper = CourseVersionDatabase({
             'host': 'localhost',
@@ -1540,7 +1540,7 @@ class TestVersionMetadata(BaseTest):
     @pytest.fixture(autouse=True)
     def setup_pages(self):
         """Set up page objects for each test."""
-        self.login_page = InstructorLoginPage(self.driver)
+        self.login_page = InstructorLoginPage(self.driver, self.config)
         self.versioning_page = CourseVersioningPage(self.driver)
         self.db_helper = CourseVersionDatabase({
             'host': 'localhost',

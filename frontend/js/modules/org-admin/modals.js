@@ -15,7 +15,6 @@
  * Extracted from monolithic org-admin-dashboard.js (3,273 lines) to improve
  * maintainability, testability, and separation of concerns.
  */
-
 // Import dependencies from other modules
 import { closeModal, showNotification } from './utils.js';
 import {
@@ -64,6 +63,9 @@ import {
     escapeHtml,
     capitalizeFirst
 } from './ui.js';
+
+// Module-level state for loaded templates
+let loadedTrackTemplates = [];
 
 // =============================================================================
 // BASIC MODAL FUNCTIONS
@@ -713,8 +715,8 @@ function displayRAGSuggestions(ragResult, projectDescription, targetRoles) {
                 <span style="color: var(--info-color);">${ragResult.difficulty_level || 'Intermediate'}</span>
             </div>
             <div class="insight-metric">
-                <strong>Optimal Cohort Size:</strong><br>
-                <span style="color: var(--success-color);">${ragResult.cohort_size || '20-30 participants'}</span>
+                <strong>Optimal Locations Size:</strong><br>
+                <span style="color: var(--success-color);">${ragResult.location_size || '20-30 participants'}</span>
             </div>
         </div>
     `;
@@ -763,7 +765,7 @@ function generateMockRAGSuggestions(description, targetRoles) {
         analysis: `Based on your project description, this appears to be a ${targetRoles ? 'role-specific' : 'general'} training program that would benefit from a structured, multi-track approach.`,
         recommended_duration: '14 weeks',
         difficulty_level: 'Intermediate',
-        cohort_size: '25 participants',
+        location_size: '25 participants',
         recommended_tracks: [
             { name: 'Foundation Track', description: 'Essential knowledge and core concepts' },
             { name: 'Hands-On Track', description: 'Practical exercises and real-world applications' },
@@ -800,18 +802,16 @@ async function loadTrackTemplates() {
             }
         });
 
-        let templates = [];
         if (response.ok) {
-            templates = await response.json();
+            loadedTrackTemplates = await response.json();
         } else {
-            // Use mock track templates
-            templates = getMockTrackTemplates();
+            loadedTrackTemplates = [];
         }
 
-        displayTrackTemplates(templates);
+        displayTrackTemplates(loadedTrackTemplates);
     } catch (error) {
         console.error('Error loading track templates:', error);
-        displayTrackTemplates(getMockTrackTemplates());
+        displayTrackTemplates([]);
     }
 }
 
@@ -871,9 +871,8 @@ function updateSelectedTracksDisplay() {
 
     container.style.display = 'block';
 
-    // Get template details for selected tracks
-    const templates = getMockTrackTemplates(); // In production, get from loaded templates
-    const selected = templates.filter(t => selectedTemplates.includes(t.id));
+    // Get template details for selected tracks from loaded API data
+    const selected = loadedTrackTemplates.filter(t => selectedTemplates.includes(t.id));
 
     listContainer.innerHTML = selected.map(template => `
         <div class="selected-track-item">
@@ -886,44 +885,3 @@ function updateSelectedTracksDisplay() {
     `).join('');
 }
 
-/**
- * Get mock track templates
- *
- * @returns {Array} Mock track templates
- */
-function getMockTrackTemplates() {
-    return [
-        {
-            id: 'template-1',
-            name: 'Application Development Track',
-            description: 'Comprehensive full-stack development training',
-            template_category: 'Software Development',
-            estimated_duration_hours: 160,
-            difficulty_level: 'intermediate'
-        },
-        {
-            id: 'template-2',
-            name: 'Business Analyst Track',
-            description: 'Requirements analysis and stakeholder management',
-            template_category: 'Business Analysis',
-            estimated_duration_hours: 120,
-            difficulty_level: 'beginner'
-        },
-        {
-            id: 'template-3',
-            name: 'DevOps Engineer Track',
-            description: 'Infrastructure automation and CI/CD pipelines',
-            template_category: 'DevOps',
-            estimated_duration_hours: 200,
-            difficulty_level: 'advanced'
-        },
-        {
-            id: 'template-4',
-            name: 'Data Science Track',
-            description: 'Data analysis and machine learning fundamentals',
-            template_category: 'Data Science',
-            estimated_duration_hours: 180,
-            difficulty_level: 'intermediate'
-        }
-    ];
-}

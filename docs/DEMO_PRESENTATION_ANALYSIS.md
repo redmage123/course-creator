@@ -77,7 +77,7 @@
 ### **SLIDE 3: Projects & Tracks (30s)**
 
 **Current Script:**
-> "Within your organization, create projects to group related courses, and tracks to define learning paths for different student cohorts or skill levels."
+> "Within your organization, create projects to group related courses, and tracks to define learning paths for different student locations or skill levels."
 
 **Analysis:**
 - ❌ Too short for 30-second video
@@ -190,7 +190,7 @@
 ### **SLIDE 7: Enroll Students (45s)**
 
 **Current Script:**
-> "Enroll students in your course individually or in bulk using CSV import. Organize students into sections or cohorts for better class management."
+> "Enroll students in your course individually or in bulk using CSV import. Organize students into sections or locations for better class management."
 
 **Analysis:**
 - ❌ Dry and administrative
@@ -200,7 +200,7 @@
 **RECOMMENDED REVISION:**
 > "Your course is ready. [0.5s pause] Now it's time to **welcome your students**. [0.8s pause]
 >
-> One student? [0.3s pause] Easy. [0.5s pause] One **hundred** students? [0.3s pause] Even easier. [0.6s pause] Upload a CSV file and enroll an entire cohort in **seconds**. [0.7s pause]
+> One student? [0.3s pause] Easy. [0.5s pause] One **hundred** students? [0.3s pause] Even easier. [0.6s pause] Upload a CSV file and enroll an entire location in **seconds**. [0.7s pause]
 >
 > Organize by section... [0.4s pause] group by skill level... [0.4s pause] track by semester. [0.5s pause] However you teach, [0.3s pause] we **adapt**. [0.7s pause]
 >

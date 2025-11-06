@@ -33,9 +33,9 @@ global.localStorage = {
   clear: jest.fn()
 };
 
-// Mock window.location for navigation tests
-delete window.location;
-window.location = {
+// Mock window.locations for navigation tests
+delete window.locations;
+window.locations = {
   href: 'http://localhost:8080',
   hash: '',
   pathname: '/',

@@ -22,12 +22,6 @@
  * - Automatic lab cleanup on logout (resource management)
  * - Seamless cross-tab authentication state
  */
-
-/**
- * MODULE DEPENDENCIES
- * PURPOSE: Import all systems that authentication integrates with
- * WHY: Authentication is a cross-cutting concern that affects all platform areas
- */
 // Use global CONFIG (loaded via script tag in HTML)
 import { showNotification } from './notifications.js';  // User feedback system
 import { ActivityTracker } from './activity-tracker.js'; // Session activity monitoring
@@ -111,6 +105,9 @@ class AuthManager {
         // SESSION MONITORING STATE: Control session timeout checking
         this.sessionCheckInterval = null;  // Interval for periodic session validation
         this.warningShown = false;         // Track if logout warning has been displayed
+
+        // TOKEN REFRESH STATE: Control automatic token refresh
+        this.tokenRefreshInterval = null;  // Interval for periodic token refresh
     }
 
     /**
@@ -212,6 +209,10 @@ class AuthManager {
             
             // Start activity tracking for existing session
             this.activityTracker.start();
+
+            // Start automatic token refresh for existing session
+            // WHY: Users who reload page should continue to have fresh tokens
+            this.startTokenRefresh();
         }
     }
 
@@ -293,7 +294,11 @@ class AuthManager {
                 
                 // START SESSION MONITORING: Automatic logout system for expired sessions
                 this.startSessionMonitoring();
-                
+
+                // START AUTOMATIC TOKEN REFRESH: Keep tokens fresh for active users
+                // WHY: Prevent unexpected logout during multi-hour sessions (instructors/students)
+                this.startTokenRefresh();
+
                 // USER PROFILE: Use user data from login response (contains all needed info)
                 // WHY: Login response already includes complete user profile data
                 if (data.user) {
@@ -526,36 +531,151 @@ class AuthManager {
     }
 
     /**
+     * AUTOMATIC TOKEN REFRESH SYSTEM
+     * PURPOSE: Refresh JWT token before expiration for active users
+     * WHY: Prevents unexpected logout during active sessions (instructors/students work for hours)
+     *
+     * REFRESH STRATEGY:
+     * - Token expires after 30 minutes backend
+     * - Frontend refreshes every 20 minutes when user is active
+     * - Only refresh if user had activity in last 30 minutes
+     * - Sliding window expiration for better UX
+     *
+     * SECURITY FEATURES:
+     * - Requires valid existing token (can't refresh expired token)
+     * - Activity check prevents indefinite sessions
+     * - Server re-validates user and permissions
+     * - Organization membership refreshed for org admins
+     *
+     * @returns {Object} Refresh result with success status and new token
+     */
+    async refreshToken() {
+        try {
+            // Check if user has recent activity (within last 30 minutes)
+            const lastActivity = localStorage.getItem('lastActivity');
+            if (!lastActivity) {
+                console.log('⏭️ No activity tracking, skipping token refresh');
+                return { success: false, reason: 'no_activity_tracking' };
+            }
+
+            const timeSinceActivity = Date.now() - parseInt(lastActivity);
+            const ACTIVITY_THRESHOLD = 30 * 60 * 1000; // 30 minutes
+
+            if (timeSinceActivity > ACTIVITY_THRESHOLD) {
+                console.log('⏭️ No recent activity, skipping token refresh');
+                return { success: false, reason: 'inactive' };
+            }
+
+            // Call refresh endpoint with current token
+            const response = await fetch(`${this.getAuthApiBase()}/auth/refresh`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.authToken || localStorage.getItem('authToken')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+
+                // Update stored token
+                this.authToken = data.access_token;
+                localStorage.setItem('authToken', this.authToken);
+
+                // Update user data (may have changed)
+                if (data.user) {
+                    this.currentUser = data.user;
+                    localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+                }
+
+                console.log('✅ Token refreshed successfully');
+                return { success: true, token: this.authToken };
+            } else if (response.status === 401) {
+                // Token already expired - trigger logout
+                console.log('❌ Token refresh failed: Token expired');
+                this.handleSessionExpired();
+                return { success: false, reason: 'token_expired' };
+            } else {
+                console.error('❌ Token refresh failed:', response.status);
+                return { success: false, reason: 'server_error' };
+            }
+        } catch (error) {
+            console.error('Error refreshing token:', error);
+            return { success: false, reason: 'network_error', error };
+        }
+    }
+
+    /**
+     * START AUTOMATIC TOKEN REFRESH INTERVAL
+     * PURPOSE: Periodically refresh token to maintain long sessions
+     * WHY: Instructors and students need multi-hour sessions without interruption
+     *
+     * REFRESH SCHEDULE:
+     * - Runs every 20 minutes (token expires in 30)
+     * - Only refreshes if user has recent activity
+     * - Stops on logout or session expiry
+     */
+    startTokenRefresh() {
+        // Clear any existing interval
+        if (this.tokenRefreshInterval) {
+            clearInterval(this.tokenRefreshInterval);
+        }
+
+        // Refresh token every 20 minutes (before 30-minute expiration)
+        const REFRESH_INTERVAL = 20 * 60 * 1000; // 20 minutes
+
+        this.tokenRefreshInterval = setInterval(async () => {
+            console.log('⏰ Auto token refresh triggered');
+            await this.refreshToken();
+        }, REFRESH_INTERVAL);
+
+        console.log('🔄 Automatic token refresh started (every 20 minutes)');
+    }
+
+    /**
+     * STOP AUTOMATIC TOKEN REFRESH
+     * PURPOSE: Clean up token refresh interval on logout
+     */
+    stopTokenRefresh() {
+        if (this.tokenRefreshInterval) {
+            clearInterval(this.tokenRefreshInterval);
+            this.tokenRefreshInterval = null;
+            console.log('🛑 Automatic token refresh stopped');
+        }
+    }
+
+    /**
      * COMPREHENSIVE USER LOGOUT SYSTEM
      * PURPOSE: Securely terminate user session with complete cleanup and resource management
      * WHY: Proper logout is critical for security, resource management, and user experience
-     * 
+     *
      * LOGOUT PROCESS WORKFLOW:
      * 1. Invalidate server-side session via logout API
      * 2. Stop all security monitoring (activity tracking)
-     * 3. Clean up role-specific resources (lab containers)
-     * 4. Clear all client-side authentication data
-     * 5. Reset authentication manager state
-     * 6. Return logout result for UI handling
-     * 
+     * 3. Stop automatic token refresh
+     * 4. Clean up role-specific resources (lab containers)
+     * 5. Clear all client-side authentication data
+     * 6. Reset authentication manager state
+     * 7. Return logout result for UI handling
+     *
      * SECURITY FEATURES:
      * - Server-side session invalidation for complete security
      * - Comprehensive client-side data cleanup
      * - Activity monitoring termination
      * - JWT token invalidation
      * - Session timestamp cleanup
-     * 
+     *
      * RESOURCE MANAGEMENT:
      * - Lab container cleanup for students
      * - Memory leak prevention through proper cleanup
      * - Event listener removal via activity tracker
      * - Background process termination
-     * 
+     *
      * GRACEFUL DEGRADATION:
      * - Continues with client cleanup even if server logout fails
      * - Handles lab cleanup failures without blocking logout
      * - Ensures user can always log out regardless of service availability
-     * 
+     *
      * @returns {Object} Logout result with success status
      */
     async logout() {
@@ -587,6 +707,10 @@ class AuthManager {
         // SECURITY MONITORING TERMINATION: Stop activity tracking for session timeout
         // WHY: No need to monitor activity after user explicitly logs out
         this.activityTracker.stop();
+
+        // STOP AUTOMATIC TOKEN REFRESH: No need to refresh tokens after logout
+        // WHY: Token refresh is only for active sessions
+        this.stopTokenRefresh();
         
         // ROLE-SPECIFIC RESOURCE CLEANUP: Clean up lab containers and other services
         // WHY: Students may have active lab containers that need proper cleanup
@@ -706,7 +830,10 @@ class AuthManager {
         // STOP SECURITY MONITORING: Terminate activity tracking immediately
         // WHY: No need to monitor activity for expired sessions
         this.activityTracker.stop();
-        
+
+        // STOP TOKEN REFRESH: No need to refresh tokens for expired sessions
+        this.stopTokenRefresh();
+
         // COMPLETE DATA CLEANUP: Remove all session-related data
         // WHY: Expired sessions should leave no authentication traces
         this.clearAllSessionData();
@@ -725,7 +852,10 @@ class AuthManager {
      */
     handleInactivityTimeout() {
         this.activityTracker.stop();
-        
+
+        // Stop token refresh for inactive sessions
+        this.stopTokenRefresh();
+
         // Clear session data including timestamps
         this.clearAllSessionData();
         
@@ -792,9 +922,9 @@ class AuthManager {
         const pageAccess = {
             'student': ['student-dashboard.html', 'lab.html', 'index.html'],
             'instructor': ['instructor-dashboard.html', 'lab.html', 'index.html'],
-            'org_admin': ['org-admin-enhanced.html', 'instructor-dashboard.html', 'student-dashboard.html', 'lab.html', 'index.html'],
-            'organization_admin': ['org-admin-enhanced.html', 'instructor-dashboard.html', 'student-dashboard.html', 'lab.html', 'index.html'], // Same as org_admin
-            'admin': ['admin.html', 'site-admin-dashboard.html', 'org-admin-enhanced.html', 'instructor-dashboard.html', 'student-dashboard.html', 'lab.html', 'index.html']
+            'org_admin': ['org-admin-dashboard.html', 'instructor-dashboard.html', 'student-dashboard.html', 'lab.html', 'index.html'],
+            'organization_admin': ['org-admin-dashboard.html', 'instructor-dashboard.html', 'student-dashboard.html', 'lab.html', 'index.html'], // Same as org_admin
+            'admin': ['admin.html', 'site-admin-dashboard.html', 'org-admin-dashboard.html', 'instructor-dashboard.html', 'student-dashboard.html', 'lab.html', 'index.html']
         };
         
         return pageAccess[userRole]?.includes(page) || false;
@@ -876,16 +1006,6 @@ class AuthManager {
      * - Cross-tab synchronization
      * - Automatic cleanup and warning system
      */
-
-    /**
-     * Check if current session is valid based on timestamps.
-     * 
-     * Validates both absolute session timeout and inactivity timeout.
-     * This method is called frequently to ensure session integrity.
-     * 
-     * Returns:
-     *   boolean: true if session is still valid, false if expired
-     */
     isSessionValid() {
         const sessionStart = localStorage.getItem('sessionStart');
         const lastActivity = localStorage.getItem('lastActivity');
@@ -962,8 +1082,9 @@ class AuthManager {
     clearExpiredSession() {
         console.log('Clearing expired session');
         this.stopSessionMonitoring();
+        this.stopTokenRefresh();  // Stop automatic token refresh
         this.clearAllSessionData();
-        
+
         // Notify user about session expiry
         if (typeof showNotification === 'function') {
             showNotification('Your session has expired. Please log in again.', 'warning');

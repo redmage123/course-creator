@@ -821,7 +821,7 @@ class TestCourseCloning:
         PRIORITY: HIGH - Core course reuse functionality
         """
         # Setup
-        login_page = InstructorLoginPage(driver)
+        login_page = InstructorLoginPage(driver, config)
         clone_page = CourseCloningPage(driver)
         db = CourseCloneDatabase()
 
@@ -926,7 +926,7 @@ class TestCourseCloning:
         PRIORITY: HIGH - Multi-tenant course sharing
         """
         # Setup
-        login_page = InstructorLoginPage(driver)
+        login_page = InstructorLoginPage(driver, config)
         clone_page = CourseCloningPage(driver)
         db = CourseCloneDatabase()
 
@@ -1010,7 +1010,7 @@ class TestCourseCloning:
         PRIORITY: MEDIUM - Course customization flexibility
         """
         # Setup
-        login_page = InstructorLoginPage(driver)
+        login_page = InstructorLoginPage(driver, config)
         clone_page = CourseCloningPage(driver)
         customize_page = CloneCustomizationPage(driver)
         db = CourseCloneDatabase()
@@ -1086,7 +1086,7 @@ class TestCourseCloning:
         PRIORITY: MEDIUM - Flexible course templating
         """
         # Setup
-        login_page = InstructorLoginPage(driver)
+        login_page = InstructorLoginPage(driver, config)
         clone_page = CourseCloningPage(driver)
         validation_page = CloneValidationPage(driver)
         db = CourseCloneDatabase()
@@ -1189,7 +1189,7 @@ class TestCourseCloneValidation:
         PRIORITY: CRITICAL - Core course structure
         """
         # Setup
-        login_page = InstructorLoginPage(driver)
+        login_page = InstructorLoginPage(driver, config)
         clone_page = CourseCloningPage(driver)
         validation_page = CloneValidationPage(driver)
         db = CourseCloneDatabase()

@@ -1,0 +1,242 @@
+/**
+ * Button Component Styles - Tami Design System
+ *
+ * BUSINESS CONTEXT:
+ * Implements Tami design system button styles with platform blue color scheme.
+ * Provides consistent, professional button styling across all user roles.
+ *
+ * CRITICAL: Uses OUR blue (#2563eb), NOT Tami purple/orange
+ */
+
+/* ============================================================================
+ * BASE BUTTON STYLES
+ * ============================================================================ */
+
+.btn {
+  /* Reset */
+  border: none;
+  margin: 0;
+  text-decoration: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  /* Layout */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+
+  /* Typography */
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+  white-space: nowrap;
+
+  /* Sizing */
+  padding: 12px 24px;
+  border-radius: 8px;
+
+  /* Transitions */
+  transition: all 0.2s ease;
+
+  /* Touch target size (WCAG 2.1 Level AAA) */
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Hover state */
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Active state */
+.btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+/* Focus state (keyboard navigation) */
+.btn:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* Disabled state */
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ============================================================================
+ * VARIANT STYLES
+ * ============================================================================ */
+
+/* Primary - Main actions (blue background) */
+.btn-primary {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #1e40af;
+}
+
+.btn-primary:active:not(:disabled) {
+  background-color: #1e3a8a;
+}
+
+/* Secondary - Less prominent actions (white with blue border) */
+.btn-secondary {
+  background-color: #ffffff;
+  color: #2563eb;
+  border: 2px solid #2563eb;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: #eff6ff;
+  border-color: #1e40af;
+  color: #1e40af;
+}
+
+.btn-secondary:active:not(:disabled) {
+  background-color: #dbeafe;
+}
+
+/* Danger - Destructive actions (red background) */
+.btn-danger {
+  background-color: #dc2626;
+  color: #ffffff;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: #b91c1c;
+}
+
+.btn-danger:active:not(:disabled) {
+  background-color: #991b1b;
+}
+
+/* Success - Positive actions (green background) */
+.btn-success {
+  background-color: #16a34a;
+  color: #ffffff;
+}
+
+.btn-success:hover:not(:disabled) {
+  background-color: #15803d;
+}
+
+.btn-success:active:not(:disabled) {
+  background-color: #166534;
+}
+
+/* Ghost - Low priority (transparent background) */
+.btn-ghost {
+  background-color: transparent;
+  color: #2563eb;
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background-color: #eff6ff;
+}
+
+.btn-ghost:active:not(:disabled) {
+  background-color: #dbeafe;
+}
+
+/* ============================================================================
+ * SIZE VARIANTS
+ * ============================================================================ */
+
+/* Small - Compact */
+.btn-small {
+  padding: 8px 16px;
+  font-size: 14px;
+  min-height: 36px;
+}
+
+/* Medium - Default (already defined in base) */
+.btn-medium {
+  padding: 12px 24px;
+  font-size: 15px;
+}
+
+/* Large - Emphasized */
+.btn-large {
+  padding: 16px 32px;
+  font-size: 16px;
+  min-height: 52px;
+}
+
+/* ============================================================================
+ * LOADING STATE
+ * ============================================================================ */
+
+.btn-loading {
+  position: relative;
+  color: transparent;
+}
+
+.btn-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner-circle {
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  color: inherit;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.btn-text-loading {
+  visibility: hidden;
+}
+
+/* ============================================================================
+ * ICON SUPPORT
+ * ============================================================================ */
+
+.btn-icon-left {
+  display: inline-flex;
+  margin-right: -4px;
+}
+
+.btn-icon-right {
+  display: inline-flex;
+  margin-left: -4px;
+}
+
+/* ============================================================================
+ * FULL WIDTH
+ * ============================================================================ */
+
+.btn-full-width {
+  width: 100%;
+  display: flex;
+}

@@ -212,6 +212,46 @@ router = APIRouter(prefix="/api/v1/privacy", tags=["privacy"])
 
 
 # ================================================================
+# CREATE GUEST SESSION
+# ================================================================
+
+@router.post("/guest-session")
+async def create_guest_session() -> Response:
+    """
+    Create a new guest session for privacy tracking.
+
+    BUSINESS REQUIREMENT:
+    Allow creation of guest sessions for privacy compliance tracking.
+    Each guest session gets a unique UUID and can be used to track
+    user consent and privacy preferences.
+
+    Returns:
+        JSONResponse with new session_id (201 Created)
+    """
+    from uuid import uuid4
+    from domain.entities.guest_session import GuestSession
+
+    # Create new session with generated UUID
+    session_id = uuid4()
+    session = GuestSession(id=session_id)
+
+    # Store session
+    dao = GuestSessionDAO()
+    dao._sessions[session_id] = dao._session_to_dict(session)
+    dao._create_audit_log(session_id, 'session_created', {'source': 'api_request'})
+
+    return MockResponse(
+        status_code=201,
+        content={
+            "session_id": str(session_id),
+            "created_at": session.created_at.isoformat(),
+            "expires_at": session.expires_at.isoformat()
+        },
+        headers=get_cors_headers()
+    )
+
+
+# ================================================================
 # GDPR ARTICLE 15 - RIGHT TO ACCESS
 # ================================================================
 
@@ -267,6 +307,16 @@ async def get_guest_session_data(session_id) -> Response:
             headers=get_cors_headers()
         )
 
+    # Log data access for audit trail
+    dao._create_audit_log(
+        session_uuid,
+        'data_accessed',
+        {'endpoint': 'get_guest_session_data', 'gdpr_article': '15'}
+    )
+
+    # Calculate GDPR retention period (30 days from creation, not session expiration)
+    retention_expires_at = session.created_at + timedelta(days=30)
+
     # Build response with all data (excluding raw PII)
     response_data = {
         "session_id": str(session.id),
@@ -287,7 +337,7 @@ async def get_guest_session_data(session_id) -> Response:
             "privacy_policy_version": getattr(session, 'privacy_policy_version', None)
         },
         "retention": {
-            "expires_at": session.expires_at.isoformat(),
+            "expires_at": retention_expires_at.isoformat(),  # GDPR 30-day retention, not session expiration
             "deletion_scheduled_at": getattr(session, 'deletion_scheduled_at', None).isoformat() if getattr(session, 'deletion_scheduled_at', None) else None
         }
     }
@@ -551,6 +601,13 @@ async def export_session_data(session_id, format: str = 'json') -> Response:
             headers=get_cors_headers()
         )
 
+    # Log data export for audit trail
+    dao._create_audit_log(
+        session_uuid,
+        'data_exported',
+        {'endpoint': 'export_session_data', 'format': format, 'gdpr_article': '20'}
+    )
+
     # Build export data
     export_data = {
         "session_id": str(session.id),
@@ -750,6 +807,96 @@ async def ccpa_disclosure(session_id) -> Response:
                 "Analytics and optimization"
             ],
             "third_parties": []  # Guest sessions don't share data with third parties
+        },
+        headers=get_cors_headers()
+    )
+
+
+# ================================================================
+# AUDIT LOG ACCESS (GDPR Article 30)
+# ================================================================
+
+@router.get("/guest-session/{session_id}/audit-log")
+async def get_audit_log(session_id) -> Response:
+    """
+    Get audit log for guest session (GDPR Article 30 - Records of Processing).
+
+    LEGAL REQUIREMENT:
+    Controllers must maintain records of processing activities (audit logs).
+    Users have right to access audit logs showing what actions were performed.
+
+    BUSINESS CONTEXT:
+    Audit logs provide transparency and enable compliance verification.
+
+    Args:
+        session_id: Guest session UUID
+
+    Returns:
+        JSONResponse with audit log entries
+    """
+    # Validate UUID format
+    try:
+        if isinstance(session_id, UUID):
+            session_uuid = session_id
+        else:
+            session_uuid = UUID(session_id)
+    except (ValueError, AttributeError):
+        return MockResponse(
+            status_code=400,
+            content={"error": "Invalid session ID format"},
+            headers=get_cors_headers()
+        )
+
+    # Check rate limit
+    if not check_rate_limit(session_uuid):
+        return MockResponse(
+            status_code=429,
+            content={"error": "Rate limit exceeded. Maximum 10 requests per hour."},
+            headers=get_cors_headers()
+        )
+
+    # Retrieve audit logs
+    dao = GuestSessionDAO()
+    audit_logs = dao.get_audit_logs(session_uuid)
+
+    # Transform audit logs for API response
+    # Map action names to test expectations
+    action_map = {
+        "session_created": "created",
+        "data_accessed": "data_accessed",
+        "consent_given": "consent_given",
+        "data_exported": "data_exported",
+        "deletion_requested": "deletion_requested",
+        "deleted": "deleted"
+    }
+
+    entries = []
+    for log in audit_logs:
+        # Convert datetime to ISO format if needed
+        timestamp = log.get("timestamp")
+        if isinstance(timestamp, datetime):
+            timestamp = timestamp.isoformat()
+        elif timestamp is None:
+            timestamp = datetime.utcnow().isoformat()
+
+        # Map action name for consistency
+        raw_action = log.get("action", "unknown")
+        mapped_action = action_map.get(raw_action, raw_action)
+
+        entry = {
+            "timestamp": timestamp,
+            "action": mapped_action,
+            "details": log.get("details", {}),
+            "checksum": log.get("checksum", "")  # Tamper detection hash
+        }
+        entries.append(entry)
+
+    return MockResponse(
+        status_code=200,
+        content={
+            "session_id": str(session_uuid),
+            "entries": entries,
+            "total_count": len(entries)
         },
         headers=get_cors_headers()
     )

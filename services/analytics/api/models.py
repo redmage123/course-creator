@@ -226,7 +226,7 @@ class EngagementScoreResponse(BaseModel):
     - Quantitative engagement scoring (0-100 scale)
     - Temporal engagement analysis over configurable periods
     - Activity breakdown for engagement pattern identification
-    - Comparative analysis capability for cohort studies
+    - Comparative analysis capability for locations studies
 
     Educational Applications:
     - Early warning system for disengaged students

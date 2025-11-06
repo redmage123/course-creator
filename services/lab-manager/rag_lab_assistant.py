@@ -430,7 +430,7 @@ class RAGLabAssistant:
         - Syntax analysis and structure assessment
         - Import and dependency analysis
         - Function and variable extraction
-        - Error location and context analysis
+        - Error locations and context analysis
         - Code complexity and quality metrics
         """
         insights = {

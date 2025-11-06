@@ -50,6 +50,10 @@ from api.project_endpoints import router as project_router
 from api.rbac_endpoints import router as rbac_router
 from api.site_admin_endpoints import router as site_admin_router
 from api.track_endpoints import router as track_router
+from api.location_endpoints import router as location_router
+from api.instructor_assignment_endpoints import router as instructor_assignment_router
+from api.course_assignment_endpoints import router as course_assignment_router
+from api.scheduling_endpoints import router as scheduling_router
 
 # Custom exceptions
 # Import shared exceptions from platform-wide exception hierarchy
@@ -225,6 +229,9 @@ class ProjectCreateRequest(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     settings: Dict[str, Any] = Field(default_factory=dict)
+    has_sub_projects: Optional[bool] = Field(None, description="Whether project has multiple locations/locations")
+    locations: Optional[List[Dict[str, Any]]] = Field(None, description="List of locations for multi-locations projects")
+    tracks: Optional[List[Dict[str, Any]]] = Field(None, description="List of tracks to create with the project")
 
     @validator('end_date')
     def end_date_after_start_date(cls, v, values):
@@ -421,6 +428,10 @@ def create_app(config: DictConfig = None) -> FastAPI:
     app.include_router(rbac_router)
     app.include_router(site_admin_router)
     app.include_router(track_router)
+    app.include_router(location_router)
+    app.include_router(instructor_assignment_router)
+    app.include_router(course_assignment_router)
+    app.include_router(scheduling_router)
 
     # Health check endpoint
     @app.get("/health")

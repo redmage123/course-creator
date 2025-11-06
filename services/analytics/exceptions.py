@@ -207,7 +207,7 @@ class LearningAnalyticsException(AnalyticsException):
         message: str = "Learning analytics operation failed",
         course_id: Optional[str] = None,
         analysis_type: Optional[str] = None,
-        cohort_size: Optional[int] = None,
+        location_size: Optional[int] = None,
         original_exception: Optional[Exception] = None
     ):
         details = {}
@@ -215,8 +215,8 @@ class LearningAnalyticsException(AnalyticsException):
             details["course_id"] = course_id
         if analysis_type:
             details["analysis_type"] = analysis_type
-        if cohort_size is not None:
-            details["cohort_size"] = cohort_size
+        if location_size is not None:
+            details["location_size"] = location_size
             
         super().__init__(
             message=message,

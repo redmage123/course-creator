@@ -25,7 +25,7 @@ Technical Architecture:
 Analytics Capabilities:
 - Student activity tracking: Comprehensive behavioral pattern analysis
 - Performance metrics: Quiz scores, lab usage, and learning outcome measurement
-- Progress analytics: Individual and cohort learning progress tracking
+- Progress analytics: Individual and locations learning progress tracking
 - Engagement measurement: Course effectiveness and student satisfaction analysis
 - Resource optimization: Lab usage patterns and infrastructure planning data
 """

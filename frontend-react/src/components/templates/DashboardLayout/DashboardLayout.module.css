@@ -1,0 +1,107 @@
+/**
+ * Dashboard Layout Styles
+ *
+ * BUSINESS CONTEXT:
+ * Consistent layout styling for all dashboard pages ensuring
+ * professional appearance and optimal content readability.
+ *
+ * DESIGN PRINCIPLES:
+ * - Clean, spacious layout
+ * - Responsive sidebar and content
+ * - Proper spacing and padding
+ * - Accessible structure
+ */
+
+/* ============================================================================
+ * LAYOUT CONTAINER
+ * ============================================================================ */
+
+.dashboard-layout {
+  /* Layout */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+
+  /* Background */
+  background-color: #f8fafc;
+}
+
+.dashboard-container {
+  /* Layout */
+  flex: 1;
+  width: 100%;
+}
+
+.dashboard-main {
+  /* Layout */
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* ============================================================================
+ * WITH SIDEBAR LAYOUT
+ * ============================================================================ */
+
+.dashboard-with-sidebar {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.dashboard-sidebar {
+  /* Position */
+  position: sticky;
+  top: 88px; /* Below navbar (64px) + padding (24px) */
+
+  /* Layout */
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 20px;
+
+  /* Border */
+  border: 1px solid #e2e8f0;
+
+  /* Shadow */
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-content {
+  /* Min height for content */
+  min-height: calc(100vh - 160px);
+}
+
+/* ============================================================================
+ * RESPONSIVE
+ * ============================================================================ */
+
+@media (max-width: 1024px) {
+  .dashboard-with-sidebar {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-sidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-main {
+    padding: 16px;
+  }
+
+  .dashboard-with-sidebar {
+    gap: 16px;
+  }
+
+  .dashboard-sidebar {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-main {
+    padding: 12px;
+  }
+}

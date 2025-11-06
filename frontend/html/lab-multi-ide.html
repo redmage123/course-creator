@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <link rel="stylesheet" href="../css/modern-ui/modern-ui.css">
     <title>Course Creator Lab - Multi-IDE Environment</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -537,7 +538,7 @@
                         <span class="ide-status-indicator loading"></span>
                         JupyterLab
                     </button>
-                    <button class="ide-tab" data-ide="intellij" style="display: none;">
+                    <button class="ide-tab hidden" data-ide="intellij">
                         <span class="ide-status-indicator offline"></span>
                         IntelliJ
                     </button>
@@ -607,19 +608,19 @@
                 </div>
                 
                 <!-- Loading indicator -->
-                <div class="ide-loading" id="ideLoading" style="display: none;">
+                <div class="ide-loading hidden" id="ideLoading">
                     <div class="spinner"></div>
                     <p>Loading IDE...</p>
                 </div>
                 
                 <!-- Error message -->
-                <div class="ide-error" id="ideError" style="display: none;">
+                <div class="ide-error hidden" id="ideError">
                     <p>Failed to load IDE</p>
-                    <button onclick="retryIDE()" style="margin-top: 10px; padding: 5px 10px;">Retry</button>
+                    <button onclick="retryIDE()" class="btn-sm">Retry</button>
                 </div>
                 
                 <!-- IDE Frame -->
-                <iframe class="ide-frame" id="ideFrame" style="display: none;"></iframe>
+                <iframe class="ide-frame hidden" id="ideFrame"></iframe>
             </div>
         </div>
 
@@ -698,7 +699,7 @@
                 <button class="fullscreen-btn" onclick="toggleFullscreen('files')">⛶</button>
             </div>
             <div class="files-content" id="filesContent">
-                <div class="file-loading" style="display: none;">
+                <div class="file-loading hidden">
                     <div class="spinner"></div>
                     <p>Loading files...</p>
                 </div>
@@ -831,7 +832,11 @@
                 
                 // Show/hide IntelliJ tab based on availability
                 if (ideType === 'intellij') {
-                    tab.style.display = ready ? 'flex' : 'none';
+                    if (ready) {
+                        tab.classList.remove('hidden');
+                    } else {
+                        tab.classList.add('hidden');
+                    }
                 }
             }
             
@@ -898,24 +903,24 @@
             }
             
             showIDELoading() {
-                document.getElementById('ideWelcome').style.display = 'none';
-                document.getElementById('ideError').style.display = 'none';
-                document.getElementById('ideFrame').style.display = 'none';
-                document.getElementById('ideLoading').style.display = 'block';
+                document.getElementById('ideWelcome').classList.add('hidden');
+                document.getElementById('ideError').classList.add('hidden');
+                document.getElementById('ideFrame').classList.add('hidden');
+                document.getElementById('ideLoading').classList.remove('hidden');
             }
             
             showIDEFrame() {
-                document.getElementById('ideWelcome').style.display = 'none';
-                document.getElementById('ideError').style.display = 'none';
-                document.getElementById('ideLoading').style.display = 'none';
-                document.getElementById('ideFrame').style.display = 'block';
+                document.getElementById('ideWelcome').classList.add('hidden');
+                document.getElementById('ideError').classList.add('hidden');
+                document.getElementById('ideLoading').classList.add('hidden');
+                document.getElementById('ideFrame').classList.remove('hidden');
             }
             
             showIDEError() {
-                document.getElementById('ideWelcome').style.display = 'none';
-                document.getElementById('ideLoading').style.display = 'none';
-                document.getElementById('ideFrame').style.display = 'none';
-                document.getElementById('ideError').style.display = 'block';
+                document.getElementById('ideWelcome').classList.add('hidden');
+                document.getElementById('ideLoading').classList.add('hidden');
+                document.getElementById('ideFrame').classList.add('hidden');
+                document.getElementById('ideError').classList.remove('hidden');
             }
             
             togglePanel(panelType) {
@@ -1221,7 +1226,7 @@
                 fileListContainer.innerHTML = `
                     <div class="no-files-message">
                         <i class="fas fa-exclamation-triangle"></i>
-                        <p style="color: #dc3545;">${message}</p>
+                        <p class="text-danger">${message}</p>
                         <button onclick="window.multiIDELab.loadFileList()" class="btn btn-sm btn-outline-primary">
                             <i class="fas fa-retry"></i> Retry
                         </button>

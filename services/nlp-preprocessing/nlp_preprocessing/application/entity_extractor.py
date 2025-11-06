@@ -9,7 +9,7 @@ TECHNICAL IMPLEMENTATION:
 - Regex pattern matching for entity extraction
 - Multi-pass extraction with priority ordering
 - Confidence scoring based on extraction method
-- Character span tracking for precise location
+- Character span tracking for precise locations
 
 PERFORMANCE TARGET:
 - Extraction time: <10ms per query

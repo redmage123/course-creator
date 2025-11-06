@@ -2,8 +2,12 @@
  * Data Visualization Manager
  * Modern charts, analytics, and interactive data displays
  */
-
 class DataVisualization {
+    /**
+     * INITIALIZE CLASS INSTANCE WITH DEFAULT STATE
+     * PURPOSE: Initialize class instance with default state
+     * WHY: Establishes initial state required for class functionality
+     */
     constructor() {
         this.charts = new Map();
         this.animationDuration = 1000;
@@ -390,6 +394,13 @@ class DataVisualization {
         const duration = this.animationDuration;
         const startTime = performance.now();
         
+    /**
+     * EXECUTE ANIMATE OPERATION
+     * PURPOSE: Execute animate operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} currentTime - Currenttime parameter
+     */
         const animate = (currentTime) => {
             const elapsed = currentTime - startTime;
             const progress = Math.min(elapsed / duration, 1);
@@ -437,6 +448,11 @@ class DataVisualization {
             header.style.cursor = 'pointer';
             header.setAttribute('tabindex', '0');
             
+    /**
+     * HANDLE SORT EVENT
+     * PURPOSE: Handle sort event
+     * WHY: Encapsulates event handling logic for better code organization
+     */
             const handleSort = () => {
                 const currentSort = header.getAttribute('aria-sort');
                 const newSort = currentSort === 'ascending' ? 'descending' : 'ascending';

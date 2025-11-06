@@ -12,12 +12,6 @@
  * - Page context detection and navigation state management
  * - Integration with authentication system for protected routes
  */
-
-/**
- * MODULE DEPENDENCIES
- * PURPOSE: Import required modules for navigation functionality
- * WHY: Navigation depends on auth state and UI components for proper operation
- */
 import { Auth } from './auth.js';          // Authentication state and user validation
 import UIComponents from './ui-components.js'; // UI helper functions and components
 
@@ -421,11 +415,6 @@ export class NavigationManager {
 
     /**
      * Show register page
-     */
-    /**
-     * Show registration options page
-     * PURPOSE: Present users with clear choice between organization and instructor registration
-     * WHY: Different registration flows require different information and permissions
      */
     showRegister() {
         try {
@@ -833,6 +822,11 @@ export class NavigationManager {
         const confirmInput = document.getElementById('register-password-confirm');
         const indicator = document.getElementById('password-match-indicator');
 
+    /**
+     * EXECUTE CHECKPASSWORDMATCH OPERATION
+     * PURPOSE: Execute checkPasswordMatch operation
+     * WHY: Implements required business logic for system functionality
+     */
         const checkPasswordMatch = () => {
             const password = passwordInput.value;
             const confirmPassword = confirmInput.value;
@@ -938,6 +932,11 @@ export class NavigationManager {
         const confirmInput = document.getElementById('register-password-confirm');
         const indicator = document.getElementById('password-match-indicator');
 
+    /**
+     * EXECUTE CHECKPASSWORDMATCH OPERATION
+     * PURPOSE: Execute checkPasswordMatch operation
+     * WHY: Implements required business logic for system functionality
+     */
         const checkPasswordMatch = () => {
             const password = passwordInput.value;
             const confirmPassword = confirmInput.value;

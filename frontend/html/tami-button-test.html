@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en" data-ui="enabled">
+<head>
+    <link rel="stylesheet" href="../css/modern-ui/modern-ui.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tami Button System Test Harness</title>
+
+    <!-- Load Tami Design Tokens -->
+    
+
+    <!-- Load Tami Button System (the file we're about to create) -->
+    
+
+    <style>
+        /* Test harness styles */
+        body {
+            font-family: var(--tami-font-sans);
+            padding: var(--tami-space-4);
+            background: #f8f9fa;
+        }
+
+        .test-section {
+            background: white;
+            padding: var(--tami-space-3);
+            margin-bottom: var(--tami-space-3);
+            border-radius: var(--tami-radius-md);
+            box-shadow: var(--tami-shadow-sm);
+        }
+
+        .test-section h2 {
+            margin-top: 0;
+            color: #1f2937;
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: var(--tami-space-2);
+            margin-top: var(--tami-space-2);
+        }
+    </style>
+</head>
+<body>
+    <h1>Tami Button System Test Harness</h1>
+    <p>This page tests the Tami-inspired button system. Hover over buttons to see lift effects.</p>
+
+    <div class="test-section">
+        <h2>Primary Buttons (Our Blue #2563eb)</h2>
+        <div class="button-grid">
+            <button class="btn-primary">Primary Button</button>
+            <button class="create-project-btn">Create Project</button>
+            <button class="add-track-btn">Add Track</button>
+            <button class="btn-primary" disabled>Disabled Primary</button>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Secondary Buttons (Outline Style)</h2>
+        <div class="button-grid">
+            <button class="btn-secondary">Secondary Button</button>
+            <button class="cancel-btn">Cancel</button>
+            <button class="filter-btn">Filter</button>
+            <button class="btn-secondary" disabled>Disabled Secondary</button>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Danger Buttons (Red)</h2>
+        <div class="button-grid">
+            <button class="btn-danger">Danger Button</button>
+            <button class="delete-btn">Delete</button>
+            <button class="btn-danger" disabled>Disabled Danger</button>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Success Buttons (Green)</h2>
+        <div class="button-grid">
+            <button class="btn-success">Success Button</button>
+            <button class="btn-success">Save Changes</button>
+            <button class="btn-success" disabled>Disabled Success</button>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Ghost Buttons (Minimal Style)</h2>
+        <div class="button-grid">
+            <button class="btn-ghost">Ghost Button</button>
+            <button class="btn-ghost">View Details</button>
+            <button class="btn-ghost" disabled>Disabled Ghost</button>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Button Sizes</h2>
+        <div class="button-grid">
+            <button class="btn-primary btn-small">Small Button</button>
+            <button class="btn-primary">Default Size</button>
+            <button class="btn-primary btn-large">Large Button</button>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Loading State</h2>
+        <div class="button-grid">
+            <button class="btn-primary" data-loading="true">Loading...</button>
+            <button class="btn-secondary" data-loading="true">Loading...</button>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Keyboard Navigation Test</h2>
+        <p>Press Tab to navigate between buttons. Focus outline should be visible.</p>
+        <div class="button-grid">
+            <button class="btn-primary">Button 1</button>
+            <button class="btn-primary">Button 2</button>
+            <button class="btn-primary">Button 3</button>
+        </div>
+    </div>
+</body>
+</html>

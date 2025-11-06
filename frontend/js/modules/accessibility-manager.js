@@ -1,21 +1,82 @@
 /**
- * Accessibility Manager - Comprehensive A11y Support
- * Handles screen reader announcements, keyboard navigation, and ARIA management
+ * ACCESSIBILITY MANAGER - WCAG 2.1 AA COMPLIANCE SYSTEM
+ *
+ * PURPOSE: Provide comprehensive accessibility support for the Course Creator Platform
+ * WHY: Educational platforms must be accessible to all users, including those with disabilities
+ * ARCHITECTURE: Event-driven accessibility layer with ARIA live regions and keyboard navigation
+ *
+ * WCAG 2.1 AA COMPLIANCE FEATURES:
+ * - Screen reader announcements via ARIA live regions
+ * - Keyboard-only navigation support
+ * - Focus management and restoration
+ * - Modal dialog accessibility (focus trapping)
+ * - Form validation announcements
+ * - Tab panel management with ARIA
+ *
+ * BUSINESS REQUIREMENTS:
+ * - Legal compliance (ADA, Section 508)
+ * - Inclusive education platform for all students
+ * - Professional user experience for assistive technology users
+ * - Educational institution accessibility requirements
+ *
+ * INTEGRATION:
+ * - Works with all dashboard components
+ * - Coordinates with modal systems
+ * - Integrates with form validation
+ * - Supports dynamic content updates
+ *
+ * @module AccessibilityManager
  */
-
 class AccessibilityManager {
+    /**
+     * ACCESSIBILITY MANAGER CONSTRUCTOR
+     *
+     * PURPOSE: Initialize accessibility system with comprehensive screen reader and keyboard support
+     * WHY: Proper initialization ensures all accessibility features work consistently across the platform
+     *
+     * STATE PROPERTIES:
+     * - liveRegion: Polite ARIA live region for general announcements
+     * - assertiveRegion: Assertive ARIA live region for urgent announcements
+     * - focusHistory: Stack of recently focused elements for restoration
+     * - keyboardNavigation: Boolean tracking if user is using keyboard navigation
+     * - currentModal: Reference to currently open modal for Escape key handling
+     *
+     * @constructor
+     */
     constructor() {
-        this.liveRegion = null;
-        this.assertiveRegion = null;
-        this.focusHistory = [];
-        this.keyboardNavigation = true;
-        this.currentModal = null;
-        
+        // ARIA LIVE REGIONS: Screen reader announcement containers
+        this.liveRegion = null;          // Polite announcements (general updates)
+        this.assertiveRegion = null;     // Assertive announcements (errors, warnings)
+
+        // FOCUS MANAGEMENT: Track focus for restoration after modals
+        this.focusHistory = [];          // Last 5 focused elements
+
+        // KEYBOARD NAVIGATION STATE: Track input method for UI adaptation
+        this.keyboardNavigation = true;  // Assume keyboard until mouse detected
+
+        // MODAL STATE: Current open modal for keyboard event handling
+        this.currentModal = null;        // Reference to open modal element
+
+        // INITIALIZATION: Set up all accessibility features
         this.init();
     }
 
     /**
-     * Initialize accessibility manager
+     * ACCESSIBILITY SYSTEM INITIALIZATION
+     *
+     * PURPOSE: Configure all accessibility features for the platform
+     * WHY: Centralized initialization ensures consistent accessibility behavior
+     *
+     * INITIALIZATION SEQUENCE:
+     * 1. Create ARIA live regions for screen reader announcements
+     * 2. Set up keyboard navigation event listeners
+     * 3. Configure focus management and restoration
+     * 4. Initialize modal accessibility support
+     * 5. Set up tab navigation with ARIA attributes
+     * 6. Detect keyboard vs mouse navigation
+     * 7. Announce page load to screen readers
+     *
+     * @returns {void}
      */
     init() {
         this.createLiveRegions();
@@ -42,6 +103,17 @@ class AccessibilityManager {
         this.assertiveRegion = document.getElementById('live-region-assertive') || this.createLiveRegion('assertive');
     }
 
+    /**
+     * CREATE NEW LIVE REGION INSTANCE
+     * PURPOSE: Create new live region instance
+     * WHY: Factory method pattern for consistent object creation
+     *
+     * @param {*} politeness - Politeness parameter
+     *
+     * @returns {Object} Newly created instance
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     createLiveRegion(politeness) {
         const region = document.createElement('div');
         region.setAttribute('aria-live', politeness);
@@ -102,6 +174,15 @@ class AccessibilityManager {
         this.announce(`Loading ${action}, please wait`);
     }
 
+    /**
+     * EXECUTE ANNOUNCELOADINGCOMPLETE OPERATION
+     * PURPOSE: Execute announceLoadingComplete operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} result - Result parameter
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     announceLoadingComplete(result) {
         this.announce(`Loading complete. ${result}`);
     }

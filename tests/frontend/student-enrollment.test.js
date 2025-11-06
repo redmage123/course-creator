@@ -7,7 +7,7 @@
 global.fetch = jest.fn();
 
 // Mock DOM elements and methods
-Object.defineProperty(window, 'location', {
+Object.defineProperty(window, 'locations', {
   value: {
     href: 'http://localhost:3000',
     pathname: '/instructor-dashboard.html'

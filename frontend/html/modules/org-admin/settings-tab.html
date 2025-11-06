@@ -1,4 +1,5 @@
 <!-- Org Admin - Settings Tab Content -->
+<!-- Required CSS: /frontend/css/components/settings.css -->
 <div class="tab-content-wrapper">
     <section class="section-card" role="region" aria-labelledby="settings-title">
         <div class="section-header">
@@ -19,104 +20,99 @@
 
         <div class="section-content">
             <!-- General Settings -->
-            <div style="margin-bottom: var(--space-8);">
-                <h3 style="font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--text-primary); margin: 0 0 var(--space-4) 0;">
+            <div class="settings-section">
+                <h3 class="settings-section-header">
                     General Settings
                 </h3>
-                <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+                <div class="settings-field-group">
                     <div>
-                        <label for="orgName" style="display: block; font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--text-primary); margin-bottom: var(--space-2);">
+                        <label for="orgName" class="settings-label">
                             Organization Name
                         </label>
                         <input
                             type="text"
                             id="orgName"
-                            class="filter-input"
+                            class="filter-input settings-input--full"
                             placeholder="Enter organization name"
-                            style="width: 100%; max-width: 500px;"
                         >
                     </div>
                     <div>
-                        <label for="orgDescription" style="display: block; font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--text-primary); margin-bottom: var(--space-2);">
+                        <label for="orgDescription" class="settings-label">
                             Description
                         </label>
                         <textarea
                             id="orgDescription"
-                            class="filter-input"
+                            class="filter-input settings-textarea"
                             placeholder="Enter organization description"
                             rows="4"
-                            style="width: 100%; max-width: 500px; resize: vertical;"
                         ></textarea>
                     </div>
                     <div>
-                        <label for="orgWebsite" style="display: block; font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--text-primary); margin-bottom: var(--space-2);">
+                        <label for="orgWebsite" class="settings-label">
                             Website
                         </label>
                         <input
                             type="url"
                             id="orgWebsite"
-                            class="filter-input"
+                            class="filter-input settings-input--full"
                             placeholder="https://your-organization.com"
-                            style="width: 100%; max-width: 500px;"
                         >
                     </div>
                 </div>
             </div>
 
             <!-- Contact Information -->
-            <div style="margin-bottom: var(--space-8);">
-                <h3 style="font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--text-primary); margin: 0 0 var(--space-4) 0;">
+            <div class="settings-section">
+                <h3 class="settings-section-header">
                     Contact Information
                 </h3>
-                <div style="display: flex; flex-direction: column; gap: var(--space-4);">
+                <div class="settings-field-group">
                     <div>
-                        <label for="contactEmail" style="display: block; font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--text-primary); margin-bottom: var(--space-2);">
+                        <label for="contactEmail" class="settings-label">
                             Contact Email
                         </label>
                         <input
                             type="email"
                             id="contactEmail"
-                            class="filter-input"
+                            class="filter-input settings-input--full"
                             placeholder="contact@organization.com"
-                            style="width: 100%; max-width: 500px;"
                         >
                     </div>
                     <div>
-                        <label for="contactPhone" style="display: block; font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--text-primary); margin-bottom: var(--space-2);">
+                        <label for="contactPhone" class="settings-label">
                             Phone Number
                         </label>
                         <input
                             type="tel"
                             id="contactPhone"
-                            class="filter-input"
+                            class="filter-input settings-input--full"
                             placeholder="+1 (555) 000-0000"
-                            style="width: 100%; max-width: 500px;"
                         >
                     </div>
                 </div>
             </div>
 
             <!-- Preferences -->
-            <div style="margin-bottom: var(--space-8);">
-                <h3 style="font-size: var(--text-lg); font-weight: var(--weight-semibold); color: var(--text-primary); margin: 0 0 var(--space-4) 0;">
+            <div class="settings-section">
+                <h3 class="settings-section-header">
                     Preferences
                 </h3>
-                <div style="display: flex; flex-direction: column; gap: var(--space-4);">
-                    <div style="display: flex; align-items: center; gap: var(--space-3);">
-                        <input type="checkbox" id="allowSelfRegistration" style="width: 20px; height: 20px;">
-                        <label for="allowSelfRegistration" style="font-size: var(--text-sm); color: var(--text-primary);">
+                <div class="settings-field-group">
+                    <div class="settings-checkbox-group">
+                        <input type="checkbox" id="allowSelfRegistration" class="settings-checkbox">
+                        <label for="allowSelfRegistration" class="settings-label--checkbox">
                             Allow self-registration for students
                         </label>
                     </div>
-                    <div style="display: flex; align-items: center; gap: var(--space-3);">
-                        <input type="checkbox" id="requireApproval" style="width: 20px; height: 20px;" checked>
-                        <label for="requireApproval" style="font-size: var(--text-sm); color: var(--text-primary);">
+                    <div class="settings-checkbox-group">
+                        <input type="checkbox" id="requireApproval" class="settings-checkbox" checked>
+                        <label for="requireApproval" class="settings-label--checkbox">
                             Require admin approval for new members
                         </label>
                     </div>
-                    <div style="display: flex; align-items: center; gap: var(--space-3);">
-                        <input type="checkbox" id="enableNotifications" style="width: 20px; height: 20px;" checked>
-                        <label for="enableNotifications" style="font-size: var(--text-sm); color: var(--text-primary);">
+                    <div class="settings-checkbox-group">
+                        <input type="checkbox" id="enableNotifications" class="settings-checkbox" checked>
+                        <label for="enableNotifications" class="settings-label--checkbox">
                             Enable email notifications
                         </label>
                     </div>

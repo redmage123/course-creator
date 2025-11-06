@@ -10,7 +10,31 @@ from content_management.domain.entities.base_content import BaseContent, Content
 
 
 class EnvironmentType(Enum):
-    """Environment type enumeration"""
+    """
+    Lab environment technology stack classification.
+
+    Comprehensive enumeration of supported programming languages and
+    development environments for hands-on coding labs and interactive
+    learning experiences.
+
+    Environment Categories:
+    - **PYTHON**: Python programming environment with pip package management
+    - **JAVASCRIPT**: JavaScript/Node.js environment with npm package management
+    - **JAVA**: Java development environment with Maven/Gradle build tools
+    - **CPP**: C++ development environment with GCC/Clang compilers
+    - **R**: R statistical computing environment with CRAN packages
+    - **JUPYTER**: Jupyter notebook environment for interactive data science
+    - **DOCKER**: Containerized environments with Docker infrastructure
+    - **WEB**: Full-stack web development with HTML/CSS/JavaScript
+    - **DATABASE**: Database management with SQL/NoSQL systems
+    - **CLOUD**: Cloud platform environments (AWS, Azure, GCP)
+
+    Educational Benefits:
+    - Technology-specific environment provisioning
+    - Appropriate tooling and dependencies per language
+    - Realistic development environment simulation
+    - Industry-standard technology stack exposure
+    """
     PYTHON = "python"
     JAVASCRIPT = "javascript"
     JAVA = "java"
@@ -24,8 +48,26 @@ class EnvironmentType(Enum):
 
 
 class ResourceRequirement:
-    """Resource requirement value object"""
-    
+    """
+    Lab environment resource requirements specification.
+
+    BUSINESS REQUIREMENT:
+    Lab environments require explicit resource allocation (CPU, memory, disk)
+    to ensure consistent performance, prevent resource contention, and
+    support fair access in multi-user educational environments.
+
+    TECHNICAL DESIGN:
+    Specifies minimum resource requirements for lab provisioning including
+    compute resources (CPU cores), memory allocation, storage capacity,
+    network connectivity, and specialized hardware (GPU) needs.
+
+    RESOURCE PLANNING:
+    - Enables capacity planning for infrastructure
+    - Prevents over-subscription of shared resources
+    - Ensures consistent student experience
+    - Supports SLA compliance and performance guarantees
+    """
+
     def __init__(
         self,
         cpu_cores: int = 1,
@@ -72,8 +114,26 @@ class ResourceRequirement:
 
 
 class LabTool:
-    """Lab tool value object"""
-    
+    """
+    Lab tool specification with version control and configuration.
+
+    BUSINESS REQUIREMENT:
+    Educational labs require specific software tools and versions for
+    consistent learning experiences, reproducible environments, and
+    alignment with industry practices and course learning objectives.
+
+    EDUCATIONAL DESIGN:
+    Provides explicit tool specification including version pinning for
+    reproducibility, installation commands for automation, and
+    configuration for proper tool setup in educational contexts.
+
+    VERSION MANAGEMENT:
+    - Explicit version specification prevents compatibility issues
+    - Reproducible environments across all student instances
+    - Industry-standard tool exposure for career preparation
+    - Seamless updates when new versions are required
+    """
+
     def __init__(
         self,
         name: str,
@@ -109,8 +169,26 @@ class LabTool:
 
 
 class Dataset:
-    """Dataset value object"""
-    
+    """
+    Educational dataset specification for data-driven labs.
+
+    BUSINESS REQUIREMENT:
+    Data science and analytics labs require curated datasets with clear
+    licensing, proper attribution, and educational relevance for effective
+    hands-on learning in data analysis and machine learning contexts.
+
+    EDUCATIONAL DESIGN:
+    Specifies dataset metadata including format, size for resource planning,
+    source attribution, and licensing information for legal compliance and
+    ethical data usage education.
+
+    DATA GOVERNANCE:
+    - Clear licensing for legal compliance
+    - Source attribution for academic integrity
+    - Size specification for resource allocation
+    - Format specification for tool compatibility
+    """
+
     def __init__(
         self,
         name: str,
@@ -153,8 +231,26 @@ class Dataset:
 
 
 class SetupScript:
-    """Setup script value object"""
-    
+    """
+    Lab environment setup automation script.
+
+    BUSINESS REQUIREMENT:
+    Complex lab environments require automated setup scripts for consistent
+    configuration, efficient provisioning, and reproducible environment
+    initialization across all student lab instances.
+
+    TECHNICAL DESIGN:
+    Specifies setup scripts with execution ordering for dependency management,
+    prerequisite checking, and comprehensive configuration automation to
+    minimize manual setup and ensure environment consistency.
+
+    AUTOMATION BENEFITS:
+    - Consistent environment configuration
+    - Reduced setup time and errors
+    - Dependency management through ordered execution
+    - Scalable provisioning for large student populations
+    """
+
     def __init__(
         self,
         script_name: str,
@@ -193,10 +289,41 @@ class SetupScript:
 
 class LabEnvironment(BaseContent):
     """
-    Lab Environment domain entity following SOLID principles
-    Single Responsibility: Lab environment-specific business logic
+    Lab Environment domain entity - comprehensive interactive coding environment.
+
+    BUSINESS REQUIREMENT:
+    Educational programming labs require complete environment specification including
+    technology stack, tool provisioning, dataset integration, resource allocation,
+    and automated setup for consistent, reproducible hands-on learning experiences.
+
+    EDUCATIONAL METHODOLOGY:
+    Implements experiential learning through hands-on coding in realistic development
+    environments, supporting constructivist pedagogy with active learning, immediate
+    feedback, and authentic technology stack exposure for career preparation.
+
+    TECHNICAL IMPLEMENTATION:
+    - Extends BaseContent for lifecycle management
+    - Aggregates LabTool, Dataset, SetupScript value objects
+    - Uses ResourceRequirement for capacity planning
+    - Supports multiple environment types (Python, Java, Docker, etc.)
+    - Provides comprehensive environment validation and completeness checking
+
+    DOMAIN OPERATIONS:
+    - Tool management (add, remove, version checking)
+    - Dataset management (add, remove, size calculation)
+    - Setup script management (add, remove, execution ordering)
+    - Resource requirement specification
+    - Access instructions and documentation
+    - Environment validation and completeness checking
+
+    INFRASTRUCTURE INTEGRATION:
+    - Docker base image specification for containerization
+    - Resource allocation for capacity planning
+    - Network requirements for cloud labs
+    - GPU requirements for ML/AI workloads
+    - Automated provisioning through setup scripts
     """
-    
+
     def __init__(
         self,
         title: str,

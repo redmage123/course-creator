@@ -1,125 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="../css/modern-ui/modern-ui.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Course Content - Course Creator Platform</title>
     <link rel="stylesheet" href="../css/design-system.css?v=5.5">
     <link rel="stylesheet" href="../css/accessibility.css">
     <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/components/course-content.css?v=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.5/dist/purify.min.js"></script>
-    <style>
-        .content-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .content-header {
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid var(--border);
-        }
-
-        .course-title {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-
-        .module-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--primary-color);
-        }
-
-        .video-section {
-            background: var(--surface-elevated);
-            border-radius: var(--radius-xl);
-            padding: 20px;
-            margin-bottom: 30px;
-        }
-
-        .video-container {
-            position: relative;
-            padding-bottom: 56.25%; /* 16:9 aspect ratio */
-            height: 0;
-            overflow: hidden;
-            background: #000;
-            border-radius: var(--radius-lg);
-        }
-
-        .video-container video,
-        .video-container iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-
-        .content-text {
-            background: var(--surface-base);
-            padding: 30px;
-            border-radius: var(--radius-lg);
-            margin-bottom: 30px;
-            line-height: 1.8;
-        }
-
-        .module-nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 30px;
-            padding: 20px;
-            background: var(--surface-elevated);
-            border-radius: var(--radius-lg);
-        }
-
-        .nav-btn {
-            padding: 12px 24px;
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .nav-btn:hover {
-            background: var(--primary-600);
-        }
-
-        .nav-btn:disabled {
-            background: var(--surface-elevated);
-            color: var(--text-secondary);
-            cursor: not-allowed;
-        }
-
-        .mark-complete-btn {
-            padding: 12px 24px;
-            background: var(--success-600);
-            color: white;
-            border: none;
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            font-size: 1rem;
-        }
-
-        .mark-complete-btn:hover {
-            background: var(--success-700);
-        }
-
-        .progress-indicator {
-            text-align: center;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-        }
-    </style>
 </head>
 <body>
     <!-- Skip links for accessibility -->
@@ -197,22 +88,22 @@
             </button>
         </nav>
 
-        <div style="text-align: center; margin-top: 20px;">
+        <div class="action-wrapper">
             <button class="mark-complete-btn" id="mark-complete-btn" onclick="markModuleComplete()" aria-label="Mark current module as complete">
                 <i class="fas fa-check" aria-hidden="true"></i> Mark Module Complete
             </button>
         </div>
 
         <!-- Quiz Link for E2E Testing -->
-        <div style="text-align: center; margin-top: 20px;">
-            <a href="/quiz" class="nav-btn" style="text-decoration: none; display: inline-flex;" aria-label="Take quiz for current module">
+        <div class="action-wrapper">
+            <a href="/quiz" class="nav-btn link-btn" aria-label="Take quiz for current module">
                 <i class="fas fa-question-circle" aria-hidden="true"></i> Take Module Quiz
             </a>
         </div>
 
         <!-- Lab Environment Link for E2E Testing -->
-        <div style="text-align: center; margin-top: 20px;">
-            <a href="/lab" class="nav-btn" style="text-decoration: none; display: inline-flex;" aria-label="Open lab environment for hands-on practice">
+        <div class="action-wrapper">
+            <a href="/lab" class="nav-btn link-btn" aria-label="Open lab environment for hands-on practice">
                 <i class="fas fa-flask" aria-hidden="true"></i> Open Lab Environment
             </a>
         </div>

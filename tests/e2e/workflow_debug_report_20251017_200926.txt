@@ -1,0 +1,15 @@
+
+============================================================
+AUTOMATED WORKFLOW DEBUGGING REPORT
+============================================================
+
+Generated: 2025-10-17T20:09:26.188144
+Base URL: https://localhost:3000
+Workflow Attempts: 5
+Workflow Complete: ❌ NO
+
+📊 ERRORS DETECTED: 0
+
+🔧 FIXES APPLIED: 0
+
+============================================================

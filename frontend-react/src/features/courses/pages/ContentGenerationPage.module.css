@@ -1,0 +1,273 @@
+/**
+ * AI Content Generation Page Styles
+ *
+ * Clean, modern interface for AI content generation
+ * Tab-based layout with form inputs
+ */
+
+.content-gen-page {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* Page Header */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  gap: 2rem;
+}
+
+.header-content {
+  flex: 1;
+}
+
+.header-description {
+  color: var(--color-text-secondary, #666);
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Program Selector */
+.program-selector {
+  margin-bottom: 2rem;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 2px solid var(--color-border, #e0e0e0);
+  margin-bottom: 2rem;
+  overflow-x: auto;
+}
+
+.tab {
+  padding: 0.875rem 1.5rem;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary, #666);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 3px solid transparent;
+  white-space: nowrap;
+}
+
+.tab:hover {
+  color: var(--color-primary, #0066cc);
+  background-color: var(--color-background-secondary, #f5f5f5);
+}
+
+.tab-active {
+  color: var(--color-primary, #0066cc);
+  border-bottom-color: var(--color-primary, #0066cc);
+}
+
+/* Tab Content */
+.tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Generation Form */
+.generation-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.description {
+  color: var(--color-text-secondary, #666);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Form Elements */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text-primary, #1a1a1a);
+}
+
+.form-input,
+.form-select {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border, #d0d0d0);
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: inherit;
+  background-color: var(--color-background-white, #fff);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-input:focus,
+.form-select:focus {
+  outline: none;
+  border-color: var(--color-primary, #0066cc);
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.form-input::placeholder {
+  color: var(--color-text-tertiary, #999);
+}
+
+/* Generate Actions */
+.generate-actions {
+  display: flex;
+  justify-content: center;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border, #e0e0e0);
+}
+
+/* Results Preview */
+.results-preview {
+  margin-top: 2rem;
+  padding: 2rem;
+  background-color: var(--color-background-secondary, #f9f9f9);
+  border-radius: 8px;
+  border: 1px solid var(--color-border, #e0e0e0);
+}
+
+.preview-content {
+  margin: 1.5rem 0;
+  padding: 1.5rem;
+  background-color: var(--color-background-white, #fff);
+  border-radius: 6px;
+  border: 1px solid var(--color-border, #e0e0e0);
+}
+
+.preview-content ul {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+}
+
+.preview-content li {
+  margin-bottom: 0.5rem;
+  color: var(--color-text-secondary, #666);
+}
+
+.placeholder-text {
+  color: var(--color-text-secondary, #666);
+  font-size: 0.95rem;
+  margin: 1rem 0;
+}
+
+.coming-soon {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: var(--color-info-light, #d1ecf1);
+  border-radius: 6px;
+  color: var(--color-info-dark, #0c5460);
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.preview-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+/* Info Card */
+.info-card {
+  margin-top: 2rem;
+  background-color: var(--color-background-secondary, #f9f9f9);
+}
+
+.info-card ul {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+}
+
+.info-card li {
+  margin-bottom: 0.75rem;
+  line-height: 1.6;
+  color: var(--color-text-secondary, #666);
+}
+
+.feature-list {
+  list-style: none;
+  padding-left: 0;
+}
+
+.feature-list li {
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.feature-list li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--color-success, #28a745);
+  font-weight: bold;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .content-gen-page {
+    padding: 1.5rem 1rem;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .page-header button {
+    width: 100%;
+  }
+
+  .tabs {
+    gap: 0.25rem;
+  }
+
+  .tab {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-actions {
+    flex-direction: column;
+  }
+
+  .preview-actions button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .content-gen-page {
+    padding: 1rem 0.5rem;
+  }
+
+  .tabs {
+    flex-wrap: nowrap;
+    overflow-x: scroll;
+    -webkit-overflow-scrolling: touch;
+  }
+}

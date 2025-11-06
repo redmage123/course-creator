@@ -1,0 +1,267 @@
+/**
+ * Textarea Component Styles - Tami Design System
+ *
+ * BUSINESS CONTEXT:
+ * Implements Tami design system textarea styles with auto-resize.
+ * Provides consistent multi-line input styling across the platform.
+ *
+ * CRITICAL: Platform blue (#2563eb) for focus states
+ */
+
+/* ============================================================================
+ * CONTAINER
+ * ============================================================================ */
+
+.textarea-container {
+  /* Layout */
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+/* ============================================================================
+ * LABEL
+ * ============================================================================ */
+
+.textarea-label {
+  /* Typography */
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #1a202c;
+
+  /* Layout */
+  display: block;
+}
+
+.textarea-required {
+  /* Color */
+  color: #dc2626;
+  margin-left: 4px;
+}
+
+/* ============================================================================
+ * TEXTAREA
+ * ============================================================================ */
+
+.textarea {
+  /* Layout */
+  width: 100%;
+  padding: 12px;
+  box-sizing: border-box;
+  min-height: 80px;
+
+  /* Typography */
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #1a202c;
+
+  /* Background */
+  background-color: #ffffff;
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+
+  /* Resize */
+  resize: vertical;
+
+  /* Transitions */
+  transition: all 0.2s ease;
+}
+
+.textarea::placeholder {
+  color: #a0aec0;
+}
+
+.textarea:hover:not(:disabled) {
+  border-color: #a0aec0;
+}
+
+.textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* ============================================================================
+ * RESIZE VARIANTS
+ * ============================================================================ */
+
+.textarea-resize-none {
+  resize: none;
+}
+
+.textarea-resize-vertical {
+  resize: vertical;
+}
+
+.textarea-resize-both {
+  resize: both;
+}
+
+/* ============================================================================
+ * VALIDATION STATES
+ * ============================================================================ */
+
+.textarea-error .textarea {
+  border-color: #dc2626;
+}
+
+.textarea-error .textarea:hover:not(:disabled) {
+  border-color: #b91c1c;
+}
+
+.textarea-error .textarea:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.textarea-success .textarea {
+  border-color: #16a34a;
+}
+
+.textarea-success .textarea:hover:not(:disabled) {
+  border-color: #15803d;
+}
+
+.textarea-success .textarea:focus {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+}
+
+.textarea-warning .textarea {
+  border-color: #f59e0b;
+}
+
+.textarea-warning .textarea:hover:not(:disabled) {
+  border-color: #d97706;
+}
+
+.textarea-warning .textarea:focus {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+/* ============================================================================
+ * DISABLED STATE
+ * ============================================================================ */
+
+.textarea-disabled .textarea {
+  background-color: #f7fafc;
+  border-color: #e2e8f0;
+  color: #a0aec0;
+  cursor: not-allowed;
+}
+
+.textarea-disabled .textarea:hover {
+  border-color: #e2e8f0;
+}
+
+.textarea-disabled .textarea-label {
+  color: #a0aec0;
+}
+
+/* ============================================================================
+ * FOOTER (MESSAGE + CHARACTER COUNT)
+ * ============================================================================ */
+
+.textarea-footer {
+  /* Layout */
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 20px;
+}
+
+/* ============================================================================
+ * MESSAGE (HELPER TEXT / ERROR / SUCCESS / WARNING)
+ * ============================================================================ */
+
+.textarea-message {
+  /* Typography */
+  font-size: 13px;
+  line-height: 1.5;
+  flex: 1;
+}
+
+.textarea-helper-text {
+  color: #64748b;
+}
+
+.textarea-error-text {
+  color: #dc2626;
+}
+
+.textarea-success-text {
+  color: #16a34a;
+}
+
+.textarea-warning-text {
+  color: #f59e0b;
+}
+
+/* ============================================================================
+ * CHARACTER COUNTER
+ * ============================================================================ */
+
+.textarea-char-count {
+  /* Typography */
+  font-size: 13px;
+  line-height: 1.5;
+  color: #64748b;
+
+  /* Layout */
+  flex-shrink: 0;
+  text-align: right;
+
+  /* Transitions */
+  transition: color 0.2s ease;
+}
+
+.textarea-char-count-warning {
+  color: #f59e0b;
+  font-weight: 500;
+}
+
+/* ============================================================================
+ * ACCESSIBILITY
+ * ============================================================================ */
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .textarea {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .textarea,
+  .textarea-char-count {
+    transition: none;
+  }
+}
+
+/* ============================================================================
+ * RESPONSIVE DESIGN
+ * ============================================================================ */
+
+/* Mobile */
+@media (max-width: 640px) {
+  .textarea {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+
+  .textarea-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .textarea-char-count {
+    text-align: left;
+  }
+}

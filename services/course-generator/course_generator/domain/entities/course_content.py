@@ -9,29 +9,49 @@ from enum import Enum
 import uuid
 
 class DifficultyLevel(Enum):
+    """
+    Content Difficulty Level - Aligns with Student Progress Levels
+
+    WHY: Ensures content difficulty matches student proficiency for optimal learning
+    """
     BEGINNER = "beginner"
     INTERMEDIATE = "intermediate"
     ADVANCED = "advanced"
 
 class ContentType(Enum):
-    SYLLABUS = "syllabus"
-    SLIDE = "slide"
-    EXERCISE = "exercise"
-    QUIZ = "quiz"
-    LAB = "lab"
+    """
+    Course Content Type - Types of AI-Generatable Content
+
+    WHY: Categorizes content for generation pipelines and storage organization
+    """
+    SYLLABUS = "syllabus"  # Course outline and learning objectives
+    SLIDE = "slide"  # Presentation slide content
+    EXERCISE = "exercise"  # Practice exercises and coding challenges
+    QUIZ = "quiz"  # Assessment questions
+    LAB = "lab"  # Docker container lab environments
 
 class JobStatus(Enum):
-    PENDING = "pending"
-    RUNNING = "running"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    CANCELLED = "cancelled"
+    """
+    Content Generation Job Status
+
+    WHY: Tracks async AI content generation jobs for progress monitoring
+    """
+    PENDING = "pending"  # Job queued, not started
+    RUNNING = "running"  # AI generation in progress
+    COMPLETED = "completed"  # Successfully generated
+    FAILED = "failed"  # Generation error occurred
+    CANCELLED = "cancelled"  # User cancelled job
 
 class SlideType(Enum):
-    TITLE = "title"
-    CONTENT = "content"
-    EXERCISE = "exercise"
-    SUMMARY = "summary"
+    """
+    Slide Type for Course Presentations
+
+    WHY: Different slide types have different layouts and content structures
+    """
+    TITLE = "title"  # Course/module title slide
+    CONTENT = "content"  # Main content slide
+    EXERCISE = "exercise"  # Embedded exercise slide
+    SUMMARY = "summary"  # Module summary slide
 
 @dataclass
 class CourseTemplate:
@@ -319,20 +339,36 @@ class LabEnvironment:
 
 @dataclass
 class GenerationJob:
-    """Domain entity representing a content generation job"""
-    content_type: ContentType
-    course_id: str
-    parameters: Dict
-    status: JobStatus = JobStatus.PENDING
-    id: Optional[str] = None
-    result: Optional[Dict] = None
-    error_message: Optional[str] = None
-    created_at: Optional[datetime] = None
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    progress_percentage: int = 0
-    scheduled_time: Optional[datetime] = None
-    metadata: Dict = field(default_factory=dict)
+    """
+    Content Generation Job Domain Entity - Async AI Content Generation
+
+    BUSINESS REQUIREMENT:
+    Instructors request AI-generated content (syllabi, quizzes, exercises, labs).
+    Generation is async (10-60 seconds) so jobs are queued, tracked, and provide
+    progress feedback to avoid UI blocking.
+
+    TECHNICAL IMPLEMENTATION:
+    - Tracks job lifecycle: PENDING → RUNNING → COMPLETED/FAILED/CANCELLED
+    - Stores generation parameters for retry/debugging
+    - Records timing metrics for performance monitoring
+    - Supports scheduled generation for batch operations
+    - Progress percentage for real-time UI updates
+
+    WHY: Enables responsive UI for expensive AI operations and provides audit trail
+    """
+    content_type: ContentType  # Type of content being generated
+    course_id: str  # Course context for generation
+    parameters: Dict  # Generation parameters (topic, difficulty, count, etc.)
+    status: JobStatus = JobStatus.PENDING  # Current job state
+    id: Optional[str] = None  # Auto-generated UUID
+    result: Optional[Dict] = None  # Generated content (set on COMPLETED)
+    error_message: Optional[str] = None  # Error details (set on FAILED)
+    created_at: Optional[datetime] = None  # Job created timestamp
+    started_at: Optional[datetime] = None  # Generation started timestamp
+    completed_at: Optional[datetime] = None  # Job finished timestamp
+    progress_percentage: int = 0  # Progress indicator (0-100)
+    scheduled_time: Optional[datetime] = None  # For batch/scheduled generation
+    metadata: Dict = field(default_factory=dict)  # Additional tracking data
     
     def __post_init__(self):
         if not self.id:
@@ -353,52 +389,87 @@ class GenerationJob:
             raise ValueError(f"Status must be a JobStatus enum value")
     
     def start(self) -> None:
-        """Mark job as started"""
+        """
+        Start AI content generation
+
+        Raises:
+            ValueError: If job is not in PENDING state
+
+        WHY: Transitions job to RUNNING state and records start time for metrics
+        """
         if self.status != JobStatus.PENDING:
             raise ValueError("Can only start pending jobs")
-        
+
         self.status = JobStatus.RUNNING
         self.started_at = datetime.utcnow()
-    
+
     def complete(self, result: Dict) -> None:
-        """Mark job as completed with result"""
+        """
+        Mark job as successfully completed with generated content
+
+        Args:
+            result: The generated content (syllabus, quiz, exercise, etc.)
+
+        Raises:
+            ValueError: If job is not RUNNING
+
+        WHY: Stores generated content and marks job complete for instructor review
+        """
         if self.status != JobStatus.RUNNING:
             raise ValueError("Can only complete running jobs")
-        
+
         self.status = JobStatus.COMPLETED
         self.result = result
         self.completed_at = datetime.utcnow()
         self.progress_percentage = 100
-    
+
     def fail(self, error_message: str) -> None:
-        """Mark job as failed with error message"""
+        """
+        Mark job as failed with error details
+
+        Args:
+            error_message: Description of what went wrong
+
+        WHY: Records failures for debugging and instructor notification
+        """
         if self.status not in [JobStatus.PENDING, JobStatus.RUNNING]:
             raise ValueError("Can only fail pending or running jobs")
-        
+
         self.status = JobStatus.FAILED
         self.error_message = error_message
         self.completed_at = datetime.utcnow()
-    
+
     def cancel(self) -> None:
-        """Mark job as cancelled"""
+        """
+        Cancel job (user-initiated)
+
+        WHY: Allows instructors to cancel long-running or incorrect generation requests
+        """
         if self.status not in [JobStatus.PENDING, JobStatus.RUNNING]:
             raise ValueError("Can only cancel pending or running jobs")
-        
+
         self.status = JobStatus.CANCELLED
         self.completed_at = datetime.utcnow()
-    
+
     def is_completed(self) -> bool:
-        """Check if job is completed"""
+        """Check if job completed successfully"""
         return self.status == JobStatus.COMPLETED
-    
+
     def is_failed(self) -> bool:
         """Check if job failed"""
         return self.status == JobStatus.FAILED
-    
+
     def get_duration_seconds(self) -> Optional[int]:
-        """Get job duration in seconds"""
+        """
+        Calculate job duration for performance monitoring
+
+        Returns:
+            Duration in seconds, or None if not completed
+
+        WHY: Tracks AI generation performance for optimization
+        """
         if not self.started_at or not self.completed_at:
             return None
-        
+
         duration = self.completed_at - self.started_at
         return int(duration.total_seconds())

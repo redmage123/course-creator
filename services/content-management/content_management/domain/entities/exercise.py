@@ -10,7 +10,27 @@ from content_management.domain.entities.base_content import BaseContent, Content
 
 
 class ExerciseType(Enum):
-    """Exercise type enumeration"""
+    """
+    Educational exercise type classification supporting diverse pedagogical approaches.
+
+    Comprehensive enumeration of exercise types aligned with different learning
+    objectives, cognitive skills, and collaborative learning methodologies.
+
+    Exercise Categories:
+    - **CODING**: Programming exercises for algorithm and software development skills
+    - **THEORETICAL**: Conceptual exercises for knowledge comprehension and analysis
+    - **PRACTICAL**: Hands-on application exercises for skill demonstration
+    - **RESEARCH**: Investigation and analysis exercises for critical thinking
+    - **PRESENTATION**: Communication exercises for knowledge articulation
+    - **GROUP_PROJECT**: Collaborative exercises for teamwork and complex problem-solving
+    - **CASE_STUDY**: Real-world scenario analysis for applied learning
+
+    Educational Benefits:
+    - Diverse cognitive skill development (remember, understand, apply, analyze, evaluate, create)
+    - Individual and collaborative learning support
+    - Theory-practice integration
+    - Professional skill development (communication, teamwork, research)
+    """
     CODING = "coding"
     THEORETICAL = "theoretical"
     PRACTICAL = "practical"
@@ -21,7 +41,24 @@ class ExerciseType(Enum):
 
 
 class DifficultyLevel(Enum):
-    """Difficulty level enumeration"""
+    """
+    Exercise difficulty progression levels for skill development scaffolding.
+
+    Granular difficulty classification supporting progressive skill development,
+    appropriate challenge levels, and adaptive learning path construction.
+
+    Difficulty Progression:
+    - **BEGINNER**: Entry-level exercises with step-by-step guidance and minimal prerequisites
+    - **INTERMEDIATE**: Moderate complexity requiring foundational skill application
+    - **ADVANCED**: Complex exercises requiring synthesis of multiple concepts
+    - **EXPERT**: Professional-level challenges requiring mastery and innovation
+
+    Educational Applications:
+    - Progressive difficulty scaffolding for skill development
+    - Adaptive exercise selection based on student proficiency
+    - Zone of proximal development targeting for optimal challenge
+    - Competency-based progression pathways
+    """
     BEGINNER = "beginner"
     INTERMEDIATE = "intermediate"
     ADVANCED = "advanced"
@@ -29,8 +66,27 @@ class DifficultyLevel(Enum):
 
 
 class ExerciseStep:
-    """Exercise step value object"""
-    
+    """
+    Exercise step value object for scaffolded multi-step exercises.
+
+    BUSINESS REQUIREMENT:
+    Complex exercises require decomposition into manageable steps with clear
+    instructions, time allocation, resource provision, and learning support
+    for effective scaffolded learning progression.
+
+    EDUCATIONAL DESIGN:
+    Implements cognitive task analysis principles breaking complex tasks into
+    sequential steps with appropriate scaffolding, hints for learning support,
+    and resource provision for successful completion.
+
+    SCAFFOLDING FRAMEWORK:
+    - Sequential step organization for logical progression
+    - Clear instructions for each step
+    - Time estimation for planning and pacing
+    - Resource links for reference and support
+    - Hint systems for learning guidance
+    """
+
     def __init__(
         self,
         step_number: int,
@@ -83,8 +139,26 @@ class ExerciseStep:
 
 
 class GradingRubric:
-    """Grading rubric value object"""
-    
+    """
+    Comprehensive grading rubric with weighted criteria and performance levels.
+
+    BUSINESS REQUIREMENT:
+    Transparent, criterion-referenced grading requires detailed rubrics with
+    clear criteria, weighted importance, performance level descriptions, and
+    fair assessment standards for student clarity and grading consistency.
+
+    EDUCATIONAL DESIGN:
+    Implements authentic assessment principles with criterion-based evaluation,
+    clear performance expectations, weighted criteria reflecting learning
+    objective priorities, and comprehensive feedback frameworks.
+
+    RUBRIC STRUCTURE:
+    - Multiple assessment criteria with weights
+    - Performance level definitions (exemplary, proficient, developing, beginning)
+    - Clear descriptors for each performance level
+    - Point allocation aligned with learning objective importance
+    """
+
     def __init__(self, criteria: Dict[str, Dict[str, Any]]):
         self.criteria = criteria
         self.validate()
@@ -129,10 +203,43 @@ class GradingRubric:
 
 class Exercise(BaseContent):
     """
-    Exercise domain entity following SOLID principles
-    Single Responsibility: Exercise-specific business logic
+    Exercise domain entity - comprehensive hands-on learning activity.
+
+    BUSINESS REQUIREMENT:
+    Educational exercises require detailed specifications including type, difficulty,
+    learning objectives, prerequisites, step-by-step instructions, solutions, grading
+    rubrics, and resources for effective hands-on learning and fair assessment.
+
+    EDUCATIONAL METHODOLOGY:
+    Implements active learning principles through hands-on exercises with clear
+    learning objectives, appropriate scaffolding, prerequisite transparency,
+    comprehensive instructions, solution provision, and criterion-based grading.
+
+    TECHNICAL IMPLEMENTATION:
+    - Extends BaseContent for lifecycle management
+    - Aggregates ExerciseStep value objects for scaffolded learning
+    - Uses GradingRubric for criterion-based assessment
+    - Supports multiple exercise types and difficulty levels
+    - Provides comprehensive validation and completeness checking
+
+    DOMAIN OPERATIONS:
+    - Learning objective management
+    - Prerequisite specification and validation
+    - Step-by-step instruction management
+    - Solution provision for instructor reference
+    - Grading rubric configuration
+    - Resource management for learning support
+    - Time estimation and difficulty assessment
+
+    LEARNING SUPPORT:
+    - Clear learning objectives for goal clarity
+    - Prerequisite transparency for student readiness
+    - Step-by-step scaffolding for complex tasks
+    - Hints and resources for learning guidance
+    - Solutions for self-assessment and review
+    - Comprehensive rubrics for grading transparency
     """
-    
+
     def __init__(
         self,
         title: str,

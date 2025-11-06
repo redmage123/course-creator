@@ -65,32 +65,98 @@ class TestOrgAdminCompleteJourney(BaseTest):
     @pytest.fixture(scope="function", autouse=True)
     def setup_org_admin_session(self):
         """
-        Setup authenticated organization admin session before each test.
+        Setup authenticated organization admin session before each test using REAL login flow.
 
         BUSINESS CONTEXT:
         Organization admins need valid authentication to access any features.
-        This fixture ensures consistent authenticated state for all tests.
+        This fixture uses the actual login flow to catch authentication bugs.
+
+        TECHNICAL IMPLEMENTATION:
+        - Uses real credentials: orgadmin / orgadmin123!
+        - Goes through actual login form submission
+        - Handles privacy consent modal
+        - Waits for authentication and redirect
+        - Tests the complete authentication pathway
+
+        IMPORTANT: This fixture tests REAL authentication, not fake token injection.
+        This ensures we catch bugs in:
+        - Login form field names
+        - Privacy modals
+        - Password validation
+        - Authentication flow
+        - Redirect logic
         """
         # Navigate to login page
         self.driver.get(f"{self.config.base_url}/html/index.html")
         time.sleep(2)
 
-        # Set up organization admin authenticated state
-        self.driver.execute_script("""
-            localStorage.setItem('authToken', 'test-org-admin-token-12345');
-            localStorage.setItem('currentUser', JSON.stringify({
-                id: 100,
-                email: 'orgadmin@testorg.com',
-                role: 'organization_admin',
-                organization_id: 1,
-                name: 'Test Org Admin'
-            }));
-            localStorage.setItem('userEmail', 'orgadmin@testorg.com');
-            localStorage.setItem('sessionStart', Date.now().toString());
-            localStorage.setItem('lastActivity', Date.now().toString());
-        """)
+        # Handle privacy consent modal first (blocks login button)
+        try:
+            # Wait for privacy modal to appear
+            time.sleep(2)
+            privacy_modal = WebDriverWait(self.driver, 5).until(
+                EC.presence_of_element_located((By.ID, "privacyModal"))
+            )
 
-        logger.info("Organization admin session established")
+            # Check if modal is visible
+            if privacy_modal.is_displayed():
+                logger.info("Privacy modal detected - dismissing...")
+                # Click "Accept All" button
+                accept_btn = self.driver.find_element(By.XPATH, "//button[contains(text(), 'Accept All')]")
+                self.click_element_js(accept_btn)
+                logger.info("Privacy consent accepted")
+                time.sleep(2)
+        except TimeoutException:
+            logger.info("No privacy modal or already dismissed")
+        except Exception as e:
+            logger.info(f"Privacy modal handling: {e}")
+
+        # Perform real login with test org_admin credentials
+        try:
+            # Step 1: Click "Login" button to open dropdown menu
+            login_btn = self.wait_for_element((By.ID, "loginBtn"))
+            self.click_element_js(login_btn)
+            logger.info("Login dropdown opened")
+            time.sleep(1)
+
+            # Step 2: Wait for login form to appear
+            login_menu = self.wait_for_element((By.ID, "loginMenu"))
+            logger.info("Login form visible")
+
+            # Step 3: Fill in username (field ID is "loginEmail", not "username")
+            username_field = self.wait_for_element((By.ID, "loginEmail"))
+            username_field.clear()
+            username_field.send_keys("orgadmin")
+
+            # Step 4: Fill in password (field ID is "loginPassword", not "password")
+            password_field = self.wait_for_element((By.ID, "loginPassword"))
+            password_field.clear()
+            password_field.send_keys("orgadmin123!")
+
+            # Step 5: Submit form (form has onsubmit="handleAccountLogin(event)")
+            submit_btn = self.driver.find_element(By.XPATH, "//button[@type='submit' and contains(text(), 'Sign In')]")
+            self.click_element_js(submit_btn)
+
+            logger.info("Login form submitted with orgadmin credentials")
+
+            # Wait for authentication and redirect (max 10 seconds)
+            time.sleep(3)
+
+            # Verify authentication succeeded
+            auth_token = self.driver.execute_script("return localStorage.getItem('authToken');")
+            if not auth_token:
+                # Take screenshot for debugging
+                logger.error("Authentication failed - no authToken in localStorage")
+                self.driver.save_screenshot("/tmp/auth_failure.png")
+                pytest.fail("Real authentication failed - check credentials or backend")
+
+            logger.info("Organization admin authentication successful - real login flow completed")
+
+        except Exception as e:
+            logger.error(f"Real login flow failed: {e}")
+            self.driver.save_screenshot("/tmp/login_failure.png")
+            pytest.fail(f"Real login flow failed: {e}")
+
         yield
 
         # Cleanup after test
@@ -104,10 +170,10 @@ class TestOrgAdminCompleteJourney(BaseTest):
         """
         TEST: Organization admin can login and access dashboard
         REQUIREMENT: Org admin authentication and dashboard access
-        SUCCESS CRITERIA: Dashboard loads without redirect loops
+        SUCCESS CRITERIA: Dashboard loads without redirect loops, no API errors, data loads successfully
         """
         # Navigate to org admin dashboard
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(3)
 
         # Verify on dashboard page (no redirect loop)
@@ -121,7 +187,36 @@ class TestOrgAdminCompleteJourney(BaseTest):
         auth_token = self.driver.execute_script("return localStorage.getItem('authToken');")
         assert auth_token is not None, "authToken should persist after navigation"
 
-        logger.info("✓ Organization admin successfully accessed dashboard")
+        # CRITICAL: Check for 422 errors during initialization
+        browser_logs = self.driver.get_log('browser')
+        api_422_errors = [
+            log for log in browser_logs
+            if '422' in log['message'] and 'organizations' in log['message']
+        ]
+        assert len(api_422_errors) == 0, \
+            f"Found {len(api_422_errors)} API 422 errors during initialization: {[e['message'][:200] for e in api_422_errors]}"
+
+        # CRITICAL: Check for "organizations/null" API calls (race condition indicator)
+        null_org_errors = [
+            log for log in browser_logs
+            if 'organizations/null' in log['message'] or 'organizations%2Fnull' in log['message']
+        ]
+        assert len(null_org_errors) == 0, \
+            f"Found {len(null_org_errors)} API calls with null organization_id (race condition!): {[e['message'][:200] for e in null_org_errors]}"
+
+        # Verify org_id parameter is present in URL (modules depend on this)
+        assert 'org_id=' in current_url, \
+            "URL should contain org_id parameter for module initialization"
+
+        # Extract org_id from URL and verify it's not null
+        org_id_from_url = self.driver.execute_script("""
+            const params = new URLSearchParams(window.locations.search);
+            return params.get('org_id');
+        """)
+        assert org_id_from_url is not None and org_id_from_url != 'null', \
+            f"org_id URL parameter should be valid (got: {org_id_from_url})"
+
+        logger.info(f"✓ Organization admin successfully accessed dashboard with org_id={org_id_from_url}, no initialization errors")
 
     def test_02_dashboard_displays_organization_name(self):
         """
@@ -129,7 +224,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization branding and identification
         SUCCESS CRITERIA: Organization name visible in dashboard header
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(3)
 
         # Wait for organization name to load
@@ -144,10 +239,29 @@ class TestOrgAdminCompleteJourney(BaseTest):
         """
         TEST: Dashboard overview shows key statistics
         REQUIREMENT: Organization admins need overview of org metrics
-        SUCCESS CRITERIA: Total projects, instructors, students, tracks displayed
+        SUCCESS CRITERIA: Total projects, instructors, students, tracks displayed without API errors
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(3)
+
+        # CRITICAL: Check for API errors during data loading
+        browser_logs = self.driver.get_log('browser')
+
+        # Check for 422 errors (invalid organization_id)
+        api_422_errors = [
+            log for log in browser_logs
+            if '422' in log['message'] and 'organizations' in log['message']
+        ]
+        assert len(api_422_errors) == 0, \
+            f"Found {len(api_422_errors)} API 422 errors while loading overview data: {[e['message'][:200] for e in api_422_errors]}"
+
+        # Check for null organization API calls
+        null_org_errors = [
+            log for log in browser_logs
+            if 'organizations/null' in log['message']
+        ]
+        assert len(null_org_errors) == 0, \
+            f"Found {len(null_org_errors)} API calls with null organization_id: {[e['message'][:200] for e in null_org_errors]}"
 
         # Verify stat cards are present
         stat_ids = ['totalProjects', 'totalInstructors', 'totalStudents', 'totalTracks', 'totalCourses']
@@ -169,7 +283,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins need access to all management features
         SUCCESS CRITERIA: Overview, Projects, Instructors, Students, Tracks, Settings tabs visible
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(3)
 
         # Expected navigation tabs
@@ -193,7 +307,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins can access settings
         SUCCESS CRITERIA: Settings tab displays and shows settings form
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(3)
 
         # Click settings tab
@@ -213,7 +327,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins can view organization configuration
         SUCCESS CRITERIA: Settings form populated with current values
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(2)
 
         # Navigate to settings
@@ -238,7 +352,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins can modify organization details
         SUCCESS CRITERIA: Settings update form submits successfully
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(3)
 
         # Navigate to settings
@@ -284,7 +398,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins manage instructor members
         SUCCESS CRITERIA: Instructors tab displays and shows instructors table
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(3)
 
         # Click instructors tab
@@ -302,15 +416,32 @@ class TestOrgAdminCompleteJourney(BaseTest):
         """
         TEST: View all organization instructors
         REQUIREMENT: Organization admins can see all instructors
-        SUCCESS CRITERIA: Instructors table displays with headers
+        SUCCESS CRITERIA: Instructors table displays with headers, no API 422 errors
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(2)
 
         # Navigate to instructors tab
         instructors_tab = self.wait_for_element((By.CSS_SELECTOR, '[data-tab="instructors"]'))
         self.click_element_js(instructors_tab)
         time.sleep(2)
+
+        # CRITICAL: Check for API errors when loading instructors
+        browser_logs = self.driver.get_log('browser')
+        api_422_errors = [
+            log for log in browser_logs
+            if '422' in log['message'] and 'members' in log['message'] and 'instructor' in log['message']
+        ]
+        assert len(api_422_errors) == 0, \
+            f"Found {len(api_422_errors)} API 422 errors while loading instructors: {[e['message'][:200] for e in api_422_errors]}"
+
+        # Check for null organization API calls
+        null_org_errors = [
+            log for log in browser_logs
+            if 'organizations/null/members' in log['message']
+        ]
+        assert len(null_org_errors) == 0, \
+            f"Found {len(null_org_errors)} API calls to /organizations/null/members (race condition!): {[e['message'][:200] for e in null_org_errors]}"
 
         # Check table headers
         table = self.driver.find_element(By.ID, "instructorsTable")
@@ -325,7 +456,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins manage student members
         SUCCESS CRITERIA: Students tab displays and shows students table
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(3)
 
         # Click students tab
@@ -343,15 +474,32 @@ class TestOrgAdminCompleteJourney(BaseTest):
         """
         TEST: View all organization students
         REQUIREMENT: Organization admins can see all students
-        SUCCESS CRITERIA: Students table displays with headers
+        SUCCESS CRITERIA: Students table displays with headers, no API 422 errors
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(2)
 
         # Navigate to students tab
         students_tab = self.wait_for_element((By.CSS_SELECTOR, '[data-tab="students"]'))
         self.click_element_js(students_tab)
         time.sleep(2)
+
+        # CRITICAL: Check for API errors when loading students
+        browser_logs = self.driver.get_log('browser')
+        api_422_errors = [
+            log for log in browser_logs
+            if '422' in log['message'] and 'members' in log['message'] and 'student' in log['message']
+        ]
+        assert len(api_422_errors) == 0, \
+            f"Found {len(api_422_errors)} API 422 errors while loading students: {[e['message'][:200] for e in api_422_errors]}"
+
+        # Check for null organization API calls
+        null_org_errors = [
+            log for log in browser_logs
+            if 'organizations/null/members' in log['message']
+        ]
+        assert len(null_org_errors) == 0, \
+            f"Found {len(null_org_errors)} API calls to /organizations/null/members (race condition!): {[e['message'][:200] for e in null_org_errors]}"
 
         # Check table headers
         table = self.driver.find_element(By.ID, "studentsTable")
@@ -370,7 +518,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins can add new instructors
         SUCCESS CRITERIA: Add instructor modal appears
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(2)
 
         # Navigate to instructors tab
@@ -404,7 +552,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins can add new students
         SUCCESS CRITERIA: Add student modal appears
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(2)
 
         # Navigate to students tab
@@ -441,7 +589,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins manage organization projects/courses
         SUCCESS CRITERIA: Projects tab displays
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(3)
 
         # Click projects tab
@@ -461,7 +609,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins can see all projects
         SUCCESS CRITERIA: Projects list displays
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(3)
 
         # Navigate to projects tab
@@ -469,13 +617,13 @@ class TestOrgAdminCompleteJourney(BaseTest):
         self.click_element_js(projects_tab)
         time.sleep(3)
 
-        # Check for projects list container
+        # Check for projects table (actual element ID in HTML is "projectsTable")
         try:
-            projects_list = self.wait_for_element((By.ID, "projectsList"))
-            assert projects_list is not None, "Projects list should exist"
-            logger.info("✓ Projects list container found")
+            projects_table = self.wait_for_element((By.ID, "projectsTable"))
+            assert projects_table is not None, "Projects table should exist"
+            logger.info("✓ Projects table found")
         except NoSuchElementException:
-            logger.warning("Projects list container not found")
+            logger.warning("Projects table not found")
 
     def test_16_filter_projects_by_status(self):
         """
@@ -483,7 +631,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins can filter projects
         SUCCESS CRITERIA: Project status filter works
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(3)
 
         projects_tab = self.wait_for_element((By.CSS_SELECTOR, '[data-tab="projects"]'))
@@ -512,7 +660,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins can create new projects
         SUCCESS CRITERIA: Create project modal appears
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(2)
 
         # Navigate to projects tab
@@ -549,7 +697,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins manage learning tracks
         SUCCESS CRITERIA: Tracks tab displays and shows tracks table
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(3)
 
         # Click tracks tab
@@ -569,7 +717,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins can see all tracks
         SUCCESS CRITERIA: Tracks table displays with headers
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(2)
 
         # Navigate to tracks tab
@@ -590,7 +738,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins can filter tracks by project
         SUCCESS CRITERIA: Track project filter works
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(3)
 
         # Navigate to tracks tab
@@ -612,7 +760,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins can filter tracks by status
         SUCCESS CRITERIA: Track status filter works
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(2)
 
         # Navigate to tracks tab
@@ -639,7 +787,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins can filter tracks by difficulty
         SUCCESS CRITERIA: Track difficulty filter works
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(3)
 
         tracks_tab = self.wait_for_element((By.CSS_SELECTOR, '[data-tab="tracks"]'))
@@ -668,7 +816,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins can search tracks
         SUCCESS CRITERIA: Track search input works
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(3)
 
         tracks_tab = self.wait_for_element((By.CSS_SELECTOR, '[data-tab="tracks"]'))
@@ -698,7 +846,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins can create new tracks
         SUCCESS CRITERIA: Create track modal appears
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(2)
 
         # Navigate to tracks tab
@@ -735,7 +883,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins see key metrics
         SUCCESS CRITERIA: Overview tab shows analytics dashboard
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(3)
 
         # Should be on overview tab by default
@@ -757,7 +905,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins monitor recent activity
         SUCCESS CRITERIA: Recent activity section displays on overview
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(3)
 
         # Look for recent activity section
@@ -774,7 +922,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins see recent projects
         SUCCESS CRITERIA: Recent projects section displays
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(3)
 
         # Look for recent projects section
@@ -795,7 +943,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins configure organization behavior
         SUCCESS CRITERIA: Preferences form displays in settings
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(3)
 
         # Navigate to settings
@@ -817,7 +965,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins configure auto-assignment
         SUCCESS CRITERIA: Auto-assign checkbox can be toggled
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(2)
 
         # Navigate to settings
@@ -847,7 +995,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins configure project templates
         SUCCESS CRITERIA: Project templates checkbox can be toggled
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(2)
 
         # Navigate to settings
@@ -877,7 +1025,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins configure branding
         SUCCESS CRITERIA: Custom branding checkbox can be toggled
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(2)
 
         # Navigate to settings
@@ -911,7 +1059,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins can access all features
         SUCCESS CRITERIA: All tabs can be clicked and become active
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(2)
 
         # Test all tabs
@@ -939,7 +1087,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admin session remains valid
         SUCCESS CRITERIA: authToken persists across all tab navigation
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(2)
 
         # Navigate through multiple tabs
@@ -966,7 +1114,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admin can logout securely
         SUCCESS CRITERIA: Logout clears all auth data
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(2)
 
         # Look for logout button
@@ -1011,12 +1159,12 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Multi-tenant isolation enforced
         SUCCESS CRITERIA: Only organization_id=1 data visible
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(3)
 
         # Verify correct org_id in URL parameter
         current_url = self.driver.current_url
-        assert 'org_id=1' in current_url, "Should be viewing organization 1"
+        assert 'org_id=550e8400-e29b-41d4-a716-446655440000' in current_url, "Should be viewing organization 1"
 
         # Verify currentUser has correct organization_id
         current_user = self.driver.execute_script(
@@ -1044,7 +1192,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         current_url = self.driver.current_url
 
         # Check if redirected to login or back to correct org
-        is_redirected = 'index.html' in current_url or 'org_id=1' in current_url
+        is_redirected = 'index.html' in current_url or 'org_id=550e8400-e29b-41d4-a716-446655440000' in current_url
 
         if is_redirected:
             logger.info("✓ Multi-tenant security enforced - unauthorized org access blocked")
@@ -1061,7 +1209,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins can perform bulk operations
         SUCCESS CRITERIA: Member tables support selection for bulk operations
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(2)
 
         # Check instructors table for selection capabilities
@@ -1085,7 +1233,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins have quick access to common actions
         SUCCESS CRITERIA: Quick actions section displays on overview
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(3)
 
         # Look for quick actions section
@@ -1108,7 +1256,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Organization admins always have access to navigation
         SUCCESS CRITERIA: Sidebar element is present and visible
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(2)
 
         # Check for sidebar
@@ -1125,7 +1273,7 @@ class TestOrgAdminCompleteJourney(BaseTest):
         REQUIREMENT: Dashboard should be error-free
         SUCCESS CRITERIA: No SEVERE console errors during tab navigation
         """
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(3)
 
         # Navigate through all tabs
@@ -1176,27 +1324,15 @@ class TestOrgAdminCompleteWorkflowIntegration(BaseTest):
         TEST: Complete organization admin session from login to logout
         REQUIREMENT: All organization admin features work together
         SUCCESS CRITERIA: Complete workflow executes without errors
-        """
-        # Step 1: Establish session
-        self.driver.get(f"{self.config.base_url}/html/index.html")
-        time.sleep(2)
 
-        self.driver.execute_script("""
-            localStorage.setItem('authToken', 'complete-workflow-test-token');
-            localStorage.setItem('currentUser', JSON.stringify({
-                id: 100,
-                email: 'workflow@testorg.com',
-                role: 'organization_admin',
-                organization_id: 1,
-                name: 'Workflow Test Admin'
-            }));
-            localStorage.setItem('userEmail', 'workflow@testorg.com');
-            localStorage.setItem('sessionStart', Date.now().toString());
-            localStorage.setItem('lastActivity', Date.now().toString());
-        """)
+        NOTE: This test inherits the real login from setup_org_admin_session fixture,
+        so it already starts with a real authenticated session.
+        """
+        # Step 1: Session already established by setup_org_admin_session fixture
+        # (which uses REAL login flow, not fake tokens)
 
         # Step 2: Access dashboard
-        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=1")
+        self.driver.get(f"{self.config.base_url}/html/org-admin-dashboard.html?org_id=550e8400-e29b-41d4-a716-446655440000")
         time.sleep(3)
 
         logger.info("Step 1: ✓ Accessed organization admin dashboard")

@@ -8,6 +8,11 @@ import authManager from './modules/auth.js';
 import { labLifecycleManager } from './modules/lab-lifecycle.js';
 
 class LabIntegration {
+    /**
+     * INITIALIZE CLASS INSTANCE WITH DEFAULT STATE
+     * PURPOSE: Initialize class instance with default state
+     * WHY: Establishes initial state required for class functionality
+     */
     constructor() {
         this.initialized = false;
     }

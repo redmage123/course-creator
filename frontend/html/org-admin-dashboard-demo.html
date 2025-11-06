@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="../css/modern-ui/modern-ui.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organization Admin Dashboard - Acme Learning</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../css/base/reset.css">
+    <link rel="stylesheet" href="../css/base/variables.css">
+    <link rel="stylesheet" href="../css/components/org-admin-demo.css?v=1.0">
+</head>
+<body>
+    <div class="org-admin-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-building"></i> Acme Learning</h2>
+            </div>
+            <nav class="nav-links">
+                <a href="#overview" class="nav-link active" id="nav-overview">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Overview</span>
+                </a>
+                <a href="#projects" class="nav-link" id="nav-projects">
+                    <i class="fas fa-folder"></i>
+                    <span>Projects</span>
+                </a>
+                <a href="#tracks" class="nav-link" id="nav-tracks">
+                    <i class="fas fa-route"></i>
+                    <span>Tracks</span>
+                </a>
+                <a href="#members" class="nav-link" id="nav-members">
+                    <i class="fas fa-users"></i>
+                    <span>Members</span>
+                </a>
+                <a href="#settings" class="nav-link" id="nav-settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="org-header">
+                <h1>Acme Learning - Organization Dashboard</h1>
+                <div class="project-selector">
+                    <label for="currentProject" class="project-selector__label">Current Project:</label>
+                    <select id="currentProject" class="project-selector__select">
+                        <option value="web-dev">Web Development Bootcamp</option>
+                        <option value="data-science">Data Science Foundations</option>
+                        <option value="cloud-arch">Cloud Architecture Certification</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="org-stats">
+                <div class="stat-card" id="stat-projects">
+                    <span class="stat-number" id="totalProjects">3</span>
+                    <div class="stat-label">Active Projects</div>
+                </div>
+                <div class="stat-card" id="stat-tracks">
+                    <span class="stat-number" id="totalTracks">3</span>
+                    <div class="stat-label">Tracks (Current Project)</div>
+                </div>
+                <div class="stat-card" id="stat-instructors">
+                    <span class="stat-number" id="totalInstructors">4</span>
+                    <div class="stat-label">Instructors (Current Project)</div>
+                </div>
+                <div class="stat-card" id="stat-students">
+                    <span class="stat-number" id="totalStudents">18</span>
+                    <div class="stat-label">Students (Current Project)</div>
+                </div>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="tab-content" id="overview-content">
+                <div class="section-header">
+                    <h2 class="section-header__title"><i class="fas fa-chart-line"></i> Dashboard Overview</h2>
+                    <button id="createProjectBtn" class="btn--create">
+                        <i class="fas fa-plus"></i> Create New Project
+                    </button>
+                </div>
+                <p>Welcome to your organization's command center. From here, you can manage all aspects of your training programs.</p>
+
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <i class="fas fa-folder feature-icon"></i>
+                        <div class="feature-text">
+                            <h3>Projects</h3>
+                            <p>Organize related courses into training programs</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-route feature-icon"></i>
+                        <div class="feature-text">
+                            <h3>Tracks</h3>
+                            <p>Create customized learning paths for different skill levels</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-users feature-icon"></i>
+                        <div class="feature-text">
+                            <h3>Members</h3>
+                            <p>Manage instructors and students across your organization</p>
+                        </div>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-cog feature-icon"></i>
+                        <div class="feature-text">
+                            <h3>Settings</h3>
+                            <p>Configure organization preferences and integrations</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content hidden" id="projects-content">
+                <h2><i class="fas fa-folder"></i> Training Projects (3 Active)</h2>
+                <p class="mb-3">Organize related courses into cohesive training programs.</p>
+
+                <table class="data-table">
+                    <thead>
+                        <tr class="data-table__header-row">
+                            <th class="data-table__header-cell">Project Name</th>
+                            <th class="data-table__header-cell">Tracks</th>
+                            <th class="data-table__header-cell">Students</th>
+                            <th class="data-table__header-cell">Status</th>
+                            <th class="data-table__header-cell">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="data-table__cell"><strong>Web Development Bootcamp</strong></td>
+                            <td class="data-table__cell">3 tracks</td>
+                            <td class="data-table__cell">18 students</td>
+                            <td class="data-table__cell"><span class="badge badge--active">Active</span></td>
+                            <td class="data-table__cell">
+                                <button class="btn--warning"><i class="fas fa-edit"></i> Edit</button>
+                                <button class="btn--danger"><i class="fas fa-trash"></i> Delete</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="data-table__cell"><strong>Data Science Foundations</strong></td>
+                            <td class="data-table__cell">3 tracks</td>
+                            <td class="data-table__cell">15 students</td>
+                            <td class="data-table__cell"><span class="badge badge--active">Active</span></td>
+                            <td class="data-table__cell">
+                                <button class="btn--warning"><i class="fas fa-edit"></i> Edit</button>
+                                <button class="btn--danger"><i class="fas fa-trash"></i> Delete</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="data-table__cell"><strong>Cloud Architecture Certification</strong></td>
+                            <td class="data-table__cell">2 tracks</td>
+                            <td class="data-table__cell">12 students</td>
+                            <td class="data-table__cell"><span class="badge badge--active">Active</span></td>
+                            <td class="data-table__cell">
+                                <button class="btn--warning"><i class="fas fa-edit"></i> Edit</button>
+                                <button class="btn--danger"><i class="fas fa-trash"></i> Delete</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="tab-content hidden" id="tracks-content">
+                <div class="section-header">
+                    <div>
+                        <h2><i class="fas fa-route"></i> Learning Tracks (8 Total)</h2>
+                        <p class="section-header__title--subtitle">Customized learning paths for different skill levels.</p>
+                    </div>
+                    <button id="createTrackBtn" class="btn--create">
+                        <i class="fas fa-plus"></i>
+                        Create New Track
+                    </button>
+                </div>
+
+                <table class="data-table">
+                    <thead>
+                        <tr class="data-table__header-row">
+                            <th class="data-table__header-cell">Track Name</th>
+                            <th class="data-table__header-cell">Project</th>
+                            <th class="data-table__header-cell">Level</th>
+                            <th class="data-table__header-cell">Students</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="data-table__cell--compact"><strong>Web Dev - Beginner</strong></td>
+                            <td class="data-table__cell--compact">Web Development</td>
+                            <td class="data-table__cell--compact"><span class="badge--beginner">Beginner</span></td>
+                            <td class="data-table__cell--compact">8</td>
+                        </tr>
+                        <tr>
+                            <td class="data-table__cell--compact"><strong>Web Dev - Intermediate</strong></td>
+                            <td class="data-table__cell--compact">Web Development</td>
+                            <td class="data-table__cell--compact"><span class="badge--intermediate">Intermediate</span></td>
+                            <td class="data-table__cell--compact">6</td>
+                        </tr>
+                        <tr>
+                            <td class="data-table__cell--compact"><strong>Web Dev - Advanced</strong></td>
+                            <td class="data-table__cell--compact">Web Development</td>
+                            <td class="data-table__cell--compact"><span class="badge--advanced">Advanced</span></td>
+                            <td class="data-table__cell--compact">4</td>
+                        </tr>
+                        <tr>
+                            <td class="data-table__cell--compact"><strong>Data Science - Beginner</strong></td>
+                            <td class="data-table__cell--compact">Data Science</td>
+                            <td class="data-table__cell--compact"><span class="badge--beginner">Beginner</span></td>
+                            <td class="data-table__cell--compact">7</td>
+                        </tr>
+                        <tr>
+                            <td class="data-table__cell--compact"><strong>Data Science - Intermediate</strong></td>
+                            <td class="data-table__cell--compact">Data Science</td>
+                            <td class="data-table__cell--compact"><span class="badge--intermediate">Intermediate</span></td>
+                            <td class="data-table__cell--compact">5</td>
+                        </tr>
+                        <tr>
+                            <td class="data-table__cell--compact"><strong>Data Science - Advanced</strong></td>
+                            <td class="data-table__cell--compact">Data Science</td>
+                            <td class="data-table__cell--compact"><span class="badge--advanced">Advanced</span></td>
+                            <td class="data-table__cell--compact">3</td>
+                        </tr>
+                        <tr>
+                            <td class="data-table__cell--compact"><strong>Cloud Architecture - Associate</strong></td>
+                            <td class="data-table__cell--compact">Cloud Architecture</td>
+                            <td class="data-table__cell--compact"><span class="badge--intermediate">Intermediate</span></td>
+                            <td class="data-table__cell--compact">7</td>
+                        </tr>
+                        <tr>
+                            <td class="data-table__cell--compact"><strong>Cloud Architecture - Professional</strong></td>
+                            <td class="data-table__cell--compact">Cloud Architecture</td>
+                            <td class="data-table__cell--compact"><span class="badge--advanced">Advanced</span></td>
+                            <td class="data-table__cell--compact">5</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="tab-content hidden" id="members-content">
+                <h2><i class="fas fa-users"></i> Organization Members</h2>
+                <p class="mb-3">Manage instructors and students across your organization.</p>
+
+                <h3 class="section-subtitle">Instructors (12)</h3>
+                <div class="member-grid">
+                    <div class="member-card">
+                        <div class="member-card__name">Dr. Sarah Chen</div>
+                        <div class="member-card__role">Web Development</div>
+                    </div>
+                    <div class="member-card">
+                        <div class="member-card__name">Prof. Michael Rodriguez</div>
+                        <div class="member-card__role">Data Science</div>
+                    </div>
+                    <div class="member-card">
+                        <div class="member-card__name">Dr. Emily Watson</div>
+                        <div class="member-card__role">Cloud Architecture</div>
+                    </div>
+                    <div class="member-card member-card--placeholder">
+                        + 9 more instructors
+                    </div>
+                </div>
+
+                <h3 class="section-subtitle">Students (45)</h3>
+                <div class="member-summary">
+                    <p class="member-summary__text">45 students enrolled across 3 projects and 8 learning tracks</p>
+                </div>
+            </div>
+
+            <div class="tab-content hidden" id="settings-content">
+                <h2><i class="fas fa-cog"></i> Organization Settings</h2>
+                <p>Configure your organization's preferences, branding, integrations with Slack or Teams, and manage member permissions.</p>
+                <p>Set up custom domains, email notifications, and compliance settings to match your organization's needs.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Project Modal -->
+    <div id="createProjectModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" id="closeModal">&times;</span>
+            <h2 class="modal-header"><i class="fas fa-plus-circle"></i> Create New Project</h2>
+
+            <form id="createProjectForm">
+                <div class="form-group">
+                    <label for="projectName">Project Name *</label>
+                    <input type="text" id="projectName" required placeholder="e.g., Machine Learning Fundamentals">
+                </div>
+
+                <div class="form-group">
+                    <label for="projectDescription">Description *</label>
+                    <textarea id="projectDescription" required placeholder="Brief description of the project goals and target audience"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="projectDuration">Duration (weeks)</label>
+                    <input type="number" id="projectDuration" min="1" value="12" placeholder="12">
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Track Modal -->
+    <div id="createTrackModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" id="closeTrackModal">&times;</span>
+            <h2 class="modal-header"><i class="fas fa-route"></i> Create New Track</h2>
+
+            <form id="createTrackForm">
+                <div class="form-group">
+                    <label for="trackName">Track Name *</label>
+                    <input type="text" id="trackName" required placeholder="e.g., Python Fundamentals">
+                </div>
+
+                <div class="form-group">
+                    <label for="trackProject">Project *</label>
+                    <select id="trackProject" required>
+                        <option value="">Select a project...</option>
+                        <option value="web-dev">Web Development Bootcamp</option>
+                        <option value="data-science">Data Science Foundations</option>
+                        <option value="cloud-arch">Cloud Architecture Certification</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="trackLevel">Level *</label>
+                    <select id="trackLevel" required>
+                        <option value="">Select a level...</option>
+                        <option value="beginner">Beginner</option>
+                        <option value="intermediate">Intermediate</option>
+                        <option value="advanced">Advanced</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="trackDescription">Description *</label>
+                    <textarea id="trackDescription" required placeholder="Brief description of what students will learn in this track"></textarea>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelTrackBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Track</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Simple tab switching
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+
+                // Remove active class from all links
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+
+                // Hide all tab contents
+                document.querySelectorAll('[id$="-content"]').forEach(content => {
+                    content.classList.add('hidden');
+                });
+
+                // Show selected content
+                const tabId = link.id.replace('nav-', '') + '-content';
+                const content = document.getElementById(tabId);
+                if (content) {
+                    content.classList.remove('hidden');
+                }
+            });
+        });
+
+        // Stat card click handlers
+        document.getElementById('stat-projects').addEventListener('click', () => {
+            document.getElementById('nav-projects').click();
+        });
+
+        document.getElementById('stat-tracks').addEventListener('click', () => {
+            document.getElementById('nav-tracks').click();
+        });
+
+        document.getElementById('stat-instructors').addEventListener('click', () => {
+            document.getElementById('nav-members').click();
+        });
+
+        document.getElementById('stat-students').addEventListener('click', () => {
+            document.getElementById('nav-members').click();
+        });
+
+        // Modal functionality
+        const modal = document.getElementById('createProjectModal');
+        const createBtn = document.getElementById('createProjectBtn');
+        const closeBtn = document.getElementById('closeModal');
+        const cancelBtn = document.getElementById('cancelBtn');
+
+        createBtn.addEventListener('click', () => {
+            modal.classList.remove('hidden');
+        });
+
+        closeBtn.addEventListener('click', () => {
+            modal.classList.add('hidden');
+        });
+
+        cancelBtn.addEventListener('click', () => {
+            modal.classList.add('hidden');
+        });
+
+        // Close modal when clicking outside
+        window.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                modal.classList.add('hidden');
+            }
+        });
+
+        // Handle form submission
+        document.getElementById('createProjectForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            // For demo purposes, just show the projects page
+            modal.classList.add('hidden');
+            document.getElementById('nav-projects').click();
+        });
+
+        // Track Modal functionality
+        const trackModal = document.getElementById('createTrackModal');
+        const createTrackBtn = document.getElementById('createTrackBtn');
+        const closeTrackBtn = document.getElementById('closeTrackModal');
+        const cancelTrackBtn = document.getElementById('cancelTrackBtn');
+
+        createTrackBtn.addEventListener('click', () => {
+            trackModal.classList.remove('hidden');
+        });
+
+        closeTrackBtn.addEventListener('click', () => {
+            trackModal.classList.add('hidden');
+        });
+
+        cancelTrackBtn.addEventListener('click', () => {
+            trackModal.classList.add('hidden');
+        });
+
+        // Close track modal when clicking outside
+        window.addEventListener('click', (event) => {
+            if (event.target === trackModal) {
+                trackModal.classList.add('hidden');
+            }
+        });
+
+        // Handle track form submission
+        document.getElementById('createTrackForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            // For demo purposes, just stay on tracks page
+            trackModal.classList.add('hidden');
+            // Track will appear in the table (in real app would add to table)
+        });
+
+        // Project data for each project
+        const projectData = {
+            'web-dev': {
+                tracks: 3,
+                instructors: 4,
+                students: 18
+            },
+            'data-science': {
+                tracks: 3,
+                instructors: 5,
+                students: 15
+            },
+            'cloud-arch': {
+                tracks: 2,
+                instructors: 3,
+                students: 12
+            }
+        };
+
+        // Handle project switching
+        document.getElementById('currentProject').addEventListener('change', (e) => {
+            const projectId = e.target.value;
+            const data = projectData[projectId];
+
+            // Update the stats
+            document.getElementById('totalTracks').textContent = data.tracks;
+            document.getElementById('totalInstructors').textContent = data.instructors;
+            document.getElementById('totalStudents').textContent = data.students;
+        });
+
+        // AI Assistant functionality
+        const aiButton = document.getElementById('aiAssistantBtn');
+        const aiPanel = document.getElementById('aiAssistantPanel');
+        const closeAIBtn = document.getElementById('closeAIAssistant');
+        const aiInput = document.getElementById('aiInput');
+        const aiSendBtn = document.getElementById('aiSendBtn');
+        const aiMessages = document.getElementById('aiMessages');
+
+        aiButton.addEventListener('click', () => {
+            aiPanel.classList.add('open');
+        });
+
+        closeAIBtn.addEventListener('click', () => {
+            aiPanel.classList.remove('open');
+        });
+
+        // Sample AI conversation
+        function addMessage(text, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `ai-message ${isUser ? 'user-message' : 'ai-message-bot'}`;
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    <div class="message-avatar">${isUser ? '👤' : '🤖'}</div>
+                    <div class="message-text">${text}</div>
+                </div>
+            `;
+            aiMessages.appendChild(messageDiv);
+            aiMessages.scrollTop = aiMessages.scrollHeight;
+        }
+
+        aiSendBtn.addEventListener('click', () => {
+            const userInput = aiInput.value.trim();
+            if (userInput) {
+                addMessage(userInput, true);
+                aiInput.value = '';
+
+                // Simulate AI response
+                setTimeout(() => {
+                    if (userInput.toLowerCase().includes('create') && userInput.toLowerCase().includes('project')) {
+                        addMessage('I\'ll help you create a new project. What would you like to name it?');
+                    } else if (userInput.toLowerCase().includes('track')) {
+                        addMessage('I can help you create a learning track. Which project should this track belong to?');
+                    } else if (userInput.toLowerCase().includes('instructor')) {
+                        addMessage('I\'ll help you onboard an instructor. Please provide their email address and the project they\'ll be assigned to.');
+                    } else {
+                        addMessage('I can help you with: creating projects, tracks, courses, onboarding instructors, and managing your organization. What would you like to do?');
+                    }
+                }, 500);
+            }
+        });
+
+        aiInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                aiSendBtn.click();
+            }
+        });
+    </script>
+
+    <!-- AI Assistant Floating Button -->
+    <button id="aiAssistantBtn" class="ai-assistant-btn" onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 6px 25px rgba(102, 126, 234, 0.5)';" onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 20px rgba(102, 126, 234, 0.4)';">
+        <i class="fas fa-robot"></i>
+    </button>
+
+    <!-- AI Assistant Panel -->
+    <div id="aiAssistantPanel" class="ai-assistant-panel">
+        <div class="ai-assistant-panel__header">
+            <div class="ai-assistant-panel__header-info">
+                <i class="fas fa-robot ai-assistant-panel__header-icon"></i>
+                <div>
+                    <div class="ai-assistant-panel__header-title">AI Assistant</div>
+                    <div class="ai-assistant-panel__header-subtitle">Ask me anything!</div>
+                </div>
+            </div>
+            <button id="closeAIAssistant" class="ai-assistant-panel__close-btn">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div id="aiMessages" class="ai-assistant-panel__messages">
+            <div class="ai-message ai-message-bot">
+                <div class="ai-assistant-panel__message-wrapper">
+                    <div class="ai-assistant-panel__message-avatar">🤖</div>
+                    <div class="ai-assistant-panel__message-text">
+                        <p>Hello! I'm your AI assistant. I can help you:</p>
+                        <ul>
+                            <li>Create projects and tracks</li>
+                            <li>Onboard instructors</li>
+                            <li>Generate course content</li>
+                            <li>Manage your organization</li>
+                        </ul>
+                        <p>Just describe what you'd like to do in natural language!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="ai-assistant-panel__footer">
+            <div class="ai-assistant-panel__input-wrapper">
+                <input type="text" id="aiInput" placeholder="Type your request here..." class="ai-assistant-panel__input" onfocus="this.style.borderColor='#667eea';" onblur="this.style.borderColor='#e5e7eb';">
+                <button id="aiSendBtn" class="ai-assistant-panel__send-btn" onmouseover="this.style.opacity='0.9';" onmouseout="this.style.opacity='1';">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

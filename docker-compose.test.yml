@@ -1,0 +1,48 @@
+version: '3.8'
+
+# Test Infrastructure for Integration Tests
+# Provides isolated PostgreSQL and Redis for testing
+
+services:
+  # PostgreSQL Test Database
+  postgres-test:
+    image: postgres:13
+    container_name: course-creator-postgres-test
+    environment:
+      POSTGRES_DB: course_creator_test
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+    ports:
+      - "5434:5432"  # Different port to avoid conflicts
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d course_creator_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+      - ./tests/integration/init-test-db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - test-network
+
+  # Redis Test Cache
+  redis-test:
+    image: redis:6-alpine
+    container_name: course-creator-redis-test
+    ports:
+      - "6380:6379"  # Different port to avoid conflicts
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - test-network
+
+volumes:
+  postgres_test_data:
+    driver: local
+
+networks:
+  test-network:
+    driver: bridge

@@ -2,7 +2,7 @@
 User Management Data Access Object (DAO)
 
 This module implements the Data Access Object (DAO) pattern for user management operations,
-centralizing all SQL queries and database interactions in a single, maintainable location.
+centralizing all SQL queries and database interactions in a single, maintainable locations.
 
 Business Context:
 The User Management service is the cornerstone of the Course Creator Platform's authentication

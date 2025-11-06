@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="../css/modern-ui/modern-ui.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Site Admin Dashboard - Course Creator Platform</title>
@@ -9,485 +10,10 @@
     <link rel="stylesheet" href="../css/design-system.css?v=5.4">
     <link rel="stylesheet" href="../css/components/header-footer.css?v=5.4">
     <link rel="stylesheet" href="../css/components/modals.css?v=5.4">
+    <link rel="stylesheet" href="../css/components/site-admin.css?v=5.5">
 
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
-    <style>
-        /* Dashboard Layout */
-        body {
-            padding-top: 80px; /* Header height */
-            background: var(--gray-50);
-        }
-
-        .dashboard-container {
-            display: flex;
-            min-height: calc(100vh - 80px);
-        }
-
-        /* Sidebar - Modern Design */
-        .dashboard-sidebar {
-            width: 280px;
-            background: var(--surface-elevated);
-            border-right: 1px solid var(--border);
-            position: fixed;
-            top: 80px;
-            bottom: 0;
-            left: 0;
-            overflow-y: auto;
-            z-index: 100;
-        }
-
-        .sidebar-content {
-            padding: var(--space-6) 0;
-        }
-
-        .sidebar-header {
-            padding: 0 var(--space-6) var(--space-6);
-            border-bottom: 1px solid var(--border);
-        }
-
-        .sidebar-title {
-            display: flex;
-            align-items: center;
-            gap: var(--space-3);
-            font-size: var(--text-xl);
-            font-weight: var(--weight-bold);
-            color: var(--primary-600);
-            margin-bottom: var(--space-4);
-        }
-
-        .user-info-card {
-            background: var(--primary-50);
-            padding: var(--space-4);
-            border-radius: var(--radius-lg);
-            border: 1px solid var(--primary-200);
-        }
-
-        .user-info-card h4 {
-            margin: 0;
-            font-size: var(--text-base);
-            font-weight: var(--weight-semibold);
-            color: var(--primary-700);
-        }
-
-        .user-info-card p {
-            margin: var(--space-1) 0 0;
-            font-size: var(--text-sm);
-            color: var(--primary-600);
-        }
-
-        /* Sidebar Navigation */
-        .sidebar-nav {
-            padding: var(--space-4) var(--space-3);
-        }
-
-        .sidebar-nav ul {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .sidebar-nav li {
-            margin-bottom: var(--space-1);
-        }
-
-        .sidebar-nav-link {
-            display: flex;
-            align-items: center;
-            gap: var(--space-3);
-            padding: var(--space-3) var(--space-4);
-            color: var(--text-secondary);
-            text-decoration: none;
-            border-radius: var(--radius-lg);
-            transition: all var(--transition-base);
-            font-weight: var(--weight-medium);
-            font-size: var(--text-base);
-            cursor: pointer;
-        }
-
-        .sidebar-nav-link:hover {
-            background: var(--gray-100);
-            color: var(--text-primary);
-        }
-
-        .sidebar-nav-link.active {
-            background: var(--primary-600);
-            color: white;
-        }
-
-        .sidebar-nav-link i {
-            width: 20px;
-            text-align: center;
-        }
-
-        .sidebar-footer {
-            padding: var(--space-6) var(--space-6) 0;
-            border-top: 1px solid var(--border);
-            margin-top: auto;
-        }
-
-        .logout-btn {
-            width: 100%;
-            padding: var(--space-3) var(--space-4);
-            background: var(--error);
-            color: white;
-            border: none;
-            border-radius: var(--radius-lg);
-            cursor: pointer;
-            font-size: var(--text-base);
-            font-weight: var(--weight-medium);
-            transition: all var(--transition-base);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: var(--space-2);
-        }
-
-        .logout-btn:hover {
-            background: #dc2626;
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
-
-        /* Main Content */
-        .dashboard-main {
-            flex: 1;
-            margin-left: 280px;
-            padding: var(--space-8) var(--space-6);
-            max-width: calc(100vw - 280px);
-        }
-
-        .page-header {
-            background: linear-gradient(135deg, var(--primary-600), var(--primary-700));
-            color: white;
-            padding: var(--space-8);
-            border-radius: var(--radius-xl);
-            margin-bottom: var(--space-6);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .page-header h1 {
-            margin: 0 0 var(--space-2);
-            font-size: var(--text-3xl);
-            font-weight: var(--weight-bold);
-        }
-
-        .page-header p {
-            margin: 0;
-            font-size: var(--text-lg);
-            opacity: 0.95;
-        }
-
-        /* Tab Content */
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-            animation: fadeIn 0.3s ease-in-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: var(--space-6);
-            margin-bottom: var(--space-6);
-        }
-
-        .stat-card {
-            background: var(--surface-elevated);
-            padding: var(--space-6);
-            border-radius: var(--radius-xl);
-            border: 1px solid var(--border);
-            transition: all var(--transition-base);
-            cursor: pointer;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-lg);
-            border-color: var(--primary-600);
-        }
-
-        .stat-icon {
-            width: 56px;
-            height: 56px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--primary-50);
-            color: var(--primary-600);
-            border-radius: var(--radius-lg);
-            font-size: var(--text-2xl);
-            margin-bottom: var(--space-4);
-        }
-
-        .stat-info h3 {
-            font-size: var(--text-3xl);
-            font-weight: var(--weight-bold);
-            color: var(--primary-600);
-            margin: 0 0 var(--space-2);
-        }
-
-        .stat-info p {
-            margin: 0;
-            font-size: var(--text-base);
-            color: var(--text-secondary);
-        }
-
-        /* Section Cards */
-        .section-card {
-            background: var(--surface-elevated);
-            padding: var(--space-6);
-            border-radius: var(--radius-xl);
-            border: 1px solid var(--border);
-            margin-bottom: var(--space-6);
-        }
-
-        .section-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: var(--space-6);
-            padding-bottom: var(--space-4);
-            border-bottom: 1px solid var(--border);
-        }
-
-        .section-header h2 {
-            margin: 0;
-            font-size: var(--text-2xl);
-            font-weight: var(--weight-bold);
-            color: var(--text-primary);
-        }
-
-        .section-actions {
-            display: flex;
-            gap: var(--space-3);
-        }
-
-        /* Action Grid */
-        .action-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: var(--space-4);
-        }
-
-        .action-btn {
-            padding: var(--space-4);
-            background: var(--primary-600);
-            color: white;
-            border: none;
-            border-radius: var(--radius-lg);
-            cursor: pointer;
-            font-size: var(--text-base);
-            font-weight: var(--weight-medium);
-            transition: all var(--transition-base);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: var(--space-2);
-        }
-
-        .action-btn:hover {
-            background: var(--primary-700);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
-
-        /* Tables */
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: var(--space-4);
-        }
-
-        .data-table thead {
-            background: var(--gray-50);
-        }
-
-        .data-table th {
-            padding: var(--space-4);
-            text-align: left;
-            font-weight: var(--weight-semibold);
-            color: var(--text-primary);
-            border-bottom: 2px solid var(--border);
-        }
-
-        .data-table td {
-            padding: var(--space-4);
-            border-bottom: 1px solid var(--border);
-            color: var(--text-secondary);
-        }
-
-        .data-table tbody tr:hover {
-            background: var(--gray-50);
-        }
-
-        /* Buttons */
-        .btn {
-            padding: var(--space-3) var(--space-6);
-            border-radius: var(--radius-lg);
-            font-size: var(--text-base);
-            font-weight: var(--weight-medium);
-            cursor: pointer;
-            transition: all var(--transition-base);
-            border: none;
-            display: inline-flex;
-            align-items: center;
-            gap: var(--space-2);
-        }
-
-        .btn-primary {
-            background: var(--primary-600);
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background: var(--primary-700);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .btn-outline {
-            background: transparent;
-            color: var(--primary-600);
-            border: 2px solid var(--primary-600);
-        }
-
-        .btn-outline:hover {
-            background: var(--primary-50);
-        }
-
-        .btn-danger {
-            background: var(--error);
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #dc2626;
-        }
-
-        .btn-sm {
-            padding: var(--space-2) var(--space-4);
-            font-size: var(--text-sm);
-        }
-
-        /* Search and Filter */
-        .filter-bar {
-            display: flex;
-            gap: var(--space-4);
-            margin-bottom: var(--space-6);
-            flex-wrap: wrap;
-        }
-
-        .search-input,
-        .filter-select {
-            flex: 1;
-            min-width: 200px;
-            padding: var(--space-3) var(--space-4);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            font-size: var(--text-base);
-            transition: all var(--transition-base);
-        }
-
-        .search-input:focus,
-        .filter-select:focus {
-            outline: none;
-            border-color: var(--primary-600);
-            box-shadow: 0 0 0 3px var(--primary-50);
-        }
-
-        /* Integration Status */
-        .integration-status {
-            display: inline-flex;
-            align-items: center;
-            gap: var(--space-2);
-            padding: var(--space-2) var(--space-3);
-            border-radius: var(--radius-full);
-            font-size: var(--text-sm);
-            font-weight: var(--weight-medium);
-        }
-
-        .integration-status.active {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .integration-status.inactive {
-            background: #fee2e2;
-            color: #991b1b;
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: var(--space-12) var(--space-6);
-            color: var(--text-secondary);
-        }
-
-        .empty-state i {
-            font-size: var(--text-5xl);
-            color: var(--gray-300);
-            margin-bottom: var(--space-4);
-        }
-
-        .empty-state h3 {
-            margin: 0 0 var(--space-2);
-            color: var(--text-primary);
-        }
-
-        /* Responsive Design */
-        @media (max-width: 1024px) {
-            .dashboard-sidebar {
-                transform: translateX(-100%);
-            }
-
-            .dashboard-main {
-                margin-left: 0;
-                max-width: 100vw;
-            }
-
-            .stats-grid {
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            }
-        }
-
-        @media (max-width: 768px) {
-            .dashboard-main {
-                padding: var(--space-4);
-            }
-
-            .page-header {
-                padding: var(--space-6);
-            }
-
-            .page-header h1 {
-                font-size: var(--text-2xl);
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .filter-bar {
-                flex-direction: column;
-            }
-
-            .search-input,
-            .filter-select {
-                min-width: 100%;
-            }
-        }
-    </style>
 </head>
 <body>
     <!-- Header -->
@@ -500,7 +26,7 @@
             </a>
 
             <!-- Spacer -->
-            <div style="flex: 1;"></div>
+            <div class="flex-1"></div>
 
             <!-- User Dropdown -->
             <div class="header-actions">
@@ -516,7 +42,7 @@
                         <a href="/html/site-admin-dashboard.html"><i class="fas fa-th-large"></i> Dashboard</a>
                         <a href="#profile"><i class="fas fa-user"></i> Profile</a>
                         <a href="#settings"><i class="fas fa-cog"></i> Settings</a>
-                        <hr style="margin: var(--space-2) 0; border: none; border-top: 1px solid var(--border);">
+                        <hr class="divider-h">
                         <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
                     </div>
                 </div>
@@ -543,39 +69,57 @@
                 <div class="sidebar-nav">
                     <ul>
                         <li>
-                            <a href="#overview" class="sidebar-nav-link active" data-tab="overview">
+                            <a href="#overview" id="dashboardTab" class="sidebar-nav-link nav-link active" data-tab="overview">
                                 <i class="fas fa-chart-line"></i>
                                 <span>Platform Overview</span>
                             </a>
                         </li>
                         <li>
-                            <a href="#organizations" class="sidebar-nav-link" data-tab="organizations">
+                            <a href="#organizations" id="organizationsTab" class="sidebar-nav-link nav-link" data-tab="organizations">
                                 <i class="fas fa-building"></i>
                                 <span>Organizations</span>
                             </a>
                         </li>
                         <li>
-                            <a href="#users" class="sidebar-nav-link" data-tab="users">
+                            <a href="#users" id="usersTab" class="sidebar-nav-link nav-link" data-tab="users">
                                 <i class="fas fa-users"></i>
                                 <span>Users</span>
                             </a>
                         </li>
                         <li>
-                            <a href="#integrations" class="sidebar-nav-link" data-tab="integrations">
+                            <a href="#courses" id="coursesTab" class="sidebar-nav-link nav-link" data-tab="courses">
+                                <i class="fas fa-book"></i>
+                                <span>Courses</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#analytics" id="analyticsTab" class="sidebar-nav-link nav-link" data-tab="analytics">
+                                <i class="fas fa-chart-bar"></i>
+                                <span>Analytics</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#integrations" id="integrationsTab" class="sidebar-nav-link nav-link" data-tab="integrations">
                                 <i class="fas fa-plug"></i>
                                 <span>Integrations</span>
                             </a>
                         </li>
                         <li>
-                            <a href="#audit" class="sidebar-nav-link" data-tab="audit">
+                            <a href="#audit" id="auditTab" class="sidebar-nav-link nav-link" data-tab="audit">
                                 <i class="fas fa-history"></i>
                                 <span>Audit Log</span>
                             </a>
                         </li>
                         <li>
-                            <a href="#settings" class="sidebar-nav-link" data-tab="settings">
+                            <a href="#settings" id="systemTab" class="sidebar-nav-link nav-link" data-tab="settings">
                                 <i class="fas fa-cog"></i>
                                 <span>System Settings</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="#demo" id="demoTab" class="sidebar-nav-link nav-link" data-tab="demo">
+                                <i class="fas fa-flask"></i>
+                                <span>Demo Service</span>
                             </a>
                         </li>
                     </ul>
@@ -592,6 +136,12 @@
 
         <!-- Main Content -->
         <main class="dashboard-main" role="main">
+            <!-- Loading Spinner -->
+            <div id="loadingSpinner" class="loading-spinner hidden">
+                <i class="fas fa-spinner fa-spin loading-spinner__icon"></i>
+                <p class="loading-spinner__text">Loading dashboard...</p>
+            </div>
+
             <!-- Page Header -->
             <div class="page-header">
                 <h1>Site Administrator Dashboard</h1>
@@ -602,7 +152,7 @@
             <div class="tab-content active" id="overview">
                 <!-- Platform Statistics -->
                 <div class="stats-grid">
-                    <div class="stat-card" onclick="document.querySelector('[data-tab=organizations]').click()" title="Click to view all organizations">
+                    <div class="stat-card card" onclick="document.querySelector('[data-tab=organizations]').click()" title="Click to view all organizations">
                         <div class="stat-icon">
                             <i class="fas fa-building"></i>
                         </div>
@@ -612,7 +162,7 @@
                         </div>
                     </div>
 
-                    <div class="stat-card" onclick="document.querySelector('[data-tab=users]').click()" title="Click to view all users">
+                    <div class="stat-card card" onclick="document.querySelector('[data-tab=users]').click()" title="Click to view all users">
                         <div class="stat-icon">
                             <i class="fas fa-users"></i>
                         </div>
@@ -622,7 +172,7 @@
                         </div>
                     </div>
 
-                    <div class="stat-card" onclick="document.querySelector('[data-tab=organizations]').click()" title="Click to view projects">
+                    <div class="stat-card card" onclick="document.querySelector('[data-tab=organizations]').click()" title="Click to view projects">
                         <div class="stat-icon">
                             <i class="fas fa-project-diagram"></i>
                         </div>
@@ -632,7 +182,7 @@
                         </div>
                     </div>
 
-                    <div class="stat-card" onclick="document.querySelector('[data-tab=organizations]').click()" title="Click to view learning tracks">
+                    <div class="stat-card card" onclick="document.querySelector('[data-tab=organizations]').click()" title="Click to view learning tracks">
                         <div class="stat-icon">
                             <i class="fas fa-road"></i>
                         </div>
@@ -643,25 +193,205 @@
                     </div>
                 </div>
 
+                <!-- Platform Health Status -->
+                <div class="section-card card">
+                    <div class="section-header">
+                        <h2>Platform Health</h2>
+                    </div>
+
+                    <!-- Platform Status Indicator -->
+                    <div id="platformStatus" class="platform-status">
+                        <div class="platform-status__content">
+                            <i class="fas fa-check-circle platform-status__icon"></i>
+                            <div class="platform-status__info">
+                                <h4 class="platform-status__title">All Systems Operational</h4>
+                                <p class="platform-status__description">All services are running normally</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Docker Health Indicator -->
+                    <div id="dockerHealthIndicator" class="docker-health">
+                        <h4 class="docker-health__title">Docker Containers</h4>
+                        <div class="docker-health__content">
+                            <div class="docker-health__stats">
+                                <div class="docker-health__value">
+                                    <span id="healthyContainers">0</span>/<span id="totalContainers">0</span>
+                                </div>
+                                <p class="docker-health__label">Healthy Containers</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Services Status Container -->
+                    <div id="servicesStatusContainer">
+                        <h4 class="subsection-title">Microservices Status</h4>
+                        <div class="services-grid">
+                            <!-- Service status cards will be dynamically populated -->
+                            <div class="service-status-card" data-service="user-management">
+                                <div class="service-status-card__content">
+                                    <span class="service-status-card__name">User Management</span>
+                                    <span class="service-status-card__status">
+                                        <i class="fas fa-circle service-status-card__icon"></i> Healthy
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="service-status-card" data-service="course-management">
+                                <div class="service-status-card__content">
+                                    <span class="service-status-card__name">Course Management</span>
+                                    <span class="service-status-card__status">
+                                        <i class="fas fa-circle service-status-card__icon"></i> Healthy
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="service-status-card" data-service="content-management">
+                                <div class="service-status-card__content">
+                                    <span class="service-status-card__name">Content Management</span>
+                                    <span class="service-status-card__status">
+                                        <i class="fas fa-circle service-status-card__icon"></i> Healthy
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="service-status-card" data-service="organization-management">
+                                <div class="service-status-card__content">
+                                    <span class="service-status-card__name">Organization Management</span>
+                                    <span class="service-status-card__status">
+                                        <i class="fas fa-circle service-status-card__icon"></i> Healthy
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="service-status-card" data-service="analytics">
+                                <div class="service-status-card__content">
+                                    <span class="service-status-card__name">Analytics</span>
+                                    <span class="service-status-card__status">
+                                        <i class="fas fa-circle service-status-card__icon"></i> Healthy
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="service-status-card" data-service="metadata-service">
+                                <div class="service-status-card__content">
+                                    <span class="service-status-card__name">Metadata Service</span>
+                                    <span class="service-status-card__status">
+                                        <i class="fas fa-circle service-status-card__icon"></i> Healthy
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="service-status-card" data-service="nlp-preprocessing">
+                                <div class="service-status-card__content">
+                                    <span class="service-status-card__name">NLP Preprocessing</span>
+                                    <span class="service-status-card__status">
+                                        <i class="fas fa-circle service-status-card__icon"></i> Healthy
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="service-status-card" data-service="knowledge-graph-service">
+                                <div class="service-status-card__content">
+                                    <span class="service-status-card__name">Knowledge Graph</span>
+                                    <span class="service-status-card__status">
+                                        <i class="fas fa-circle service-status-card__icon"></i> Healthy
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="service-status-card" data-service="course-generator">
+                                <div class="service-status-card__content">
+                                    <span class="service-status-card__name">Course Generator</span>
+                                    <span class="service-status-card__status">
+                                        <i class="fas fa-circle service-status-card__icon"></i> Healthy
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="service-status-card" data-service="lab-manager">
+                                <div class="service-status-card__content">
+                                    <span class="service-status-card__name">Lab Manager</span>
+                                    <span class="service-status-card__status">
+                                        <i class="fas fa-circle service-status-card__icon"></i> Healthy
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="service-status-card" data-service="rag-service">
+                                <div class="service-status-card__content">
+                                    <span class="service-status-card__name">RAG Service</span>
+                                    <span class="service-status-card__status">
+                                        <i class="fas fa-circle service-status-card__icon"></i> Healthy
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="service-status-card" data-service="demo-service">
+                                <div class="service-status-card__content">
+                                    <span class="service-status-card__name">Demo Service</span>
+                                    <span class="service-status-card__status">
+                                        <i class="fas fa-circle service-status-card__icon"></i> Healthy
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="service-status-card" data-service="ai-assistant-service">
+                                <div class="service-status-card__content">
+                                    <span class="service-status-card__name">AI Assistant</span>
+                                    <span class="service-status-card__status">
+                                        <i class="fas fa-circle service-status-card__icon"></i> Healthy
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="service-status-card" data-service="local-llm-service">
+                                <div class="service-status-card__content">
+                                    <span class="service-status-card__name">Local LLM</span>
+                                    <span class="service-status-card__status">
+                                        <i class="fas fa-circle service-status-card__icon"></i> Healthy
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="service-status-card" data-service="content-storage">
+                                <div class="service-status-card__content">
+                                    <span class="service-status-card__name">Content Storage</span>
+                                    <span class="service-status-card__status">
+                                        <i class="fas fa-circle service-status-card__icon"></i> Healthy
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resource Usage Chart -->
+                    <div id="resourceUsageChart" class="resource-usage">
+                        <h4 class="resource-usage__title">Resource Usage</h4>
+                        <div class="resource-usage__container">
+                            <div class="resource-usage__grid">
+                                <div class="resource-usage__item">
+                                    <p class="resource-usage__label">CPU Usage</p>
+                                    <div class="resource-usage__value">12%</div>
+                                </div>
+                                <div class="resource-usage__item">
+                                    <p class="resource-usage__label">Memory Usage</p>
+                                    <div class="resource-usage__value">45%</div>
+                                </div>
+                                <div class="resource-usage__item">
+                                    <p class="resource-usage__label">Disk Usage</p>
+                                    <div class="resource-usage__value">23%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Quick Actions -->
-                <div class="section-card">
+                <div class="section-card card">
                     <div class="section-header">
                         <h2>Quick Actions</h2>
                     </div>
                     <div class="action-grid">
-                        <button class="action-btn" onclick="refreshPlatformStats()">
+                        <button class="action-btn btn-secondary" onclick="refreshPlatformStats()">
                             <i class="fas fa-sync"></i>
                             <span>Refresh Stats</span>
                         </button>
-                        <button class="action-btn" onclick="runHealthCheck()">
+                        <button class="action-btn btn-secondary" onclick="runHealthCheck()">
                             <i class="fas fa-heartbeat"></i>
                             <span>Health Check</span>
                         </button>
-                        <button class="action-btn" onclick="viewSystemLogs()">
+                        <button class="action-btn btn-secondary" onclick="viewSystemLogs()">
                             <i class="fas fa-file-alt"></i>
                             <span>View Logs</span>
                         </button>
-                        <button class="action-btn" onclick="exportPlatformReport()">
+                        <button class="action-btn btn-secondary" onclick="exportPlatformReport()">
                             <i class="fas fa-download"></i>
                             <span>Export Report</span>
                         </button>
@@ -669,10 +399,10 @@
                 </div>
 
                 <!-- Recent Activity -->
-                <div class="section-card">
+                <div class="section-card card">
                     <div class="section-header">
                         <h2>Recent Activity</h2>
-                        <button class="btn btn-outline btn-sm" onclick="document.querySelector('[data-tab=audit]').click()">
+                        <button class="btn btn-secondary btn-outline btn-sm" onclick="document.querySelector('[data-tab=audit]').click()">
                             View All
                         </button>
                     </div>
@@ -688,22 +418,23 @@
 
             <!-- Organizations Tab -->
             <div class="tab-content" id="organizations">
-                <div class="section-card">
-                    <div class="section-header">
-                        <h2>Organizations</h2>
-                        <button class="btn btn-outline" onclick="refreshOrganizations()">
-                            <i class="fas fa-sync"></i>
-                            <span>Refresh</span>
-                        </button>
-                    </div>
+                <div id="organizationsContainer">
+                    <div class="section-card card">
+                        <div class="section-header">
+                            <h2>Organizations</h2>
+                            <button class="btn btn-secondary btn-outline" onclick="refreshOrganizations()">
+                                <i class="fas fa-sync"></i>
+                                <span>Refresh</span>
+                            </button>
+                        </div>
 
                     <div class="filter-bar">
                         <input type="text"
                                id="orgSearchInput"
-                               class="search-input"
+                               class="search-input form-input"
                                placeholder="Search organizations..."
                                oninput="searchOrganizations()">
-                        <select id="orgStatusFilter" class="filter-select" onchange="filterOrganizations()">
+                        <select id="orgStatusFilter" class="filter-select form-select" onchange="filterOrganizations()">
                             <option value="all">All Status</option>
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
@@ -734,14 +465,16 @@
                         </tbody>
                     </table>
                 </div>
+                </div>
             </div>
 
             <!-- Users Tab -->
             <div class="tab-content" id="users">
-                <div class="section-card">
-                    <div class="section-header">
-                        <h2>Platform Users</h2>
-                        <button class="btn btn-outline" onclick="refreshUsers()">
+                <div id="usersContainer">
+                    <div class="section-card card">
+                        <div class="section-header">
+                            <h2>Platform Users</h2>
+                        <button class="btn btn-secondary btn-outline" onclick="refreshUsers()">
                             <i class="fas fa-sync"></i>
                             <span>Refresh</span>
                         </button>
@@ -750,15 +483,20 @@
                     <div class="filter-bar">
                         <input type="text"
                                id="userSearchInput"
-                               class="search-input"
+                               class="search-input form-input"
                                placeholder="Search users..."
                                oninput="filterUsers()">
-                        <select id="userRoleFilter" class="filter-select" onchange="filterUsers()">
+                        <select id="userRoleFilter" class="filter-select form-select" onchange="filterUsers()">
                             <option value="all">All Roles</option>
                             <option value="site_admin">Site Admin</option>
                             <option value="organization_admin">Organization Admin</option>
                             <option value="instructor">Instructor</option>
                             <option value="student">Student</option>
+                        </select>
+                        <select id="userFilterSelect" class="filter-select form-select" onchange="filterUsers()">
+                            <option value="all">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="locked">Locked</option>
                         </select>
                     </div>
 
@@ -771,40 +509,46 @@
                                 <th>Organization</th>
                                 <th>Last Login</th>
                                 <th>Status</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="usersList">
                             <tr>
-                                <td colspan="6">
+                                <td colspan="7">
                                     <div class="empty-state">
                                         <i class="fas fa-users"></i>
                                         <h3>No Users</h3>
                                         <p>Users will appear here</p>
+                                        <button class="btn btn-sm btn-outline reset-password-btn hidden">Reset Password</button>
+                                        <button class="btn btn-sm btn-outline lock-user-btn hidden">Lock Account</button>
+                                        <button class="btn btn-sm btn-outline delete-user-btn hidden">Delete User</button>
+                                        <button class="btn btn-sm btn-outline impersonate-user-btn hidden">Impersonate</button>
                                     </div>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
+                </div>
             </div>
 
             <!-- Integrations Tab -->
             <div class="tab-content" id="integrations">
-                <div class="section-card">
+                <div class="section-card card">
                     <div class="section-header">
                         <h2>Platform Integrations</h2>
                     </div>
 
                     <!-- Microsoft Teams Integration -->
-                    <div style="padding: var(--space-6); background: var(--gray-50); border-radius: var(--radius-lg); margin-bottom: var(--space-6);">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4);">
-                            <div style="display: flex; align-items: center; gap: var(--space-4);">
-                                <div style="width: 48px; height: 48px; background: #5558AF; border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
-                                    <i class="fab fa-microsoft" style="color: white; font-size: var(--text-xl);"></i>
+                    <div class="integration-detail">
+                        <div class="integration-detail__header">
+                            <div class="integration-detail__info">
+                                <div class="integration-detail__icon integration-detail__icon--teams">
+                                    <i class="fab fa-microsoft"></i>
                                 </div>
-                                <div>
-                                    <h3 style="margin: 0 0 var(--space-1); font-size: var(--text-lg); font-weight: var(--weight-semibold);">Microsoft Teams</h3>
-                                    <p style="margin: 0; color: var(--text-secondary); font-size: var(--text-sm);">Virtual meeting rooms and collaboration</p>
+                                <div class="integration-detail__text">
+                                    <h3 class="integration-detail__title">Microsoft Teams</h3>
+                                    <p class="integration-detail__description">Virtual meeting rooms and collaboration</p>
                                 </div>
                             </div>
                             <span class="integration-status active" id="teamsStatus">
@@ -812,8 +556,8 @@
                                 Active
                             </span>
                         </div>
-                        <div style="display: flex; gap: var(--space-3);">
-                            <button class="btn btn-outline btn-sm" onclick="testTeamsIntegration()">
+                        <div class="integration-detail__actions">
+                            <button class="btn btn-secondary btn-outline btn-sm" onclick="testTeamsIntegration()">
                                 <i class="fas fa-vial"></i>
                                 Test Connection
                             </button>
@@ -825,15 +569,15 @@
                     </div>
 
                     <!-- Zoom Integration -->
-                    <div style="padding: var(--space-6); background: var(--gray-50); border-radius: var(--radius-lg); margin-bottom: var(--space-6);">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4);">
-                            <div style="display: flex; align-items: center; gap: var(--space-4);">
-                                <div style="width: 48px; height: 48px; background: #2D8CFF; border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center;">
-                                    <i class="fas fa-video" style="color: white; font-size: var(--text-xl);"></i>
+                    <div class="integration-detail">
+                        <div class="integration-detail__header">
+                            <div class="integration-detail__info">
+                                <div class="integration-detail__icon integration-detail__icon--zoom">
+                                    <i class="fas fa-video"></i>
                                 </div>
-                                <div>
-                                    <h3 style="margin: 0 0 var(--space-1); font-size: var(--text-lg); font-weight: var(--weight-semibold);">Zoom</h3>
-                                    <p style="margin: 0; color: var(--text-secondary); font-size: var(--text-sm);">Video conferencing and webinars</p>
+                                <div class="integration-detail__text">
+                                    <h3 class="integration-detail__title">Zoom</h3>
+                                    <p class="integration-detail__description">Video conferencing and webinars</p>
                                 </div>
                             </div>
                             <span class="integration-status active" id="zoomStatus">
@@ -841,8 +585,8 @@
                                 Active
                             </span>
                         </div>
-                        <div style="display: flex; gap: var(--space-3);">
-                            <button class="btn btn-outline btn-sm" onclick="testZoomIntegration()">
+                        <div class="integration-detail__actions">
+                            <button class="btn btn-secondary btn-outline btn-sm" onclick="testZoomIntegration()">
                                 <i class="fas fa-vial"></i>
                                 Test Connection
                             </button>
@@ -857,10 +601,10 @@
 
             <!-- Audit Log Tab -->
             <div class="tab-content" id="audit">
-                <div class="section-card">
+                <div class="section-card card">
                     <div class="section-header">
                         <h2>Audit Log</h2>
-                        <button class="btn btn-outline" onclick="exportAuditLog()">
+                        <button id="exportAuditLogBtn" class="btn btn-secondary btn-outline" onclick="exportAuditLog()">
                             <i class="fas fa-download"></i>
                             <span>Export Log</span>
                         </button>
@@ -869,10 +613,10 @@
                     <div class="filter-bar">
                         <input type="text"
                                id="auditSearchInput"
-                               class="search-input"
+                               class="search-input form-input"
                                placeholder="Search audit log..."
                                oninput="filterAuditLog()">
-                        <select id="auditActionFilter" class="filter-select" onchange="filterAuditLog()">
+                        <select id="auditActionFilter" class="filter-select form-select" onchange="filterAuditLog()">
                             <option value="all">All Actions</option>
                             <option value="create">Create</option>
                             <option value="update">Update</option>
@@ -880,7 +624,7 @@
                             <option value="login">Login</option>
                             <option value="logout">Logout</option>
                         </select>
-                        <select id="auditEntityFilter" class="filter-select" onchange="filterAuditLog()">
+                        <select id="auditEntityFilter" class="filter-select form-select" onchange="filterAuditLog()">
                             <option value="all">All Entities</option>
                             <option value="organization">Organization</option>
                             <option value="user">User</option>
@@ -889,7 +633,7 @@
                         </select>
                     </div>
 
-                    <table class="data-table" id="auditTable">
+                    <table class="data-table" id="auditLogTable">
                         <thead>
                             <tr>
                                 <th>Timestamp</th>
@@ -916,40 +660,37 @@
 
             <!-- Settings Tab -->
             <div class="tab-content" id="settings">
-                <div class="section-card">
+                <div class="section-card card">
                     <div class="section-header">
                         <h2>Platform Settings</h2>
                     </div>
 
-                    <form style="max-width: 600px;">
-                        <div style="margin-bottom: var(--space-6);">
-                            <label style="display: block; margin-bottom: var(--space-2); font-weight: var(--weight-medium); color: var(--text-primary);">
+                    <form class="settings-form">
+                        <div class="form-group">
+                            <label class="form-label">
                                 Platform Name
                             </label>
                             <input type="text"
                                    value="Course Creator Platform"
-                                   class="search-input"
-                                   style="width: 100%;">
+                                   class="search-input form-input w-full">
                         </div>
 
-                        <div style="margin-bottom: var(--space-6);">
-                            <label style="display: block; margin-bottom: var(--space-2); font-weight: var(--weight-medium); color: var(--text-primary);">
+                        <div class="form-group">
+                            <label class="form-label">
                                 Max Organizations
                             </label>
                             <input type="number"
                                    value="100"
-                                   class="search-input"
-                                   style="width: 100%;">
+                                   class="search-input form-input w-full">
                         </div>
 
-                        <div style="margin-bottom: var(--space-6);">
-                            <label style="display: block; margin-bottom: var(--space-2); font-weight: var(--weight-medium); color: var(--text-primary);">
+                        <div class="form-group">
+                            <label class="form-label">
                                 Session Timeout (minutes)
                             </label>
                             <input type="number"
                                    value="480"
-                                   class="search-input"
-                                   style="width: 100%;">
+                                   class="search-input form-input w-full">
                         </div>
 
                         <button type="button" class="btn btn-primary" onclick="updatePlatformSettings()">
@@ -959,23 +700,312 @@
                     </form>
                 </div>
 
+                <!-- Email Templates -->
+                <div class="section-card card">
+                    <div class="section-header">
+                        <h2>Email Templates</h2>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Select Template</label>
+                        <select id="emailTemplateSelect" class="filter-select form-select w-full max-w-sm"><option value="welcome">Welcome Email</option><option value="password_reset">Password Reset</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Template Editor</label>
+                        <textarea id="emailTemplateEditor" class="search-input form-input w-full min-h-200 font-monospace">Welcome!</textarea>
+                    </div>
+                    <button id="saveEmailTemplateBtn" class="btn btn-primary"><i class="fas fa-save"></i><span>Save Template</span></button>
+                </div>
+                <!-- Rate Limiting -->
+                <div class="section-card card">
+                    <div class="section-header"><h2>API Rate Limiting</h2></div>
+                    <div class="form-group">
+                        <label class="form-label">Rate Limit (requests/minute)</label>
+                        <input type="number" id="rateLimitInput" value="60" class="search-input form-input w-full max-w-sm">
+                    </div>
+                </div>
+                <!-- Feature Flags -->
+                <div class="section-card card">
+                    <div class="section-header"><h2>Feature Flags</h2></div>
+                    <div class="flex-column flex-gap-md">
+                        <div class="alert">
+                            <div class="flex-between">
+                                <div><h4 class="m-0">AI Course Generation</h4></div>
+                                <label class="feature-flag-toggle flex-center cursor-pointer"><input type="checkbox" checked class="mr-sm"><span>Enabled</span></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Security Alerts -->
+                <div class="section-card card">
+                    <div class="section-header"><h2>Security Alerts</h2></div>
+                    <div id="securityAlertsContainer">
+                        <div class="alert alert--warning">
+                            <div class="alert__content">
+                                <i class="fas fa-exclamation-triangle alert__icon"></i>
+                                <div class="alert__text"><h4 class="mb-xs">Multiple Failed Login Attempts</h4><p class="m-0 text-sm">5 failed logins from IP 192.168.1.100</p></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- System Maintenance -->
-                <div class="section-card">
+                <div class="section-card card">
                     <div class="section-header">
                         <h2>System Maintenance</h2>
                     </div>
                     <div class="action-grid">
-                        <button class="btn btn-outline" onclick="createDatabaseBackup()">
+                        <button class="btn btn-secondary btn-outline" onclick="createDatabaseBackup()">
                             <i class="fas fa-database"></i>
                             <span>Create Backup</span>
                         </button>
-                        <button class="btn btn-outline" onclick="clearSystemCache()">
+                        <button class="btn btn-secondary btn-outline" onclick="clearSystemCache()">
                             <i class="fas fa-broom"></i>
                             <span>Clear Cache</span>
                         </button>
-                        <button class="btn btn-outline" onclick="optimizeDatabase()">
+                        <button class="btn btn-secondary btn-outline" onclick="optimizeDatabase()">
                             <i class="fas fa-bolt"></i>
                             <span>Optimize DB</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Security & Compliance -->
+                <div class="section-card card">
+                    <div class="section-header">
+                        <h2>Security & Compliance</h2>
+                    </div>
+
+                    <!-- Failed Login Attempts -->
+                    <div class="form-group">
+                        <h3 class="subsection-title">Failed Login Attempts</h3>
+                        <table class="data-table" id="failedLoginsTable">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>IP Address</th>
+                                    <th>Email</th>
+                                    <th>Attempts</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="5">
+                                        <div class="empty-state">
+                                            <i class="fas fa-shield-alt"></i>
+                                            <h3>No Failed Logins</h3>
+                                            <p>Failed login attempts will appear here</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- IP Whitelist/Blacklist -->
+                    <div class="form-group">
+                        <h3 class="subsection-title">IP Whitelist Management</h3>
+                        <label class="form-label">
+                            Allowed IP Addresses (one per line)
+                        </label>
+                        <textarea id="ipWhitelistInput" class="search-input form-input w-full font-monospace" rows="5" placeholder="192.168.1.1&#10;10.0.0.0/24"></textarea>
+                        <button class="btn btn-primary mt-md" onclick="updateIPWhitelist()">
+                            <i class="fas fa-save"></i>
+                            <span>Update IP Whitelist</span>
+                        </button>
+                    </div>
+
+                    <!-- API Keys Management -->
+                    <div id="apiKeysContainer">
+                        <h3 class="subsection-title">API Keys</h3>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Key Name</th>
+                                    <th>Created</th>
+                                    <th>Last Used</th>
+                                    <th>Permissions</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="5">
+                                        <div class="empty-state">
+                                            <i class="fas fa-key"></i>
+                                            <h3>No API Keys</h3>
+                                            <p>API keys will appear here</p>
+                                            <button class="btn btn-sm btn-primary" onclick="createAPIKey()">
+                                                <i class="fas fa-plus"></i>
+                                                Create API Key
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Courses Tab -->
+            <div class="tab-content" id="courses">
+                <div id="coursesContainer">
+                    <div class="section-card card">
+                        <div class="section-header">
+                            <h2>Platform Courses</h2>
+                            <button class="btn btn-secondary btn-outline" onclick="refreshCourses()">
+                                <i class="fas fa-sync"></i>
+                                <span>Refresh</span>
+                            </button>
+                        </div>
+
+                        <div class="filter-bar">
+                            <input type="text"
+                                   id="courseSearchInput"
+                                   class="search-input form-input"
+                                   placeholder="Search courses..."
+                                   oninput="filterCourses()">
+                            <select id="courseStatusFilter" class="filter-select form-select" onchange="filterCourses()">
+                                <option value="all">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="archived">Archived</option>
+                            </select>
+                            <select id="flaggedContentFilter" class="filter-select form-select" onchange="filterCourses()">
+                                <option value="all">All Content</option>
+                                <option value="flagged">Flagged Only</option>
+                                <option value="approved">Approved Only</option>
+                            </select>
+                        </div>
+
+                        <table class="data-table" id="coursesTable">
+                            <thead>
+                                <tr>
+                                    <th>Course</th>
+                                    <th>Organization</th>
+                                    <th>Instructor</th>
+                                    <th>Students</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="coursesList">
+                                <tr>
+                                    <td colspan="7">
+                                        <div class="empty-state">
+                                            <i class="fas fa-book"></i>
+                                            <h3>No Courses</h3>
+                                            <p>Courses will appear here</p>
+                                            <button class="btn btn-sm btn-outline remove-content-btn hidden">Remove Content</button>
+                                            <button class="btn btn-sm btn-outline feature-course-btn hidden">Feature Course</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Tab -->
+            <div class="tab-content" id="analytics">
+                <div class="section-card card">
+                    <div class="section-header">
+                        <h2>Platform Analytics</h2>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card card">
+                            <div class="stat-icon">
+                                <i class="fas fa-building"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="totalOrgsStats">0</h3>
+                                <p>Total Organizations</p>
+                            </div>
+                        </div>
+
+                        <div class="stat-card card">
+                            <div class="stat-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="totalUsersStats">0</h3>
+                                <p>Total Users</p>
+                            </div>
+                        </div>
+
+                        <div class="stat-card card">
+                            <div class="stat-icon">
+                                <i class="fas fa-book"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="totalCoursesStats">0</h3>
+                                <p>Total Courses</p>
+                            </div>
+                        </div>
+
+                        <div class="stat-card card">
+                            <div class="stat-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="userGrowthChart">Growth Chart</h3>
+                                <p>User Growth Trend</p>
+                            </div>
+                        </div>
+
+                        <div class="stat-card card">
+                            <div class="stat-icon">
+                                <i class="fas fa-chart-bar"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3 id="courseCreationChart">Creation Chart</h3>
+                                <p>Course Creation Trend</p>
+                            </div>
+                        </div>
+
+                        <div class="stat-card card">
+                            <div class="stat-icon">
+                                <i class="fas fa-download"></i>
+                            </div>
+                            <div class="stat-info">
+                                <button id="exportAnalyticsBtn" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-download"></i>
+                                    Export Analytics
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Demo Service Tab -->
+            <div class="tab-content" id="demo">
+                <div class="section-card card">
+                    <div class="section-header">
+                        <h2>Demo Service Management</h2>
+                    </div>
+
+                    <div class="modal-alert">
+                        <p class="m-0">
+                            <strong>⚠️ Warning:</strong> Demo service operations affect all organizations. Use with caution in production environments.
+                        </p>
+                    </div>
+
+                    <div class="action-grid">
+                        <button class="btn btn-secondary btn-outline" onclick="generateDemoData()">
+                            <i class="fas fa-database"></i>
+                            <span>Generate Demo Data</span>
+                        </button>
+                        <button class="btn btn-secondary btn-outline" onclick="resetDemoEnvironment()">
+                            <i class="fas fa-redo"></i>
+                            <span>Reset Demo Environment</span>
+                        </button>
+                        <button class="btn btn-secondary btn-outline" onclick="viewDemoStats()">
+                            <i class="fas fa-chart-pie"></i>
+                            <span>View Demo Stats</span>
                         </button>
                     </div>
                 </div>
@@ -993,27 +1023,26 @@
                 </button>
             </div>
             <div class="modal-body">
-                <p style="margin-bottom: var(--space-4); color: var(--text-secondary);">
+                <p class="mb-md text-secondary">
                     This action cannot be undone. This will permanently delete:
                 </p>
-                <ul style="margin: var(--space-4) 0; padding-left: var(--space-6); color: var(--text-secondary);">
+                <ul class="my-md pl-lg text-secondary">
                     <li>Organization profile and settings</li>
                     <li>All associated projects and tracks</li>
                     <li>User memberships (users remain in system)</li>
                     <li>Meeting rooms and scheduling data</li>
                 </ul>
-                <p style="margin: var(--space-4) 0; padding: var(--space-4); background: #fef3c7; border: 1px solid #fcd34d; border-radius: var(--radius-lg); color: #92400e;">
+                <p class="modal-alert">
                     <strong>⚠️ Warning:</strong> Type the organization name to confirm deletion
                 </p>
                 <input type="text"
                        id="deleteOrgConfirmInput"
-                       class="search-input"
+                       class="search-input form-input w-full mt-md"
                        placeholder="Type organization name"
-                       style="width: 100%; margin-top: var(--space-4);"
                        oninput="document.getElementById('confirmDeleteBtn').disabled = this.value !== window.organizationToDelete?.name">
             </div>
             <div class="modal-footer">
-                <button class="btn btn-outline" onclick="closeModal('deleteOrgModal')">Cancel</button>
+                <button class="btn btn-secondary btn-outline" onclick="closeModal('deleteOrgModal')">Cancel</button>
                 <button class="btn btn-danger" onclick="confirmDeleteOrganization()" id="confirmDeleteBtn" disabled>
                     <i class="fas fa-trash"></i>
                     Delete Organization
@@ -1045,8 +1074,15 @@
         function createDatabaseBackup() { alert('Database backup feature coming soon'); }
         function clearSystemCache() { alert('Clear cache feature coming soon'); }
         function optimizeDatabase() { alert('Database optimization feature coming soon'); }
+        function refreshCourses() { if (window.siteAdmin) window.siteAdmin.refreshCourses(); }
+        function filterCourses() { if (window.siteAdmin) window.siteAdmin.filterCourses(); }
+        function generateDemoData() { if (window.siteAdmin) window.siteAdmin.generateDemoData(); }
+        function resetDemoEnvironment() { if (window.siteAdmin) window.siteAdmin.resetDemoEnvironment(); }
+        function viewDemoStats() { if (window.siteAdmin) window.siteAdmin.viewDemoStats(); }
         function closeModal(modalId) { if (window.siteAdmin) window.siteAdmin.closeModal(modalId); }
         function confirmDeleteOrganization() { if (window.siteAdmin) window.siteAdmin.confirmDeleteOrganization(); }
+        function updateIPWhitelist() { alert('IP whitelist update feature coming soon'); }
+        function createAPIKey() { alert('Create API key feature coming soon'); }
 
         // User dropdown functionality
         document.addEventListener('DOMContentLoaded', () => {

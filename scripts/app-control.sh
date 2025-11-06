@@ -95,7 +95,8 @@ parse_compose_config() {
             if [[ $line =~ ^[[:space:]]{2}([a-zA-Z0-9_-]+):[[:space:]]*$ ]]; then
                 current_service="${BASH_REMATCH[1]}"
                 SERVICE_NAMES["$current_service"]="$current_service"
-                SERVICE_CONTAINERS["$current_service"]="${DOCKER_PROJECT_NAME}_${current_service}_1"
+                # Docker Compose v2 uses hyphens in container names
+                SERVICE_CONTAINERS["$current_service"]="${DOCKER_PROJECT_NAME}-${current_service}-1"
             # Match port mappings
             elif [[ $line =~ ^[[:space:]]*-[[:space:]]*\"([0-9]+):([0-9]+)\"[[:space:]]*$ ]] && [[ -n "$current_service" ]]; then
                 host_port="${BASH_REMATCH[1]}"

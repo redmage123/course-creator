@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication Flow Guide - Course Creator</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: #667eea;
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0 0 0.5rem 0;
+            font-size: 2rem;
+        }
+        .header p {
+            margin: 0;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 2rem;
+        }
+        .section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            border-left: 4px solid #667eea;
+            background: #f7fafc;
+            border-radius: 4px;
+        }
+        .section h2 {
+            margin: 0 0 1rem 0;
+            color: #2d3748;
+            font-size: 1.5rem;
+        }
+        .section p {
+            margin: 0.5rem 0;
+            color: #4a5568;
+            line-height: 1.6;
+        }
+        .flow-diagram {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        .flow-step {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+        }
+        .flow-step-number {
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+        .flow-step-content {
+            flex: 1;
+        }
+        .flow-step-title {
+            font-weight: 600;
+            color: #2d3748;
+            margin: 0 0 0.25rem 0;
+        }
+        .flow-step-description {
+            color: #718096;
+            margin: 0;
+            font-size: 0.875rem;
+        }
+        .status-box {
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        .status-box.info {
+            background: #ebf8ff;
+            border: 2px solid #4299e1;
+            color: #2c5282;
+        }
+        .status-box.success {
+            background: #f0fff4;
+            border: 2px solid #48bb78;
+            color: #22543d;
+        }
+        .status-box.warning {
+            background: #fffaf0;
+            border: 2px solid #ed8936;
+            color: #7c2d12;
+        }
+        .code-block {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+        }
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 2rem;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #2d3748;
+        }
+        .btn-secondary:hover {
+            background: #cbd5e0;
+        }
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            justify-content: center;
+        }
+        .debug-info {
+            background: #f7fafc;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            margin-top: 2rem;
+        }
+        .debug-info h3 {
+            margin: 0 0 1rem 0;
+            color: #2d3748;
+        }
+        .debug-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .debug-item:last-child {
+            border-bottom: none;
+        }
+        .debug-label {
+            font-weight: 600;
+            color: #4a5568;
+        }
+        .debug-value {
+            color: #2d3748;
+            font-family: monospace;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+        .status-indicator.green {
+            background: #48bb78;
+        }
+        .status-indicator.red {
+            background: #f56565;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Authentication Flow Guide</h1>
+            <p>Understanding how login and session management works</p>
+        </div>
+
+        <div class="content">
+            <!-- Current Status -->
+            <div class="section">
+                <h2>Your Current Status</h2>
+                <div id="currentStatus" class="status-box info">
+                    <strong>Checking your authentication status...</strong>
+                </div>
+                <div class="debug-info">
+                    <h3>Debug Information</h3>
+                    <div class="debug-item">
+                        <span class="debug-label">Has authToken:</span>
+                        <span class="debug-value" id="hasToken">-</span>
+                    </div>
+                    <div class="debug-item">
+                        <span class="debug-label">User Role:</span>
+                        <span class="debug-value" id="userRole">-</span>
+                    </div>
+                    <div class="debug-item">
+                        <span class="debug-label">User Name:</span>
+                        <span class="debug-value" id="userName">-</span>
+                    </div>
+                    <div class="debug-item">
+                        <span class="debug-label">Is Guest:</span>
+                        <span class="debug-value" id="isGuest">-</span>
+                    </div>
+                    <div class="debug-item">
+                        <span class="debug-label">Session Start:</span>
+                        <span class="debug-value" id="sessionStart">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- What Happened -->
+            <div class="section">
+                <h2>What Happened?</h2>
+                <p>
+                    <strong>You cleared your browser's localStorage</strong> using the clear-session page.
+                    This removed your authentication token (authToken) which is required to access protected pages.
+                </p>
+                <div class="code-block">
+localStorage.clear();  // ← This removed your authToken
+                </div>
+                <p>
+                    Without a valid authToken, the backend API returns:
+                </p>
+                <div class="code-block">
+403 Forbidden
+{"detail": "Not authenticated"}
+                </div>
+            </div>
+
+            <!-- Expected Flow -->
+            <div class="section">
+                <h2>Expected Authentication Flow</h2>
+                <p>Here's what needs to happen for you to access protected pages again:</p>
+
+                <div class="flow-diagram">
+                    <div class="flow-step">
+                        <div class="flow-step-number">1</div>
+                        <div class="flow-step-content">
+                            <div class="flow-step-title">Go to Homepage</div>
+                            <div class="flow-step-description">Navigate to https://176.9.99.103:3000/html/index.html</div>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-step-number">2</div>
+                        <div class="flow-step-content">
+                            <div class="flow-step-title">Click "Login" Button</div>
+                            <div class="flow-step-description">Click the Login button in the top-right corner (it should now be visible)</div>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-step-number">3</div>
+                        <div class="flow-step-content">
+                            <div class="flow-step-title">Enter Credentials</div>
+                            <div class="flow-step-description">Enter your username/email and password in the login dropdown</div>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-step-number">4</div>
+                        <div class="flow-step-content">
+                            <div class="flow-step-title">Submit Login Form</div>
+                            <div class="flow-step-description">Click "Sign In" - this calls handleAccountLogin()</div>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-step-number">5</div>
+                        <div class="flow-step-content">
+                            <div class="flow-step-title">Backend Validates Credentials</div>
+                            <div class="flow-step-description">POST /auth/login checks username/password against database</div>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-step-number">6</div>
+                        <div class="flow-step-content">
+                            <div class="flow-step-title">Backend Returns JWT Token</div>
+                            <div class="flow-step-description">Response: {"access_token": "...", "user": {...}}</div>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-step-number">7</div>
+                        <div class="flow-step-content">
+                            <div class="flow-step-title">JavaScript Stores Token</div>
+                            <div class="flow-step-description">localStorage.setItem('authToken', data.access_token)</div>
+                        </div>
+                    </div>
+
+                    <div class="flow-step">
+                        <div class="flow-step-number">8</div>
+                        <div class="flow-step-content">
+                            <div class="flow-step-title">Redirect to Dashboard</div>
+                            <div class="flow-step-description">Automatically redirects based on your role (org_admin → org-admin-dashboard.html)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- The Question -->
+            <div class="section">
+                <h2>Why Do I Need to Log In Again?</h2>
+                <div class="status-box warning">
+                    <p><strong>You asked: "Why doesn't the login process generate a new token?"</strong></p>
+                </div>
+                <p>
+                    <strong>The answer is: The login process DOES generate a new token!</strong>
+                    But you need to actually go through the login process first.
+                </p>
+                <p>
+                    What happened:
+                </p>
+                <ul>
+                    <li>✅ You cleared localStorage (removed old token)</li>
+                    <li>✅ You returned to homepage (login buttons are visible)</li>
+                    <li>❌ You tried to access org-admin dashboard directly (without logging in first)</li>
+                    <li>❌ Backend checked for authToken, found none, returned 403 error</li>
+                </ul>
+                <p>
+                    <strong>Solution:</strong> Follow the 8-step flow above to log in and get a new token.
+                </p>
+            </div>
+
+            <!-- Code Reference -->
+            <div class="section">
+                <h2>How Login Stores the Token (Code Reference)</h2>
+                <p>From <code>/home/bbrelin/course-creator/frontend/html/index.html</code> lines 273-292:</p>
+                <div class="code-block">
+if (response.ok) {
+    const data = await response.json();
+
+    // Store authentication token and user info
+    localStorage.setItem('authToken', data.access_token);  // ← Token stored here!
+    localStorage.setItem('userRole', data.user.role);
+    localStorage.setItem('userName', data.user.username);
+    localStorage.setItem('isGuest', 'false');
+    localStorage.setItem('currentUser', JSON.stringify(data.user));
+
+    // Store session timestamps
+    const now = Date.now();
+    localStorage.setItem('sessionStart', now.toString());
+    localStorage.setItem('lastActivity', now.toString());
+
+    // Redirect based on role
+    switch(role) {
+        case 'org_admin': window.location.href = '/html/org-admin-dashboard.html'; break;
+        // ... other roles
+    }
+}
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="button-group">
+                <a href="/html/index.html" class="btn">
+                    Go to Homepage & Login
+                </a>
+                <button class="btn btn-secondary" onclick="location.reload()">
+                    Refresh This Page
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check current authentication status
+        function checkAuthStatus() {
+            const authToken = localStorage.getItem('authToken');
+            const userRole = localStorage.getItem('userRole');
+            const userName = localStorage.getItem('userName');
+            const isGuest = localStorage.getItem('isGuest');
+            const sessionStart = localStorage.getItem('sessionStart');
+
+            // Update debug info
+            document.getElementById('hasToken').innerHTML = authToken
+                ? '<span class="status-indicator green"></span>YES'
+                : '<span class="status-indicator red"></span>NO';
+            document.getElementById('userRole').textContent = userRole || 'Not set';
+            document.getElementById('userName').textContent = userName || 'Not set';
+            document.getElementById('isGuest').textContent = isGuest || 'Not set';
+            document.getElementById('sessionStart').textContent = sessionStart
+                ? new Date(parseInt(sessionStart)).toLocaleString()
+                : 'Not set';
+
+            // Update status message
+            const statusDiv = document.getElementById('currentStatus');
+            if (authToken) {
+                statusDiv.className = 'status-box success';
+                statusDiv.innerHTML = `
+                    <strong>✅ You are authenticated!</strong><br>
+                    Logged in as: <strong>${userName}</strong> (${userRole})<br>
+                    You can now access protected pages.
+                `;
+            } else {
+                statusDiv.className = 'status-box warning';
+                statusDiv.innerHTML = `
+                    <strong>⚠️ You are NOT authenticated</strong><br>
+                    No authToken found in localStorage.<br>
+                    You need to log in to access protected pages.
+                `;
+            }
+        }
+
+        // Run on page load
+        checkAuthStatus();
+
+        // Console logging for debugging
+        console.log('🔍 Authentication Status Check:');
+        console.log('authToken:', localStorage.getItem('authToken') ? 'EXISTS' : 'MISSING');
+        console.log('userRole:', localStorage.getItem('userRole'));
+        console.log('userName:', localStorage.getItem('userName'));
+    </script>
+</body>
+</html>

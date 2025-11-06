@@ -111,8 +111,12 @@ class RegistrationPage(BasePage):
 
         # Scroll register button into view before clicking
         register_button = self.find_element(*self.REGISTER_BUTTON)
-        self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", register_button)
-        time.sleep(0.5)  # Wait for scroll animation
+        # First scroll to top to reset scroll position
+        self.driver.execute_script("window.scrollTo(0, 0);")
+        time.sleep(0.3)
+        # Then scroll button into center view
+        self.driver.execute_script("arguments[0].scrollIntoView({block: 'center', behavior: 'smooth'});", register_button)
+        time.sleep(1)  # Wait for scroll animation and element to be stable
         self.click_element(*self.REGISTER_BUTTON)
 
     def get_error_message(self):
@@ -264,9 +268,20 @@ class CourseCatalogPage(BasePage):
         Args:
             query: Search query string
         """
+        self.wait_for_element_visible(*self.SEARCH_INPUT, timeout=10)
         self.enter_text(*self.SEARCH_INPUT, query)
-        self.click_element(*self.SEARCH_BUTTON)
-        time.sleep(1)  # Wait for search results
+
+        # Wait for search button and click or use Enter key
+        if self.is_element_present(*self.SEARCH_BUTTON, timeout=5):
+            time.sleep(0.5)  # Brief wait for button to be ready
+            self.click_element(*self.SEARCH_BUTTON)
+        else:
+            # If no search button, pressing Enter should trigger search
+            from selenium.webdriver.common.keys import Keys
+            search_input = self.find_element(*self.SEARCH_INPUT)
+            search_input.send_keys(Keys.RETURN)
+
+        time.sleep(2)  # Wait for search results to load
 
     def get_course_count(self):
         """Get count of visible courses."""
@@ -544,7 +559,19 @@ class QuizPage(BasePage):
 
     def submit_quiz(self):
         """Submit quiz for grading."""
+        from selenium.common.exceptions import UnexpectedAlertPresentException
+        from selenium.webdriver.common.alert import Alert
+
         self.click_element(*self.SUBMIT_QUIZ_BUTTON)
+
+        # Handle confirmation alert if present
+        try:
+            time.sleep(0.5)  # Brief wait for alert to appear
+            alert = Alert(self.driver)
+            alert.accept()  # Click OK on "Are you sure?" alert
+        except:
+            pass  # No alert present, continue
+
         time.sleep(2)
 
 

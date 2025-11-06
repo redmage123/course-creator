@@ -314,12 +314,4 @@ def test_data():
     }
 
 
-# Test markers
-pytest.mark.smoke = pytest.mark.marker("smoke")
-pytest.mark.regression = pytest.mark.marker("regression")
-pytest.mark.frontend = pytest.mark.marker("frontend")
-pytest.mark.auth = pytest.mark.marker("auth")
-pytest.mark.navigation = pytest.mark.marker("navigation")
-pytest.mark.javascript = pytest.mark.marker("javascript")
-pytest.mark.responsive = pytest.mark.marker("responsive")
-pytest.mark.cross_browser = pytest.mark.marker("cross_browser")
+# Test markers are registered in pytest.ini - no need to declare them here

@@ -16,7 +16,11 @@ from unittest.mock import Mock, AsyncMock, patch
 from uuid import UUID, uuid4
 from datetime import datetime
 from typing import Dict, Any, Optional
+import sys
+from pathlib import Path
 
+# Add organization-management to path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / 'services' / 'organization-management'))
 
 from organization_management.application.services.organization_service import OrganizationService
 from organization_management.domain.entities.organization import Organization

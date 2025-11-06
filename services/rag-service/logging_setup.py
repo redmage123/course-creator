@@ -17,7 +17,7 @@ LOGGING ARCHITECTURE:
 - **Console Output**: Real-time monitoring with syslog format
 - **File Output**: Persistent logging to /var/log/course-creator/rag-service.log
 - **Rotation**: 50MB max file size with 10 backup files
-- **Format**: RFC 3164 syslog format with hostname, PID, service name, and location info
+- **Format**: RFC 3164 syslog format with hostname, PID, service name, and locations info
 
 LOG LEVELS AND USAGE:
 - **DEBUG**: Detailed RAG operations, vector similarity scores, retrieval metrics
@@ -46,7 +46,7 @@ def setup_logging(name: str = __name__, level: str = "INFO") -> logging.Logger:
     Setup comprehensive logging for RAG service with syslog format
     
     SYSLOG FORMAT IMPLEMENTATION:
-    Follows RFC 3164 format: "MMM DD HH:MM:SS hostname service[pid]: LEVEL - location - message"
+    Follows RFC 3164 format: "MMM DD HH:MM:SS hostname service[pid]: LEVEL - locations - message"
     
     RAG SERVICE SPECIFIC CONFIGURATION:
     - Enhanced metadata for vector operations
@@ -89,7 +89,7 @@ def setup_logging(name: str = __name__, level: str = "INFO") -> logging.Logger:
     - Service: rag-service identifier for log filtering and analysis
     - PID: Process ID for multi-instance deployment tracking
     - Level: Log level for severity-based filtering
-    - Location: File and line number for debugging precision
+    - Locations: File and line number for debugging precision
     - Message: Actual log message with RAG operation details
     
     METADATA PRESERVATION:
@@ -107,7 +107,7 @@ def setup_logging(name: str = __name__, level: str = "INFO") -> logging.Logger:
         ENHANCEMENT FEATURES:
         - Consistent timestamp formatting across all log entries
         - Service identification for multi-service log aggregation
-        - Location information for precise debugging
+        - Locations information for precise debugging
         - Structured format for automated log parsing and analysis
         """
         
@@ -115,12 +115,12 @@ def setup_logging(name: str = __name__, level: str = "INFO") -> logging.Logger:
             # Create timestamp in syslog format
             timestamp = datetime.fromtimestamp(record.created).strftime('%b %d %H:%M:%S')
             
-            # Extract filename and line number for location tracking
+            # Extract filename and line number for locations tracking
             filename = os.path.basename(record.pathname)
-            location = f"{filename}:{record.lineno}"
+            locations = f"{filename}:{record.lineno}"
             
-            # Format: "MMM DD HH:MM:SS hostname service[pid]: LEVEL - location - message"
-            formatted_message = f"{timestamp} {hostname} {service_name}[{pid}]: {record.levelname} - {location} - {record.getMessage()}"
+            # Format: "MMM DD HH:MM:SS hostname service[pid]: LEVEL - locations - message"
+            formatted_message = f"{timestamp} {hostname} {service_name}[{pid}]: {record.levelname} - {locations} - {record.getMessage()}"
             
             return formatted_message
     

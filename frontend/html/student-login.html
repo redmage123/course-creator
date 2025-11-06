@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="../css/modern-ui/modern-ui.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Portal Login - Course Creator Platform</title>
@@ -294,13 +295,13 @@
             </div>
 
             <!-- Course Information (populated by JavaScript) -->
-            <div id="courseInfo" class="course-context" style="display: none;">
+            <div id="courseInfo" class="course-context hidden">
                 <strong>Course:</strong> <span id="courseTitle">Loading...</span>
                 <br><span id="courseDescription"></span>
             </div>
 
             <!-- Account Status Notice -->
-            <div id="statusNotice" class="expired-notice" style="display: none;">
+            <div id="statusNotice" class="expired-notice hidden">
                 <strong>Account Notice:</strong> <span id="statusMessage"></span>
             </div>
 
@@ -378,8 +379,8 @@
                             <strong>Instructor Notifications:</strong> Notify your instructor when you log in to help them track class engagement.
                         </label>
                     </div>
-                    
-                    <p style="font-size: 12px; color: #6c757d; margin-top: 8px;">
+
+                    <p class="consent-help-text">
                         <i class="fas fa-info-circle"></i> You can change these preferences at any time in your account settings.
                     </p>
                 </div>
@@ -390,7 +391,7 @@
             </form>
 
             <!-- Token Login Form -->
-            <form id="tokenForm" class="login-form" style="display: none;" role="tabpanel" aria-labelledby="tokenMode">
+            <form id="tokenForm" class="login-form hidden" role="tabpanel" aria-labelledby="tokenMode">
                 <div class="form-group">
                     <label for="accessToken">Access Token</label>
                     <input
@@ -423,7 +424,7 @@
             </form>
             
             <!-- Password Reset Form (hidden initially) -->
-            <form id="passwordResetForm" class="login-form" style="display: none;">
+            <form id="passwordResetForm" class="login-form hidden">
                 <h3>Password Reset Required</h3>
                 <p>For security, please create a new password for your account.</p>
                 
@@ -474,8 +475,8 @@
                 <button type="submit" id="resetBtn" class="login-btn">
                     <i class="fas fa-key"></i> Update Password
                 </button>
-                
-                <button type="button" onclick="showLoginForm()" class="btn btn-outline" style="width: 100%;">
+
+                <button type="button" onclick="showLoginForm()" class="btn btn-outline w-full">
                     <i class="fas fa-arrow-left"></i> Back to Login
                 </button>
             </form>
@@ -494,7 +495,7 @@
     </div>
 
     <!-- Privacy Policy Modal -->
-    <div id="privacyModal" class="modal" style="display: none;">
+    <div id="privacyModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
                 <h3><i class="fas fa-shield-alt"></i> Privacy Policy Summary</h3>
@@ -599,8 +600,16 @@
             tokenBtn.setAttribute('aria-selected', mode === 'token');
 
             // Show/hide forms
-            document.getElementById('credentialsForm').style.display = mode === 'credentials' ? 'block' : 'none';
-            document.getElementById('tokenForm').style.display = mode === 'token' ? 'block' : 'none';
+            const credentialsForm = document.getElementById('credentialsForm');
+            const tokenForm = document.getElementById('tokenForm');
+
+            if (mode === 'credentials') {
+                credentialsForm.classList.remove('hidden');
+                tokenForm.classList.add('hidden');
+            } else {
+                credentialsForm.classList.add('hidden');
+                tokenForm.classList.remove('hidden');
+            }
 
             // Clear any messages
             hideMessages();
@@ -619,7 +628,7 @@
                     const courseInfo = await response.json();
                     document.getElementById('courseTitle').textContent = courseInfo.title || 'Course';
                     document.getElementById('courseDescription').textContent = courseInfo.description || '';
-                    document.getElementById('courseInfo').style.display = 'block';
+                    document.getElementById('courseInfo').classList.remove('hidden');
                 }
             } catch (error) {
                 console.warn('Could not load course context:', error);
@@ -694,12 +703,12 @@
 
                     // Role-based redirect
                     const dashboardUrls = {
-                        'site_admin': 'site-admin-dashboard-modular.html',
-                        'organization_admin': 'org-admin-dashboard-modular.html',
-                        'instructor': 'instructor-dashboard-modular.html',
-                        'student': 'student-dashboard-modular.html'
+                        'site_admin': 'site-admin-dashboard.html',
+                        'organization_admin': 'org-admin-dashboard.html',
+                        'instructor': 'instructor-dashboard.html',
+                        'student': 'student-dashboard.html'
                     };
-                    const dashboardUrl = dashboardUrls[role] || 'student-dashboard-modular.html';
+                    const dashboardUrl = dashboardUrls[role] || 'student-dashboard.html';
 
                     // Immediate redirect (no delay for tests)
                     window.location.href = dashboardUrl;
@@ -814,10 +823,11 @@
         function showAccountStatusError(message) {
             const statusNotice = document.getElementById('statusNotice');
             const statusMessage = document.getElementById('statusMessage');
-            
+
             statusMessage.textContent = message;
-            statusNotice.style.display = 'block';
-            
+            statusNotice.classList.remove('hidden');
+            statusNotice.classList.add('show');
+
             // Scroll to notice
             statusNotice.scrollIntoView({ behavior: 'smooth' });
         }
@@ -825,46 +835,58 @@
         function showError(message) {
             const errorElement = document.getElementById('errorMessage');
             errorElement.textContent = message;
-            errorElement.style.display = 'block';
+            errorElement.classList.remove('hidden');
+            errorElement.classList.add('show');
         }
 
         function showSuccess(message) {
             const successElement = document.getElementById('successMessage');
             successElement.textContent = message;
-            successElement.style.display = 'block';
+            successElement.classList.remove('hidden');
+            successElement.classList.add('show');
         }
 
         function hideMessages() {
-            document.getElementById('errorMessage').style.display = 'none';
-            document.getElementById('successMessage').style.display = 'none';
-            document.getElementById('statusNotice').style.display = 'none';
+            const errorMsg = document.getElementById('errorMessage');
+            const successMsg = document.getElementById('successMessage');
+            const statusNotice = document.getElementById('statusNotice');
+
+            errorMsg.classList.remove('show');
+            errorMsg.classList.add('hidden');
+            successMsg.classList.remove('show');
+            successMsg.classList.add('hidden');
+            statusNotice.classList.remove('show');
+            statusNotice.classList.add('hidden');
         }
 
         // Show password requirements
         function showPasswordRequirements() {
-            document.getElementById('passwordRequirements').style.display = 'block';
+            document.getElementById('passwordRequirements').classList.remove('hidden');
+            document.getElementById('passwordRequirements').classList.add('show');
         }
 
         // Show password reset form
         function showPasswordResetForm() {
-            document.getElementById('credentialsForm').style.display = 'none';
-            document.getElementById('tokenForm').style.display = 'none';
-            document.getElementById('passwordResetForm').style.display = 'block';
+            document.getElementById('credentialsForm').classList.add('hidden');
+            document.getElementById('tokenForm').classList.add('hidden');
+            document.getElementById('passwordResetForm').classList.remove('hidden');
             hideMessages();
         }
 
         function showLoginForm() {
-            document.getElementById('passwordResetForm').style.display = 'none';
+            document.getElementById('passwordResetForm').classList.add('hidden');
             switchLoginMode(currentLoginMode);
         }
 
         // Privacy Policy Modal Functions
         function showPrivacyPolicy() {
-            document.getElementById('privacyModal').style.display = 'block';
+            document.getElementById('privacyModal').classList.remove('hidden');
+            document.getElementById('privacyModal').classList.add('show');
         }
 
         function hidePrivacyPolicy() {
-            document.getElementById('privacyModal').style.display = 'none';
+            document.getElementById('privacyModal').classList.remove('show');
+            document.getElementById('privacyModal').classList.add('hidden');
         }
 
         // Close modal when clicking outside

@@ -1,0 +1,55 @@
+{
+  "student": {
+    "username": "student@test.com",
+    "email": "student@test.com",
+    "password": "test123",
+    "firstName": "John",
+    "lastName": "Student",
+    "role": "student",
+    "organizationId": "org-001"
+  },
+  "instructor": {
+    "username": "instructor@test.com",
+    "email": "instructor@test.com",
+    "password": "test123",
+    "firstName": "Jane",
+    "lastName": "Instructor",
+    "role": "instructor",
+    "organizationId": "org-001"
+  },
+  "org_admin": {
+    "username": "orgadmin@test.com",
+    "email": "orgadmin@test.com",
+    "password": "test123",
+    "firstName": "Bob",
+    "lastName": "OrgAdmin",
+    "role": "organization_admin",
+    "organizationId": "org-001"
+  },
+  "site_admin": {
+    "username": "admin@test.com",
+    "email": "admin@test.com",
+    "password": "test123",
+    "firstName": "Alice",
+    "lastName": "SiteAdmin",
+    "role": "site_admin"
+  },
+  "new_users": [
+    {
+      "username": "newstudent@test.com",
+      "email": "newstudent@test.com",
+      "password": "NewPass123!",
+      "firstName": "New",
+      "lastName": "Student",
+      "role": "student"
+    },
+    {
+      "username": "newinstructor@test.com",
+      "email": "newinstructor@test.com",
+      "password": "NewPass123!",
+      "firstName": "New",
+      "lastName": "Instructor",
+      "role": "instructor"
+    }
+  ]
+}

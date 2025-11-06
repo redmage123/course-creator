@@ -598,7 +598,7 @@ class TestStudentLoginPage:
                                     description: 'Learn advanced JavaScript concepts and frameworks'
                                 },
                                 instance: {
-                                    name: 'Spring 2024 Cohort'
+                                    name: 'Spring 2024 Locations'
                                 }
                             }
                         })
@@ -624,7 +624,7 @@ class TestStudentLoginPage:
         assert course_title.text == 'Advanced JavaScript Programming'
         
         course_description = driver.find_element(By.ID, 'courseDescription')
-        assert 'Spring 2024 Cohort' in course_description.text
+        assert 'Spring 2024 Locations' in course_description.text
         assert 'Learn advanced JavaScript concepts' in course_description.text
 
 

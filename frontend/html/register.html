@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="../css/modern-ui/modern-ui.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Registration - Course Creator Platform</title>
@@ -165,8 +166,8 @@
     </div>
 
     <!-- ARIA Live Regions -->
-    <div id="errorMessageAria" role="alert" aria-live="assertive" style="position: absolute; left: -9999px;"></div>
-    <div id="successMessageAria" role="status" aria-live="polite" style="position: absolute; left: -9999px;"></div>
+    <div id="errorMessageAria" role="alert" aria-live="assertive" class="sr-only"></div>
+    <div id="successMessageAria" role="status" aria-live="polite" class="sr-only"></div>
 
     <header role="banner">
         <div class="container">
@@ -205,7 +206,7 @@
                 <div class="form-group">
                     <label for="password">Password <span class="required">*</span></label>
                     <input type="password" id="password" name="password" required aria-required="true" aria-describedby="passwordHelp">
-                    <small id="passwordHelp" style="display: block; margin-top: 5px; color: #6c757d;">Must be at least 8 characters long</small>
+                    <small id="passwordHelp" class="form-help-text">Must be at least 8 characters long</small>
                 </div>
 
                 <div class="form-group">
@@ -214,7 +215,7 @@
                 </div>
 
                 <div class="checkbox-group">
-                    <h3 style="margin-top: 0; margin-bottom: 15px;">Privacy & Consent</h3>
+                    <h3 class="section-heading">Privacy & Consent</h3>
 
                     <div class="checkbox-item">
                         <input type="checkbox" id="gdprConsent" name="gdprConsent" required aria-required="true">

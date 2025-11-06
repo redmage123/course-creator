@@ -1,0 +1,75 @@
+/**
+ * Authentication Layout Styles
+ *
+ * BUSINESS CONTEXT:
+ * Shared styles for all authentication pages providing consistent
+ * branding and user experience across login, registration, and password reset flows.
+ *
+ * DESIGN PRINCIPLES:
+ * - Centered layout with gradient background
+ * - Platform colors from Tami design system
+ * - 8px border radius (design system standard)
+ * - Responsive design for mobile/desktop
+ * - Clear visual hierarchy
+ */
+
+/* ============================================================================
+ * PAGE CONTAINER
+ * ============================================================================ */
+
+.auth-layout {
+  /* Layout */
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+/* ============================================================================
+ * CONTENT CONTAINER
+ * ============================================================================ */
+
+.auth-container {
+  width: 100%;
+  /* max-width set via inline style prop for flexibility */
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ============================================================================
+ * HEADER
+ * ============================================================================ */
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.auth-subtitle {
+  /* Typography */
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #64748b;
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
+/* ============================================================================
+ * RESPONSIVE
+ * ============================================================================ */
+
+@media (max-width: 640px) {
+  .auth-layout {
+    padding: 16px;
+    align-items: flex-start;
+    padding-top: 40px;
+  }
+
+  .auth-container {
+    max-width: 100%;
+  }
+}

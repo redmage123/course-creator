@@ -27,6 +27,9 @@ sys.modules['shared'] = MagicMock()
 sys.modules['shared.cache'] = MagicMock()
 sys.modules['shared.cache.redis_cache'] = MagicMock()
 
+# Clean sys.path of other services to avoid 'main' module conflicts
+sys.path = [p for p in sys.path if '/services/' not in p or 'organization-management' in p]
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / 'services' / 'organization-management'))
 
 from main import app, create_app

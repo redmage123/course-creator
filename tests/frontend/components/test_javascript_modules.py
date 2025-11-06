@@ -27,7 +27,7 @@ class JavaScriptTestHarness:
         # Setup window mocks
         self.mock_window.localStorage = Mock()
         self.mock_window.sessionStorage = Mock()
-        self.mock_window.location = Mock()
+        self.mock_window.locations = Mock()
         self.mock_window.fetch = self.mock_fetch
     
     def create_mock_element(self, tag_name="div", **attributes):

@@ -11,12 +11,6 @@
  * - Global exposure for debugging while maintaining module boundaries
  * - Single entry point reduces complexity and enables unified error handling
  */
-
-/**
- * CORE MODULE IMPORTS
- * PURPOSE: Import all essential platform modules for initialization
- * WHY: Explicit imports make dependencies clear and enable tree-shaking
- */
 import { App } from './modules/app.js';                    // Main application controller and lifecycle management
 import { Auth } from './modules/auth.js';                  // Authentication system and session management  
 import { Navigation } from './modules/navigation.js';      // Site navigation and routing logic
@@ -47,6 +41,13 @@ function initializeSlideshow() {
         const slideshowContainer = document.querySelector('.hero-slideshow');
         if (slideshowContainer) {
             // Ensure CSS is fully loaded before initializing slideshow
+    /**
+     * EXECUTE CHECKCSSLOADED OPERATION
+     * PURPOSE: Execute checkCSSLoaded operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
             const checkCSSLoaded = () => {
                 const slideshowWrapper = slideshowContainer.querySelector('.slideshow-wrapper');
                 if (slideshowWrapper && getComputedStyle(slideshowWrapper).display !== 'none') {
@@ -67,6 +68,13 @@ function initializeSlideshow() {
 }
 
 // Wait for both DOM content and window load to ensure CSS is ready
+    /**
+     * EXECUTE WAITFORFULLLOAD OPERATION
+     * PURPOSE: Execute waitForFullLoad operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
 function waitForFullLoad() {
     if (document.readyState === 'complete') {
         initializeSlideshow();

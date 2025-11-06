@@ -1,305 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="../css/modern-ui/modern-ui.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Project Dashboard - Course Creator</title>
+    <link rel="stylesheet" href="../css/base/reset.css">
+    <link rel="stylesheet" href="../css/base/variables.css">
     <link rel="stylesheet" href="../css/main.css">
-    <style>
-        .project-dashboard-container {
-            display: flex;
-            min-height: 100vh;
-            background-color: var(--background-color);
-        }
-
-        .sidebar {
-            width: 280px;
-            background: var(--card-background);
-            border-right: 1px solid var(--border-color);
-            padding: 2rem 0;
-            position: fixed;
-            height: 100vh;
-            overflow-y: auto;
-        }
-
-        .main-content {
-            flex: 1;
-            margin-left: 280px;
-            padding: 2rem;
-        }
-
-        .project-header {
-            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-            color: white;
-            padding: 2rem;
-            border-radius: 12px;
-            margin-bottom: 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .project-meta {
-            display: flex;
-            gap: 2rem;
-            margin-top: 1rem;
-            font-size: 0.875rem;
-        }
-
-        .project-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background: var(--card-background);
-            padding: 1.5rem;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            text-align: center;
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: var(--primary-color);
-            display: block;
-        }
-
-        .tracks-container {
-            background: var(--card-background);
-            border-radius: 12px;
-            padding: 2rem;
-            border: 1px solid var(--border-color);
-        }
-
-        .track-card {
-            background: white;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            transition: all 0.3s ease;
-        }
-
-        .track-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        .track-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 1rem;
-        }
-
-        .track-status {
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
-
-        .status-draft {
-            background: var(--warning-color);
-            color: white;
-        }
-
-        .status-active {
-            background: var(--success-color);
-            color: white;
-        }
-
-        .status-completed {
-            background: var(--info-color);
-            color: white;
-        }
-
-        .modules-list {
-            margin-top: 1rem;
-        }
-
-        .module-item {
-            background: var(--hover-color);
-            border-radius: 6px;
-            padding: 1rem;
-            margin-bottom: 0.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .module-progress {
-            width: 100%;
-            height: 8px;
-            background: #e9ecef;
-            border-radius: 4px;
-            margin: 0.5rem 0;
-            overflow: hidden;
-        }
-
-        .module-progress-bar {
-            height: 100%;
-            background: linear-gradient(90deg, var(--success-color), var(--primary-color));
-            transition: width 0.3s ease;
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .btn-sm {
-            padding: 0.5rem 1rem;
-            font-size: 0.875rem;
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-
-        .modal-content {
-            background-color: var(--card-background);
-            margin: 5% auto;
-            padding: 2rem;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 600px;
-            position: relative;
-        }
-
-        .close {
-            position: absolute;
-            right: 1rem;
-            top: 1rem;
-            font-size: 1.5rem;
-            cursor: pointer;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 1rem;
-        }
-
-        .form-group textarea {
-            min-height: 100px;
-            resize: vertical;
-        }
-
-        .ai-content-section {
-            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin: 1rem 0;
-            border-left: 4px solid var(--primary-color);
-        }
-
-        .content-generation-status {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .status-indicator {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: var(--text-muted);
-        }
-
-        .status-pending { background: var(--warning-color); }
-        .status-generating { background: var(--info-color); animation: pulse 2s infinite; }
-        .status-completed { background: var(--success-color); }
-        .status-failed { background: var(--error-color); }
-
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-
-        .breadcrumb {
-            margin-bottom: 2rem;
-            font-size: 0.875rem;
-        }
-
-        .breadcrumb a {
-            color: var(--primary-color);
-            text-decoration: none;
-        }
-
-        .breadcrumb a:hover {
-            text-decoration: underline;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 3rem 2rem;
-            color: var(--text-muted);
-        }
-
-        .empty-state h3 {
-            margin-bottom: 1rem;
-        }
-
-        @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
-            }
-
-            .sidebar.open {
-                transform: translateX(0);
-            }
-
-            .main-content {
-                margin-left: 0;
-                padding: 1rem;
-            }
-
-            .project-header {
-                flex-direction: column;
-                text-align: center;
-                gap: 1rem;
-            }
-
-            .project-meta {
-                justify-content: center;
-            }
-
-            .modal-content {
-                width: 95%;
-                margin: 10% auto;
-                padding: 1rem;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="../css/components/project-dashboard.css?v=1.0">
 </head>
 <body>
     <a href="#main-content" class="skip-link">Skip to main content</a>
@@ -307,58 +16,58 @@
     <div class="project-dashboard-container">
         <!-- Sidebar -->
         <nav class="sidebar" role="navigation" aria-label="Main navigation">
-            <div style="padding: 0 1.5rem;">
-                <h2 style="margin: 0 0 2rem 0; color: var(--primary-color);">Project Dashboard</h2>
-                
-                <div class="project-info" style="margin-bottom: 2rem; padding: 1rem; background: var(--hover-color); border-radius: 8px;">
-                    <h4 id="projectName" style="margin: 0 0 0.5rem 0;">Loading...</h4>
-                    <p id="projectStatus" style="margin: 0; color: var(--text-muted); font-size: 0.875rem;"></p>
+            <div class="sidebar__inner">
+                <h2 class="sidebar__title">Project Dashboard</h2>
+
+                <div class="sidebar__project-info">
+                    <h4 id="projectName" class="sidebar__project-name">Loading...</h4>
+                    <p id="projectStatus" class="sidebar__project-status"></p>
                 </div>
 
-                <ul style="list-style: none; padding: 0; margin: 0;">
-                    <li style="margin-bottom: 0.5rem;">
+                <ul class="sidebar__nav-list">
+                    <li class="sidebar__nav-item">
                         <a href="#overview" class="nav-link active" data-tab="overview">
                             📊 Overview
                         </a>
                     </li>
-                    <li style="margin-bottom: 0.5rem;">
+                    <li class="sidebar__nav-item">
                         <a href="#tracks" class="nav-link" data-tab="tracks">
                             🎯 Training Tracks
                         </a>
                     </li>
-                    <li style="margin-bottom: 0.5rem;">
+                    <li class="sidebar__nav-item">
                         <a href="#modules" class="nav-link" data-tab="modules">
                             📚 Modules
                         </a>
                     </li>
-                    <li style="margin-bottom: 0.5rem;">
+                    <li class="sidebar__nav-item">
                         <a href="#participants" class="nav-link" data-tab="participants">
                             👥 Participants
                         </a>
                     </li>
-                    <li style="margin-bottom: 0.5rem;">
+                    <li class="sidebar__nav-item">
                         <a href="#analytics" class="nav-link" data-tab="analytics">
                             📈 Analytics
                         </a>
                     </li>
-                    <li style="margin-bottom: 0.5rem;">
+                    <li class="sidebar__nav-item">
                         <a href="#settings" class="nav-link" data-tab="settings">
                             ⚙️ Settings
                         </a>
                     </li>
                 </ul>
 
-                <hr style="margin: 2rem 0;">
-                
-                <div style="padding: 1rem; background: var(--card-background); border-radius: 8px;">
-                    <h5 style="margin: 0 0 1rem 0;">Quick Actions</h5>
-                    <button class="btn btn-primary btn-sm" onclick="showCreateTrackModal()" style="width: 100%; margin-bottom: 0.5rem;">
+                <hr class="sidebar__divider">
+
+                <div class="sidebar__quick-actions">
+                    <h5 class="sidebar__quick-actions-title">Quick Actions</h5>
+                    <button class="btn btn-primary btn-sm btn--full-width-spaced" onclick="showCreateTrackModal()">
                         ➕ Add Track
                     </button>
-                    <button class="btn btn-outline btn-sm" onclick="showCreateModuleModal()" style="width: 100%; margin-bottom: 0.5rem;">
+                    <button class="btn btn-outline btn-sm btn--full-width-spaced" onclick="showCreateModuleModal()">
                         📝 Add Module
                     </button>
-                    <button class="btn btn-outline btn-sm" onclick="manageParticipants()" style="width: 100%;">
+                    <button class="btn btn-outline btn-sm btn--full-width" onclick="manageParticipants()">
                         👤 Add Participants
                     </button>
                 </div>
@@ -412,7 +121,7 @@
                 </div>
 
                 <div class="tracks-container">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <div class="section-header--spaced">
                         <h3>Training Tracks Overview</h3>
                         <button class="btn btn-primary" onclick="showCreateTrackModal()">
                             ➕ Create Track
@@ -426,7 +135,7 @@
 
             <!-- Tracks Tab -->
             <div id="tracks" class="tab-content">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <div class="section-header--spaced">
                     <h2>Training Tracks</h2>
                     <button class="btn btn-primary" onclick="showCreateTrackModal()">
                         ➕ Create Track
@@ -439,7 +148,7 @@
 
             <!-- Modules Tab -->
             <div id="modules" class="tab-content">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <div class="section-header--spaced">
                     <h2>Course Modules</h2>
                     <button class="btn btn-primary" onclick="showCreateModuleModal()">
                         ➕ Create Module
@@ -452,7 +161,7 @@
 
             <!-- Participants Tab -->
             <div id="participants" class="tab-content">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <div class="section-header--spaced">
                     <h2>Project Participants</h2>
                     <button class="btn btn-primary" onclick="manageParticipants()">
                         👤 Add Participants
@@ -466,13 +175,13 @@
             <!-- Analytics Tab -->
             <div id="analytics" class="tab-content">
                 <h2>Project Analytics</h2>
-                <p style="color: var(--text-muted);">Analytics dashboard coming soon...</p>
+                <p class="text--muted">Analytics dashboard coming soon...</p>
             </div>
 
             <!-- Settings Tab -->
             <div id="settings" class="tab-content">
                 <h2>Project Settings</h2>
-                <p style="color: var(--text-muted);">Project settings panel coming soon...</p>
+                <p class="text--muted">Project settings panel coming soon...</p>
             </div>
         </main>
     </div>
@@ -491,7 +200,7 @@
                     <label for="trackDescription">Description</label>
                     <textarea id="trackDescription" name="description" placeholder="Describe the learning objectives and content of this track..."></textarea>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-grid--2col">
                     <div class="form-group">
                         <label for="trackDifficulty">Difficulty Level</label>
                         <select id="trackDifficulty" name="difficulty_level">
@@ -509,7 +218,7 @@
                     <label for="trackPrerequisites">Prerequisites (one per line)</label>
                     <textarea id="trackPrerequisites" name="prerequisites" placeholder="List any prerequisites for this track..."></textarea>
                 </div>
-                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeModal('createTrackModal')">Cancel</button>
                     <button type="submit" class="btn btn-primary">Create Track</button>
                 </div>
@@ -519,7 +228,7 @@
 
     <!-- Create Module Modal -->
     <div id="createModuleModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="createModuleModalTitle">
-        <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-content modal-content--wide">
             <span class="close" onclick="closeModal('createModuleModal')">&times;</span>
             <h2>Create Course Module with AI</h2>
             <form id="createModuleForm">
@@ -538,11 +247,11 @@
                     <h4>🤖 AI-Powered Content Generation</h4>
                     <div class="form-group">
                         <label for="moduleAIDescription">Describe the module content for AI generation *</label>
-                        <textarea id="moduleAIDescription" name="ai_description_prompt" required 
+                        <textarea id="moduleAIDescription" name="ai_description_prompt" required
                                   placeholder="Describe what this module should teach. For example: 'This module should cover JavaScript fundamentals including variables, functions, and DOM manipulation. Include practical exercises and a quiz to test understanding.'"></textarea>
                         <small>The AI will use this description to generate syllabus content, slides, and quizzes with help from our RAG system.</small>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 1rem;">
+                    <div class="checkbox-group">
                         <label>
                             <input type="checkbox" name="generate_syllabus" checked> Generate Syllabus
                         </label>
@@ -554,7 +263,7 @@
                         </label>
                     </div>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-grid--2col">
                     <div class="form-group">
                         <label for="moduleOrder">Module Order</label>
                         <input type="number" id="moduleOrder" name="module_order" min="1" value="1">
@@ -564,7 +273,7 @@
                         <input type="number" id="moduleHours" name="estimated_duration_hours" min="1" max="100" step="0.5">
                     </div>
                 </div>
-                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeModal('createModuleModal')">Cancel</button>
                     <button type="submit" class="btn btn-primary">🚀 Create & Generate Content</button>
                 </div>

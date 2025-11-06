@@ -145,7 +145,7 @@ Course Creator Platform is an AI-powered learning management system specifically
 ### Student Enrollment
 - Individual enrollment
 - Bulk CSV upload (hundreds of students in seconds)
-- Section/cohort organization
+- Section/location organization
 - Skill level grouping
 - Semester/session tracking
 

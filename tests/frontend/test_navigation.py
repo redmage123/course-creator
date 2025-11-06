@@ -183,7 +183,7 @@ class TestNavigationFunctionality:
         
         for hash_section in hash_sections:
             # Navigate to hash
-            driver.execute_script(f"window.location.hash = '{hash_section}'")
+            driver.execute_script(f"window.locations.hash = '{hash_section}'")
             time.sleep(1)
             
             # Check that URL updated

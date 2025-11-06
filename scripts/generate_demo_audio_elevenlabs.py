@@ -62,65 +62,75 @@ NARRATIONS = [
     {
         'slide': 1,
         'title': 'Introduction',
-        'text': 'Welcome to Course Creator Platform, built specifically for corporate training teams and professional instructors who need to create courses fast. Our AI-powered system transforms what used to take weeks into just minutes. In the next nine minutes, you\'ll see how artificial intelligence handles the heavy lifting while you focus on your expertise.'
+        'text': 'Welcome to THE Course Creator Platform, built specifically for corporate training teams and professional instructors who need to create courses fast. Our AI-powered system transforms what used to take weeks into just minutes. In the next slide, we\'ll show you how to get started.'
     },
     {
         'slide': 2,
-        'title': 'Organization Dashboard',
-        'text': 'Every great learning program starts with a solid foundation. Watch as we create an organization. We\'ll enter the name, website, and a brief description. Then add contact details, like the business email and address. Finally, we\'ll set up the admin account with username, email, and password. In under a minute, you\'ve created a complete organizational structure, ready to host unlimited courses and manage hundreds of users. That\'s effortless setup.'
+        'title': 'Getting Started - Register Your Organization',
+        'text': 'To get started, simply click Register Organization on the home page. Now, let\'s fill in the details. Enter your organization name, website, and a brief description. Add your contact information, including business email and address. Finally, set up your administrator account with credentials. Click submit, and there you go! Your organization is successfully registered. Next, we\'ll show you how to create projects.'
     },
     {
         'slide': 3,
-        'title': 'Projects & Tracks',
-        'text': 'Now, let\'s talk about structure. Projects let you organize related courses, think Web Development Bootcamp or Data Science Foundations. Tracks? They\'re your secret weapon for personalization. Create customized learning paths for beginners, intermediates, or advanced students, all within the same program. One platform, infinite possibilities.'
+        'title': 'Organization Admin Dashboard',
+        'text': 'Let\'s log in as the organization admin we just created. First, navigate to the home page and click the Login button in the header. Now, enter the email address: sarah at acmelearning dot edu. Then enter the password. Click the login button to sign in. Notice the user icon in the header changes to show you\'re logged in. You\'re now redirected to your organization admin dashboard. From here, you can manage everything. Notice the purple AI assistant button in the bottom right corner - you can use it to manage your organization through natural language instead of filling out forms. Let\'s create a new project. Click Create New Project, enter the project name and description, then click Create. Your project is ready! You can edit or delete projects anytime. Now, let\'s change which project we\'re viewing. Click the Current Project dropdown and select Data Science Foundations. Notice how the metrics update instantly. The Tracks metric shows how many learning paths are in this project. The Instructors metric shows your teaching team. And Students shows total enrollment. Click on Tracks to see all learning paths. Click on Members to manage your team. Click Settings to configure the project. Next, we\'ll show you how to create tracks for your project.'
     },
     {
         'slide': 4,
+        'title': 'Creating Tracks',
+        'text': 'Now let\'s create a learning track. We\'re already viewing the Tracks tab from the previous slide. Click the Create New Track button. This opens the track creation form. First, enter the track name: Python Fundamentals. Next, select the project. Choose Data Science Foundations from the dropdown. Then select the level. We\'ll make this a Beginner track. Now add a description: Learn Python basics for data science. Click Create Track, and there you go! Your track is created. Tracks let you organize courses into structured learning paths at different skill levels. Students can follow these tracks from beginner to advanced. Next, we\'ll show you the AI assistant in action.'
+    },
+    {
+        'slide': 5,
+        'title': 'AI Assistant - Natural Language Management',
+        'text': 'Instead of filling out forms, you can simply tell our AI assistant what you need. Watch how easy it is. Click the purple AI assistant button in the bottom right corner. The chat panel slides up. Now, just describe what you want in plain English. Type: Create an intermediate track called Machine Learning Basics for the Data Science project. The AI understands your request instantly. It confirms the details and creates the track for you. No forms to fill out. No dropdowns to navigate. Just natural conversation. The AI assistant can help you create projects, manage tracks, onboard instructors, and generate course content. It\'s like having an expert teammate available twenty-four seven. Next, we\'ll show you how to add instructors to your organization.'
+    },
+    {
+        'slide': 6,
         'title': 'Adding Instructors',
         'text': 'Your instructors are your greatest asset. Bring them onboard in seconds, assign them to specific projects or tracks, and they\'re instantly connected to your Slack or Teams channels for seamless collaboration. Whether it\'s co-developing courses with colleagues or running independent programs, everything integrates with the tools your team already uses.'
     },
     {
-        'slide': 5,
-        'title': 'Instructor Dashboard',
-        'text': 'Here\'s where the AI magic happens. Tell our system your learning objectives, your target audience, and your key topics. Then watch as artificial intelligence generates a complete course structure, suggested modules, learning outcomes, even quiz questions. You review, refine, and approve. What used to take days of curriculum design now takes minutes. And when you schedule live sessions? Automatic Zoom or Teams integration means one click launches your class.'
-    },
-    {
-        'slide': 6,
-        'title': 'Course Content',
-        'text': 'Here\'s where AI really shines. Need lesson content? Describe your topic and the AI generates a complete lesson draft, you just add your expertise and real-world examples. Creating quizzes? AI suggests questions based on your content, multiple choice, code challenges, scenario-based problems. You spend your time refining and personalizing, not starting from scratch. Upload presentations, embed videos, add code exercises with real-time feedback. The AI accelerates creation, you ensure quality.'
-    },
-    {
         'slide': 7,
-        'title': 'Enroll Students',
-        'text': 'Your course is ready, now it\'s time to welcome your students. One student? Easy. One hundred students? Even easier. Upload a CSV file and enroll an entire cohort in seconds. Organize by section, group by skill level, track by semester. However you teach, we adapt. Because managing students should be effortless, not exhausting.'
+        'title': 'Instructor Dashboard',
+        'text': 'Instructors have powerful AI tools at their fingertips. Tell the system your learning objectives, your target audience, and your key topics. Then watch as artificial intelligence generates a complete course structure, suggested modules, learning outcomes, even quiz questions. You review, refine, and approve. What used to take days of curriculum design now takes minutes. And when you schedule live sessions? Automatic Zoom or Teams integration means one click launches your class.'
     },
     {
         'slide': 8,
+        'title': 'Course Content',
+        'text': 'AI accelerates content creation. Need lesson content? Describe your topic and the AI generates a complete lesson draft, you just add your expertise and real-world examples. Creating quizzes? AI suggests questions based on your content, multiple choice, code challenges, scenario-based problems. You spend your time refining and personalizing, not starting from scratch. Upload presentations, embed videos, add code exercises with real-time feedback. The AI accelerates creation, you ensure quality.'
+    },
+    {
+        'slide': 9,
+        'title': 'Enroll Students',
+        'text': 'Your course is ready, now it\'s time to welcome your students. One student? Easy. One hundred students? Even easier. Upload a CSV file and enroll an entire locations in seconds. Organize by section, group by skill level, track by semester. However you teach, we adapt. Because managing students should be effortless, not exhausting.'
+    },
+    {
+        'slide': 10,
         'title': 'Student Dashboard',
         'text': 'Now let\'s see what your students experience. They log in and immediately, everything they need is right there. Their courses, their progress, upcoming deadlines, recent achievements. No confusion, no hunting for information. Just a clear path forward and the motivation to keep going.'
     },
     {
-        'slide': 9,
+        'slide': 11,
         'title': 'Course Browsing',
-        'text': 'Here\'s where things get really exciting. Students browse the catalog, discover courses, and enroll with one click. But here\'s the game changer for technical training. When they hit a coding lesson? Professional development environments open right in their browser. VSCode for web development, PyCharm for Python, JupyterLab for data science, full Linux terminal for system administration. No installation, no configuration, no IT headaches. This is why corporate training teams choose us, their developers learn with real professional tools, no setup time wasted.'
+        'text': 'Students browse the catalog, discover courses, and enroll with one click. The game changer for technical training? When they hit a coding lesson, professional development environments open right in their browser. VSCode for web development, PyCharm for Python, JupyterLab for data science, full Linux terminal for system administration. No installation, no configuration, no IT headaches. This is why corporate training teams choose us, their developers learn with real professional tools, no setup time wasted.'
     },
     {
-        'slide': 10,
+        'slide': 12,
         'title': 'Taking Quizzes',
         'text': 'Assessment shouldn\'t feel like a gotcha moment, it should be a learning opportunity. Our quiz system delivers multiple question formats, multiple choice for quick checks, coding challenges for hands-on validation, short answer for deeper understanding. But here\'s what matters most, instant feedback. Not just a score, but detailed explanations that turn mistakes into mastery. Because real learning happens when students understand why.'
     },
     {
-        'slide': 11,
+        'slide': 13,
         'title': 'Student Progress',
         'text': 'Progress should be visible and celebrated. Every quiz completed, every module mastered, every achievement unlocked. Students see their journey unfold in real time. Completion rates, quiz scores, time invested, it all adds up to something powerful, proof of growth. And that\'s what keeps them coming back.'
     },
     {
-        'slide': 12,
+        'slide': 14,
         'title': 'Instructor Analytics',
-        'text': 'Here\'s where we go beyond basic LMS reporting. Our AI-powered analytics don\'t just show you data, they surface insights. Which students are at risk of falling behind? AI flags them automatically. What content drives the most engagement? AI identifies patterns across all your courses. Which quiz questions are too easy or too hard? AI analyzes performance trends and suggests adjustments. Export reports to Slack or Teams so your entire training team stays informed. This isn\'t just analytics, it\'s intelligent course optimization.'
+        'text': 'We go beyond basic LMS reporting. Our AI-powered analytics don\'t just show you data, they surface insights. Which students are at risk of falling behind? AI flags them automatically. What content drives the most engagement? AI identifies patterns across all your courses. Which quiz questions are too easy or too hard? AI analyzes performance trends and suggests adjustments. Export reports to Slack or Teams so your entire training team stays informed. This isn\'t just analytics, it\'s intelligent course optimization.'
     },
     {
-        'slide': 13,
+        'slide': 15,
         'title': 'Summary & Next Steps',
         'text': 'So that\'s Course Creator Platform. AI handles course development, content generation, and intelligent analytics. Your team works inside Slack, Teams, and Zoom, and everything integrates seamlessly. Whether you\'re building corporate training programs or teaching as an independent instructor, we turn weeks of work into minutes of guided setup. Ready to see it in action? Visit our site to get started.'
     }

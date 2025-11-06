@@ -589,7 +589,7 @@ class TestCourseSearchFilters(BaseTest):
         Improves user experience by reducing failed searches due to typos,
         leading to higher course discovery and enrollment rates.
         """
-        login_page = LoginPage(self.driver)
+        login_page = LoginPage(self.driver, self.config)
         search_page = CourseSearchPage(self.driver)
 
         # Step 1: Create test courses
@@ -706,7 +706,7 @@ class TestCourseSearchFilters(BaseTest):
         Enables students to follow favorite instructors and enroll in
         all their courses, improving student retention and satisfaction.
         """
-        login_page = LoginPage(self.driver)
+        login_page = LoginPage(self.driver, self.config)
         filters_page = CourseFiltersPage(self.driver)
         search_page = CourseSearchPage(self.driver)
 
@@ -819,7 +819,7 @@ class TestCourseSearchFilters(BaseTest):
         Ensures data privacy compliance and prevents competitive
         intelligence leaks in multi-tenant SaaS environment.
         """
-        login_page = LoginPage(self.driver)
+        login_page = LoginPage(self.driver, self.config)
         filters_page = CourseFiltersPage(self.driver)
         search_page = CourseSearchPage(self.driver)
 
@@ -961,7 +961,7 @@ class TestCourseSearchFilters(BaseTest):
         Improves student experience by showing only enrollable courses,
         reducing frustration and support tickets for full/closed courses.
         """
-        login_page = LoginPage(self.driver)
+        login_page = LoginPage(self.driver, self.config)
         filters_page = CourseFiltersPage(self.driver)
         search_page = CourseSearchPage(self.driver)
         list_page = CourseListPage(self.driver)
@@ -1119,7 +1119,7 @@ class TestCourseSearchFilters(BaseTest):
         Helps students discover high-quality popular courses, increasing
         enrollment in top courses and improving platform engagement metrics.
         """
-        login_page = LoginPage(self.driver)
+        login_page = LoginPage(self.driver, self.config)
         list_page = CourseListPage(self.driver)
         search_page = CourseSearchPage(self.driver)
 

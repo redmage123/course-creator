@@ -26,7 +26,6 @@
  * - Accessible: Proper color contrast and keyboard navigation
  * - Performance: Lightweight DOM manipulation and memory management
  */
-
 export class NotificationManager {
     /**
      * NOTIFICATION MANAGER CONSTRUCTOR
@@ -358,13 +357,6 @@ const notificationManager = new NotificationManager();
  * - showError('Failed to save changes')
  * - showWarning('Session will expire in 5 minutes')
  * - showInfo('New features available')
- */
-
-/**
- * GENERAL NOTIFICATION FUNCTION
- * @param {string} message - Notification message
- * @param {string} type - Notification type ('success', 'error', 'warning', 'info')
- * @param {object} options - Additional options (title, timeout, etc.)
  */
 export function showNotification(message, type = 'info', options = {}) {
     return notificationManager.show(message, type, options);

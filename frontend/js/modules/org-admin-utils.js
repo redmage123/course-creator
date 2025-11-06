@@ -11,21 +11,6 @@
  *
  * @module org-admin-utils
  */
-
-/**
- * Escape HTML to prevent XSS attacks
- *
- * SECURITY:
- * Critical function to prevent Cross-Site Scripting (XSS) vulnerabilities
- * by converting special HTML characters to their entity equivalents
- *
- * @param {string} text - Raw text that may contain HTML special characters
- * @returns {string} HTML-safe string with special characters escaped
- *
- * @example
- * escapeHtml('<script>alert("xss")</script>')
- * // Returns: '&lt;script&gt;alert("xss")&lt;/script&gt;'
- */
 export function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -230,8 +215,35 @@ function getNotificationIcon(type) {
  */
 export function openModal(modalId) {
     const modal = document.getElementById(modalId);
+    console.log('openModal called for:', modalId, 'found:', !!modal);
     if (modal) {
-        modal.style.display = 'block';
+        console.log('Adding show class to modal');
+        modal.classList.add('show');
+
+        // Explicitly show the modal
+        modal.style.display = 'flex';
+
+        // Show overlay if present
+        const overlay = modal.querySelector('.modal-overlay');
+        if (overlay) {
+            overlay.style.display = 'block';
+        }
+
+        console.log('Modal classes:', modal.className);
+
+        // Initialize all date inputs within the modal to current date
+        // This makes it easier for users to select dates relative to today
+        const dateInputs = modal.querySelectorAll('input[type="date"]');
+        if (dateInputs.length > 0) {
+            const currentDate = getCurrentDateString();
+            dateInputs.forEach(input => {
+                // Only set if the input doesn't already have a value
+                if (!input.value) {
+                    input.value = currentDate;
+                }
+            });
+        }
+
         // Prevent body scroll when modal is open
         document.body.style.overflow = 'hidden';
     } else {
@@ -292,15 +304,39 @@ export function hideLoading() {
 export function closeModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
+        modal.classList.remove('show');
+
+        // Explicitly hide the modal to prevent black screen
         modal.style.display = 'none';
+
         // Re-enable body scroll
         document.body.style.overflow = 'auto';
+
+        // Hide any modal overlays/backdrops
+        const overlay = modal.querySelector('.modal-overlay');
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
 
         // Reset form if it exists within the modal
         const form = modal.querySelector('form');
         if (form) {
             form.reset();
         }
+
+        // Restore floating dashboard AI Assistant when project modal closes
+        if (modalId === 'createProjectModal') {
+            const dashboardAI = document.getElementById('dashboardAIChatPanel');
+            if (dashboardAI) {
+                dashboardAI.style.display = '';
+            }
+            const aiButton = document.getElementById('aiAssistantButton');
+            if (aiButton) {
+                aiButton.style.display = '';
+            }
+        }
+
+        console.log(`✅ Modal '${modalId}' closed successfully`);
     }
 }
 
@@ -341,6 +377,11 @@ export function validateEmail(email) {
 export function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
+    /**
+     * EXECUTE LATER OPERATION
+     * PURPOSE: Execute later operation
+     * WHY: Implements required business logic for system functionality
+     */
         const later = () => {
             clearTimeout(timeout);
             func(...args);
@@ -411,4 +452,79 @@ export function hasPermission(permission, currentUser) {
     }
 
     return false;
+}
+
+/**
+ * Calculate project status based on current date and project dates
+ *
+ * BUSINESS LOGIC:
+ * Projects automatically transition through lifecycle stages based on their
+ * start and end dates. This ensures accurate status reporting and prevents
+ * projects from appearing "active" when they've already ended.
+ *
+ * Status transitions:
+ * - draft: No start/end dates configured yet
+ * - planned: Dates set, but start date is in the future
+ * - active: Currently between start and end dates
+ * - completed: Past the end date (inactive)
+ *
+ * @param {Object} project - Project object with start_date and end_date
+ * @returns {string} Calculated status: 'draft', 'planned', 'active', or 'completed'
+ *
+ * @example
+ * calculateProjectStatus({ start_date: '2025-01-01', end_date: '2025-12-31' })
+ * // Returns: 'active' (if current date is in 2025)
+ *
+ * calculateProjectStatus({ start_date: '2024-01-01', end_date: '2024-12-31' })
+ * // Returns: 'completed' (if current date is after 2024)
+ */
+export function calculateProjectStatus(project) {
+    // If no dates set, keep as draft
+    if (!project.start_date || !project.end_date) {
+        return 'draft';
+    }
+
+    const now = new Date();
+    const startDate = new Date(project.start_date);
+    const endDate = new Date(project.end_date);
+
+    // Normalize dates to midnight for accurate day-based comparison
+    now.setHours(0, 0, 0, 0);
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+
+    // Project hasn't started yet
+    if (now < startDate) {
+        return 'planned';
+    }
+
+    // Project has ended (INACTIVE - as requested by user)
+    if (now > endDate) {
+        return 'completed';
+    }
+
+    // Project is currently running
+    return 'active';
+}
+
+/**
+ * Get current date in YYYY-MM-DD format for date inputs
+ *
+ * BUSINESS CONTEXT:
+ * Provides standardized current date string for initializing HTML5 date inputs.
+ * Makes it easier for users to select dates relative to today by pre-selecting
+ * the current date in calendar widgets.
+ *
+ * @returns {string} Current date in YYYY-MM-DD format
+ *
+ * @example
+ * getCurrentDateString()
+ * // Returns: '2025-10-19' (if today is October 19, 2025)
+ */
+export function getCurrentDateString() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
 }

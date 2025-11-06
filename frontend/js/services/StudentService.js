@@ -15,10 +15,14 @@
  * - Authentication integration
  * - Configuration-based endpoints
  */
-
 import { Auth } from '../modules/auth.js';
 
 export class StudentService {
+    /**
+     * INITIALIZE CLASS INSTANCE WITH DEFAULT STATE
+     * PURPOSE: Initialize class instance with default state
+     * WHY: Establishes initial state required for class functionality
+     */
     constructor() {
         this.baseUrl = window.CONFIG?.API_URLS?.USER_MANAGEMENT || 'https://localhost:8000';
     }

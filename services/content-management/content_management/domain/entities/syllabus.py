@@ -9,8 +9,26 @@ from content_management.domain.entities.base_content import BaseContent, Content
 
 
 class SyllabusModule:
-    """Syllabus module value object"""
-    
+    """
+    Syllabus module value object representing weekly course content organization.
+
+    BUSINESS REQUIREMENT:
+    Course syllabi require structured weekly module organization with clear
+    learning outcomes, topic coverage, and time allocation for effective
+    course planning and student expectation management.
+
+    EDUCATIONAL DESIGN:
+    Implements backward design principles with learning outcomes driving
+    content organization, proper time allocation for realistic planning,
+    and clear topic definition for student preparation.
+
+    VALIDATION FRAMEWORK:
+    - Module title and description completeness
+    - Week number logical sequencing
+    - At least one topic per module
+    - Learning outcomes alignment
+    """
+
     def __init__(
         self,
         title: str,
@@ -53,8 +71,26 @@ class SyllabusModule:
 
 
 class GradingScheme:
-    """Grading scheme value object"""
-    
+    """
+    Grading scheme value object with weight allocation and validation.
+
+    BUSINESS REQUIREMENT:
+    Transparent grading schemes require clear component weighting,
+    mathematical accuracy (weights sum to 100%), and fair distribution
+    for student clarity and institutional accountability.
+
+    EDUCATIONAL DESIGN:
+    Implements criterion-referenced grading with multiple assessment
+    components (quizzes, labs, projects, exams) weighted according to
+    pedagogical priorities and learning outcome emphasis.
+
+    VALIDATION FRAMEWORK:
+    - Component weights must sum to exactly 100%
+    - Individual weights must be between 0-100%
+    - At least one grading component required
+    - Floating-point precision tolerance for calculations
+    """
+
     def __init__(self, components: Dict[str, float]):
         self.components = components
         self.validate()
@@ -83,10 +119,43 @@ class GradingScheme:
 
 class Syllabus(BaseContent):
     """
-    Syllabus domain entity following SOLID principles
-    Single Responsibility: Syllabus-specific business logic
+    Syllabus domain entity - comprehensive course planning and communication tool.
+
+    BUSINESS REQUIREMENT:
+    Course syllabi serve as contractual documents between institution and students,
+    requiring comprehensive course information, clear learning objectives, detailed
+    module organization, grading schemes, policies, and schedule information for
+    effective course management and student success.
+
+    EDUCATIONAL METHODOLOGY:
+    Implements backward design principles starting with learning objectives,
+    structured module progression, transparent assessment methods, fair grading
+    schemes, clear policies, and comprehensive resource provision.
+
+    TECHNICAL IMPLEMENTATION:
+    - Extends BaseContent for lifecycle management
+    - Aggregates SyllabusModule value objects
+    - Uses GradingScheme for weight management
+    - Validates required course information fields
+    - Provides completeness checking and analytics
+
+    DOMAIN OPERATIONS:
+    - Module management (add, remove, retrieve)
+    - Learning objective management
+    - Grading scheme configuration
+    - Assessment method definition
+    - Policy updates and textbook management
+    - Course hours calculation and validation
+
+    INSTITUTIONAL COMPLIANCE:
+    - Required course information fields (code, name, credits)
+    - Learning objectives documentation
+    - Assessment method transparency
+    - Grading scheme clarity
+    - Policy communication
+    - Academic integrity standards
     """
-    
+
     def __init__(
         self,
         title: str,

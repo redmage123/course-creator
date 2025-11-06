@@ -1,3 +1,39 @@
+"""
+Pydantic Schema Definitions for User Management Service API.
+
+This module defines all Data Transfer Objects (DTOs) used for API request validation
+and response serialization in the User Management Service. Schemas provide type safety,
+automatic validation, and API documentation through FastAPI's integration with Pydantic.
+
+Business Context:
+Schemas serve as the contract between the API and clients, ensuring data integrity
+and validation at the API boundary. They separate external API representation from
+internal domain models, following the Interface Segregation Principle.
+
+Technical Rationale:
+- Uses Pydantic for automatic validation and serialization
+- Separates request/response models for API versioning flexibility
+- Provides clear validation rules (min/max length, email format, etc.)
+- Generates OpenAPI/Swagger documentation automatically
+- Supports partial updates through optional fields
+
+Why Pydantic:
+- Runtime type validation with detailed error messages
+- Automatic JSON serialization/deserialization
+- Integration with FastAPI for API docs generation
+- Immutable models prevent accidental modification
+- Excellent performance through Rust-based validation (pydantic v2)
+
+Schema Organization:
+- Base schemas: Common fields and configurations
+- Create schemas: Required fields for resource creation
+- Update schemas: Optional fields for partial updates
+- Response schemas: Complete resource representation with metadata
+
+Author: Course Creator Platform Team
+Version: 2.3.0
+Last Updated: 2025-08-02
+"""
 from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
@@ -5,6 +41,20 @@ from pydantic import BaseModel, EmailStr, Field, constr
 
 # Base Models
 class BaseSchema(BaseModel):
+    """
+    Base schema with common timestamp fields.
+
+    Business Context:
+    Provides audit trail timestamps for all resources, enabling temporal queries
+    and compliance with data retention policies (GDPR Article 17).
+
+    Attributes:
+        created_at (datetime): Resource creation timestamp (UTC)
+        updated_at (datetime): Last modification timestamp (UTC)
+
+    Configuration:
+        orm_mode: Enables compatibility with SQLAlchemy ORM models
+    """
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 

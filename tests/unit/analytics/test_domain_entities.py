@@ -13,8 +13,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / 'services' / 'analytics'))
 
 from analytics.domain.entities.student_analytics import (
-    StudentActivity, LabUsageMetrics, QuizPerformance, StudentProgress, 
-    LearningAnalytics, ActivityType, ContentType, RiskLevel, ProgressStatus
+    StudentActivity, LabUsageMetrics, QuizPerformance, StudentProgress,
+    LearningAnalytics, ActivityType, ContentType, RiskLevel, CompletionStatus
 )
 
 
@@ -429,7 +429,7 @@ class TestStudentProgress:
         assert progress.content_item_id == content_item_id
         assert progress.content_type == content_type
         assert progress.progress_percentage == 0.0
-        assert progress.status == ProgressStatus.NOT_STARTED
+        assert progress.status == CompletionStatus.NOT_STARTED
         assert progress.first_accessed is not None
         assert progress.last_accessed is not None
         assert isinstance(progress.id, str)
@@ -451,7 +451,7 @@ class TestStudentProgress:
         # Assert
         assert progress.progress_percentage == 75.5
         assert progress.time_spent_minutes == 2.0  # 120 seconds = 2 minutes
-        assert progress.status == ProgressStatus.IN_PROGRESS
+        assert progress.status == CompletionStatus.IN_PROGRESS
         assert progress.last_accessed > original_last_accessed
     
     def test_student_progress_update_progress_with_invalid_percentage_raises_error(self):
@@ -483,7 +483,7 @@ class TestStudentProgress:
         
         # Assert
         assert progress.progress_percentage == 100.0
-        assert progress.status == ProgressStatus.COMPLETED
+        assert progress.status == CompletionStatus.COMPLETED
         assert progress.completion_date is not None
     
     def test_student_progress_mark_mastered_success(self):
@@ -501,7 +501,7 @@ class TestStudentProgress:
         progress.mark_mastered(mastery_score)
         
         # Assert
-        assert progress.status == ProgressStatus.MASTERED
+        assert progress.status == CompletionStatus.MASTERED
         assert progress.mastery_score == mastery_score
         assert progress.mastery_date is not None
     
@@ -723,8 +723,8 @@ class TestEnums:
         assert RiskLevel.CRITICAL.value == "critical"
     
     def test_progress_status_enum_values(self):
-        """Test ProgressStatus enum has expected values"""
-        assert ProgressStatus.NOT_STARTED.value == "not_started"
-        assert ProgressStatus.IN_PROGRESS.value == "in_progress"
-        assert ProgressStatus.COMPLETED.value == "completed"
-        assert ProgressStatus.MASTERED.value == "mastered"
+        """Test CompletionStatus enum has expected values"""
+        assert CompletionStatus.NOT_STARTED.value == "not_started"
+        assert CompletionStatus.IN_PROGRESS.value == "in_progress"
+        assert CompletionStatus.COMPLETED.value == "completed"
+        assert CompletionStatus.MASTERED.value == "mastered"

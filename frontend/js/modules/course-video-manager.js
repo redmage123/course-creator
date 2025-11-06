@@ -10,7 +10,6 @@
  * - Provides progress tracking for large file uploads
  * - Maintains video ordering for structured curriculum
  */
-
 // Temporary storage for videos before course is created
 let courseVideos = [];
 
@@ -479,6 +478,13 @@ if (typeof module !== 'undefined' && module.exports) {
         initializeVideoManager,
         uploadCourseVideos,
         clearCourseVideos,
+    /**
+     * RETRIEVE COURSE VIDEOS INFORMATION
+     * PURPOSE: Retrieve course videos information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
         getCourseVideos: () => courseVideos
     };
 }

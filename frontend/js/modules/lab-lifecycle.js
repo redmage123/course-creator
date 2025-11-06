@@ -2,10 +2,21 @@
  * Lab Lifecycle Manager
  * Handles automatic lab container lifecycle management based on user authentication events
  */
-
 import { showNotification } from './notifications.js';
 
 class LabLifecycleManager {
+    /**
+     * Creates a new LabLifecycleManager instance for managing student lab containers.
+     *
+     * Initializes lab management system that automatically handles container lifecycle based on
+     * user authentication events (login, logout, tab switching). Manages lab state tracking,
+     * health monitoring, and automatic pause/resume.
+     *
+     * WHY: Students need persistent lab environments that survive page reloads and resume automatically
+     * when returning to the platform, while conserving resources by pausing inactive labs.
+     *
+     * @constructor
+     */
     constructor() {
         // Use global CONFIG (loaded via script tag in HTML)
         this.labApiBase = window.CONFIG?.API_URLS?.LAB_MANAGER || 'http://localhost:8006';
@@ -17,7 +28,18 @@ class LabLifecycleManager {
     }
 
     /**
-     * Initialize the lab lifecycle manager
+     * Initializes the lab lifecycle manager for a specific user.
+     *
+     * Loads enrolled courses, initializes lab containers for each course, starts health check
+     * monitoring, and sets up window unload handlers. Only initializes once per session.
+     *
+     * WHY: Automatic initialization ensures students have lab environments ready when they need them,
+     * without requiring manual setup or understanding of container management.
+     *
+     * @param {Object} user - The authenticated user object
+     * @param {string|number} user.id - User identifier
+     * @param {string} user.email - User email address
+     * @returns {Promise<void>}
      */
     async initialize(user) {
         if (this.isInitialized) {
@@ -47,7 +69,16 @@ class LabLifecycleManager {
     }
 
     /**
-     * Load enrolled courses for the current user
+     * Loads the list of courses the current user is enrolled in.
+     *
+     * Fetches enrolled courses from localStorage or API. Falls back to empty array if
+     * authentication token is missing or fetch fails.
+     *
+     * WHY: The system needs to know which courses the user is enrolled in to create and manage
+     * the appropriate lab containers - one container per enrolled course.
+     *
+     * @returns {Promise<void>}
+     * @throws {Error} If no authentication token is found
      */
     async loadEnrolledCourses() {
         try {
@@ -74,7 +105,15 @@ class LabLifecycleManager {
     }
 
     /**
-     * Initialize labs for all enrolled courses
+     * Initializes lab containers for all enrolled courses.
+     *
+     * Iterates through enrolled courses and creates/retrieves lab container for each.
+     * Handles failures gracefully by logging errors but continuing with remaining courses.
+     *
+     * WHY: Students need lab environments ready for all their courses, not just the current one.
+     * Parallel initialization during login ensures labs are available when needed.
+     *
+     * @returns {Promise<void>}
      */
     async initializeUserLabs() {
         if (!this.currentUser || this.enrolledCourses.length === 0) {
@@ -92,7 +131,16 @@ class LabLifecycleManager {
     }
 
     /**
-     * Get or create a student lab for a specific course
+     * Gets an existing lab container or creates a new one for a specific course.
+     *
+     * Sends POST request to lab manager API with user ID and course ID. Stores lab data in
+     * activeLabs map and shows notification based on status. Polls for completion if building.
+     *
+     * WHY: Lab containers must be created on-demand per course/user combination. This method
+     * ensures idempotency - calling multiple times won't create duplicate containers.
+     *
+     * @param {string|number} courseId - The course identifier to get/create lab for
+     * @returns {Promise<Object|null>} The lab data object, or null if creation failed
      */
     async getOrCreateStudentLab(courseId) {
         try {
@@ -137,12 +185,31 @@ class LabLifecycleManager {
     }
 
     /**
-     * Poll lab status until it's ready
+     * Polls a building lab's status until it's running or encounters an error.
+     *
+     * Checks lab status every 10 seconds with maximum 30 attempts (5 minutes total).
+     * Shows notifications when lab becomes ready, errors, or times out.
+     *
+     * WHY: Lab container builds can take 30-120 seconds. Polling provides feedback to users
+     * and updates internal state when containers become available.
+     *
+     * @param {string} labId - The lab identifier to poll
+     * @param {string|number} courseId - The course identifier for user notification
+     * @returns {Promise<void>}
      */
     async pollLabStatus(labId, courseId) {
         const maxAttempts = 30; // 5 minutes with 10-second intervals
         let attempts = 0;
 
+    /**
+     * EXECUTE CHECKSTATUS OPERATION
+     * PURPOSE: Execute checkStatus operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
         const checkStatus = async () => {
             try {
                 const response = await fetch(`${this.labApiBase}/labs/${labId}`, {
@@ -180,7 +247,15 @@ class LabLifecycleManager {
     }
 
     /**
-     * Pause all active labs (called on logout or window unload)
+     * Pauses all currently running lab containers.
+     *
+     * Sends pause requests to all running labs in parallel using Promise.allSettled.
+     * Updates local state to reflect paused status. Called on logout or long inactivity.
+     *
+     * WHY: Running containers consume significant server resources. Pausing inactive labs
+     * preserves student work while freeing resources for active users.
+     *
+     * @returns {Promise<void>}
      */
     async pauseAllLabs() {
 
@@ -209,7 +284,15 @@ class LabLifecycleManager {
     }
 
     /**
-     * Resume all paused labs (called on login)
+     * Resumes all paused lab containers.
+     *
+     * Sends resume requests to all paused labs in parallel using Promise.allSettled.
+     * Updates local state to reflect running status. Called on login or tab re-focus.
+     *
+     * WHY: Students expect their lab environment to resume where they left off. Auto-resume
+     * eliminates manual restart steps and provides seamless user experience.
+     *
+     * @returns {Promise<void>}
      */
     async resumeAllLabs() {
 
@@ -238,7 +321,16 @@ class LabLifecycleManager {
     }
 
     /**
-     * Get lab access URL for a specific course
+     * Returns the access URL for a course's lab container if running.
+     *
+     * Retrieves the lab's access URL from the activeLabs map. Returns null if lab doesn't
+     * exist, has no URL, or is not in running state.
+     *
+     * WHY: Lab containers are accessed via unique URLs (typically VS Code Server or JupyterLab).
+     * This method provides safe access to URLs only when labs are ready.
+     *
+     * @param {string|number} courseId - The course identifier
+     * @returns {string|null} The lab access URL, or null if not available
      */
     getLabAccessUrl(courseId) {
         const lab = this.activeLabs[courseId];
@@ -249,7 +341,16 @@ class LabLifecycleManager {
     }
 
     /**
-     * Check if lab is ready for a specific course
+     * Checks if a course's lab container is ready to use.
+     *
+     * Returns true only if the lab exists and has status 'running'. Used to enable/disable
+     * lab access buttons and show appropriate UI states.
+     *
+     * WHY: UI needs to know lab state to show accurate status (ready, building, paused, error)
+     * and prevent users from trying to access labs that aren't running.
+     *
+     * @param {string|number} courseId - The course identifier
+     * @returns {boolean} True if lab is running and ready, false otherwise
      */
     isLabReady(courseId) {
         const lab = this.activeLabs[courseId];
@@ -257,7 +358,16 @@ class LabLifecycleManager {
     }
 
     /**
-     * Get lab status for a specific course
+     * Returns the current status of a course's lab container.
+     *
+     * Returns the lab's status string ('running', 'paused', 'building', 'error', or 'not_created').
+     * Used for displaying lab status indicators and conditional logic.
+     *
+     * WHY: Different lab states require different UI treatments and user messaging. This method
+     * provides a single source of truth for lab status throughout the application.
+     *
+     * @param {string|number} courseId - The course identifier
+     * @returns {string} The lab status ('running', 'paused', 'building', 'error', 'not_created')
      */
     getLabStatus(courseId) {
         const lab = this.activeLabs[courseId];
@@ -265,7 +375,15 @@ class LabLifecycleManager {
     }
 
     /**
-     * Start periodic health checks for all active labs
+     * Starts periodic health checks for all active lab containers.
+     *
+     * Sets up an interval that runs health checks every 5 minutes. Helps detect and
+     * respond to container failures, network issues, or resource problems.
+     *
+     * WHY: Lab containers can fail silently due to OOM errors, network issues, or Docker problems.
+     * Regular health checks detect failures early so users can be notified and containers restarted.
+     *
+     * @returns {void}
      */
     startLabHealthChecks() {
         // Check lab health every 5 minutes
@@ -276,7 +394,15 @@ class LabLifecycleManager {
     }
 
     /**
-     * Stop lab health checks
+     * Stops the periodic health check interval.
+     *
+     * Clears the health check interval when manager is cleaned up or user logs out.
+     * Prevents memory leaks from continued polling after user session ends.
+     *
+     * WHY: Intervals must be explicitly cleared to prevent memory leaks and unnecessary
+     * network requests after the lab manager is no longer needed.
+     *
+     * @returns {void}
      */
     stopLabHealthChecks() {
         if (this.labCheckInterval) {
@@ -286,7 +412,15 @@ class LabLifecycleManager {
     }
 
     /**
-     * Perform health check on all active labs
+     * Performs a health check on all active lab containers.
+     *
+     * Fetches current status for each lab from the API and updates local state.
+     * Logs warnings for failed health checks but continues checking remaining labs.
+     *
+     * WHY: Container state can change outside this manager (manual intervention, crashes, etc.).
+     * Health checks ensure local state stays synchronized with actual container state.
+     *
+     * @returns {Promise<void>}
      */
     async performLabHealthCheck() {
 
@@ -311,7 +445,15 @@ class LabLifecycleManager {
     }
 
     /**
-     * Set up window unload handler to pause labs when user leaves
+     * Sets up event handlers for window unload and visibility changes.
+     *
+     * Registers beforeunload handler (browser close/navigation) to pause labs and visibilitychange
+     * handler (tab switching) to pause after 30 seconds of inactivity or resume when tab becomes visible.
+     *
+     * WHY: Labs should pause when students leave the platform to conserve resources, but resume
+     * automatically when they return for seamless workflow.
+     *
+     * @returns {void}
      */
     setupWindowUnloadHandler() {
         // Handle page unload (browser close, tab close, navigation)
@@ -337,7 +479,15 @@ class LabLifecycleManager {
     }
 
     /**
-     * Quick pause all labs using sendBeacon for reliability during page unload
+     * Quickly pauses all labs using sendBeacon for page unload scenarios.
+     *
+     * Uses navigator.sendBeacon instead of fetch because regular requests are often cancelled
+     * during page unload. SendBeacon ensures pause requests are sent even as page closes.
+     *
+     * WHY: Normal async requests don't complete during page unload. SendBeacon is specifically
+     * designed for sending analytics/cleanup data during unload and is more reliable.
+     *
+     * @returns {Promise<void>}
      */
     async quickPauseAllLabs() {
         const authToken = localStorage.getItem('authToken');
@@ -360,7 +510,15 @@ class LabLifecycleManager {
     }
 
     /**
-     * Clean up resources and pause all labs
+     * Cleans up all resources and pauses all labs.
+     *
+     * Stops health checks, pauses all labs, clears all state, and resets initialization flag.
+     * Called on logout or when manager is being destroyed.
+     *
+     * WHY: Proper cleanup prevents memory leaks, unnecessary network requests, and ensures
+     * clean state for next user session or manager re-initialization.
+     *
+     * @returns {Promise<void>}
      */
     async cleanup() {
         
@@ -375,7 +533,17 @@ class LabLifecycleManager {
     }
 
     /**
-     * Update enrolled courses (called when student enrolls in new course)
+     * Updates the enrolled courses list and initializes labs for new enrollments.
+     *
+     * Replaces the enrolled courses list and creates lab containers for any newly enrolled
+     * courses that don't already have active labs.
+     *
+     * WHY: When students enroll in new courses, their lab containers should be created
+     * automatically without requiring logout/login or manual initialization.
+     *
+     * @param {Array<Object>} courses - Array of course objects student is enrolled in
+     * @param {string|number} courses[].id - Course identifier
+     * @returns {Promise<void>}
      */
     async updateEnrolledCourses(courses) {
         this.enrolledCourses = courses;
@@ -389,7 +557,17 @@ class LabLifecycleManager {
     }
 
     /**
-     * Access a lab for a specific course
+     * Accesses a lab container, resuming it if paused, and returns the access URL.
+     *
+     * Checks lab exists, resumes it if paused, updates last access time, and returns the
+     * access URL. Throws errors if lab doesn't exist or isn't ready.
+     *
+     * WHY: Provides a single method for accessing labs that handles all necessary state
+     * transitions (pause to running) and validation before returning the URL.
+     *
+     * @param {string|number} courseId - The course identifier
+     * @returns {Promise<string>} The lab access URL
+     * @throws {Error} If lab not found or not ready
      */
     async accessLab(courseId) {
         const lab = this.activeLabs[courseId];
@@ -414,7 +592,17 @@ class LabLifecycleManager {
     }
 
     /**
-     * Resume a specific lab
+     * Resumes a specific paused lab container.
+     *
+     * Sends resume request to lab manager API, updates local state, and shows success
+     * notification. Throws error if resume fails.
+     *
+     * WHY: Sometimes only one lab needs to be resumed (user accessing specific course) rather
+     * than resuming all labs. This saves resources and reduces resume time.
+     *
+     * @param {string|number} courseId - The course identifier
+     * @returns {Promise<void>}
+     * @throws {Error} If lab not found or resume fails
      */
     async resumeSpecificLab(courseId) {
         const lab = this.activeLabs[courseId];
@@ -441,7 +629,16 @@ class LabLifecycleManager {
     }
 
     /**
-     * Update lab last accessed time
+     * Updates the last accessed timestamp for a lab container.
+     *
+     * Sends a GET request to the lab endpoint to update its last access time in the database.
+     * Used for auto-pause policies based on inactivity and usage analytics.
+     *
+     * WHY: Labs that haven't been accessed recently can be automatically paused or deleted
+     * to conserve resources. Access tracking enables intelligent resource management policies.
+     *
+     * @param {string} labId - The lab identifier
+     * @returns {Promise<void>}
      */
     async updateLabAccess(labId) {
         try {

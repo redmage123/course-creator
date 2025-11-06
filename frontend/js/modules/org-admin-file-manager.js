@@ -20,7 +20,6 @@
  *
  * @module org-admin-file-manager
  */
-
 import { FileExplorer } from './file-explorer.js';
 import { CONFIG } from '../config.js';
 
@@ -75,10 +74,26 @@ export function initOrgAdminFileExplorer(containerId, organizationId) {
         multiSelect: true,
 
         // Event callbacks
+    /**
+     * EVENT HANDLER FOR FILE SELECT EVENTS
+     * PURPOSE: Event handler for file select events
+     * WHY: Responds to user interactions and system events
+     *
+     * @param {*} file - File parameter
+     */
         onFileSelect: (file) => {
             console.log('File selected:', file);
         },
 
+    /**
+     * EVENT HANDLER FOR FILE DELETE EVENTS
+     * PURPOSE: Event handler for file delete events
+     * WHY: Responds to user interactions and system events
+     *
+     * @param {*} file - File parameter
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
         onFileDelete: (file) => {
             console.log('File deleted:', file);
             showNotification(`File "${file.filename}" deleted successfully`, 'success');
@@ -87,6 +102,16 @@ export function initOrgAdminFileExplorer(containerId, organizationId) {
             updateFileStats();
         },
 
+    /**
+     * EVENT HANDLER FOR FILE UPLOAD EVENTS
+     * PURPOSE: Event handler for file upload events
+     * WHY: Responds to user interactions and system events
+     *
+     * @param {*} response - Response parameter
+     * @param {*} file - File parameter
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
         onFileUpload: (response, file) => {
             console.log('File uploaded:', file);
             showNotification(`File "${file.name}" uploaded successfully`, 'success');
@@ -95,6 +120,13 @@ export function initOrgAdminFileExplorer(containerId, organizationId) {
             updateFileStats();
         },
 
+    /**
+     * EVENT HANDLER FOR ERROR EVENTS
+     * PURPOSE: Event handler for error events
+     * WHY: Responds to user interactions and system events
+     *
+     * @param {*} error - Error parameter
+     */
         onError: (error) => {
             console.error('File explorer error:', error);
             showNotification(error.message || 'An error occurred', 'error');

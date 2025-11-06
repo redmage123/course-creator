@@ -9,13 +9,37 @@ from enum import Enum
 import uuid
 
 class InteractionType(Enum):
-    CHAT = "chat"
-    EXERCISE_SUBMISSION = "exercise_submission"
-    QUIZ_ATTEMPT = "quiz_attempt"
-    LAB_SESSION = "lab_session"
-    PROGRESS_UPDATE = "progress_update"
+    """
+    Student Interaction Type Enumeration
+
+    BUSINESS REQUIREMENT:
+    Platform tracks different types of student interactions for personalized
+    learning paths and AI assistant context.
+
+    WHY: Enables analytics on which interaction types drive learning outcomes
+    """
+    CHAT = "chat"  # AI assistant conversations
+    EXERCISE_SUBMISSION = "exercise_submission"  # Code or text exercise submissions
+    QUIZ_ATTEMPT = "quiz_attempt"  # Quiz completion attempts
+    LAB_SESSION = "lab_session"  # Docker container lab sessions
+    PROGRESS_UPDATE = "progress_update"  # Manual progress checkpoints
 
 class ProgressLevel(Enum):
+    """
+    Student Progress Level Enumeration
+
+    BUSINESS REQUIREMENT:
+    Students progress through levels based on completion rate and quiz scores.
+    Levels determine content difficulty and AI assistant guidance style.
+
+    TECHNICAL IMPLEMENTATION:
+    - BEGINNER: <30% complete OR <60% avg quiz score
+    - INTERMEDIATE: 30-60% complete AND 60-75% avg quiz score
+    - ADVANCED: 60-80% complete AND 75-85% avg quiz score
+    - EXPERT: 80%+ complete AND 85%+ avg quiz score
+
+    WHY: Adaptive learning - adjusts content difficulty to student performance
+    """
     BEGINNER = "beginner"
     INTERMEDIATE = "intermediate"
     ADVANCED = "advanced"
@@ -23,22 +47,37 @@ class ProgressLevel(Enum):
 
 @dataclass
 class StudentProgress:
-    """Domain entity representing student progress in a course"""
-    course_id: str
-    student_id: str
-    completed_exercises: int
-    total_exercises: int
-    quiz_scores: List[float]
-    knowledge_areas: List[str]
-    current_level: ProgressLevel
-    last_activity: datetime
-    id: Optional[str] = None
-    strengths: List[str] = field(default_factory=list)
-    weaknesses: List[str] = field(default_factory=list)
-    learning_preferences: Dict[str, any] = field(default_factory=dict)
-    time_spent_minutes: int = 0
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    """
+    Student Progress Domain Entity - Tracks Learning Journey
+
+    BUSINESS REQUIREMENT:
+    Track student progress for adaptive learning, instructor analytics, and
+    personalized AI assistant interactions. Progress includes completion rates,
+    quiz scores, identified strengths/weaknesses, and time investment.
+
+    TECHNICAL IMPLEMENTATION:
+    - Auto-calculates progress level based on completion and quiz scores
+    - Tracks knowledge areas for skill mapping
+    - Identifies struggling students (needs_help) and high performers
+    - Integrates with AI for personalized content recommendations
+
+    WHY: Enables data-driven teaching and personalized learning experiences
+    """
+    course_id: str  # Course being tracked
+    student_id: str  # Student whose progress is tracked
+    completed_exercises: int  # Number of exercises completed
+    total_exercises: int  # Total exercises in course
+    quiz_scores: List[float]  # All quiz scores (0-100)
+    knowledge_areas: List[str]  # Topics student has studied
+    current_level: ProgressLevel  # Auto-calculated proficiency level
+    last_activity: datetime  # Last interaction timestamp
+    id: Optional[str] = None  # Auto-generated UUID
+    strengths: List[str] = field(default_factory=list)  # Identified strong areas
+    weaknesses: List[str] = field(default_factory=list)  # Identified weak areas
+    learning_preferences: Dict[str, any] = field(default_factory=dict)  # Learning style data
+    time_spent_minutes: int = 0  # Total time invested in course
+    created_at: Optional[datetime] = None  # Enrollment timestamp
+    updated_at: Optional[datetime] = None  # Last update timestamp
     
     def __post_init__(self):
         if not self.id:
@@ -134,11 +173,19 @@ class StudentProgress:
         self.updated_at = datetime.utcnow()
     
     def _update_level(self) -> None:
-        """Update student level based on progress and performance"""
+        """
+        Auto-calculate student proficiency level
+
+        BUSINESS REQUIREMENT:
+        Student level determines AI difficulty, content recommendations, and
+        instructor intervention priorities.
+
+        WHY: Adaptive learning - automatically adjusts to student performance
+        """
         completion_rate = self.get_completion_percentage()
         avg_quiz_score = self.get_average_quiz_score()
-        
-        # Simple level calculation logic
+
+        # Level calculation logic (see ProgressLevel enum for thresholds)
         if completion_rate >= 80 and avg_quiz_score >= 85:
             self.current_level = ProgressLevel.EXPERT
         elif completion_rate >= 60 and avg_quiz_score >= 75:
@@ -147,34 +194,63 @@ class StudentProgress:
             self.current_level = ProgressLevel.INTERMEDIATE
         else:
             self.current_level = ProgressLevel.BEGINNER
-    
+
     def needs_help(self) -> bool:
-        """Determine if student needs additional help"""
+        """
+        Identify students who need instructor intervention
+
+        Returns:
+            True if struggling (avg score <60% or <20% complete after 2+ quizzes)
+
+        WHY: Proactive student support - alerts instructors to at-risk students
+        """
         avg_score = self.get_average_quiz_score()
         completion_rate = self.get_completion_percentage()
-        
+
         return avg_score < 60 or (completion_rate < 20 and len(self.quiz_scores) >= 2)
-    
+
     def is_high_performer(self) -> bool:
-        """Determine if student is a high performer"""
+        """
+        Identify high-performing students for advanced content
+
+        Returns:
+            True if avg score ≥85% and completion ≥70%
+
+        WHY: Enables accelerated tracks and peer mentorship opportunities
+        """
         avg_score = self.get_average_quiz_score()
         completion_rate = self.get_completion_percentage()
-        
+
         return avg_score >= 85 and completion_rate >= 70
 
 @dataclass
 class ChatInteraction:
-    """Domain entity representing a student-AI chat interaction"""
-    course_id: str
-    student_id: str
-    user_message: str
-    ai_response: str
-    context: Dict
-    id: Optional[str] = None
-    topic: Optional[str] = None
-    sentiment: Optional[str] = None
-    confidence_score: Optional[float] = None
-    created_at: Optional[datetime] = None
+    """
+    Chat Interaction Domain Entity - RAG AI Assistant Conversations
+
+    BUSINESS REQUIREMENT:
+    Students interact with RAG-enhanced AI assistant for help with concepts,
+    exercises, and quizzes. All interactions are logged for analytics and
+    AI model improvement.
+
+    TECHNICAL IMPLEMENTATION:
+    - Stores full conversation context for RAG retrieval
+    - Tracks confidence scores for answer quality monitoring
+    - Auto-extracts topics for knowledge graph integration
+    - Sentiment analysis for student satisfaction tracking
+
+    WHY: Enables personalized AI assistance and tracks learning conversations
+    """
+    course_id: str  # Course context for RAG retrieval
+    student_id: str  # Student having conversation
+    user_message: str  # Student's question or input
+    ai_response: str  # AI-generated response
+    context: Dict  # RAG context, progress data, conversation history
+    id: Optional[str] = None  # Auto-generated UUID
+    topic: Optional[str] = None  # Auto-extracted topic (e.g., 'assessment', 'concept_explanation')
+    sentiment: Optional[str] = None  # Student sentiment (positive, neutral, negative)
+    confidence_score: Optional[float] = None  # AI confidence (0.0-1.0)
+    created_at: Optional[datetime] = None  # Interaction timestamp
     
     def __post_init__(self):
         if not self.id:
@@ -225,19 +301,35 @@ class ChatInteraction:
 
 @dataclass
 class LabSession:
-    """Domain entity representing a student lab session"""
-    course_id: str
-    student_id: str
-    session_data: Dict
-    code_files: Dict[str, str]
-    id: Optional[str] = None
-    current_exercise: Optional[str] = None
-    progress_data: Dict = field(default_factory=dict)
-    ai_conversation_history: List[Dict] = field(default_factory=list)
-    environment_state: Dict = field(default_factory=dict)
-    started_at: Optional[datetime] = None
-    last_activity: Optional[datetime] = None
-    ended_at: Optional[datetime] = None
+    """
+    Lab Session Domain Entity - Docker Container Coding Sessions
+
+    BUSINESS REQUIREMENT:
+    Students work in isolated Docker container environments with multiple IDEs
+    (VSCode, Jupyter, RStudio). Sessions persist code files, track AI assistant
+    interactions, and monitor progress on lab exercises.
+
+    TECHNICAL IMPLEMENTATION:
+    - Each session maps to a Docker container instance
+    - Code files stored as key-value pairs (filename -> content)
+    - AI conversation history for context-aware assistance
+    - Environment state tracks installed packages, config changes
+    - Session duration monitoring for resource management
+
+    WHY: Enables hands-on coding practice with AI guidance in isolated environments
+    """
+    course_id: str  # Course context
+    student_id: str  # Student owning this session
+    session_data: Dict  # Container metadata, IDE preferences
+    code_files: Dict[str, str]  # Filename -> file content mapping
+    id: Optional[str] = None  # Auto-generated UUID
+    current_exercise: Optional[str] = None  # Active exercise ID
+    progress_data: Dict = field(default_factory=dict)  # Exercise completion states
+    ai_conversation_history: List[Dict] = field(default_factory=list)  # In-lab AI chat
+    environment_state: Dict = field(default_factory=dict)  # Docker env state
+    started_at: Optional[datetime] = None  # Session start time
+    last_activity: Optional[datetime] = None  # Last interaction time
+    ended_at: Optional[datetime] = None  # Session end time (container stopped)
     
     def __post_init__(self):
         if not self.id:
@@ -353,38 +445,59 @@ class LabSession:
 
 @dataclass
 class DynamicContentRequest:
-    """Value object for dynamic content generation requests"""
-    course_id: str
-    student_progress: Dict
-    context: Dict
-    content_type: str
-    
+    """
+    Dynamic Content Generation Request Value Object
+
+    BUSINESS REQUIREMENT:
+    AI generates personalized content (exercises, quizzes, explanations, hints)
+    based on student progress, weaknesses, and learning style.
+
+    TECHNICAL IMPLEMENTATION:
+    - Includes full student progress context for AI personalization
+    - Supports 4 content types: exercise, quiz, explanation, hint
+    - Validates all parameters before expensive AI generation
+    - Extracts key metrics for RAG context
+
+    WHY: Enables adaptive learning with AI-generated personalized content
+    """
+    course_id: str  # Course context
+    student_progress: Dict  # StudentProgress entity serialized
+    context: Dict  # Additional context (current topic, recent errors, etc.)
+    content_type: str  # Type to generate: exercise, quiz, explanation, hint
+
     def validate(self) -> None:
-        """Validate request"""
+        """
+        Validate content generation request
+
+        Raises:
+            ValueError: If any parameter is invalid
+
+        WHY: Prevents invalid AI requests that waste tokens and time
+        """
         if not self.course_id:
             raise ValueError("Course ID is required")
-        
+
         if not isinstance(self.student_progress, dict):
             raise ValueError("Student progress must be a dictionary")
-        
+
         if not isinstance(self.context, dict):
             raise ValueError("Context must be a dictionary")
-        
+
         valid_content_types = ["exercise", "quiz", "explanation", "hint"]
         if self.content_type not in valid_content_types:
             raise ValueError(f"Content type must be one of: {', '.join(valid_content_types)}")
-    
+
     def get_student_level(self) -> str:
-        """Extract student level from progress data"""
+        """Extract student proficiency level for content difficulty"""
         return self.student_progress.get('current_level', 'beginner')
-    
+
     def get_completion_rate(self) -> float:
-        """Extract completion rate from progress data"""
+        """Calculate student completion percentage for adaptive pacing"""
         completed = self.student_progress.get('completed_exercises', 0)
         total = self.student_progress.get('total_exercises', 1)
         return (completed / total) * 100 if total > 0 else 0.0
-    
+
     def get_average_score(self) -> float:
-        """Extract average quiz score from progress data"""
+        """Calculate average quiz score for difficulty calibration"""
         scores = self.student_progress.get('quiz_scores', [])
         return sum(scores) / len(scores) if scores else 0.0

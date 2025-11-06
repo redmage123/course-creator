@@ -250,15 +250,101 @@ class Role:
                 raise ValueError(f"Invalid permission: {permission}")
     
     def add_permission(self, permission: Permission) -> None:
-        """Add permission to role"""
+        """
+        Add a single permission to this role with validation and audit trail.
+
+        This method enables dynamic permission management by adding individual
+        permissions to a role's permission set. It ensures type safety and
+        maintains an audit trail through timestamp updates.
+
+        Business Logic:
+            - Only valid Permission enum values are accepted
+            - Duplicate permissions are automatically handled by set data structure
+            - Permission additions are immediately effective
+            - Timestamp is updated for audit purposes
+
+        Args:
+            permission (Permission): The permission to add to this role.
+                                    Must be a valid Permission enum value.
+
+        Returns:
+            None: Method modifies the role object in place
+
+        Raises:
+            ValueError: If permission is not a valid Permission enum value
+
+        Usage Examples:
+            # Add course creation permission to a role
+            role.add_permission(Permission.CREATE_COURSE)
+
+            # Add multiple permissions sequentially
+            role.add_permission(Permission.READ_CONTENT)
+            role.add_permission(Permission.UPDATE_CONTENT)
+
+        Integration Notes:
+            - Permission changes should be logged by calling services
+            - May trigger cache invalidation in authorization systems
+            - Should be accompanied by user notifications if affecting active users
+            - Consider authorization checks before allowing permission additions
+
+        Design Rationale:
+            - Set-based storage prevents duplicate permissions automatically
+            - Type validation ensures only valid permissions are added
+            - Atomic operation maintains data integrity
+            - Audit trail supports compliance requirements
+        """
         if not isinstance(permission, Permission):
             raise ValueError("Permission must be a Permission enum value")
-        
+
         self.permissions.add(permission)
         self.updated_at = datetime.utcnow()
     
     def remove_permission(self, permission: Permission) -> None:
-        """Remove permission from role"""
+        """
+        Remove a single permission from this role safely with audit trail.
+
+        This method enables permission revocation by removing individual permissions
+        from a role's permission set. It uses safe removal that doesn't fail if the
+        permission doesn't exist, making it idempotent.
+
+        Business Logic:
+            - Safely removes permission even if not present (idempotent operation)
+            - Uses discard() instead of remove() to avoid KeyError
+            - Permission removals are immediately effective
+            - Timestamp is updated for audit purposes
+
+        Args:
+            permission (Permission): The permission to remove from this role.
+                                    Can be any Permission enum value.
+
+        Returns:
+            None: Method modifies the role object in place
+
+        Usage Examples:
+            # Remove course deletion permission from a role
+            role.remove_permission(Permission.DELETE_COURSE)
+
+            # Safe removal even if permission doesn't exist
+            role.remove_permission(Permission.MANAGE_SYSTEM)  # No error if not present
+
+        Security Implications:
+            - Permission removal immediately affects authorization decisions
+            - Active users with this role lose access instantly
+            - Should be logged for security auditing
+            - May require user notification for compliance
+
+        Integration Notes:
+            - Permission changes should trigger cache invalidation
+            - Calling services should log permission removals
+            - Consider session invalidation for affected users
+            - May need to notify users of permission changes
+
+        Design Rationale:
+            - Idempotent operation prevents errors from repeated calls
+            - discard() method is safer than remove() for this use case
+            - Immediate effect ensures security constraints are enforced
+            - Audit trail maintained through timestamp update
+        """
         self.permissions.discard(permission)
         self.updated_at = datetime.utcnow()
     
@@ -282,11 +368,98 @@ class Role:
         return permission in self.permissions
     
     def has_any_permission(self, permissions: List[Permission]) -> bool:
-        """Check if role has any of the specified permissions"""
+        """
+        Check if role has at least one permission from a list of permissions.
+
+        This method implements "OR" logic for permission checking, determining
+        if a role has ANY of the specified permissions. Useful for authorization
+        scenarios where multiple permissions could grant access.
+
+        Business Logic:
+            - Returns True if role has one or more of the specified permissions
+            - Returns False only if role has none of the specified permissions
+            - Empty permission list returns False (no permissions to check)
+            - Efficient short-circuit evaluation stops at first match
+
+        Args:
+            permissions (List[Permission]): List of permissions to check against.
+                                           Any one match will return True.
+
+        Returns:
+            bool: True if role has any of the permissions, False otherwise
+
+        Usage Examples:
+            # Check if role can perform any user management operation
+            user_mgmt_perms = [Permission.CREATE_USER, Permission.UPDATE_USER, Permission.DELETE_USER]
+            if role.has_any_permission(user_mgmt_perms):
+                # User can perform at least one user management operation
+
+            # Check for read access to either courses or content
+            read_perms = [Permission.READ_COURSE, Permission.READ_CONTENT]
+            if role.has_any_permission(read_perms):
+                # User has some form of read access
+
+        Authorization Pattern:
+            - "OR" logic: Multiple valid permissions for the same operation
+            - Useful for feature access where different permissions grant access
+            - More permissive than has_all_permissions()
+            - Common pattern for read access and viewing capabilities
+
+        Performance Notes:
+            - Short-circuit evaluation for efficiency
+            - Stops checking after first matching permission found
+            - Suitable for frequent authorization checks
+        """
         return any(perm in self.permissions for perm in permissions)
     
     def has_all_permissions(self, permissions: List[Permission]) -> bool:
-        """Check if role has all specified permissions"""
+        """
+        Check if role has all permissions from a list of permissions.
+
+        This method implements "AND" logic for permission checking, determining
+        if a role has ALL of the specified permissions. Useful for authorization
+        scenarios that require multiple permissions simultaneously.
+
+        Business Logic:
+            - Returns True only if role has every specified permission
+            - Returns False if role is missing even one of the permissions
+            - Empty permission list returns True (vacuous truth)
+            - Efficient short-circuit evaluation stops at first missing permission
+
+        Args:
+            permissions (List[Permission]): List of permissions to check against.
+                                           All must be present for True result.
+
+        Returns:
+            bool: True if role has all specified permissions, False otherwise
+
+        Usage Examples:
+            # Check if role can fully manage courses (requires all permissions)
+            full_course_mgmt = [
+                Permission.CREATE_COURSE,
+                Permission.UPDATE_COURSE,
+                Permission.DELETE_COURSE,
+                Permission.PUBLISH_COURSE
+            ]
+            if role.has_all_permissions(full_course_mgmt):
+                # User has complete course management capabilities
+
+            # Check for complete analytics access
+            analytics_perms = [Permission.VIEW_ANALYTICS, Permission.EXPORT_ANALYTICS]
+            if role.has_all_permissions(analytics_perms):
+                # User can both view and export analytics
+
+        Authorization Pattern:
+            - "AND" logic: All permissions required for operation
+            - More restrictive than has_any_permission()
+            - Used for privileged operations requiring multiple capabilities
+            - Common pattern for administrative functions
+
+        Performance Notes:
+            - Short-circuit evaluation for efficiency
+            - Stops checking after first missing permission found
+            - Suitable for frequent authorization checks
+        """
         return all(perm in self.permissions for perm in permissions)
     
     def can_manage_users(self) -> bool:
@@ -311,9 +484,42 @@ class Role:
         return self.has_any_permission(user_management_permissions)
     
     def can_manage_courses(self) -> bool:
-        """Check if role can manage courses"""
+        """
+        Check if role has course management capabilities.
+
+        Determines if the role can perform any course administration tasks
+        by checking for course management permissions. This is a convenience
+        method for authorization decisions related to course operations.
+
+        Business Logic:
+            Role can manage courses if it has any of:
+            - CREATE_COURSE: Can create new courses
+            - UPDATE_COURSE: Can modify existing courses
+            - DELETE_COURSE: Can remove courses
+            - PUBLISH_COURSE: Can publish courses to students
+
+        Returns:
+            bool: True if role can manage courses, False otherwise
+
+        Usage Examples:
+            if role.can_manage_courses():
+                # Show course management interface
+                # Allow access to course admin features
+
+        Authorization Pattern:
+            - Uses "OR" logic - any course permission grants access
+            - Suitable for gating course management features
+            - Less restrictive than requiring all course permissions
+            - Common in instructor and admin roles
+
+        Integration Notes:
+            - Used by course management UI to show/hide features
+            - API endpoints use this for coarse-grained authorization
+            - Fine-grained permissions checked for specific operations
+            - Enhanced RBAC may add organization-specific course permissions
+        """
         course_management_permissions = [
-            Permission.CREATE_COURSE, Permission.UPDATE_COURSE, 
+            Permission.CREATE_COURSE, Permission.UPDATE_COURSE,
             Permission.DELETE_COURSE, Permission.PUBLISH_COURSE
         ]
         return self.has_any_permission(course_management_permissions)

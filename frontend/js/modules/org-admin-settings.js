@@ -15,7 +15,6 @@
  *
  * @module org-admin-settings
  */
-
 import {
     fetchOrganization,
     updateOrganization
@@ -498,14 +497,43 @@ async function setupDragDropLogoUpload() {
             maxSizeMB: 5,
             uploadEndpoint: `${CONFIG.ENDPOINTS.METADATA_SERVICE}/organizations/${currentOrganizationId}/upload-logo`,
 
+    /**
+     * EVENT HANDLER FOR UPLOAD START EVENTS
+     * PURPOSE: Event handler for upload start events
+     * WHY: Responds to user interactions and system events
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
             onUploadStart: () => {
                 console.log('Starting logo upload...');
             },
 
+    /**
+     * EVENT HANDLER FOR UPLOAD PROGRESS EVENTS
+     * PURPOSE: Event handler for upload progress events
+     * WHY: Responds to user interactions and system events
+     *
+     * @param {*} percent - Percent parameter
+     * @param {*} file - File parameter
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
             onUploadProgress: (percent, file) => {
                 console.log(`Upload progress: ${percent.toFixed(0)}%`);
             },
 
+    /**
+     * EVENT HANDLER FOR UPLOAD COMPLETE EVENTS
+     * PURPOSE: Event handler for upload complete events
+     * WHY: Responds to user interactions and system events
+     *
+     * @param {*} response - Response parameter
+     * @param {*} file - File parameter
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
             onUploadComplete: async (response, file) => {
                 console.log('Logo upload complete:', response);
                 showNotification('Organization logo uploaded successfully!', 'success');
@@ -520,6 +548,15 @@ async function setupDragDropLogoUpload() {
                 await loadSettingsData();
             },
 
+    /**
+     * EVENT HANDLER FOR UPLOAD ERROR EVENTS
+     * PURPOSE: Event handler for upload error events
+     * WHY: Responds to user interactions and system events
+     *
+     * @param {*} error - Error parameter
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
             onUploadError: (error) => {
                 console.error('Logo upload failed:', error);
                 showNotification(`Logo upload failed: ${error.message}`, 'error');

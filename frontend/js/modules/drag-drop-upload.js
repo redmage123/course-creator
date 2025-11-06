@@ -11,7 +11,6 @@
  * - Progress indication
  * - Multiple file support
  */
-
 export class DragDropUpload {
     /**
      * Initialize drag-and-drop upload component

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="../css/modern-ui/modern-ui.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Course Creator Platform - AI-Powered Course Creation</title>
@@ -16,7 +17,7 @@
 </head>
 <body>
     <!-- Accessibility Skip Link -->
-    <a href="#main-content" class="skip-link" style="position: absolute; left: -9999px; z-index: 999; padding: 1rem; background: var(--primary-600); color: white; text-decoration: none;">Skip to main content</a>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
 
     <!-- HEADER - Consistent across all pages -->
     <header class="site-header" role="banner">
@@ -48,7 +49,7 @@
                 </div>
 
                 <!-- User Dropdown (hidden by default, shown when logged in) -->
-                <div id="userDropdown" class="user-dropdown" style="display: none;">
+                <div id="userDropdown" class="user-dropdown hidden">
                     <button class="user-trigger" aria-expanded="false" aria-haspopup="true">
                         <div class="user-avatar">
                             <span id="userInitials">U</span>
@@ -60,7 +61,7 @@
                         <a href="#dashboard"><i class="fas fa-th-large"></i> Dashboard</a>
                         <a href="#profile"><i class="fas fa-user"></i> Profile</a>
                         <a href="#settings"><i class="fas fa-cog"></i> Settings</a>
-                        <hr style="margin: var(--space-2) 0; border: none; border-top: 1px solid var(--border);">
+                        <hr class="divider-h">
                         <a href="#" onclick="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a>
                     </div>
                 </div>
@@ -69,7 +70,7 @@
     </header>
 
     <!-- Main Content -->
-    <main id="main-content" role="main" style="padding-top: 80px;">
+    <main id="main-content" role="main" class="pt-4xl">
 
         <!-- HERO SECTION - Bold, Centered, Professional -->
         <section class="hero">

@@ -17,7 +17,7 @@ class MockWindow:
     """Mock browser window object"""
     def __init__(self):
         self.localStorage = MockLocalStorage()
-        self.location = MockLocation()
+        self.locations = MockLocation()
         self.addEventListener = Mock()
         self.removeEventListener = Mock()
         self.open = Mock()
@@ -53,7 +53,7 @@ class MockLocalStorage:
 
 
 class MockLocation:
-    """Mock window.location object"""
+    """Mock window.locations object"""
     def __init__(self):
         self.href = "http://localhost:8080/student-dashboard.html"
         self.pathname = "/student-dashboard.html"

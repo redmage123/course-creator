@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="../css/modern-ui/modern-ui.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Certificates - Course Creator</title>
@@ -152,7 +153,7 @@
 
     <header class="site-header" role="banner">
         <nav role="navigation" aria-label="Main navigation">
-            <a href="/dashboard" style="color: var(--primary-600); text-decoration: none;" aria-label="Return to dashboard">
+            <a href="/dashboard" class="link-primary" aria-label="Return to dashboard">
                 <i class="fas fa-arrow-left" aria-hidden="true"></i> Back to Dashboard
             </a>
         </nav>
@@ -176,7 +177,7 @@
         </section>
 
         <!-- Certificates Grid (hidden by default, shown when certificates exist) -->
-        <section id="certificates-grid" style="display: none;" aria-labelledby="certs-list-heading">
+        <section id="certificates-grid" class="hidden" aria-labelledby="certs-list-heading">
             <h2 id="certs-list-heading" class="sr-only">Your Earned Certificates</h2>
             <!-- Example certificate card (will be populated dynamically) -->
             <article class="certificate-card">
@@ -186,7 +187,7 @@
                             <i class="fas fa-award"></i>
                         </div>
                     </div>
-                    <div style="flex: 1; margin: 0 20px;">
+                    <div class="flex-1 mx-5">
                         <h3 class="certificate-title">Introduction to Python Programming</h3>
                         <div class="certificate-date">
                             <i class="fas fa-calendar" aria-hidden="true"></i>

@@ -1,0 +1,116 @@
+/**
+ * File Explorer Styles
+ */
+
+.fileExplorer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #252526;
+}
+
+.fileExplorerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #3e3e42;
+}
+
+.fileExplorerHeader h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #cccccc;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.fileActions {
+  display: flex;
+  gap: 4px;
+}
+
+.actionBtn {
+  background: transparent;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.2s;
+}
+
+.actionBtn:hover {
+  background: #3e3e42;
+}
+
+.newFileForm {
+  padding: 8px 16px;
+  background: #1e1e1e;
+  border-bottom: 1px solid #3e3e42;
+}
+
+.newFileInput {
+  width: 100%;
+  padding: 6px 8px;
+  background: #3e3e42;
+  border: 1px solid #007acc;
+  border-radius: 4px;
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-family: 'Courier New', monospace;
+}
+
+.newFileInput:focus {
+  outline: none;
+  border-color: #00a0ff;
+}
+
+.fileList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.fileItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+  color: #cccccc;
+  font-size: 0.85rem;
+}
+
+.fileItem:hover {
+  background: #2a2d2e;
+}
+
+.fileItem.active {
+  background: #37373d;
+  color: #ffffff;
+}
+
+.fileIcon {
+  font-size: 1rem;
+}
+
+.fileName {
+  flex: 1;
+  font-family: 'Courier New', monospace;
+}
+
+.modifiedIndicator {
+  color: #007acc;
+  font-size: 1.2rem;
+  line-height: 0;
+}
+
+.emptyState {
+  padding: 32px 16px;
+  text-align: center;
+  color: #999999;
+  font-size: 0.85rem;
+}

@@ -31,7 +31,6 @@
  * - Professional modal systems for complex workflows
  * - Responsive design for desktop and mobile usage
  */
-
 import { Auth } from './auth.js';
 
 import { showNotification } from './notifications.js';

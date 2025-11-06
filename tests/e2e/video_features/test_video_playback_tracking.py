@@ -654,7 +654,7 @@ class TestVideoPlaybackFeatures(BaseTest):
         video_id = 1
 
         # Navigate and login
-        login_page = StudentLoginPage(self.driver)
+        login_page = StudentLoginPage(self.driver, self.config)
         login_page.navigate()
         login_page.login(student_email, "password123")
 
@@ -728,7 +728,7 @@ class TestVideoPlaybackFeatures(BaseTest):
         video_id = 1
 
         # Navigate and login
-        login_page = StudentLoginPage(self.driver)
+        login_page = StudentLoginPage(self.driver, self.config)
         login_page.navigate()
         login_page.login(student_email, "password123")
 
@@ -804,7 +804,7 @@ class TestVideoPlaybackFeatures(BaseTest):
         video_id = 1
 
         # Navigate and login
-        login_page = StudentLoginPage(self.driver)
+        login_page = StudentLoginPage(self.driver, self.config)
         login_page.navigate()
         login_page.login(student_email, "password123")
 
@@ -879,7 +879,7 @@ class TestVideoPlaybackFeatures(BaseTest):
         video_id = 1
 
         # Navigate and login
-        login_page = StudentLoginPage(self.driver)
+        login_page = StudentLoginPage(self.driver, self.config)
         login_page.navigate()
         login_page.login(student_email, "password123")
 
@@ -949,7 +949,7 @@ class TestVideoProgressTracking(BaseTest):
         video_id = 1
 
         # Navigate and login
-        login_page = StudentLoginPage(self.driver)
+        login_page = StudentLoginPage(self.driver, self.config)
         login_page.navigate()
         login_page.login(student_email, "password123")
 
@@ -1016,7 +1016,7 @@ class TestVideoProgressTracking(BaseTest):
         video_id = 1
 
         # Navigate and login
-        login_page = StudentLoginPage(self.driver)
+        login_page = StudentLoginPage(self.driver, self.config)
         login_page.navigate()
         login_page.login(student_email, "password123")
 
@@ -1089,7 +1089,7 @@ class TestVideoProgressTracking(BaseTest):
         video_id = 1
 
         # Navigate and login
-        login_page = StudentLoginPage(self.driver)
+        login_page = StudentLoginPage(self.driver, self.config)
         login_page.navigate()
         login_page.login(student_email, "password123")
 
@@ -1181,7 +1181,7 @@ class TestVideoAnalytics(BaseTest):
         video_id = 1
 
         # Navigate and login
-        login_page = StudentLoginPage(self.driver)
+        login_page = StudentLoginPage(self.driver, self.config)
         login_page.navigate()
         login_page.login(student_email, "password123")
 
@@ -1275,7 +1275,7 @@ class TestVideoAnalytics(BaseTest):
         db_connection.commit()
 
         # Login as instructor
-        login_page = StudentLoginPage(self.driver)
+        login_page = StudentLoginPage(self.driver, self.config)
         login_page.navigate()
         login_page.login("instructor@test.com", "password123")
 
@@ -1364,7 +1364,7 @@ class TestVideoAnalytics(BaseTest):
         db_connection.commit()
 
         # Login as instructor
-        login_page = StudentLoginPage(self.driver)
+        login_page = StudentLoginPage(self.driver, self.config)
         login_page.navigate()
         login_page.login("instructor@test.com", "password123")
 

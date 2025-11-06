@@ -446,7 +446,7 @@ Stay connected with your students:
    - Skill development over time
    - Areas needing improvement
 
-2. **Cohort Analysis**
+2. **Location Analysis**
    - Compare student groups
    - Identify trends and patterns
    - Benchmark performance

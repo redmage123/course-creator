@@ -147,7 +147,7 @@ class FileMetadata:
     - **upload_timestamp**: Educational content lifecycle and audit trail tracking
     
     Storage Management:
-    - **storage_path**: Physical location for educational content retrieval
+    - **storage_path**: Physical locations for educational content retrieval
     - **expires_at**: Temporary content cleanup and storage optimization
     
     Educational Benefits:
@@ -410,7 +410,7 @@ class StorageManager:
             course_id: Associated course for educational content context
             
         Returns:
-            Path: Secure storage location for uploaded educational content
+            Path: Secure storage locations for uploaded educational content
             
         Raises:
             ValueError: Educational content validation failure or size limit exceeded

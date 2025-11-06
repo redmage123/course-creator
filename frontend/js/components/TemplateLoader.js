@@ -13,8 +13,12 @@
  * - Variable substitution for dynamic content
  * - Error handling with fallbacks
  */
-
 class TemplateLoader {
+    /**
+     * INITIALIZE CLASS INSTANCE WITH DEFAULT STATE
+     * PURPOSE: Initialize class instance with default state
+     * WHY: Establishes initial state required for class functionality
+     */
     constructor() {
         // In-memory cache for loaded templates
         this.cache = new Map();

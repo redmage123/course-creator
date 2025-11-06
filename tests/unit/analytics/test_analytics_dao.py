@@ -22,6 +22,9 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any
 import asyncpg
 import json
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / 'services' / 'analytics'))
 
 from data_access.analytics_dao import AnalyticsDAO
 

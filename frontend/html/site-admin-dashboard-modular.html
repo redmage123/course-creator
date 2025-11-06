@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="../css/modern-ui/modern-ui.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Site Admin Dashboard - Course Creator Platform</title>
@@ -138,10 +139,10 @@
                 </button>
             </div>
             <div class="modal-body">
-                <p style="margin-bottom: var(--space-4); color: var(--text-secondary);">
+                <p class="mb-md text-secondary">
                     This will permanently delete the organization and all associated data:
                 </p>
-                <ul style="list-style: disc; padding-left: var(--space-6); margin-bottom: var(--space-4); color: var(--text-secondary);">
+                <ul class="list-disc pl-lg mb-md text-secondary">
                     <li>Organization profile and settings</li>
                     <li>All associated projects and tracks</li>
                     <li>User memberships (users remain in system)</li>
@@ -159,9 +160,8 @@
                 </div>
                 <input type="text"
                        id="deleteOrgConfirmInput"
-                       class="filter-input"
+                       class="filter-input w-full mt-md"
                        placeholder="Type organization name"
-                       style="width: 100%; margin-top: var(--space-4);"
                        oninput="document.getElementById('confirmDeleteBtn').disabled = this.value !== window.organizationToDelete?.name">
             </div>
             <div class="modal-footer">

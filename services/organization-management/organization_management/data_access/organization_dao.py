@@ -2,7 +2,7 @@
 Organization Management Data Access Object (DAO)
 
 This module implements the Data Access Object (DAO) pattern for organization management operations,
-centralizing all SQL queries and database interactions in a single, maintainable location.
+centralizing all SQL queries and database interactions in a single, maintainable locations.
 
 Business Context:
 The Organization Management service is the foundation of the Course Creator Platform's multi-tenant
@@ -984,3 +984,470 @@ class OrganizationManagementDAO:
         except Exception as e:
             logging.error(f"Failed to get track assignments for track {track_id}: {e}")
             return []
+
+    async def exists_by_project_and_slug(
+        self,
+        project_id: UUID,
+        slug: str
+    ) -> bool:
+        """
+        Check if a track with the given slug already exists in the project.
+
+        BUSINESS CONTEXT:
+        Prevent duplicate track slugs within a project to ensure unique URL paths
+        and avoid confusion when referencing tracks.
+
+        Args:
+            project_id: UUID of the project
+            slug: URL-friendly track identifier
+
+        Returns:
+            True if track with slug exists in project, False otherwise
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                result = await conn.fetchval(
+                    """SELECT EXISTS(
+                        SELECT 1 FROM course_creator.tracks
+                        WHERE project_id = $1 AND slug = $2
+                    )""",
+                    project_id, slug
+                )
+                return result
+        except Exception as e:
+            logging.error(f"Failed to check track existence for project {project_id}, slug {slug}: {e}")
+            return False
+
+    async def get_by_project(self, project_id: UUID) -> List[Dict[str, Any]]:
+        """
+        Get all tracks for a project.
+
+        Args:
+            project_id: UUID of the project
+
+        Returns:
+            List of track dictionaries
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                tracks = await conn.fetch(
+                    """SELECT * FROM course_creator.tracks
+                       WHERE project_id = $1
+                       ORDER BY display_order, created_at""",
+                    project_id
+                )
+                return [dict(t) for t in tracks] if tracks else []
+        except Exception as e:
+            logging.error(f"Failed to get tracks for project {project_id}: {e}")
+            return []
+
+    async def get_project_organization_id(self, project_id: UUID) -> Optional[UUID]:
+        """
+        Get the organization_id for a project.
+
+        Args:
+            project_id: UUID of the project
+
+        Returns:
+            Organization UUID or None if project not found
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                result = await conn.fetchval(
+                    """SELECT organization_id FROM projects WHERE id = $1""",
+                    project_id
+                )
+                return result
+        except Exception as e:
+            logging.error(f"Failed to get organization_id for project {project_id}: {e}")
+            return None
+
+    async def create(self, track):
+        """
+        Create a new track in the database.
+
+        BUSINESS CONTEXT:
+        Persist a newly created track entity to the database with all metadata
+        and relationships properly established.
+
+        Args:
+            track: Track entity to persist
+
+        Returns:
+            Persisted Track entity with database-generated fields
+        """
+        from organization_management.domain.entities.track import Track
+
+        try:
+            async with self.db_pool.acquire() as conn:
+                import json
+
+                result = await conn.fetchrow(
+                    """
+                    INSERT INTO course_creator.tracks (
+                        id, organization_id, project_id, location_id, name, slug,
+                        description, track_type, target_audience, prerequisites,
+                        duration_weeks, max_students, learning_objectives, skills_taught,
+                        difficulty_level, display_order, auto_enroll_enabled, status,
+                        settings, created_by, created_at, updated_at
+                    ) VALUES (
+                        $1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10::jsonb, $11, $12, $13::jsonb, $14::jsonb,
+                        $15, $16, $17, $18, $19::jsonb, $20, $21, $22
+                    ) RETURNING *
+                    """,
+                    track.id,
+                    track.organization_id,
+                    track.project_id,
+                    track.location_id,
+                    track.name,
+                    track.slug,
+                    track.description,
+                    track.track_type.value if hasattr(track.track_type, 'value') else str(track.track_type),
+                    json.dumps(track.target_audience or []),
+                    json.dumps(track.prerequisites or []),
+                    track.duration_weeks,
+                    track.max_enrolled,
+                    json.dumps(track.learning_objectives or []),
+                    json.dumps(track.skills_taught or []),
+                    track.difficulty_level,
+                    track.display_order,
+                    track.auto_enroll_enabled,
+                    track.status.value if hasattr(track.status, 'value') else str(track.status),
+                    json.dumps(track.settings or {}),
+                    track.created_by,
+                    track.created_at,
+                    track.updated_at
+                )
+
+                # Convert result to Track entity
+                # Parse JSONB fields if they're strings
+                def parse_jsonb(value):
+                    if isinstance(value, str):
+                        import json
+                        return json.loads(value)
+                    return value
+
+                return Track(
+                    id=result['id'],
+                    organization_id=result['organization_id'],
+                    project_id=result['project_id'],
+                    location_id=result['location_id'],
+                    name=result['name'],
+                    slug=result['slug'],
+                    description=result['description'],
+                    track_type=result['track_type'],
+                    target_audience=parse_jsonb(result['target_audience']),
+                    prerequisites=parse_jsonb(result['prerequisites']),
+                    duration_weeks=result['duration_weeks'],
+                    max_enrolled=result['max_students'],
+                    learning_objectives=parse_jsonb(result['learning_objectives']),
+                    skills_taught=parse_jsonb(result['skills_taught']),
+                    difficulty_level=result['difficulty_level'],
+                    display_order=result['display_order'],
+                    auto_enroll_enabled=result['auto_enroll_enabled'],
+                    status=result['status'],
+                    settings=parse_jsonb(result['settings']),
+                    created_by=result['created_by'],
+                    created_at=result['created_at'],
+                    updated_at=result['updated_at']
+                )
+
+        except Exception as e:
+            logging.error(f"Failed to create track: {e}")
+            raise
+
+    # ================================================================
+    # ORGANIZATION ACTIVITY TRACKING
+    # ================================================================
+
+    async def log_organization_activity(
+        self,
+        organization_id: str,
+        user_id: Optional[str],
+        activity_type: str,
+        description: str,
+        metadata: Optional[Dict[str, Any]] = None,
+        user_name: Optional[str] = None,
+        source: str = 'web'
+    ) -> str:
+        """
+        Log an activity for an organization
+
+        BUSINESS CONTEXT:
+        Activity logging is essential for:
+        - Audit compliance and security monitoring
+        - Operational visibility for organization admins
+        - Troubleshooting and support
+        - Analytics and usage tracking
+
+        Activities include all significant user and system actions such as:
+        - Project creation, updates, deletions
+        - User management (add, remove, role changes)
+        - Track management (create, update, publish)
+        - Meeting room operations
+        - System configuration changes
+
+        TECHNICAL IMPLEMENTATION:
+        - Single Responsibility: Focused solely on logging activities
+        - Dependency Inversion: Depends on database abstraction (asyncpg pool)
+        - Uses JSON B for flexible metadata storage
+        - Returns activity ID for future reference/correlation
+
+        SOLID PRINCIPLES:
+        - SRP: Single responsibility of logging one activity
+        - OCP: Open for extension (new activity types can be added without modification)
+        - DIP: Depends on abstraction (db_pool) not concrete implementation
+
+        Args:
+            organization_id: UUID of the organization
+            user_id: Optional UUID of the user who performed the action
+            activity_type: Type classification (e.g., 'project_created', 'user_added')
+            description: Human-readable description for UI display
+            metadata: Optional structured data about the activity
+            user_name: Optional user name for display (denormalized for performance)
+            source: Activity source (web, api, system, integration)
+
+        Returns:
+            str: UUID of the created activity record
+
+        Raises:
+            DatabaseException: If activity logging fails
+
+        Example:
+            activity_id = await dao.log_organization_activity(
+                organization_id='org-123',
+                user_id='user-456',
+                activity_type='project_created',
+                description='Created new project "AI Course 2025"',
+                metadata={'project_id': 'proj-789', 'project_name': 'AI Course 2025'},
+                user_name='John Doe'
+            )
+        """
+        try:
+            # Validate required parameters
+            if not organization_id:
+                raise ValidationException("organization_id is required for activity logging")
+
+            if not activity_type:
+                raise ValidationException("activity_type is required for activity logging")
+
+            if not description:
+                raise ValidationException("description is required for activity logging")
+
+            # Default empty metadata if not provided
+            if metadata is None:
+                metadata = {}
+
+            # Insert activity record
+            async with self.db_pool.acquire() as conn:
+                result = await conn.fetchrow(
+                    """
+                    INSERT INTO organization_activity (
+                        organization_id,
+                        user_id,
+                        user_name,
+                        activity_type,
+                        description,
+                        metadata,
+                        source,
+                        created_at
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+                    RETURNING id
+                    """,
+                    organization_id,
+                    user_id,
+                    user_name,
+                    activity_type,
+                    description,
+                    json.dumps(metadata),
+                    source
+                )
+
+                activity_id = str(result['id'])
+
+                self.logger.info(
+                    f"Activity logged successfully: {activity_type} for organization {organization_id}",
+                    extra={
+                        'activity_id': activity_id,
+                        'organization_id': organization_id,
+                        'activity_type': activity_type
+                    }
+                )
+
+                return activity_id
+
+        except ValidationException:
+            # Re-raise validation exceptions
+            raise
+        except Exception as e:
+            error_msg = f"Failed to log activity for organization {organization_id}: {e}"
+            self.logger.error(error_msg, exc_info=True)
+            raise DatabaseException(error_msg) from e
+
+    async def get_organization_activities(
+        self,
+        organization_id: str,
+        limit: int = 50,
+        offset: int = 0,
+        days_back: Optional[int] = None,
+        activity_types: Optional[List[str]] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Retrieve activities for an organization
+
+        BUSINESS CONTEXT:
+        Organization admins need to view recent activities for:
+        - Monitoring team actions and collaboration
+        - Security auditing and compliance
+        - Operational awareness and troubleshooting
+        - Understanding platform usage patterns
+
+        Activities are displayed in reverse chronological order (newest first)
+        with pagination support for performance.
+
+        TECHNICAL IMPLEMENTATION:
+        - Multi-tenant isolation enforced through organization_id WHERE clause
+        - Efficient indexing on (organization_id, created_at) for performance
+        - Pagination support through LIMIT/OFFSET
+        - Optional date range filtering for compliance reporting
+        - Optional activity type filtering for focused views
+
+        SOLID PRINCIPLES:
+        - SRP: Single responsibility of retrieving activities
+        - OCP: Extensible through optional filters without modifying core logic
+        - ISP: Interface segregation - focused method for activity retrieval only
+
+        Args:
+            organization_id: UUID of the organization
+            limit: Maximum number of activities to return (default: 50, max: 100)
+            offset: Number of activities to skip for pagination (default: 0)
+            days_back: Optional number of days to look back (default: all activities)
+            activity_types: Optional list of activity types to filter (default: all types)
+
+        Returns:
+            List[Dict]: List of activity dictionaries containing:
+                - id: Activity UUID
+                - organization_id: Organization UUID
+                - user_id: Optional user UUID
+                - user_name: Optional user name
+                - activity_type: Activity type classification
+                - description: Human-readable description
+                - metadata: Structured activity data (parsed from JSONB)
+                - created_at: Timestamp of activity
+                - source: Activity source
+
+        Raises:
+            DatabaseException: If activity retrieval fails
+
+        Example:
+            # Get last 10 activities
+            activities = await dao.get_organization_activities(
+                organization_id='org-123',
+                limit=10
+            )
+
+            # Get activities from last 7 days
+            activities = await dao.get_organization_activities(
+                organization_id='org-123',
+                days_back=7
+            )
+
+            # Get only project-related activities
+            activities = await dao.get_organization_activities(
+                organization_id='org-123',
+                activity_types=['project_created', 'project_updated', 'project_deleted']
+            )
+        """
+        try:
+            # Validate organization_id
+            if not organization_id:
+                raise ValidationException("organization_id is required")
+
+            # Cap limit at maximum to prevent abuse
+            limit = min(limit, 100)
+
+            # Ensure offset is non-negative
+            offset = max(offset, 0)
+
+            # Build dynamic query based on filters
+            query_conditions = ["organization_id = $1"]
+            query_params = [organization_id]
+            param_index = 2
+
+            # Add date range filter if specified
+            if days_back is not None and days_back > 0:
+                query_conditions.append(f"created_at >= NOW() - INTERVAL '{days_back} days'")
+
+            # Add activity type filter if specified
+            if activity_types and len(activity_types) > 0:
+                placeholders = ", ".join([f"${i}" for i in range(param_index, param_index + len(activity_types))])
+                query_conditions.append(f"activity_type IN ({placeholders})")
+                query_params.extend(activity_types)
+                param_index += len(activity_types)
+
+            where_clause = " AND ".join(query_conditions)
+
+            # Add limit and offset parameters
+            query_params.append(limit)
+            query_params.append(offset)
+
+            # Execute query
+            async with self.db_pool.acquire() as conn:
+                rows = await conn.fetch(
+                    f"""
+                    SELECT
+                        id,
+                        organization_id,
+                        user_id,
+                        user_name,
+                        activity_type,
+                        description,
+                        metadata,
+                        created_at,
+                        source
+                    FROM organization_activity
+                    WHERE {where_clause}
+                    ORDER BY created_at DESC
+                    LIMIT ${param_index} OFFSET ${param_index + 1}
+                    """,
+                    *query_params
+                )
+
+                # Convert rows to dictionaries and parse metadata
+                activities = []
+                for row in rows:
+                    activity = dict(row)
+                    # Parse JSONB metadata back to Python dict
+                    if activity.get('metadata'):
+                        if isinstance(activity['metadata'], str):
+                            activity['metadata'] = json.loads(activity['metadata'])
+                    else:
+                        activity['metadata'] = {}
+
+                    # Convert UUID to string for JSON serialization
+                    activity['id'] = str(activity['id'])
+                    activity['organization_id'] = str(activity['organization_id'])
+                    if activity.get('user_id'):
+                        activity['user_id'] = str(activity['user_id'])
+
+                    activities.append(activity)
+
+                self.logger.info(
+                    f"Retrieved {len(activities)} activities for organization {organization_id}",
+                    extra={
+                        'organization_id': organization_id,
+                        'count': len(activities),
+                        'limit': limit,
+                        'offset': offset
+                    }
+                )
+
+                return activities
+
+        except ValidationException:
+            # Re-raise validation exceptions
+            raise
+        except Exception as e:
+            error_msg = f"Failed to retrieve activities for organization {organization_id}: {e}"
+            self.logger.error(error_msg, exc_info=True)
+            raise DatabaseException(error_msg) from e

@@ -2,10 +2,12 @@
  * Student File Manager Module
  * Handles file downloads and workspace management for students
  */
-
-
-
 export class StudentFileManager {
+    /**
+     * INITIALIZE CLASS INSTANCE WITH DEFAULT STATE
+     * PURPOSE: Initialize class instance with default state
+     * WHY: Establishes initial state required for class functionality
+     */
     constructor() {
         this.labManagerURL = window.CONFIG?.API_URLS.LAB_MANAGER;
         this.currentLabId = null;

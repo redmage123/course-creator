@@ -1,0 +1,174 @@
+/**
+ * RiskAssessmentCard Component Styles
+ *
+ * Styling for risk assessment display with color-coded severity indicators
+ */
+
+.riskCard {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #eee;
+}
+
+.headerLeft {
+  flex: 1;
+}
+
+.title {
+  margin: 0 0 4px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: #333;
+}
+
+.lastUpdated {
+  margin: 0;
+  font-size: 13px;
+  color: #888;
+}
+
+.riskBadge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 20px;
+  border-radius: 8px;
+  color: white;
+  min-width: 100px;
+}
+
+.riskLevel {
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.riskScore {
+  font-size: 24px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.section {
+  margin-bottom: 24px;
+}
+
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.sectionTitle {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.factorsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.factorItem {
+  padding: 12px;
+  background: #f9f9f9;
+  border-radius: 6px;
+  border-left: 3px solid #ddd;
+}
+
+.factorHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.severityIcon {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.severityIcon.low {
+  color: #4caf50;
+}
+
+.severityIcon.medium {
+  color: #ff9800;
+}
+
+.severityIcon.high {
+  color: #f44336;
+}
+
+.factorName {
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+.factorDescription {
+  margin: 4px 0 0 26px;
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.recommendationsList {
+  margin: 0;
+  padding-left: 20px;
+  list-style: none;
+}
+
+.recommendationItem {
+  position: relative;
+  padding: 8px 0 8px 24px;
+  font-size: 14px;
+  color: #444;
+  line-height: 1.6;
+}
+
+.recommendationItem::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: #2196f3;
+  font-weight: 700;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .riskCard {
+    padding: 16px;
+  }
+
+  .header {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .riskBadge {
+    align-self: flex-start;
+  }
+
+  .title {
+    font-size: 18px;
+  }
+
+  .factorDescription {
+    margin-left: 0;
+  }
+}

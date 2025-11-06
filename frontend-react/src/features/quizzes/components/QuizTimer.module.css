@@ -1,0 +1,51 @@
+.timer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1.2rem;
+  transition: all 0.3s;
+}
+
+.timer.normal {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.timer.warning {
+  background: #fff3e0;
+  color: #f57c00;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.timer.critical {
+  background: #ffebee;
+  color: #d32f2f;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.timerIcon {
+  font-size: 1.5rem;
+}
+
+.urgentBadge {
+  background: #d32f2f;
+  color: #ffffff;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  animation: shake 0.5s infinite;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}

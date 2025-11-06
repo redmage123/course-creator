@@ -31,15 +31,20 @@ from unittest.mock import Mock, MagicMock, patch
 import sys
 import os
 
-# Add service paths to Python path for testing
-course_mgmt_path = os.path.join(os.path.dirname(__file__), "../../../services/course-management")
-analytics_path = os.path.join(os.path.dirname(__file__), "../../../services/analytics")
-sys.path.insert(0, course_mgmt_path)
-sys.path.insert(0, analytics_path)
+# Clean sys.path of ALL other service directories to avoid 'api' module conflicts
+# conftest.py adds ALL services - we need course-management ONLY for this test
+import sys
+# Keep only non-service paths
+sys.path = [p for p in sys.path if '/services/' not in p or 'course-management' in p]
 
-# Now import the modules
+# Add course-management path at the beginning
+course_mgmt_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../services/course-management"))
+if course_mgmt_path not in sys.path:
+    sys.path.insert(0, course_mgmt_path)
+
+# Now we can import without conflicts
 from api import video_endpoints
-from api import dependencies as analytics_dependencies
+from auth.jwt_middleware import get_current_user_id
 
 
 class TestJWTValidationVideoEndpoints:

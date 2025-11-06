@@ -139,13 +139,14 @@ class TestLabStartupAndInitialization(BaseTest):
     """
 
     @pytest.fixture(autouse=True)
-    def setup(self, driver, test_base_url, student_credentials, docker_client):
+    def setup(self, driver, selenium_config, student_credentials, docker_client):
         """Setup for each test."""
         self.driver = driver
-        self.base_url = test_base_url
+        self.config = selenium_config
+        self.base_url = selenium_config.base_url
         self.student_credentials = student_credentials
         self.docker_client = docker_client
-        self.lab_page = LabEnvironmentPage(driver, test_base_url)
+        self.lab_page = LabEnvironmentPage(driver, selenium_config)
 
         # Login as student
         self._login_as_student()
@@ -393,13 +394,14 @@ class TestLabSessionManagement(BaseTest):
     """
 
     @pytest.fixture(autouse=True)
-    def setup(self, driver, test_base_url, student_credentials, docker_client):
+    def setup(self, driver, selenium_config, student_credentials, docker_client):
         """Setup for each test."""
         self.driver = driver
-        self.base_url = test_base_url
+        self.config = selenium_config
+        self.base_url = selenium_config.base_url
         self.student_credentials = student_credentials
         self.docker_client = docker_client
-        self.lab_page = LabEnvironmentPage(driver, test_base_url)
+        self.lab_page = LabEnvironmentPage(driver, selenium_config)
 
         # Login as student
         self._login_as_student()
@@ -965,13 +967,14 @@ class TestLabCleanup(BaseTest):
     """
 
     @pytest.fixture(autouse=True)
-    def setup(self, driver, test_base_url, student_credentials, docker_client):
+    def setup(self, driver, selenium_config, student_credentials, docker_client):
         """Setup for each test."""
         self.driver = driver
-        self.base_url = test_base_url
+        self.config = selenium_config
+        self.base_url = selenium_config.base_url
         self.student_credentials = student_credentials
         self.docker_client = docker_client
-        self.lab_page = LabEnvironmentPage(driver, test_base_url)
+        self.lab_page = LabEnvironmentPage(driver, selenium_config)
 
     def test_18_lab_cleanup_on_course_completion(self):
         """

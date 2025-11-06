@@ -328,7 +328,7 @@ class EngagementScoreResponse(BaseModel):
     - Quantitative engagement scoring (0-100 scale)
     - Temporal engagement analysis over configurable periods
     - Activity breakdown for engagement pattern identification
-    - Comparative analysis capability for cohort studies
+    - Comparative analysis capability for locations studies
     
     Educational Applications:
     - Early warning system for disengaged students
@@ -1934,7 +1934,7 @@ async def get_course_analytics_summary(
        - Time-to-completion distributions
        
     2. **Learning Effectiveness Measurement**:
-       - Average learning outcomes across cohorts
+       - Average learning outcomes across locations
        - Competency achievement rates by learning objective
        - Knowledge retention and transfer assessment
        - Skill development progression tracking

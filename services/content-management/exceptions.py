@@ -509,7 +509,7 @@ class ContentNotFoundException(ContentManagementException):
     - **Missing Educational Content**: Educational content deletion or unavailability
     - **Educational Content Access Restrictions**: Permission and security access limitations
     - **Educational Content Status Issues**: Educational content status and availability changes
-    - **Educational Content Location Errors**: Educational content storage and retrieval failures
+    - **Educational Content Locations Errors**: Educational content storage and retrieval failures
     
     ### Educational Content Discovery
     - **Educational Content Search Failures**: Educational content discovery and search result issues
@@ -608,7 +608,7 @@ class StorageException(ContentManagementException):
     - **Educational Storage Integrity Issues**: Educational content storage corruption and data integrity problems
     
     Educational Storage Context:
-    - **Storage Path Information**: Educational content storage location and file system details
+    - **Storage Path Information**: Educational content storage locations and file system details
     - **Storage Operation**: Specific educational content storage operation and context
     - **Storage Type**: Educational content storage system type and configuration
     - **Educational Impact**: Storage error impact on educational content availability and quality

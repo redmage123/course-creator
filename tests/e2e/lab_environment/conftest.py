@@ -38,10 +38,10 @@ def db_connection():
     """
     conn = psycopg2.connect(
         host=os.getenv('DB_HOST', 'localhost'),
-        port=os.getenv('DB_PORT', '5432'),
+        port=int(os.getenv('DB_PORT', '5433')),
         database=os.getenv('DB_NAME', 'course_creator'),
-        user=os.getenv('DB_USER', 'course_user'),
-        password=os.getenv('DB_PASSWORD', 'password')
+        user=os.getenv('DB_USER', 'postgres'),
+        password=os.getenv('DB_PASSWORD', 'postgres_password')
     )
     yield conn
     conn.close()

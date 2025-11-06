@@ -1,0 +1,79 @@
+{
+  "courses": [
+    {
+      "id": "course-001",
+      "name": "Introduction to Python",
+      "description": "Learn Python programming from scratch",
+      "category": "Programming",
+      "difficulty": "Beginner",
+      "estimatedHours": 40,
+      "instructorId": "instructor-001",
+      "organizationId": "org-001",
+      "status": "published"
+    },
+    {
+      "id": "course-002",
+      "name": "Advanced JavaScript",
+      "description": "Master advanced JavaScript concepts",
+      "category": "Programming",
+      "difficulty": "Advanced",
+      "estimatedHours": 60,
+      "instructorId": "instructor-001",
+      "organizationId": "org-001",
+      "status": "draft"
+    },
+    {
+      "id": "course-003",
+      "name": "Data Science Fundamentals",
+      "description": "Introduction to data science and analytics",
+      "category": "Data Science",
+      "difficulty": "Intermediate",
+      "estimatedHours": 50,
+      "instructorId": "instructor-002",
+      "organizationId": "org-001",
+      "status": "published"
+    }
+  ],
+  "new_course": {
+    "name": "Test Course E2E",
+    "description": "Course created during E2E testing",
+    "category": "Testing",
+    "difficulty": "Beginner",
+    "estimatedHours": 10,
+    "enableLabs": true,
+    "enableQuizzes": true
+  },
+  "course_content": {
+    "slides": [
+      {
+        "title": "Introduction to the Course",
+        "content": "Welcome to the course!",
+        "order": 1
+      },
+      {
+        "title": "Module 1: Basics",
+        "content": "Let's cover the basics",
+        "order": 2
+      }
+    ],
+    "quizzes": [
+      {
+        "title": "Quiz 1: Introduction",
+        "questions": [
+          {
+            "question": "What is the main topic?",
+            "options": ["A", "B", "C", "D"],
+            "correctAnswer": "A"
+          }
+        ]
+      }
+    ],
+    "labs": [
+      {
+        "name": "Lab 1: Hello World",
+        "description": "Your first lab exercise",
+        "environment": "python"
+      }
+    ]
+  }
+}

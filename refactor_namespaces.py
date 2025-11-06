@@ -401,7 +401,7 @@ class NamespaceRefactorer:
             file_changes = [c for c in all_import_changes if Path(c.file_path).name == file_path.name]
 
             if file_changes:
-                # Re-analyze with current file location
+                # Re-analyze with current file locations
                 current_changes = self.analyze_imports(file_path, service_name)
                 if current_changes:
                     if not self.apply_import_changes(file_path, current_changes):

@@ -6,8 +6,8 @@
 // Mock fetch for API calls
 global.fetch = jest.fn();
 
-// Mock window.location
-Object.defineProperty(window, 'location', {
+// Mock window.locations
+Object.defineProperty(window, 'locations', {
   value: {
     href: 'http://localhost:3000',
     pathname: '/student-dashboard.html',
@@ -35,8 +35,8 @@ describe('Student Dashboard Permissions', () => {
     fetch.mockClear();
     localStorageMock.getItem.mockClear();
     localStorageMock.setItem.mockClear();
-    window.location.assign.mockClear();
-    window.location.replace.mockClear();
+    window.locations.assign.mockClear();
+    window.locations.replace.mockClear();
     
     // Setup basic DOM structure for student dashboard
     document.body.innerHTML = `
@@ -108,7 +108,7 @@ describe('Student Dashboard Permissions', () => {
       window.initializeDashboard = function() {
         const currentUser = this.getCurrentUser();
         if (!currentUser || currentUser.role !== 'student') {
-          window.location.href = 'index.html';
+          window.locations.href = 'index.html';
           return false;
         }
         return true;
@@ -128,14 +128,14 @@ describe('Student Dashboard Permissions', () => {
 
       const result = window.initializeDashboard();
       expect(result).toBe(true);
-      expect(window.location.href).not.toBe('index.html');
+      expect(window.locations.href).not.toBe('index.html');
     });
 
     test('should redirect non-student users to login', () => {
       window.initializeDashboard = function() {
         const currentUser = this.getCurrentUser();
         if (!currentUser || currentUser.role !== 'student') {
-          window.location.href = 'index.html';
+          window.locations.href = 'index.html';
           return false;
         }
         return true;
@@ -154,7 +154,7 @@ describe('Student Dashboard Permissions', () => {
       }));
 
       window.initializeDashboard();
-      expect(window.location.href).toBe('index.html');
+      expect(window.locations.href).toBe('index.html');
     });
 
     test('should hide instructor/admin controls from students', () => {

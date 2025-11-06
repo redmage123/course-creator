@@ -15,7 +15,6 @@
  *
  * @module org-admin-tracks
  */
-
 import {
     fetchTracks,
     fetchTrack,
@@ -145,6 +144,9 @@ function renderTracksTable(tracks) {
                 </button>
                 <button class="btn-icon" onclick="window.OrgAdmin.Tracks.editTrack('${track.id}')" title="Edit">
                     ✏️
+                </button>
+                <button class="btn-icon" onclick="window.OrgAdmin.Tracks.manageTrack('${track.id}')" title="Manage Track">
+                    📊
                 </button>
                 <button class="btn-icon" onclick="window.OrgAdmin.Tracks.deleteTrackPrompt('${track.id}')" title="Delete">
                     🗑️
@@ -477,5 +479,314 @@ export async function confirmDeleteTrack() {
     } catch (error) {
         // Error already shown by API layer
         console.error('Error deleting track:', error);
+    }
+}
+
+/**
+ * Show custom track form with advanced options
+ *
+ * BUSINESS CONTEXT:
+ * Opens advanced custom track creation modal with extended configuration options
+ * including scheduling, assessment requirements, and automation settings
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Opens customTrackModal
+ * - Loads projects dropdown
+ * - Resets form to default values
+ */
+export async function showCustomTrackForm() {
+    const modal = document.getElementById('customTrackModal');
+    const form = document.getElementById('customTrackForm');
+
+    if (!modal || !form) {
+        showNotification('Custom track modal not found', 'error');
+        return;
+    }
+
+    // Reset form to default values
+    form.reset();
+
+    // Load projects for dropdown
+    try {
+        const projects = await fetchProjects(currentOrganizationId);
+
+        const select = document.getElementById('customTrackProject');
+        if (select) {
+            select.innerHTML = '<option value="">Select Project</option>' +
+                projects.map(p => `<option value="${p.id}">${escapeHtml(p.name)}</option>`).join('');
+        }
+    } catch (error) {
+        console.error('Error loading projects:', error);
+    }
+
+    // Show modal
+    openModal('customTrackModal');
+}
+
+/**
+ * Submit custom track form with advanced options
+ *
+ * BUSINESS CONTEXT:
+ * Creates a new track with extended configuration options including
+ * scheduling, assessment requirements, and automation settings
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Gathers comprehensive form data from customTrackForm
+ * - Validates required fields
+ * - Submits to API via createTrack
+ * - Handles errors and displays notifications
+ *
+ * @param {Event} event - Form submit event
+ * @returns {Promise<void>}
+ */
+export async function submitCustomTrack(event) {
+    event.preventDefault();
+
+    const form = document.getElementById('customTrackForm');
+    if (!form) {
+        console.error('Custom track form not found');
+        return;
+    }
+
+    try {
+        // Gather basic information
+        const formData = {
+            name: document.getElementById('customTrackName')?.value,
+            description: document.getElementById('customTrackDescription')?.value || null,
+            project_id: document.getElementById('customTrackProject')?.value,
+            category: document.getElementById('customTrackCategory')?.value || null,
+            difficulty_level: document.getElementById('customTrackDifficulty')?.value || 'beginner',
+            tags: parseCommaSeparated(document.getElementById('customTrackTags')?.value || ''),
+
+            // Schedule & Duration
+            duration_weeks: parseInt(document.getElementById('customTrackDuration')?.value) || null,
+            hours_per_week: parseInt(document.getElementById('customTrackHoursPerWeek')?.value) || null,
+            start_date: document.getElementById('customTrackStartDate')?.value || null,
+            end_date: document.getElementById('customTrackEndDate')?.value || null,
+            self_paced: document.getElementById('customTrackSelfPaced')?.value === 'true',
+
+            // Enrollment & Capacity
+            max_students: parseInt(document.getElementById('customTrackMaxStudents')?.value) || null,
+            enrollment_deadline: document.getElementById('customTrackEnrollmentDeadline')?.value || null,
+            auto_enroll: document.getElementById('customTrackAutoEnroll')?.checked || false,
+
+            // Prerequisites & Requirements
+            prerequisites: parseCommaSeparated(document.getElementById('customTrackPrerequisites')?.value || ''),
+            target_audience: parseCommaSeparated(document.getElementById('customTrackAudience')?.value || ''),
+            learning_objectives: parseCommaSeparated(document.getElementById('customTrackObjectives')?.value || ''),
+
+            // Assessment Settings
+            requires_assessment: document.getElementById('customTrackRequiresAssessment')?.checked || false,
+            pass_threshold: parseInt(document.getElementById('customTrackPassThreshold')?.value) || 70,
+            certificate_enabled: document.getElementById('customTrackCertificate')?.checked || true,
+
+            // Automation Settings
+            auto_progress: document.getElementById('customTrackAutoProgress')?.checked || false,
+            reminder_emails: document.getElementById('customTrackReminders')?.checked || true,
+            progress_notifications: document.getElementById('customTrackProgressNotifications')?.checked || true,
+
+            // Initial status
+            status: 'draft'
+        };
+
+        // Validate required fields
+        if (!formData.name) {
+            showNotification('Track name is required', 'error');
+            return;
+        }
+
+        if (!formData.project_id) {
+            showNotification('Project is required', 'error');
+            return;
+        }
+
+        // Create track via API
+        await createTrack(formData);
+        showNotification('Custom track created successfully', 'success');
+
+        // Close modal and refresh data
+        closeModal('customTrackModal');
+        loadTracksData();
+
+        // Reset form
+        form.reset();
+
+    } catch (error) {
+        console.error('Error creating custom track:', error);
+        showNotification(`Failed to create track: ${error.message}`, 'error');
+    }
+}
+
+/**
+ * Manage a specific track from the main Tracks list
+ *
+ * BUSINESS CONTEXT:
+ * Provides quick access to track management from the Tracks tab without
+ * needing to navigate through projects. Organization admins can configure
+ * track details, assign instructors, add courses, and enroll students.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Fetches track details from API
+ * - Imports and calls openTrackManagement from org-admin-projects module
+ * - Loads track data into modal for editing
+ * - Reuses existing track management modal UI
+ *
+ * @param {string} trackId - UUID of the track to manage
+ * @returns {Promise<void>}
+ */
+/**
+ * Manage a single track from the Tracks tab main list
+ *
+ * BUSINESS CONTEXT:
+ * Organization admins need direct access to track management from the Tracks list
+ * without navigating through Projects first. This provides a focused view for
+ * track-specific operations like adding courses, assigning instructors, and
+ * enrolling students.
+ *
+ * WHY THIS EXISTS:
+ * - Tracks can be viewed as independent entities, not just project sub-components
+ * - Admins often work with specific tracks directly (e.g., "Python Track")
+ * - Having to navigate Projects → Project → Tracks → Manage is too many clicks
+ * - This function provides direct access: Tracks → Manage (2 clicks vs 4)
+ * - Improves UX efficiency for track-focused workflows
+ *
+ * ARCHITECTURAL DECISIONS:
+ * - Delegates to Projects module modal (DEPENDENCY INVERSION PRINCIPLE)
+ * - Uses window.OrgAdmin global namespace for cross-module communication
+ * - Does NOT duplicate modal code (DRY principle maintained)
+ * - Transforms single track into array format for modal compatibility
+ *
+ * WHY USE window.OrgAdmin INSTEAD OF IMPORT:
+ * - Avoids circular dependency between org-admin-tracks.js and org-admin-projects.js
+ * - Both modules are loaded by org-admin-main.js which sets up window.OrgAdmin
+ * - Global namespace is already established for backwards compatibility
+ * - Alternative would be to create a third module for the modal (over-engineering)
+ *
+ * LISKOV SUBSTITUTION PRINCIPLE:
+ * - This function can substitute for manageProjectTracks() behaviorally
+ * - Both load track data and open the same modal interface
+ * - Modal doesn't know or care whether called from Projects or Tracks tab
+ *
+ * SINGLE RESPONSIBILITY PRINCIPLE:
+ * - Only responsibility: Load single track and delegate to modal
+ * - Authentication: delegated to localStorage
+ * - API calls: delegated to fetch API
+ * - Modal rendering: delegated to Projects module
+ * - Data transformation: minimal, just format adaptation
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * 1. Validates authentication and organization context
+ * 2. Fetches track details from organization-scoped endpoint
+ * 3. Validates modal functions are available (defensive programming)
+ * 4. Transforms track data to match modal's expected format
+ * 5. Wraps single track in array (modal expects array from wizard context)
+ * 6. Delegates to Projects module for UI rendering
+ *
+ * @param {string} trackId - UUID of the track to manage
+ * @returns {Promise<void>}
+ *
+ * @throws {Error} If track fetch fails
+ * @throws {Error} If modal functions not available
+ *
+ * @example
+ * // Called from Tracks table "Manage" button
+ * <button onclick="window.OrgAdmin.Tracks.manageTrack('track-uuid-456')">
+ *   📊 Manage
+ * </button>
+ */
+export async function manageTrack(trackId) {
+    console.log('📊 Managing track:', trackId);
+
+    try {
+        // AUTHENTICATION CHECK
+        // WHY: Prevent unauthorized access to track data
+        // Security boundary: All API calls require authentication token
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) {
+            showNotification('Please log in to continue', 'error');
+            return;
+        }
+
+        // ORGANIZATION CONTEXT CHECK
+        // WHY: Multi-tenant system requires organization scope for all operations
+        // Prevents cross-organization data access (security requirement)
+        const orgId = localStorage.getItem('currentOrgId');
+        if (!orgId) {
+            showNotification('No organization selected', 'error');
+            return;
+        }
+
+        // FETCH TRACK DATA
+        // WHY: Need fresh track data including courses, instructors, students
+        // Uses organization-scoped endpoint to enforce multi-tenant boundaries
+        const trackResponse = await fetch(`${window.API_BASE_URL || 'https://localhost'}/api/v1/organizations/${orgId}/tracks/${trackId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!trackResponse.ok) {
+            throw new Error(`Failed to fetch track: ${trackResponse.status}`);
+        }
+
+        const track = await trackResponse.json();
+        console.log('📋 Track data:', track);
+
+        // VALIDATE MODAL AVAILABILITY
+        // WHY: Defensive programming - ensure Projects module loaded before calling
+        // Fails gracefully with clear message if module not initialized
+        // INTERFACE SEGREGATION PRINCIPLE: Only depends on specific modal functions needed
+        if (!window.OrgAdmin?.Projects?.openTrackManagement) {
+            console.error('Track management modal not available');
+            showNotification('Track management feature not available', 'error');
+            return;
+        }
+
+        // DATA TRANSFORMATION
+        // WHY: Modal expects array of tracks with specific structure
+        // Transform single track into array format for modal compatibility
+        // OPEN/CLOSED PRINCIPLE: Adapt data to interface without modifying modal code
+        const trackData = {
+            id: track.id,
+            name: track.name,
+            description: track.description || '',
+            difficulty_level: track.difficulty_level || 'beginner',
+            duration_weeks: track.duration_weeks || 0,
+            instructors: track.instructors || [],
+            courses: track.courses || [],
+            students: track.students || [],
+            project_id: track.project_id,
+            project_name: track.project_name || 'N/A'
+        };
+
+        // VALIDATE POPULATE FUNCTION
+        // WHY: Second defensive check - ensure list population function available
+        // Modal needs track list populated before opening
+        if (!window.OrgAdmin?.Projects?.populateTrackReviewList) {
+            console.error('Track review list population not available');
+            showNotification('Track management feature not available', 'error');
+            return;
+        }
+
+        // POPULATE TRACK LIST
+        // WHY: Modal expects tracks in generatedTracks array (from wizard context)
+        // Wrap single track in array to match wizard's multi-track interface
+        // ADAPTER PATTERN: Adapting single-track workflow to multi-track modal
+        window.OrgAdmin.Projects.populateTrackReviewList([trackData]);
+
+        // OPEN MODAL
+        // WHY: Delegate to Projects module for modal rendering
+        // Pass index 0 since we only have one track in the array
+        // DEPENDENCY INVERSION: Depend on modal abstraction, not concrete implementation
+        window.OrgAdmin.Projects.openTrackManagement(0);
+
+    } catch (error) {
+        // ERROR HANDLING
+        // WHY: Provide clear user feedback when operations fail
+        // Log technical details for debugging, show user-friendly message
+        console.error('❌ Error managing track:', error);
+        showNotification(`Failed to load track: ${error.message}`, 'error');
     }
 }

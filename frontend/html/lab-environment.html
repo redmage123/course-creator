@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="../css/modern-ui/modern-ui.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lab Environment - Course Creator</title>
@@ -454,7 +455,7 @@
     <div id="aria-live-assertive" role="alert" aria-live="assertive" aria-atomic="true" class="sr-only"></div>
 
     <header class="site-header" role="banner">
-        <a href="/dashboard" style="color: var(--primary-600); text-decoration: none;" aria-label="Back to Dashboard">
+        <a href="/dashboard" class="link-primary" aria-label="Back to Dashboard">
             <i class="fas fa-arrow-left" aria-hidden="true"></i> Back to Dashboard
         </a>
     </header>
@@ -472,11 +473,11 @@
 
         <!-- Loading Spinner -->
         <div class="lab-loading" id="lab-loading">
-            <div style="font-size: 3rem; margin-bottom: 20px;">
+            <div class="loading-icon">
                 <i class="fas fa-spinner fa-spin"></i>
             </div>
             <p>Starting your lab environment...</p>
-            <p style="color: var(--text-secondary);">This may take up to 30 seconds</p>
+            <p class="text-secondary">This may take up to 30 seconds</p>
         </div>
 
         <!-- Lab Container (appears after starting) -->
@@ -489,10 +490,10 @@
                 <i class="fas fa-play"></i> Run Code
             </button>
 
-            <h3 style="margin-top: 20px;">Output:</h3>
+            <h3 class="output-heading">Output:</h3>
             <div class="code-output" id="code-output">Ready to run code...</div>
 
-            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+            <div class="button-group">
                 <button class="launch-btn" id="save-work-btn" onclick="saveWork()">
                     <i class="fas fa-save"></i> Save Work
                 </button>
@@ -942,7 +943,7 @@
             return text
                 .replace(/\n/g, '<br>')
                 .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                .replace(/`(.+?)`/g, '<code style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px;">$1</code>');
+                .replace(/`(.+?)`/g, '<code class="inline-code">$1</code>');
         }
 
         /**

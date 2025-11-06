@@ -24,13 +24,51 @@ from organization_management.exceptions import (
 
 class OrganizationService:
     """
-    Service class for organization business operations
+    Service class for organization business operations with integrated user management.
+
+    BUSINESS PURPOSE:
+    Manages complete organization lifecycle including registration, configuration, and administration.
+    Orchestrates organization creation with automatic administrator user provisioning for seamless onboarding.
+
+    CORE RESPONSIBILITIES:
+    - Organization CRUD operations (create, read, update, delete)
+    - Automatic organization administrator user creation during registration
+    - Organization validation and uniqueness enforcement (slug, domain)
+    - Multi-tenant organization isolation and security
+    - Organization search, filtering, and statistics
+    - Inter-service communication with user-management for admin user creation
+
+    MULTI-TENANT ARCHITECTURE:
+    This service implements organization-level multi-tenancy:
+    - Each organization has unique slug and domain for identification
+    - Organizations are completely isolated from each other
+    - Organization admins can only access their own organization
+    - Site admin has cross-organization access for platform management
+
+    INTEGRATION POINTS:
+    - user-management service: Creates organization admin users via REST API
+    - Database: Stores organization entities and metadata
+    - Authentication: Validates organization access permissions
+
+    DESIGN PATTERNS:
+    - Single Responsibility: Handles organization business logic only
+    - Dependency Inversion: Depends on DAO abstraction, not concrete implementation
+    - Service Layer: Orchestrates between domain entities and infrastructure
+
+    Args:
+        dao: Data access object for organization persistence operations
     """
 
     def __init__(self, dao: OrganizationManagementDAO):
+        """
+        Initialize organization service with data access object.
+
+        Args:
+            dao: OrganizationManagementDAO for database operations
+        """
         self._dao = dao
         self._logger = logging.getLogger(__name__)
-        
+
         # HTTP client configuration for user management service with SSL certificate handling
         self._user_management_url = os.getenv('USER_MANAGEMENT_URL') or os.getenv('USER_SERVICE_URL', 'http://user-management:8000')
         # Configure client to accept self-signed certificates for inter-service communication
@@ -387,16 +425,52 @@ class OrganizationService:
                 raise
     
     async def __aenter__(self):
-        """Async context manager entry"""
+        """
+        Async context manager entry for resource management.
+
+        WHAT: Enables 'async with' syntax for service lifecycle management
+        WHY: Ensures proper cleanup of HTTP client and database connections
+
+        Returns:
+            Self for context manager use
+        """
         return self
-    
+
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """Async context manager exit - cleanup HTTP client"""
+        """
+        Async context manager exit for cleanup of HTTP client resources.
+
+        WHAT: Closes HTTP client connection to user-management service
+        WHY: Prevents resource leaks and ensures graceful shutdown
+
+        Args:
+            exc_type: Exception type if exception occurred
+            exc_val: Exception value if exception occurred
+            exc_tb: Exception traceback if exception occurred
+        """
         if hasattr(self, '_http_client'):
             await self._http_client.aclose()
 
     async def get_all_organizations(self) -> list[Organization]:
-        """Get all organizations"""
+        """
+        Retrieve all organizations from the system.
+
+        WHAT: Fetches complete list of all organizations regardless of status
+        WHY: Site admin needs to view and manage all organizations on the platform
+
+        BUSINESS CONTEXT:
+        This operation is typically restricted to site administrators for platform-wide
+        visibility. Organization admins should only see their own organization.
+
+        SECURITY NOTE:
+        Should be protected by site admin authorization in the API layer.
+
+        Returns:
+            List of Organization entities with complete metadata
+
+        Raises:
+            Exception: If database query fails
+        """
         try:
             org_dicts = await self._dao.get_all_organizations()
             organizations = []
@@ -428,12 +502,49 @@ class OrganizationService:
             raise
 
     async def get_organization_projects(self, organization_id: UUID) -> list:
-        """Get all projects for an organization"""
+        """
+        Get all projects for an organization.
+
+        WHAT: Retrieves all projects owned by the specified organization
+        WHY: Organization admins need to view and manage their organization's projects
+
+        BUSINESS CONTEXT:
+        Projects are the top-level content organization structure within an organization.
+        Each organization can have multiple projects (e.g., "Python Bootcamp", "Data Science Track").
+
+        NOTE: Projects table schema not yet implemented - returns empty list as placeholder.
+
+        Args:
+            organization_id: UUID of the organization
+
+        Returns:
+            List of project dicts (currently empty - future implementation)
+        """
         # Projects table doesn't exist yet, return empty list
         return []
 
     async def get_organization(self, organization_id: UUID) -> Optional[Organization]:
-        """Get organization by ID"""
+        """
+        Get organization by ID with complete metadata.
+
+        WHAT: Retrieves single organization entity by UUID
+        WHY: Needed for organization detail views, settings pages, and validation
+
+        BUSINESS CONTEXT:
+        This is the primary method for retrieving organization information. Used by:
+        - Organization dashboard to display org details
+        - Settings pages for configuration
+        - Authorization checks for organization access
+
+        Args:
+            organization_id: UUID of the organization to retrieve
+
+        Returns:
+            Organization entity if found, None if not found
+
+        Raises:
+            Exception: If database query fails
+        """
         try:
             org_dict = await self._dao.get_organization_by_id(str(organization_id))
             if not org_dict:
@@ -464,7 +575,27 @@ class OrganizationService:
             raise
 
     async def get_organization_by_slug(self, slug: str) -> Optional[Organization]:
-        """Get organization by slug"""
+        """
+        Get organization by unique slug identifier.
+
+        WHAT: Retrieves organization using human-readable slug
+        WHY: Slugs provide user-friendly URLs (e.g., /orgs/acme-corp)
+
+        BUSINESS CONTEXT:
+        Slugs are unique, URL-safe identifiers used for:
+        - Organization login pages (/login/acme-corp)
+        - Public organization profiles
+        - URL routing and navigation
+
+        Args:
+            slug: Unique slug identifier (e.g., 'acme-corp', 'google-edu')
+
+        Returns:
+            Organization entity if found, None if not found
+
+        Raises:
+            Exception: If database query fails
+        """
         try:
             return await self._dao.get_by_slug(slug)
         except Exception as e:
@@ -472,7 +603,31 @@ class OrganizationService:
             raise
 
     async def get_organization_by_domain(self, domain: str) -> Optional[Organization]:
-        """Get organization by domain"""
+        """
+        Get organization by registered domain name.
+
+        WHAT: Retrieves organization using email domain for auto-enrollment
+        WHY: Enables automatic organization assignment based on user email domain
+
+        BUSINESS CONTEXT:
+        Domain-based organization lookup enables:
+        - Auto-enrollment: Users with @acme.com email automatically join Acme org
+        - Organization discovery during registration
+        - Single sign-on (SSO) routing
+
+        EXAMPLE:
+        User registers with email 'alice@acme.com' → System finds organization
+        with domain 'acme.com' → Auto-enrolls user in Acme organization
+
+        Args:
+            domain: Email domain (e.g., 'acme.com', 'google.com')
+
+        Returns:
+            Organization entity if found, None if not found
+
+        Raises:
+            Exception: If database query fails
+        """
         try:
             return await self._dao.get_by_domain(domain)
         except Exception as e:
@@ -577,7 +732,34 @@ class OrganizationService:
             )
 
     async def delete_organization(self, organization_id: UUID) -> bool:
-        """Delete organization"""
+        """
+        Delete organization and all associated data.
+
+        WHAT: Permanently removes organization from the system
+        WHY: Site admin may need to remove inactive or test organizations
+
+        BUSINESS CONTEXT:
+        Organization deletion is a DESTRUCTIVE operation that removes:
+        - Organization entity and metadata
+        - Organization members and roles (handled by foreign key cascade)
+        - Projects, tracks, and courses (handled by foreign key cascade)
+        - Meeting rooms and notifications
+
+        SECURITY WARNING:
+        This operation should be restricted to site administrators only.
+        Consider implementing soft delete (is_active=false) instead of hard delete
+        to preserve audit trails and prevent data loss.
+
+        Args:
+            organization_id: UUID of organization to delete
+
+        Returns:
+            True if deletion successful, False if organization not found
+
+        Raises:
+            ValueError: If organization doesn't exist
+            Exception: If database operation fails
+        """
         try:
             # Check if organization exists
             organization = await self._dao.get_by_id(organization_id)
@@ -597,7 +779,26 @@ class OrganizationService:
             raise
 
     async def list_organizations(self, limit: int = 100, offset: int = 0) -> List[Organization]:
-        """List all organizations with pagination"""
+        """
+        List all organizations with pagination support.
+
+        WHAT: Retrieves paginated list of organizations
+        WHY: Site admin needs to browse all organizations with performance optimization
+
+        BUSINESS CONTEXT:
+        Used by site admin dashboard to display organization directory.
+        Pagination prevents performance issues with large organization counts.
+
+        Args:
+            limit: Maximum number of organizations to return (default: 100)
+            offset: Number of organizations to skip for pagination (default: 0)
+
+        Returns:
+            List of Organization entities (up to limit count)
+
+        Raises:
+            Exception: If database query fails
+        """
         try:
             return await self._dao.get_all(limit, offset)
         except Exception as e:
@@ -605,7 +806,22 @@ class OrganizationService:
             raise
 
     async def list_active_organizations(self) -> List[Organization]:
-        """List all active organizations"""
+        """
+        List all active organizations.
+
+        WHAT: Retrieves only organizations with is_active=True
+        WHY: Filter out deactivated/suspended organizations from listings
+
+        BUSINESS CONTEXT:
+        Active organizations are those currently using the platform.
+        Inactive organizations may be suspended, deleted, or in setup phase.
+
+        Returns:
+            List of active Organization entities
+
+        Raises:
+            Exception: If database query fails
+        """
         try:
             return await self._dao.get_active()
         except Exception as e:
@@ -613,7 +829,28 @@ class OrganizationService:
             raise
 
     async def search_organizations(self, query: str, limit: int = 50) -> List[Organization]:
-        """Search organizations"""
+        """
+        Search organizations by name, slug, or domain.
+
+        WHAT: Full-text search across organization attributes
+        WHY: Site admin needs to quickly find specific organizations
+
+        BUSINESS CONTEXT:
+        Search functionality supports:
+        - Finding organization by partial name match
+        - Looking up by slug or domain
+        - Discovery for support and administration tasks
+
+        Args:
+            query: Search query string (searches name, slug, domain)
+            limit: Maximum results to return (default: 50)
+
+        Returns:
+            List of matching Organization entities
+
+        Raises:
+            Exception: If database query fails
+        """
         try:
             return await self._dao.search(query, limit)
         except Exception as e:
@@ -621,7 +858,28 @@ class OrganizationService:
             raise
 
     async def get_organization_stats(self, organization_id: UUID) -> Dict[str, Any]:
-        """Get organization statistics"""
+        """
+        Get organization statistics and metadata summary.
+
+        WHAT: Retrieves key statistics and metadata for an organization
+        WHY: Organization dashboard needs summary statistics
+
+        BUSINESS CONTEXT:
+        Provides overview information for organization dashboard including:
+        - Basic metadata (name, slug, creation date)
+        - Active status
+        - Future: Member count, project count, usage metrics
+
+        Args:
+            organization_id: UUID of organization
+
+        Returns:
+            Dict with organization statistics
+
+        Raises:
+            ValueError: If organization doesn't exist
+            Exception: If database query fails
+        """
         try:
             organization = await self._dao.get_by_id(organization_id)
             if not organization:

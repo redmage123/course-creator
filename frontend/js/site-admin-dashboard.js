@@ -36,13 +36,6 @@
  * - Audit logging for all administrative actions
  * - JWT token validation and renewal
  */
-
-/**
- * IMPORT DEPENDENCIES
- * PURPOSE: Import configuration and utility modules
- * WHY: Centralized configuration and consistent notification system
- */
-
 import { showNotification } from './modules/notifications.js';
 
 class SiteAdminDashboard {
@@ -559,6 +552,11 @@ class SiteAdminDashboard {
         }
     }
 
+    /**
+     * SET EVENT LISTENERS VALUE
+     * PURPOSE: Set event listeners value
+     * WHY: Maintains data integrity through controlled mutation
+     */
     setupEventListeners() {
         // Tab navigation
         document.querySelectorAll('.nav-link').forEach(link => {
@@ -594,6 +592,15 @@ class SiteAdminDashboard {
         });
     }
 
+    /**
+     * LOAD DASHBOARD DATA DATA FROM SERVER
+     * PURPOSE: Load dashboard data data from server
+     * WHY: Dynamic data loading enables real-time content updates
+     *
+     * @returns {Promise<void>} Promise resolving when loading completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async loadDashboardData() {
         this.showLoadingOverlay(true);
         
@@ -612,6 +619,15 @@ class SiteAdminDashboard {
         }
     }
 
+    /**
+     * LOAD PLATFORM STATS DATA FROM SERVER
+     * PURPOSE: Load platform stats data from server
+     * WHY: Dynamic data loading enables real-time content updates
+     *
+     * @returns {Promise<void>} Promise resolving when loading completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async loadPlatformStats() {
         try {
             const response = await fetch(`${this.API_BASE}/api/v1/site-admin/stats`, {
@@ -634,6 +650,15 @@ class SiteAdminDashboard {
         }
     }
 
+    /**
+     * LOAD ORGANIZATIONS DATA FROM SERVER
+     * PURPOSE: Load organizations data from server
+     * WHY: Dynamic data loading enables real-time content updates
+     *
+     * @returns {Promise<void>} Promise resolving when loading completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async loadOrganizations() {
         try {
             const response = await fetch(`${this.API_BASE}/api/v1/site-admin/organizations`, {
@@ -657,6 +682,15 @@ class SiteAdminDashboard {
         }
     }
 
+    /**
+     * LOAD RECENT ACTIVITY DATA FROM SERVER
+     * PURPOSE: Load recent activity data from server
+     * WHY: Dynamic data loading enables real-time content updates
+     *
+     * @returns {Promise<void>} Promise resolving when loading completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async loadRecentActivity() {
         try {
             // Mock recent activity data for now
@@ -696,6 +730,15 @@ class SiteAdminDashboard {
         }
     }
 
+    /**
+     * LOAD INTEGRATION STATUS DATA FROM SERVER
+     * PURPOSE: Load integration status data from server
+     * WHY: Dynamic data loading enables real-time content updates
+     *
+     * @returns {Promise<void>} Promise resolving when loading completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async loadIntegrationStatus() {
         try {
             const response = await fetch(`${this.API_BASE}/api/v1/site-admin/platform/health`, {
@@ -718,6 +761,13 @@ class SiteAdminDashboard {
         }
     }
 
+    /**
+     * DISPLAY TAB INTERFACE
+     * PURPOSE: Display tab interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} tabName - Tabname parameter
+     */
     showTab(tabName) {
         // Update active nav link
         document.querySelectorAll('.nav-link').forEach(link => {
@@ -742,6 +792,13 @@ class SiteAdminDashboard {
         }
     }
 
+    /**
+     * UPDATE PLATFORM STATS STATE
+     * PURPOSE: Update platform stats state
+     * WHY: Keeps application state synchronized with user actions and data changes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     updatePlatformStats() {
         document.getElementById('totalOrganizations').textContent = this.platformStats.total_organizations || 0;
         document.getElementById('totalUsers').textContent = this.platformStats.total_users || 0;
@@ -757,6 +814,11 @@ class SiteAdminDashboard {
         document.getElementById('studentCount').textContent = usersByRole.student || 0;
     }
 
+    /**
+     * DISPLAY DEFAULT STATS INTERFACE
+     * PURPOSE: Display default stats interface
+     * WHY: Provides user interface for interaction and data visualization
+     */
     showDefaultStats() {
         document.getElementById('totalOrganizations').textContent = '0';
         document.getElementById('totalUsers').textContent = '0';
@@ -766,6 +828,11 @@ class SiteAdminDashboard {
         document.getElementById('systemHealth').textContent = 'Unknown';
     }
 
+    /**
+     * RENDER ORGANIZATIONS UI COMPONENT
+     * PURPOSE: Render organizations UI component
+     * WHY: Separates presentation logic for maintainable UI code
+     */
     renderOrganizations() {
         const container = document.getElementById('organizationsContainer');
 
@@ -933,6 +1000,13 @@ class SiteAdminDashboard {
         container.innerHTML = organizationsHtml;
     }
 
+    /**
+     * RENDER RECENT ACTIVITY UI COMPONENT
+     * PURPOSE: Render recent activity UI component
+     * WHY: Separates presentation logic for maintainable UI code
+     *
+     * @param {*} activities - Activities parameter
+     */
     renderRecentActivity(activities) {
         const container = document.getElementById('recentActivity');
         
@@ -965,6 +1039,15 @@ class SiteAdminDashboard {
         container.innerHTML = activitiesHtml;
     }
 
+    /**
+     * UPDATE INTEGRATION STATUS STATE
+     * PURPOSE: Update integration status state
+     * WHY: Keeps application state synchronized with user actions and data changes
+     *
+     * @param {*} health - Health parameter
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     updateIntegrationStatus(health) {
         // Teams integration
         const teamsStatus = document.getElementById('teamsIntegrationStatus');
@@ -979,6 +1062,11 @@ class SiteAdminDashboard {
         document.getElementById('zoomLastTest').textContent = new Date().toLocaleString();
     }
 
+    /**
+     * SET DEFAULT INTEGRATION STATUS VALUE
+     * PURPOSE: Set default integration status value
+     * WHY: Maintains data integrity through controlled mutation
+     */
     setDefaultIntegrationStatus() {
         document.getElementById('teamsIntegrationStatus').className = 'integration-status inactive';
         document.getElementById('zoomIntegrationStatus').className = 'integration-status inactive';
@@ -987,6 +1075,19 @@ class SiteAdminDashboard {
     }
 
     // Modal Functions
+    /**
+     * DISPLAY DELETE ORGANIZATION MODAL INTERFACE
+     * PURPOSE: Display delete organization modal interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {string|number} orgId - Unique identifier
+     * @param {*} orgName - Name value
+     * @param {*} memberCount - Membercount parameter
+     * @param {*} projectCount - Projectcount parameter
+     * @param {*} meetingRoomCount - Meetingroomcount parameter
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     showDeleteOrganizationModal(orgId, orgName, memberCount, projectCount, meetingRoomCount) {
         document.getElementById('deleteOrgId').value = orgId;
         document.getElementById('orgNameToDelete').textContent = orgName;
@@ -1001,11 +1102,25 @@ class SiteAdminDashboard {
         this.showModal('deleteOrgModal');
     }
 
+    /**
+     * DISPLAY MODAL INTERFACE
+     * PURPOSE: Display modal interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {string|number} modalId - Modalid parameter
+     */
     showModal(modalId) {
         document.getElementById(modalId).style.display = 'flex';
         document.body.style.overflow = 'hidden';
     }
 
+    /**
+     * HIDE MODAL INTERFACE
+     * PURPOSE: Hide modal interface
+     * WHY: Improves UX by managing interface visibility and state
+     *
+     * @param {string|number} modalId - Modalid parameter
+     */
     closeModal(modalId) {
         document.getElementById(modalId).style.display = 'none';
         document.body.style.overflow = 'auto';
@@ -1019,6 +1134,15 @@ class SiteAdminDashboard {
     }
 
     // API Functions
+    /**
+     * EXECUTE CONFIRMDELETEORGANIZATION OPERATION
+     * PURPOSE: Execute confirmDeleteOrganization operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async confirmDeleteOrganization() {
         try {
             this.showLoadingOverlay(true);
@@ -1064,6 +1188,17 @@ class SiteAdminDashboard {
         }
     }
 
+    /**
+     * EXECUTE DEACTIVATEORGANIZATION OPERATION
+     * PURPOSE: Execute deactivateOrganization operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} orgId - Unique identifier
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async deactivateOrganization(orgId) {
         if (!confirm('Are you sure you want to deactivate this organization? This will disable access for all members.')) {
             return;
@@ -1096,6 +1231,17 @@ class SiteAdminDashboard {
         }
     }
 
+    /**
+     * EXECUTE REACTIVATEORGANIZATION OPERATION
+     * PURPOSE: Execute reactivateOrganization operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} orgId - Unique identifier
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async reactivateOrganization(orgId) {
         try {
             this.showLoadingOverlay(true);
@@ -1124,6 +1270,15 @@ class SiteAdminDashboard {
         }
     }
 
+    /**
+     * EXECUTE TESTTEAMSINTEGRATION OPERATION
+     * PURPOSE: Execute testTeamsIntegration operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async testTeamsIntegration() {
         try {
             const status = document.getElementById('teamsIntegrationStatus');
@@ -1142,6 +1297,15 @@ class SiteAdminDashboard {
         }
     }
 
+    /**
+     * EXECUTE TESTZOOMINTEGRATION OPERATION
+     * PURPOSE: Execute testZoomIntegration operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async testZoomIntegration() {
         try {
             const status = document.getElementById('zoomIntegrationStatus');
@@ -1161,6 +1325,13 @@ class SiteAdminDashboard {
     }
 
     // Filter Functions
+    /**
+     * FILTER ORGANIZATIONS BASED ON CRITERIA
+     * PURPOSE: Filter organizations based on criteria
+     * WHY: Enables users to find relevant data quickly
+     *
+     * @returns {Array} Filtered array
+     */
     filterOrganizations() {
         const statusFilter = document.getElementById('orgStatusFilter').value;
         const orgCards = document.querySelectorAll('.organization-card');
@@ -1174,6 +1345,11 @@ class SiteAdminDashboard {
         });
     }
 
+    /**
+     * SEARCH FOR ORGANIZATIONS
+     * PURPOSE: Search for organizations
+     * WHY: Enables efficient data discovery and navigation
+     */
     searchOrganizations() {
         const searchTerm = document.getElementById('orgSearchFilter').value.toLowerCase();
         const orgCards = document.querySelectorAll('.organization-card');
@@ -1191,6 +1367,18 @@ class SiteAdminDashboard {
     }
 
     // Organization member/project viewing
+    /**
+     * DISPLAY ORGANIZATION MEMBERS INTERFACE
+     * PURPOSE: Display organization members interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {string|number} orgId - Unique identifier
+     * @param {*} role - Role parameter
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async showOrganizationMembers(orgId, role) {
         /**
          * ORGANIZATION MEMBERS VIEWER
@@ -1256,6 +1444,15 @@ class SiteAdminDashboard {
         }
     }
 
+    /**
+     * DISPLAY MEMBERS MODAL INTERFACE
+     * PURPOSE: Display members modal interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {string|number} orgId - Unique identifier
+     * @param {*} members - Members parameter
+     * @param {*} roleFilter - Rolefilter parameter
+     */
     showMembersModal(orgId, members, roleFilter) {
         /**
          * MEMBERS MODAL DISPLAY
@@ -1319,6 +1516,14 @@ class SiteAdminDashboard {
         this.showModal('membersModal');
     }
 
+    /**
+     * RENDER MEMBERS UI COMPONENT
+     * PURPOSE: Render members UI component
+     * WHY: Separates presentation logic for maintainable UI code
+     *
+     * @param {*} members - Members parameter
+     * @param {*} roleFilter - Rolefilter parameter
+     */
     renderMembers(members, roleFilter) {
         /**
          * MEMBERS RENDERING
@@ -1366,6 +1571,13 @@ class SiteAdminDashboard {
         `).join('');
     }
 
+    /**
+     * RENDER STUDENT ENROLLMENTS UI COMPONENT
+     * PURPOSE: Render student enrollments UI component
+     * WHY: Separates presentation logic for maintainable UI code
+     *
+     * @param {*} enrollments - Enrollments parameter
+     */
     renderStudentEnrollments(enrollments) {
         /**
          * STUDENT ENROLLMENTS RENDERING
@@ -1391,6 +1603,15 @@ class SiteAdminDashboard {
         `;
     }
 
+    /**
+     * RETRIEVE ROLE ICON INFORMATION
+     * PURPOSE: Retrieve role icon information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @param {*} role - Role parameter
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
     getRoleIcon(role) {
         /**
          * GET ROLE ICON
@@ -1406,6 +1627,15 @@ class SiteAdminDashboard {
         return icons[role] || 'fa-user';
     }
 
+    /**
+     * FORMAT ROLE NAME FOR DISPLAY
+     * PURPOSE: Format role name for display
+     * WHY: Consistent data presentation improves user experience
+     *
+     * @param {*} role - Role parameter
+     *
+     * @returns {string} Formatted string
+     */
     formatRoleName(role) {
         /**
          * FORMAT ROLE NAME
@@ -1421,6 +1651,17 @@ class SiteAdminDashboard {
         return names[role] || role;
     }
 
+    /**
+     * FILTER MEMBERS BY ROLE BASED ON CRITERIA
+     * PURPOSE: Filter members by role based on criteria
+     * WHY: Enables users to find relevant data quickly
+     *
+     * @param {string|number} orgId - Unique identifier
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async filterMembersByRole(orgId) {
         /**
          * FILTER MEMBERS BY ROLE
@@ -1430,6 +1671,11 @@ class SiteAdminDashboard {
         await this.showOrganizationMembers(orgId, roleFilter);
     }
 
+    /**
+     * SORT MEMBERS IN SPECIFIED ORDER
+     * PURPOSE: Sort members in specified order
+     * WHY: Organized data presentation improves usability
+     */
     sortMembers() {
         /**
          * SORT MEMBERS
@@ -1458,6 +1704,11 @@ class SiteAdminDashboard {
         document.getElementById('membersList').innerHTML = this.renderMembers(members, this.currentMembersRole);
     }
 
+    /**
+     * HIDE MEMBERS MODAL INTERFACE
+     * PURPOSE: Hide members modal interface
+     * WHY: Improves UX by managing interface visibility and state
+     */
     closeMembersModal() {
         /**
          * CLOSE MEMBERS MODAL
@@ -1469,6 +1720,17 @@ class SiteAdminDashboard {
         this.currentMembersRole = null;
     }
 
+    /**
+     * DISPLAY ORGANIZATION PROJECTS INTERFACE
+     * PURPOSE: Display organization projects interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {string|number} orgId - Unique identifier
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async showOrganizationProjects(orgId) {
         /**
          * ORGANIZATION PROJECTS VIEWER
@@ -1524,6 +1786,14 @@ class SiteAdminDashboard {
         }
     }
 
+    /**
+     * DISPLAY PROJECTS MODAL INTERFACE
+     * PURPOSE: Display projects modal interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {string|number} orgId - Unique identifier
+     * @param {*} projects - Projects parameter
+     */
     showProjectsModal(orgId, projects) {
         /**
          * PROJECTS MODAL DISPLAY
@@ -1567,6 +1837,13 @@ class SiteAdminDashboard {
         this.showModal('projectsModal');
     }
 
+    /**
+     * RENDER PROJECTS UI COMPONENT
+     * PURPOSE: Render projects UI component
+     * WHY: Separates presentation logic for maintainable UI code
+     *
+     * @param {*} projects - Projects parameter
+     */
     renderProjects(projects) {
         /**
          * PROJECTS RENDERING
@@ -1596,6 +1873,13 @@ class SiteAdminDashboard {
         `).join('');
     }
 
+    /**
+     * RENDER TRACKS UI COMPONENT
+     * PURPOSE: Render tracks UI component
+     * WHY: Separates presentation logic for maintainable UI code
+     *
+     * @param {*} tracks - Tracks parameter
+     */
     renderTracks(tracks) {
         /**
          * TRACKS RENDERING
@@ -1618,6 +1902,11 @@ class SiteAdminDashboard {
         `).join('');
     }
 
+    /**
+     * SORT PROJECTS IN SPECIFIED ORDER
+     * PURPOSE: Sort projects in specified order
+     * WHY: Organized data presentation improves usability
+     */
     sortProjects() {
         /**
          * PROJECTS SORTING
@@ -1645,6 +1934,11 @@ class SiteAdminDashboard {
         document.getElementById('projectsList').innerHTML = this.renderProjects(projects);
     }
 
+    /**
+     * HIDE PROJECTS MODAL INTERFACE
+     * PURPOSE: Hide projects modal interface
+     * WHY: Improves UX by managing interface visibility and state
+     */
     closeProjectsModal() {
         /**
          * CLOSE PROJECTS MODAL
@@ -1655,6 +1949,15 @@ class SiteAdminDashboard {
     }
 
     // Utility Functions
+    /**
+     * RETRIEVE ACTIVITY ICON INFORMATION
+     * PURPOSE: Retrieve activity icon information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @param {*} type - Type identifier
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
     getActivityIcon(type) {
         const icons = {
             'create': 'fa-plus',
@@ -1665,6 +1968,15 @@ class SiteAdminDashboard {
         return icons[type] || 'fa-info';
     }
 
+    /**
+     * FORMAT TIME AGO FOR DISPLAY
+     * PURPOSE: Format time ago for display
+     * WHY: Consistent data presentation improves user experience
+     *
+     * @param {*} timestamp - Timestamp parameter
+     *
+     * @returns {string} Formatted string
+     */
     formatTimeAgo(timestamp) {
         const now = new Date();
         const diff = now - new Date(timestamp);
@@ -1680,10 +1992,27 @@ class SiteAdminDashboard {
         return `${days}d ago`;
     }
 
+    /**
+     * DISPLAY LOADING OVERLAY INTERFACE
+     * PURPOSE: Display loading overlay interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} show - Show parameter
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     showLoadingOverlay(show) {
         document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
     }
 
+    /**
+     * DISPLAY NOTIFICATION INTERFACE
+     * PURPOSE: Display notification interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} message - Message parameter
+     * @param {*} type - Type identifier
+     */
     showNotification(message, type = 'info') {
         const notification = document.getElementById('notification');
         const icon = notification.querySelector('.notification-icon');
@@ -1709,30 +2038,72 @@ class SiteAdminDashboard {
     }
 
     // Placeholder functions for other features
+    /**
+     * EXECUTE REFRESHPLATFORMSTATS OPERATION
+     * PURPOSE: Execute refreshPlatformStats operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async refreshPlatformStats() {
         await this.loadPlatformStats();
         this.showNotification('Platform statistics refreshed', 'success');
     }
 
+    /**
+     * EXECUTE RUNHEALTHCHECK OPERATION
+     * PURPOSE: Execute runHealthCheck operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async runHealthCheck() {
         await this.loadIntegrationStatus();
         this.showNotification('Health check completed', 'success');
     }
 
+    /**
+     * EXECUTE VIEWSYSTEMLOGS OPERATION
+     * PURPOSE: Execute viewSystemLogs operation
+     * WHY: Implements required business logic for system functionality
+     */
     viewSystemLogs() {
         this.showNotification('System logs feature coming soon', 'info');
     }
 
+    /**
+     * EXECUTE EXPORTPLATFORMREPORT OPERATION
+     * PURPOSE: Execute exportPlatformReport operation
+     * WHY: Implements required business logic for system functionality
+     */
     exportPlatformReport() {
         this.showNotification('Platform report export feature coming soon', 'info');
     }
 
+    /**
+     * EXECUTE REFRESHORGANIZATIONS OPERATION
+     * PURPOSE: Execute refreshOrganizations operation
+     * WHY: Implements required business logic for system functionality
+     */
     refreshOrganizations() {
         console.log('🔄 Refresh button clicked - reloading organizations');
         this.showNotification('Refreshing organizations...', 'info');
         this.loadOrganizations();
     }
 
+    /**
+     * LOAD USERS DATA FROM SERVER
+     * PURPOSE: Load users data from server
+     * WHY: Dynamic data loading enables real-time content updates
+     *
+     * @returns {Promise<void>} Promise resolving when loading completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async loadUsers() {
         try {
             const usersContainer = document.getElementById('usersContainer');
@@ -1795,6 +2166,13 @@ class SiteAdminDashboard {
         }
     }
 
+    /**
+     * RENDER USERS TABLE UI COMPONENT
+     * PURPOSE: Render users table UI component
+     * WHY: Separates presentation logic for maintainable UI code
+     *
+     * @param {*} users - Users parameter
+     */
     renderUsersTable(users) {
         const usersContainer = document.getElementById('usersContainer');
         
@@ -1880,6 +2258,15 @@ class SiteAdminDashboard {
         usersContainer.innerHTML = usersTable;
     }
 
+    /**
+     * LOAD AUDIT LOG DATA FROM SERVER
+     * PURPOSE: Load audit log data from server
+     * WHY: Dynamic data loading enables real-time content updates
+     *
+     * @returns {Promise<void>} Promise resolving when loading completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async loadAuditLog() {
         try {
             const auditContainer = document.getElementById('auditLogContainer');
@@ -1917,6 +2304,13 @@ class SiteAdminDashboard {
         }
     }
 
+    /**
+     * RENDER AUDIT LOG UI COMPONENT
+     * PURPOSE: Render audit log UI component
+     * WHY: Separates presentation logic for maintainable UI code
+     *
+     * @param {*} entries - Entries parameter
+     */
     renderAuditLog(entries) {
         const auditContainer = document.getElementById('auditLogContainer');
         
@@ -1973,6 +2367,15 @@ class SiteAdminDashboard {
         auditContainer.innerHTML = auditLogHtml;
     }
 
+    /**
+     * RETRIEVE AUDIT SEVERITY CLASS INFORMATION
+     * PURPOSE: Retrieve audit severity class information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @param {*} action - Action parameter
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
     getAuditSeverityClass(action) {
         const highSeverity = ['organization_deleted', 'user_deleted', 'permission_revoked', 'system_security_breach'];
         const mediumSeverity = ['user_created', 'permission_granted', 'organization_created', 'integration_failed'];
@@ -1982,6 +2385,15 @@ class SiteAdminDashboard {
         return 'audit-low';
     }
 
+    /**
+     * RETRIEVE AUDIT ICON INFORMATION
+     * PURPOSE: Retrieve audit icon information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @param {*} action - Action parameter
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
     getAuditIcon(action) {
         const iconMap = {
             'organization_created': 'fa-building',
@@ -1999,12 +2411,30 @@ class SiteAdminDashboard {
         return iconMap[action] || 'fa-info-circle';
     }
 
+    /**
+     * FORMAT AUDIT ACTION FOR DISPLAY
+     * PURPOSE: Format audit action for display
+     * WHY: Consistent data presentation improves user experience
+     *
+     * @param {*} action - Action parameter
+     *
+     * @returns {string} Formatted string
+     */
     formatAuditAction(action) {
         return action.split('_').map(word => 
             word.charAt(0).toUpperCase() + word.slice(1)
         ).join(' ');
     }
 
+    /**
+     * FORMAT TIMESTAMP FOR DISPLAY
+     * PURPOSE: Format timestamp for display
+     * WHY: Consistent data presentation improves user experience
+     *
+     * @param {*} timestamp - Timestamp parameter
+     *
+     * @returns {string} Formatted string
+     */
     formatTimestamp(timestamp) {
         const date = new Date(timestamp);
         return date.toLocaleString('en-US', {
@@ -2017,11 +2447,29 @@ class SiteAdminDashboard {
         });
     }
 
+    /**
+     * LOAD MORE AUDIT ENTRIES DATA FROM SERVER
+     * PURPOSE: Load more audit entries data from server
+     * WHY: Dynamic data loading enables real-time content updates
+     *
+     * @returns {Promise<void>} Promise resolving when loading completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async loadMoreAuditEntries() {
         // Implementation for pagination
         this.showNotification('Loading more audit entries...', 'info');
     }
 
+    /**
+     * FILTER AUDIT LOG BASED ON CRITERIA
+     * PURPOSE: Filter audit log based on criteria
+     * WHY: Enables users to find relevant data quickly
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async filterAuditLog() {
         /**
          * AUDIT LOG FILTERING
@@ -2077,6 +2525,15 @@ class SiteAdminDashboard {
         }
     }
 
+    /**
+     * EXECUTE EXPORTAUDITLOG OPERATION
+     * PURPOSE: Execute exportAuditLog operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async exportAuditLog() {
         /**
          * AUDIT LOG EXPORT
@@ -2133,10 +2590,28 @@ class SiteAdminDashboard {
         }
     }
 
+    /**
+     * EXECUTE VIEWORGANIZATIONDETAILS OPERATION
+     * PURPOSE: Execute viewOrganizationDetails operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} orgId - Unique identifier
+     */
     viewOrganizationDetails(orgId) {
         this.showNotification(`Organization details for ${orgId}`, 'info');
     }
 
+    /**
+     * EXECUTE VIEWUSERDETAILS OPERATION
+     * PURPOSE: Execute viewUserDetails operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} userId - Unique identifier
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async viewUserDetails(userId) {
         try {
             const response = await fetch(`/api/v1/rbac/users/${userId}`, {
@@ -2159,16 +2634,45 @@ class SiteAdminDashboard {
         }
     }
 
+    /**
+     * DISPLAY USER DETAILS MODAL INTERFACE
+     * PURPOSE: Display user details modal interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} user - User parameter
+     */
     showUserDetailsModal(user) {
         // Implementation for user details modal
         this.showNotification(`User details for ${user.name || user.email}`, 'info');
     }
 
+    /**
+     * EXECUTE EDITUSER OPERATION
+     * PURPOSE: Execute editUser operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} userId - Unique identifier
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async editUser(userId) {
         // Implementation for user editing
         this.showNotification(`Edit user functionality for user ${userId}`, 'info');
     }
 
+    /**
+     * EXECUTE ACTIVATEUSER OPERATION
+     * PURPOSE: Execute activateUser operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} userId - Unique identifier
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async activateUser(userId) {
         try {
             const response = await fetch(`/api/v1/rbac/users/${userId}/activate`, {
@@ -2192,6 +2696,17 @@ class SiteAdminDashboard {
         }
     }
 
+    /**
+     * EXECUTE DEACTIVATEUSER OPERATION
+     * PURPOSE: Execute deactivateUser operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} userId - Unique identifier
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async deactivateUser(userId) {
         if (!confirm('Are you sure you want to deactivate this user?')) {
             return;
@@ -2219,14 +2734,29 @@ class SiteAdminDashboard {
         }
     }
 
+    /**
+     * EXECUTE CONFIGURETEAMSINTEGRATION OPERATION
+     * PURPOSE: Execute configureTeamsIntegration operation
+     * WHY: Implements required business logic for system functionality
+     */
     configureTeamsIntegration() {
         this.showNotification('Teams integration configuration coming soon', 'info');
     }
 
+    /**
+     * EXECUTE CONFIGUREZOOMINTEGRATION OPERATION
+     * PURPOSE: Execute configureZoomIntegration operation
+     * WHY: Implements required business logic for system functionality
+     */
     configureZoomIntegration() {
         this.showNotification('Zoom integration configuration coming soon', 'info');
     }
 
+    /**
+     * EXECUTE LOGOUT OPERATION
+     * PURPOSE: Execute logout operation
+     * WHY: Implements required business logic for system functionality
+     */
     logout() {
         // Clear all session data
         this.clearExpiredSession();

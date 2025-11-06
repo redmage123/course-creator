@@ -35,10 +35,10 @@ def db_connection():
     """
     conn = psycopg2.connect(
         host="localhost",
-        port=5432,
+        port=5433,
         database="course_creator",
         user="postgres",
-        password="postgres"
+        password="postgres_password"
     )
 
     # Enable autocommit for DDL operations

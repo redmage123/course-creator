@@ -2,7 +2,6 @@
  * Enhanced Organization Admin Dashboard
  * Comprehensive RBAC and Meeting Room Management
  */
-
 // Import ES6 modules
 import { showNotification } from './modules/notifications.js';
 import AccessibilityManager from './modules/accessibility-manager.js';
@@ -43,6 +42,11 @@ window.logout = async function() {
 };
 
 class OrgAdminDashboard {
+    /**
+     * INITIALIZE CLASS INSTANCE WITH DEFAULT STATE
+     * PURPOSE: Initialize class instance with default state
+     * WHY: Establishes initial state required for class functionality
+     */
     constructor() {
         this.currentOrganizationId = null;
         this.currentUser = null;
@@ -142,6 +146,15 @@ class OrgAdminDashboard {
         window.location.href = window.location.pathname.includes('/html/') ? '../index.html' : 'index.html';
     }
 
+    /**
+     * INITIALIZE  COMPONENT
+     * PURPOSE: Initialize  component
+     * WHY: Proper initialization ensures component reliability and correct state
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async init() {
         try {
             // Initialize authentication
@@ -165,6 +178,15 @@ class OrgAdminDashboard {
         }
     }
 
+    /**
+     * LOAD CURRENT USER DATA FROM SERVER
+     * PURPOSE: Load current user data from server
+     * WHY: Dynamic data loading enables real-time content updates
+     *
+     * @returns {Promise<void>} Promise resolving when loading completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async loadCurrentUser() {
         /*
          * COMPREHENSIVE SESSION VALIDATION ON PAGE LOAD - ORG ADMIN DASHBOARD
@@ -247,6 +269,11 @@ class OrgAdminDashboard {
         return '259da6df-c148-40c2-bcd9-dc6889e7e9fb';
     }
 
+    /**
+     * SET EVENT LISTENERS VALUE
+     * PURPOSE: Set event listeners value
+     * WHY: Maintains data integrity through controlled mutation
+     */
     setupEventListeners() {
         // Tab navigation
         document.querySelectorAll('.nav-tab').forEach(tab => {
@@ -291,6 +318,15 @@ class OrgAdminDashboard {
         });
     }
 
+    /**
+     * LOAD DASHBOARD DATA DATA FROM SERVER
+     * PURPOSE: Load dashboard data data from server
+     * WHY: Dynamic data loading enables real-time content updates
+     *
+     * @returns {Promise<void>} Promise resolving when loading completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async loadDashboardData() {
         this.showLoadingOverlay(true);
         
@@ -316,6 +352,15 @@ class OrgAdminDashboard {
         }
     }
 
+    /**
+     * LOAD MEMBERS DATA FROM SERVER
+     * PURPOSE: Load members data from server
+     * WHY: Dynamic data loading enables real-time content updates
+     *
+     * @returns {Promise<void>} Promise resolving when loading completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async loadMembers() {
         try {
             // Use the organization management service endpoint (port 8008) 
@@ -355,6 +400,15 @@ class OrgAdminDashboard {
         }
     }
 
+    /**
+     * LOAD TRACKS DATA FROM SERVER
+     * PURPOSE: Load tracks data from server
+     * WHY: Dynamic data loading enables real-time content updates
+     *
+     * @returns {Promise<void>} Promise resolving when loading completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async loadTracks() {
         try {
             // Tracks are managed by the course generation service (port 8001)
@@ -395,6 +449,15 @@ class OrgAdminDashboard {
         }
     }
 
+    /**
+     * LOAD MEETING ROOMS DATA FROM SERVER
+     * PURPOSE: Load meeting rooms data from server
+     * WHY: Dynamic data loading enables real-time content updates
+     *
+     * @returns {Promise<void>} Promise resolving when loading completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async loadMeetingRooms() {
         try {
             // Meeting rooms are managed by organization management service (port 8008)
@@ -434,6 +497,15 @@ class OrgAdminDashboard {
         }
     }
 
+    /**
+     * LOAD PROJECTS DATA FROM SERVER
+     * PURPOSE: Load projects data from server
+     * WHY: Dynamic data loading enables real-time content updates
+     *
+     * @returns {Promise<void>} Promise resolving when loading completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async loadProjects() {
         try {
             // Projects might be managed by organization management service (port 8008)
@@ -467,6 +539,13 @@ class OrgAdminDashboard {
         }
     }
 
+    /**
+     * DISPLAY TAB INTERFACE
+     * PURPOSE: Display tab interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} tabName - Tabname parameter
+     */
     showTab(tabName) {
         // Validate tabName parameter
         if (!tabName || typeof tabName !== 'string') {
@@ -549,6 +628,11 @@ class OrgAdminDashboard {
         }
     }
 
+    /**
+     * RENDER MEMBERS UI COMPONENT
+     * PURPOSE: Render members UI component
+     * WHY: Separates presentation logic for maintainable UI code
+     */
     renderMembers() {
         const container = document.getElementById('membersContainer');
         
@@ -596,6 +680,11 @@ class OrgAdminDashboard {
         container.innerHTML = membersHtml;
     }
 
+    /**
+     * RENDER TRACKS UI COMPONENT
+     * PURPOSE: Render tracks UI component
+     * WHY: Separates presentation logic for maintainable UI code
+     */
     renderTracks() {
         const container = document.getElementById('tracksContainer');
         
@@ -655,6 +744,11 @@ class OrgAdminDashboard {
         container.innerHTML = tracksHtml;
     }
 
+    /**
+     * RENDER PROJECTS UI COMPONENT
+     * PURPOSE: Render projects UI component
+     * WHY: Separates presentation logic for maintainable UI code
+     */
     renderProjects() {
         const container = document.getElementById('projectsContainer');
         
@@ -718,6 +812,11 @@ class OrgAdminDashboard {
         container.innerHTML = projectsHtml;
     }
 
+    /**
+     * RENDER MEETING ROOMS UI COMPONENT
+     * PURPOSE: Render meeting rooms UI component
+     * WHY: Separates presentation logic for maintainable UI code
+     */
     renderMeetingRooms() {
         const container = document.getElementById('meetingRoomsContainer');
         
@@ -782,6 +881,15 @@ class OrgAdminDashboard {
         container.innerHTML = roomsHtml;
     }
 
+    /**
+     * UPDATE OVERVIEW STATS STATE
+     * PURPOSE: Update overview stats state
+     * WHY: Keeps application state synchronized with user actions and data changes
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async updateOverviewStats() {
         try {
             // Update simplified stats
@@ -808,16 +916,35 @@ class OrgAdminDashboard {
     }
 
     // Modal Functions
+    /**
+     * DISPLAY ADD MEMBER MODAL INTERFACE
+     * PURPOSE: Display add member modal interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} roleType - Roletype parameter
+     */
     showAddMemberModal(roleType = 'instructor') {
         document.getElementById('memberRole').value = roleType;
         this.updateMemberRoleFields();
         this.showModal('addMemberModal');
     }
 
+    /**
+     * DISPLAY ADD STUDENT MODAL INTERFACE
+     * PURPOSE: Display add student modal interface
+     * WHY: Provides user interface for interaction and data visualization
+     */
     showAddStudentModal() {
         this.showModal('addStudentModal');
     }
 
+    /**
+     * DISPLAY CREATE PROJECT MODAL INTERFACE
+     * PURPOSE: Display create project modal interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     showCreateProjectModal() {
         // Auto-generate slug from name when typing
         const nameInput = document.getElementById('projectName');
@@ -836,16 +963,37 @@ class OrgAdminDashboard {
         this.showModal('createProjectModal');
     }
 
+    /**
+     * DISPLAY CREATE MEETING ROOM MODAL INTERFACE
+     * PURPOSE: Display create meeting room modal interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     showCreateMeetingRoomModal() {
         this.updateRoomTypeFields();
         this.showModal('createMeetingRoomModal');
     }
 
+    /**
+     * DISPLAY MODAL INTERFACE
+     * PURPOSE: Display modal interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {string|number} modalId - Modalid parameter
+     */
     showModal(modalId) {
         document.getElementById(modalId).style.display = 'flex';
         document.body.style.overflow = 'hidden';
     }
 
+    /**
+     * HIDE MODAL INTERFACE
+     * PURPOSE: Hide modal interface
+     * WHY: Improves UX by managing interface visibility and state
+     *
+     * @param {string|number} modalId - Modalid parameter
+     */
     closeModal(modalId) {
         document.getElementById(modalId).style.display = 'none';
         document.body.style.overflow = 'auto';
@@ -858,6 +1006,13 @@ class OrgAdminDashboard {
         }
     }
 
+    /**
+     * UPDATE MEMBER ROLE FIELDS STATE
+     * PURPOSE: Update member role fields state
+     * WHY: Keeps application state synchronized with user actions and data changes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     updateMemberRoleFields() {
         const role = document.getElementById('memberRole').value;
         const projectGroup = document.getElementById('projectAccessGroup');
@@ -869,6 +1024,13 @@ class OrgAdminDashboard {
         }
     }
 
+    /**
+     * UPDATE ROOM TYPE FIELDS STATE
+     * PURPOSE: Update room type fields state
+     * WHY: Keeps application state synchronized with user actions and data changes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     updateRoomTypeFields() {
         const roomType = document.getElementById('roomType').value;
         
@@ -891,6 +1053,11 @@ class OrgAdminDashboard {
         }
     }
 
+    /**
+     * EXECUTE POPULATEPROJECTSELECTS OPERATION
+     * PURPOSE: Execute populateProjectSelects operation
+     * WHY: Implements required business logic for system functionality
+     */
     populateProjectSelects() {
         const selects = ['projectAccess', 'roomProject'];
         
@@ -904,6 +1071,11 @@ class OrgAdminDashboard {
         });
     }
 
+    /**
+     * EXECUTE POPULATETRACKSELECTS OPERATION
+     * PURPOSE: Execute populateTrackSelects operation
+     * WHY: Implements required business logic for system functionality
+     */
     populateTrackSelects() {
         const selects = ['studentTrack', 'roomTrack'];
         
@@ -919,6 +1091,15 @@ class OrgAdminDashboard {
     }
 
     // API Functions
+    /**
+     * EXECUTE ADDMEMBER OPERATION
+     * PURPOSE: Execute addMember operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async addMember() {
         try {
             this.showLoadingOverlay(true);
@@ -960,6 +1141,15 @@ class OrgAdminDashboard {
         }
     }
 
+    /**
+     * EXECUTE ADDSTUDENT OPERATION
+     * PURPOSE: Execute addStudent operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async addStudent() {
         try {
             this.showLoadingOverlay(true);
@@ -1005,6 +1195,15 @@ class OrgAdminDashboard {
         }
     }
 
+    /**
+     * CREATE NEW MEETING ROOM INSTANCE
+     * PURPOSE: Create new meeting room instance
+     * WHY: Factory method pattern for consistent object creation
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async createMeetingRoom() {
         try {
             this.showLoadingOverlay(true);
@@ -1054,6 +1253,15 @@ class OrgAdminDashboard {
         }
     }
 
+    /**
+     * CREATE NEW PROJECT INSTANCE
+     * PURPOSE: Create new project instance
+     * WHY: Factory method pattern for consistent object creation
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async createProject() {
         try {
             this.showLoadingOverlay(true);
@@ -1125,6 +1333,13 @@ class OrgAdminDashboard {
         }
     }
 
+    /**
+     * EXECUTE SELECTPROJECT OPERATION
+     * PURPOSE: Execute selectProject operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} projectId - Unique identifier
+     */
     selectProject(projectId) {
         const project = this.projects.find(p => p.id === projectId);
         if (!project) {
@@ -1144,6 +1359,13 @@ class OrgAdminDashboard {
         showNotification(`Viewing project: ${project.name}`, 'success');
     }
 
+    /**
+     * DISPLAY PROJECT DETAILS INTERFACE
+     * PURPOSE: Display project details interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} project - Project parameter
+     */
     showProjectDetails(project) {
         // Update tab label and project name
         document.getElementById('projectDetailsTabLabel').textContent = project.name;
@@ -1165,6 +1387,13 @@ class OrgAdminDashboard {
         this.setupProjectContentTabs();
     }
 
+    /**
+     * DISPLAY PROJECT INFO INTERFACE
+     * PURPOSE: Display project info interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} project - Project parameter
+     */
     displayProjectInfo(project) {
         const projectInfoDisplay = document.getElementById('projectInfoDisplay');
         
@@ -1214,6 +1443,17 @@ class OrgAdminDashboard {
         projectInfoDisplay.innerHTML = projectInfo;
     }
 
+    /**
+     * LOAD PROJECT DATA DATA FROM SERVER
+     * PURPOSE: Load project data data from server
+     * WHY: Dynamic data loading enables real-time content updates
+     *
+     * @param {*} project - Project parameter
+     *
+     * @returns {Promise<void>} Promise resolving when loading completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async loadProjectData(project) {
         try {
             // Load project-specific members, tracks, and meeting rooms
@@ -1232,6 +1472,17 @@ class OrgAdminDashboard {
         }
     }
 
+    /**
+     * LOAD PROJECT MEMBERS DATA FROM SERVER
+     * PURPOSE: Load project members data from server
+     * WHY: Dynamic data loading enables real-time content updates
+     *
+     * @param {string|number} projectId - Unique identifier
+     *
+     * @returns {Promise<void>} Promise resolving when loading completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async loadProjectMembers(projectId) {
         try {
             // For now, filter existing members by project
@@ -1248,6 +1499,17 @@ class OrgAdminDashboard {
         }
     }
 
+    /**
+     * LOAD PROJECT TRACKS DATA FROM SERVER
+     * PURPOSE: Load project tracks data from server
+     * WHY: Dynamic data loading enables real-time content updates
+     *
+     * @param {string|number} projectId - Unique identifier
+     *
+     * @returns {Promise<void>} Promise resolving when loading completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async loadProjectTracks(projectId) {
         try {
             // For now, filter existing tracks by project
@@ -1264,6 +1526,17 @@ class OrgAdminDashboard {
         }
     }
 
+    /**
+     * LOAD PROJECT MEETING ROOMS DATA FROM SERVER
+     * PURPOSE: Load project meeting rooms data from server
+     * WHY: Dynamic data loading enables real-time content updates
+     *
+     * @param {string|number} projectId - Unique identifier
+     *
+     * @returns {Promise<void>} Promise resolving when loading completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async loadProjectMeetingRooms(projectId) {
         try {
             // For now, filter existing meeting rooms by project
@@ -1280,6 +1553,13 @@ class OrgAdminDashboard {
         }
     }
 
+    /**
+     * UPDATE PROJECT STATS STATE
+     * PURPOSE: Update project stats state
+     * WHY: Keeps application state synchronized with user actions and data changes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     updateProjectStats() {
         // Count different types of members
         const instructors = this.projectMembers.filter(m => m.role_type === 'instructor').length;
@@ -1291,6 +1571,11 @@ class OrgAdminDashboard {
         document.getElementById('projectInstructorCount').textContent = instructors;
     }
 
+    /**
+     * RENDER PROJECT MEMBERS UI COMPONENT
+     * PURPOSE: Render project members UI component
+     * WHY: Separates presentation logic for maintainable UI code
+     */
     renderProjectMembers() {
         const container = document.getElementById('projectMembersContainer');
         
@@ -1329,6 +1614,11 @@ class OrgAdminDashboard {
         container.innerHTML = membersHtml;
     }
 
+    /**
+     * RENDER PROJECT TRACKS UI COMPONENT
+     * PURPOSE: Render project tracks UI component
+     * WHY: Separates presentation logic for maintainable UI code
+     */
     renderProjectTracks() {
         const container = document.getElementById('projectTracksContainer');
         
@@ -1376,6 +1666,11 @@ class OrgAdminDashboard {
         container.innerHTML = tracksHtml;
     }
 
+    /**
+     * RENDER PROJECT MEETING ROOMS UI COMPONENT
+     * PURPOSE: Render project meeting rooms UI component
+     * WHY: Separates presentation logic for maintainable UI code
+     */
     renderProjectMeetingRooms() {
         const container = document.getElementById('projectMeetingRoomsContainer');
         
@@ -1419,6 +1714,11 @@ class OrgAdminDashboard {
         container.innerHTML = roomsHtml;
     }
 
+    /**
+     * SET PROJECT CONTENT TABS VALUE
+     * PURPOSE: Set project content tabs value
+     * WHY: Maintains data integrity through controlled mutation
+     */
     setupProjectContentTabs() {
         // Handle project content tab switching
         const tabButtons = document.querySelectorAll('.project-content-tabs .tab-button');
@@ -1445,6 +1745,11 @@ class OrgAdminDashboard {
         });
     }
 
+    /**
+     * EXECUTE BACKTOPROJECTS OPERATION
+     * PURPOSE: Execute backToProjects operation
+     * WHY: Implements required business logic for system functionality
+     */
     backToProjects() {
         // Hide project details tab and show projects tab
         const projectDetailsTab = document.querySelector('[data-tab="project-details"]');
@@ -1461,16 +1766,37 @@ class OrgAdminDashboard {
         showNotification('Returned to projects view', 'info');
     }
 
+    /**
+     * EXECUTE EDITPROJECT OPERATION
+     * PURPOSE: Execute editProject operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} projectId - Unique identifier
+     */
     editProject(projectId) {
         showNotification('Project editing will be available soon', 'info');
         // TODO: Implement project editing
     }
 
+    /**
+     * EXECUTE MANAGEPROJECTMEMBERS OPERATION
+     * PURPOSE: Execute manageProjectMembers operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} projectId - Unique identifier
+     */
     manageProjectMembers(projectId) {
         showNotification('Project member management will be available soon', 'info');
         // TODO: Implement project member management
     }
 
+    /**
+     * FILTER PROJECTS BASED ON CRITERIA
+     * PURPOSE: Filter projects based on criteria
+     * WHY: Enables users to find relevant data quickly
+     *
+     * @returns {Array} Filtered array
+     */
     filterProjects() {
         const statusFilter = document.getElementById('projectStatusFilter').value;
         const projectCards = document.querySelectorAll('.project-card');
@@ -1484,11 +1810,27 @@ class OrgAdminDashboard {
         });
     }
 
+    /**
+     * EXECUTE VIEWREPORTS OPERATION
+     * PURPOSE: Execute viewReports operation
+     * WHY: Implements required business logic for system functionality
+     */
     viewReports() {
         showNotification('Organization reports will be available soon', 'info');
         // TODO: Implement reports view
     }
 
+    /**
+     * REMOVE MEMBER FROM SYSTEM
+     * PURPOSE: Remove member from system
+     * WHY: Manages resource cleanup and data consistency
+     *
+     * @param {string|number} membershipId - Membershipid parameter
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async removeMember(membershipId) {
         if (!confirm('Are you sure you want to remove this member? This action cannot be undone.')) {
             return;
@@ -1522,6 +1864,17 @@ class OrgAdminDashboard {
         }
     }
 
+    /**
+     * REMOVE ROOM FROM SYSTEM
+     * PURPOSE: Remove room from system
+     * WHY: Manages resource cleanup and data consistency
+     *
+     * @param {string|number} roomId - Roomid parameter
+     *
+     * @returns {Promise} Promise resolving when operation completes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     async deleteRoom(roomId) {
         if (!confirm('Are you sure you want to delete this meeting room? This action cannot be undone.')) {
             return;
@@ -1556,6 +1909,13 @@ class OrgAdminDashboard {
     }
 
     // Filter Functions
+    /**
+     * FILTER MEMBERS BASED ON CRITERIA
+     * PURPOSE: Filter members based on criteria
+     * WHY: Enables users to find relevant data quickly
+     *
+     * @returns {Array} Filtered array
+     */
     filterMembers() {
         const roleFilter = document.getElementById('memberRoleFilter').value;
         const memberCards = document.querySelectorAll('.member-card');
@@ -1569,6 +1929,13 @@ class OrgAdminDashboard {
         });
     }
 
+    /**
+     * FILTER MEETING ROOMS BASED ON CRITERIA
+     * PURPOSE: Filter meeting rooms based on criteria
+     * WHY: Enables users to find relevant data quickly
+     *
+     * @returns {Array} Filtered array
+     */
     filterMeetingRooms() {
         const platformFilter = document.getElementById('platformFilter').value;
         const typeFilter = document.getElementById('roomTypeFilter').value;
@@ -1590,6 +1957,15 @@ class OrgAdminDashboard {
     }
 
     // Utility Functions
+    /**
+     * RETRIEVE ROLE ICON INFORMATION
+     * PURPOSE: Retrieve role icon information
+     * WHY: Provides controlled access to internal data and state
+     *
+     * @param {*} role - Role parameter
+     *
+     * @returns {Object|null} Retrieved data or null if not found
+     */
     getRoleIcon(role) {
         const icons = {
             'organization_admin': 'fa-crown',
@@ -1599,6 +1975,15 @@ class OrgAdminDashboard {
         return icons[role] || 'fa-user';
     }
 
+    /**
+     * FORMAT ROLE NAME FOR DISPLAY
+     * PURPOSE: Format role name for display
+     * WHY: Consistent data presentation improves user experience
+     *
+     * @param {*} role - Role parameter
+     *
+     * @returns {string} Formatted string
+     */
     formatRoleName(role) {
         const names = {
             'organization_admin': 'Organization Admin',
@@ -1608,6 +1993,15 @@ class OrgAdminDashboard {
         return names[role] || role;
     }
 
+    /**
+     * FORMAT ROOM TYPE FOR DISPLAY
+     * PURPOSE: Format room type for display
+     * WHY: Consistent data presentation improves user experience
+     *
+     * @param {*} type - Type identifier
+     *
+     * @returns {string} Formatted string
+     */
     formatRoomType(type) {
         const names = {
             'organization_room': 'Organization Room',
@@ -1618,16 +2012,37 @@ class OrgAdminDashboard {
         return names[type] || type;
     }
 
+    /**
+     * EXECUTE JOINROOM OPERATION
+     * PURPOSE: Execute joinRoom operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} joinUrl - Joinurl parameter
+     */
     joinRoom(joinUrl) {
         if (joinUrl) {
             window.open(joinUrl, '_blank');
         }
     }
 
+    /**
+     * DISPLAY LOADING OVERLAY INTERFACE
+     * PURPOSE: Display loading overlay interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} show - Show parameter
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
     showLoadingOverlay(show) {
         document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
     }
     
+    /**
+     * DISPLAY NEW ORGANIZATION WELCOME INTERFACE
+     * PURPOSE: Display new organization welcome interface
+     * WHY: Provides user interface for interaction and data visualization
+     */
     showNewOrganizationWelcome() {
         // Add a welcome message to the overview tab for new organizations
         const overviewTab = document.getElementById('overview-tab');

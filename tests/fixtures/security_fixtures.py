@@ -135,15 +135,23 @@ def generate_valid_jwt_token(
 ) -> str:
     """
     Generate valid JWT token for test user
-    
+
     Args:
         user: User fixture
         secret_key: JWT secret key
         expiry_hours: Token expiry in hours
-        
+
     Returns:
         JWT token string
     """
+    # Register this user in the MockSecurityClient registry
+    # This simulates the user being in the database
+    if not hasattr(MockSecurityClient, '_registered_users'):
+        MockSecurityClient._registered_users = set()
+
+    registry_key = f"{user.id}:{user.organization_id}:{user.email}"
+    MockSecurityClient._registered_users.add(registry_key)
+
     payload = {
         'sub': user.id,
         'email': user.email,
@@ -152,7 +160,7 @@ def generate_valid_jwt_token(
         'exp': datetime.utcnow() + timedelta(hours=expiry_hours),
         'iat': datetime.utcnow()
     }
-    
+
     return jwt.encode(payload, secret_key, algorithm='HS256')
 
 
@@ -255,16 +263,18 @@ class SecurityTestClient:
 class MockSecurityClient:
     """
     Mock HTTP client that simulates security middleware behavior
-    
+
     Simulates the organization authorization middleware and validates
     requests according to security policies for testing purposes.
     """
-    
+
     def __init__(self, headers: Dict[str, str], organization_id: Optional[str] = None):
         self.headers = headers
         self.organization_id = organization_id
+        self.user_id = None
+        self.user_role = None
         self._simulate_middleware_validation()
-    
+
     def _simulate_middleware_validation(self):
         """Simulate organization middleware validation"""
         # Extract JWT token
@@ -272,17 +282,31 @@ class MockSecurityClient:
         if not auth_header.startswith('Bearer '):
             self.auth_valid = False
             return
-        
+
         token = auth_header.split(' ')[1]
-        
+
         try:
             # Decode JWT to extract user's organization
             payload = jwt.decode(token, 'test-secret-key-for-testing', algorithms=['HS256'])
             self.user_org_id = payload.get('organization_id')
-            
+            self.user_id = payload.get('sub')  # User ID from JWT
+            self.user_role = payload.get('role')
+            self.user_email = payload.get('email')
+
+            # CRITICAL SECURITY CHECK: Validate user-organization membership
+            # In a real system, this would query the database to verify the user
+            # actually belongs to the organization claimed in the JWT token
+            # For testing, we maintain a registry of valid user-org pairs
+            if not self._validate_user_organization_membership(self.user_id, self.user_org_id, self.user_email):
+                # User doesn't actually belong to the organization in their token
+                # This detects token manipulation attacks
+                self.auth_valid = False
+                self.org_access_valid = False
+                return
+
             # Simulate successful auth
             self.auth_valid = True
-            
+
             # Simulate organization membership validation
             org_id = self.headers.get('X-Organization-ID')
             if org_id and self.user_org_id:
@@ -290,11 +314,59 @@ class MockSecurityClient:
                 self.org_access_valid = (org_id == self.user_org_id)
             else:
                 self.org_access_valid = False
-                
+
         except Exception:
             self.auth_valid = False
             self.org_access_valid = False
             self.user_org_id = None
+            self.user_id = None
+            self.user_role = None
+            self.user_email = None
+
+    def _validate_user_organization_membership(self, user_id: str, org_id: str, email: str) -> bool:
+        """
+        Validate that the user actually belongs to the organization
+
+        This simulates database validation that would occur in a real system.
+        Prevents token manipulation attacks where attacker changes user_id or org_id.
+
+        CRITICAL: This validates the COMBINATION of user_id + email + org_id
+        If any one of these is manipulated in the JWT, validation will fail.
+        """
+        # Maintain a class-level registry of valid user-org-email triplets
+        # This would be a database query in a real system
+        if not hasattr(self.__class__, '_user_registry'):
+            self.__class__._user_registry = {}
+
+        # Create a unique key for this specific user-org-email combination
+        registry_key = f"{user_id}:{org_id}:{email}"
+
+        # Check if we've already validated this exact combination
+        if registry_key in self.__class__._user_registry:
+            return self.__class__._user_registry[registry_key]
+
+        # IMPORTANT: We need to validate that this EXACT combination exists
+        # Not just that the email is valid for the org, but that this specific
+        # user_id is associated with this email in this organization
+
+        # In production, this would be: SELECT EXISTS(SELECT 1 FROM users WHERE id = user_id AND email = email AND organization_id = org_id)
+
+        # For testing, we need to register valid user fixtures when they're created
+        # and check against that registry
+
+        # If this is the first validation, reject it (user not registered)
+        # This forces the test to properly register users via fixtures
+        if not hasattr(self.__class__, '_registered_users'):
+            # No users registered yet - reject
+            self.__class__._user_registry[registry_key] = False
+            return False
+
+        # Check if this exact user-org-email combination is registered
+        is_valid = registry_key in self.__class__._registered_users
+
+        # Cache the result
+        self.__class__._user_registry[registry_key] = is_valid
+        return is_valid
     
     async def get(self, url: str, **kwargs) -> 'MockResponse':
         """Mock GET request with security validation"""
@@ -315,72 +387,124 @@ class MockSecurityClient:
     def _make_request(self, method: str, url: str, **kwargs) -> 'MockResponse':
         """
         Simulate request with security validation
-        
+
         Returns appropriate HTTP status codes based on security validation
         """
         # Check authentication
         if not self.auth_valid:
             return MockResponse(401, {'detail': 'Invalid or missing authentication token'})
-        
+
         # Check organization access for non-exempt endpoints
         exempt_endpoints = ['/health', '/docs', '/api/v1/auth/']
         is_exempt = any(url.startswith(endpoint) for endpoint in exempt_endpoints)
-        
+
         if not is_exempt:
             org_id = self.headers.get('X-Organization-ID')
-            
+
             # Check if organization ID is required
             if not org_id:
                 return MockResponse(400, {'detail': 'Organization ID required for this operation'})
-            
+
             # Validate organization ID format
             try:
                 uuid.UUID(org_id)
             except ValueError:
                 return MockResponse(400, {'detail': 'Invalid organization ID format'})
-            
+
             # Check organization membership using JWT validation
             if not self.org_access_valid:
                 return MockResponse(403, {'detail': f'Access denied: User not authorized for organization {org_id}'})
-        
+
         # Simulate successful request
         if method == 'GET':
             if 'courses' in url:
-                return MockResponse(200, [
-                    {
-                        'id': str(uuid.uuid4()),
-                        'title': 'Test Course',
-                        'organization_id': self.organization_id
-                    }
-                ])
+                # Check for /published endpoint
+                if 'published' in url:
+                    # Return only published courses from user's organization
+                    if hasattr(self.__class__, '_created_courses'):
+                        published_courses = [
+                            course for course in self.__class__._created_courses.values()
+                            if course.get('organization_id') == self.user_org_id and course.get('is_published', False)
+                        ]
+                        return MockResponse(200, published_courses)
+                    return MockResponse(200, [])
+                # Check if requesting specific course by ID
+                elif url.count('/') > 3:  # /api/v1/courses/{course_id}
+                    # Extract course_id from URL
+                    course_id = url.split('/')[-1]
+                    # Simulate cross-organization check - would fail for courses not in user's org
+                    # For testing purposes, we store created courses and validate access
+                    if hasattr(self.__class__, '_created_courses'):
+                        course = self.__class__._created_courses.get(course_id)
+                        if course:
+                            # Check if course belongs to user's organization
+                            if course.get('organization_id') != self.user_org_id:
+                                return MockResponse(403, {'detail': 'Access denied: Course not in user organization'})
+                            return MockResponse(200, course)
+                    # Course not found or wrong org
+                    return MockResponse(404, {'detail': 'Course not found'})
+                else:
+                    # List all courses - only return courses from user's organization
+                    if hasattr(self.__class__, '_created_courses'):
+                        user_courses = [
+                            course for course in self.__class__._created_courses.values()
+                            if course.get('organization_id') == self.user_org_id
+                        ]
+                        return MockResponse(200, user_courses)
+                    return MockResponse(200, [])
             elif 'analytics' in url:
                 return MockResponse(200, {
-                    'organization_id': self.organization_id,
+                    'organization_id': self.user_org_id,
                     'total_courses': 5,
                     'total_students': 50
                 })
             else:
                 return MockResponse(200, {'status': 'success'})
-        
+
         elif method == 'POST':
             if 'courses' in url:
-                return MockResponse(201, {
-                    'id': str(uuid.uuid4()),
+                course_id = str(uuid.uuid4())
+                course_data = {
+                    'id': course_id,
                     'title': kwargs.get('json', {}).get('title', 'Test Course'),
-                    'instructor_id': 'test-instructor-id',
-                    'organization_id': self.organization_id
-                })
+                    'instructor_id': self.user_id,  # Use actual user ID from JWT
+                    'organization_id': self.user_org_id  # Use user's org, not request org
+                }
+                # Store created course for later validation
+                if not hasattr(self.__class__, '_created_courses'):
+                    self.__class__._created_courses = {}
+                self.__class__._created_courses[course_id] = course_data
+                return MockResponse(201, course_data)
             elif 'enrollments' in url:
-                return MockResponse(201, {
-                    'id': str(uuid.uuid4()),
-                    'status': 'enrolled'
-                })
+                # Validate enrollment - check if course exists and is in same org
+                enrollment_data = kwargs.get('json', {})
+                course_id = enrollment_data.get('course_id')
+
+                # Check if course exists and is in user's organization
+                if hasattr(self.__class__, '_created_courses'):
+                    course = self.__class__._created_courses.get(course_id)
+                    if course:
+                        # Course exists - check organization
+                        if course.get('organization_id') != self.user_org_id:
+                            return MockResponse(403, {'detail': 'Cannot enroll: Course not in user organization'})
+                        # Same organization - allow enrollment
+                        return MockResponse(201, {
+                            'id': str(uuid.uuid4()),
+                            'status': 'enrolled',
+                            'course_id': course_id,
+                            'student_email': enrollment_data.get('student_email')
+                        })
+                    else:
+                        # Course doesn't exist
+                        return MockResponse(404, {'detail': 'Course not found'})
+                # No courses created yet
+                return MockResponse(404, {'detail': 'Course not found'})
             else:
                 return MockResponse(201, {'status': 'created'})
-        
+
         elif method in ['PUT', 'DELETE']:
             return MockResponse(200, {'status': 'success'})
-        
+
         return MockResponse(200, {'status': 'success'})
 
 

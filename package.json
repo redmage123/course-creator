@@ -19,6 +19,8 @@
     "test:api": "python -m pytest tests/integration/test_api_integration.py -v",
     "test:all": "npm run test:backend && npm run test:frontend",
     "test:unit": "jest --coverage",
+    "test:unit:wizard": "jest test_org_admin_project_wizard_navigation --verbose",
+    "test:integration:wizard": "jest test_project_wizard_integration --verbose",
     "test:e2e": "playwright test",
     "test:e2e:chrome": "playwright test --project=chromium",
     "test:e2e:firefox": "playwright test --project=firefox",
@@ -39,7 +41,12 @@
     "test:organization": "jest tests/frontend/test_organization_registration_frontend.js --verbose",
     "test:organization:watch": "jest tests/frontend/test_organization_registration_frontend.js --watch",
     "test:organization:coverage": "jest tests/frontend/test_organization_registration_frontend.js --coverage",
-    "lint": "eslint frontend/js/**/*.js",
+    "test:ai-assistant": "./run_ai_assistant_tests.sh --all",
+    "test:ai-assistant:unit": "./run_ai_assistant_tests.sh --unit",
+    "test:ai-assistant:integration": "./run_ai_assistant_tests.sh --integration",
+    "test:ai-assistant:e2e": "./run_ai_assistant_tests.sh --e2e",
+    "test:ai-assistant:lint": "./run_ai_assistant_tests.sh --lint",
+    "lint": "eslint frontend/js/**/*.js frontend/static/js/**/*.js",
     "lint:fix": "eslint frontend/js/**/*.js --fix",
     "lint:css": "stylelint frontend/css/**/*.css",
     "format": "prettier --write 'frontend/**/*.{js,css,html}'"
@@ -61,6 +68,7 @@
   "devDependencies": {
     "@babel/core": "^7.28.0",
     "@babel/preset-env": "^7.28.0",
+    "@playwright/mcp": "^0.0.45",
     "@playwright/test": "^1.40.0",
     "@testing-library/dom": "^9.3.3",
     "@testing-library/jest-dom": "^6.1.4",
@@ -85,8 +93,9 @@
     "jest-watch-typeahead": "^2.2.2",
     "jsdom": "^23.2.0",
     "lint-staged": "^15.1.0",
+    "msw": "^2.12.0",
     "nyc": "^15.1.0",
-    "playwright": "^1.40.0",
+    "playwright": "^1.56.1",
     "prettier": "^3.1.0",
     "puppeteer": "^21.5.2",
     "selenium-webdriver": "^4.15.0",
@@ -97,35 +106,5 @@
     "vitest": "^3.2.4",
     "wait-on": "^7.2.0",
     "webdriverio": "^8.24.12"
-  },
-  "jest": {
-    "testEnvironment": "jsdom",
-    "setupFilesAfterEnv": [
-      "<rootDir>/tests/setup.js",
-      "<rootDir>/tests/frontend/setup.js"
-    ],
-    "testMatch": [
-      "**/tests/**/*.test.js",
-      "!**/tests/e2e/**"
-    ],
-    "collectCoverageFrom": [
-      "frontend/js/**/*.js",
-      "!frontend/js/**/*.test.js",
-      "!frontend/js/**/*.spec.js"
-    ],
-    "coverageThreshold": {
-      "global": {
-        "branches": 70,
-        "functions": 80,
-        "lines": 80,
-        "statements": 80
-      }
-    },
-    "moduleNameMapper": {
-      "\\.(css|less|scss|sass)$": "identity-obj-proxy"
-    },
-    "transform": {
-      "^.+\\.js$": "babel-jest"
-    }
   }
 }

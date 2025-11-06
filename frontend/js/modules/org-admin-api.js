@@ -19,16 +19,31 @@ import { showNotification } from './org-admin-utils.js';
 /**
  * API Base URLs from environment configuration
  * BUSINESS CONTEXT: Multi-microservice architecture requires different base URLs
+ *
+ * IMPORTANT: Using empty string to force relative URLs (browser was stripping port from absolute URLs)
+ * All API calls must go through nginx on port 3000 (HTTPS only)
+ * Direct port access (8008, 8000) is blocked by nginx configuration
  */
-const ORG_API_BASE = window.CONFIG?.API_URLS?.ORGANIZATION_MANAGEMENT || 'https://localhost:8008';
-const USER_API_BASE = window.CONFIG?.API_URLS?.USER_MANAGEMENT || 'https://localhost:8000';
+const ORG_API_BASE = '';  // Empty string = relative URL from current origin
+const USER_API_BASE = '';  // Empty string = relative URL from current origin
 
 // Debug logging for API configuration
 console.log('🔧 API Configuration:', {
     hasConfig: !!window.CONFIG,
-    USER_API_BASE,
-    ORG_API_BASE,
-    configApiUrls: window.CONFIG?.API_URLS
+    USER_API_BASE: USER_API_BASE || '(relative URLs)',
+    ORG_API_BASE: ORG_API_BASE || '(relative URLs)',
+    configApiUrls: window.CONFIG?.API_URLS,
+    note: 'Using nginx proxy for all API calls'
+});
+
+// Critical debug: Check what origin the browser thinks we're on
+console.log('🌐 Page Origin Check:', {
+    'window.location.href': window.location.href,
+    'window.location.origin': window.location.origin,
+    'window.location.protocol': window.location.protocol,
+    'window.location.host': window.location.host,
+    'window.location.hostname': window.location.hostname,
+    'window.location.port': window.location.port
 });
 
 /**
@@ -173,8 +188,19 @@ export async function fetchProjects(organizationId, filters = {}) {
  * @param {Object} projectData - Project creation data
  * @returns {Promise<Object>} Created project object
  */
+/**
+ * Create a new project
+ *
+ * WHY THIS ERROR HANDLING:
+ * - 422 errors contain detailed validation information from Pydantic
+ * - Need to extract and display which fields are invalid
+ * - Helps users understand what needs to be fixed
+ * - Logs full error details for debugging
+ */
 export async function createProject(organizationId, projectData) {
     try {
+        console.log('📤 Sending project creation request:', projectData);
+
         const response = await fetch(`${ORG_API_BASE}/api/v1/organizations/${organizationId}/projects`, {
             method: 'POST',
             headers: await getAuthHeaders(),
@@ -183,12 +209,32 @@ export async function createProject(organizationId, projectData) {
 
         if (!response.ok) {
             const error = await response.json();
+            console.error('❌ API Error Response:', error);
+
+            // Handle validation errors (422)
+            if (response.status === 422 && error.detail) {
+                // Extract field-specific validation errors
+                let errorMessage = 'Validation Error:\n';
+                if (Array.isArray(error.detail)) {
+                    errorMessage += error.detail.map(err => {
+                        const field = err.loc ? err.loc.join('.') : 'unknown';
+                        return `  • ${field}: ${err.msg}`;
+                    }).join('\n');
+                } else {
+                    errorMessage += error.detail;
+                }
+                console.error('📋 Validation Details:', errorMessage);
+                throw new Error(errorMessage);
+            }
+
             throw new Error(error.detail || 'Failed to create project');
         }
 
-        return await response.json();
+        const result = await response.json();
+        console.log('✅ Project created successfully:', result);
+        return result;
     } catch (error) {
-        console.error('Error creating project:', error);
+        console.error('❌ Error creating project:', error);
         showNotification(error.message, 'error');
         throw error;
     }
@@ -246,6 +292,102 @@ export async function deleteProject(projectId) {
     }
 }
 
+/**
+ * Save project as draft
+ *
+ * BUSINESS CONTEXT:
+ * Allows org admins to save incomplete project creation for later completion
+ * Useful for complex multi-step projects that take time to configure
+ *
+ * @param {string} organizationId - UUID of organization
+ * @param {Object} draftData - Partial project data with wizard state
+ * @returns {Promise<Object>} Created draft project object
+ */
+export async function saveDraftProject(organizationId, draftData) {
+    try {
+        // Add draft status and wizard metadata
+        const projectData = {
+            ...draftData,
+            status: 'draft',
+            wizard_state: draftData.wizard_state || {}
+        };
+
+        console.log('💾 Saving draft project:', projectData);
+
+        const response = await fetch(`${ORG_API_BASE}/api/v1/organizations/${organizationId}/projects`, {
+            method: 'POST',
+            headers: await getAuthHeaders(),
+            body: JSON.stringify(projectData)
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to save draft');
+        }
+
+        const draft = await response.json();
+        console.log('✅ Draft saved successfully:', draft.id);
+        return draft;
+    } catch (error) {
+        console.error('Error saving draft:', error);
+        showNotification(error.message, 'error');
+        throw error;
+    }
+}
+
+/**
+ * Update existing draft project
+ *
+ * @param {string} projectId - UUID of draft project
+ * @param {Object} draftData - Updated draft data
+ * @returns {Promise<Object>} Updated draft project object
+ */
+export async function updateDraftProject(projectId, draftData) {
+    try {
+        const projectData = {
+            ...draftData,
+            status: 'draft',
+            wizard_state: draftData.wizard_state || {}
+        };
+
+        console.log('💾 Updating draft project:', projectId);
+
+        const response = await fetch(`${ORG_API_BASE}/api/v1/projects/${projectId}`, {
+            method: 'PUT',
+            headers: await getAuthHeaders(),
+            body: JSON.stringify(projectData)
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to update draft');
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('Error updating draft:', error);
+        showNotification(error.message, 'error');
+        throw error;
+    }
+}
+
+/**
+ * Fetch all draft projects for organization
+ *
+ * @param {string} organizationId - UUID of organization
+ * @returns {Promise<Array>} Array of draft project objects
+ */
+export async function fetchDraftProjects(organizationId) {
+    try {
+        const projects = await fetchProjects(organizationId, { status: 'draft' });
+        console.log(`📋 Found ${projects.length} draft projects`);
+        return projects;
+    } catch (error) {
+        console.error('Error fetching drafts:', error);
+        return [];
+    }
+}
+
 // ============================================================================
 // TRACKS API
 // ============================================================================
@@ -262,19 +404,34 @@ export async function deleteProject(projectId) {
  */
 export async function fetchTracks(filters = {}) {
     try {
+        console.log('🚀 fetchTracks START - Code updated 2025-10-16');
+        console.log('📦 localStorage authToken:', localStorage.getItem('authToken') ? 'EXISTS' : 'MISSING');
+
         const params = new URLSearchParams();
         if (filters.project_id) params.append('project_id', filters.project_id);
         if (filters.status) params.append('status', filters.status);
         if (filters.difficulty_level) params.append('difficulty_level', filters.difficulty_level);
         if (filters.search) params.append('search', filters.search);
 
-        const url = `${ORG_API_BASE}/api/v1/tracks?${params.toString()}`;
+        const url = `${ORG_API_BASE}/api/v1/tracks/?${params.toString()}`;
+        const headers = await getAuthHeaders();
 
-        const response = await fetch(url, {
-            headers: await getAuthHeaders()
+        console.log('🔍 fetchTracks - ORG_API_BASE:', ORG_API_BASE);
+        console.log('🔍 fetchTracks - Constructed URL:', url);
+        console.log('🔍 fetchTracks - Params:', params.toString());
+        console.log('🔑 fetchTracks - Headers:', {
+            hasToken: !!headers.Authorization,
+            fullHeader: headers.Authorization,
+            tokenPreview: headers.Authorization ? headers.Authorization.substring(0, 50) + '...' : 'NONE - AUTH WILL FAIL!'
         });
 
+        const response = await fetch(url, { headers });
+
+        console.log('📡 fetchTracks - Response status:', response.status, response.statusText);
+
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ fetchTracks - Error response:', errorText);
             throw new Error(`Failed to fetch tracks: ${response.statusText}`);
         }
 
@@ -318,7 +475,7 @@ export async function fetchTrack(trackId) {
  */
 export async function createTrack(trackData) {
     try {
-        const response = await fetch(`${ORG_API_BASE}/api/v1/tracks`, {
+        const response = await fetch(`${ORG_API_BASE}/api/v1/tracks/`, {
             method: 'POST',
             headers: await getAuthHeaders(),
             body: JSON.stringify(trackData)
@@ -521,7 +678,7 @@ export async function removeMember(organizationId, userId) {
  */
 export async function fetchCurrentUser() {
     try {
-        const url = `${USER_API_BASE}/users/me`;
+        const url = `${USER_API_BASE}/api/v1/users/me`;
         const headers = await getAuthHeaders();
 
         console.log('🔍 Fetching current user from:', url);

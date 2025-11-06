@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="../css/modern-ui/modern-ui.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, minimum-scale=0.5, maximum-scale=3.0">
     <title>Admin Dashboard - Course Creator Platform</title>
@@ -145,7 +146,7 @@
     
     <div class="admin-header">
         <h1>🛡️ Admin Dashboard</h1>
-        <p>Welcome, <span id="admin-name">Administrator</span> | <a href="index.html" style="color: #fff;">Back to Main Site</a></p>
+        <p>Welcome, <span id="admin-name">Administrator</span> | <a href="index.html" class="text-white">Back to Main Site</a></p>
     </div>
 
     <div class="container">
@@ -187,38 +188,38 @@
         <!-- User Management Section -->
         <div id="users" class="admin-section">
             <h2>👥 User Management</h2>
-            <div style="margin-bottom: 1rem;">
+            <div class="mb-md">
                 <button onclick="refreshUsers()" class="btn btn-primary">Refresh Users</button>
-                <button onclick="bulkDeleteUsers()" class="btn btn-danger" id="bulk-delete-btn" style="display: none;">Delete Selected Users</button>
-                <span id="selected-count" style="margin-left: 1rem; font-weight: bold;"></span>
+                <button onclick="bulkDeleteUsers()" class="btn btn-danger hidden" id="bulk-delete-btn">Delete Selected Users</button>
+                <span id="selected-count" class="ml-md font-bold"></span>
             </div>
             
             <!-- Filters and Search -->
-            <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <label for="search-users" style="font-weight: 500; margin: 0;">Search:</label>
-                    <input type="text" id="search-users" placeholder="Search by name or email..." style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; min-width: 200px;" oninput="filterUsers()">
+            <div class="filter-bar">
+                <div class="filter-group">
+                    <label for="search-users" class="filter-label">Search:</label>
+                    <input type="text" id="search-users" placeholder="Search by name or email..." class="form-control min-w-200" oninput="filterUsers()">
                 </div>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <label for="filter-role" style="font-weight: 500; margin: 0;">Role:</label>
-                    <select id="filter-role" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;" onchange="filterUsers()">
+                <div class="filter-group">
+                    <label for="filter-role" class="filter-label">Role:</label>
+                    <select id="filter-role" class="form-control" onchange="filterUsers()">
                         <option value="">All Roles</option>
                         <option value="admin">Admin</option>
                         <option value="instructor">Instructor</option>
                         <option value="student">Student</option>
                     </select>
                 </div>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <label for="filter-status" style="font-weight: 500; margin: 0;">Status:</label>
-                    <select id="filter-status" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;" onchange="filterUsers()">
+                <div class="filter-group">
+                    <label for="filter-status" class="filter-label">Status:</label>
+                    <select id="filter-status" class="form-control" onchange="filterUsers()">
                         <option value="">All Status</option>
                         <option value="active">Active</option>
                         <option value="inactive">Inactive</option>
                     </select>
                 </div>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <label for="sort-users" style="font-weight: 500; margin: 0;">Sort by:</label>
-                    <select id="sort-users" style="padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;" onchange="filterUsers()">
+                <div class="filter-group">
+                    <label for="sort-users" class="filter-label">Sort by:</label>
+                    <select id="sort-users" class="form-control" onchange="filterUsers()">
                         <option value="name-asc">Name (A-Z)</option>
                         <option value="name-desc">Name (Z-A)</option>
                         <option value="email-asc">Email (A-Z)</option>
@@ -227,11 +228,11 @@
                         <option value="role-desc">Role (Z-A)</option>
                     </select>
                 </div>
-                <button onclick="clearFilters()" class="btn" style="background: #6c757d; color: white;">Clear Filters</button>
+                <button onclick="clearFilters()" class="btn btn-secondary">Clear Filters</button>
             </div>
             
             <!-- Results info -->
-            <div id="filter-results" style="margin-bottom: 1rem; font-style: italic; color: #666;"></div>
+            <div id="filter-results" class="filter-results"></div>
             <table class="users-table">
                 <thead>
                     <tr>

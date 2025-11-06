@@ -56,7 +56,7 @@ class UserCreateRequest(BaseModel):
     user_id: Optional[str] = Field(None, min_length=1, max_length=50, description="Optional custom user ID. Must be unique if provided.")
     first_name: Optional[str] = None
     last_name: Optional[str] = None
-    role: str = Field(default="student", pattern="^(student|instructor|admin|organization_admin)$")
+    role: str = Field(default="organization_admin", pattern="^(student|instructor|admin|organization_admin)$")
     organization: Optional[str] = None
     phone: Optional[str] = None
     timezone: Optional[str] = None
@@ -495,11 +495,84 @@ def setup_auth_routes(app: FastAPI) -> None:
         try:
             await session_service.revoke_session(token)
             return {"message": "Successfully logged out"}
-            
+
         except Exception as e:
             logging.error("Error during logout: %s", e)
             # Don't return error - logout should always succeed
             return {"message": "Logged out"}
+
+    @app.post("/auth/refresh", response_model=TokenResponse)
+    async def refresh_token(
+        raw_request: Request,
+        current_user: User = Depends(get_current_user),
+        token_service = Depends(get_token_service)
+    ):
+        """
+        Refresh JWT token for active users (Activity-Based Token Renewal)
+
+        Business Context:
+        Instructors and students may be logged in for multiple hours per day.
+        This endpoint enables sliding window token expiration - tokens refresh
+        on user activity rather than fixed 30-minute expiration.
+
+        Token Refresh Strategy:
+        - User must have valid (not expired) token to refresh
+        - New token issued with fresh 30-minute expiration
+        - Frontend calls this every 20 minutes when user is active
+        - Prevents unexpected logout during active sessions
+
+        Security Features:
+        - Requires valid existing token (no refresh without authentication)
+        - User data re-validated from database (not just from token)
+        - Organization membership re-fetched for org admins
+        - Activity-based renewal prevents indefinite sessions
+
+        Returns:
+            TokenResponse with new access_token and user data
+        """
+        try:
+            logger.info(f"🔄 Token refresh requested for user: {current_user.username}")
+
+            # Re-fetch user data from database to ensure current state
+            user_response = _user_to_response(current_user)
+
+            # Fetch organization_id for organization admins (same as login)
+            if current_user.role.value in ['organization_admin', 'org_admin']:
+                try:
+                    pool = raw_request.app.state.container._connection_pool
+                    membership_query = """
+                        SELECT organization_id
+                        FROM course_creator.organization_memberships
+                        WHERE user_id = $1 AND is_active = true
+                        LIMIT 1
+                    """
+                    async with pool.acquire() as conn:
+                        result = await conn.fetchrow(membership_query, current_user.id)
+                        if result:
+                            user_response.organization_id = str(result['organization_id'])
+                            logger.info(f"✅ Refreshed organization_id for {current_user.username}: {user_response.organization_id}")
+                except Exception as e:
+                    logger.error(f"❌ Error fetching organization_id during refresh: {e}")
+
+            # Generate new JWT token with fresh expiration
+            session_id = f"sess_{current_user.id[:8]}"
+            new_token = await token_service.generate_access_token(str(current_user.id), session_id)
+
+            logger.info(f"✅ Token refreshed successfully for user: {current_user.username}")
+
+            return TokenResponse(
+                access_token=new_token,
+                user=user_response
+            )
+
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Error refreshing token: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Token refresh failed"
+            ) from e
 
     @app.post("/auth/password/change")
     async def change_password(
@@ -903,9 +976,49 @@ def setup_user_routes(app: FastAPI) -> None:
     """Setup user management routes"""
     
     @app.get("/users/me", response_model=UserResponse)
-    async def get_current_user_profile(current_user: User = Depends(get_current_user)):
-        """Get current user profile"""
-        return _user_to_response(current_user)
+    async def get_current_user_profile(
+        raw_request: Request,
+        current_user: User = Depends(get_current_user)
+    ):
+        """
+        Get current user profile with organization_id for org admins
+
+        Business Context:
+        Returns complete user profile including organization_id for organization admins.
+        This enables org admin dashboard navigation and organization-scoped operations.
+
+        Implementation:
+        - Base profile from User entity via _user_to_response()
+        - Additional organization_id lookup from organization_memberships for org admins
+        - Site admin (username='admin') has no organization association
+        """
+        user_response = _user_to_response(current_user)
+
+        # Fetch organization_id for organization admins from organization_memberships table
+        if current_user.role.value in ['organization_admin', 'org_admin']:
+            try:
+                # Get database connection pool from app state container
+                pool = raw_request.app.state.container._connection_pool
+
+                # Query organization_memberships to get organization_id
+                # Note: asyncpg uses $1, $2 for parameters, not %s
+                membership_query = """
+                    SELECT organization_id
+                    FROM course_creator.organization_memberships
+                    WHERE user_id = $1 AND is_active = true
+                    LIMIT 1
+                """
+                async with pool.acquire() as conn:
+                    result = await conn.fetchrow(membership_query, current_user.id)
+                    if result:
+                        user_response.organization_id = str(result['organization_id'])
+                        logger.info(f"✅ Found organization_id for {current_user.username}: {user_response.organization_id}")
+                    else:
+                        logger.warning(f"⚠️ No organization membership found for org admin: {current_user.username}")
+            except Exception as e:
+                logger.error(f"❌ Error fetching organization_id in /users/me: {e}")
+
+        return user_response
 
     @app.put("/users/me", response_model=UserResponse)
     async def update_profile(

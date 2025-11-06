@@ -199,7 +199,72 @@ class Container:
         return self._meeting_room_service
 
     def _get_teams_credentials(self) -> Optional[TeamsCredentials]:
-        """Get Teams credentials from configuration"""
+        """
+        Get Microsoft Teams Integration Credentials - OAuth2 Configuration
+
+        BUSINESS CONTEXT:
+        Retrieves Microsoft Teams API credentials from configuration for creating and
+        managing Teams meeting rooms within organization workspaces. Teams integration
+        enables organizations to leverage their existing Microsoft 365 infrastructure
+        for virtual meetings, collaboration, and communication.
+
+        INTEGRATION PURPOSE:
+        Microsoft Teams integration provides:
+        - Online meeting room creation and management
+        - Calendar event integration with Outlook
+        - Team channel creation for course discussions
+        - File sharing via SharePoint integration
+        - Attendance tracking and meeting reports
+        - Recording storage in Microsoft Stream/OneDrive
+
+        OAUTH2 AUTHENTICATION:
+        Uses Azure AD OAuth2 client credentials flow requiring:
+        - tenant_id: Azure AD tenant identifier (organization's Microsoft directory)
+        - client_id: Application (client) ID from Azure AD app registration
+        - client_secret: Application secret for authentication
+        These credentials authenticate the app to access Microsoft Graph API.
+
+        CONFIGURATION STRATEGY:
+        Credentials are loaded from Hydra configuration with hierarchical structure:
+        - integrations.teams.enabled: Boolean flag to enable/disable integration
+        - integrations.teams.tenant_id: Azure AD tenant ID
+        - integrations.teams.client_id: Azure AD application ID
+        - integrations.teams.client_secret: Azure AD application secret
+
+        SECURITY CONSIDERATIONS:
+        - Client secrets stored in environment variables, not code
+        - Credentials cached after first load for performance
+        - Failed credential loading logged as warning, not error (graceful degradation)
+        - Returns None if Teams not enabled or credentials missing
+
+        LAZY INITIALIZATION:
+        Credentials created only when first accessed, preventing unnecessary Azure AD
+        validation during startup if Teams integration is not needed. Singleton pattern
+        ensures credentials reused across multiple meeting room operations.
+
+        WHY OPTIONAL RETURN TYPE:
+        Teams integration is optional - organizations may use Zoom or Slack instead.
+        Returning None when disabled allows service to gracefully handle missing
+        integration without errors, falling back to alternative platforms.
+
+        MICROSOFT GRAPH API PERMISSIONS:
+        The Azure AD app requires specific permissions:
+        - OnlineMeetings.ReadWrite.All: Create and manage online meetings
+        - Calendars.ReadWrite: Create calendar events
+        - Team.Create: Create Teams channels
+        - User.Read.All: Look up user information
+
+        ERROR HANDLING:
+        Catches all exceptions during credential initialization to prevent service
+        startup failures. Logs warnings for debugging but continues operation,
+        allowing other integrations (Zoom, Slack) to function normally.
+
+        Returns:
+            Optional[TeamsCredentials]: Teams API credentials if enabled, None otherwise
+
+        Note:
+            Requires Azure AD app registration and proper API permissions configuration
+        """
         if self._teams_credentials is None:
             try:
                 teams_config = self._config.get('integrations', {}).get('teams', {})
@@ -216,7 +281,89 @@ class Container:
         return self._teams_credentials
 
     def _get_zoom_credentials(self) -> Optional[ZoomCredentials]:
-        """Get Zoom credentials from configuration"""
+        """
+        Get Zoom Integration Credentials - Server-to-Server OAuth Configuration
+
+        BUSINESS CONTEXT:
+        Retrieves Zoom API credentials from configuration for creating and managing
+        Zoom meeting rooms within organizations. Zoom integration enables organizations
+        to leverage industry-leading video conferencing capabilities for courses,
+        instructor sessions, and student collaboration.
+
+        INTEGRATION PURPOSE:
+        Zoom integration provides:
+        - Scheduled and instant video meeting creation
+        - Webinar hosting with registration management
+        - Cloud recording storage and playback
+        - Breakout room management for group work
+        - Waiting room security features
+        - Participant polling and Q&A
+        - Virtual backgrounds and screen sharing
+        - Meeting analytics and attendance reports
+
+        SERVER-TO-SERVER OAUTH AUTHENTICATION:
+        Uses Zoom's Server-to-Server OAuth flow requiring:
+        - api_key: Zoom App Client ID for authentication
+        - api_secret: Zoom App Client Secret for token generation
+        - account_id: Zoom Account ID for API scope
+        This modern approach replaces deprecated JWT authentication.
+
+        CONFIGURATION STRATEGY:
+        Credentials loaded from Hydra configuration:
+        - integrations.zoom.enabled: Boolean to enable/disable Zoom integration
+        - integrations.zoom.api_key: Zoom Server-to-Server OAuth App Client ID
+        - integrations.zoom.api_secret: Zoom Server-to-Server OAuth App Secret
+        - integrations.zoom.account_id: Zoom Account ID (optional, defaults to 'me')
+
+        ZOOM API CAPABILITIES:
+        The integration enables:
+        - Meeting room creation with configurable settings
+        - Participant management and access control
+        - Recording management and storage
+        - Meeting registration workflows
+        - Post-meeting analytics and reports
+        - Integration with Zoom Phone and Zoom Rooms hardware
+
+        SECURITY CONSIDERATIONS:
+        - API credentials stored in environment variables
+        - Cached credentials for performance optimization
+        - Graceful degradation if credentials missing
+        - Returns None when Zoom not enabled
+        - OAuth token auto-refresh handled by integration service
+
+        LAZY INITIALIZATION:
+        Credentials created only when first accessed, avoiding unnecessary Zoom API
+        validation during startup if integration not needed. Singleton pattern ensures
+        credential reuse across multiple meeting operations.
+
+        WHY OPTIONAL RETURN TYPE:
+        Zoom is one of several meeting platform options. Organizations may choose
+        Teams, Slack, or no integration. Returning None when disabled allows graceful
+        fallback to alternative platforms without service errors.
+
+        ZOOM OAUTH SCOPES REQUIRED:
+        The Zoom Server-to-Server OAuth App needs scopes:
+        - meeting:write:admin - Create and manage meetings
+        - meeting:read:admin - Read meeting details
+        - user:read:admin - Read user information
+        - recording:read:admin - Access meeting recordings
+        - webinar:write:admin - Create webinars (optional)
+
+        ERROR HANDLING:
+        Catches all credential initialization exceptions to prevent startup failures.
+        Logs warnings for debugging but continues operation, enabling other integrations
+        (Teams, Slack) to function if Zoom unavailable.
+
+        MIGRATION FROM JWT:
+        Zoom deprecated JWT app authentication in June 2023. This implementation uses
+        the newer Server-to-Server OAuth pattern for improved security and compliance.
+
+        Returns:
+            Optional[ZoomCredentials]: Zoom API credentials if enabled, None otherwise
+
+        Note:
+            Requires Zoom Server-to-Server OAuth App creation in Zoom Marketplace
+        """
         if self._zoom_credentials is None:
             try:
                 zoom_config = self._config.get('integrations', {}).get('zoom', {})
@@ -233,7 +380,104 @@ class Container:
         return self._zoom_credentials
 
     def _get_slack_credentials(self) -> Optional[SlackCredentials]:
-        """Get Slack credentials from configuration"""
+        """
+        Get Slack Integration Credentials - Bot Token and Workspace Configuration
+
+        BUSINESS CONTEXT:
+        Retrieves Slack API credentials from configuration for creating channels,
+        sending notifications, and managing team communication within organization
+        workspaces. Slack integration enables organizations to leverage their existing
+        communication infrastructure for course discussions, announcements, and collaboration.
+
+        INTEGRATION PURPOSE:
+        Slack integration provides:
+        - Channel creation for courses, tracks, and projects
+        - Real-time notifications and announcements
+        - Direct messaging for student support
+        - File sharing and document collaboration
+        - Meeting room channels (Huddles)
+        - Message threading for organized discussions
+        - Reaction-based engagement tracking
+        - Integration with course management workflows
+
+        BOT TOKEN AUTHENTICATION:
+        Uses Slack OAuth Bot User Token (xoxb-*) authentication requiring:
+        - bot_token: OAuth token for bot user with API permissions
+        - app_token: Socket Mode token for event subscriptions (optional)
+        - workspace_id: Slack workspace/team identifier
+        - webhook_url: Incoming webhook URL for simple notifications (optional)
+
+        CONFIGURATION STRATEGY:
+        Credentials loaded from Hydra configuration:
+        - integrations.slack.enabled: Boolean to enable/disable Slack integration
+        - integrations.slack.bot_token: OAuth bot token (xoxb-...)
+        - integrations.slack.app_token: Socket Mode token (xapp-..., optional)
+        - integrations.slack.workspace_id: Slack workspace/team ID
+        - integrations.slack.webhook_url: Incoming webhook URL (optional)
+
+        SLACK BOT CAPABILITIES:
+        The bot token enables:
+        - Channel management (create, archive, invite users)
+        - Message posting and reactions
+        - File uploads and sharing
+        - User lookup and profile access
+        - Channel history and search
+        - Slash command handling
+        - Interactive component responses
+
+        SECURITY CONSIDERATIONS:
+        - Bot tokens stored in environment variables
+        - Scoped permissions (only necessary OAuth scopes)
+        - Token rotation support
+        - Workspace isolation (separate tokens per organization)
+        - Returns None when Slack not enabled
+        - Graceful degradation if credentials missing
+
+        LAZY INITIALIZATION:
+        Credentials created only when first accessed, avoiding unnecessary Slack API
+        validation during startup. Singleton pattern ensures credential reuse across
+        multiple channel and messaging operations.
+
+        WHY OPTIONAL RETURN TYPE:
+        Slack is one of several communication platform options. Organizations may choose
+        Teams, Discord, or no integration. Returning None when disabled allows graceful
+        fallback without service errors.
+
+        SLACK OAUTH SCOPES REQUIRED:
+        The Slack Bot Token needs scopes:
+        - channels:manage - Create and manage public channels
+        - groups:write - Create and manage private channels
+        - chat:write - Send messages as bot
+        - files:write - Upload and share files
+        - users:read - Look up users by email
+        - channels:read - View channel information
+        - im:write - Send direct messages (optional)
+
+        WEBHOOK USAGE:
+        The webhook_url provides a simpler alternative for one-way notifications:
+        - Doesn't require full OAuth flow
+        - Limited to posting messages to specific channel
+        - No access to Slack API features
+        - Useful for simple status updates and alerts
+
+        ERROR HANDLING:
+        Catches all credential initialization exceptions to prevent startup failures.
+        Logs warnings for debugging but continues operation, enabling other integrations
+        (Teams, Zoom) to function if Slack unavailable.
+
+        MULTI-ORGANIZATION SUPPORT:
+        Each organization can have separate Slack workspace integration:
+        - Different bot tokens per organization
+        - Isolated channels and data
+        - Organization-specific notification preferences
+        - Separate workspace configurations
+
+        Returns:
+            Optional[SlackCredentials]: Slack API credentials if enabled, None otherwise
+
+        Note:
+            Requires Slack App creation with Bot User OAuth Token in Slack workspace
+        """
         if self._slack_credentials is None:
             try:
                 slack_config = self._config.get('integrations', {}).get('slack', {})
@@ -318,21 +562,175 @@ _container: Optional[Container] = None
 
 
 def initialize_container(config: DictConfig) -> Container:
-    """Initialize the global container"""
+    """
+    Initialize Global Organization Management Container - Application Startup
+
+    BUSINESS CONTEXT:
+    Creates and initializes the global dependency injection container for the
+    organization management service during application startup. This is called once
+    by the FastAPI application factory to establish all service dependencies and
+    external integrations before accepting requests.
+
+    SINGLETON PATTERN:
+    Uses module-level singleton pattern to ensure only one container exists across
+    the entire application lifecycle. The global _container variable is set once
+    during initialization and reused for all subsequent requests.
+
+    INITIALIZATION FLOW:
+    1. Create Container instance with Hydra configuration
+    2. Store container in global _container variable
+    3. Return container for async initialization (initialize() method)
+    4. Container establishes database pool, Redis cache, and integrations
+    5. Container ready to provide services to API endpoints
+
+    WHY GLOBAL CONTAINER:
+    - Single source of truth for all dependencies
+    - Consistent service instances across requests
+    - Simplified dependency injection in endpoints
+    - Efficient resource management (shared pools)
+    - Easy testing with container replacement
+
+    CONFIGURATION SOURCE:
+    The config parameter contains Hydra OmegaConf with:
+    - Database connection settings (host, port, credentials)
+    - Redis cache configuration (host, port, URL)
+    - External integration credentials (Teams, Zoom, Slack)
+    - Service-specific settings (timeouts, pool sizes)
+
+    USAGE IN FASTAPI:
+    Called from app factory during startup lifespan event:
+    ```python
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        container = initialize_container(config)
+        await container.initialize()
+        yield
+        await cleanup_container()
+    ```
+
+    Args:
+        config (DictConfig): Hydra configuration with all service settings
+
+    Returns:
+        Container: Initialized (but not yet connected) container instance
+
+    Note:
+        Must call container.initialize() after this to establish connections
+    """
     global _container
     _container = Container(config)
     return _container
 
 
 def get_container() -> Container:
-    """Get the global container instance"""
+    """
+    Get Global Organization Management Container Instance - Request Dependency
+
+    BUSINESS CONTEXT:
+    Retrieves the global container instance for use in FastAPI dependency injection.
+    This is the primary way API endpoints access organization services, ensuring
+    consistent service instances and proper dependency management.
+
+    DEPENDENCY INJECTION PATTERN:
+    Used in FastAPI endpoints as a dependency:
+    ```python
+    @router.get("/organizations/{org_id}")
+    async def get_organization(
+        org_id: UUID,
+        container: Container = Depends(get_container)
+    ):
+        org_service = await container.get_organization_service()
+        return await org_service.get_organization(org_id)
+    ```
+
+    ERROR HANDLING:
+    Raises RuntimeError if container not initialized, preventing undefined behavior
+    when services attempt to access uninitialized dependencies. This ensures proper
+    application startup sequence.
+
+    WHY NOT DIRECT ACCESS:
+    Using function instead of direct _container access enables:
+    - Proper error handling with clear error messages
+    - Easier testing (can mock the function)
+    - Type checking and IDE autocomplete
+    - Future enhancement without breaking API
+
+    THREAD SAFETY:
+    The global container is set once during startup and never modified during request
+    handling, making it safe for concurrent access across multiple request threads.
+
+    Returns:
+        Container: The global container instance with all services
+
+    Raises:
+        RuntimeError: If container not initialized via initialize_container()
+
+    Note:
+        Container must be initialized before first request arrives
+    """
     if _container is None:
         raise RuntimeError("Container not initialized. Call initialize_container first.")
     return _container
 
 
 async def cleanup_container():
-    """Cleanup the global container"""
+    """
+    Cleanup Global Organization Management Container - Application Shutdown
+
+    BUSINESS CONTEXT:
+    Performs graceful cleanup of the global container during application shutdown,
+    ensuring all resources (database connections, Redis connections, HTTP sessions)
+    are properly closed to prevent resource leaks in containerized environments.
+
+    CLEANUP RESPONSIBILITIES:
+    - Close database connection pool (asyncpg)
+    - Disconnect Redis cache manager
+    - Close HTTP client sessions for integrations (Teams, Zoom, Slack)
+    - Flush any pending operations
+    - Release file handles and system resources
+    - Set global container to None for garbage collection
+
+    WHY PROPER CLEANUP MATTERS:
+    In containerized environments (Docker, Kubernetes):
+    - Prevents database connection exhaustion
+    - Avoids Redis connection leaks
+    - Ensures graceful pod termination
+    - Allows health checks to report unhealthy status
+    - Prevents zombie connections after restart
+
+    SHUTDOWN SEQUENCE:
+    1. Stop accepting new requests (handled by FastAPI)
+    2. Wait for in-flight requests to complete
+    3. Call cleanup_container() to close connections
+    4. FastAPI shutdown completes
+    5. Container process terminates
+
+    USAGE IN FASTAPI:
+    Called from app factory during shutdown lifespan event:
+    ```python
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        container = initialize_container(config)
+        await container.initialize()
+        yield  # Application running
+        await cleanup_container()  # Shutdown
+    ```
+
+    ERROR HANDLING:
+    All cleanup errors are caught and logged within container.cleanup() to prevent
+    shutdown failures. Even if cleanup partially fails, the container is set to None
+    to allow process termination.
+
+    KUBERNETES INTEGRATION:
+    Proper cleanup ensures:
+    - PreStop hook completes successfully
+    - SIGTERM handling works correctly
+    - Zero-downtime rolling updates
+    - Clean pod deletion without hanging
+
+    Note:
+        Safe to call multiple times - idempotent cleanup with None checks
+    """
     global _container
     if _container:
         await _container.cleanup()

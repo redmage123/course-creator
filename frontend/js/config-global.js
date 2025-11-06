@@ -5,25 +5,6 @@
  * WHY: Avoids ES6 export syntax errors in non-module contexts
  * USAGE: Include with <script src="config-global.js"></script>
  */
-
-/**
- * DYNAMIC HOST DETECTION FUNCTION
- * 
- * PURPOSE: Automatically detects the appropriate API host based on current environment
- * WHY: Allows the same frontend code to work in development, staging, and production
- * without hardcoded environment-specific values
- * 
- * LOGIC FLOW:
- * 1. Check if running in browser environment (window object exists)
- * 2. Extract hostname from current URL to determine environment context
- * 3. Apply environment-specific routing rules for API calls
- * 4. Fall back to external IP if detection fails
- * 
- * SUPPORTED ENVIRONMENTS:
- * - localhost: Development environment with Docker services
- * - 192.168.x.x: Local network development  
- * - External hosts: Production deployment with proper DNS
- */
 function detectHost() {
     // Check if we're in a browser environment
     if (typeof window === 'undefined' || !window.location) {
@@ -84,15 +65,20 @@ const CONFIG = {
      * WHY: Centralized protocol management enables easy HTTPS migration
      * SECURITY: HTTPS preferred for production environments
      * FLEXIBILITY: Can be overridden for specific development needs
+     *
+     * BUSINESS CONTEXT:
+     * The platform runs on HTTPS in all environments (including localhost on port 3000).
+     * All API calls should use the same protocol as the current page to avoid mixed content errors.
+     *
+     * TECHNICAL RATIONALE:
+     * - nginx serves frontend on https://localhost:3000
+     * - All API calls go through nginx reverse proxy on same port
+     * - Using HTTP would cause the browser to redirect to HTTPS on default port 443, bypassing nginx
      */
     get PROTOCOL() {
-        // For API calls, always use HTTP in development (localhost)
-        if (typeof window !== 'undefined') {
-            const hostname = window.location.hostname;
-            // Use HTTP for localhost and local IPs for development
-            if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.')) {
-                return 'http';
-            }
+        // Use the current page's protocol to ensure consistency
+        if (typeof window !== 'undefined' && window.location.protocol) {
+            return window.location.protocol.replace(':', '');  // Returns 'http' or 'https'
         }
         // Default to HTTPS for production environments
         return 'https';
@@ -141,6 +127,13 @@ const CONFIG = {
             REGISTER: `${urls.USER_MANAGEMENT}/auth/register`,
             RESET_PASSWORD: `${urls.USER_MANAGEMENT}/auth/reset-password`,
             PROFILE: `${urls.USER_MANAGEMENT}/users/profile`,
+    /**
+     * EXECUTE USER BY EMAIL OPERATION
+     * PURPOSE: Execute USER BY EMAIL operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} email - Email address
+     */
             USER_BY_EMAIL: (email) => `${urls.USER_MANAGEMENT}/users/by-email/${email}`,
             
             /* ================================================================
@@ -148,10 +141,32 @@ const CONFIG = {
              * PURPOSE: Course CRUD operations, enrollment, instructor tools
              * ================================================================ */
             COURSES: `${urls.COURSE_MANAGEMENT}/courses`,
+            COURSE_SERVICE: `/api/v1/courses`,  // Via nginx proxy (relative URL)
+    /**
+     * EXECUTE COURSE BY ID OPERATION
+     * PURPOSE: Execute COURSE BY ID operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} id - Unique identifier
+     */
             COURSE_BY_ID: (id) => `${urls.COURSE_MANAGEMENT}/courses/${id}`,
             ENROLL_STUDENT: `${urls.COURSE_MANAGEMENT}/instructor/enroll-student`,
             REGISTER_STUDENTS: `${urls.COURSE_MANAGEMENT}/instructor/register-students`,
+    /**
+     * EXECUTE COURSE STUDENTS OPERATION
+     * PURPOSE: Execute COURSE STUDENTS operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} courseId - Unique identifier
+     */
             COURSE_STUDENTS: (courseId) => `${urls.COURSE_MANAGEMENT}/instructor/course/${courseId}/students`,
+    /**
+     * EXECUTE REMOVE ENROLLMENT OPERATION
+     * PURPOSE: Execute REMOVE ENROLLMENT operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} enrollmentId - Enrollmentid parameter
+     */
             REMOVE_ENROLLMENT: (enrollmentId) => `${urls.COURSE_MANAGEMENT}/instructor/enrollment/${enrollmentId}`,
             
             /* ================================================================
@@ -162,6 +177,13 @@ const CONFIG = {
             /* SYLLABUS GENERATION */
             GENERATE_SYLLABUS: `${urls.COURSE_GENERATOR}/syllabus/generate`,
             REFINE_SYLLABUS: `${urls.COURSE_GENERATOR}/syllabus/refine`,
+    /**
+     * EXECUTE SYLLABUS OPERATION
+     * PURPOSE: Execute SYLLABUS operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} courseId - Unique identifier
+     */
             SYLLABUS: (courseId) => `${urls.COURSE_GENERATOR}/syllabus/${courseId}`,
             
             /* CONTENT GENERATION */
@@ -170,35 +192,139 @@ const CONFIG = {
             SAVE_COURSE: `${urls.COURSE_GENERATOR}/courses/save`,
             
             /* SLIDE GENERATION */
+    /**
+     * EXECUTE SLIDES OPERATION
+     * PURPOSE: Execute SLIDES operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} courseId - Unique identifier
+     */
             SLIDES: (courseId) => `${urls.COURSE_GENERATOR}/slides/${courseId}`,
+    /**
+     * EXECUTE UPDATE SLIDES OPERATION
+     * PURPOSE: Execute UPDATE SLIDES operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} courseId - Unique identifier
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
             UPDATE_SLIDES: (courseId) => `${urls.COURSE_GENERATOR}/slides/update/${courseId}`,
             GENERATE_SLIDES: `${urls.COURSE_GENERATOR}/slides/generate`,
             
             /* QUIZ SYSTEM */
+    /**
+     * EXECUTE QUIZZES OPERATION
+     * PURPOSE: Execute QUIZZES operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} courseId - Unique identifier
+     */
             QUIZZES: (courseId) => `${urls.COURSE_GENERATOR}/quizzes/${courseId}`,
             QUIZ_GENERATE_FOR_COURSE: `${urls.COURSE_GENERATOR}/quiz/generate-for-course`,
             QUIZ_GENERATE: `${urls.COURSE_GENERATOR}/quiz/generate`,
+    /**
+     * EXECUTE QUIZ GET COURSE QUIZZES OPERATION
+     * PURPOSE: Execute QUIZ GET COURSE QUIZZES operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} courseId - Unique identifier
+     */
             QUIZ_GET_COURSE_QUIZZES: (courseId) => `${urls.COURSE_GENERATOR}/quiz/course/${courseId}`,
+    /**
+     * EXECUTE QUIZ GET BY ID OPERATION
+     * PURPOSE: Execute QUIZ GET BY ID operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} quizId - Quizid parameter
+     */
             QUIZ_GET_BY_ID: (quizId) => `${urls.COURSE_GENERATOR}/quiz/${quizId}`,
+    /**
+     * EXECUTE QUIZ SUBMIT OPERATION
+     * PURPOSE: Execute QUIZ SUBMIT operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} quizId - Quizid parameter
+     */
             QUIZ_SUBMIT: (quizId) => `${urls.COURSE_GENERATOR}/quiz/${quizId}/submit`,
+    /**
+     * EXECUTE QUIZ ANALYTICS OPERATION
+     * PURPOSE: Execute QUIZ ANALYTICS operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} courseId - Unique identifier
+     */
             QUIZ_ANALYTICS: (courseId) => `${urls.COURSE_GENERATOR}/quiz/analytics/${courseId}`,
             
             /* LAB ENVIRONMENT MANAGEMENT */
+    /**
+     * EXECUTE LAB BY COURSE OPERATION
+     * PURPOSE: Execute LAB BY COURSE operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} courseId - Unique identifier
+     */
             LAB_BY_COURSE: (courseId) => `${urls.COURSE_GENERATOR}/lab/${courseId}`,
             LAB_LAUNCH: `${urls.COURSE_GENERATOR}/lab/launch`,
+    /**
+     * EXECUTE LAB STOP OPERATION
+     * PURPOSE: Execute LAB STOP operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} courseId - Unique identifier
+     */
             LAB_STOP: (courseId) => `${urls.COURSE_GENERATOR}/lab/stop/${courseId}`,
+    /**
+     * EXECUTE LAB ACCESS OPERATION
+     * PURPOSE: Execute LAB ACCESS operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} courseId - Unique identifier
+     */
             LAB_ACCESS: (courseId) => `${urls.COURSE_GENERATOR}/lab/access/${courseId}`,
             LAB_GENERATE_EXERCISE: `${urls.COURSE_GENERATOR}/lab/generate-exercise`,
             LAB_GENERATE_QUIZ: `${urls.COURSE_GENERATOR}/lab/generate-quiz`,
+    /**
+     * EXECUTE LAB ANALYTICS OPERATION
+     * PURPOSE: Execute LAB ANALYTICS operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} courseId - Unique identifier
+     */
             LAB_ANALYTICS: (courseId) => `${urls.COURSE_GENERATOR}/lab/analytics/${courseId}`,
             GENERATE_CUSTOM_LAB: `${urls.COURSE_GENERATOR}/lab/generate-custom`,
             REFRESH_LAB_EXERCISES: `${urls.COURSE_GENERATOR}/lab/refresh-exercises`,
+    /**
+     * EXECUTE EXERCISES OPERATION
+     * PURPOSE: Execute EXERCISES operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} courseId - Unique identifier
+     */
             EXERCISES: (courseId) => `${urls.COURSE_GENERATOR}/exercises/${courseId}`,
             
             /* LAB SESSION MANAGEMENT */
             LAB_CHAT: `${urls.COURSE_GENERATOR}/lab/chat`,
             LAB_SESSION_SAVE: `${urls.COURSE_GENERATOR}/lab/session/save`,
+    /**
+     * EXECUTE LAB SESSION LOAD OPERATION
+     * PURPOSE: Execute LAB SESSION LOAD operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} courseId - Unique identifier
+     * @param {string|number} studentId - Studentid parameter
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
             LAB_SESSION_LOAD: (courseId, studentId) => `${urls.COURSE_GENERATOR}/lab/session/${courseId}/${studentId}`,
+    /**
+     * EXECUTE LAB SESSION CLEAR OPERATION
+     * PURPOSE: Execute LAB SESSION CLEAR operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} courseId - Unique identifier
+     * @param {string|number} studentId - Studentid parameter
+     */
             LAB_SESSION_CLEAR: (courseId, studentId) => `${urls.COURSE_GENERATOR}/lab/session/${courseId}/${studentId}`,
 
             /* ================================================================
@@ -207,7 +333,21 @@ const CONFIG = {
              * ================================================================ */
             PUBLISHED_COURSES: `https://localhost:8004/courses?status=published`,
             COURSE_INSTANCES: `https://localhost:8004/course-instances`,
+    /**
+     * EXECUTE COURSES BY STATUS OPERATION
+     * PURPOSE: Execute COURSES BY STATUS operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {*} status - Status parameter
+     */
             COURSES_BY_STATUS: (status) => `https://localhost:8004/courses?status=${status}`,
+    /**
+     * EXECUTE INSTRUCTOR INSTANCES OPERATION
+     * PURPOSE: Execute INSTRUCTOR INSTANCES operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {string|number} instructorId - Instructorid parameter
+     */
             INSTRUCTOR_INSTANCES: (instructorId) => `https://localhost:8004/course-instances?instructor_id=${instructorId}`,
         }
     }

@@ -16,10 +16,17 @@
  * const checker = new PrerequisiteChecker(courseId, studentId);
  * await checker.render('prerequisite-container');
  */
-
 import { knowledgeGraphClient } from '../knowledge-graph-client.js';
 
 class PrerequisiteChecker {
+    /**
+     * INITIALIZE CLASS INSTANCE WITH DEFAULT STATE
+     * PURPOSE: Initialize class instance with default state
+     * WHY: Establishes initial state required for class functionality
+     *
+     * @param {string|number} courseId - Unique identifier
+     * @param {string|number} studentId - Studentid parameter
+     */
     constructor(courseId, studentId = null) {
         this.courseId = courseId;
         this.studentId = studentId;

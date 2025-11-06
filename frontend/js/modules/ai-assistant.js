@@ -15,7 +15,6 @@
  *
  * @module ai-assistant
  */
-
 import { showNotification, escapeHtml } from './org-admin-utils.js';
 import { getAuthHeaders } from './org-admin-api.js';
 
@@ -391,7 +390,7 @@ async function addWebResultsToRAG(searchResults, contextType) {
         for (const result of searchResults.results) {
             const content = `${result.title}\n\n${result.snippet}`;
 
-            const response = await fetch('https://localhost:8009/api/v1/rag/add-document', {
+            const response = await fetch('/api/v1/rag/add-document', {
                 method: 'POST',
                 headers: await getAuthHeaders(),
                 body: JSON.stringify({
@@ -461,7 +460,7 @@ async function queryRAGWithContext(query, context, nlpResult = null) {
         }
 
         // Use hybrid search for better retrieval accuracy
-        const response = await fetch('https://localhost:8009/api/v1/rag/hybrid-search', {
+        const response = await fetch('/api/v1/rag/hybrid-search', {
             method: 'POST',
             headers: await getAuthHeaders(),
             body: JSON.stringify({
@@ -527,7 +526,7 @@ async function queryMetadataWithFuzzySearch(query, context) {
 
         const entityTypes = entityTypeMap[context.type] || ['course'];
 
-        const response = await fetch('https://localhost:8011/api/v1/metadata/search/fuzzy', {
+        const response = await fetch('/api/v1/metadata/search/fuzzy', {
             method: 'POST',
             headers: await getAuthHeaders(),
             body: JSON.stringify({
@@ -603,7 +602,7 @@ async function queryKnowledgeGraph(query, context, metadataContext) {
         // Get prerequisite information for each course
         for (const courseId of courseIds) {
             try {
-                const response = await fetch(`https://localhost:8012/api/v1/graph/prerequisites/${courseId}/check`, {
+                const response = await fetch(`/api/v1/knowledge-graph/prerequisites/${courseId}/check`, {
                     method: 'GET',
                     headers: await getAuthHeaders()
                 });
@@ -629,7 +628,7 @@ async function queryKnowledgeGraph(query, context, metadataContext) {
                 const endCourse = courseIds[courseIds.length - 1];
 
                 const response = await fetch(
-                    `https://localhost:8012/api/v1/graph/paths/learning-path?start=${startCourse}&end=${endCourse}&optimization=shortest`,
+                    `/api/v1/knowledge-graph/paths/learning-path?start=${startCourse}&end=${endCourse}&optimization=shortest`,
                     {
                         method: 'GET',
                         headers: await getAuthHeaders()
@@ -842,7 +841,6 @@ async function callAIService(prompt, context) {
          * TECHNICAL IMPLEMENTATION:
          * Calls the /api/v1/chat endpoint with full context and conversation history
          */
-
         // Prepare conversation history for the AI
         const conversationHistory = context.conversationHistory
             .filter(msg => msg.role !== 'system')
@@ -862,8 +860,9 @@ async function callAIService(prompt, context) {
 
         console.log('🤖 Calling course-generator chat endpoint...');
 
-        // Call actual chat endpoint
-        const response = await fetch('https://localhost:8001/api/v1/chat', {
+        // Call course-generator service via nginx proxy
+        // NOTE: This requires nginx locations for /api/v1/chat → course-generator:8001/api/v1/chat
+        const response = await fetch('/api/v1/chat', {
             method: 'POST',
             headers: await getAuthHeaders(),
             body: JSON.stringify({
@@ -985,7 +984,7 @@ export function exportConversationHistory() {
  */
 async function preprocessQuery(query, context) {
     try {
-        const response = await fetch('https://localhost:8013/api/v1/preprocess', {
+        const response = await fetch('/api/v1/nlp/preprocess', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="../css/modern-ui/modern-ui.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Progress - Course Creator</title>
@@ -79,6 +80,7 @@
             height: 100%;
             background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
             transition: width 0.3s ease;
+            width: calc(var(--progress, 0) * 1%);
         }
 
         .course-progress-card {
@@ -126,7 +128,7 @@
 
     <header class="site-header" role="banner">
         <nav role="navigation" aria-label="Main navigation">
-            <a href="/dashboard" style="color: var(--primary-600); text-decoration: none;" aria-label="Return to dashboard">
+            <a href="/dashboard" class="link-primary" aria-label="Return to dashboard">
                 <i class="fas fa-arrow-left" aria-hidden="true"></i> Back to Dashboard
             </a>
         </nav>
@@ -148,45 +150,45 @@
                          aria-valuenow="42"
                          aria-label="Overall learning progress: 42 percent complete"
                          class="progress-bar-container">
-                        <div class="progress-bar" style="width: 42%"></div>
+                        <div class="progress-bar" style="--progress: 42"></div>
                     </div>
                 </article>
 
                 <article class="stat-card">
                     <div class="stat-label">Time Spent</div>
                     <div class="stat-value time-spent" aria-label="12.5 hours spent learning">12.5</div>
-                    <div style="color: var(--text-secondary); font-size: 0.875rem;">hours</div>
+                    <div class="stat-detail">hours</div>
                 </article>
 
                 <article class="stat-card">
                     <div class="stat-label">Modules Completed</div>
                     <div class="stat-value modules-completed" aria-label="8 modules completed out of 15 total">8</div>
-                    <div style="color: var(--text-secondary); font-size: 0.875rem;">of 15 modules</div>
+                    <div class="stat-detail">of 15 modules</div>
                 </article>
 
                 <article class="stat-card">
                     <div class="stat-label">Quizzes Passed</div>
                     <div class="stat-value quizzes-passed" aria-label="5 quizzes passed with 85 percent average">5</div>
-                    <div style="color: var(--text-secondary); font-size: 0.875rem;">with 85% avg</div>
+                    <div class="stat-detail">with 85% avg</div>
                 </article>
 
                 <article class="stat-card">
                     <div class="stat-label">Certificates Earned</div>
                     <div class="stat-value certificates-earned" aria-label="0 certificates earned">0</div>
-                    <div style="color: var(--text-secondary); font-size: 0.875rem;">achievements</div>
+                    <div class="stat-detail">achievements</div>
                 </article>
 
                 <article class="stat-card">
                     <div class="stat-label">Learning Streak</div>
                     <div class="stat-value learning-streak" aria-label="7 day learning streak">7</div>
-                    <div style="color: var(--text-secondary); font-size: 0.875rem;">days</div>
+                    <div class="stat-detail">days</div>
                 </article>
             </div>
         </section>
 
         <!-- Course Progress Cards -->
         <section aria-labelledby="course-progress-heading">
-            <h2 id="course-progress-heading" style="margin-bottom: 20px; color: var(--text-primary);">Course Progress</h2>
+            <h2 id="course-progress-heading" class="section-heading-spaced">Course Progress</h2>
 
             <article class="course-progress-card">
                 <h3 class="course-title">
@@ -205,7 +207,7 @@
                      aria-valuenow="35"
                      aria-label="Introduction to Python Programming course progress: 35 percent complete"
                      class="progress-bar-container">
-                    <div class="progress-bar" style="width: 35%"></div>
+                    <div class="progress-bar" style="--progress: 35"></div>
                 </div>
             </article>
 
@@ -226,7 +228,7 @@
                      aria-valuenow="60"
                      aria-label="Web Development Fundamentals course progress: 60 percent complete"
                      class="progress-bar-container">
-                    <div class="progress-bar" style="width: 60%"></div>
+                    <div class="progress-bar" style="--progress: 60"></div>
                 </div>
             </article>
         </section>

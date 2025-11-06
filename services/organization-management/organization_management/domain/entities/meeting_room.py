@@ -224,13 +224,51 @@ class MeetingRoomUsage:
     duration_minutes: Optional[int] = None
 
     def calculate_duration(self):
-        """Calculate session duration"""
+        """
+        Calculate meeting room session duration in minutes
+
+        BUSINESS PURPOSE:
+        Tracks time spent in meeting rooms for usage analytics and billing.
+        Helps organizations understand engagement patterns.
+
+        WHY THIS APPROACH:
+        - Only calculates if left_at is set (session ended)
+        - Rounds to integer minutes for simplicity
+        - Stores result for quick queries (denormalized data)
+
+        BUSINESS ANALYTICS:
+        Duration data used for:
+        - Instructor engagement metrics
+        - Student participation tracking
+        - Resource utilization reports
+
+        Returns:
+            None - updates entity in place (sets duration_minutes)
+        """
         if self.left_at:
             duration = self.left_at - self.joined_at
             self.duration_minutes = int(duration.total_seconds() / 60)
 
     def end_session(self):
-        """End the session"""
+        """
+        End meeting room session and calculate duration
+
+        BUSINESS PURPOSE:
+        Records when user left meeting room and automatically calculates
+        session duration for analytics.
+
+        WHY THIS APPROACH:
+        - Sets left_at to current time
+        - Delegates duration calculation to calculate_duration()
+        - Atomic operation ensures data consistency
+
+        USAGE:
+        Called when user disconnects from meeting room or closes browser.
+        Can also be called by cleanup job for stale sessions.
+
+        Returns:
+            None - updates entity in place (sets left_at and duration_minutes)
+        """
         self.left_at = datetime.utcnow()
         self.calculate_duration()
 
@@ -249,15 +287,65 @@ class MeetingRoomInvitation:
     status: str = "pending"  # pending, accepted, expired
 
     def accept(self):
-        """Accept the invitation"""
+        """
+        Accept meeting room invitation
+
+        BUSINESS PURPOSE:
+        Records user acceptance of meeting room invitation and grants access.
+        Transitions invitation from pending to accepted state.
+
+        WHY THIS APPROACH:
+        - Status change enables access to meeting room
+        - Preserves invitation record for audit trail
+        - Permanent acceptance (no expiration after acceptance)
+
+        Returns:
+            None - updates entity in place (sets status to "accepted")
+        """
         self.status = "accepted"
 
     def expire(self):
-        """Mark invitation as expired"""
+        """
+        Mark invitation as expired
+
+        BUSINESS PURPOSE:
+        Automatically expires invitations past their expiration date.
+        Prevents access to meeting rooms with outdated invitations.
+
+        WHY THIS APPROACH:
+        - Status change prevents further acceptance
+        - Preserves invitation record for audit trail
+        - Called automatically by is_valid() check
+
+        BUSINESS RULE:
+        Expired invitations cannot be accepted. User must request new invitation.
+
+        Returns:
+            None - updates entity in place (sets status to "expired")
+        """
         self.status = "expired"
 
     def is_valid(self) -> bool:
-        """Check if invitation is still valid"""
+        """
+        Check if invitation is still valid for acceptance
+
+        BUSINESS PURPOSE:
+        Validates invitation before granting meeting room access.
+        Ensures invitations are pending and not expired.
+
+        WHY THIS APPROACH:
+        - Status check ensures invitation is pending (not already accepted or expired)
+        - Expiration check automatically expires outdated invitations
+        - Returns boolean for permission checks
+
+        VALIDATION RULES:
+        - Status must be "pending" (not "accepted" or "expired")
+        - Current time must be before expires_at (if set)
+        - Automatically expires invitation if past expiration
+
+        Returns:
+            bool: True if invitation is valid, False otherwise
+        """
         if self.status != "pending":
             return False
 

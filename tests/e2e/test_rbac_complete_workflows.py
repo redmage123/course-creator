@@ -118,10 +118,10 @@ class TestRBACCompleteWorkflows:
         
         # Mock successful login response
         mock_browser_session.local_storage['authToken'] = mock_api_server['auth']['login']['token']
-        mock_browser_session.current_url = "http://localhost:3000/org-admin-enhanced.html"
-        
+        mock_browser_session.current_url = "http://localhost:3000/org-admin-dashboard.html"
+
         # Verify login successful
-        assert mock_browser_session.current_url.endswith('org-admin-enhanced.html')
+        assert mock_browser_session.current_url.endswith('org-admin-dashboard.html')
         assert 'authToken' in mock_browser_session.local_storage
         
         # Step 2: Dashboard Loading
@@ -582,7 +582,7 @@ class TestRBACCompleteWorkflows:
         mock_browser_session.local_storage['authToken'] = student_token
         
         # Attempt to access organization admin dashboard
-        mock_browser_session.get("http://localhost:3000/org-admin-enhanced.html")
+        mock_browser_session.get("http://localhost:3000/org-admin-dashboard.html")
         
         # Mock permission check failure
         error_elements = {
@@ -616,7 +616,7 @@ class TestRBACCompleteWorkflows:
         # Test 3: Organization admin attempting to delete organizations
         org_admin_token = RBACTestUtils.create_test_jwt_token(rbac_test_data["users"]["org_admin"])
         mock_browser_session.local_storage['authToken'] = org_admin_token
-        mock_browser_session.current_url = "http://localhost:3000/org-admin-enhanced.html"
+        mock_browser_session.current_url = "http://localhost:3000/org-admin-dashboard.html"
         
         # Attempt organization deletion (should fail)
         delete_org_btn = Mock()
@@ -696,7 +696,7 @@ class TestRBACCompleteWorkflows:
         # Step 1: Normal operation
         org_admin_token = RBACTestUtils.create_test_jwt_token(rbac_test_data["users"]["org_admin"])
         mock_browser_session.local_storage['authToken'] = org_admin_token
-        mock_browser_session.current_url = "http://localhost:3000/org-admin-enhanced.html"
+        mock_browser_session.current_url = "http://localhost:3000/org-admin-dashboard.html"
         
         # Mock network connectivity
         network_status = {"connected": True, "retry_count": 0}

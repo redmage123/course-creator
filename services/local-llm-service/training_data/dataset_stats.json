@@ -1,0 +1,9 @@
+{
+  "total_examples": 2500,
+  "datasets": {
+    "oasst": 1000,
+    "alpaca": 1000,
+    "code_alpaca": 500
+  },
+  "output_file": "./training_data/quick_training_data.jsonl"
+}

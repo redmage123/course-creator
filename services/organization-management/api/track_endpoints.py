@@ -73,6 +73,29 @@ class EnrollmentResponse(BaseModel):
     total_enrolled: int
 
 
+class LocationResponse(BaseModel):
+    """
+    Response model for locations data
+
+    BUSINESS CONTEXT:
+    Locations represent geographic instances of projects where tracks can be offered.
+    Used when assigning instructors to specific locations within a track.
+    """
+    id: str
+    name: str
+    parent_project_id: str
+    organization_id: str
+    location_country: str
+    location_region: Optional[str]
+    location_city: Optional[str]
+    timezone: str
+    start_date: Optional[str]
+    end_date: Optional[str]
+    max_participants: Optional[int]
+    current_participants: int
+    status: str
+
+
 async def get_track_service() -> TrackService:
     """Get track service from container"""
     return await get_container().get_track_service()
@@ -88,8 +111,34 @@ async def create_track(
     try:
         # Verify permissions - need to get organization ID from project
         # For now, assume we can get it from the current user's context
-        organization_id = current_user.organization_id
-        await verify_permission(current_user.id, organization_id, Permission.CREATE_TRACKS)
+        organization_id_str = current_user.get('organization_id')
+        if not organization_id_str:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User must be associated with an organization to create tracks"
+            )
+
+        # Convert string IDs from JWT to UUID objects for permission check
+        user_id_str = current_user.get('user_id') or current_user.get('sub')
+        if not user_id_str:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User ID missing from JWT token"
+            )
+
+        try:
+            user_id_uuid = UUID(user_id_str)
+            organization_id_uuid = UUID(organization_id_str)
+        except (ValueError, TypeError) as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid UUID format - user_id: {user_id_str}, org_id: {organization_id_str}, error: {str(e)}"
+            )
+
+        await verify_permission(user_id_uuid, organization_id_uuid, Permission.CREATE_TRACKS)
+
+        # Use string version for track creation (service expects string)
+        organization_id = organization_id_str
 
         # Validate difficulty level
         try:
@@ -100,18 +149,21 @@ async def create_track(
                 detail=f"Invalid difficulty level: {request.difficulty_level}"
             )
 
+        # Generate slug from track name
+        slug = request.name.lower().replace(' ', '-').replace('_', '-')
+
         track = await track_service.create_track(
-            name=request.name,
-            description=request.description,
             project_id=request.project_id,
-            organization_id=organization_id,
-            created_by=current_user.id,
+            name=request.name,
+            slug=slug,
+            description=request.description,
+            created_by=UUID(user_id_str),
             target_audience=request.target_audience,
             prerequisites=request.prerequisites,
             learning_objectives=request.learning_objectives,
             duration_weeks=request.duration_weeks,
-            difficulty_level=difficulty,
-            max_students=request.max_students
+            difficulty_level=request.difficulty_level,  # Service expects string
+            max_enrolled=request.max_students
         )
 
         return TrackResponse(
@@ -124,15 +176,18 @@ async def create_track(
             prerequisites=track.prerequisites,
             learning_objectives=track.learning_objectives,
             duration_weeks=track.duration_weeks,
-            difficulty_level=track.difficulty_level.value,
-            max_students=track.max_students,
-            status=track.status.value,
+            difficulty_level=track.difficulty_level.value if hasattr(track.difficulty_level, 'value') else track.difficulty_level,
+            max_students=track.max_enrolled,
+            status=track.status.value if hasattr(track.status, 'value') else track.status,
             enrollment_count=0,  # New track has no enrollments
             instructor_count=0,  # New track has no instructors
             created_at=track.created_at.isoformat(),
             updated_at=track.updated_at.isoformat()
         )
 
+    except HTTPException:
+        # Re-raise HTTP exceptions (including 403 from verify_permission) without modification
+        raise
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
@@ -182,16 +237,16 @@ async def get_track(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
-def _parse_status_filter(status: Optional[str]) -> Optional[TrackStatus]:
+def _parse_status_filter(status_value: Optional[str]) -> Optional[TrackStatus]:
     """Parse and validate status filter"""
-    if not status:
+    if not status_value:
         return None
     try:
-        return TrackStatus(status)
+        return TrackStatus(status_value)
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid status: {status}"
+            detail=f"Invalid status: {status_value}"
         )
 
 
@@ -237,12 +292,24 @@ async def _build_track_response(track, track_service: TrackService) -> TrackResp
 async def list_tracks(
     project_id: Optional[UUID] = None,
     organization_id: Optional[UUID] = None,
-    status: Optional[str] = None,
+    track_status: Optional[str] = None,
     difficulty_level: Optional[str] = None,
     current_user=Depends(get_current_user),
     track_service: TrackService = Depends(get_track_service)
 ):
-    """List tracks with optional filters"""
+    """
+    List tracks with optional filters
+
+    BUSINESS CONTEXT:
+    Organization admins need to view all tracks across all projects in their organization.
+    This endpoint supports both project-specific and organization-wide track listing.
+
+    QUERY PATTERNS:
+    - With project_id: Returns tracks for specific project only
+    - Without project_id: Returns all tracks in user's organization
+    - With status filter: Filters by track status (draft, active, archived)
+    - With difficulty filter: Filters by difficulty level (beginner, intermediate, advanced)
+    """
     try:
         # Default to current user's organization if not specified
         if not organization_id:
@@ -250,14 +317,71 @@ async def list_tracks(
             organization_id = current_user.get('organization_id') if isinstance(current_user, dict) else getattr(current_user, 'organization_id', None)
 
         # Parse filters
-        status_filter = _parse_status_filter(status)
+        status_filter = _parse_status_filter(track_status)
         difficulty_filter = _parse_difficulty_filter(difficulty_level)
 
-        # Get tracks - if project_id is provided, use that; otherwise return empty list for now
+        # Get tracks - if project_id is provided, use that; otherwise get all organization tracks
         if project_id:
             tracks = await track_service.get_tracks_by_project(project_id, status_filter)
+        elif organization_id:
+            # Get all tracks for the organization using direct SQL query
+            # TODO: Move this to track_service.get_tracks_by_organization() method
+            container = get_container()
+            dao = await container.get_organization_dao()
+
+            # Build SQL query with filters
+            query = "SELECT * FROM course_creator.tracks WHERE organization_id = $1"
+            params = [str(organization_id)]
+
+            if track_status:
+                query += " AND status = $2"
+                params.append(track_status)
+            if difficulty_level:
+                query += f" AND difficulty_level = ${len(params) + 1}"
+                params.append(difficulty_level)
+
+            query += " ORDER BY created_at DESC"
+
+            # Execute query
+            rows = await dao.db_pool.fetch(query, *params)
+
+            # Convert rows to Track entities
+            from organization_management.domain.entities.track import Track, TrackType
+            tracks = []
+            for row in rows:
+                # Parse track_type enum
+                try:
+                    track_type_enum = TrackType(row.get('track_type', 'sequential'))
+                except ValueError:
+                    track_type_enum = TrackType.SEQUENTIAL
+
+                track = Track(
+                    id=row['id'],
+                    organization_id=row['organization_id'],
+                    name=row['name'],
+                    slug=row.get('slug', ''),
+                    project_id=row.get('project_id'),
+                    location_id=row.get('location_id'),
+                    description=row.get('description'),
+                    track_type=track_type_enum,
+                    target_audience=row.get('target_audience', []),
+                    prerequisites=row.get('prerequisites', []),
+                    duration_weeks=row.get('duration_weeks'),
+                    max_enrolled=row.get('max_students'),
+                    learning_objectives=row.get('learning_objectives', []),
+                    skills_taught=row.get('skills_taught', []),
+                    difficulty_level=row.get('difficulty_level', 'beginner'),
+                    display_order=row.get('display_order', 0),
+                    auto_enroll_enabled=row.get('auto_enroll_enabled', True),
+                    status=row.get('status', 'draft'),
+                    settings=row.get('settings', {}),
+                    created_at=row.get('created_at'),
+                    updated_at=row.get('updated_at'),
+                    created_by=row.get('created_by')
+                )
+                tracks.append(track)
         else:
-            # No organization-wide track listing method exists yet, return empty
+            # No organization or project specified
             tracks = []
 
         # Build track responses with counts
@@ -270,6 +394,87 @@ async def list_tracks(
 
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/{track_id}/locations", response_model=List[LocationResponse])
+async def get_track_locations(
+    track_id: UUID,
+    current_user=Depends(get_current_user),
+    track_service: TrackService = Depends(get_track_service)
+):
+    """
+    Get all locations associated with a track's parent project
+
+    BUSINESS CONTEXT:
+    When assigning instructors to tracks, org admins need to see which locations
+    are available for that track. This endpoint returns all locations under the
+    track's parent project, enabling locations-specific instructor assignments.
+
+    WORKFLOW:
+    1. Track belongs to a project
+    2. Project has multiple locations (geographic instances)
+    3. Instructors can be assigned to specific locations within the track
+    4. This endpoint provides the list of available locations for assignment
+    """
+    try:
+        # Get track to find its parent project
+        track = await track_service.get_track(track_id)
+        if not track:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Track not found"
+            )
+
+        # Verify user has permission to view track details
+        await verify_permission(current_user.id, track.organization_id, Permission.VIEW_TRACKS)
+
+        # Get locations for the track's parent project
+        container = get_container()
+        dao = await container.get_organization_dao()
+
+        # Query locations table for this project
+        query = """
+            SELECT
+                id, name, parent_project_id, organization_id,
+                location_country, location_region, location_city,
+                timezone, start_date, end_date,
+                max_participants, current_participants, status
+            FROM locations
+            WHERE parent_project_id = $1
+            AND status IN ('draft', 'active')
+            ORDER BY name
+        """
+
+        rows = await dao.db_pool.fetch(query, track.project_id)
+
+        # Build response
+        locations = []
+        for row in rows:
+            locations.append(LocationResponse(
+                id=str(row['id']),
+                name=row['name'],
+                parent_project_id=str(row['parent_project_id']),
+                organization_id=str(row['organization_id']),
+                location_country=row['location_country'],
+                location_region=row.get('location_region'),
+                location_city=row.get('location_city'),
+                timezone=row['timezone'],
+                start_date=row['start_date'].isoformat() if row.get('start_date') else None,
+                end_date=row['end_date'].isoformat() if row.get('end_date') else None,
+                max_participants=row.get('max_participants'),
+                current_participants=row.get('current_participants', 0),
+                status=row['status']
+            ))
+
+        return locations
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch track locations: {str(e)}"
+        )
 
 
 def _build_update_data(request: UpdateTrackRequest) -> dict:
@@ -493,7 +698,7 @@ async def bulk_enroll_students(
 @router.get("/{track_id}/enrollments")
 async def get_track_enrollments(
     track_id: UUID,
-    status: Optional[str] = None,
+    enrollment_status: Optional[str] = None,
     current_user=Depends(get_current_user),
     track_service: TrackService = Depends(get_track_service)
 ):
@@ -510,7 +715,7 @@ async def get_track_enrollments(
         # Verify permissions
         await verify_permission(current_user.id, track.organization_id, Permission.MANAGE_TRACKS)
 
-        enrollments = await track_service.get_track_enrollments(track_id, status)
+        enrollments = await track_service.get_track_enrollments(track_id, enrollment_status)
 
         return {
             "track_id": str(track_id),

@@ -345,8 +345,8 @@ export function displayRAGSuggestions(ragResult, projectDescription, targetRoles
                 <span style="color: var(--info-color);">${ragResult.difficulty_level || 'Intermediate'}</span>
             </div>
             <div class="insight-metric">
-                <strong>Optimal Cohort Size:</strong><br>
-                <span style="color: var(--success-color);">${ragResult.cohort_size || '20-30 participants'}</span>
+                <strong>Optimal Locations Size:</strong><br>
+                <span style="color: var(--success-color);">${ragResult.location_size || '20-30 participants'}</span>
             </div>
         </div>
     `;

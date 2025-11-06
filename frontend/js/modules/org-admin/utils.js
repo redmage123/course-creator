@@ -96,112 +96,49 @@ export function formatDateTime(dateString) {
     });
 }
 
-// Mock Data for Development
-export function getMockProjects() {
-    return [
-        {
-            id: 'project-1',
-            name: 'Graduate Developer Training Program',
-            slug: 'grad-dev-program',
-            description: 'Comprehensive training program for new graduate developers',
-            target_roles: ['Application Developer', 'DevOps Engineer'],
-            duration_weeks: 16,
-            max_participants: 50,
-            current_participants: 32,
-            start_date: '2024-01-15',
-            end_date: '2024-05-15',
-            status: 'active'
-        },
-        {
-            id: 'project-2',
-            name: 'Business Analysis Bootcamp',
-            slug: 'ba-bootcamp',
-            description: 'Intensive business analysis training',
-            target_roles: ['Business Analyst', 'Product Manager'],
-            duration_weeks: 12,
-            max_participants: 30,
-            current_participants: 15,
-            start_date: '2024-02-01',
-            status: 'draft'
-        }
-    ];
-}
+// Project Status Calculation
+/**
+ * Calculate project status based on current date and project dates
+ *
+ * BUSINESS LOGIC:
+ * Projects automatically transition through lifecycle stages based on their
+ * start and end dates. This ensures accurate status reporting and prevents
+ * projects from appearing "active" when they've already ended.
+ *
+ * Status transitions:
+ * - draft: No start/end dates configured yet
+ * - planned: Dates set, but start date is in the future
+ * - active: Currently between start and end dates
+ * - completed: Past the end date (inactive)
+ *
+ * @param {Object} project - Project object with start_date and end_date
+ * @returns {string} Calculated status: 'draft', 'planned', 'active', or 'completed'
+ */
+export function calculateProjectStatus(project) {
+    // If no dates set, keep as draft
+    if (!project.start_date || !project.end_date) {
+        return 'draft';
+    }
 
-export function getMockInstructors() {
-    return [
-        {
-            user_id: 'user-1',
-            email: 'john.doe@techuni.edu',
-            first_name: 'John',
-            last_name: 'Doe',
-            role: 'instructor',
-            is_active: true,
-            joined_at: '2024-01-01T00:00:00Z',
-            last_login: '2024-01-20T10:30:00Z'
-        },
-        {
-            user_id: 'user-2',
-            email: 'jane.smith@techuni.edu',
-            first_name: 'Jane',
-            last_name: 'Smith',
-            role: 'project_manager',
-            is_active: true,
-            joined_at: '2024-01-15T00:00:00Z',
-            last_login: '2024-01-19T14:20:00Z'
-        }
-    ];
-}
+    const now = new Date();
+    const startDate = new Date(project.start_date);
+    const endDate = new Date(project.end_date);
 
-export function getMockStudents() {
-    return [
-        {
-            user_id: 'user-3',
-            email: 'student1@techuni.edu',
-            first_name: 'Alice',
-            last_name: 'Johnson',
-            project_count: 2,
-            is_active: true,
-            joined_at: '2024-01-10T00:00:00Z',
-            last_active: '2024-09-28T00:00:00Z'
-        },
-        {
-            user_id: 'user-4',
-            email: 'student2@techuni.edu',
-            first_name: 'Bob',
-            last_name: 'Wilson',
-            project_count: 1,
-            is_active: true,
-            joined_at: '2024-01-12T00:00:00Z',
-            last_active: '2024-09-30T00:00:00Z'
-        },
-        {
-            user_id: 'user-5',
-            email: 'student3@techuni.edu',
-            first_name: 'Charlie',
-            last_name: 'Brown',
-            project_count: 3,
-            is_active: true,
-            joined_at: '2024-02-01T00:00:00Z',
-            last_active: '2024-10-01T00:00:00Z'
-        }
-    ];
-}
+    // Normalize dates to midnight for accurate day-based comparison
+    now.setHours(0, 0, 0, 0);
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
 
-export function getMockTrackTemplates() {
-    return [
-        {
-            id: 'template-1',
-            name: 'Fundamentals of Programming',
-            description: 'Learn core programming concepts',
-            difficulty_level: 'beginner',
-            duration_weeks: 4
-        },
-        {
-            id: 'template-2',
-            name: 'Advanced Web Development',
-            description: 'Master modern web technologies',
-            difficulty_level: 'advanced',
-            duration_weeks: 8
-        }
-    ];
+    // Project hasn't started yet
+    if (now < startDate) {
+        return 'planned';
+    }
+
+    // Project has ended (INACTIVE - as requested by user)
+    if (now > endDate) {
+        return 'completed';
+    }
+
+    // Project is currently running
+    return 'active';
 }

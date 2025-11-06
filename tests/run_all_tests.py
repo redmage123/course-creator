@@ -205,6 +205,12 @@ def main():
                 "command": "python -m pytest tests/unit/user_management/ -v --tb=short",
                 "description": "Unit Tests - User Management & Student Login",
                 "timeout": 300
+            },
+            "course_management": {
+                "path": "tests/unit/course_management/",
+                "command": "python -m pytest tests/unit/course_management/ -v --tb=short",
+                "description": "Unit Tests - Course Management & Project Import",
+                "timeout": 300
             }
         },
         "integration": {
@@ -319,6 +325,42 @@ def main():
                 "command": "python -m pytest tests/e2e/test_org_admin_notifications_e2e.py -v --tb=short",
                 "description": "End-to-End Tests - Org Admin Notifications & Meeting Rooms",
                 "timeout": 900
+            },
+            "critical_org_admin_journey": {
+                "path": "tests/e2e/critical_user_journeys/test_org_admin_complete_journey.py",
+                "command": "python -m pytest tests/e2e/critical_user_journeys/test_org_admin_complete_journey.py -v --tb=short",
+                "description": "End-to-End Tests - Critical Organization Admin User Journey",
+                "timeout": 1200
+            },
+            "critical_site_admin_journey": {
+                "path": "tests/e2e/critical_user_journeys/test_site_admin_complete_journey.py",
+                "command": "python -m pytest tests/e2e/critical_user_journeys/test_site_admin_complete_journey.py -v --tb=short",
+                "description": "End-to-End Tests - Critical Site Admin User Journey (Platform Administration)",
+                "timeout": 1200
+            },
+            "critical_guest_journey": {
+                "path": "tests/e2e/critical_user_journeys/test_guest_complete_journey.py",
+                "command": "python -m pytest tests/e2e/critical_user_journeys/test_guest_complete_journey.py -v --tb=short",
+                "description": "End-to-End Tests - Critical Guest User Journey (Unauthenticated Access)",
+                "timeout": 900
+            },
+            "critical_rag_ai_assistant_journey": {
+                "path": "tests/e2e/critical_user_journeys/test_rag_ai_assistant_complete_journey.py",
+                "command": "python -m pytest tests/e2e/critical_user_journeys/test_rag_ai_assistant_complete_journey.py -v --tb=short",
+                "description": "End-to-End Tests - RAG AI Assistant Complete Workflow",
+                "timeout": 1200
+            },
+            "content_generation_pipeline": {
+                "path": "tests/e2e/critical_user_journeys/test_content_generation_pipeline_complete.py",
+                "command": "python -m pytest tests/e2e/critical_user_journeys/test_content_generation_pipeline_complete.py -v --tb=short",
+                "description": "End-to-End Tests - Content Generation Pipeline Complete Workflow",
+                "timeout": 1200
+            },
+            "complete_platform_workflow": {
+                "path": "tests/e2e/critical_user_journeys/test_complete_platform_workflow.py",
+                "command": "python -m pytest tests/e2e/critical_user_journeys/test_complete_platform_workflow.py -v --tb=short",
+                "description": "End-to-End Tests - Complete Platform Workflow (All Roles Integration)",
+                "timeout": 1800
             }
         },
         "security": {

@@ -16,10 +16,14 @@
  * - Configuration-based endpoints
  * - Support for course feedback (student → course) and student feedback (instructor → student)
  */
-
 import { Auth } from '../modules/auth.js';
 
 export class FeedbackService {
+    /**
+     * INITIALIZE CLASS INSTANCE WITH DEFAULT STATE
+     * PURPOSE: Initialize class instance with default state
+     * WHY: Establishes initial state required for class functionality
+     */
     constructor() {
         this.baseUrl = window.CONFIG?.API_URLS?.COURSE_MANAGEMENT || 'https://localhost:8004';
     }

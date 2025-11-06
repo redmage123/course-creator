@@ -365,7 +365,7 @@ def main():
     print("✅ SLIDE 2 REGENERATION COMPLETE")
     print("=" * 80)
     print()
-    print(f"📹 Video location: {output_path}")
+    print(f"📹 Video locations: {output_path}")
     print(f"🎬 Ready for deployment")
     print()
 

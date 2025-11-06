@@ -335,7 +335,7 @@
 
 .modal-backdrop {
     background: rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(8px);
+    /* backdrop-filter: blur(8px); */ /* Removed per user request - no blur background */
 }
 
 /* Modern Loading States */

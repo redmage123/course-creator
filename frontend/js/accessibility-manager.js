@@ -10,8 +10,12 @@
  * - Keyboard navigation enhancements
  * - Tab panel management
  */
-
 class AccessibilityManager {
+    /**
+     * INITIALIZE CLASS INSTANCE WITH DEFAULT STATE
+     * PURPOSE: Initialize class instance with default state
+     * WHY: Establishes initial state required for class functionality
+     */
     constructor() {
         this.isUsingKeyboard = false;
         this.lastFocusedElement = null;
@@ -178,6 +182,13 @@ class AccessibilityManager {
         firstFocusable.focus();
 
         // Trap focus
+    /**
+     * EXECUTE TRAPFOCUS OPERATION
+     * PURPOSE: Execute trapFocus operation
+     * WHY: Implements required business logic for system functionality
+     *
+     * @param {Event} e - Event object
+     */
         const trapFocus = (e) => {
             if (e.key !== 'Tab') return;
 
@@ -195,6 +206,13 @@ class AccessibilityManager {
         };
 
         // Handle Escape key
+    /**
+     * HANDLE ESCAPE EVENT
+     * PURPOSE: Handle escape event
+     * WHY: Encapsulates event handling logic for better code organization
+     *
+     * @param {Event} e - Event object
+     */
         const handleEscape = (e) => {
             if (e.key === 'Escape') {
                 this.closeModal(modal);

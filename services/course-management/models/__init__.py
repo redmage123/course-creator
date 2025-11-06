@@ -16,6 +16,16 @@ from models.course_instance import (
 from models.enrollment import Enrollment, EnrollmentCreate, EnrollmentUpdate, EnrollmentRequest, StudentRegistrationRequest
 from models.progress import Progress, ProgressUpdate, ProgressResponse
 from models.common import BaseModel, PaginatedResponse
+from models.course_video import (
+    CourseVideo,
+    CourseVideoCreate,
+    CourseVideoUpdate,
+    CourseVideoResponse,
+    CourseVideoListResponse,
+    VideoUploadRequest,
+    VideoUploadResponse,
+    VideoType
+)
 
 __all__ = [
     "Course",
@@ -38,5 +48,13 @@ __all__ = [
     "ProgressUpdate",
     "ProgressResponse",
     "BaseModel",
-    "PaginatedResponse"
+    "PaginatedResponse",
+    "CourseVideo",
+    "CourseVideoCreate",
+    "CourseVideoUpdate",
+    "CourseVideoResponse",
+    "CourseVideoListResponse",
+    "VideoUploadRequest",
+    "VideoUploadResponse",
+    "VideoType"
 ]

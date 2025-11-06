@@ -2,7 +2,7 @@
 Content Queries DAO - Centralized SQL Query Management for Content Operations
 
 BUSINESS REQUIREMENT:
-All SQL queries for content metadata operations centralized in one location following
+All SQL queries for content metadata operations centralized in one locations following
 DAO (Data Access Object) pattern for better maintainability and separation of concerns.
 
 TECHNICAL IMPLEMENTATION:

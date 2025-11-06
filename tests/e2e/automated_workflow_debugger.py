@@ -392,19 +392,50 @@ class AutomatedWorkflowDebugger:
             # Wait for page load
             time.sleep(3)
 
-            # Find login form
-            print("🔍 Looking for login form...")
-
-            # Try to find email/username field
+            # Handle privacy consent modal first (it blocks login button)
+            print("🔍 Checking for privacy consent modal...")
             try:
-                email_field = WebDriverWait(self.driver, 10).until(
-                    EC.presence_of_element_located((By.ID, "email"))
-                )
-                password_field = self.driver.find_element(By.ID, "password")
+                # Wait for privacy modal to appear (it shows after 1 second)
+                time.sleep(2)
 
-                # Use test credentials
-                email = "admin@aielevate.com"
-                password = "admin123"
+                privacy_modal = WebDriverWait(self.driver, 5).until(
+                    EC.presence_of_element_located((By.ID, "privacyModal"))
+                )
+
+                # Check if modal is visible
+                if privacy_modal.is_displayed():
+                    print("🍪 Privacy modal detected - dismissing...")
+                    # Click "Accept All" button
+                    accept_btn = self.driver.find_element(By.XPATH, "//button[contains(text(), 'Accept All')]")
+                    accept_btn.click()
+                    print("✅ Privacy consent accepted")
+                    time.sleep(2)  # Wait for modal to close
+            except Exception as e:
+                print(f"ℹ️  No privacy modal or already dismissed")
+
+            # Click login button to open dropdown
+            print("🔍 Looking for login button...")
+
+            try:
+                login_btn = WebDriverWait(self.driver, 10).until(
+                    EC.element_to_be_clickable((By.ID, "loginBtn"))
+                )
+                print("🖱️  Clicking login button to open dropdown...")
+                login_btn.click()
+
+                # Wait for dropdown to appear
+                time.sleep(2)
+
+                # Find login form fields in dropdown
+                print("🔍 Looking for login form in dropdown...")
+                email_field = WebDriverWait(self.driver, 10).until(
+                    EC.presence_of_element_located((By.ID, "loginEmail"))
+                )
+                password_field = self.driver.find_element(By.ID, "loginPassword")
+
+                # Use org_admin test credentials for testing org-admin workflows
+                email = "orgadmin"  # Organization admin user for test-org
+                password = "orgadmin123!"  # Password for test org_admin user
 
                 print(f"📝 Entering credentials: {email}")
                 email_field.clear()
@@ -460,7 +491,7 @@ class AutomatedWorkflowDebugger:
 
         try:
             # Get org_id from URL or use default
-            org_id = "259da6df-c148-40c2-bcd9-dc6889e7e9fb"  # AI Elevate org
+            org_id = "550e8400-e29b-41d4-a716-446655440000"  # AI Elevate org
 
             dashboard_url = f"{self.base_url}/html/org-admin-dashboard.html?org_id={org_id}"
             print(f"🌐 Navigating to: {dashboard_url}")
@@ -662,7 +693,7 @@ class AutomatedWorkflowDebugger:
 
             # Find and click submit/create button
             submit_btn = WebDriverWait(self.driver, 10).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, "button.btn-primary[type='submit'], button:contains('Create Project')"))
+                EC.element_to_be_clickable((By.ID, "submitProjectBtn"))
             )
 
             print("🖱️  Clicking submit button...")

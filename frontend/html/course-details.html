@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="../css/modern-ui/modern-ui.css">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Course Details - Course Creator Platform</title>
@@ -131,7 +132,7 @@
             <h1 id="course-title-header" class="course-title">Loading...</h1>
             <p id="course-description-text" class="course-description"></p>
 
-            <div id="enrolled-message" class="enrolled-message" style="display: none;" role="status" aria-live="polite">
+            <div id="enrolled-message" class="enrolled-message hidden" role="status" aria-live="polite">
                 <i class="fas fa-check-circle" aria-hidden="true"></i> You are already enrolled in this course!
             </div>
 
@@ -144,27 +145,27 @@
                 <div id="modules-list">
                     <!-- Sample modules for E2E testing - will be replaced by loadCourseDetails if API provides modules -->
                     <article class="module-item" aria-labelledby="module-title-0">
-                        <h3 id="module-title-0" style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">Module 1: Introduction</h3>
+                        <h3 id="module-title-0" class="module-title">Module 1: Introduction</h3>
                         <p>Getting started with the basics</p>
                     </article>
                     <article class="module-item" aria-labelledby="module-title-1">
-                        <h3 id="module-title-1" style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">Module 2: Core Concepts</h3>
+                        <h3 id="module-title-1" class="module-title">Module 2: Core Concepts</h3>
                         <p>Understanding fundamental principles</p>
                     </article>
                     <article class="module-item" aria-labelledby="module-title-2">
-                        <h3 id="module-title-2" style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">Module 3: Practical Application</h3>
+                        <h3 id="module-title-2" class="module-title">Module 3: Practical Application</h3>
                         <p>Hands-on exercises and projects</p>
                     </article>
                 </div>
             </section>
 
             <div id="enroll-section">
-                <button type="button" id="enroll-btn" onclick="enrollInCourse()" style="display: none;" aria-label="Enroll in this course">
+                <button type="button" id="enroll-btn" onclick="enrollInCourse()" class="hidden" aria-label="Enroll in this course">
                     Enroll in This Course
                 </button>
             </div>
 
-            <div id="enrolled-section" style="display: none;">
+            <div id="enrolled-section" class="hidden">
                 <button type="button" id="go-to-course-btn" onclick="goToCourse()" aria-label="Go to course content">
                     Go to Course Content
                 </button>
@@ -228,7 +229,7 @@
             if (course.modules && course.modules.length > 0) {
                 modulesList.innerHTML = course.modules.map((module, index) => `
                     <article class="module-item" aria-labelledby="module-title-${index}">
-                        <h3 id="module-title-${index}" style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">
+                        <h3 id="module-title-${index}" class="module-title">
                             ${escapeHtml(module.title || module.name || 'Module')}
                         </h3>
                         ${module.description ? `<p>${escapeHtml(module.description)}</p>` : ''}
@@ -244,7 +245,7 @@
                 ];
                 modulesList.innerHTML = sampleModules.map((module, index) => `
                     <article class="module-item" aria-labelledby="module-title-${index}">
-                        <h3 id="module-title-${index}" style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem;">
+                        <h3 id="module-title-${index}" class="module-title">
                             ${escapeHtml(module.title)}
                         </h3>
                         <p>${escapeHtml(module.description)}</p>
@@ -259,13 +260,13 @@
 
             if (!authToken || !userId) {
                 // Not logged in, show enroll button
-                document.getElementById('enroll-btn').style.display = 'block';
+                document.getElementById('enroll-btn').classList.remove('hidden');
                 return;
             }
 
             // For now, assume not enrolled and show enroll button
             // In production, you'd check enrollment status via API
-            document.getElementById('enroll-btn').style.display = 'block';
+            document.getElementById('enroll-btn').classList.remove('hidden');
         }
 
         async function enrollInCourse() {
@@ -294,12 +295,17 @@
 
                 if (response.ok) {
                     // Show success message
-                    document.getElementById('enrollment-success-message').style.display = 'block';
-                    document.getElementById('enroll-btn').style.display = 'none';
-                    document.getElementById('enrolled-section').style.display = 'block';
+                    const successMsg = document.getElementById('enrollment-success-message');
+                    const enrollBtn = document.getElementById('enroll-btn');
+                    const enrolledSection = document.getElementById('enrolled-section');
+
+                    successMsg.classList.remove('hidden');
+                    successMsg.classList.add('show');
+                    enrollBtn.classList.add('hidden');
+                    enrolledSection.classList.remove('hidden');
 
                     // Scroll to success message
-                    document.getElementById('enrollment-success-message').scrollIntoView({ behavior: 'smooth' });
+                    successMsg.scrollIntoView({ behavior: 'smooth' });
                 } else {
                     const error = await response.json();
                     alert(`Enrollment failed: ${error.detail || 'Unknown error'}`);

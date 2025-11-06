@@ -1,0 +1,324 @@
+/**
+ * Toast Component Styles - Tami Design System
+ *
+ * BUSINESS CONTEXT:
+ * Implements Tami design system toast styles with smooth animations.
+ * Provides consistent notification styling for user feedback.
+ *
+ * CRITICAL: Color-coded variants for quick recognition
+ */
+
+/* ============================================================================
+ * BASE TOAST STYLES
+ * ============================================================================ */
+
+.toast {
+  /* Positioning */
+  position: fixed;
+  z-index: 9999;
+
+  /* Layout */
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 300px;
+  max-width: 500px;
+  padding: 16px;
+  box-sizing: border-box;
+
+  /* Background */
+  background-color: #ffffff;
+  border-radius: 8px;
+  border-left: 4px solid currentColor;
+
+  /* Shadow */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+              0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+  /* Animation */
+  animation: slideIn 0.3s ease-out;
+
+  /* Progress bar container */
+  position: relative;
+  overflow: hidden;
+}
+
+/* ============================================================================
+ * POSITION VARIANTS
+ * ============================================================================ */
+
+.toast-top-right {
+  top: 20px;
+  right: 20px;
+}
+
+.toast-top-left {
+  top: 20px;
+  left: 20px;
+}
+
+.toast-bottom-right {
+  bottom: 20px;
+  right: 20px;
+}
+
+.toast-bottom-left {
+  bottom: 20px;
+  left: 20px;
+}
+
+.toast-top-center {
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.toast-bottom-center {
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* ============================================================================
+ * ANIMATIONS
+ * ============================================================================ */
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Top-left and bottom-left slide from left */
+.toast-top-left,
+.toast-bottom-left {
+  animation: slideInLeft 0.3s ease-out;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Center toasts slide from top/bottom */
+.toast-top-center {
+  animation: slideInTop 0.3s ease-out;
+}
+
+@keyframes slideInTop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -100%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.toast-bottom-center {
+  animation: slideInBottom 0.3s ease-out;
+}
+
+@keyframes slideInBottom {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 100%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+/* Exit animation */
+.toast-exiting {
+  animation: fadeOut 0.3s ease-out forwards;
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* ============================================================================
+ * VARIANT STYLES
+ * ============================================================================ */
+
+.toast-success {
+  color: #16a34a;
+  background-color: #f0fdf4;
+}
+
+.toast-error {
+  color: #dc2626;
+  background-color: #fef2f2;
+}
+
+.toast-warning {
+  color: #f59e0b;
+  background-color: #fffbeb;
+}
+
+.toast-info {
+  color: #2563eb;
+  background-color: #eff6ff;
+}
+
+/* ============================================================================
+ * TOAST ICON
+ * ============================================================================ */
+
+.toast-icon {
+  /* Layout */
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+
+  /* Color inherited from variant */
+  color: inherit;
+}
+
+/* ============================================================================
+ * TOAST MESSAGE
+ * ============================================================================ */
+
+.toast-message {
+  /* Layout */
+  flex: 1;
+
+  /* Typography */
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #1a202c;
+}
+
+/* ============================================================================
+ * TOAST CLOSE BUTTON
+ * ============================================================================ */
+
+.toast-close {
+  /* Reset */
+  border: none;
+  background: none;
+  padding: 4px;
+  cursor: pointer;
+
+  /* Layout */
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+
+  /* Colors */
+  color: #64748b;
+
+  /* Transitions */
+  transition: all 0.2s ease;
+}
+
+.toast-close:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: #1a202c;
+}
+
+.toast-close:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* ============================================================================
+ * PROGRESS BAR
+ * ============================================================================ */
+
+.toast-progress {
+  /* Positioning */
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+
+  /* Background */
+  background-color: currentColor;
+  opacity: 0.3;
+
+  /* Animation */
+  transform-origin: left;
+  animation: progress linear forwards;
+}
+
+@keyframes progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* ============================================================================
+ * ACCESSIBILITY
+ * ============================================================================ */
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .toast {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+
+  .toast-progress {
+    animation: none;
+  }
+}
+
+/* ============================================================================
+ * RESPONSIVE DESIGN
+ * ============================================================================ */
+
+/* Mobile */
+@media (max-width: 640px) {
+  .toast {
+    /* Full width on mobile with margins */
+    left: 10px !important;
+    right: 10px !important;
+    min-width: auto;
+    max-width: none;
+  }
+
+  .toast-top-center,
+  .toast-bottom-center {
+    transform: none;
+  }
+
+  .toast-message {
+    font-size: 13px;
+  }
+}

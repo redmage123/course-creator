@@ -17,7 +17,7 @@
  * - Complete administrative control over platform users
  * - Real-time statistics for platform oversight
  * - Efficient bulk operations for large user bases
- * - Advanced filtering for quick user location
+ * - Advanced filtering for quick user locations
  * - Professional interface matching platform standards
  * - Security compliance with session validation
  * 
@@ -41,7 +41,6 @@
  * - Event-driven architecture for user interactions
  * - Responsive design for cross-device compatibility
  */
-
 // CONFIGURATION AND AUTHENTICATION SETUP
 // PURPOSE: Initialize API endpoints and authentication state for admin operations
 // WHY: Centralized configuration ensures consistent API access across all admin functions
@@ -246,6 +245,13 @@ if (!validateAdminSession()) {
  * @param {string} sectionId - Target section identifier ('dashboard' or 'users')
  */
 // eslint-disable-next-line no-unused-vars
+    /**
+     * DISPLAY SECTION INTERFACE
+     * PURPOSE: Display section interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {string|number} sectionId - Sectionid parameter
+     */
 function showSection(sectionId) {
     // HIDE ALL SECTIONS: Clear current section display
     const sections = document.querySelectorAll('.admin-section');
@@ -415,6 +421,13 @@ async function loadUsers() {
 }
 
 // Display users in table
+    /**
+     * DISPLAY USERS INTERFACE
+     * PURPOSE: Display users interface
+     * WHY: Provides user interface for interaction and data visualization
+     *
+     * @param {*} users - Users parameter
+     */
 function displayUsers(users) {
     const tbody = document.getElementById('users-table-body');
     tbody.innerHTML = '';
@@ -441,6 +454,11 @@ function displayUsers(users) {
 
 // Refresh users list
 // eslint-disable-next-line no-unused-vars
+    /**
+     * EXECUTE REFRESHUSERS OPERATION
+     * PURPOSE: Execute refreshUsers operation
+     * WHY: Implements required business logic for system functionality
+     */
 function refreshUsers() {
     loadUsers();
     showAlert('Users list refreshed');
@@ -482,6 +500,11 @@ async function editUser(userId) {
 }
 
 // Close modal
+    /**
+     * HIDE MODAL INTERFACE
+     * PURPOSE: Hide modal interface
+     * WHY: Improves UX by managing interface visibility and state
+     */
 function closeModal() {
     document.getElementById('edit-user-modal').style.display = 'none';
 }
@@ -617,6 +640,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Add logout functionality
 // eslint-disable-next-line no-unused-vars
+    /**
+     * EXECUTE LOGOUT OPERATION
+     * PURPOSE: Execute logout operation
+     * WHY: Implements required business logic for system functionality
+     */
 function logout() {
     localStorage.removeItem('authToken');
     window.location.href = 'index.html';
@@ -624,6 +652,11 @@ function logout() {
 
 // Bulk user management functions
 // eslint-disable-next-line no-unused-vars
+    /**
+     * TOGGLE SELECT ALL STATE
+     * PURPOSE: Toggle select all state
+     * WHY: Provides binary state management for UI elements
+     */
 function toggleSelectAll() {
     const selectAllCheckbox = document.getElementById('select-all');
     const userCheckboxes = document.querySelectorAll('.user-checkbox');
@@ -635,6 +668,13 @@ function toggleSelectAll() {
     updateBulkActions();
 }
 
+    /**
+     * UPDATE BULK ACTIONS STATE
+     * PURPOSE: Update bulk actions state
+     * WHY: Keeps application state synchronized with user actions and data changes
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
 function updateBulkActions() {
     const selectedCheckboxes = document.querySelectorAll('.user-checkbox:checked');
     const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
@@ -735,6 +775,13 @@ async function bulkDeleteUsers() {
 }
 
 // Filtering and sorting functions
+    /**
+     * FILTER USERS BASED ON CRITERIA
+     * PURPOSE: Filter users based on criteria
+     * WHY: Enables users to find relevant data quickly
+     *
+     * @returns {Array} Filtered array
+     */
 function filterUsers() {
     if (!allUsers || allUsers.length === 0) {
         return;
@@ -800,6 +847,16 @@ function filterUsers() {
     displayUsers(filteredUsers);
 }
 
+    /**
+     * UPDATE FILTER RESULTS STATE
+     * PURPOSE: Update filter results state
+     * WHY: Keeps application state synchronized with user actions and data changes
+     *
+     * @param {*} filteredCount - Filteredcount parameter
+     * @param {*} totalCount - Totalcount parameter
+     *
+     * @throws {Error} If operation fails or validation errors occur
+     */
 function updateFilterResults(filteredCount, totalCount) {
     const resultsDiv = document.getElementById('filter-results');
     if (filteredCount === totalCount) {
@@ -810,6 +867,11 @@ function updateFilterResults(filteredCount, totalCount) {
 }
 
 // eslint-disable-next-line no-unused-vars
+    /**
+     * EXECUTE CLEARFILTERS OPERATION
+     * PURPOSE: Execute clearFilters operation
+     * WHY: Implements required business logic for system functionality
+     */
 function clearFilters() {
     document.getElementById('search-users').value = '';
     document.getElementById('filter-role').value = '';

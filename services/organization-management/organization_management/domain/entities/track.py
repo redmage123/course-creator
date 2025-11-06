@@ -31,11 +31,11 @@ class DifficultyLevel(str, Enum):
 @dataclass
 class Track:
     """
-    Track entity representing a learning path within a project or sub-project
+    Track entity representing a learning path within a project or locations
 
     BUSINESS PURPOSE:
     Tracks organize courses into structured learning paths. They can belong to either
-    a main project OR a sub-project (XOR constraint enforced at database level).
+    a main project OR a specific locations (XOR constraint enforced at database level).
 
     EXAMPLES:
     - App Developer Track
@@ -43,17 +43,17 @@ class Track:
     - Operations Engineer Track
 
     FLEXIBLE HIERARCHY:
-    - Track → Main Project (project_id set, sub_project_id NULL)
-    - Track → Sub-Project → Main Project (sub_project_id set, project_id NULL)
+    - Track → Main Project (project_id set, location_id NULL)
+    - Track → Locations → Main Project (location_id set, project_id NULL)
     """
     organization_id: UUID           # Required for multi-tenancy
     name: str                       # Display name
     slug: str                       # URL-safe identifier
     id: Optional[UUID] = None
 
-    # Flexible parent reference (XOR: project_id OR sub_project_id, not both)
+    # Flexible parent reference (XOR: project_id OR location_id, not both)
     project_id: Optional[UUID] = None       # If track belongs to main project
-    sub_project_id: Optional[UUID] = None   # If track belongs to sub-project
+    location_id: Optional[UUID] = None      # If track belongs to specific locations
 
     description: Optional[str] = None
     track_type: TrackType = TrackType.SEQUENTIAL
@@ -165,10 +165,10 @@ class Track:
 
     def validate_parent_reference(self) -> bool:
         """
-        Validate XOR constraint: Track must reference EITHER project OR sub-project
+        Validate XOR constraint: Track must reference EITHER project OR locations
 
         BUSINESS RULE:
-        A track can belong to a main project OR a sub-project, but not both
+        A track can belong to a main project OR a specific locations, but not both
         and not neither. This is enforced at the database level but we also
         validate it at the domain level for early error detection.
 
@@ -176,10 +176,10 @@ class Track:
             bool: True if exactly one parent reference is set, False otherwise
         """
         has_project = self.project_id is not None
-        has_subproject = self.sub_project_id is not None
+        has_location = self.location_id is not None
 
         # XOR: exactly one must be True
-        return (has_project and not has_subproject) or (not has_project and has_subproject)
+        return (has_project and not has_location) or (not has_project and has_location)
 
     def is_valid(self) -> bool:
         """Check if track data is valid"""
@@ -283,7 +283,21 @@ class TrackInstructor:
             self.assigned_at = datetime.utcnow()
 
     def has_communication_links(self) -> bool:
-        """Check if instructor has at least one communication link"""
+        """
+        Check if instructor has at least one communication link configured
+
+        BUSINESS PURPOSE:
+        Validates that instructor has provided a way for students to contact them.
+        UI can warn org admins if communication links are missing.
+
+        WHY THIS APPROACH:
+        - Any single link type is sufficient (OR logic)
+        - Empty slack_links list evaluates to False
+        - Returns boolean for conditional rendering
+
+        Returns:
+            bool: True if at least one communication link exists, False otherwise
+        """
         return bool(
             self.zoom_link or
             self.teams_link or
@@ -291,12 +305,44 @@ class TrackInstructor:
         )
 
     def add_slack_link(self, slack_link: str) -> None:
-        """Add a Slack channel or DM link"""
+        """
+        Add a Slack channel or DM link for student communication
+
+        BUSINESS PURPOSE:
+        Instructors can provide multiple Slack channels (general questions,
+        office hours, direct messages) for different communication purposes.
+
+        WHY THIS APPROACH:
+        - Prevents duplicate links (idempotent operation)
+        - Empty string check prevents invalid links
+        - Appends to list for multiple channel support
+
+        Args:
+            slack_link: Slack channel URL or DM link
+
+        Returns:
+            None - updates entity in place
+        """
         if slack_link and slack_link not in self.slack_links:
             self.slack_links.append(slack_link)
 
     def remove_slack_link(self, slack_link: str) -> None:
-        """Remove a Slack channel or DM link"""
+        """
+        Remove a Slack channel or DM link
+
+        BUSINESS PURPOSE:
+        Allows instructors to remove deprecated or incorrect Slack links.
+
+        WHY THIS APPROACH:
+        - Silent failure if link not found (idempotent operation)
+        - List.remove() handles removal automatically
+
+        Args:
+            slack_link: Slack channel URL or DM link to remove
+
+        Returns:
+            None - updates entity in place
+        """
         if slack_link in self.slack_links:
             self.slack_links.remove(slack_link)
 
@@ -306,7 +352,26 @@ class TrackInstructor:
         teams_link: Optional[str] = None,
         slack_links: Optional[List[str]] = None
     ) -> None:
-        """Update instructor communication links"""
+        """
+        Update instructor communication links
+
+        BUSINESS PURPOSE:
+        Allows org admins or instructors to update all communication links
+        at once. Supports partial updates without overwriting unchanged links.
+
+        WHY THIS APPROACH:
+        - Optional parameters allow partial updates
+        - slack_links replaces entire list (not appends)
+        - No timestamp update (assignment metadata handles this)
+
+        Args:
+            zoom_link: Zoom meeting URL (optional)
+            teams_link: Microsoft Teams meeting URL (optional)
+            slack_links: List of Slack channel URLs (replaces existing, optional)
+
+        Returns:
+            None - updates entity in place
+        """
         if zoom_link is not None:
             self.zoom_link = zoom_link
         if teams_link is not None:
@@ -354,16 +419,46 @@ class TrackStudent:
             self.enrolled_at = datetime.utcnow()
 
     def has_instructor(self) -> bool:
-        """Check if student is assigned to an instructor"""
+        """
+        Check if student is assigned to an instructor for this track
+
+        BUSINESS PURPOSE:
+        Validates that student has an instructor for personalized guidance.
+        Used by UI to warn org admins about unassigned students.
+
+        WHY THIS APPROACH:
+        - Simple null check for readability
+        - Returns boolean for conditional rendering
+        - Students without instructors may have degraded experience
+
+        Returns:
+            bool: True if assigned_instructor_id is set, False otherwise
+        """
         return self.assigned_instructor_id is not None
 
     def assign_instructor(self, instructor_id: UUID, assigned_by: Optional[UUID] = None) -> None:
         """
-        Assign student to a specific instructor
+        Assign student to a specific instructor for this track
 
-        BUSINESS LOGIC:
-        Updates the assigned instructor and records the reassignment timestamp
-        for audit trail purposes.
+        BUSINESS PURPOSE:
+        Enables load balancing of students across instructors teaching the same track.
+        Ensures each student has a dedicated instructor for personalized support.
+
+        WHY THIS APPROACH:
+        - Records reassignment timestamp for audit trail
+        - Optional assigned_by tracks who made the assignment (org admin)
+        - Allows reassignment (not idempotent) for load rebalancing
+
+        BUSINESS RULE:
+        Assigned instructor must be teaching this track (enforced at database level).
+        This prevents invalid instructor-student pairings.
+
+        Args:
+            instructor_id: UUID of instructor teaching this track
+            assigned_by: UUID of org admin making assignment (optional)
+
+        Returns:
+            None - updates entity in place
         """
         self.assigned_instructor_id = instructor_id
         self.last_reassigned_at = datetime.utcnow()
@@ -371,6 +466,24 @@ class TrackStudent:
             self.assigned_by = assigned_by
 
     def unassign_instructor(self) -> None:
-        """Remove instructor assignment (not recommended but allowed)"""
+        """
+        Remove instructor assignment (not recommended but allowed)
+
+        BUSINESS PURPOSE:
+        Allows org admins to unassign instructor when instructor leaves or
+        track reassignment is needed. Not recommended as it degrades student experience.
+
+        WHY THIS APPROACH:
+        - Sets assigned_instructor_id to None (explicit unassignment)
+        - Records reassignment timestamp for audit trail
+        - Use sparingly - prefer reassigning to another instructor
+
+        BUSINESS RISK:
+        Students without assigned instructors may have difficulty getting help.
+        Use only temporarily during instructor transitions.
+
+        Returns:
+            None - updates entity in place
+        """
         self.assigned_instructor_id = None
         self.last_reassigned_at = datetime.utcnow()

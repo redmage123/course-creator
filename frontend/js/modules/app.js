@@ -12,12 +12,6 @@
  * - Legacy function export for backward compatibility
  * - Page-specific initialization and routing
  */
-
-/**
- * MODULE DEPENDENCY IMPORTS
- * PURPOSE: Import all core modules that App coordinates
- * WHY: Explicit imports make dependencies clear and enable proper initialization order
- */
 import { Auth } from './auth.js';                    // Authentication and session management
 import { Navigation } from './navigation.js';        // Site navigation and routing
 import { showNotification } from './notifications.js'; // User notification system
@@ -276,7 +270,7 @@ class App {
      * ERROR LOG STRUCTURE:
      * - Timestamp: When the error occurred
      * - Type: Category of error (JavaScript Error, Promise Rejection, etc.)
-     * - Details: Complete error information (message, stack, location)
+     * - Details: Complete error information (message, stack, locations)
      * - Page: Which page the error occurred on
      * - User Agent: Browser and device information for compatibility debugging
      * 
@@ -322,6 +316,11 @@ class App {
      */
     setupAuthEventListeners() {
         // Wait for DOM to be ready and retry if elements not found
+    /**
+     * EXECUTE ATTACHLISTENERS OPERATION
+     * PURPOSE: Execute attachListeners operation
+     * WHY: Implements required business logic for system functionality
+     */
         const attachListeners = () => {
             // LOGIN BUTTON: Attach click handler
             const loginBtn = document.getElementById('loginBtn');

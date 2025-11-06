@@ -292,6 +292,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    z-index: 10;
+    pointer-events: auto;
 }
 
 .password-toggle:hover {
@@ -429,6 +431,12 @@
 .user-menu a:hover {
     background: var(--gray-50);
     color: var(--primary-600);
+}
+
+.user-menu-divider {
+    margin: var(--space-2) 0;
+    border: none;
+    border-top: 1px solid var(--border);
 }
 
 /* ==========================================================================

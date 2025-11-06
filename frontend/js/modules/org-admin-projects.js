@@ -46,7 +46,8 @@ import {
     formatDuration,
     openModal,
     closeModal,
-    showNotification
+    showNotification,
+    calculateProjectStatus
 } from './org-admin-utils.js';
 
 // Wave 4: Wizard Enhancement Modules
@@ -57,6 +58,42 @@ import { showToast } from './feedback-system.js';
 
 // Wave 5: Wizard Framework (replaces embedded wizard logic)
 import { WizardFramework } from './wizard-framework.js';
+
+// ==============================================================================
+// UTILITY FUNCTIONS
+// ==============================================================================
+
+/**
+ * Sanitize string to create valid URL slug
+ *
+ * BUSINESS CONTEXT:
+ * URL slugs must match pattern ^[a-z0-9-]+$ for API validation.
+ * Converts any string to a valid slug format.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Converts to lowercase
+ * - Replaces spaces and special chars with hyphens
+ * - Removes consecutive hyphens
+ * - Trims leading/trailing hyphens
+ *
+ * @param {string} text - Text to convert to slug
+ * @returns {string} Valid URL slug
+ */
+function sanitizeSlug(text) {
+    if (!text) return '';
+
+    return text
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, '-')           // Spaces to hyphens
+        .replace(/[^a-z0-9-]/g, '-')    // Special chars to hyphens
+        .replace(/-+/g, '-')             // Remove consecutive hyphens
+        .replace(/^-+|-+$/g, '');        // Remove leading/trailing hyphens
+}
+
+// ==============================================================================
+// MODULE STATE
+// ==============================================================================
 
 // Current organization context
 let currentOrganizationId = null;
@@ -123,6 +160,60 @@ async function initializeProjectWizard() {
         },
         onStepChange: (oldIdx, newIdx) => {
             console.log(`Wizard step changed: ${oldIdx} → ${newIdx}`);
+
+            /**
+             * AUTO-GENERATE TRACKS: Step 2 → Step 3 transition
+             *
+             * WHY THIS IS NEEDED:
+             * - Step 1 is where user selects target roles
+             * - Step 2 is "Configure Locations"
+             * - Step 3 is "Configure Training Tracks" where generated tracks are displayed
+             * - Step 4 is "Review & Confirm" where tracks can be managed
+             *
+             * HOW IT WORKS:
+             * 1. When entering Step 3 (index 2) from Step 2 (index 1)
+             * 2. Get target roles selected in Step 1 via getSelectedAudiences()
+             * 3. Map roles to track configurations via mapAudiencesToTracks()
+             * 4. Display tracks in Step 3's track list container
+             *
+             * BUSINESS CONTEXT:
+             * - Automates track creation based on target audience selection
+             * - Shows tracks immediately in Step 3 for review
+             * - User can see what tracks will be created before proceeding
+             */
+            if (oldIdx === 1 && newIdx === 2) {
+                // Entering Step 3 (Training Tracks) from Step 2 (Locations)
+                console.log('🎯 Auto-generating tracks from selected audiences...');
+
+                const audiences = getSelectedAudiences();
+                console.log(`📋 Found ${audiences.length} selected audiences:`, audiences);
+
+                if (audiences && audiences.length > 0) {
+                    const tracks = mapAudiencesToTracks(audiences);
+                    console.log(`✅ Generated ${tracks.length} tracks:`, tracks);
+
+                    // Display tracks in Step 3
+                    displayGeneratedTracksInStep3(tracks);
+                } else {
+                    console.warn('⚠️  No audiences selected - cannot generate tracks');
+                    displayGeneratedTracksInStep3([]);
+                }
+            }
+
+            /**
+             * POPULATE TRACK REVIEW: Step 3 → Step 4 transition
+             *
+             * WHY THIS IS NEEDED:
+             * - Step 4 shows tracks in the management modal format
+             * - Reuses the same track data generated in Step 3
+             */
+            if (oldIdx === 2 && newIdx === 3) {
+                // Also populate Step 4's review list (uses same track data)
+                console.log('📋 Populating Step 4 track review list...');
+                if (generatedTracks && generatedTracks.length > 0) {
+                    populateTrackReviewList(generatedTracks);
+                }
+            }
         },
         onDraftSaved: () => {
             showToast('Draft saved successfully', 'success', 2000);
@@ -251,6 +342,7 @@ export function previousProjectStep() {
  * BUSINESS LOGIC:
  * Fetches all projects for the organization and displays them in a table
  * Supports filtering by status and search term
+ * Automatically calculates project status based on current date vs. start/end dates
  *
  * @returns {Promise<void>}
  */
@@ -264,9 +356,16 @@ export async function loadProjectsData() {
 
         const projects = await fetchProjects(currentOrganizationId, filters);
 
-        // Update UI
-        renderProjectsTable(projects);
-        updateProjectsStats(projects);
+        // Calculate status for each project based on dates
+        // This ensures projects with end_date in the past show as "completed"
+        const projectsWithStatus = projects.map(project => ({
+            ...project,
+            status: calculateProjectStatus(project)
+        }));
+
+        // Update UI with calculated statuses
+        renderProjectsTable(projectsWithStatus);
+        updateProjectsStats(projectsWithStatus);
 
     } catch (error) {
         console.error('Error loading projects:', error);
@@ -321,6 +420,9 @@ function renderProjectsTable(projects) {
                 </button>
                 <button class="btn-icon" onclick="window.OrgAdmin.Projects.manageMembers('${project.id}')" title="Manage Members">
                     👥
+                </button>
+                <button class="btn-icon" onclick="window.OrgAdmin.Projects.manageProjectTracks('${project.id}')" title="Manage Track">
+                    📊
                 </button>
                 <button class="btn-icon" onclick="window.OrgAdmin.Projects.deleteProjectPrompt('${project.id}')" title="Delete">
                     🗑️
@@ -385,6 +487,21 @@ export async function showCreateProjectModal() {
         projectWizard.goToStep(0); // Framework uses 0-based indexing
     }
 
+    // Set default start date to next working day (if today is weekend)
+    const startDateInput = document.getElementById('projectStartDate');
+    if (startDateInput) {
+        const today = new Date();
+        const nextWorkingDay = getNextWorkingDay(today);
+        startDateInput.value = formatDateForInput(nextWorkingDay);
+
+        // Log for clarity
+        if (today.getDay() === 0 || today.getDay() === 6) {
+            console.log(`📅 Today is a weekend, defaulting start date to next Monday: ${startDateInput.value}`);
+        } else {
+            console.log(`📅 Setting start date to today: ${startDateInput.value}`);
+        }
+    }
+
     // Hide floating dashboard AI Assistant to avoid conflicts with wizard AI Assistant
     const dashboardAI = document.getElementById('dashboardAIChatPanel');
     if (dashboardAI) {
@@ -397,6 +514,18 @@ export async function showCreateProjectModal() {
 
     // Open modal
     openModal('createProjectModal');
+
+    // CRITICAL FIX: Re-attach drag handler after modal opens
+    // The wizard initialization destroys the drag handler attached at page load
+    // We need to reattach it after the modal is fully initialized
+    setTimeout(() => {
+        const modalElement = document.getElementById('createProjectModal');
+        const handleElement = document.querySelector('#createProjectModal .draggable-handle');
+
+        if (modalElement && handleElement && window.makeDraggable) {
+            window.makeDraggable(modalElement, handleElement);
+        }
+    }, 100); // Small delay to ensure wizard initialization completes
 }
 
 // Wave 5: Legacy duplicate wizard functions removed (lines 392-538)
@@ -412,7 +541,7 @@ export async function showCreateProjectModal() {
  *
  * BUSINESS CONTEXT:
  * Allows org admins to save incomplete projects and return later
- * Particularly useful for complex multi-location projects with many cohorts
+ * Particularly useful for complex multi-locations projects with many locations
  *
  * @returns {Promise<void>}
  */
@@ -433,7 +562,7 @@ export async function saveCurrentProjectDraft() {
         // Add wizard state metadata
         draftData.wizard_state = {
             current_step: currentStep,
-            wizard_cohorts: wizardCohorts,
+            wizard_locations: wizardLocations,
             last_saved: new Date().toISOString()
         };
 
@@ -498,10 +627,10 @@ export async function loadProjectDraft(draftId) {
 
         // Restore wizard state if available
         if (draft.wizard_state) {
-            // Restore cohorts
-            if (draft.wizard_state.wizard_cohorts) {
-                wizardCohorts = draft.wizard_state.wizard_cohorts;
-                renderCohortsList();
+            // Restore locations
+            if (draft.wizard_state.wizard_locations) {
+                wizardLocations = draft.wizard_state.wizard_locations;
+                renderLocationsList();
             }
 
             // Navigate to saved step (Wave 5: uses framework, converts 1-based to 0-based)
@@ -592,133 +721,185 @@ export async function showDraftsList() {
 }
 
 // ============================================================================
-// COHORT MANAGEMENT (STEP 2)
+// LOCATIONS MANAGEMENT (STEP 2)
 // ============================================================================
 
-// Store cohorts being created during wizard
-let wizardCohorts = [];
+// Store locations being created during wizard
+let wizardLocations = []; // Variable name kept for backward compatibility
 
 /**
- * Show the cohort creation form in Step 2
+ * Show the locations creation form in Step 2
  *
  * BUSINESS CONTEXT:
- * Displays the inline form for adding a new cohort/location during
- * project creation. This allows org admins to define initial cohorts
+ * Displays the inline form for adding a new locations during
+ * project creation. This allows org admins to define initial locations
  * before the project is created.
  */
-export function showAddCohortForm() {
-    const form = document.getElementById('addCohortForm');
-    const button = document.querySelector('button[onclick*="showAddCohortForm"]');
+export function showAddLocationForm() {
+    const form = document.getElementById('addLocationForm');
+    const button = document.querySelector('button[onclick*="showAddLocationForm"]');
 
     if (form) {
         // Remove the hidden class (which has !important CSS)
-        form.classList.remove('cohort-form-hidden');
+        form.classList.remove('locations-form-hidden');
         if (button) button.style.display = 'none';
 
         // Clear form fields
-        document.getElementById('cohortName').value = '';
-        document.getElementById('cohortLocation').value = '';
-        document.getElementById('cohortStartDate').value = '';
-        document.getElementById('cohortEndDate').value = '';
-        document.getElementById('cohortMaxStudents').value = '';
+        document.getElementById('locationName').value = '';
+        document.getElementById('locationLocation').value = '';
+        document.getElementById('locationMaxStudents').value = '';
 
-        console.log('📝 Location form displayed');
+        // Sync dates and duration from project form (Step 1)
+        const projectStartDate = document.getElementById('projectStartDate')?.value;
+        const projectDuration = document.getElementById('projectDuration')?.value;
+        const projectMaxParticipants = document.getElementById('projectMaxParticipants')?.value;
+
+        const locationStartDateInput = document.getElementById('locationStartDate');
+        const locationDurationInput = document.getElementById('locationDuration');
+        const locationMaxParticipantsInput = document.getElementById('locationMaxParticipants');
+
+        if (projectStartDate && locationStartDateInput) {
+            // Sync start date from project
+            locationStartDateInput.value = projectStartDate;
+            console.log(`📅 Synced location start date from project: ${projectStartDate}`);
+        } else if (locationStartDateInput) {
+            // Fallback to next working day if no project date set
+            const today = new Date();
+            const nextWorkingDay = getNextWorkingDay(today);
+            locationStartDateInput.value = formatDateForInput(nextWorkingDay);
+            console.log(`📅 Location: Using next working day as default: ${locationStartDateInput.value}`);
+        }
+
+        if (projectDuration && locationDurationInput) {
+            // Sync duration from project
+            locationDurationInput.value = projectDuration;
+            // Trigger end date calculation
+            if (typeof calculateLocationEndDate === 'function') {
+                calculateLocationEndDate();
+            }
+            console.log(`⏱️  Synced location duration from project: ${projectDuration} weeks`);
+        } else {
+            document.getElementById('locationEndDate').value = '';
+        }
+
+        if (projectMaxParticipants && locationMaxParticipantsInput) {
+            // Optionally sync max participants from project as a suggested default
+            locationMaxParticipantsInput.value = projectMaxParticipants;
+            console.log(`👥 Synced location max participants from project: ${projectMaxParticipants}`);
+        }
+
+        console.log('📝 Locations form displayed');
     }
 }
 
 /**
- * Cancel cohort form and hide it
+ * Cancel locations form and hide it
  */
-export function cancelCohortForm() {
-    const form = document.getElementById('addCohortForm');
-    const button = document.querySelector('button[onclick*="showAddCohortForm"]');
+export function cancelLocationForm() {
+    const form = document.getElementById('addLocationForm');
+    const button = document.querySelector('button[onclick*="showAddLocationForm"]');
 
     // Re-add the hidden class (which has !important CSS)
-    if (form) form.classList.add('cohort-form-hidden');
+    if (form) form.classList.add('locations-form-hidden');
     if (button) button.style.display = 'block';
 
-    console.log('❌ Location form cancelled');
+    console.log('❌ Locations form cancelled');
 }
 
 /**
- * Save cohort data from form
+ * Save locations data from form
  *
  * BUSINESS CONTEXT:
- * Validates and stores cohort data temporarily during project creation.
- * Cohorts will be created after the project is created in finalizeProjectCreation().
+ * Validates and stores locations data temporarily during project creation.
+ * Locations will be created after the project is created in finalizeProjectCreation().
  */
-export function saveCohort() {
-    // Get form values
-    const name = document.getElementById('cohortName')?.value.trim();
-    const location = document.getElementById('cohortLocation')?.value.trim();
-    const startDate = document.getElementById('cohortStartDate')?.value;
-    const endDate = document.getElementById('cohortEndDate')?.value;
-    const maxStudents = parseInt(document.getElementById('cohortMaxStudents')?.value) || null;
+export function saveLocation() {
+    // Get form values (using inline field IDs)
+    const name = document.getElementById('locationName')?.value.trim();
+    const locationAddress = document.getElementById('locationLocation')?.value.trim();
+    const startDate = document.getElementById('inlineLocationStartDate')?.value;
+    const endDate = document.getElementById('inlineLocationEndDate')?.value;
+    const maxStudents = parseInt(document.getElementById('inlineLocationMaxStudents')?.value) || null;
 
     // Validate required fields
-    if (!name || !location) {
-        showNotification('Please provide cohort name and location', 'error');
+    if (!name || !locationAddress) {
+        showNotification('Please provide location name and address', 'error');
         return;
     }
 
-    // Create cohort object
-    const cohort = {
+    // Create location object
+    const locationData = {
         id: `temp_${Date.now()}`, // Temporary ID for UI display
         name,
-        location,
+        location: locationAddress,
         start_date: startDate || null,
         end_date: endDate || null,
         max_students: maxStudents
     };
 
-    // Add to wizard cohorts array
-    wizardCohorts.push(cohort);
+    // Add to wizard locations array
+    wizardLocations.push(locationData);
 
     // Update display
-    renderWizardCohorts();
+    renderWizardLocations();
+
+    // Clear form fields for next entry
+    const nameField = document.getElementById('locationName');
+    const locationField = document.getElementById('locationLocation');
+    const startDateField = document.getElementById('inlineLocationStartDate');
+    const endDateField = document.getElementById('inlineLocationEndDate');
+    const maxStudentsField = document.getElementById('inlineLocationMaxStudents');
+
+    if (nameField) nameField.value = '';
+    if (locationField) locationField.value = '';
+    if (startDateField) startDateField.value = '';
+    if (endDateField) endDateField.value = '';
+    if (maxStudentsField) maxStudentsField.value = '';
+
+    console.log('🧹 Location form fields cleared');
 
     // Hide form
-    cancelCohortForm();
+    cancelLocationForm();
 
-    showNotification(`Cohort "${name}" added`, 'success');
-    console.log('✅ Cohort saved:', cohort);
+    showNotification(`Locations "${name}" added`, 'success');
+    console.log('✅ Locations saved:', locationData);
 }
 
 /**
- * Render cohorts list in Step 2
+ * Render locations list in Step 2
  */
-function renderWizardCohorts() {
-    const container = document.getElementById('cohortsListContent');
+function renderWizardLocations() {
+    const container = document.getElementById('locationsListContent');
 
     if (!container) return;
 
-    if (wizardCohorts.length === 0) {
+    if (wizardLocations.length === 0) {
         container.innerHTML = `
             <div style="padding: 2rem; text-align: center; background: var(--hover-color); border: 2px dashed var(--border-color); border-radius: 8px;">
                 <p style="margin: 0; color: var(--text-muted);">
-                    No cohorts defined yet. Click "Add Cohort" to create your first location.
+                    No locations defined yet. Click "Add Locations" to create your first locations.
                 </p>
             </div>
         `;
         return;
     }
 
-    container.innerHTML = wizardCohorts.map((cohort, index) => `
+    container.innerHTML = wizardLocations.map((locations, index) => `
         <div style="padding: 1.5rem; background: var(--card-background); border: 1px solid var(--border-color); border-radius: 8px; display: flex; justify-content: space-between; align-items: start;">
             <div style="flex: 1;">
                 <h5 style="margin: 0 0 0.5rem 0; color: var(--primary-color);">
-                    ${index + 1}. ${escapeHtml(cohort.name)}
+                    ${index + 1}. ${escapeHtml(locations.name)}
                 </h5>
                 <div style="display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.9rem; color: var(--text-muted);">
-                    <span>📍 ${escapeHtml(cohort.location)}</span>
-                    ${cohort.start_date ? `<span>📅 ${formatDate(cohort.start_date)}</span>` : ''}
-                    ${cohort.max_students ? `<span>👥 Max ${cohort.max_students} students</span>` : ''}
+                    <span>📍 ${escapeHtml(locations.locations)}</span>
+                    ${locations.start_date ? `<span>📅 ${formatDate(locations.start_date)}</span>` : ''}
+                    ${locations.max_students ? `<span>👥 Max ${locations.max_students} students</span>` : ''}
                 </div>
             </div>
             <button
                 class="btn-icon"
-                onclick="window.OrgAdmin.Projects.removeCohortFromWizard('${cohort.id}')"
-                title="Remove Cohort"
+                onclick="window.OrgAdmin.Projects.removeLocationFromWizard('${locations.id}')"
+                title="Remove Locations"
                 style="color: var(--danger-color);">
                 🗑️
             </button>
@@ -727,12 +908,12 @@ function renderWizardCohorts() {
 }
 
 /**
- * Remove cohort from wizard
+ * Remove locations from wizard
  */
-export function removeCohortFromWizard(cohortId) {
-    wizardCohorts = wizardCohorts.filter(c => c.id !== cohortId);
-    renderWizardCohorts();
-    showNotification('Cohort removed', 'info');
+export function removeLocationFromWizard(locationId) {
+    wizardLocations = wizardLocations.filter(c => c.id !== locationId);
+    renderWizardLocations();
+    showNotification('Locations removed', 'info');
 }
 
 /**
@@ -848,9 +1029,9 @@ export async function submitProjectForm(event) {
  * View project details
  *
  * BUSINESS CONTEXT:
- * Opens the project detail modal showing project information and cohorts tab.
- * The cohorts tab allows creating and managing sub-projects (cohorts) for
- * multi-location projects.
+ * Opens the project detail modal showing project information and locations tab.
+ * The locations tab allows creating and managing sub-projects (locations) for
+ * multi-locations projects.
  *
  * TECHNICAL IMPLEMENTATION:
  * Calls the openProjectDetail function defined in org-admin-dashboard.html
@@ -1919,6 +2100,154 @@ export function mapAudiencesToTracks(audiences) {
 }
 
 /**
+ * Display generated tracks in Step 3
+ *
+ * BUSINESS CONTEXT:
+ * Step 3 is "Configure Training Tracks" where users see the tracks that will
+ * be created for their project. This function displays the auto-generated tracks
+ * based on the target roles selected in Step 1.
+ *
+ * WHY THIS IS NEEDED:
+ * - Users need to see what tracks will be created BEFORE proceeding to Step 4
+ * - Provides transparency about what's being generated
+ * - Allows users to understand the project structure early
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Stores tracks in generatedTracks array for later use
+ * - Renders tracks in Step 3's track list container
+ * - Shows track details: name, description, difficulty, skills
+ * - Provides visual feedback if no tracks generated
+ *
+ * @param {Object[]} tracks - Array of track configurations to display
+ */
+export function displayGeneratedTracksInStep3(tracks) {
+    console.log('📋 Displaying generated tracks in Step 3...');
+
+    // Store tracks globally for later use
+    generatedTracks = tracks || [];
+
+    // Find the container in Step 3
+    const container = document.getElementById('step3TracksList');
+    if (!container) {
+        console.error('❌ Step 3 tracks container not found');
+        return;
+    }
+
+    // Clear existing content
+    container.innerHTML = '';
+
+    if (generatedTracks.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 2rem; color: var(--text-muted);
+                        background: var(--hover-color); border-radius: 8px;">
+                <p>⚠️ No target roles selected in Step 1.</p>
+                <p style="margin-top: 0.5rem;">
+                    <a href="#" onclick="window.OrgAdmin.Projects.previousProjectStep();
+                        window.OrgAdmin.Projects.previousProjectStep(); return false;"
+                        style="color: var(--primary-600); text-decoration: underline;">
+                        ← Go back to Step 1
+                    </a> to select target roles.
+                </p>
+            </div>
+        `;
+        return;
+    }
+
+    // Render each track
+    generatedTracks.forEach((track, index) => {
+        const trackCard = document.createElement('div');
+        trackCard.className = 'track-preview-card';
+        trackCard.style.cssText = `
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            background: var(--card-background, #ffffff);
+            border: 2px solid var(--border-color, #e0e0e0);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        `;
+
+        trackCard.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+                <div style="flex: 1;">
+                    <h4 style="margin: 0 0 0.5rem 0; color: var(--primary-600); font-size: 1.1rem;">
+                        ${index + 1}. ${escapeHtml(track.name)}
+                    </h4>
+                    <span style="display: inline-block; padding: 0.25rem 0.75rem; background: var(--primary-50);
+                                 color: var(--primary-700); border-radius: 12px; font-size: 0.85rem; font-weight: 500;">
+                        ${escapeHtml(track.difficulty || 'intermediate')}
+                    </span>
+                </div>
+                <div style="text-align: right;">
+                    <span style="display: inline-block; padding: 0.25rem 0.75rem; background: var(--success-bg, #e8f5e9);
+                                 color: var(--success, #10b981); border-radius: 12px; font-size: 0.85rem; font-weight: 500;">
+                        ✓ Auto-Generated
+                    </span>
+                </div>
+            </div>
+
+            <p style="margin: 0.75rem 0; color: var(--text-secondary); line-height: 1.5;">
+                ${escapeHtml(track.description || 'Training track for selected audience')}
+            </p>
+
+            ${track.skills && track.skills.length > 0 ? `
+                <div style="margin-top: 0.75rem;">
+                    <strong style="font-size: 0.9rem; color: var(--text-primary);">Skills Covered:</strong>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
+                        ${track.skills.map(skill => `
+                            <span style="padding: 0.25rem 0.75rem; background: var(--hover-color);
+                                         border-radius: 12px; font-size: 0.85rem; color: var(--text-secondary);">
+                                ${escapeHtml(skill)}
+                            </span>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : ''}
+
+            ${track.audience ? `
+                <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border-color);">
+                    <span style="font-size: 0.85rem; color: var(--text-muted);">
+                        Target Audience: <strong>${escapeHtml(track.audience.replace(/_/g, ' '))}</strong>
+                    </span>
+                </div>
+            ` : ''}
+        `;
+
+        container.appendChild(trackCard);
+    });
+
+    /**
+     * Add summary box using design system classes
+     *
+     * WHY USE DESIGN SYSTEM CLASSES:
+     * - Ensures visual consistency across the platform
+     * - Leverages CSS variables for theming (light/dark mode support)
+     * - Eliminates hardcoded color values (#e3f2fd, #3b82f6)
+     * - Makes the UI maintainable through centralized styling
+     *
+     * CLASSES USED:
+     * - info-box: Base container with padding, border-radius, white text
+     * - info-box--info: Info variant with blue gradient background
+     * - info-box__icon: Emoji icon with proper sizing
+     * - info-box__title: Bold title text
+     * - info-box__description: Descriptive text with proper opacity
+     */
+    const summary = document.createElement('div');
+    summary.className = 'info-box info-box--info';
+    summary.style.marginTop = '1.5rem'; // Keep spacing control
+    summary.innerHTML = `
+        <div class="info-box__icon">📊</div>
+        <h4 class="info-box__title">Track Generation Summary</h4>
+        <p class="info-box__description" style="margin: 0;">
+            ${generatedTracks.length} ${generatedTracks.length === 1 ? 'track' : 'tracks'}
+            will be automatically created for this project based on your target role selection.
+        </p>
+    `;
+    container.appendChild(summary);
+
+    console.log(`✅ Displayed ${generatedTracks.length} tracks in Step 3`);
+}
+
+/**
  * Show track confirmation dialog
  *
  * BUSINESS CONTEXT:
@@ -2129,6 +2458,13 @@ export function populateTrackReviewList(tracks) {
         `;
         if (totalTracksCount) totalTracksCount.textContent = '0';
         if (totalRolesCount) totalRolesCount.textContent = '0';
+
+        // Reset popup counts as well
+        const popupTracksCount = document.getElementById('popupTotalTracksCount');
+        const popupRolesCount = document.getElementById('popupTotalRolesCount');
+        if (popupTracksCount) popupTracksCount.textContent = '0';
+        if (popupRolesCount) popupRolesCount.textContent = '0';
+
         return;
     }
 
@@ -2205,15 +2541,29 @@ export function populateTrackReviewList(tracks) {
         </div>
     `).join('');
 
-    // Update summary statistics
+    // Update summary statistics (both popup and inline versions)
+    const trackCount = generatedTracks.length;
+    const uniqueRoles = new Set(generatedTracks.map(t => t.audience).filter(Boolean));
+    const roleCount = uniqueRoles.size || trackCount;
+
     if (totalTracksCount) {
-        totalTracksCount.textContent = generatedTracks.length;
+        totalTracksCount.textContent = trackCount;
     }
 
     if (totalRolesCount) {
-        // Count unique audiences/roles
-        const uniqueRoles = new Set(generatedTracks.map(t => t.audience).filter(Boolean));
-        totalRolesCount.textContent = uniqueRoles.size || generatedTracks.length;
+        totalRolesCount.textContent = roleCount;
+    }
+
+    // Update popup statistics
+    const popupTracksCount = document.getElementById('popupTotalTracksCount');
+    const popupRolesCount = document.getElementById('popupTotalRolesCount');
+
+    if (popupTracksCount) {
+        popupTracksCount.textContent = trackCount;
+    }
+
+    if (popupRolesCount) {
+        popupRolesCount.textContent = roleCount;
     }
 
     console.log(`✅ Populated ${generatedTracks.length} tracks in review list with management buttons`);
@@ -2726,6 +3076,180 @@ export function saveTrackChanges() {
 }
 
 /**
+ * Manage tracks for a specific project from the main Projects list
+ *
+ * BUSINESS CONTEXT:
+ * Provides quick access to track management from the Projects tab without
+ * needing to go through the Project Creation Wizard. Organization admins
+ * can manage existing project tracks directly from the main list view.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Fetches project details including associated tracks
+ * - Loads tracks into temporary generatedTracks array
+ * - Opens track management modal with first track selected
+ * - Reuses existing openTrackManagement() modal code
+ *
+ * @param {string} projectId - UUID of the project to manage tracks for
+ * @returns {Promise<void>}
+ */
+/**
+ * Manage tracks for an existing project from the Projects tab main list
+ *
+ * BUSINESS CONTEXT:
+ * Organization admins need to access track management for existing projects without
+ * going through the Project Creation Wizard again. This function enables editing
+ * tracks, courses, instructors, and students for projects that have already been
+ * created and deployed.
+ *
+ * WHY THIS EXISTS:
+ * - Originally, track management was only accessible during project creation (Step 4)
+ * - After project creation, there was no way to edit tracks, add courses, or assign instructors
+ * - This created a major UX gap: admins couldn't modify existing projects
+ * - This function fills that gap by providing post-creation track management access
+ *
+ * ARCHITECTURAL DECISIONS:
+ * - Reuses existing openTrackManagement() modal to avoid code duplication (DRY principle)
+ * - Fetches fresh data from API rather than using cached data (ensures consistency)
+ * - Uses generatedTracks array to maintain compatibility with existing modal code
+ * - Provides clear user feedback for edge cases (no tracks, auth errors)
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * 1. Validates authentication and organization context
+ * 2. Fetches project details to get project name for display
+ * 3. Fetches all tracks associated with this project
+ * 4. Transforms track data into format expected by existing modal
+ * 5. Populates track review list (same UI as wizard Step 4)
+ * 6. Opens track management modal for first track
+ *
+ * DEPENDENCY INVERSION PRINCIPLE:
+ * - Depends on abstractions (API endpoints) not concrete implementations
+ * - Uses showNotification abstraction for user feedback
+ * - Calls existing modal functions rather than duplicating logic
+ *
+ * SINGLE RESPONSIBILITY PRINCIPLE:
+ * - Only responsibility: Coordinate loading and displaying project tracks
+ * - Delegates authentication to localStorage (separation of concerns)
+ * - Delegates API calls to fetch API (separation of concerns)
+ * - Delegates UI rendering to populateTrackReviewList (separation of concerns)
+ * - Delegates modal display to openTrackManagement (separation of concerns)
+ *
+ * @param {string} projectId - UUID of the project whose tracks to manage
+ * @returns {Promise<void>}
+ *
+ * @throws {Error} If project fetch fails
+ * @throws {Error} If tracks fetch fails
+ *
+ * @example
+ * // Called from Projects table "Manage Track" button
+ * <button onclick="window.OrgAdmin.Projects.manageProjectTracks('proj-uuid-123')">
+ *   📊 Manage Track
+ * </button>
+ */
+export async function manageProjectTracks(projectId) {
+    console.log('📊 Managing tracks for project:', projectId);
+
+    try {
+        // AUTHENTICATION CHECK
+        // WHY: Prevent unauthorized access to project data
+        // Security boundary: All API calls require authentication token
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) {
+            showNotification('Please log in to continue', 'error');
+            return;
+        }
+
+        // ORGANIZATION CONTEXT CHECK
+        // WHY: Multi-tenant system requires organization scope for all operations
+        // Prevents cross-organization data access
+        const orgId = localStorage.getItem('currentOrgId');
+        if (!orgId) {
+            showNotification('No organization selected', 'error');
+            return;
+        }
+
+        // FETCH PROJECT DATA
+        // WHY: Need project name for modal title and context
+        // Uses organization-scoped endpoint to ensure multi-tenant security
+        const projectResponse = await fetch(`${window.API_BASE_URL || 'https://localhost'}/api/v1/organizations/${orgId}/projects/${projectId}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!projectResponse.ok) {
+            throw new Error(`Failed to fetch project: ${projectResponse.status}`);
+        }
+
+        const project = await projectResponse.json();
+        console.log('📋 Project data:', project);
+
+        // FETCH TRACKS FOR THIS PROJECT
+        // WHY: Get current track list to display in modal
+        // Fresh fetch ensures we have latest data (not stale cached data)
+        const tracksResponse = await fetch(`${window.API_BASE_URL || 'https://localhost'}/api/v1/organizations/${orgId}/projects/${projectId}/tracks`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!tracksResponse.ok) {
+            throw new Error(`Failed to fetch tracks: ${tracksResponse.status}`);
+        }
+
+        const tracks = await tracksResponse.json();
+        console.log('📊 Tracks for project:', tracks);
+
+        // HANDLE EMPTY STATE
+        // WHY: Projects may exist without tracks (draft state)
+        // Provide clear guidance on how to add tracks
+        if (!tracks || tracks.length === 0) {
+            showNotification('This project has no tracks yet. Create tracks in the Project Creation Wizard.', 'info');
+            return;
+        }
+
+        // DATA TRANSFORMATION
+        // WHY: Modal expects specific format with default values for optional fields
+        // Ensures modal doesn't break if backend sends incomplete data
+        // OPEN/CLOSED PRINCIPLE: Transforming data to match interface, extensible for new fields
+        generatedTracks = tracks.map(track => ({
+            id: track.id,
+            name: track.name,
+            description: track.description || '',
+            difficulty_level: track.difficulty_level || 'beginner',
+            duration_weeks: track.duration_weeks || 0,
+            instructors: track.instructors || [],
+            courses: track.courses || [],
+            students: track.students || [],
+            project_id: projectId,
+            project_name: project.name
+        }));
+
+        // POPULATE UI
+        // WHY: Reuse existing track review list UI from wizard
+        // Maintains UI consistency between wizard and post-creation editing
+        populateTrackReviewList(generatedTracks);
+
+        // OPEN MODAL
+        // WHY: Modal provides full track management interface (courses, instructors, students)
+        // Opens first track by default (index 0) for immediate access
+        if (generatedTracks.length > 0) {
+            openTrackManagement(0);
+        }
+
+    } catch (error) {
+        // ERROR HANDLING
+        // WHY: Provide clear user feedback when operations fail
+        // Log technical details for debugging, show user-friendly message
+        console.error('❌ Error managing project tracks:', error);
+        showNotification(`Failed to load project tracks: ${error.message}`, 'error');
+    }
+}
+
+/**
  * Close track management modal
  */
 export function closeTrackManagement() {
@@ -2757,20 +3281,31 @@ export async function finalizeProjectCreation() {
     console.log('✅ Finalizing project creation with tracks...');
 
     try {
-        // Gather all project data from wizard steps
+        /**
+         * Gather project data from wizard and transform to API schema
+         *
+         * WHY THIS TRANSFORMATION:
+         * - API expects specific field names (see ProjectCreateRequest in project_endpoints.py)
+         * - Some wizard fields (objectives, locations, tracks) are NOT in the API schema
+         * - Those fields need to be handled separately after project creation
+         * - API validates: name, slug, description, target_roles, duration_weeks,
+         *   max_participants, start_date, end_date, selected_track_templates
+         */
         const projectData = {
+            // Required fields
             name: document.getElementById('projectName')?.value,
-            slug: document.getElementById('projectSlug')?.value,
+            slug: sanitizeSlug(document.getElementById('projectSlug')?.value),
             description: document.getElementById('projectDescription')?.value || null,
-            objectives: parseCommaSeparated(document.getElementById('projectObjectives')?.value),
-            target_roles: getSelectedAudiences(), // Use the correct getter for multi-select
+
+            // Optional fields matching API schema
+            target_roles: getSelectedAudiences(), // Array of role strings
             duration_weeks: parseInt(document.getElementById('projectDuration')?.value) || null,
             max_participants: parseInt(document.getElementById('projectMaxParticipants')?.value) || null,
             start_date: document.getElementById('projectStartDate')?.value || null,
             end_date: document.getElementById('projectEndDate')?.value || null,
-            has_sub_projects: document.getElementById('hasSubProjects')?.value === 'true', // Multi-location support
-            cohorts: wizardCohorts, // Include cohorts from Step 2
-            tracks: generatedTracks // Include tracks with instructors/courses/students from Step 4
+
+            // Optional: Track template IDs (if pre-selecting from templates)
+            selected_track_templates: [] // Empty for now, tracks created separately
         };
 
         // Validate required fields
@@ -2785,14 +3320,18 @@ export async function finalizeProjectCreation() {
             projectData.description = `Training project for ${projectData.name}. This project provides comprehensive learning paths and resources.`;
         }
 
+        console.log('📋 Project data prepared for API:', projectData);
+        console.log(`🌍 Will create ${wizardLocations.length} locations after project creation`);
+        console.log(`📚 Will create ${generatedTracks.length} tracks after project creation`);
+
         // Create project with tracks
         const createdProject = await createProject(currentOrganizationId, projectData);
 
         console.log('✅ Project created successfully:', createdProject);
 
-        // If cohorts were created, associate them with project
-        if (wizardCohorts.length > 0) {
-            console.log(`🌍 Created ${wizardCohorts.length} cohorts for multi-location project`);
+        // If locations were created, associate them with project
+        if (wizardLocations.length > 0) {
+            console.log(`🌍 Created ${wizardLocations.length} locations for multi-locations project`);
         }
 
         // If tracks were generated, create them associated with the project
@@ -2802,7 +3341,15 @@ export async function finalizeProjectCreation() {
             // Store the created project ID for track association
             currentProjectId = createdProject.id || createdProject.project_id;
 
-            // Create all tracks with their instructors, courses, and students
+            /**
+             * Create all tracks with their instructors, courses, and students
+             *
+             * WHY INHERIT PROJECT DATES:
+             * - Tracks should align with the overall project timeline
+             * - Start/end dates from Step 1 provide the boundary for all tracks
+             * - Ensures tracks don't extend beyond project duration
+             * - Provides sensible defaults that can be adjusted per-track if needed
+             */
             for (const track of generatedTracks) {
                 const trackData = {
                     organization_id: currentOrganizationId,
@@ -2814,7 +3361,11 @@ export async function finalizeProjectCreation() {
                     audience: track.audience,
                     instructors: track.instructors || [],
                     courses: track.courses || [],
-                    students: track.students || []
+                    students: track.students || [],
+
+                    // Inherit start/end dates from project (entered in Step 1)
+                    start_date: projectData.start_date || null,
+                    end_date: projectData.end_date || null
                 };
 
                 await createTrack(trackData);
@@ -2828,7 +3379,7 @@ export async function finalizeProjectCreation() {
 
         // Clean up
         generatedTracks = [];
-        wizardCohorts = [];
+        wizardLocations = [];
         closeModal('createProjectModal');
 
         // Refresh projects list
@@ -2837,6 +3388,45 @@ export async function finalizeProjectCreation() {
     } catch (error) {
         console.error('❌ Error finalizing project creation:', error);
         showNotification(`Failed to create project: ${error.message || 'Unknown error'}`, 'error');
+    }
+}
+
+/**
+ * Toggle visibility of wizard progress tracker
+ *
+ * Business Context:
+ * - Allows users to show/hide the step progress tracker in the project creation wizard
+ * - Default state is hidden to reduce clutter
+ * - Progress tracker shows steps 1-5 with completion status
+ *
+ * @global
+ */
+export function toggleWizardProgress() {
+    const progressTracker = document.getElementById('project-wizard-progress');
+    const button = document.getElementById('toggleWizardProgress');
+
+    if (!progressTracker) {
+        console.warn('Wizard progress tracker not found');
+        return;
+    }
+
+    // Toggle visibility using CSS class (more reliable than inline styles)
+    const isHidden = progressTracker.classList.contains('wizard-progress-hidden');
+
+    if (isHidden) {
+        // Show the progress tracker
+        progressTracker.classList.remove('wizard-progress-hidden');
+        if (button) {
+            button.textContent = '📊 Hide Progress';
+        }
+        console.log('✅ Wizard progress tracker shown');
+    } else {
+        // Hide the progress tracker
+        progressTracker.classList.add('wizard-progress-hidden');
+        if (button) {
+            button.textContent = '📊 Show Progress';
+        }
+        console.log('✅ Wizard progress tracker hidden');
     }
 }
 
@@ -2851,6 +3441,7 @@ if (typeof window !== 'undefined') {
         previousProjectStep,
         resetProjectWizard,
         submitProjectForm,
+        toggleWizardProgress,
         // Draft save/load
         saveCurrentProjectDraft,
         loadProjectDraft,
@@ -2880,11 +3471,11 @@ if (typeof window !== 'undefined') {
         showTrackConfirmationDialog,
         handleTrackApproval,
         handleTrackCancellation,
-        // Step 2: Cohort/Sub-Project management
-        showAddCohortForm,
-        saveCohort,
-        cancelCohortForm,
-        removeCohortFromWizard,
+        // Step 2: Locations/Sub-Project management
+        showAddLocationForm,
+        saveLocation,
+        cancelLocationForm,
+        removeLocationFromWizard,
         // Step 4: Track review and management
         populateTrackReviewList,
         openCustomTrackCreation,
@@ -2892,6 +3483,7 @@ if (typeof window !== 'undefined') {
         closeTrackManagement,
         switchTrackTab,
         saveTrackChanges,
+        manageProjectTracks,
         // Track management - Instructors
         addInstructorToTrack,
         removeInstructorFromTrack,
@@ -2904,4 +3496,309 @@ if (typeof window !== 'undefined') {
         // Project creation finalization
         finalizeProjectCreation
     };
+
+    // Explicitly assign toggleWizardProgress to ensure it's available
+    window.OrgAdmin.Projects.toggleWizardProgress = toggleWizardProgress;
+    console.log('✅ toggleWizardProgress explicitly assigned:', typeof window.OrgAdmin.Projects.toggleWizardProgress);
 }
+
+// ============================================================================
+// GLOBAL VALIDATION AND CALCULATION FUNCTIONS (Called from HTML)
+// ============================================================================
+
+/**
+ * Get next working day from a given date
+ *
+ * BUSINESS CONTEXT:
+ * Projects should start on working days (Monday-Friday).
+ * If current day is weekend, defaults to next Monday.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Sunday (0) -> Add 1 day to get Monday
+ * - Saturday (6) -> Add 2 days to get Monday
+ * - Monday-Friday (1-5) -> Return as-is
+ *
+ * @param {Date} date - Starting date
+ * @returns {Date} Next working day (or same day if already working day)
+ */
+function getNextWorkingDay(date) {
+    const result = new Date(date);
+    const dayOfWeek = result.getDay();
+
+    // Sunday (0) -> Add 1 day to Monday
+    if (dayOfWeek === 0) {
+        result.setDate(result.getDate() + 1);
+    }
+    // Saturday (6) -> Add 2 days to Monday
+    else if (dayOfWeek === 6) {
+        result.setDate(result.getDate() + 2);
+    }
+    // Monday-Friday (1-5) -> No change needed
+
+    return result;
+}
+
+/**
+ * Format date as YYYY-MM-DD for date input fields
+ *
+ * @param {Date} date - Date to format
+ * @returns {string} Formatted date string
+ */
+function formatDateForInput(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+/**
+ * Validate maximum participants field for projects
+ *
+ * BUSINESS CONTEXT:
+ * Provides real-time validation to prevent invalid capacity values
+ *
+ * VALIDATION RULES:
+ * - Must be a positive integer if provided
+ * - Can be empty (unlimited capacity)
+ * - Must be at least 1 if provided
+ */
+window.validateMaxParticipants = function() {
+    const input = document.getElementById('projectMaxParticipants');
+    const errorDiv = document.getElementById('projectMaxParticipantsError');
+
+    if (!input || !errorDiv) return true;
+
+    // Check for invalid input first (e.g., non-numeric characters in type="number" field)
+    if (input.validity.badInput) {
+        errorDiv.textContent = 'Invalid input - please enter numbers only';
+        errorDiv.style.display = 'block';
+        input.style.borderColor = '#dc2626';
+        return false;
+    }
+
+    const value = input.value.trim();
+
+    // Empty is valid (unlimited capacity)
+    if (value === '') {
+        errorDiv.style.display = 'none';
+        input.style.borderColor = '';
+        return true;
+    }
+
+    const num = parseInt(value, 10);
+
+    // Check if it's a valid positive integer
+    if (isNaN(num) || num < 1 || num.toString() !== value) {
+        errorDiv.textContent = 'Must be a positive integer (minimum 1) or leave empty for unlimited';
+        errorDiv.style.display = 'block';
+        input.style.borderColor = '#dc2626';
+        return false;
+    }
+
+    // Valid
+    errorDiv.style.display = 'none';
+    input.style.borderColor = '#10b981';
+    return true;
+};
+
+/**
+ * Validate maximum participants field for locations
+ *
+ * BUSINESS CONTEXT:
+ * Provides real-time validation to prevent invalid capacity values for locations
+ *
+ * VALIDATION RULES:
+ * - Must be a positive integer if provided
+ * - Can be empty (unlimited capacity)
+ * - Must be at least 1 if provided
+ */
+window.validateLocationMaxParticipants = function() {
+    const input = document.getElementById('locationMaxParticipants');
+    const errorDiv = document.getElementById('locationMaxParticipantsError');
+
+    if (!input || !errorDiv) return true;
+
+    // Check for invalid input first (e.g., non-numeric characters in type="number" field)
+    if (input.validity.badInput) {
+        errorDiv.textContent = 'Invalid input - please enter numbers only';
+        errorDiv.style.display = 'block';
+        input.style.borderColor = '#dc2626';
+        return false;
+    }
+
+    const value = input.value.trim();
+
+    // Empty is valid (unlimited capacity)
+    if (value === '') {
+        errorDiv.style.display = 'none';
+        input.style.borderColor = '';
+        return true;
+    }
+
+    const num = parseInt(value, 10);
+
+    // Check if it's a valid positive integer
+    if (isNaN(num) || num < 1 || num.toString() !== value) {
+        errorDiv.textContent = 'Must be a positive integer (minimum 1) or leave empty for unlimited';
+        errorDiv.style.display = 'block';
+        input.style.borderColor = '#dc2626';
+        return false;
+    }
+
+    // Valid
+    errorDiv.style.display = 'none';
+    input.style.borderColor = '#10b981';
+    return true;
+};
+
+/**
+ * Calculate location end date from start date and duration
+ *
+ * BUSINESS CONTEXT:
+ * Auto-calculates end date excluding weekends for accurate project timeline
+ *
+ * CALCULATION:
+ * - Start date + duration (weeks)
+ * - Excludes Saturdays and Sundays
+ * - Updates readonly end date field
+ */
+window.calculateLocationEndDate = function() {
+    const startDateInput = document.getElementById('locationStartDate');
+    const durationInput = document.getElementById('locationDuration');
+    const endDateInput = document.getElementById('locationEndDate');
+
+    if (!startDateInput || !durationInput || !endDateInput) {
+        console.warn('Location date fields not found');
+        return;
+    }
+
+    const startDate = startDateInput.value;
+    const duration = parseInt(durationInput.value, 10);
+
+    // Clear end date if either field is empty
+    if (!startDate || !duration || duration < 1) {
+        endDateInput.value = '';
+        return;
+    }
+
+    // Calculate end date excluding weekends
+    // IMPORTANT: Start date counts as the first business day
+    let current = new Date(startDate);
+    let businessDaysAdded = 1; // Count start date as day 1
+    const totalBusinessDays = duration * 5; // 5 business days per week
+
+    while (businessDaysAdded < totalBusinessDays) {
+        current.setDate(current.getDate() + 1);
+        const dayOfWeek = current.getDay();
+
+        // Skip weekends (0 = Sunday, 6 = Saturday)
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+            businessDaysAdded++;
+        }
+    }
+
+    // Format as YYYY-MM-DD for date input
+    const year = current.getFullYear();
+    const month = String(current.getMonth() + 1).padStart(2, '0');
+    const day = String(current.getDate()).padStart(2, '0');
+    endDateInput.value = `${year}-${month}-${day}`;
+
+    console.log(`✅ Calculated end date: ${endDateInput.value} (${duration} weeks from ${startDate})`);
+};
+
+/**
+ * Calculate project end date from start date and duration
+ *
+ * BUSINESS CONTEXT:
+ * Auto-calculates end date excluding weekends for accurate project timeline
+ *
+ * CALCULATION:
+ * - Start date + duration (weeks)
+ * - Excludes Saturdays and Sundays
+ * - Updates readonly end date field
+ */
+window.calculateProjectEndDate = function() {
+    const startDateInput = document.getElementById('projectStartDate');
+    const durationInput = document.getElementById('projectDuration');
+    const endDateInput = document.getElementById('projectEndDate');
+
+    if (!startDateInput || !durationInput || !endDateInput) {
+        console.warn('Project date fields not found');
+        return;
+    }
+
+    const startDate = startDateInput.value;
+    const duration = parseInt(durationInput.value, 10);
+
+    // Clear end date if either field is empty
+    if (!startDate || !duration || duration < 1) {
+        endDateInput.value = '';
+        return;
+    }
+
+    // Calculate end date excluding weekends
+    // IMPORTANT: Start date counts as the first business day
+    let current = new Date(startDate);
+    let businessDaysAdded = 1; // Count start date as day 1
+    const totalBusinessDays = duration * 5; // 5 business days per week
+
+    while (businessDaysAdded < totalBusinessDays) {
+        current.setDate(current.getDate() + 1);
+        const dayOfWeek = current.getDay();
+
+        // Skip weekends (0 = Sunday, 6 = Saturday)
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+            businessDaysAdded++;
+        }
+    }
+
+    // Format as YYYY-MM-DD for date input
+    const year = current.getFullYear();
+    const month = String(current.getMonth() + 1).padStart(2, '0');
+    const day = String(current.getDate()).padStart(2, '0');
+    endDateInput.value = `${year}-${month}-${day}`;
+
+    console.log(`✅ Calculated project end date: ${endDateInput.value} (${duration} weeks from ${startDate})`);
+};
+
+/**
+ * Toggle Project Summary Popup
+ *
+ * BUSINESS CONTEXT:
+ * Provides optional project summary statistics in a non-intrusive popup.
+ * Allows users to view project status without cluttering the wizard flow.
+ *
+ * TECHNICAL IMPLEMENTATION:
+ * - Toggles visibility of floating summary popup
+ * - Updates button text to show current state
+ * - Popup positioned near AI assistant but non-overlapping
+ *
+ * @export
+ */
+export function toggleProjectSummary() {
+    const popup = document.getElementById('projectSummaryPopup');
+    const button = document.getElementById('toggleProjectSummary');
+
+    if (!popup) {
+        console.warn('Project summary popup not found');
+        return;
+    }
+
+    // Toggle display
+    const isVisible = popup.style.display === 'block';
+
+    if (isVisible) {
+        popup.style.display = 'none';
+        if (button) {
+            button.textContent = '📊 Show Project Summary';
+        }
+    } else {
+        popup.style.display = 'block';
+        if (button) {
+            button.textContent = '📊 Hide Project Summary';
+        }
+    }
+
+    console.log(`Project summary popup ${isVisible ? 'hidden' : 'shown'}`);
+}
+

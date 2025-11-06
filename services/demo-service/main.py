@@ -92,6 +92,34 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Security headers middleware for GDPR/CCPA compliance and OWASP best practices
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    """
+    Add security headers to all HTTP responses for compliance and protection.
+
+    BUSINESS REQUIREMENT:
+    All HTTP responses must include security headers to prevent common web vulnerabilities
+    including XSS attacks, clickjacking, MIME sniffing, and protocol downgrade attacks.
+
+    COMPLIANCE:
+    - OWASP A05:2021 - Security Misconfiguration
+    - GDPR/CCPA - Data protection through secure transmission
+    - PCI DSS - Requirement 6.5 for secure web applications
+
+    HEADERS APPLIED:
+    - X-Content-Type-Options: nosniff (prevents MIME type sniffing)
+    - X-Frame-Options: DENY (prevents clickjacking attacks)
+    - Strict-Transport-Security: enforces HTTPS with 1-year max-age
+    - Referrer-Policy: strict-origin-when-cross-origin (privacy protection)
+    """
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+
 # Global exception handlers for structured error responses
 @app.exception_handler(ValidationException)
 async def validation_exception_handler(request, exc: ValidationException):

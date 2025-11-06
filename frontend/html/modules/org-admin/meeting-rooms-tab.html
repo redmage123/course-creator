@@ -38,7 +38,7 @@
                         <option value="track">Track Rooms</option>
                     </select>
                 </div>
-                <div class="action-buttons" style="margin-left: auto; display: flex; gap: 0.5rem;">
+                <div class="action-buttons flex-actions ml-auto">
                     <button class="btn btn-primary" onclick="openCreateRoomModal()">
                         <i class="fas fa-plus"></i>
                         Create Room
@@ -135,7 +135,7 @@
     </section>
 
     <!-- Loading Overlay -->
-    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+    <div class="loading-overlay hidden" id="loadingOverlay">
         <div class="loading-content">
             <div class="loading-spinner"></div>
             <p id="loadingMessage">Processing...</p>
@@ -143,7 +143,7 @@
     </div>
 
     <!-- Success/Error Notification -->
-    <div id="notification" class="notification" style="display: none;">
+    <div id="notification" class="notification hidden">
         <i class="fas fa-check-circle"></i>
         <span id="notificationText">Action completed successfully</span>
     </div>

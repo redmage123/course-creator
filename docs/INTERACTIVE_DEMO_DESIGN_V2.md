@@ -84,7 +84,7 @@ Demonstrate the complete Course Creator Platform workflow from organization setu
 #### Slide 3: Creating Projects & Tracks (30 seconds)
 **Visual:** Project and track creation
 **Narration:**
-> "Within your organization, create projects to group related courses, and tracks to define learning paths for different student cohorts or skill levels."
+> "Within your organization, create projects to group related courses, and tracks to define learning paths for different student locations or skill levels."
 
 **Workflow:**
 1. From organization dashboard, click "Create Project"
@@ -215,7 +215,7 @@ Demonstrate the complete Course Creator Platform workflow from organization setu
 #### Slide 7: Adding Students to Course (45 seconds)
 **Visual:** Student enrollment workflow
 **Narration:**
-> "Enroll students in your course individually or in bulk using CSV import. Organize students into sections or cohorts for better class management."
+> "Enroll students in your course individually or in bulk using CSV import. Organize students into sections or locations for better class management."
 
 **Workflow:**
 1. Navigate to course "Students" tab
@@ -223,11 +223,11 @@ Demonstrate the complete Course Creator Platform workflow from organization setu
 3. Option 1: Add individual student
    - Email: "sarah.johnson@example.com"
    - Name: "Sarah Johnson"
-   - Section: "Morning Cohort"
+   - Section: "Morning Location"
 4. Option 2: Show bulk CSV upload interface
 5. Assign students to sections:
-   - Morning Cohort
-   - Evening Cohort
+   - Morning Location
+   - Evening Location
 6. Configure enrollment settings (start date, access duration)
 7. Send enrollment notification emails
 8. View enrolled students list
@@ -460,12 +460,12 @@ Demonstrate the complete Course Creator Platform workflow from organization setu
 - At-risk student alerts (red flags)
 - Individual student drill-down panel
 - Engagement heatmap visualization
-- Filter controls (date range, cohort, status)
+- Filter controls (date range, location, status)
 - Export button
 
 **Technical Notes:**
 - Show realistic class data (20-30 students)
-- Demonstrate filtering by cohort
+- Demonstrate filtering by location
 - Highlight at-risk student identification
 - Preview exported report format
 

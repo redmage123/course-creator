@@ -102,7 +102,7 @@ class TestQuizPersistence:
             "questions": [
                 {
                     "question": "What is a variable?",
-                    "options": ["A storage location", "A function", "A loop", "A condition"],
+                    "options": ["A storage locations", "A function", "A loop", "A condition"],
                     "correct_answer": 0
                 }
             ]

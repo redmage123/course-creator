@@ -2,7 +2,7 @@
 Course Management Data Access Object (DAO)
 
 This module implements the Data Access Object (DAO) pattern for course management operations,
-centralizing all SQL queries and database interactions in a single, maintainable location.
+centralizing all SQL queries and database interactions in a single, maintainable locations.
 
 Business Context:
 The Course Management service handles course creation, publishing, student enrollment,
@@ -70,7 +70,248 @@ class CourseManagementDAO:
     # ================================================================
     # COURSE MANAGEMENT QUERIES
     # ================================================================
-    
+
+    async def create(self, course: Course) -> Course:
+        """Create a new course"""
+        try:
+            import json
+            # Prepare metadata JSONB column with tags only (organizational fields now in dedicated columns)
+            metadata = {
+                'tags': course.tags or []
+            }
+
+            async with self.db_pool.acquire() as conn:
+                await conn.execute(
+                    """INSERT INTO courses (
+                        id, title, description, instructor_id, category,
+                        difficulty_level, estimated_duration, duration_unit,
+                        price, is_published, created_at, updated_at, metadata,
+                        organization_id, project_id, track_id, location_id
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)""",
+                    course.id, course.title, course.description, course.instructor_id,
+                    course.category, course.difficulty_level.value, course.estimated_duration,
+                    course.duration_unit.value if course.duration_unit else None,
+                    course.price, course.is_published, course.created_at, course.updated_at,
+                    json.dumps(metadata),
+                    getattr(course, 'organization_id', None),
+                    getattr(course, 'project_id', None),
+                    getattr(course, 'track_id', None),
+                    getattr(course, 'location_id', None)
+                )
+                return course
+        except Exception as e:
+            raise DatabaseException(
+                message="Failed to create course",
+                operation="create",
+                table_name="courses",
+                original_exception=e
+            )
+
+    async def get_by_id(self, course_id: str) -> Optional[Course]:
+        """Get course by ID"""
+        try:
+            async with self.db_pool.acquire() as conn:
+                row = await conn.fetchrow(
+                    "SELECT * FROM courses WHERE id = $1",
+                    course_id
+                )
+                if not row:
+                    return None
+                return self._row_to_course(row)
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to retrieve course {course_id}",
+                operation="get_by_id",
+                table_name="courses",
+                record_id=course_id,
+                original_exception=e
+            )
+
+    async def get_by_instructor_id(self, instructor_id: str) -> List[Course]:
+        """Get all courses for an instructor"""
+        try:
+            async with self.db_pool.acquire() as conn:
+                rows = await conn.fetch(
+                    "SELECT * FROM courses WHERE instructor_id = $1 ORDER BY created_at DESC",
+                    instructor_id
+                )
+                return [self._row_to_course(row) for row in rows]
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to retrieve courses for instructor {instructor_id}",
+                operation="get_by_instructor_id",
+                table_name="courses",
+                original_exception=e
+            )
+
+    async def update(self, course: Course) -> Course:
+        """Update an existing course"""
+        try:
+            import json
+            # Prepare metadata JSONB column with tags only (organizational fields now in dedicated columns)
+            metadata = {
+                'tags': course.tags or []
+            }
+
+            async with self.db_pool.acquire() as conn:
+                await conn.execute(
+                    """UPDATE courses SET
+                        title = $2, description = $3, category = $4,
+                        difficulty_level = $5, estimated_duration = $6, duration_unit = $7,
+                        price = $8, is_published = $9, updated_at = $10, metadata = $11,
+                        organization_id = $12, project_id = $13, track_id = $14, location_id = $15
+                    WHERE id = $1""",
+                    course.id, course.title, course.description, course.category,
+                    course.difficulty_level.value, course.estimated_duration,
+                    course.duration_unit.value if course.duration_unit else None,
+                    course.price, course.is_published, course.updated_at,
+                    json.dumps(metadata),
+                    getattr(course, 'organization_id', None),
+                    getattr(course, 'project_id', None),
+                    getattr(course, 'track_id', None),
+                    getattr(course, 'location_id', None)
+                )
+                return course
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to update course {course.id}",
+                operation="update",
+                table_name="courses",
+                record_id=course.id,
+                original_exception=e
+            )
+
+    async def delete(self, course_id: str) -> bool:
+        """Delete a course"""
+        try:
+            async with self.db_pool.acquire() as conn:
+                result = await conn.execute(
+                    "DELETE FROM courses WHERE id = $1",
+                    course_id
+                )
+                return int(result.split()[-1]) > 0 if result else False
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to delete course {course_id}",
+                operation="delete",
+                table_name="courses",
+                record_id=course_id,
+                original_exception=e
+            )
+
+    async def count_active_by_course(self, course_id: str) -> int:
+        """Count active enrollments for a course"""
+        try:
+            async with self.db_pool.acquire() as conn:
+                result = await conn.fetchval(
+                    """SELECT COUNT(*) FROM student_course_enrollments sce
+                       JOIN course_instances ci ON sce.course_instance_id = ci.id
+                       WHERE ci.course_id = $1 AND ci.status = 'active'""",
+                    course_id
+                )
+                return result or 0
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to count active enrollments for course {course_id}",
+                operation="count_active_by_course",
+                table_name="courses",
+                record_id=course_id,
+                original_exception=e
+            )
+
+    async def count_by_instructor(self, instructor_id: str) -> int:
+        """Count courses by instructor"""
+        try:
+            async with self.db_pool.acquire() as conn:
+                result = await conn.fetchval(
+                    "SELECT COUNT(*) FROM courses WHERE instructor_id = $1",
+                    instructor_id
+                )
+                return result or 0
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to count courses for instructor {instructor_id}",
+                operation="count_by_instructor",
+                table_name="courses",
+                original_exception=e
+            )
+
+    async def search(self, query: str, filters: Dict[str, Any]) -> List[Course]:
+        """Search courses by query and filters"""
+        try:
+            where_conditions = ["is_published = true"]
+            params = []
+            param_num = 1
+
+            if query:
+                where_conditions.append(f"(title ILIKE ${param_num} OR description ILIKE ${param_num})")
+                params.append(f"%{query}%")
+                param_num += 1
+
+            if filters.get('category'):
+                where_conditions.append(f"category = ${param_num}")
+                params.append(filters['category'])
+                param_num += 1
+
+            if filters.get('difficulty_level'):
+                where_conditions.append(f"difficulty_level = ${param_num}")
+                params.append(filters['difficulty_level'])
+                param_num += 1
+
+            where_clause = " AND ".join(where_conditions)
+
+            async with self.db_pool.acquire() as conn:
+                rows = await conn.fetch(
+                    f"""SELECT * FROM courses WHERE {where_clause}
+                        ORDER BY created_at DESC LIMIT 100""",
+                    *params
+                )
+                return [self._row_to_course(row) for row in rows]
+        except Exception as e:
+            raise DatabaseException(
+                message="Failed to search courses",
+                operation="search",
+                table_name="courses",
+                original_exception=e
+            )
+
+    async def get_statistics(self, course_id: str):
+        """Get course statistics (placeholder)"""
+        return None
+
+    def _row_to_course(self, row) -> Course:
+        """Convert database row to Course entity"""
+        from course_management.domain.entities.course import DurationUnit
+        import json
+
+        # Extract metadata from JSONB column (now only contains tags)
+        metadata = row.get('metadata', {})
+        if isinstance(metadata, str):
+            metadata = json.loads(metadata)
+        elif metadata is None:
+            metadata = {}
+
+        return Course(
+            id=str(row['id']),
+            title=row['title'],
+            description=row['description'],
+            instructor_id=str(row['instructor_id']),
+            category=row.get('category'),
+            difficulty_level=DifficultyLevel(row['difficulty_level']),
+            estimated_duration=row.get('estimated_duration'),
+            duration_unit=DurationUnit(row['duration_unit']) if row.get('duration_unit') else None,
+            price=row.get('price', 0.0),
+            is_published=row.get('is_published', False),
+            thumbnail_url=row.get('thumbnail_url'),
+            created_at=row.get('created_at'),
+            updated_at=row.get('updated_at'),
+            tags=metadata.get('tags', []),
+            organization_id=str(row['organization_id']) if row.get('organization_id') else None,
+            project_id=str(row['project_id']) if row.get('project_id') else None,
+            track_id=str(row['track_id']) if row.get('track_id') else None,
+            location_id=str(row['location_id']) if row.get('location_id') else None
+        )
+
     async def get_course_by_id_and_instructor(self, course_id: str, instructor_id: str) -> Optional[Dict[str, Any]]:
         """
         Retrieve course information for a specific instructor.

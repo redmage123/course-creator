@@ -38,48 +38,52 @@ from unittest.mock import patch, Mock, AsyncMock
 # Test utilities
 from tests.fixtures.security_fixtures import (
     OrganizationFixture, UserFixture, SecurityTestClient,
-    create_test_organizations, create_test_users, 
+    create_test_organizations, create_test_users,
     generate_valid_jwt_token, generate_expired_jwt_token
 )
 
 
+# Module-level fixtures shared across all test classes
+@pytest.fixture
+def test_organizations():
+    """Create test organizations for isolation testing"""
+    return create_test_organizations([
+        {'name': 'TechCorp Academy', 'slug': 'techcorp'},
+        {'name': 'EduInnovate', 'slug': 'eduinnovate'},
+        {'name': 'SkillBuilder Inc', 'slug': 'skillbuilder'}
+    ])
+
+
+@pytest.fixture
+def test_users(test_organizations):
+    """Create test users across different organizations"""
+    org_techcorp, org_eduinnovate, org_skillbuilder = test_organizations
+
+    return create_test_users([
+        # TechCorp users
+        {'email': 'admin@techcorp.com', 'role': 'admin', 'organization_id': org_techcorp.id},
+        {'email': 'instructor1@techcorp.com', 'role': 'instructor', 'organization_id': org_techcorp.id},
+        {'email': 'student1@techcorp.com', 'role': 'student', 'organization_id': org_techcorp.id},
+
+        # EduInnovate users
+        {'email': 'admin@eduinnovate.com', 'role': 'admin', 'organization_id': org_eduinnovate.id},
+        {'email': 'instructor1@eduinnovate.com', 'role': 'instructor', 'organization_id': org_eduinnovate.id},
+        {'email': 'student1@eduinnovate.com', 'role': 'student', 'organization_id': org_eduinnovate.id},
+
+        # SkillBuilder users
+        {'email': 'admin@skillbuilder.com', 'role': 'admin', 'organization_id': org_skillbuilder.id},
+        {'email': 'instructor1@skillbuilder.com', 'role': 'instructor', 'organization_id': org_skillbuilder.id},
+    ])
+
+
+@pytest.fixture
+def security_client():
+    """Create security-aware test client"""
+    return SecurityTestClient()
+
+
 class TestCompleteSecurityWorkflows:
     """End-to-end tests for complete security workflows"""
-    
-    @pytest.fixture
-    def test_organizations(self):
-        """Create test organizations for isolation testing"""
-        return create_test_organizations([
-            {'name': 'TechCorp Academy', 'slug': 'techcorp'},
-            {'name': 'EduInnovate', 'slug': 'eduinnovate'},
-            {'name': 'SkillBuilder Inc', 'slug': 'skillbuilder'}
-        ])
-    
-    @pytest.fixture
-    def test_users(self, test_organizations):
-        """Create test users across different organizations"""
-        org_techcorp, org_eduinnovate, org_skillbuilder = test_organizations
-        
-        return create_test_users([
-            # TechCorp users
-            {'email': 'admin@techcorp.com', 'role': 'admin', 'organization_id': org_techcorp.id},
-            {'email': 'instructor1@techcorp.com', 'role': 'instructor', 'organization_id': org_techcorp.id},
-            {'email': 'student1@techcorp.com', 'role': 'student', 'organization_id': org_techcorp.id},
-            
-            # EduInnovate users
-            {'email': 'admin@eduinnovate.com', 'role': 'admin', 'organization_id': org_eduinnovate.id},
-            {'email': 'instructor1@eduinnovate.com', 'role': 'instructor', 'organization_id': org_eduinnovate.id},
-            {'email': 'student1@eduinnovate.com', 'role': 'student', 'organization_id': org_eduinnovate.id},
-            
-            # SkillBuilder users
-            {'email': 'admin@skillbuilder.com', 'role': 'admin', 'organization_id': org_skillbuilder.id},
-            {'email': 'instructor1@skillbuilder.com', 'role': 'instructor', 'organization_id': org_skillbuilder.id},
-        ])
-    
-    @pytest.fixture
-    def security_client(self):
-        """Create security-aware test client"""
-        return SecurityTestClient()
 
     async def test_complete_instructor_workflow_with_organization_isolation(
         self, security_client, test_organizations, test_users
