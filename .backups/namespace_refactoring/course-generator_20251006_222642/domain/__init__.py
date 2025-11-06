@@ -1,1 +1,0 @@
-# Course Generator Domain Layer

@@ -1,8 +1,0 @@
-# Content Storage Service - Service-Specific Dependencies
-# Base dependencies are installed from requirements-base.txt
-
-# Note: Content Storage Service only uses base dependencies
-# No additional service-specific packages required
-
-# All dependencies (FastAPI, SQLAlchemy, Redis, etc.) 
-# are provided by requirements-base.txt

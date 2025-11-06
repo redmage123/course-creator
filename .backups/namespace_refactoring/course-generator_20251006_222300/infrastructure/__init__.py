@@ -1,1 +1,0 @@
-# Course Generator Infrastructure Layer

@@ -1,1 +1,0 @@
-# Content Management Application Layer
