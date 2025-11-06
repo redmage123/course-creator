@@ -139,6 +139,21 @@ class ChromeDriverSetup:
         options.add_argument('--remote-debugging-port=9222')  # Fix DevToolsActivePort issue
         options.add_argument('--disable-software-rasterizer')
 
+        # Additional stability options for renderer connection issues
+        options.add_argument('--disable-features=VizDisplayCompositor')
+        options.add_argument('--disable-background-timer-throttling')
+        options.add_argument('--disable-backgrounding-occluded-windows')
+        options.add_argument('--disable-renderer-backgrounding')
+        options.add_argument('--disable-ipc-flooding-protection')
+        options.add_argument('--force-device-scale-factor=1')
+        options.add_argument('--disable-hang-monitor')
+        options.add_argument('--disable-prompt-on-repost')
+        options.add_argument('--disable-sync')
+        options.add_argument('--disable-web-security')  # For CORS in local testing
+        options.add_argument('--metrics-recording-only')
+        options.add_argument('--mute-audio')
+        options.add_argument('--disable-component-extensions-with-background-pages')
+
         # SSL/Security options for HTTPS testing
         options.add_argument('--ignore-certificate-errors')
         options.add_argument('--allow-insecure-localhost')
@@ -180,6 +195,11 @@ class ChromeDriverSetup:
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_experimental_option('useAutomationExtension', False)
 
+        # Enable browser console logging for error detection
+        # CRITICAL: Allows tests to check for JavaScript errors, API failures, CORS issues
+        # User directive: "always have the agent check the console for errors when testing"
+        options.set_capability('goog:loggingPrefs', {'browser': 'ALL'})
+
         return options
 
     @staticmethod
@@ -196,18 +216,32 @@ class ChromeDriverSetup:
         AUTOMATIC DRIVER MANAGEMENT:
         Uses webdriver-manager to automatically download and manage
         ChromeDriver versions matching the installed Chrome browser.
+
+        DOCKER SELENIUM GRID SUPPORT:
+        Set SELENIUM_REMOTE=http://localhost:4444 to use Docker Selenium Grid
+        for stable Chrome 119 instead of local Chrome 141+.
         """
         try:
             # Create Chrome options
             options = ChromeDriverSetup.create_chrome_options(config)
 
-            # Use webdriver-manager to automatically manage ChromeDriver
-            # Detect if using snap chromium and use appropriate ChromeDriver
-            chrome_type = ChromeType.CHROMIUM if config.chrome_binary == '/snap/bin/chromium' else ChromeType.GOOGLE
-            service = Service(ChromeDriverManager(chrome_type=chrome_type).install())
+            # Check if using remote Selenium Grid (Docker)
+            selenium_remote = os.getenv('SELENIUM_REMOTE')
 
-            # Create WebDriver instance
-            driver = webdriver.Chrome(service=service, options=options)
+            if selenium_remote:
+                # Use Docker Selenium Grid for stable Chrome 119
+                logger.info(f"Using remote Selenium Grid: {selenium_remote}")
+                driver = webdriver.Remote(
+                    command_executor=selenium_remote,
+                    options=options
+                )
+                logger.info(f"Remote Chrome WebDriver initialized (Grid version: {driver.capabilities.get('browserVersion', 'unknown')})")
+            else:
+                # Use local Chrome with webdriver-manager
+                chrome_type = ChromeType.CHROMIUM if config.chrome_binary == '/snap/bin/chromium' else ChromeType.GOOGLE
+                service = Service(ChromeDriverManager(chrome_type=chrome_type).install())
+                driver = webdriver.Chrome(service=service, options=options)
+                logger.info(f"Local Chrome WebDriver initialized (version: {driver.capabilities['browserVersion']})")
 
             # Set implicit wait
             driver.implicitly_wait(config.implicit_wait)
@@ -215,7 +249,6 @@ class ChromeDriverSetup:
             # Maximize window (or set specific size)
             driver.set_window_size(config.window_width, config.window_height)
 
-            logger.info(f"Chrome WebDriver initialized successfully (version: {driver.capabilities['browserVersion']})")
             return driver
 
         except WebDriverException as e:
@@ -232,7 +265,7 @@ class BasePage:
 
     RESPONSIBILITIES:
     - Common page operations (navigation, waiting, etc.)
-    - Element location and interaction methods
+    - Element locations and interaction methods
     - Screenshot capture on errors
     - Explicit wait utilities
     """

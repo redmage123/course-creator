@@ -31,14 +31,16 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
-    command: redis-server --appendonly yes
+    command: redis-server --appendonly yes --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
     # Removed external port mapping to avoid conflicts
     # Services communicate via internal Docker network
+    # Tests should use docker exec to connect to Redis
     networks:
       - course-creator-network
     healthcheck:
@@ -46,6 +48,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   # Core Microservices
   user-management:
@@ -451,15 +454,32 @@ services:
       - ./frontend/js:/usr/share/nginx/html/js:ro
       - ./frontend/css:/usr/share/nginx/html/css:ro
       - ./frontend/html:/usr/share/nginx/html/html:ro
+      - ./frontend/public:/usr/share/nginx/html/public:ro
       - ./frontend/static:/usr/share/nginx/html/static:ro
       - ./logs:/var/log/nginx
     networks:
       - course-creator-network
     depends_on:
-      - user-management
-      - course-management
-      - content-management
-      - analytics
+      user-management:
+        condition: service_healthy
+      course-management:
+        condition: service_healthy
+      content-management:
+        condition: service_healthy
+      analytics:
+        condition: service_healthy
+      rag-service:
+        condition: service_healthy
+      nlp-preprocessing:
+        condition: service_healthy
+      metadata-service:
+        condition: service_healthy
+      knowledge-graph-service:
+        condition: service_healthy
+      course-generator:
+        condition: service_healthy
+      organization-management:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "--no-check-certificate", "https://127.0.0.1:3000/health"]
       interval: 30s
@@ -591,13 +611,14 @@ services:
       - ENVIRONMENT=docker
       - DOCKER_CONTAINER=true
       - SERVICE_NAME=metadata-service
+      - PORT=8014
       - LOG_LEVEL=INFO
       - PYTHONPATH=/app:/app/.venv/lib/python3.12/site-packages
       - VIRTUAL_ENV=/app/.venv
       - SSL_CERT_FILE=/app/ssl/nginx-selfsigned.crt
       - SSL_KEY_FILE=/app/ssl/nginx-selfsigned.key
     ports:
-      - "8011:8011"
+      - "8014:8014"
     volumes:
       - ./.venv:/app/.venv:ro
       - ./shared:/app/shared:ro
@@ -609,7 +630,7 @@ services:
       - postgres
       - redis
     healthcheck:
-      test: ["CMD", "python", "-c", "import warnings; warnings.filterwarnings('ignore'); import requests; r = requests.get('https://localhost:8011/', verify=False); exit(0 if r.status_code == 200 else 1)"]
+      test: ["CMD", "python", "-c", "import warnings; warnings.filterwarnings('ignore'); import requests; r = requests.get('https://localhost:8014/', verify=False); exit(0 if r.status_code == 200 else 1)"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -678,6 +699,105 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    restart: unless-stopped
+
+  ai-assistant-service:
+    image: course-creator-ai-assistant:latest
+    build:
+      context: ./services/ai-assistant-service
+      dockerfile: Dockerfile
+      cache_from:
+        - course-creator-ai-assistant:latest
+    env_file:
+      - .cc_env
+    environment:
+      - ENVIRONMENT=docker
+      - DOCKER_CONTAINER=true
+      - SERVICE_NAME=ai-assistant-service
+      - LOG_LEVEL=INFO
+      - AI_ASSISTANT_PORT=8011
+      - RAG_SERVICE_URL=https://rag-service:8009
+      - NLP_SERVICE_URL=https://nlp-preprocessing:8013
+      - KG_SERVICE_URL=https://knowledge-graph-service:8012
+      - PLATFORM_API_URL=https://localhost
+      - SSL_CERT_PATH=/app/ssl/cert.pem
+      - SSL_KEY_PATH=/app/ssl/key.pem
+      - PYTHONPATH=/app/.venv/lib/python3.12/site-packages
+      - VIRTUAL_ENV=/app/.venv
+    ports:
+      - "8011:8011"
+    volumes:
+      - ./.venv:/app/.venv:ro
+      - ./shared:/app/shared:ro
+      - ./logs:/var/log/course-creator
+      - ./ssl:/app/ssl:ro
+    networks:
+      - course-creator-network
+    depends_on:
+      rag-service:
+        condition: service_healthy
+      nlp-preprocessing:
+        condition: service_healthy
+      knowledge-graph-service:
+        condition: service_healthy
+      user-management:
+        condition: service_healthy
+      organization-management:
+        condition: service_healthy
+      course-management:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8011/api/v1/ai-assistant/health'); exit(0 if r.status_code == 200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  local-llm-service:
+    image: course-creator-local-llm-service:latest
+    build:
+      context: ./services/local-llm-service
+      dockerfile: Dockerfile
+      cache_from:
+        - course-creator-local-llm-service:latest
+    environment:
+      - LOCAL_LLM_PORT=8015
+      - OLLAMA_HOST=http://127.0.0.1:11434
+      - MODEL_NAME=llama3.1:8b-instruct-q4_K_M
+      - ENABLE_CACHE=true
+      - CACHE_TTL=3600
+      - LOG_LEVEL=INFO
+      - PYTHONPATH=/app
+    network_mode: host
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; r = requests.get('http://localhost:8015/health'); exit(0 if r.status_code == 200 else 1)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # Selenium Chrome - Stable browser automation for E2E tests
+  selenium-chrome:
+    image: selenium/standalone-chrome:119.0
+    ports:
+      - "4444:4444"
+      - "7900:7900"  # VNC viewer port for debugging
+    shm_size: "2g"
+    environment:
+      - SE_NODE_MAX_SESSIONS=5
+      - SE_NODE_SESSION_TIMEOUT=300
+      - SE_START_XVFB=true
+      - SE_SCREEN_WIDTH=1920
+      - SE_SCREEN_HEIGHT=1080
+    networks:
+      - course-creator-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4444/wd/hub/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     restart: unless-stopped
 
 
