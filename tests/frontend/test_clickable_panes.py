@@ -33,7 +33,7 @@ class TestClickablePanes:
             chrome_options.add_argument('--disable-logging')
             chrome_options.add_argument('--silent')
             chrome_options.add_argument('--window-size=1920,1080')
-            chrome_options.add_argument('--remote-debugging-port=9222')
+            chrome_options.add_argument('--remote-debugging-port=0')  # Auto-assign random port
             chrome_options.add_argument('--disable-web-security')
             chrome_options.add_argument('--allow-running-insecure-content')
             chrome_options.add_argument('--disable-features=VizDisplayCompositor')

@@ -139,7 +139,7 @@ class ChromeDriverSetup:
 
         # Additional options for snap chromium stability
         options.add_argument('--disable-setuid-sandbox')
-        options.add_argument('--remote-debugging-port=9222')  # Fix DevToolsActivePort issue
+        options.add_argument('--remote-debugging-port=0')  # Auto-assign random port for parallel tests
         options.add_argument('--disable-software-rasterizer')
 
         # Additional stability options for renderer connection issues
