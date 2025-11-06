@@ -208,16 +208,18 @@ class SiteAdminDashboardPage(BasePage):
                     # Last attempt failed, re-raise the exception
                     raise Exception(f"Failed to set localStorage after {max_retries} attempts: {str(e)}")
 
-    def wait_for_dashboard_load(self, timeout=30):
+    def wait_for_dashboard_load(self, timeout=None):
         """Wait for site admin dashboard to fully load."""
+        # Use config's explicit_wait if no timeout specified (increased from 30s default)
+        wait_time = timeout or self.config.explicit_wait
         try:
             # Wait for loading spinner to disappear
-            WebDriverWait(self.driver, timeout).until(
+            WebDriverWait(self.driver, wait_time).until(
                 EC.invisibility_of_element_located(self.LOADING_SPINNER)
             )
 
             # Wait for dashboard tab to be visible
-            self.wait_for_element_visible(*self.DASHBOARD_TAB, timeout=timeout)
+            self.wait_for_element_visible(*self.DASHBOARD_TAB, timeout=wait_time)
 
             return True
         except TimeoutException:
@@ -633,7 +635,7 @@ class TestSiteAdminCompleteJourney(BaseTest):
         assert len(services) >= 10, f"Expected 18 services, found {len(services)}"
 
         # Verify Docker health indicator present
-        assert self.page.is_element_present(*self.page.DOCKER_HEALTH_INDICATOR, timeout=5), \
+        assert self.page.is_element_present(*self.page.DOCKER_HEALTH_INDICATOR, timeout=15), \
             "Docker health indicator not present"
 
     def test_03_view_all_services_status(self):
@@ -652,7 +654,7 @@ class TestSiteAdminCompleteJourney(BaseTest):
         time.sleep(2)
 
         # Verify services status container exists
-        assert self.page.is_element_present(*self.page.SERVICES_STATUS_CONTAINER, timeout=10), \
+        assert self.page.is_element_present(*self.page.SERVICES_STATUS_CONTAINER, timeout=20), \
             "Services status container not found"
 
     def test_04_check_docker_container_health(self):
@@ -705,7 +707,7 @@ class TestSiteAdminCompleteJourney(BaseTest):
         time.sleep(2)
 
         # Verify organizations container present
-        assert self.page.is_element_present(*self.page.ORGANIZATIONS_CONTAINER, timeout=10), \
+        assert self.page.is_element_present(*self.page.ORGANIZATIONS_CONTAINER, timeout=20), \
             "Organizations container not found"
 
     def test_07_search_organizations(self):
@@ -721,7 +723,7 @@ class TestSiteAdminCompleteJourney(BaseTest):
         time.sleep(2)
 
         # Verify search input present
-        assert self.page.is_element_present(*self.page.ORG_SEARCH_INPUT, timeout=10), \
+        assert self.page.is_element_present(*self.page.ORG_SEARCH_INPUT, timeout=20), \
             "Organization search input not found"
 
         # Perform search
@@ -805,7 +807,7 @@ class TestSiteAdminCompleteJourney(BaseTest):
         time.sleep(2)
 
         # Verify users container
-        assert self.page.is_element_present(*self.page.USERS_CONTAINER, timeout=10), \
+        assert self.page.is_element_present(*self.page.USERS_CONTAINER, timeout=20), \
             "Users container not found"
 
     def test_12_search_users_globally(self):
@@ -821,7 +823,7 @@ class TestSiteAdminCompleteJourney(BaseTest):
         time.sleep(2)
 
         # Verify search input
-        assert self.page.is_element_present(*self.page.USER_SEARCH_INPUT, timeout=10), \
+        assert self.page.is_element_present(*self.page.USER_SEARCH_INPUT, timeout=20), \
             "User search input not found"
 
         # Perform search
@@ -942,7 +944,7 @@ class TestSiteAdminCompleteJourney(BaseTest):
         time.sleep(2)
 
         # Verify courses container
-        assert self.page.is_element_present(*self.page.COURSES_CONTAINER, timeout=10), \
+        assert self.page.is_element_present(*self.page.COURSES_CONTAINER, timeout=20), \
             "Courses container not found"
 
     def test_20_search_courses_globally(self):

@@ -83,7 +83,7 @@ class TestInstructorTrainingProgramJourney:
     def setup(self, driver):
         """Setup for each test"""
         self.driver = driver
-        self.base_url = os.getenv('TEST_BASE_URL', 'https://176.9.99.103:3000')
+        self.base_url = os.getenv('TEST_BASE_URL', 'https://localhost:3000')
         self.wait = WebDriverWait(driver, 15)
 
     def test_01_instructor_login_and_navigate_to_programs(self):
@@ -480,7 +480,7 @@ class TestOrgAdminTrainingProgramJourney:
     def setup(self, driver):
         """Setup for each test"""
         self.driver = driver
-        self.base_url = os.getenv('TEST_BASE_URL', 'https://176.9.99.103:3000')
+        self.base_url = os.getenv('TEST_BASE_URL', 'https://localhost:3000')
         self.wait = WebDriverWait(driver, 15)
 
     def test_01_org_admin_login_and_view_programs(self):
@@ -553,7 +553,7 @@ class TestStudentTrainingProgramJourney:
     def setup(self, driver):
         """Setup for each test"""
         self.driver = driver
-        self.base_url = os.getenv('TEST_BASE_URL', 'https://176.9.99.103:3000')
+        self.base_url = os.getenv('TEST_BASE_URL', 'https://localhost:3000')
         self.wait = WebDriverWait(driver, 15)
 
     def test_01_student_login_and_view_courses(self):

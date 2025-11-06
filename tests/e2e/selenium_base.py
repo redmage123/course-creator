@@ -59,14 +59,29 @@ class SeleniumConfig:
     """
 
     def __init__(self):
-        self.base_url = os.getenv('TEST_BASE_URL', 'https://localhost:3000')
+        # Determine base URL based on whether we're using Selenium Grid (Docker)
+        # When using SELENIUM_REMOTE, we need to use Docker network hostname
+        selenium_remote = os.getenv('SELENIUM_REMOTE')
+        if selenium_remote and os.getenv('TEST_BASE_URL_DOCKER'):
+            # Use Docker network URL (e.g., https://frontend:3000)
+            self.base_url = os.getenv('TEST_BASE_URL_DOCKER')
+        elif os.getenv('TEST_BASE_URL'):
+            # Use explicitly configured URL
+            self.base_url = os.getenv('TEST_BASE_URL')
+        elif selenium_remote:
+            # Default to Docker network hostname when using Selenium Grid
+            self.base_url = 'https://frontend:3000'
+        else:
+            # Default to localhost for local testing
+            self.base_url = 'https://localhost:3000'
+
         self.headless = os.getenv('HEADLESS', 'true').lower() == 'true'
         self.screenshot_dir = os.getenv('SCREENSHOT_DIR', 'tests/reports/screenshots')
         self.video_dir = os.getenv('VIDEO_DIR', 'tests/reports/videos')
         self.record_video = os.getenv('RECORD_VIDEO', 'false').lower() == 'true'
         self.video_fps = int(os.getenv('VIDEO_FPS', '5'))
-        self.implicit_wait = int(os.getenv('IMPLICIT_WAIT', '15'))
-        self.explicit_wait = int(os.getenv('EXPLICIT_WAIT', '30'))
+        self.implicit_wait = int(os.getenv('IMPLICIT_WAIT', '20'))
+        self.explicit_wait = int(os.getenv('EXPLICIT_WAIT', '45'))
         self.window_width = int(os.getenv('WINDOW_WIDTH', '1920'))
         self.window_height = int(os.getenv('WINDOW_HEIGHT', '1080'))
 

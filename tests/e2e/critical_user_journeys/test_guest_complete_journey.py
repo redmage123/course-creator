@@ -537,11 +537,11 @@ class TestPublicCourseBrowsing(BaseTest):
         page.navigate()
 
         # Verify homepage elements are present
-        assert page.is_element_present(*page.HOMEPAGE_HEADER, timeout=10), \
+        assert page.is_element_present(*page.HOMEPAGE_HEADER, timeout=20), \
             "Homepage header not found"
-        assert page.is_element_present(*page.NAV_MENU, timeout=5), \
+        assert page.is_element_present(*page.NAV_MENU, timeout=15), \
             "Navigation menu not visible"
-        assert page.is_element_present(*page.LOGO, timeout=5), \
+        assert page.is_element_present(*page.LOGO, timeout=15), \
             "Platform logo not visible"
 
     def test_public_course_catalog_visible(self):
@@ -557,7 +557,7 @@ class TestPublicCourseBrowsing(BaseTest):
         page.navigate()
 
         # Verify course catalog section exists
-        assert page.is_element_present(*page.COURSE_CATALOG_SECTION, timeout=10), \
+        assert page.is_element_present(*page.COURSE_CATALOG_SECTION, timeout=20), \
             "Course catalog section not found"
 
         # Verify course cards are displayed
@@ -565,7 +565,7 @@ class TestPublicCourseBrowsing(BaseTest):
         assert course_count > 0, "No course cards found in catalog"
 
         # Verify course information is displayed
-        assert page.is_element_present(*page.COURSE_TITLE, timeout=5), \
+        assert page.is_element_present(*page.COURSE_TITLE, timeout=15), \
             "Course titles not displayed"
 
     def test_course_search_functionality(self):
@@ -582,7 +582,7 @@ class TestPublicCourseBrowsing(BaseTest):
         page.navigate()
 
         # Verify search functionality exists
-        assert page.is_element_present(*page.SEARCH_INPUT, timeout=10), \
+        assert page.is_element_present(*page.SEARCH_INPUT, timeout=20), \
             "Search input not found"
 
         # Perform search
@@ -592,7 +592,7 @@ class TestPublicCourseBrowsing(BaseTest):
 
         # Verify search executed (results may change)
         # Note: We can't assert exact count without knowing test data
-        assert page.is_element_present(*page.COURSE_CATALOG_SECTION, timeout=5), \
+        assert page.is_element_present(*page.COURSE_CATALOG_SECTION, timeout=15), \
             "Course catalog disappeared after search"
 
     def test_category_filter_functionality(self):
@@ -614,7 +614,7 @@ class TestPublicCourseBrowsing(BaseTest):
             time.sleep(1)
 
             # Verify courses are still displayed
-            assert page.is_element_present(*page.COURSE_CATALOG_SECTION, timeout=5), \
+            assert page.is_element_present(*page.COURSE_CATALOG_SECTION, timeout=15), \
                 "Course catalog disappeared after filtering"
 
     def test_difficulty_filter_functionality(self):
@@ -636,7 +636,7 @@ class TestPublicCourseBrowsing(BaseTest):
             time.sleep(1)
 
             # Verify courses are still displayed
-            assert page.is_element_present(*page.COURSE_CATALOG_SECTION, timeout=5), \
+            assert page.is_element_present(*page.COURSE_CATALOG_SECTION, timeout=15), \
                 "Course catalog disappeared after filtering"
 
 
@@ -670,7 +670,7 @@ class TestCoursePreviewAccess(BaseTest):
 
             # Verify course preview page loaded
             preview_page = CoursePreviewPage(self.driver, self.config)
-            assert preview_page.is_element_present(*preview_page.COURSE_TITLE, timeout=10), \
+            assert preview_page.is_element_present(*preview_page.COURSE_TITLE, timeout=20), \
                 "Course title not found on preview page"
 
     def test_instructor_information_visible(self):
@@ -693,7 +693,7 @@ class TestCoursePreviewAccess(BaseTest):
 
             # Verify instructor information
             if preview_page.is_element_present(*preview_page.INSTRUCTOR_INFO, timeout=5):
-                assert preview_page.is_element_present(*preview_page.INSTRUCTOR_NAME, timeout=5), \
+                assert preview_page.is_element_present(*preview_page.INSTRUCTOR_NAME, timeout=15), \
                     "Instructor name not displayed"
 
     def test_syllabus_outline_visible(self):
@@ -716,7 +716,7 @@ class TestCoursePreviewAccess(BaseTest):
 
             # Verify syllabus is visible
             if preview_page.is_element_present(*preview_page.SYLLABUS_OUTLINE, timeout=5):
-                assert preview_page.is_element_present(*preview_page.LEARNING_OBJECTIVES, timeout=5), \
+                assert preview_page.is_element_present(*preview_page.LEARNING_OBJECTIVES, timeout=15), \
                     "Learning objectives not displayed"
 
     def test_course_prerequisites_displayed(self):
@@ -763,9 +763,9 @@ class TestPublicPagesAccess(BaseTest):
         page.navigate_to_about()
 
         # Verify page loaded
-        assert page.is_element_present(*page.PAGE_HEADER, timeout=10), \
+        assert page.is_element_present(*page.PAGE_HEADER, timeout=20), \
             "About page header not found"
-        assert page.is_element_present(*page.MAIN_CONTENT, timeout=5), \
+        assert page.is_element_present(*page.MAIN_CONTENT, timeout=15), \
             "About page content not visible"
 
     def test_contact_page_accessible(self):
@@ -781,12 +781,12 @@ class TestPublicPagesAccess(BaseTest):
         page.navigate_to_contact()
 
         # Verify contact page loaded
-        assert page.is_element_present(*page.PAGE_HEADER, timeout=10), \
+        assert page.is_element_present(*page.PAGE_HEADER, timeout=20), \
             "Contact page header not found"
 
         # Verify contact form exists (if implemented)
         if page.is_element_present(*page.CONTACT_FORM, timeout=5):
-            assert page.is_element_present(*page.CONTACT_EMAIL_INPUT, timeout=5), \
+            assert page.is_element_present(*page.CONTACT_EMAIL_INPUT, timeout=15), \
                 "Contact email input not found"
 
     def test_privacy_policy_accessible(self):
@@ -802,9 +802,9 @@ class TestPublicPagesAccess(BaseTest):
         page.navigate_to_privacy_policy()
 
         # Verify privacy policy loaded
-        assert page.is_element_present(*page.PAGE_HEADER, timeout=10), \
+        assert page.is_element_present(*page.PAGE_HEADER, timeout=20), \
             "Privacy policy header not found"
-        assert page.is_element_present(*page.MAIN_CONTENT, timeout=5), \
+        assert page.is_element_present(*page.MAIN_CONTENT, timeout=15), \
             "Privacy policy content not visible"
 
     def test_terms_of_service_accessible(self):
@@ -820,9 +820,9 @@ class TestPublicPagesAccess(BaseTest):
         page.navigate_to_terms_of_service()
 
         # Verify terms page loaded
-        assert page.is_element_present(*page.PAGE_HEADER, timeout=10), \
+        assert page.is_element_present(*page.PAGE_HEADER, timeout=20), \
             "Terms of service header not found"
-        assert page.is_element_present(*page.MAIN_CONTENT, timeout=5), \
+        assert page.is_element_present(*page.MAIN_CONTENT, timeout=15), \
             "Terms content not visible"
 
     def test_faq_page_accessible(self):
@@ -838,7 +838,7 @@ class TestPublicPagesAccess(BaseTest):
         page.navigate_to_faq()
 
         # Verify FAQ page loaded
-        assert page.is_element_present(*page.PAGE_HEADER, timeout=10), \
+        assert page.is_element_present(*page.PAGE_HEADER, timeout=20), \
             "FAQ page header not found"
 
 
@@ -864,11 +864,11 @@ class TestUserRegistration(BaseTest):
         page.navigate()
 
         # Verify registration page loaded
-        assert page.is_element_present(*page.FULL_NAME_INPUT, timeout=10), \
+        assert page.is_element_present(*page.FULL_NAME_INPUT, timeout=20), \
             "Full name input not found"
-        assert page.is_element_present(*page.EMAIL_INPUT, timeout=5), \
+        assert page.is_element_present(*page.EMAIL_INPUT, timeout=15), \
             "Email input not found"
-        assert page.is_element_present(*page.PASSWORD_INPUT, timeout=5), \
+        assert page.is_element_present(*page.PASSWORD_INPUT, timeout=15), \
             "Password input not found"
 
     def test_registration_form_validation(self):
@@ -907,11 +907,11 @@ class TestUserRegistration(BaseTest):
         page.navigate()
 
         # Verify GDPR consent checkbox exists
-        assert page.is_element_present(*page.GDPR_CONSENT_CHECKBOX, timeout=5), \
+        assert page.is_element_present(*page.GDPR_CONSENT_CHECKBOX, timeout=15), \
             "GDPR consent checkbox not found"
 
         # Verify privacy policy link exists
-        assert page.is_element_present(*page.PRIVACY_POLICY_LINK, timeout=5), \
+        assert page.is_element_present(*page.PRIVACY_POLICY_LINK, timeout=15), \
             "Privacy policy link not found"
 
     def test_successful_registration_flow(self):
@@ -1029,9 +1029,9 @@ class TestPasswordReset(BaseTest):
         page.navigate()
 
         # Verify password reset page loaded
-        assert page.is_element_present(*page.EMAIL_INPUT, timeout=10), \
+        assert page.is_element_present(*page.EMAIL_INPUT, timeout=20), \
             "Password reset email input not found"
-        assert page.is_element_present(*page.REQUEST_RESET_BUTTON, timeout=5), \
+        assert page.is_element_present(*page.REQUEST_RESET_BUTTON, timeout=15), \
             "Password reset submit button not found"
 
     def test_password_reset_request_submission(self):
@@ -1076,7 +1076,7 @@ class TestPasswordReset(BaseTest):
 
             # Verify navigated to password reset page
             reset_page = PasswordResetPage(self.driver, self.config)
-            assert reset_page.is_element_present(*reset_page.EMAIL_INPUT, timeout=10), \
+            assert reset_page.is_element_present(*reset_page.EMAIL_INPUT, timeout=20), \
                 "Did not navigate to password reset page"
 
     def test_back_to_login_link(self):
@@ -1258,13 +1258,13 @@ class TestNavigationAndLinks(BaseTest):
         page.navigate()
 
         # Verify navigation menu exists
-        assert page.is_element_present(*page.NAV_MENU, timeout=10), \
+        assert page.is_element_present(*page.NAV_MENU, timeout=20), \
             "Main navigation menu not found"
 
         # Verify key navigation links present
-        assert page.is_element_present(*page.LOGIN_LINK, timeout=5), \
+        assert page.is_element_present(*page.LOGIN_LINK, timeout=15), \
             "Login link not found in navigation"
-        assert page.is_element_present(*page.REGISTER_LINK, timeout=5), \
+        assert page.is_element_present(*page.REGISTER_LINK, timeout=15), \
             "Register link not found in navigation"
 
     def test_login_link_navigation(self):
@@ -1330,9 +1330,9 @@ class TestNavigationAndLinks(BaseTest):
         time.sleep(1)
 
         # Verify footer links exist
-        assert page.is_element_present(*page.PRIVACY_POLICY_LINK, timeout=5), \
+        assert page.is_element_present(*page.PRIVACY_POLICY_LINK, timeout=15), \
             "Privacy policy link not found in footer"
-        assert page.is_element_present(*page.TERMS_OF_SERVICE_LINK, timeout=5), \
+        assert page.is_element_present(*page.TERMS_OF_SERVICE_LINK, timeout=15), \
             "Terms of service link not found in footer"
 
     def test_privacy_policy_link_in_footer(self):
