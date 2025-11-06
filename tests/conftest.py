@@ -842,10 +842,10 @@ async def db_connection():
 
     # Get database connection parameters from environment
     db_host = os.getenv('DB_HOST', 'localhost')
-    db_port = int(os.getenv('DB_PORT', '5432'))
+    db_port = int(os.getenv('DB_PORT', '5433'))
     db_name = os.getenv('DB_NAME', 'course_creator')
-    db_user = os.getenv('DB_USER', 'course_creator_user')
-    db_password = os.getenv('DB_PASSWORD', 'course_creator_password')
+    db_user = os.getenv('DB_USER', 'postgres')
+    db_password = os.getenv('DB_PASSWORD', 'postgres_password')
 
     # Create connection
     conn = await asyncpg.connect(

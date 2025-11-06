@@ -530,10 +530,10 @@ async def test_postgres_pool():
     IMPORTANT: Requires PostgreSQL test database to be running.
     """
     db_host = os.getenv("POSTGRES_HOST", "localhost")
-    db_port = os.getenv("POSTGRES_PORT", "5432")
-    db_user = os.getenv("POSTGRES_USER", "course_creator_user")
-    db_password = os.getenv("POSTGRES_PASSWORD", "secure_password_123")
-    db_name = os.getenv("POSTGRES_DB", "course_creator_test")
+    db_port = os.getenv("POSTGRES_PORT", "5433")
+    db_user = os.getenv("POSTGRES_USER", "postgres")
+    db_password = os.getenv("POSTGRES_PASSWORD", "postgres_password")
+    db_name = os.getenv("POSTGRES_DB", "course_creator")
 
     dsn = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 

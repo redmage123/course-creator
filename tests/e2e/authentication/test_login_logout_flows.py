@@ -172,10 +172,10 @@ async def db_connection():
     """Create database connection for user setup and verification"""
     conn = await asyncpg.connect(
         host=os.getenv('DB_HOST', 'localhost'),
-        port=int(os.getenv('DB_PORT', '5432')),
+        port=int(os.getenv('DB_PORT', '5433')),
         database=os.getenv('DB_NAME', 'course_creator'),
-        user=os.getenv('DB_USER', 'course_creator_user'),
-        password=os.getenv('DB_PASSWORD', 'course_creator_password')
+        user=os.getenv('DB_USER', 'postgres'),
+        password=os.getenv('DB_PASSWORD', 'postgres_password')
     )
 
     yield conn

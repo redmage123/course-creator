@@ -554,10 +554,10 @@ async def test_pool_recovery_after_database_restart_simulation(
     # Recreate pool (simulating recovery)
     import os
     db_host = os.getenv("POSTGRES_HOST", "localhost")
-    db_port = os.getenv("POSTGRES_PORT", "5432")
-    db_user = os.getenv("POSTGRES_USER", "course_creator_user")
-    db_password = os.getenv("POSTGRES_PASSWORD", "secure_password_123")
-    db_name = os.getenv("POSTGRES_DB", "course_creator_test")
+    db_port = os.getenv("POSTGRES_PORT", "5433")
+    db_user = os.getenv("POSTGRES_USER", "postgres")
+    db_password = os.getenv("POSTGRES_PASSWORD", "postgres_password")
+    db_name = os.getenv("POSTGRES_DB", "course_creator")
     dsn = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
     new_pool = await asyncpg.create_pool(dsn, min_size=5, max_size=20)
@@ -890,10 +890,10 @@ async def test_min_size_maintains_minimum_connections():
     """
     import os
     db_host = os.getenv("POSTGRES_HOST", "localhost")
-    db_port = os.getenv("POSTGRES_PORT", "5432")
-    db_user = os.getenv("POSTGRES_USER", "course_creator_user")
-    db_password = os.getenv("POSTGRES_PASSWORD", "secure_password_123")
-    db_name = os.getenv("POSTGRES_DB", "course_creator_test")
+    db_port = os.getenv("POSTGRES_PORT", "5433")
+    db_user = os.getenv("POSTGRES_USER", "postgres")
+    db_password = os.getenv("POSTGRES_PASSWORD", "postgres_password")
+    db_name = os.getenv("POSTGRES_DB", "course_creator")
     dsn = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
     logger.info("Testing min_size connection maintenance")
@@ -948,10 +948,10 @@ async def test_max_size_prevents_overallocation():
     """
     import os
     db_host = os.getenv("POSTGRES_HOST", "localhost")
-    db_port = os.getenv("POSTGRES_PORT", "5432")
-    db_user = os.getenv("POSTGRES_USER", "course_creator_user")
-    db_password = os.getenv("POSTGRES_PASSWORD", "secure_password_123")
-    db_name = os.getenv("POSTGRES_DB", "course_creator_test")
+    db_port = os.getenv("POSTGRES_PORT", "5433")
+    db_user = os.getenv("POSTGRES_USER", "postgres")
+    db_password = os.getenv("POSTGRES_PASSWORD", "postgres_password")
+    db_name = os.getenv("POSTGRES_DB", "course_creator")
     dsn = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
     logger.info("Testing max_size prevents overallocation")
@@ -996,10 +996,10 @@ async def test_connection_idle_timeout():
     """
     import os
     db_host = os.getenv("POSTGRES_HOST", "localhost")
-    db_port = os.getenv("POSTGRES_PORT", "5432")
-    db_user = os.getenv("POSTGRES_USER", "course_creator_user")
-    db_password = os.getenv("POSTGRES_PASSWORD", "secure_password_123")
-    db_name = os.getenv("POSTGRES_DB", "course_creator_test")
+    db_port = os.getenv("POSTGRES_PORT", "5433")
+    db_user = os.getenv("POSTGRES_USER", "postgres")
+    db_password = os.getenv("POSTGRES_PASSWORD", "postgres_password")
+    db_name = os.getenv("POSTGRES_DB", "course_creator")
     dsn = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
     logger.info("Testing connection idle timeout")
@@ -1050,10 +1050,10 @@ async def test_connection_max_lifetime():
     """
     import os
     db_host = os.getenv("POSTGRES_HOST", "localhost")
-    db_port = os.getenv("POSTGRES_PORT", "5432")
-    db_user = os.getenv("POSTGRES_USER", "course_creator_user")
-    db_password = os.getenv("POSTGRES_PASSWORD", "secure_password_123")
-    db_name = os.getenv("POSTGRES_DB", "course_creator_test")
+    db_port = os.getenv("POSTGRES_PORT", "5433")
+    db_user = os.getenv("POSTGRES_USER", "postgres")
+    db_password = os.getenv("POSTGRES_PASSWORD", "postgres_password")
+    db_name = os.getenv("POSTGRES_DB", "course_creator")
     dsn = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
     logger.info("Testing connection max lifetime")
@@ -1101,10 +1101,10 @@ async def test_pool_warmup_on_initialization():
     """
     import os
     db_host = os.getenv("POSTGRES_HOST", "localhost")
-    db_port = os.getenv("POSTGRES_PORT", "5432")
-    db_user = os.getenv("POSTGRES_USER", "course_creator_user")
-    db_password = os.getenv("POSTGRES_PASSWORD", "secure_password_123")
-    db_name = os.getenv("POSTGRES_DB", "course_creator_test")
+    db_port = os.getenv("POSTGRES_PORT", "5433")
+    db_user = os.getenv("POSTGRES_USER", "postgres")
+    db_password = os.getenv("POSTGRES_PASSWORD", "postgres_password")
+    db_name = os.getenv("POSTGRES_DB", "course_creator")
     dsn = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
     logger.info("Testing pool warm-up on initialization")
