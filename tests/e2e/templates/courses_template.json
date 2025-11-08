@@ -1,0 +1,167 @@
+{
+  "template_type": "courses",
+  "version": "1.0",
+  "description": "Detailed courses for each track in the Software Engineering Graduate Program",
+  "courses": [
+    {
+      "track": "Foundations Track",
+      "courses": [
+        {
+          "title": "Introduction to Programming with Python",
+          "description": "Learn Python fundamentals including variables, control flow, functions, and object-oriented programming",
+          "duration_weeks": 4,
+          "difficulty_level": "beginner",
+          "learning_outcomes": [
+            "Write basic Python programs using variables and data types",
+            "Use control structures (if/else, loops) effectively",
+            "Create and use functions with parameters and return values",
+            "Understand object-oriented programming basics"
+          ]
+        },
+        {
+          "title": "Data Structures Fundamentals",
+          "description": "Master essential data structures including arrays, linked lists, stacks, queues, trees, and graphs",
+          "duration_weeks": 4,
+          "difficulty_level": "intermediate",
+          "learning_outcomes": [
+            "Implement common data structures from scratch",
+            "Choose appropriate data structures for different problems",
+            "Analyze time and space complexity of operations",
+            "Optimize code using efficient data structures"
+          ]
+        },
+        {
+          "title": "Algorithm Design and Analysis",
+          "description": "Study classic algorithms for searching, sorting, recursion, and dynamic programming",
+          "duration_weeks": 4,
+          "difficulty_level": "intermediate",
+          "learning_outcomes": [
+            "Implement sorting algorithms (merge sort, quick sort, etc.)",
+            "Solve problems using recursion and backtracking",
+            "Apply dynamic programming to optimization problems",
+            "Analyze algorithm efficiency using Big O notation"
+          ]
+        }
+      ]
+    },
+    {
+      "track": "Full Stack Development Track",
+      "courses": [
+        {
+          "title": "Modern Front-End Development with React",
+          "description": "Build interactive user interfaces with React, including hooks, state management, and routing",
+          "duration_weeks": 5,
+          "difficulty_level": "intermediate",
+          "learning_outcomes": [
+            "Create React components using functional components and hooks",
+            "Manage application state with useState and useContext",
+            "Implement routing with React Router",
+            "Fetch and display data from APIs",
+            "Style components with CSS modules and styled-components"
+          ]
+        },
+        {
+          "title": "Back-End Development with Node.js",
+          "description": "Build RESTful APIs using Node.js, Express, and PostgreSQL with authentication",
+          "duration_weeks": 5,
+          "difficulty_level": "intermediate",
+          "learning_outcomes": [
+            "Create Express servers with multiple routes and middleware",
+            "Design and implement PostgreSQL database schemas",
+            "Build RESTful APIs following best practices",
+            "Implement JWT-based authentication",
+            "Handle errors and validate user input"
+          ]
+        },
+        {
+          "title": "Full Stack Integration and Deployment",
+          "description": "Connect front-end to back-end, implement testing, and deploy to production",
+          "duration_weeks": 6,
+          "difficulty_level": "intermediate",
+          "learning_outcomes": [
+            "Integrate React front-end with Express back-end",
+            "Write unit and integration tests",
+            "Configure CORS and handle security concerns",
+            "Deploy applications to Heroku and Vercel",
+            "Set up CI/CD pipelines"
+          ]
+        }
+      ]
+    },
+    {
+      "track": "Advanced Specialization Track",
+      "courses": [
+        {
+          "title": "Microservices Architecture",
+          "description": "Design and build scalable microservices using Docker, message queues, and API gateways",
+          "duration_weeks": 5,
+          "difficulty_level": "advanced",
+          "learning_outcomes": [
+            "Design microservices architectures following best practices",
+            "Containerize applications with Docker",
+            "Implement inter-service communication",
+            "Use message queues for asynchronous processing",
+            "Set up API gateways and service discovery"
+          ]
+        },
+        {
+          "title": "Cloud Computing with AWS",
+          "description": "Deploy and manage applications on AWS using EC2, S3, RDS, Lambda, and more",
+          "duration_weeks": 4,
+          "difficulty_level": "advanced",
+          "learning_outcomes": [
+            "Deploy applications to EC2 instances",
+            "Store files in S3 buckets",
+            "Set up managed databases with RDS",
+            "Create serverless functions with Lambda",
+            "Configure VPCs, security groups, and IAM roles"
+          ]
+        },
+        {
+          "title": "DevOps and CI/CD",
+          "description": "Implement automated testing, continuous integration, and continuous deployment pipelines",
+          "duration_weeks": 5,
+          "difficulty_level": "advanced",
+          "learning_outcomes": [
+            "Set up GitHub Actions workflows",
+            "Implement automated testing in CI pipelines",
+            "Deploy applications automatically on code changes",
+            "Use Kubernetes for container orchestration",
+            "Monitor applications with logging and metrics"
+          ]
+        }
+      ]
+    },
+    {
+      "track": "Capstone Projects Track",
+      "courses": [
+        {
+          "title": "Capstone Project Development",
+          "description": "Design, build, and deploy a full-stack application showcasing all learned skills",
+          "duration_weeks": 8,
+          "difficulty_level": "advanced",
+          "learning_outcomes": [
+            "Define project requirements and create technical specifications",
+            "Design system architecture and database schema",
+            "Build full-stack application with modern technologies",
+            "Implement testing and deployment pipelines",
+            "Present project to technical and non-technical audiences"
+          ]
+        },
+        {
+          "title": "Technical Interview Preparation",
+          "description": "Master coding interviews, system design interviews, and behavioral interviews",
+          "duration_weeks": 4,
+          "difficulty_level": "advanced",
+          "learning_outcomes": [
+            "Solve LeetCode-style coding problems efficiently",
+            "Design scalable systems in whiteboard interviews",
+            "Explain technical concepts clearly",
+            "Answer behavioral questions using STAR method",
+            "Negotiate compensation packages"
+          ]
+        }
+      ]
+    }
+  ]
+}

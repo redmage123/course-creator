@@ -1,0 +1,217 @@
+{
+  "template_type": "instructors",
+  "version": "1.0",
+  "description": "Instructor roster with location assignments and track rotations throughout the program",
+  "instructors": [
+    {
+      "email": "david.kim@globaltech.edu",
+      "first_name": "David",
+      "last_name": "Kim",
+      "bio": "Former Google software engineer with 10 years of experience in algorithm design and system optimization",
+      "expertise": ["Algorithms", "Data Structures", "Python", "System Design"],
+      "primary_location": "New York City",
+      "track_assignments": [
+        {
+          "track": "Foundations Track",
+          "start_date": "2025-01-15",
+          "end_date": "2025-04-08",
+          "courses": ["Introduction to Programming with Python", "Algorithm Design and Analysis"]
+        },
+        {
+          "track": "Advanced Specialization Track",
+          "start_date": "2025-07-01",
+          "end_date": "2025-10-14",
+          "courses": ["Microservices Architecture"]
+        }
+      ],
+      "availability": "full_time",
+      "max_students": 25
+    },
+    {
+      "email": "maria.rodriguez@globaltech.edu",
+      "first_name": "Maria",
+      "last_name": "Rodriguez",
+      "bio": "Senior React developer and former bootcamp instructor with passion for teaching modern web development",
+      "expertise": ["React", "JavaScript", "Front-End Development", "UI/UX"],
+      "primary_location": "San Francisco",
+      "track_assignments": [
+        {
+          "track": "Full Stack Development Track",
+          "start_date": "2025-04-15",
+          "end_date": "2025-08-19",
+          "courses": ["Modern Front-End Development with React"]
+        },
+        {
+          "track": "Full Stack Development Track",
+          "start_date": "2025-04-15",
+          "end_date": "2025-08-19",
+          "courses": ["Full Stack Integration and Deployment"]
+        }
+      ],
+      "availability": "full_time",
+      "max_students": 30
+    },
+    {
+      "email": "james.chen@globaltech.edu",
+      "first_name": "James",
+      "last_name": "Chen",
+      "bio": "Backend architect specializing in Node.js and PostgreSQL with 8 years at startups",
+      "expertise": ["Node.js", "PostgreSQL", "API Design", "Database Architecture"],
+      "primary_location": "Chicago",
+      "track_assignments": [
+        {
+          "track": "Full Stack Development Track",
+          "start_date": "2025-04-15",
+          "end_date": "2025-08-19",
+          "courses": ["Back-End Development with Node.js"]
+        },
+        {
+          "track": "Capstone Projects Track",
+          "start_date": "2026-03-01",
+          "end_date": "2026-07-15",
+          "courses": ["Capstone Project Development"]
+        }
+      ],
+      "availability": "full_time",
+      "max_students": 25
+    },
+    {
+      "email": "sarah.williams@globaltech.edu",
+      "first_name": "Sarah",
+      "last_name": "Williams",
+      "bio": "DevOps engineer and AWS certified solutions architect with experience at Amazon",
+      "expertise": ["AWS", "Docker", "Kubernetes", "CI/CD", "Infrastructure"],
+      "primary_location": "Austin",
+      "track_assignments": [
+        {
+          "track": "Advanced Specialization Track",
+          "start_date": "2025-08-26",
+          "end_date": "2025-12-09",
+          "courses": ["Cloud Computing with AWS", "DevOps and CI/CD"]
+        }
+      ],
+      "availability": "full_time",
+      "max_students": 20
+    },
+    {
+      "email": "michael.oconnor@globaltech.edu",
+      "first_name": "Michael",
+      "last_name": "O'Connor",
+      "bio": "Computer science professor turned industry professional, specializes in algorithms and teaching fundamentals",
+      "expertise": ["Computer Science Fundamentals", "Algorithms", "Teaching Pedagogy"],
+      "primary_location": "Seattle",
+      "track_assignments": [
+        {
+          "track": "Foundations Track",
+          "start_date": "2025-01-15",
+          "end_date": "2025-04-08",
+          "courses": ["Data Structures Fundamentals"]
+        },
+        {
+          "track": "Capstone Projects Track",
+          "start_date": "2026-03-01",
+          "end_date": "2026-07-15",
+          "courses": ["Technical Interview Preparation"]
+        }
+      ],
+      "availability": "full_time",
+      "max_students": 30
+    },
+    {
+      "email": "priya.patel@globaltech.edu",
+      "first_name": "Priya",
+      "last_name": "Patel",
+      "bio": "Full-stack engineer with expertise in React and Node.js, formerly at Microsoft",
+      "expertise": ["React", "Node.js", "TypeScript", "Full Stack Development"],
+      "primary_location": "New York City",
+      "track_assignments": [
+        {
+          "track": "Full Stack Development Track",
+          "start_date": "2025-04-15",
+          "end_date": "2025-08-19",
+          "courses": ["Modern Front-End Development with React", "Back-End Development with Node.js"]
+        }
+      ],
+      "availability": "full_time",
+      "max_students": 25
+    },
+    {
+      "email": "robert.jackson@globaltech.edu",
+      "first_name": "Robert",
+      "last_name": "Jackson",
+      "bio": "System architect with 12 years experience designing microservices at Netflix and Uber",
+      "expertise": ["System Design", "Microservices", "Scalability", "Architecture"],
+      "primary_location": "San Francisco",
+      "track_assignments": [
+        {
+          "track": "Advanced Specialization Track",
+          "start_date": "2025-08-26",
+          "end_date": "2025-12-09",
+          "courses": ["Microservices Architecture"]
+        },
+        {
+          "track": "Capstone Projects Track",
+          "start_date": "2026-03-01",
+          "end_date": "2026-07-15",
+          "courses": ["Capstone Project Development"]
+        }
+      ],
+      "availability": "full_time",
+      "max_students": 20
+    },
+    {
+      "email": "emily.nguyen@globaltech.edu",
+      "first_name": "Emily",
+      "last_name": "Nguyen",
+      "bio": "Career coach and former software engineer helping students transition into tech careers",
+      "expertise": ["Career Development", "Interview Preparation", "Resume Writing", "Networking"],
+      "primary_location": "Chicago",
+      "track_assignments": [
+        {
+          "track": "Capstone Projects Track",
+          "start_date": "2026-03-01",
+          "end_date": "2026-07-15",
+          "courses": ["Technical Interview Preparation"]
+        }
+      ],
+      "availability": "part_time",
+      "max_students": 50
+    },
+    {
+      "email": "alex.thompson@globaltech.edu",
+      "first_name": "Alex",
+      "last_name": "Thompson",
+      "bio": "Cloud infrastructure specialist with AWS and Azure certifications",
+      "expertise": ["AWS", "Azure", "Cloud Architecture", "Security"],
+      "primary_location": "Austin",
+      "track_assignments": [
+        {
+          "track": "Advanced Specialization Track",
+          "start_date": "2025-08-26",
+          "end_date": "2025-12-09",
+          "courses": ["Cloud Computing with AWS"]
+        }
+      ],
+      "availability": "full_time",
+      "max_students": 20
+    },
+    {
+      "email": "lisa.brown@globaltech.edu",
+      "first_name": "Lisa",
+      "last_name": "Brown",
+      "bio": "JavaScript expert and open-source contributor with focus on modern web frameworks",
+      "expertise": ["JavaScript", "TypeScript", "React", "Vue.js", "Web Standards"],
+      "primary_location": "Seattle",
+      "track_assignments": [
+        {
+          "track": "Full Stack Development Track",
+          "start_date": "2025-04-15",
+          "end_date": "2025-08-19",
+          "courses": ["Modern Front-End Development with React", "Full Stack Integration and Deployment"]
+        }
+      ],
+      "availability": "full_time",
+      "max_students": 28
+    }
+  ]
+}

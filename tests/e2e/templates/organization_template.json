@@ -1,0 +1,26 @@
+{
+  "template_type": "organization",
+  "version": "1.0",
+  "description": "Template for creating a new organization with complete structure",
+  "organization": {
+    "name": "Global Tech Institute",
+    "description": "A multi-city software engineering training program preparing students for careers in technology",
+    "industry": "Education & Technology",
+    "size": "medium",
+    "contact_email": "admin@globaltech.edu",
+    "website": "https://globaltech.edu",
+    "admin_user": {
+      "email": "admin@globaltech.edu",
+      "password": "Admin123!",
+      "first_name": "Sarah",
+      "last_name": "Johnson",
+      "role": "organization_admin"
+    },
+    "settings": {
+      "timezone": "America/New_York",
+      "language": "en",
+      "currency": "USD",
+      "date_format": "MM/DD/YYYY"
+    }
+  }
+}

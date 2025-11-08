@@ -1,0 +1,138 @@
+{
+  "workflow_name": "Complete Platform Setup - Software Engineering Graduate Program 2025",
+  "version": "1.0",
+  "description": "AI-assisted workflow to create complete organization structure with all entities",
+  "execution_order": [
+    {
+      "step": 1,
+      "action": "create_organization",
+      "template_file": "organization_template.json",
+      "description": "Create organization and admin user",
+      "wait_for_completion": true,
+      "success_criteria": {
+        "organization_created": true,
+        "admin_can_login": true
+      }
+    },
+    {
+      "step": 2,
+      "action": "create_training_programs",
+      "template_file": "training_programs_template.json",
+      "description": "Create multi-location training programs with sub-projects",
+      "wait_for_completion": true,
+      "dependencies": ["step_1"],
+      "success_criteria": {
+        "programs_created": 1,
+        "locations_created": 5,
+        "sub_projects_created": 4
+      }
+    },
+    {
+      "step": 3,
+      "action": "create_tracks",
+      "template_file": "tracks_template.json",
+      "description": "Create learning tracks for each sub-project",
+      "wait_for_completion": true,
+      "dependencies": ["step_2"],
+      "mapping_strategy": "Map each track to corresponding sub-project by name",
+      "success_criteria": {
+        "tracks_created": 4
+      }
+    },
+    {
+      "step": 4,
+      "action": "create_courses",
+      "template_file": "courses_template.json",
+      "description": "Create courses and assign to tracks",
+      "wait_for_completion": true,
+      "dependencies": ["step_3"],
+      "mapping_strategy": "Map courses to tracks based on track field in template",
+      "success_criteria": {
+        "total_courses_created": 12
+      }
+    },
+    {
+      "step": 5,
+      "action": "create_instructors",
+      "template_file": "instructors_template.json",
+      "description": "Create instructor accounts and assign to tracks with scheduling",
+      "wait_for_completion": true,
+      "dependencies": ["step_3"],
+      "mapping_strategy": "Create users with instructor role, assign to locations and tracks based on schedule",
+      "success_criteria": {
+        "instructors_created": 10,
+        "track_assignments_created": true,
+        "location_assignments_created": true
+      }
+    },
+    {
+      "step": 6,
+      "action": "create_students",
+      "template_file": "students_template.json",
+      "description": "Create student accounts and enroll in tracks by city",
+      "wait_for_completion": true,
+      "dependencies": ["step_3", "step_5"],
+      "mapping_strategy": "Create users with student role, assign to city location, enroll in all specified tracks",
+      "success_criteria": {
+        "students_created": 15,
+        "enrollments_created": true,
+        "city_assignments_correct": true
+      }
+    },
+    {
+      "step": 7,
+      "action": "verify_complete_structure",
+      "description": "Verify all entities are created correctly and relationships are established",
+      "dependencies": ["step_1", "step_2", "step_3", "step_4", "step_5", "step_6"],
+      "verification_checks": [
+        "Organization has 1 admin, 10 instructors, 15 students",
+        "All 5 locations have assigned students",
+        "All 4 tracks have assigned instructors and students",
+        "Instructor track assignments respect date ranges",
+        "Students are enrolled in correct city location"
+      ]
+    }
+  ],
+  "ai_assistant_instructions": {
+    "role": "You are an AI assistant helping to set up a complete Software Engineering Graduate Program",
+    "context": "You will receive templates defining an organization structure with multi-location training programs, learning tracks, courses, instructors, and students. Your task is to create all entities in the correct order and establish relationships between them.",
+    "guidelines": [
+      "Process templates in the specified execution order",
+      "Wait for each step to complete before starting the next",
+      "Map entities using the specified mapping strategies",
+      "Verify success criteria after each step",
+      "Handle errors gracefully and report any issues",
+      "Maintain referential integrity (don't create child entities before parents)",
+      "Respect date ranges for instructor track assignments",
+      "Assign students to locations based on their city field",
+      "Enroll students in all tracks specified in enrolled_tracks array"
+    ],
+    "error_handling": {
+      "on_failure": "Stop workflow, report error details, do not proceed to next step",
+      "rollback_strategy": "Manual cleanup - log all created entity IDs for potential rollback",
+      "retry_policy": "Retry failed API calls up to 3 times with exponential backoff"
+    }
+  },
+  "expected_outcomes": {
+    "total_entities_created": {
+      "organizations": 1,
+      "users": 26,
+      "training_programs": 1,
+      "locations": 5,
+      "sub_projects": 4,
+      "tracks": 4,
+      "courses": 12,
+      "instructor_assignments": "~20 (instructors can teach multiple tracks)",
+      "student_enrollments": "60 (15 students × 4 tracks)",
+      "total_participants_per_city": {
+        "New York City": "3 students + 2 instructors",
+        "San Francisco": "3 students + 2 instructors",
+        "Chicago": "3 students + 2 instructors",
+        "Austin": "3 students + 2 instructors",
+        "Seattle": "3 students + 2 instructors"
+      }
+    },
+    "timeline": "Entire program runs 2025-01-15 to 2026-07-15 (18 months)",
+    "completion_message": "Software Engineering Graduate Program 2025 successfully created across 5 cities with 15 students and 10 instructors"
+  }
+}

@@ -1,0 +1,146 @@
+{
+  "template_type": "tracks",
+  "version": "1.0",
+  "description": "Learning tracks for the Software Engineering Graduate Program",
+  "tracks": [
+    {
+      "name": "Foundations Track",
+      "description": "Build a solid foundation in computer science fundamentals, algorithms, data structures, and software design principles",
+      "difficulty_level": "beginner",
+      "duration_weeks": 12,
+      "max_students": 50,
+      "target_audience": [
+        "Career changers with no programming background",
+        "Recent college graduates",
+        "Self-taught developers seeking formal training"
+      ],
+      "prerequisites": [
+        "High school diploma or equivalent",
+        "Basic computer literacy",
+        "Strong motivation to learn"
+      ],
+      "learning_objectives": [
+        "Master fundamental programming concepts in Python",
+        "Understand time and space complexity analysis",
+        "Implement classic data structures (arrays, linked lists, trees, graphs)",
+        "Apply common algorithms for searching, sorting, and optimization",
+        "Write clean, maintainable code following best practices",
+        "Debug and test code effectively"
+      ],
+      "skills_taught": [
+        "Python programming",
+        "Algorithm design",
+        "Data structures",
+        "Big O notation",
+        "Problem solving",
+        "Code debugging"
+      ]
+    },
+    {
+      "name": "Full Stack Development Track",
+      "description": "Learn modern web development technologies and build production-ready applications using industry-standard tools",
+      "difficulty_level": "intermediate",
+      "duration_weeks": 16,
+      "max_students": 50,
+      "target_audience": [
+        "Students who completed Foundations Track",
+        "Developers with basic programming knowledge",
+        "Front-end developers wanting to learn back-end"
+      ],
+      "prerequisites": [
+        "Completed Foundations Track or equivalent",
+        "Proficiency in at least one programming language",
+        "Understanding of algorithms and data structures"
+      ],
+      "learning_objectives": [
+        "Build responsive web applications with React",
+        "Create RESTful APIs with Node.js and Express",
+        "Design and implement PostgreSQL databases",
+        "Implement authentication and authorization",
+        "Deploy applications to cloud platforms",
+        "Write automated tests for front-end and back-end",
+        "Use Git for version control and collaboration"
+      ],
+      "skills_taught": [
+        "React.js",
+        "Node.js",
+        "Express.js",
+        "PostgreSQL",
+        "REST APIs",
+        "Authentication/JWT",
+        "Git/GitHub",
+        "Cloud deployment"
+      ]
+    },
+    {
+      "name": "Advanced Specialization Track",
+      "description": "Master cloud architecture, DevOps practices, microservices, and enterprise-scale system design",
+      "difficulty_level": "advanced",
+      "duration_weeks": 14,
+      "max_students": 40,
+      "target_audience": [
+        "Students who completed Full Stack Development Track",
+        "Mid-level developers seeking advancement",
+        "Engineers transitioning to cloud/DevOps roles"
+      ],
+      "prerequisites": [
+        "Completed Full Stack Development Track",
+        "Experience building and deploying web applications",
+        "Understanding of databases and APIs"
+      ],
+      "learning_objectives": [
+        "Design scalable microservices architectures",
+        "Implement CI/CD pipelines with GitHub Actions",
+        "Deploy and manage applications with Docker and Kubernetes",
+        "Configure AWS services (EC2, S3, RDS, Lambda)",
+        "Implement monitoring and logging solutions",
+        "Optimize application performance and security",
+        "Design for high availability and fault tolerance"
+      ],
+      "skills_taught": [
+        "Microservices architecture",
+        "Docker",
+        "Kubernetes",
+        "AWS",
+        "CI/CD",
+        "Infrastructure as Code",
+        "System design",
+        "Performance optimization"
+      ]
+    },
+    {
+      "name": "Capstone Projects Track",
+      "description": "Apply all learned skills to build real-world projects, create a professional portfolio, and prepare for job interviews",
+      "difficulty_level": "advanced",
+      "duration_weeks": 12,
+      "max_students": 40,
+      "target_audience": [
+        "Students completing Advanced Specialization Track",
+        "All program participants preparing for job search"
+      ],
+      "prerequisites": [
+        "Completed all previous tracks",
+        "Portfolio of at least 3 projects",
+        "Resume prepared and reviewed"
+      ],
+      "learning_objectives": [
+        "Design and build a full-stack capstone project from scratch",
+        "Collaborate in teams using Agile methodologies",
+        "Present technical solutions to non-technical audiences",
+        "Prepare for technical interviews and coding challenges",
+        "Build a professional portfolio website",
+        "Network with industry professionals and alumni",
+        "Negotiate job offers and understand compensation packages"
+      ],
+      "skills_taught": [
+        "Project management",
+        "Agile/Scrum",
+        "Technical communication",
+        "Interview preparation",
+        "Portfolio development",
+        "Networking",
+        "Career development"
+      ]
+    }
+  ]
+}
