@@ -67,6 +67,7 @@ class UserUpdateRequest(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     organization: Optional[str] = None
+    organization_id: Optional[str] = None
     phone: Optional[str] = None
     timezone: Optional[str] = None
     language: Optional[str] = None
@@ -336,10 +337,15 @@ def setup_auth_routes(app: FastAPI) -> None:
                 except Exception as e:
                     logger.error(f"❌ Error fetching organization_id: {e}")
 
-            # Generate JWT token with user information
+            # Generate JWT token with user information including role and organization_id
             # Note: JWT tokens are stateless, no need to store session in database
             session_id = f"sess_{user.id[:8]}"  # Simple session ID for JWT payload
-            access_token = await token_service.generate_access_token(str(user.id), session_id)
+            access_token = await token_service.generate_access_token(
+                str(user.id),
+                session_id,
+                role=user.role.value if user.role else None,
+                organization_id=user_response.organization_id
+            )
 
             return TokenResponse(
                 access_token=access_token,
@@ -554,9 +560,14 @@ def setup_auth_routes(app: FastAPI) -> None:
                 except Exception as e:
                     logger.error(f"❌ Error fetching organization_id during refresh: {e}")
 
-            # Generate new JWT token with fresh expiration
+            # Generate new JWT token with fresh expiration including role and organization_id
             session_id = f"sess_{current_user.id[:8]}"
-            new_token = await token_service.generate_access_token(str(current_user.id), session_id)
+            new_token = await token_service.generate_access_token(
+                str(current_user.id),
+                session_id,
+                role=current_user.role.value if current_user.role else None,
+                organization_id=user_response.organization_id
+            )
 
             logger.info(f"✅ Token refreshed successfully for user: {current_user.username}")
 
@@ -1031,11 +1042,65 @@ def setup_user_routes(app: FastAPI) -> None:
             profile_data = request.dict(exclude_unset=True)
             updated_user = await user_service.update_user_profile(current_user.id, profile_data)
             return _user_to_response(updated_user)
-            
+
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
         except Exception as e:
             logging.error("Error updating profile: %s", e)
+            raise HTTPException(status_code=500, detail="Internal server error") from e
+
+    @app.get("/users/{user_id}", response_model=UserResponse)
+    async def get_user_by_id_endpoint(
+        user_id: str,
+        user_service: IUserService = Depends(get_user_service)
+    ):
+        """
+        Get user by ID (for internal service-to-service communication)
+
+        BUSINESS CONTEXT:
+        Allows other services to fetch user information by user_id.
+        No authentication required for service-to-service calls.
+        """
+        try:
+            user = await user_service.get_user_by_id(user_id)
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+            return _user_to_response(user)
+        except ValueError:
+            raise HTTPException(status_code=404, detail="User not found")
+        except Exception as e:
+            logging.error(f"Error getting user {user_id}: %s", e)
+            raise HTTPException(status_code=500, detail="Internal server error") from e
+
+    @app.patch("/users/{user_id}", response_model=UserResponse)
+    async def patch_user(
+        user_id: str,
+        request: UserUpdateRequest,
+        user_service: IUserService = Depends(get_user_service)
+    ):
+        """
+        Partial update of user (for internal service-to-service communication)
+
+        BUSINESS CONTEXT:
+        Allows organization-management service to update user's organization_id
+        after organization creation. No authentication required for service-to-service.
+        """
+        try:
+            update_data = request.dict(exclude_unset=True)
+            logging.info(f"🔧 PATCH /users/{user_id} - Update data: {update_data}")
+            print(f"🔧 PATCH /users/{user_id} - Update data: {update_data}")
+
+            updated_user = await user_service.update_user_profile(user_id, update_data)
+
+            logging.info(f"✅ PATCH complete - User {user_id} organization_id: {updated_user.organization_id}")
+            print(f"✅ PATCH complete - User {user_id} organization_id: {updated_user.organization_id}")
+
+            return _user_to_response(updated_user)
+
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        except Exception as e:
+            logging.error(f"Error updating user {user_id}: %s", e)
             raise HTTPException(status_code=500, detail="Internal server error") from e
 
     @app.get("/users/search")
@@ -1141,6 +1206,7 @@ def _user_to_response(user: User) -> UserResponse:
         role=user.role.value,
         status=user.status.value,
         organization=user.organization,
+        organization_id=user.organization_id,
         phone=user.phone,
         timezone=user.timezone,
         language=user.language,

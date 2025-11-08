@@ -32,7 +32,7 @@ from exceptions import (
     ContentNotFoundException,
     ValidationException
 )
-from course_management.domain.entities.course import Course, DifficultyLevel
+from course_management.domain.entities.course import Course, DifficultyLevel, DurationUnit
 
 
 class CourseManagementDAO:
@@ -82,19 +82,18 @@ class CourseManagementDAO:
 
             async with self.db_pool.acquire() as conn:
                 await conn.execute(
-                    """INSERT INTO courses (
+                    """INSERT INTO course_creator.courses (
                         id, title, description, instructor_id, category,
                         difficulty_level, estimated_duration, duration_unit,
                         price, is_published, created_at, updated_at, metadata,
-                        organization_id, project_id, track_id, location_id
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)""",
+                        organization_id, track_id, location_id
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)""",
                     course.id, course.title, course.description, course.instructor_id,
                     course.category, course.difficulty_level.value, course.estimated_duration,
                     course.duration_unit.value if course.duration_unit else None,
                     course.price, course.is_published, course.created_at, course.updated_at,
                     json.dumps(metadata),
                     getattr(course, 'organization_id', None),
-                    getattr(course, 'project_id', None),
                     getattr(course, 'track_id', None),
                     getattr(course, 'location_id', None)
                 )
@@ -112,7 +111,7 @@ class CourseManagementDAO:
         try:
             async with self.db_pool.acquire() as conn:
                 row = await conn.fetchrow(
-                    "SELECT * FROM courses WHERE id = $1",
+                    "SELECT * FROM course_creator.courses WHERE id = $1",
                     course_id
                 )
                 if not row:
@@ -132,7 +131,7 @@ class CourseManagementDAO:
         try:
             async with self.db_pool.acquire() as conn:
                 rows = await conn.fetch(
-                    "SELECT * FROM courses WHERE instructor_id = $1 ORDER BY created_at DESC",
+                    "SELECT * FROM course_creator.courses WHERE instructor_id = $1 ORDER BY created_at DESC",
                     instructor_id
                 )
                 return [self._row_to_course(row) for row in rows]
@@ -155,7 +154,7 @@ class CourseManagementDAO:
 
             async with self.db_pool.acquire() as conn:
                 await conn.execute(
-                    """UPDATE courses SET
+                    """UPDATE course_creator.courses SET
                         title = $2, description = $3, category = $4,
                         difficulty_level = $5, estimated_duration = $6, duration_unit = $7,
                         price = $8, is_published = $9, updated_at = $10, metadata = $11,
@@ -186,7 +185,7 @@ class CourseManagementDAO:
         try:
             async with self.db_pool.acquire() as conn:
                 result = await conn.execute(
-                    "DELETE FROM courses WHERE id = $1",
+                    "DELETE FROM course_creator.courses WHERE id = $1",
                     course_id
                 )
                 return int(result.split()[-1]) > 0 if result else False
@@ -224,7 +223,7 @@ class CourseManagementDAO:
         try:
             async with self.db_pool.acquire() as conn:
                 result = await conn.fetchval(
-                    "SELECT COUNT(*) FROM courses WHERE instructor_id = $1",
+                    "SELECT COUNT(*) FROM course_creator.courses WHERE instructor_id = $1",
                     instructor_id
                 )
                 return result or 0
@@ -262,7 +261,7 @@ class CourseManagementDAO:
 
             async with self.db_pool.acquire() as conn:
                 rows = await conn.fetch(
-                    f"""SELECT * FROM courses WHERE {where_clause}
+                    f"""SELECT * FROM course_creator.courses WHERE {where_clause}
                         ORDER BY created_at DESC LIMIT 100""",
                     *params
                 )
@@ -330,7 +329,7 @@ class CourseManagementDAO:
         try:
             async with self.db_pool.acquire() as conn:
                 course = await conn.fetchrow(
-                    "SELECT * FROM courses WHERE id = $1 AND instructor_id = $2",
+                    "SELECT * FROM course_creator.courses WHERE id = $1 AND instructor_id = $2",
                     course_id, instructor_id
                 )
                 return dict(course) if course else None
@@ -389,13 +388,13 @@ class CourseManagementDAO:
             async with self.db_pool.acquire() as conn:
                 # Get total course count
                 total_courses = await conn.fetchval(
-                    "SELECT COUNT(DISTINCT c.id) FROM courses c WHERE c.instructor_id = $1",
+                    "SELECT COUNT(DISTINCT c.id) FROM course_creator.courses c WHERE c.instructor_id = $1",
                     instructor_id
                 )
                 
                 # Get courses with detailed information
                 courses = await conn.fetch(
-                    """SELECT * FROM courses 
+                    """SELECT * FROM course_creator.courses 
                        WHERE instructor_id = $1 
                        ORDER BY created_at DESC""",
                     instructor_id
@@ -861,7 +860,7 @@ class CourseManagementDAO:
                     SELECT id, title, description, instructor_id, category,
                            difficulty_level, estimated_duration, is_published,
                            created_at, updated_at
-                    FROM courses
+                    FROM course_creator.courses
                     WHERE is_published = true
                     ORDER BY created_at DESC
                     LIMIT $1 OFFSET $2
@@ -893,6 +892,78 @@ class CourseManagementDAO:
             raise DatabaseException(
                 message=f"Failed to retrieve published courses (limit={limit}, offset={offset})",
                 operation="get_published_courses",
+                table_name="courses",
+                original_exception=e
+            )
+
+    async def get_all_courses(self, limit: int = 50, offset: int = 0) -> List[Course]:
+        """
+        Retrieve ALL courses (both published and unpublished) with pagination.
+
+        Business Context:
+        This method returns both published and draft courses, useful for:
+        - Organization admins managing their training programs
+        - Instructors viewing their course portfolios
+        - Administrative interfaces requiring full course visibility
+
+        Args:
+            limit: Maximum number of courses to return (default: 50, max: 100)
+            offset: Number of courses to skip for pagination (default: 0)
+
+        Returns:
+            List of all Course domain entities (published + unpublished)
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                rows = await conn.fetch(
+                    """
+                    SELECT id, title, description, instructor_id, category,
+                           difficulty_level, estimated_duration, duration_unit,
+                           price, is_published, created_at, updated_at, metadata,
+                           organization_id, track_id, location_id
+                    FROM course_creator.courses
+                    ORDER BY created_at DESC
+                    LIMIT $1 OFFSET $2
+                    """,
+                    limit, offset
+                )
+
+                courses = []
+                for row in rows:
+                    # Extract tags from metadata JSONB column
+                    tags = []
+                    if row['metadata']:
+                        import json
+                        metadata = json.loads(row['metadata']) if isinstance(row['metadata'], str) else row['metadata']
+                        tags = metadata.get('tags', [])
+
+                    # Convert database row to Course domain entity
+                    course = Course(
+                        id=str(row['id']),
+                        title=row['title'],
+                        description=row['description'],
+                        instructor_id=str(row['instructor_id']),
+                        category=row['category'] or 'General',
+                        difficulty_level=DifficultyLevel(row['difficulty_level'] or 'beginner'),
+                        estimated_duration=row['estimated_duration'] if row['estimated_duration'] is not None else None,
+                        duration_unit=DurationUnit(row['duration_unit']) if row['duration_unit'] else DurationUnit.WEEKS,
+                        price=float(row['price']) if row['price'] else 0.0,
+                        is_published=row['is_published'],
+                        created_at=row['created_at'],
+                        updated_at=row['updated_at'],
+                        tags=tags,
+                        organization_id=str(row['organization_id']) if row['organization_id'] else None,
+                        track_id=str(row['track_id']) if row['track_id'] else None,
+                        location_id=str(row['location_id']) if row['location_id'] else None
+                    )
+                    courses.append(course)
+
+                return courses
+
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to retrieve all courses (limit={limit}, offset={offset})",
+                operation="get_all_courses",
                 table_name="courses",
                 original_exception=e
             )

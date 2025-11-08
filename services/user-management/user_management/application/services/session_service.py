@@ -662,7 +662,13 @@ class TokenService(ITokenService):
         self._algorithm = algorithm
         self._revoked_tokens = set()  # In production, use Redis or database
     
-    async def generate_access_token(self, user_id: str, session_id: str) -> str:
+    async def generate_access_token(
+        self,
+        user_id: str,
+        session_id: str,
+        role: Optional[str] = None,
+        organization_id: Optional[str] = None
+    ) -> str:
         """
         Generate JWT access token for authenticated API requests.
 
@@ -675,6 +681,8 @@ class TokenService(ITokenService):
             - user_id: Unique user identifier
             - session_id: Session identifier for tracking
             - type: 'access' to distinguish from refresh tokens
+            - role: User role for RBAC permission checks (optional)
+            - organization_id: Organization context for multi-tenant operations (optional)
             - exp: Expiration time (1 hour from now)
             - iat: Issued at time (current timestamp)
             - jti: JWT ID for revocation tracking
@@ -682,6 +690,8 @@ class TokenService(ITokenService):
         Args:
             user_id (str): Unique user identifier
             session_id (str): Session identifier
+            role (Optional[str]): User role for permission verification
+            organization_id (Optional[str]): Organization identifier for multi-tenant context
 
         Returns:
             str: Signed JWT access token (1 hour expiration)
@@ -694,7 +704,13 @@ class TokenService(ITokenService):
             'iat': datetime.now(timezone.utc),
             'jti': secrets.token_urlsafe(16)  # JWT ID for revocation
         }
-        
+
+        # Add optional claims for RBAC and multi-tenancy
+        if role:
+            payload['role'] = role
+        if organization_id:
+            payload['organization_id'] = organization_id
+
         return jwt.encode(payload, self._secret_key, algorithm=self._algorithm)
     
     async def generate_refresh_token(self, user_id: str, session_id: str) -> str:

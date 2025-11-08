@@ -153,8 +153,8 @@ class OrganizationService:
                 is_temp_password = True
                 self._logger.info(f"Generated temporary password for user: {admin_email}")
             
-            # Default role is organization admin (using org_admin to match frontend expectations)
-            primary_role = "org_admin" if "org_admin" in (admin_roles or []) else "org_admin"
+            # Default role is organization admin (using organization_admin to match user-management validation)
+            primary_role = "organization_admin" if "organization_admin" in (admin_roles or []) else "organization_admin"
             
             # Prepare user registration request
             user_registration_data = {
@@ -386,6 +386,53 @@ class OrganizationService:
             self._logger.info(f"SERVICE DEBUG: DAO.create_organization completed, returned ID: {org_id}")
             # Get the created organization back
             created_organization = organization  # We already have the entity
+
+            # Step 3: Update admin user with organization_id (now that organization exists)
+            print(f"=== SERVICE DEBUG: Updating admin user with organization_id: {created_organization.id}")
+            self._logger.info(f"Updating admin user {admin_user_info['user_id']} with organization_id: {created_organization.id}")
+            try:
+                update_response = await self._http_client.patch(
+                    f"{self._user_management_url}/users/{admin_user_info['user_id']}",
+                    json={"organization_id": str(created_organization.id)},
+                    headers={"Content-Type": "application/json"}
+                )
+
+                if update_response.status_code == 200:
+                    print(f"=== SERVICE DEBUG: Admin user updated successfully with organization_id")
+                    self._logger.info(f"Admin user updated successfully with organization_id")
+                else:
+                    print(f"=== SERVICE WARNING: Failed to update user organization_id: {update_response.status_code}")
+                    self._logger.warning(f"Failed to update user organization_id: {update_response.status_code} - {update_response.text}")
+            except Exception as update_error:
+                print(f"=== SERVICE WARNING: Exception updating user organization_id: {update_error}")
+                self._logger.warning(f"Non-critical error updating user organization_id: {update_error}")
+                # Don't fail the entire registration if user update fails - organization is already created
+
+            # Step 4: Create organization membership for admin user
+            print(f"=== SERVICE DEBUG: Creating organization membership for admin user")
+            self._logger.info(f"Creating organization membership for admin user {admin_user_info['user_id']}")
+            try:
+                import uuid
+                from datetime import datetime, timezone
+
+                membership_data = {
+                    'id': str(uuid.uuid4()),
+                    'user_id': admin_user_info['user_id'],
+                    'organization_id': str(created_organization.id),
+                    'role': 'organization_admin',
+                    'is_active': True,
+                    'joined_at': datetime.now(timezone.utc),
+                    'updated_at': datetime.now(timezone.utc)
+                }
+
+                membership_id = await self._dao.create_membership(membership_data)
+                print(f"=== SERVICE DEBUG: Organization membership created successfully: {membership_id}")
+                self._logger.info(f"Organization membership created successfully: {membership_id}")
+            except Exception as membership_error:
+                print(f"=== SERVICE ERROR: Failed to create organization membership: {membership_error}")
+                self._logger.error(f"Failed to create organization membership: {membership_error}")
+                # This is critical - membership is required for permission checks
+                raise ValueError(f"Failed to create organization membership: {membership_error}")
 
             print(f"=== SERVICE DEBUG: About to build return data")
             self._logger.info(f"Organization created successfully: {created_organization.slug}")

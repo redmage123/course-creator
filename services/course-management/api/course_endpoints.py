@@ -25,7 +25,7 @@ SECURITY CONSIDERATIONS:
 - Published courses are read-only to students
 - Organization context enforced via middleware
 """
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Header
 from typing import List, Optional
 from datetime import datetime
 import logging
@@ -89,17 +89,15 @@ class CourseCreateRequest(BaseModel):
         None,
         description="Organization ID (optional - for corporate training programs)"
     )
-    project_id: Optional[str] = Field(
-        None,
-        description="Project ID (optional - for project-based courses)"
-    )
+    # Note: project_id is NOT stored in courses table - projects manage tracks
+    # Courses belong to tracks, tracks belong to projects
     track_id: Optional[str] = Field(
         None,
         description="Track ID (optional - for track-based learning paths)"
     )
     location_id: Optional[str] = Field(
         None,
-        description="Locations ID (optional - for locations-specific course delivery)"
+        description="Location ID (optional - for location-specific course delivery)"
     )
 
 class CourseUpdateRequest(BaseModel):
@@ -156,6 +154,20 @@ class CourseResponse(BaseModel):
     track_id: Optional[str] = None
     location_id: Optional[str] = None
 
+class PaginatedCoursesResponse(BaseModel):
+    """
+    Data Transfer Object for paginated course list responses.
+
+    BUSINESS CONTEXT:
+    Returns courses in paginated format for efficient frontend rendering.
+    Provides metadata for pagination controls (total, pages, etc).
+    """
+    data: List[CourseResponse]
+    total: int
+    page: int = 1
+    limit: int = 100
+    pages: int = 1
+
 # Create router with course prefix and tag
 router = APIRouter(prefix="/courses", tags=["courses"])
 
@@ -168,14 +180,40 @@ def get_course_service(request: Request) -> ICourseService:
         raise HTTPException(status_code=500, detail="Service not initialized (course_endpoints.py)")
     return request.app.state.container.get_course_service()
 
-def get_current_user_id() -> str:
+def get_current_user_id(authorization: str = Header(None)) -> str:
     """
-    Extract user ID from JWT token
-    For now, return a mock user ID - in production, this would validate JWT
+    Extract user ID from JWT token in Authorization header.
+
+    BUSINESS CONTEXT:
+    Authenticates the request and extracts the user_id claim from the JWT token.
+    This ensures proper instructor assignment for course creation.
+
+    TECHNICAL IMPLEMENTATION:
+    Decodes JWT token without verification (verification happens at API gateway/nginx level).
+    Extracts user_id claim which is used as instructor_id for course ownership.
+
+    WHY THIS APPROACH:
+    - JWT is already verified by the API gateway
+    - We only need to extract claims for business logic
+    - No need to re-verify signature here
     """
-    # Use a real UUID from the database for testing
-    # orgadmin@e2etest.com = b14efecc-de51-4056-8034-30d05bf6fe80
-    return "b14efecc-de51-4056-8034-30d05bf6fe80"  # Mock implementation with valid UUID
+    if not authorization or not authorization.startswith('Bearer '):
+        raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
+
+    token = authorization.split(' ')[1]
+
+    try:
+        import jwt
+        # Decode without verification since it's already verified by API gateway
+        payload = jwt.decode(token, options={"verify_signature": False})
+        user_id = payload.get('user_id')
+
+        if not user_id:
+            raise HTTPException(status_code=401, detail="user_id claim not found in token")
+
+        return user_id
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Invalid JWT token: {str(e)}")
 
 # Helper function to convert domain entity to API response
 def _course_to_response(course: Course) -> CourseResponse:
@@ -259,6 +297,7 @@ async def create_course(
     try:
         # Convert DTO to domain entity
         # Support both standalone and organizational course creation (v3.3.1)
+        # Note: project_id removed - courses belong to tracks, tracks belong to projects
         course = Course(
             title=request.title,
             description=request.description,
@@ -271,7 +310,6 @@ async def create_course(
             tags=request.tags,
             # Optional organizational context (new in v3.3.1)
             organization_id=request.organization_id,
-            project_id=request.project_id,
             track_id=request.track_id,
             location_id=request.location_id
         )
@@ -339,32 +377,82 @@ async def get_course(
             original_exception=e
         )
 
-@router.get("", response_model=List[CourseResponse])
+@router.get("", response_model=PaginatedCoursesResponse)
 async def get_courses(
     instructor_id: Optional[str] = None,
+    organization_id: Optional[str] = None,
+    project_id: Optional[str] = None,
+    track_id: Optional[str] = None,
     published_only: bool = True,
+    page: int = 1,
+    limit: int = 100,
     course_service: ICourseService = Depends(get_course_service)
 ):
     """
-    Get courses - either published courses for browsing or instructor's courses
+    Get courses with pagination and filtering
 
     Query parameters:
     - instructor_id: Filter by instructor (if provided)
+    - organization_id: Filter by organization (if provided)
+    - project_id: Filter by project (if provided)
+    - track_id: Filter by track (if provided)
     - published_only: Only return published courses (default: True)
+    - page: Page number (default: 1)
+    - limit: Items per page (default: 100)
 
-    This endpoint supports both:
+    This endpoint supports:
     1. Public course browsing (no auth required if published_only=True)
     2. Instructor course management (with auth)
+    3. Organization-filtered course lists
     """
     try:
+        # Calculate offset from page number
+        offset = (page - 1) * limit
+
         if instructor_id:
             # Get specific instructor's courses
             courses = await course_service.get_courses_by_instructor(instructor_id)
+        elif organization_id:
+            # Get organization's courses (filter by organization_id)
+            # Respect published_only parameter - if false, get ALL courses
+            if published_only:
+                all_courses = await course_service.get_published_courses(limit=1000, offset=0)
+            else:
+                all_courses = await course_service.get_all_courses(limit=1000, offset=0)
+            courses = [c for c in all_courses if c.organization_id == organization_id]
+        elif project_id:
+            # Get project's courses
+            if published_only:
+                all_courses = await course_service.get_published_courses(limit=1000, offset=0)
+            else:
+                all_courses = await course_service.get_all_courses(limit=1000, offset=0)
+            courses = [c for c in all_courses if getattr(c, 'project_id', None) == project_id]
+        elif track_id:
+            # Get track's courses
+            if published_only:
+                all_courses = await course_service.get_published_courses(limit=1000, offset=0)
+            else:
+                all_courses = await course_service.get_all_courses(limit=1000, offset=0)
+            courses = [c for c in all_courses if c.track_id == track_id]
         else:
-            # Get all published courses for browsing
-            courses = await course_service.get_published_courses(limit=100, offset=0)
+            # Get all courses for browsing (default: published only)
+            if published_only:
+                courses = await course_service.get_published_courses(limit=1000, offset=0)
+            else:
+                courses = await course_service.get_all_courses(limit=1000, offset=0)
 
-        return [_course_to_response(course) for course in courses]
+        # Apply pagination
+        total = len(courses)
+        pages = (total + limit - 1) // limit  # Ceiling division
+        paginated_courses = courses[offset:offset + limit]
+
+        return PaginatedCoursesResponse(
+            data=[_course_to_response(course) for course in paginated_courses],
+            total=total,
+            page=page,
+            limit=limit,
+            pages=pages
+        )
 
     except Exception as e:
         logging.error("Error getting courses: %s", e)

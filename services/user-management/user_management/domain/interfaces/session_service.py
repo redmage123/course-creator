@@ -129,8 +129,14 @@ class ITokenService(ABC):
     """
     
     @abstractmethod
-    async def generate_access_token(self, user_id: str, session_id: str) -> str:
-        """Generate access token"""
+    async def generate_access_token(
+        self,
+        user_id: str,
+        session_id: str,
+        role: Optional[str] = None,
+        organization_id: Optional[str] = None
+    ) -> str:
+        """Generate access token with optional role and organization_id claims"""
         pass
     
     @abstractmethod

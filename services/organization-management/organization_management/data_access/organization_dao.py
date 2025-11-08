@@ -1043,10 +1043,24 @@ class OrganizationManagementDAO:
 
     async def get_project_organization_id(self, project_id: UUID) -> Optional[UUID]:
         """
-        Get the organization_id for a project.
+        Get the organization_id for a project (training program).
+
+        BUSINESS CONTEXT:
+        In this system, "projects" or "training programs" are represented by the courses table.
+        These are the primary training program entities created by organization admins.
+
+        SEMANTIC MAPPING:
+        - courses = Training Programs/Projects (primary entity created via UI)
+        - course_outlines = Templates/curricula (course content)
+        - course_instances = Specific runs/sessions of courses (not currently used)
+        - tracks = Learning paths within a project
+
+        TECHNICAL IMPLEMENTATION:
+        Queries the courses table which stores training programs with organization assignment.
+        This enables proper multi-tenant isolation for track creation.
 
         Args:
-            project_id: UUID of the project
+            project_id: UUID of the course (training program/project)
 
         Returns:
             Organization UUID or None if project not found
@@ -1054,7 +1068,7 @@ class OrganizationManagementDAO:
         try:
             async with self.db_pool.acquire() as conn:
                 result = await conn.fetchval(
-                    """SELECT organization_id FROM projects WHERE id = $1""",
+                    """SELECT organization_id FROM course_creator.courses WHERE id = $1""",
                     project_id
                 )
                 return result
