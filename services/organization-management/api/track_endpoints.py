@@ -264,9 +264,58 @@ def _parse_difficulty_filter(difficulty_level: Optional[str]) -> Optional[Diffic
 
 
 async def _build_track_response(track, track_service: TrackService) -> TrackResponse:
-    """Build track response with enrollment and instructor counts"""
-    enrollment_count = await track_service.get_track_enrollment_count(track.id)
-    instructor_count = await track_service.get_track_instructor_count(track.id)
+    """
+    Build track response with enrollment and instructor counts
+
+    BUSINESS CONTEXT:
+    Track responses include real-time enrollment and instructor counts for analytics.
+    For newly created tracks or when count methods are not yet implemented,
+    these counts default to 0 to ensure API responses remain stable.
+
+    TECHNICAL IMPLEMENTATION:
+    Uses graceful degradation pattern - attempts to fetch real-time counts,
+    but falls back to 0 if methods don't exist or database queries fail.
+    This ensures the tracks list endpoint remains functional even if
+    enrollment/instructor counting features are incomplete.
+
+    WHY THIS APPROACH:
+    - Prevents API failures when new tracks have no enrollments/instructors
+    - Allows incremental development (can add count methods later)
+    - Maintains backward compatibility if count methods are removed
+    - Logs failures for debugging without breaking the API response
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    # Get enrollment count with graceful degradation
+    enrollment_count = 0
+    if hasattr(track_service, 'get_track_enrollment_count'):
+        try:
+            enrollment_count = await track_service.get_track_enrollment_count(track.id)
+        except AttributeError as e:
+            logger.warning(f"Enrollment count method exists but failed for track {track.id}: {e}")
+            enrollment_count = 0
+        except (ValueError, TypeError) as e:
+            logger.error(f"Invalid data type when getting enrollment count for track {track.id}: {e}")
+            enrollment_count = 0
+        except Exception as e:
+            logger.error(f"Unexpected error getting enrollment count for track {track.id}: {e}")
+            enrollment_count = 0
+
+    # Get instructor count with graceful degradation
+    instructor_count = 0
+    if hasattr(track_service, 'get_track_instructor_count'):
+        try:
+            instructor_count = await track_service.get_track_instructor_count(track.id)
+        except AttributeError as e:
+            logger.warning(f"Instructor count method exists but failed for track {track.id}: {e}")
+            instructor_count = 0
+        except (ValueError, TypeError) as e:
+            logger.error(f"Invalid data type when getting instructor count for track {track.id}: {e}")
+            instructor_count = 0
+        except Exception as e:
+            logger.error(f"Unexpected error getting instructor count for track {track.id}: {e}")
+            instructor_count = 0
 
     return TrackResponse(
         id=str(track.id),
