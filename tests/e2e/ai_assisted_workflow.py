@@ -140,25 +140,56 @@ class AIAssistedWorkflow:
         await self.page.goto(f"{self.base_url}/organization/register")
         await self.page.wait_for_load_state('networkidle')
 
-        # Fill registration form
-        await self.page.fill('input[name="orgName"]', org_data["name"])
-        await self.page.fill('input[name="email"]', admin_data["email"])
-        await self.page.fill('input[name="password"]', admin_data["password"])
-        await self.page.fill('input[name="firstName"]', admin_data["first_name"])
-        await self.page.fill('input[name="lastName"]', admin_data["last_name"])
+        # Fill organization details
+        await self.page.fill('input[name="name"]', org_data["name"])
+        # Note: slug is auto-generated, but we can override it
+        await self.page.fill('input[name="slug"]', org_data.get("slug", org_data["name"].lower().replace(" ", "-")))
+        await self.page.fill('textarea[name="description"]', org_data.get("description", ""))
+        await self.page.fill('input[name="domain"]', org_data["domain"])
+
+        # Fill organization address
+        await self.page.fill('input[name="street_address"]', org_data.get("street_address", ""))
+        await self.page.fill('input[name="city"]', org_data.get("city", ""))
+        await self.page.fill('input[name="state_province"]', org_data.get("state_province", ""))
+        await self.page.fill('input[name="postal_code"]', org_data.get("postal_code", ""))
+        await self.page.select_option('select[name="country"]', org_data["country"])
+
+        # Fill contact information
+        await self.page.fill('input[name="contact_phone"]', org_data.get("contact_phone", ""))
+        await self.page.fill('input[name="contact_email"]', org_data.get("contact_email", admin_data["email"]))
+
+        # Fill admin account details
+        await self.page.fill('input[name="admin_full_name"]', admin_data["full_name"])
+        await self.page.fill('input[name="admin_username"]', admin_data["username"])
+        await self.page.fill('input[name="admin_email"]', admin_data["email"])
+        await self.page.fill('input[name="admin_password"]', admin_data["password"])
+        await self.page.fill('input[name="admin_password_confirm"]', admin_data["password_confirm"])
+
+        # Accept terms and privacy policy
+        await self.page.check('input[name="terms_accepted"]')
+        await self.page.check('input[name="privacy_accepted"]')
 
         # Submit form
         await self.page.click('button[type="submit"]')
-        await self.page.wait_for_url(f"{self.base_url}/login*")
+
+        # Wait for redirect to login page OR directly to dashboard (depending on implementation)
+        try:
+            await self.page.wait_for_url(f"{self.base_url}/login*", timeout=5000)
+            login_required = True
+        except:
+            login_required = False
 
         logger.info(f"✅ Organization '{org_data['name']}' created")
         logger.info(f"✅ Admin user '{admin_data['email']}' created")
 
-        # Login as org admin
-        await self.page.fill('input[name="email"]', admin_data["email"])
-        await self.page.fill('input[name="password"]', admin_data["password"])
-        await self.page.click('button[type="submit"]')
-        await self.page.wait_for_url(f"{self.base_url}/dashboard/org-admin")
+        # Login as org admin if redirected to login page
+        if login_required:
+            await self.page.fill('input[name="email"]', admin_data["email"])
+            await self.page.fill('input[name="password"]', admin_data["password"])
+            await self.page.click('button[type="submit"]')
+
+        # Wait for dashboard
+        await self.page.wait_for_url(f"{self.base_url}/dashboard/org-admin*", timeout=10000)
 
         # Extract auth token from localStorage
         self.auth_token = await self.page.evaluate("localStorage.getItem('authToken')")
