@@ -1,0 +1,907 @@
+{
+  "slide_01": {
+    "title": "Platform Introduction",
+    "description": "Welcome to Course Creator Platform - Landing page showcase",
+    "duration_seconds": 15,
+    "narration_file": "slide_01_narration.mp3",
+    "output_file": "frontend-legacy/static/demo/videos/slide_01_platform_introduction.mp4",
+    "mcp_commands": [
+      {
+        "tool": "mcp__playwright__browser_navigate",
+        "params": {
+          "url": "https://localhost:3000/"
+        },
+        "description": "Navigate to homepage",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 2.0
+        },
+        "description": "Wait 2 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_snapshot",
+        "params": {},
+        "description": "Capture homepage layout",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_hover",
+        "params": {
+          "element": "Hover Watch Demo button",
+          "ref": "a[href='/demo']"
+        },
+        "description": "Hover Watch Demo button",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 1.0
+        },
+        "description": "Wait 1 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_hover",
+        "params": {
+          "element": "Hover Sign In button",
+          "ref": "a[href='/login']"
+        },
+        "description": "Hover Sign In button",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 1.0
+        },
+        "description": "Wait 1 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_hover",
+        "params": {
+          "element": "Hover Create Account button",
+          "ref": "a[href='/register']"
+        },
+        "description": "Hover Create Account button",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 2.0
+        },
+        "description": "Wait 2 seconds",
+        "wait_after_seconds": 0.5
+      }
+    ]
+  },
+  "slide_02": {
+    "title": "Organization Registration",
+    "description": "Register a new organization on the platform",
+    "duration_seconds": 25,
+    "narration_file": "slide_02_narration.mp3",
+    "output_file": "frontend-legacy/static/demo/videos/slide_02_organization_registration.mp4",
+    "mcp_commands": [
+      {
+        "tool": "mcp__playwright__browser_navigate",
+        "params": {
+          "url": "https://localhost:3000/organization/register"
+        },
+        "description": "Go to org registration",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 2.0
+        },
+        "description": "Wait 2 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_snapshot",
+        "params": {},
+        "description": "Capture registration form",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_type",
+        "params": {
+          "element": "Enter organization name",
+          "ref": "#orgName",
+          "text": "Acme Training Corp",
+          "slowly": true
+        },
+        "description": "Enter organization name",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 0.5
+        },
+        "description": "Wait 0.5 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_type",
+        "params": {
+          "element": "Enter admin email",
+          "ref": "#adminEmail",
+          "text": "admin@acmetraining.com",
+          "slowly": true
+        },
+        "description": "Enter admin email",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 0.5
+        },
+        "description": "Wait 0.5 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_type",
+        "params": {
+          "element": "Enter admin name",
+          "ref": "#adminName",
+          "text": "John Smith",
+          "slowly": true
+        },
+        "description": "Enter admin name",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 0.5
+        },
+        "description": "Wait 0.5 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_type",
+        "params": {
+          "element": "Enter password",
+          "ref": "#password",
+          "text": "SecurePass123!",
+          "slowly": true
+        },
+        "description": "Enter password",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 1.0
+        },
+        "description": "Wait 1 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_hover",
+        "params": {
+          "element": "Hover submit button",
+          "ref": "button[type='submit']"
+        },
+        "description": "Hover submit button",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 2.0
+        },
+        "description": "Wait 2 seconds",
+        "wait_after_seconds": 0.5
+      }
+    ]
+  },
+  "slide_03": {
+    "title": "Organization Admin Dashboard",
+    "description": "Explore the Organization Admin dashboard",
+    "duration_seconds": 30,
+    "narration_file": "slide_03_narration.mp3",
+    "output_file": "frontend-legacy/static/demo/videos/slide_03_organization_admin_dashboard.mp4",
+    "mcp_commands": [
+      {
+        "tool": "mcp__playwright__browser_navigate",
+        "params": {
+          "url": "https://localhost:3000/login"
+        },
+        "description": "Go to login",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 1.0
+        },
+        "description": "Wait 1 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_type",
+        "params": {
+          "element": "Enter org admin email",
+          "ref": "#email",
+          "text": "org_admin@demo.com",
+          "slowly": true
+        },
+        "description": "Enter org admin email",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_type",
+        "params": {
+          "element": "Enter password",
+          "ref": "#password",
+          "text": "demo123",
+          "slowly": true
+        },
+        "description": "Enter password",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_click",
+        "params": {
+          "element": "Click login",
+          "ref": "button[type='submit']"
+        },
+        "description": "Click login",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "text": "Dashboard"
+        },
+        "description": "Wait for text: Dashboard",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_snapshot",
+        "params": {},
+        "description": "Capture dashboard",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 2.0
+        },
+        "description": "Wait 2 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_click",
+        "params": {
+          "element": "Click Members tab",
+          "ref": "[data-tab='members']"
+        },
+        "description": "Click Members tab",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 2.0
+        },
+        "description": "Wait 2 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_click",
+        "params": {
+          "element": "Click Projects tab",
+          "ref": "[data-tab='projects']"
+        },
+        "description": "Click Projects tab",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 2.0
+        },
+        "description": "Wait 2 seconds",
+        "wait_after_seconds": 0.5
+      }
+    ]
+  },
+  "slide_04": {
+    "title": "Creating Training Tracks",
+    "description": "Create and organize training tracks",
+    "duration_seconds": 25,
+    "narration_file": "slide_04_narration.mp3",
+    "output_file": "frontend-legacy/static/demo/videos/slide_04_creating_training_tracks.mp4",
+    "mcp_commands": [
+      {
+        "tool": "mcp__playwright__browser_click",
+        "params": {
+          "element": "Click Tracks tab",
+          "ref": "[data-tab='tracks']"
+        },
+        "description": "Click Tracks tab",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 2.0
+        },
+        "description": "Wait 2 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_snapshot",
+        "params": {},
+        "description": "Capture tracks view",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_click",
+        "params": {
+          "element": "Click Create Track",
+          "ref": "button.create-track"
+        },
+        "description": "Click Create Track",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 1.0
+        },
+        "description": "Wait 1 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_type",
+        "params": {
+          "element": "Enter track name",
+          "ref": "#trackName",
+          "text": "Python Fundamentals",
+          "slowly": true
+        },
+        "description": "Enter track name",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_type",
+        "params": {
+          "element": "Enter description",
+          "ref": "#trackDescription",
+          "text": "Learn Python from basics to advanced",
+          "slowly": true
+        },
+        "description": "Enter description",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 2.0
+        },
+        "description": "Wait 2 seconds",
+        "wait_after_seconds": 0.5
+      }
+    ]
+  },
+  "slide_05": {
+    "title": "Instructor Dashboard",
+    "description": "Instructor view for course management",
+    "duration_seconds": 30,
+    "narration_file": "slide_05_narration.mp3",
+    "output_file": "frontend-legacy/static/demo/videos/slide_05_instructor_dashboard.mp4",
+    "mcp_commands": [
+      {
+        "tool": "mcp__playwright__browser_navigate",
+        "params": {
+          "url": "https://localhost:3000/login"
+        },
+        "description": "Go to login",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 1.0
+        },
+        "description": "Wait 1 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_type",
+        "params": {
+          "element": "Enter instructor email",
+          "ref": "#email",
+          "text": "instructor@demo.com",
+          "slowly": true
+        },
+        "description": "Enter instructor email",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_type",
+        "params": {
+          "element": "Enter password",
+          "ref": "#password",
+          "text": "demo123",
+          "slowly": true
+        },
+        "description": "Enter password",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_click",
+        "params": {
+          "element": "Click login",
+          "ref": "button[type='submit']"
+        },
+        "description": "Click login",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "text": "Instructor Dashboard"
+        },
+        "description": "Wait for text: Instructor Dashboard",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_snapshot",
+        "params": {},
+        "description": "Capture instructor dashboard",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 2.0
+        },
+        "description": "Wait 2 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_click",
+        "params": {
+          "element": "Click Courses tab",
+          "ref": "[data-tab='courses']"
+        },
+        "description": "Click Courses tab",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 2.0
+        },
+        "description": "Wait 2 seconds",
+        "wait_after_seconds": 0.5
+      }
+    ]
+  },
+  "slide_06": {
+    "title": "AI Course Generation",
+    "description": "Generate course content with AI assistance",
+    "duration_seconds": 35,
+    "narration_file": "slide_06_narration.mp3",
+    "output_file": "frontend-legacy/static/demo/videos/slide_06_ai_course_generation.mp4",
+    "mcp_commands": [
+      {
+        "tool": "mcp__playwright__browser_click",
+        "params": {
+          "element": "Click Content Generation tab",
+          "ref": "[data-tab='content-generation']"
+        },
+        "description": "Click Content Generation tab",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 2.0
+        },
+        "description": "Wait 2 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_snapshot",
+        "params": {},
+        "description": "Capture AI generation interface",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_type",
+        "params": {
+          "element": "Enter course title",
+          "ref": "#courseTitle",
+          "text": "Introduction to Machine Learning",
+          "slowly": true
+        },
+        "description": "Enter course title",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_type",
+        "params": {
+          "element": "Enter description",
+          "ref": "#courseDescription",
+          "text": "A comprehensive introduction to ML concepts",
+          "slowly": true
+        },
+        "description": "Enter description",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 1.0
+        },
+        "description": "Wait 1 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_click",
+        "params": {
+          "element": "Click Generate Outline",
+          "ref": "button.generate-outline"
+        },
+        "description": "Click Generate Outline",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 5.0
+        },
+        "description": "Wait 5 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_snapshot",
+        "params": {},
+        "description": "Capture generated outline",
+        "wait_after_seconds": 0.5
+      }
+    ]
+  },
+  "slide_07": {
+    "title": "Interactive Lab Environment",
+    "description": "Hands-on coding labs with AI assistance",
+    "duration_seconds": 40,
+    "narration_file": "slide_07_narration.mp3",
+    "output_file": "frontend-legacy/static/demo/videos/slide_07_interactive_lab_environment.mp4",
+    "mcp_commands": [
+      {
+        "tool": "mcp__playwright__browser_navigate",
+        "params": {
+          "url": "https://localhost:3000/lab/python-basics"
+        },
+        "description": "Open Python lab",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 3.0
+        },
+        "description": "Wait 3 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_snapshot",
+        "params": {},
+        "description": "Capture lab environment",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_click",
+        "params": {
+          "element": "Click code editor",
+          "ref": ".monaco-editor"
+        },
+        "description": "Click code editor",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_type",
+        "params": {
+          "element": "Type code",
+          "ref": ".monaco-editor",
+          "text": "print('Hello, World!')",
+          "slowly": true
+        },
+        "description": "Type code",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 1.0
+        },
+        "description": "Wait 1 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_click",
+        "params": {
+          "element": "Click Run",
+          "ref": "button.run-code"
+        },
+        "description": "Click Run",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 3.0
+        },
+        "description": "Wait 3 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_snapshot",
+        "params": {},
+        "description": "Capture code output",
+        "wait_after_seconds": 0.5
+      }
+    ]
+  },
+  "slide_08": {
+    "title": "Student Progress Analytics",
+    "description": "Track student progress and performance",
+    "duration_seconds": 30,
+    "narration_file": "slide_08_narration.mp3",
+    "output_file": "frontend-legacy/static/demo/videos/slide_08_student_progress_analytics.mp4",
+    "mcp_commands": [
+      {
+        "tool": "mcp__playwright__browser_navigate",
+        "params": {
+          "url": "https://localhost:3000/instructor/analytics"
+        },
+        "description": "Go to analytics",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 2.0
+        },
+        "description": "Wait 2 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_snapshot",
+        "params": {},
+        "description": "Capture analytics dashboard",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_hover",
+        "params": {
+          "element": "Hover over chart",
+          "ref": ".chart-container"
+        },
+        "description": "Hover over chart",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 2.0
+        },
+        "description": "Wait 2 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_click",
+        "params": {
+          "element": "Click Students view",
+          "ref": "[data-view='students']"
+        },
+        "description": "Click Students view",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 2.0
+        },
+        "description": "Wait 2 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_snapshot",
+        "params": {},
+        "description": "Capture student list",
+        "wait_after_seconds": 0.5
+      }
+    ]
+  },
+  "slide_09": {
+    "title": "Quiz and Assessment",
+    "description": "Create and manage quizzes",
+    "duration_seconds": 30,
+    "narration_file": "slide_09_narration.mp3",
+    "output_file": "frontend-legacy/static/demo/videos/slide_09_quiz_and_assessment.mp4",
+    "mcp_commands": [
+      {
+        "tool": "mcp__playwright__browser_navigate",
+        "params": {
+          "url": "https://localhost:3000/instructor/quizzes"
+        },
+        "description": "Go to quizzes",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 2.0
+        },
+        "description": "Wait 2 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_snapshot",
+        "params": {},
+        "description": "Capture quiz management",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_click",
+        "params": {
+          "element": "Click Create Quiz",
+          "ref": "button.create-quiz"
+        },
+        "description": "Click Create Quiz",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 1.0
+        },
+        "description": "Wait 1 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_type",
+        "params": {
+          "element": "Enter quiz title",
+          "ref": "#quizTitle",
+          "text": "Python Basics Quiz",
+          "slowly": true
+        },
+        "description": "Enter quiz title",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_click",
+        "params": {
+          "element": "Generate questions with AI",
+          "ref": "button.ai-generate-questions"
+        },
+        "description": "Generate questions with AI",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 4.0
+        },
+        "description": "Wait 4 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_snapshot",
+        "params": {},
+        "description": "Capture generated questions",
+        "wait_after_seconds": 0.5
+      }
+    ]
+  },
+  "slide_10": {
+    "title": "Student Learning Experience",
+    "description": "The student view of course content",
+    "duration_seconds": 35,
+    "narration_file": "slide_10_narration.mp3",
+    "output_file": "frontend-legacy/static/demo/videos/slide_10_student_learning_experience.mp4",
+    "mcp_commands": [
+      {
+        "tool": "mcp__playwright__browser_navigate",
+        "params": {
+          "url": "https://localhost:3000/login"
+        },
+        "description": "Go to login",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 1.0
+        },
+        "description": "Wait 1 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_type",
+        "params": {
+          "element": "Enter student email",
+          "ref": "#email",
+          "text": "student@demo.com",
+          "slowly": true
+        },
+        "description": "Enter student email",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_type",
+        "params": {
+          "element": "Enter password",
+          "ref": "#password",
+          "text": "demo123",
+          "slowly": true
+        },
+        "description": "Enter password",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_click",
+        "params": {
+          "element": "Click login",
+          "ref": "button[type='submit']"
+        },
+        "description": "Click login",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "text": "Student Dashboard"
+        },
+        "description": "Wait for text: Student Dashboard",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_snapshot",
+        "params": {},
+        "description": "Capture student dashboard",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_click",
+        "params": {
+          "element": "Click a course",
+          "ref": ".course-card"
+        },
+        "description": "Click a course",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_wait_for",
+        "params": {
+          "time": 2.0
+        },
+        "description": "Wait 2 seconds",
+        "wait_after_seconds": 0.5
+      },
+      {
+        "tool": "mcp__playwright__browser_snapshot",
+        "params": {},
+        "description": "Capture course content",
+        "wait_after_seconds": 0.5
+      }
+    ]
+  }
+}
