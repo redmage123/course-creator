@@ -93,7 +93,7 @@ Container: Dependency injection container for service management
 Exceptions: Custom exception types for domain-specific errors
 """
 from routes import setup_auth_routes, setup_user_routes, setup_session_routes, setup_admin_routes, set_container
-from middleware import setup_cors_middleware, setup_logging_middleware, setup_security_headers
+from middleware import setup_cors_middleware, setup_logging_middleware, setup_security_headers, setup_rate_limiting
 from error_handlers import setup_exception_handlers
 from user_management.infrastructure.container import UserManagementContainer
 from exceptions import UserManagementException
@@ -299,11 +299,7 @@ class ApplicationFactory:
             )
         
         # Rate limiting middleware (second for security)
-        try:
-            from middleware.rate_limiting import setup_rate_limiting
-            setup_rate_limiting(app, config)
-        except ImportError:
-            logging.warning("Rate limiting middleware not available")
+        setup_rate_limiting(app, config)
         
         # Security headers middleware (third for security)
         setup_security_headers(app, config)

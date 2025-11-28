@@ -11,6 +11,7 @@
  */
 
 import { apiClient } from './apiClient';
+import { tokenManager } from './tokenManager';
 import type { UserRole } from '@store/slices/authSlice';
 
 export interface LoginCredentials {
@@ -74,17 +75,33 @@ class AuthService {
    */
   async login(credentials: LoginCredentials): Promise<LoginResponse> {
     try {
-      const response = await apiClient.post<LoginResponse>('/auth/login', credentials);
+      // Backend returns: { access_token, token_type, expires_in, user }
+      // Frontend expects: { token, refreshToken, user, expiresIn }
+      const backendResponse: any = await apiClient.post('/auth/login', credentials);
 
       // Calculate token expiration timestamp
-      const expiresAt = Date.now() + response.expiresIn * 1000;
+      const expiresAt = Date.now() + backendResponse.expires_in * 1000;
 
+      // Transform backend response to match frontend LoginResponse interface
       return {
-        ...response,
+        token: backendResponse.access_token,
+        refreshToken: backendResponse.refresh_token,
+        user: {
+          id: backendResponse.user.id,
+          username: backendResponse.user.username,
+          email: backendResponse.user.email,
+          role: backendResponse.user.role,
+          organizationId: backendResponse.user.organization_id,
+        },
         expiresIn: expiresAt,
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('[AuthService] Login failed:', error);
+      // Handle rate limiting (429 Too Many Requests)
+      if (error?.status === 429 || error?.response?.status === 429) {
+        throw new Error('Too many login attempts. Please try again later.');
+      }
+      // Handle other errors
       throw new Error('Invalid credentials. Please try again.');
     }
   }
@@ -103,9 +120,9 @@ class AuthService {
       console.error('[AuthService] Logout failed:', error);
       // Continue with local logout even if API call fails
     } finally {
-      // Clear all auth data from localStorage
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('refreshToken');
+      // Clear all auth data from memory
+      tokenManager.clearTokens();
+      // Clear non-token data from localStorage (for role-based routing only)
       localStorage.removeItem('userRole');
       localStorage.removeItem('userId');
       localStorage.removeItem('organizationId');
@@ -204,6 +221,25 @@ class AuthService {
   }
 
   /**
+   * Change password for authenticated user
+   *
+   * BUSINESS LOGIC:
+   * Allows authenticated users to change their password by providing
+   * current password for verification and new password.
+   * Distinct from password reset flow (which uses email token).
+   *
+   * @param data - Current and new password
+   */
+  async changePassword(data: { current_password: string; new_password: string }): Promise<void> {
+    try {
+      await apiClient.post('/auth/change-password', data);
+    } catch (error) {
+      console.error('[AuthService] Password change failed:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get current user profile
    *
    * BUSINESS LOGIC:
@@ -228,8 +264,7 @@ class AuthService {
    * @returns True if valid token exists
    */
   isAuthenticated(): boolean {
-    const token = localStorage.getItem('authToken');
-    return !!token;
+    return tokenManager.hasToken();
   }
 
   /**
