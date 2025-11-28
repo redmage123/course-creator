@@ -187,8 +187,9 @@ class Course:
     tags: List[str] = field(default_factory=list)
 
     # Optional organizational context (v3.3.1)
+    # Note: project_id is NOT a database column - projects are managed separately
+    # Courses belong to tracks, tracks belong to projects
     organization_id: Optional[str] = None
-    project_id: Optional[str] = None
     track_id: Optional[str] = None
     location_id: Optional[str] = None
     

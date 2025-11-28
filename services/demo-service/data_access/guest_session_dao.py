@@ -129,11 +129,21 @@ class GuestSessionDAO:
         """
         self.logger = logging.getLogger(__name__)
 
-        # Get secret key for pseudonymization (from environment or default)
+        # Get secret key for pseudonymization (from environment - SECURITY: no default allowed)
         if secret_key:
             self.secret_key = secret_key
         else:
-            secret_key_str = os.getenv('GUEST_SESSION_SECRET_KEY', 'test_secret_key_12345')
+            secret_key_str = os.getenv('GUEST_SESSION_SECRET_KEY')
+            if not secret_key_str:
+                raise ValueError(
+                    "SECURITY ERROR: GUEST_SESSION_SECRET_KEY environment variable must be set. "
+                    "No default value is allowed for security reasons."
+                )
+            if len(secret_key_str) < 32:
+                raise ValueError(
+                    f"SECURITY ERROR: GUEST_SESSION_SECRET_KEY must be at least 32 characters. "
+                    f"Current length: {len(secret_key_str)}"
+                )
             self.secret_key = secret_key_str.encode()
 
         # Use shared in-memory storage for unit testing (shared across DAO instances)

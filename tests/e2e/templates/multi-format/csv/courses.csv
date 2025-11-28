@@ -1,0 +1,7 @@
+track,title,description,difficulty,duration_weeks
+Frontend Development,React Fundamentals,"Learn React basics including components, props, and state",beginner,2
+Frontend Development,Advanced React Patterns,"Master hooks, context, and performance optimization",intermediate,2
+Frontend Development,State Management with Redux,Implement complex state management in React apps,intermediate,2
+Backend Development,Node.js Essentials,Build server-side applications with Node.js,beginner,2
+Backend Development,Express.js and REST APIs,Create RESTful APIs with Express framework,intermediate,2
+Backend Development,Database Integration,Work with PostgreSQL and MongoDB,intermediate,2

@@ -101,6 +101,10 @@ import hydra
 from omegaconf import DictConfig
 import uvicorn
 
+# JWT Authentication - Import from auth module
+sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+from auth import get_current_user_id as get_authenticated_user_id
+
 # Add shared directory to path for organization middleware
 sys.path.append('/app/shared')
 try:
@@ -377,12 +381,14 @@ def create_app(config: DictConfig = None) -> FastAPI:
             config=config
         )
     
-    # CORS middleware
+    # CORS middleware - Security: Use environment-configured origins
+    # Never use wildcard (*) in production - enables CSRF attacks
+    CORS_ORIGINS = os.getenv('CORS_ORIGINS', 'https://localhost:3000,https://localhost:3001').split(',')
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=[origin.strip() for origin in CORS_ORIGINS],
         allow_credentials=True,
-        allow_methods=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
         allow_headers=["*"],
     )
     
@@ -523,40 +529,8 @@ def get_content_export_service() -> IContentExportService:
         raise HTTPException(status_code=500, detail="Service not initialized")
     return container.get_content_export_service()
 
-async def get_current_user() -> str:
-    """
-    Authentication dependency for educational content access control.
-    
-    Provides user identification for educational content operations,
-    ensuring proper access control and audit trails for educational materials.
-    
-    Educational Context:
-    - Supports role-based access to educational content (instructors, students, admins)
-    - Enables content ownership tracking for academic integrity
-    - Facilitates collaboration controls for course development
-    - Supports institutional content sharing and access policies
-    
-    Security Considerations:
-    - Validates JWT tokens for secure educational content access
-    - Maintains session security for sensitive educational materials
-    - Supports fine-grained permissions for different content types
-    - Enables audit logging for educational content access patterns
-    
-    Returns:
-        str: Current authenticated user identifier
-        
-    Future Implementation:
-    - Will integrate with comprehensive JWT token validation
-    - Will support role-based educational content access control
-    - Will enable institutional authentication integration
-    
-    Note:
-        Currently simplified for development - will be enhanced with
-        full authentication and authorization for production educational environments.
-    """
-    """Get current user (simplified for now)"""
-    # In a real implementation, this would validate JWT token
-    return "current_user_id"
+# JWT-authenticated user ID extraction (replaced deprecated mock)
+get_current_user = get_authenticated_user_id
 
 # Health check endpoint
 @app.get("/health")

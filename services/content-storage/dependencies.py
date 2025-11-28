@@ -199,12 +199,14 @@ async def get_user_service_client() -> httpx.AsyncClient:
         when associating content with creators, validating ownership, and audit logging.
 
     Security Note:
-        SSL verification is disabled (verify=False) for development convenience with
-        self-signed certificates. Production deployments should use valid SSL certificates
-        and enable verification.
+        SSL verification is environment-aware:
+        - Development/staging: Disabled for self-signed certificates
+        - Production: Enabled to prevent MITM attacks
     """
-    # Disable SSL verification for self-signed certificates in development
-    async with httpx.AsyncClient(base_url=settings.USER_SERVICE_URL, verify=False) as client:
+    # Environment-aware SSL verification (enabled in production)
+    import os
+    verify_ssl = os.getenv("ENVIRONMENT", "dev").lower() == "prod"
+    async with httpx.AsyncClient(base_url=settings.USER_SERVICE_URL, verify=verify_ssl) as client:
         yield client
 
 async def get_notification_service_client() -> httpx.AsyncClient:
@@ -223,12 +225,14 @@ async def get_notification_service_client() -> httpx.AsyncClient:
         notify students when new content is available.
 
     Security Note:
-        SSL verification is disabled (verify=False) for development convenience with
-        self-signed certificates. Production deployments should use valid SSL certificates
-        and enable verification.
+        SSL verification is environment-aware:
+        - Development/staging: Disabled for self-signed certificates
+        - Production: Enabled to prevent MITM attacks
     """
-    # Disable SSL verification for self-signed certificates in development
-    async with httpx.AsyncClient(base_url=settings.NOTIFICATION_SERVICE_URL, verify=False) as client:
+    # Environment-aware SSL verification (enabled in production)
+    import os
+    verify_ssl = os.getenv("ENVIRONMENT", "dev").lower() == "prod"
+    async with httpx.AsyncClient(base_url=settings.NOTIFICATION_SERVICE_URL, verify=verify_ssl) as client:
         yield client
 
 # Error handling utilities

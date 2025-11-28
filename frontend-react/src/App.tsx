@@ -22,17 +22,30 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Provider } from 'react-redux';
 import { store } from '@store/index';
 import { Spinner } from './components/atoms/Spinner';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 // Eager-loaded pages (small, needed immediately)
 import { Homepage } from './pages/Homepage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { ComingSoon } from './pages/ComingSoon';
 
+// Global AI Assistant Widget
+import { GlobalAIAssistant } from './components/organisms/GlobalAIAssistant';
+
 // Lazy-loaded Auth Pages
 const LoginPage = lazy(() => import('./features/auth/Login').then(m => ({ default: m.LoginPage })));
 const RegisterPage = lazy(() => import('./features/auth/Register').then(m => ({ default: m.RegisterPage })));
 const ForgotPasswordPage = lazy(() => import('./features/auth/ForgotPassword').then(m => ({ default: m.ForgotPasswordPage })));
 const ResetPasswordPage = lazy(() => import('./features/auth/ResetPassword').then(m => ({ default: m.ResetPasswordPage })));
+
+// Lazy-loaded Organization Registration (public self-service)
+const OrganizationRegistration = lazy(() => import('./pages/OrganizationRegistration').then(m => ({ default: m.OrganizationRegistration })));
+
+// Lazy-loaded Student Certificates
+const StudentCertificates = lazy(() => import('./pages/StudentCertificates').then(m => ({ default: m.StudentCertificates })));
+
+// Lazy-loaded Password Change
+const PasswordChange = lazy(() => import('./pages/PasswordChange').then(m => ({ default: m.PasswordChange })));
 
 // Lazy-loaded Dashboard Pages
 const StudentDashboard = lazy(() => import('./features/dashboard/pages/StudentDashboard').then(m => ({ default: m.StudentDashboard })));
@@ -67,8 +80,26 @@ const CreateOrganization = lazy(() => import('./pages/CreateOrganization').then(
 const ManageUsers = lazy(() => import('./pages/ManageUsers').then(m => ({ default: m.ManageUsers })));
 const SystemSettings = lazy(() => import('./pages/SystemSettings').then(m => ({ default: m.SystemSettings })));
 
+// Lazy-loaded Organization Members and Tracks Pages
+const MembersPage = lazy(() => import('./features/members/pages/MembersPage').then(m => ({ default: m.MembersPage })));
+const TracksPage = lazy(() => import('./features/tracks/pages/TracksPage').then(m => ({ default: m.TracksPage })));
+
+// Lazy-loaded Course Pages
+const CourseCreatePage = lazy(() => import('./features/courses/pages/CourseCreatePage').then(m => ({ default: m.CourseCreatePage })));
+
+// Lazy-loaded Import, Quiz, and Resources Pages
+const ImportTemplatePage = lazy(() => import('./pages/ImportTemplatePage').then(m => ({ default: m.ImportTemplatePage })));
+const QuizListPage = lazy(() => import('./pages/QuizListPage').then(m => ({ default: m.QuizListPage })));
+const ResourcesPage = lazy(() => import('./pages/ResourcesPage').then(m => ({ default: m.ResourcesPage })));
+
+// Lazy-loaded Demo Page
+const DemoPage = lazy(() => import('./features/demo/pages/DemoPage').then(m => ({ default: m.DemoPage })));
+
 // Protected Route Wrapper (small, needed for routing logic)
 import { ProtectedRoute } from './components/routing/ProtectedRoute';
+
+// Dashboard Redirect (role-based navigation)
+import { DashboardRedirect } from './components/routing/DashboardRedirect';
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -110,11 +141,13 @@ const RouteLoadingFallback = () => (
  */
 function App() {
   return (
-    <Provider store={store}>
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <Suspense fallback={<RouteLoadingFallback />}>
-            <Routes>
+    <ErrorBoundary>
+      <Provider store={store}>
+        <QueryClientProvider client={queryClient}>
+          <BrowserRouter>
+            <ErrorBoundary>
+              <Suspense fallback={<RouteLoadingFallback />}>
+                <Routes>
             {/* ============================================================
              * PUBLIC ROUTES (No Authentication Required)
              * ============================================================ */}
@@ -124,6 +157,12 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
 
+            {/* Organization Registration - Public self-service */}
+            <Route path="/organization/register" element={<OrganizationRegistration />} />
+
+            {/* Demo Page - Interactive platform walkthrough */}
+            <Route path="/demo" element={<DemoPage />} />
+
             {/* ============================================================
              * PROTECTED ROUTES - ROLE-BASED DASHBOARDS
              * ============================================================ */}
@@ -132,9 +171,11 @@ function App() {
             <Route
               path="/dashboard/student"
               element={
-                <ProtectedRoute requiredRoles={['student']}>
-                  <StudentDashboard />
-                </ProtectedRoute>
+                <ErrorBoundary>
+                  <ProtectedRoute requiredRoles={['student']}>
+                    <StudentDashboard />
+                  </ProtectedRoute>
+                </ErrorBoundary>
               }
             />
 
@@ -142,9 +183,11 @@ function App() {
             <Route
               path="/dashboard/instructor"
               element={
-                <ProtectedRoute requiredRoles={['instructor']}>
-                  <InstructorDashboard />
-                </ProtectedRoute>
+                <ErrorBoundary>
+                  <ProtectedRoute requiredRoles={['instructor']}>
+                    <InstructorDashboard />
+                  </ProtectedRoute>
+                </ErrorBoundary>
               }
             />
 
@@ -152,9 +195,11 @@ function App() {
             <Route
               path="/dashboard/org-admin"
               element={
-                <ProtectedRoute requiredRoles={['org_admin']}>
-                  <OrgAdminDashboard />
-                </ProtectedRoute>
+                <ErrorBoundary>
+                  <ProtectedRoute requiredRoles={['organization_admin']}>
+                    <OrgAdminDashboard />
+                  </ProtectedRoute>
+                </ErrorBoundary>
               }
             />
 
@@ -162,9 +207,11 @@ function App() {
             <Route
               path="/dashboard/site-admin"
               element={
-                <ProtectedRoute requiredRoles={['site_admin']}>
-                  <SiteAdminDashboard />
-                </ProtectedRoute>
+                <ErrorBoundary>
+                  <ProtectedRoute requiredRoles={['site_admin']}>
+                    <SiteAdminDashboard />
+                  </ProtectedRoute>
+                </ErrorBoundary>
               }
             />
 
@@ -173,12 +220,7 @@ function App() {
               path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <ComingSoon
-                    title="Dashboard"
-                    description="Please use your role-specific dashboard link to access your personalized dashboard."
-                    backLink="/"
-                    backLinkText="Back to Homepage"
-                  />
+                  <DashboardRedirect />
                 </ProtectedRoute>
               }
             />
@@ -212,9 +254,11 @@ function App() {
             <Route
               path="/labs/:labId/course/:courseId"
               element={
-                <ProtectedRoute requiredRoles={['student']}>
-                  <LabEnvironment />
-                </ProtectedRoute>
+                <ErrorBoundary>
+                  <ProtectedRoute requiredRoles={['student']}>
+                    <LabEnvironment />
+                  </ProtectedRoute>
+                </ErrorBoundary>
               }
             />
 
@@ -238,6 +282,46 @@ function App() {
               }
             />
 
+            {/* Quiz List - All student quizzes */}
+            <Route
+              path="/quizzes"
+              element={
+                <ProtectedRoute requiredRoles={['student']}>
+                  <QuizListPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Quiz History */}
+            <Route
+              path="/quizzes/history"
+              element={
+                <ProtectedRoute requiredRoles={['student']}>
+                  <QuizListPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Learning Resources */}
+            <Route
+              path="/resources"
+              element={
+                <ProtectedRoute requiredRoles={['student']}>
+                  <ResourcesPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Download Materials */}
+            <Route
+              path="/resources/download"
+              element={
+                <ProtectedRoute requiredRoles={['student']}>
+                  <ResourcesPage />
+                </ProtectedRoute>
+              }
+            />
+
             {/* Progress Tracking / Analytics */}
             <Route
               path="/progress"
@@ -254,6 +338,16 @@ function App() {
               element={
                 <ProtectedRoute requiredRoles={['student']}>
                   <AnalyticsDashboard viewType="student" />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Student Certificates */}
+            <Route
+              path="/certificates"
+              element={
+                <ProtectedRoute requiredRoles={['student']}>
+                  <StudentCertificates />
                 </ProtectedRoute>
               }
             />
@@ -336,8 +430,30 @@ function App() {
             <Route
               path="/instructor/content-generator"
               element={
+                <ErrorBoundary>
+                  <ProtectedRoute requiredRoles={['instructor']}>
+                    <ContentGenerationPage />
+                  </ProtectedRoute>
+                </ErrorBoundary>
+              }
+            />
+
+            {/* Instructor Bulk Enrollment */}
+            <Route
+              path="/instructor/students/bulk-enroll"
+              element={
                 <ProtectedRoute requiredRoles={['instructor']}>
-                  <ContentGenerationPage />
+                  <BulkEnrollStudents />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Instructor Lab Creation */}
+            <Route
+              path="/instructor/labs/create"
+              element={
+                <ProtectedRoute requiredRoles={['instructor']}>
+                  <LabEnvironmentsList />
                 </ProtectedRoute>
               }
             />
@@ -351,7 +467,7 @@ function App() {
             <Route
               path="/organization/trainers"
               element={
-                <ProtectedRoute requiredRoles={['org_admin']}>
+                <ProtectedRoute requiredRoles={['organization_admin']}>
                   <ManageTrainers />
                 </ProtectedRoute>
               }
@@ -361,7 +477,7 @@ function App() {
             <Route
               path="/organization/students/enroll"
               element={
-                <ProtectedRoute requiredRoles={['org_admin']}>
+                <ProtectedRoute requiredRoles={['organization_admin']}>
                   <BulkEnrollStudents />
                 </ProtectedRoute>
               }
@@ -371,8 +487,58 @@ function App() {
             <Route
               path="/organization/programs"
               element={
-                <ProtectedRoute requiredRoles={['org_admin']}>
+                <ProtectedRoute requiredRoles={['organization_admin']}>
                   <TrainingProgramListPage context="organization" />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Create Training Program (Organization Admin) */}
+            <Route
+              path="/organization/programs/create"
+              element={
+                <ProtectedRoute requiredRoles={['organization_admin']}>
+                  <CreateEditTrainingProgramPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Edit Training Program (Organization Admin) */}
+            <Route
+              path="/organization/programs/:programId/edit"
+              element={
+                <ProtectedRoute requiredRoles={['organization_admin']}>
+                  <CreateEditTrainingProgramPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Organization Members Management */}
+            <Route
+              path="/organization/members"
+              element={
+                <ProtectedRoute requiredRoles={['organization_admin']}>
+                  <MembersPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Organization Tracks Management */}
+            <Route
+              path="/organization/tracks"
+              element={
+                <ProtectedRoute requiredRoles={['organization_admin']}>
+                  <TracksPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Course Creation (Organization Admin & Instructor) */}
+            <Route
+              path="/organization/courses/create"
+              element={
+                <ProtectedRoute requiredRoles={['organization_admin', 'instructor']}>
+                  <CourseCreatePage />
                 </ProtectedRoute>
               }
             />
@@ -381,7 +547,7 @@ function App() {
             <Route
               path="/organization/analytics"
               element={
-                <ProtectedRoute requiredRoles={['org_admin']}>
+                <ProtectedRoute requiredRoles={['organization_admin']}>
                   <AnalyticsDashboard viewType="course" />
                 </ProtectedRoute>
               }
@@ -391,7 +557,7 @@ function App() {
             <Route
               path="/organization/courses/:courseId/analytics"
               element={
-                <ProtectedRoute requiredRoles={['org_admin']}>
+                <ProtectedRoute requiredRoles={['organization_admin']}>
                   <AnalyticsDashboard viewType="course" />
                 </ProtectedRoute>
               }
@@ -401,8 +567,38 @@ function App() {
             <Route
               path="/organization/settings"
               element={
-                <ProtectedRoute requiredRoles={['org_admin']}>
+                <ProtectedRoute requiredRoles={['organization_admin']}>
                   <OrganizationSettings />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Import Organization Template */}
+            <Route
+              path="/organization/import"
+              element={
+                <ProtectedRoute requiredRoles={['organization_admin']}>
+                  <ImportTemplatePage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* AI Auto Create Project */}
+            <Route
+              path="/organization/ai-create"
+              element={
+                <ProtectedRoute requiredRoles={['organization_admin']}>
+                  <ImportTemplatePage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Download Organization Template */}
+            <Route
+              path="/organization/templates/download"
+              element={
+                <ProtectedRoute requiredRoles={['organization_admin']}>
+                  <ImportTemplatePage />
                 </ProtectedRoute>
               }
             />
@@ -462,6 +658,20 @@ function App() {
             />
 
             {/* ============================================================
+             * PROTECTED ROUTES - USER SETTINGS (ALL ROLES)
+             * ============================================================ */}
+
+            {/* Password Change */}
+            <Route
+              path="/settings/password"
+              element={
+                <ProtectedRoute>
+                  <PasswordChange />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* ============================================================
              * ERROR PAGES
              * ============================================================ */}
 
@@ -474,10 +684,14 @@ function App() {
             {/* 404 Not Found - Catch-all route */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </QueryClientProvider>
-    </Provider>
+              </Suspense>
+              {/* Global AI Assistant - Available on all pages */}
+              <GlobalAIAssistant />
+            </ErrorBoundary>
+          </BrowserRouter>
+        </QueryClientProvider>
+      </Provider>
+    </ErrorBoundary>
   );
 }
 

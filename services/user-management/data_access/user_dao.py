@@ -98,6 +98,7 @@ class UserManagementDAO:
             role=UserRole(row['role']),
             status=UserStatus(row.get('status', 'active')),
             organization=row.get('organization'),
+            organization_id=str(row['organization_id']) if row.get('organization_id') else None,
             phone=row.get('phone'),
             timezone=row.get('timezone'),
             language=row.get('language', 'en'),
@@ -191,10 +192,10 @@ class UserManagementDAO:
                     # Use custom ID in INSERT
                     user_row = await conn.fetchrow(
                         """INSERT INTO course_creator.users (
-                            id, email, username, full_name, hashed_password, role, 
-                            organization, status, created_at, updated_at
-                        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
-                        RETURNING id, email, username, full_name, role, organization, status, created_at, updated_at""",
+                            id, email, username, full_name, hashed_password, role,
+                            organization, organization_id, status, created_at, updated_at
+                        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                        RETURNING id, email, username, full_name, role, organization, organization_id, status, created_at, updated_at""",
                         custom_id,
                         user_data['email'],
                         user_data['username'],
@@ -202,6 +203,7 @@ class UserManagementDAO:
                         user_data['hashed_password'],
                         user_data.get('role', 'student'),
                         user_data.get('organization'),
+                        user_data.get('organization_id'),
                         user_data.get('status', 'active'),
                         datetime.utcnow(),
                         datetime.utcnow()
@@ -210,16 +212,17 @@ class UserManagementDAO:
                     # Use auto-generated ID
                     user_row = await conn.fetchrow(
                         """INSERT INTO course_creator.users (
-                            email, username, full_name, hashed_password, role, 
-                            organization, status, created_at, updated_at
-                        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
-                        RETURNING id, email, username, full_name, role, organization, status, created_at, updated_at""",
+                            email, username, full_name, hashed_password, role,
+                            organization, organization_id, status, created_at, updated_at
+                        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                        RETURNING id, email, username, full_name, role, organization, organization_id, status, created_at, updated_at""",
                         user_data['email'],
                         user_data['username'],
                         user_data['full_name'],
                         user_data['hashed_password'],
                         user_data.get('role', 'student'),
                         user_data.get('organization'),
+                        user_data.get('organization_id'),
                         user_data.get('status', 'active'),
                         datetime.utcnow(),
                         datetime.utcnow()
@@ -270,8 +273,8 @@ class UserManagementDAO:
         try:
             async with self.db_pool.acquire() as conn:
                 user = await conn.fetchrow(
-                    """SELECT id, email, username, full_name, hashed_password, role, 
-                              organization, status, created_at, updated_at, last_login
+                    """SELECT id, email, username, full_name, hashed_password, role,
+                              organization, organization_id, status, created_at, updated_at, last_login
                        FROM course_creator.users WHERE email = $1""",
                     email
                 )
@@ -331,7 +334,7 @@ class UserManagementDAO:
             async with self.db_pool.acquire() as conn:
                 user = await conn.fetchrow(
                     """SELECT id, email, username, full_name, hashed_password, role,
-                              organization, status, created_at, updated_at, last_login
+                              organization, organization_id, status, created_at, updated_at, last_login
                        FROM course_creator.users WHERE username = $1""",
                     username
                 )
@@ -364,8 +367,8 @@ class UserManagementDAO:
         try:
             async with self.db_pool.acquire() as conn:
                 user = await conn.fetchrow(
-                    """SELECT id, email, username, full_name, hashed_password, role, 
-                              organization, status, created_at, updated_at, last_login
+                    """SELECT id, email, username, full_name, hashed_password, role,
+                              organization, organization_id, status, created_at, updated_at, last_login
                        FROM course_creator.users WHERE id = $1""",
                     user_id
                 )
@@ -1000,13 +1003,15 @@ class UserManagementDAO:
         try:
             async with self.db_pool.acquire() as conn:
                 result = await conn.execute(
-                    """UPDATE course_creator.users 
-                       SET email = $2, username = $3, full_name = $4, role = $5, 
-                           organization = $6, status = $7, updated_at = CURRENT_TIMESTAMP
+                    """UPDATE course_creator.users
+                       SET email = $2, username = $3, full_name = $4, role = $5,
+                           organization = $6, organization_id = $7, status = $8,
+                           updated_at = CURRENT_TIMESTAMP
                        WHERE id = $1""",
                     user_data['id'], user_data.get('email'), user_data.get('username'),
-                    user_data.get('full_name'), user_data.get('role'), 
-                    user_data.get('organization'), user_data.get('status')
+                    user_data.get('full_name'), user_data.get('role'),
+                    user_data.get('organization'), user_data.get('organization_id'),
+                    user_data.get('status')
                 )
                 return user_data
         except Exception as e:

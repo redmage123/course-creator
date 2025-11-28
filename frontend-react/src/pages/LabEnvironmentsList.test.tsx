@@ -118,8 +118,9 @@ describe('LabEnvironmentsList Component', () => {
         },
       });
 
-      expect(screen.getByText('completed')).toBeInTheDocument();
-      expect(screen.getByText('in-progress')).toBeInTheDocument();
+      // Component displays "completed" and "In Progress" (capitalized for in-progress)
+      expect(screen.getAllByText('completed').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('In Progress').length).toBeGreaterThan(0);
     });
   });
 
@@ -208,7 +209,7 @@ describe('LabEnvironmentsList Component', () => {
         },
       });
 
-      const difficultySelect = screen.getByDisplayValue('All Levels');
+      const difficultySelect = screen.getByDisplayValue('All Difficulties');
       await user.selectOptions(difficultySelect, 'intermediate');
 
       await waitFor(() => {
@@ -238,7 +239,7 @@ describe('LabEnvironmentsList Component', () => {
         },
       });
 
-      const launchButtons = screen.getAllByText(/Launch Lab|Continue Lab/i);
+      const launchButtons = screen.getAllByText(/Start Lab|Resume Lab/i);
       expect(launchButtons.length).toBeGreaterThan(0);
     });
 
@@ -262,7 +263,7 @@ describe('LabEnvironmentsList Component', () => {
         },
       });
 
-      expect(screen.getByText('Continue Lab')).toBeInTheDocument();
+      expect(screen.getByText(/Resume Lab/i)).toBeInTheDocument();
     });
 
     it('displays completed indicator for finished labs', () => {
@@ -312,7 +313,7 @@ describe('LabEnvironmentsList Component', () => {
       });
 
       expect(screen.getByText('60%')).toBeInTheDocument();
-      expect(screen.getByText('100%')).toBeInTheDocument();
+      expect(screen.getAllByText('100%').length).toBeGreaterThan(0);
     });
   });
 

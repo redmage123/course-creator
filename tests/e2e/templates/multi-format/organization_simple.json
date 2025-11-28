@@ -1,0 +1,207 @@
+{
+  "_comment": "Simple Organization Template - JSON Format",
+  "_description": "AI Assistant can parse this format to create organizations",
+  "template_type": "organization",
+  "version": "1.0",
+  "description": "Simple organization template with basic course structure",
+  "organization": {
+    "name": "TechEd Academy",
+    "slug": "teched-academy",
+    "description": "Modern technology education academy focusing on software development",
+    "domain": "teched-academy.edu",
+    "industry": "Education & Technology",
+    "size": "small",
+    "address": {
+      "street": "456 Innovation Drive",
+      "city": "San Francisco",
+      "state": "CA",
+      "postal_code": "94105",
+      "country": "US"
+    },
+    "contact": {
+      "phone": "+1-415-555-0199",
+      "email": "contact@teched-academy.edu",
+      "website": "https://teched-academy.edu"
+    },
+    "admin": {
+      "full_name": "Dr. Emily Chen",
+      "username": "echen",
+      "email": "admin@teched-academy.edu",
+      "password": "AdminPass123!",
+      "first_name": "Emily",
+      "last_name": "Chen",
+      "role": "organization_admin"
+    },
+    "settings": {
+      "timezone": "America/Los_Angeles",
+      "language": "en",
+      "currency": "USD",
+      "date_format": "MM/DD/YYYY"
+    }
+  },
+  "programs": [
+    {
+      "name": "Web Development Bootcamp 2025",
+      "description": "Intensive 12-week program covering modern web development",
+      "category": "Software Engineering",
+      "difficulty": "intermediate",
+      "duration": 12,
+      "duration_unit": "weeks",
+      "price": 0,
+      "is_published": false
+    }
+  ],
+  "tracks": [
+    {
+      "name": "Frontend Development",
+      "description": "Master modern frontend technologies",
+      "target_audience": [
+        "career_changers",
+        "junior_developers"
+      ],
+      "prerequisites": [
+        "Basic HTML/CSS knowledge",
+        "JavaScript fundamentals"
+      ],
+      "learning_objectives": [
+        "Build responsive web applications with React",
+        "Implement state management with Redux",
+        "Create accessible and performant UIs"
+      ],
+      "duration_weeks": 6,
+      "difficulty": "beginner",
+      "max_students": 30
+    },
+    {
+      "name": "Backend Development",
+      "description": "Server-side development with Node.js",
+      "target_audience": [
+        "frontend_developers",
+        "junior_developers"
+      ],
+      "prerequisites": [
+        "JavaScript proficiency",
+        "Understanding of HTTP"
+      ],
+      "learning_objectives": [
+        "Build RESTful APIs with Express",
+        "Work with databases (SQL and NoSQL)",
+        "Implement authentication and authorization"
+      ],
+      "duration_weeks": 6,
+      "difficulty": "intermediate",
+      "max_students": 30
+    }
+  ],
+  "courses": {
+    "Frontend Development": [
+      {
+        "title": "React Fundamentals",
+        "description": "Learn React basics including components, props, and state",
+        "difficulty": "beginner",
+        "duration_weeks": 2
+      },
+      {
+        "title": "Advanced React Patterns",
+        "description": "Master hooks, context, and performance optimization",
+        "difficulty": "intermediate",
+        "duration_weeks": 2
+      },
+      {
+        "title": "State Management with Redux",
+        "description": "Implement complex state management in React apps",
+        "difficulty": "intermediate",
+        "duration_weeks": 2
+      }
+    ],
+    "Backend Development": [
+      {
+        "title": "Node.js Essentials",
+        "description": "Build server-side applications with Node.js",
+        "difficulty": "beginner",
+        "duration_weeks": 2
+      },
+      {
+        "title": "Express.js and REST APIs",
+        "description": "Create RESTful APIs with Express framework",
+        "difficulty": "intermediate",
+        "duration_weeks": 2
+      },
+      {
+        "title": "Database Integration",
+        "description": "Work with PostgreSQL and MongoDB",
+        "difficulty": "intermediate",
+        "duration_weeks": 2
+      }
+    ]
+  },
+  "instructors": [
+    {
+      "first_name": "Alex",
+      "last_name": "Rodriguez",
+      "email": "alex.rodriguez@teched-academy.edu",
+      "full_name": "Alex Rodriguez",
+      "username": "arodriguez",
+      "password": "InstructorPass123!",
+      "specialties": [
+        "React",
+        "JavaScript"
+      ],
+      "bio": "Senior frontend developer with 8 years of experience"
+    },
+    {
+      "first_name": "Maya",
+      "last_name": "Patel",
+      "email": "maya.patel@teched-academy.edu",
+      "full_name": "Maya Patel",
+      "username": "mpatel",
+      "password": "InstructorPass123!",
+      "specialties": [
+        "Node.js",
+        "Databases"
+      ],
+      "bio": "Backend engineer specializing in scalable systems"
+    }
+  ],
+  "students": [
+    {
+      "first_name": "Jordan",
+      "last_name": "Smith",
+      "email": "jordan.smith@students.teched-academy.edu",
+      "full_name": "Jordan Smith",
+      "username": "jsmith",
+      "password": "StudentPass123!",
+      "background": "Career changer from marketing",
+      "goals": [
+        "Become a frontend developer",
+        "Build portfolio projects"
+      ]
+    },
+    {
+      "first_name": "Taylor",
+      "last_name": "Johnson",
+      "email": "taylor.johnson@students.teched-academy.edu",
+      "full_name": "Taylor Johnson",
+      "username": "tjohnson",
+      "password": "StudentPass123!",
+      "background": "Computer science graduate",
+      "goals": [
+        "Master full-stack development",
+        "Get hired at a tech company"
+      ]
+    },
+    {
+      "first_name": "Casey",
+      "last_name": "Williams",
+      "email": "casey.williams@students.teched-academy.edu",
+      "full_name": "Casey Williams",
+      "username": "cwilliams",
+      "password": "StudentPass123!",
+      "background": "Self-taught developer",
+      "goals": [
+        "Formalize web development skills",
+        "Learn best practices"
+      ]
+    }
+  ]
+}

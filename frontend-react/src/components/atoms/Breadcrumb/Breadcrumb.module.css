@@ -1,0 +1,256 @@
+/**
+ * Breadcrumb Component Styles
+ *
+ * BUSINESS CONTEXT:
+ * Styles for the navigation breadcrumb component. Provides clear
+ * visual hierarchy for page location within the application.
+ *
+ * DESIGN PRINCIPLES:
+ * - Muted colors for non-interactive items
+ * - Platform blue for interactive links
+ * - Clear visual separation between items
+ * - Responsive layout for all screen sizes
+ */
+
+/* ============================================================================
+ * BREADCRUMB CONTAINER
+ * ============================================================================ */
+
+.breadcrumb {
+  /* Layout */
+  display: flex;
+  align-items: center;
+
+  /* Spacing */
+  padding: 12px 0;
+  margin-bottom: 16px;
+
+  /* Typography */
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.breadcrumb-list {
+  /* Reset list styles */
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  /* Layout */
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* ============================================================================
+ * BREADCRUMB ITEMS
+ * ============================================================================ */
+
+.breadcrumb-item {
+  /* Layout */
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ============================================================================
+ * BREADCRUMB LINK
+ * ============================================================================ */
+
+.breadcrumb-link {
+  /* Layout */
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  /* Typography */
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 500;
+
+  /* Interaction */
+  transition: color 0.15s ease;
+
+  /* Touch target */
+  padding: 4px 8px;
+  margin: -4px -8px;
+  border-radius: 4px;
+}
+
+.breadcrumb-link:hover {
+  color: #1e40af;
+  text-decoration: underline;
+  background-color: #eff6ff;
+}
+
+.breadcrumb-link:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* ============================================================================
+ * CURRENT PAGE
+ * ============================================================================ */
+
+.breadcrumb-current {
+  /* Layout */
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  /* Typography */
+  color: #1f2937;
+  font-weight: 600;
+
+  /* Padding for visual balance */
+  padding: 4px 0;
+}
+
+/* ============================================================================
+ * NON-NAVIGABLE TEXT
+ * ============================================================================ */
+
+.breadcrumb-text {
+  /* Layout */
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  /* Typography */
+  color: #64748b;
+  font-weight: 500;
+
+  /* Padding for visual balance */
+  padding: 4px 0;
+}
+
+/* ============================================================================
+ * SEPARATOR
+ * ============================================================================ */
+
+.separator {
+  /* Sizing */
+  width: 16px;
+  height: 16px;
+
+  /* Color */
+  color: #94a3b8;
+
+  /* Spacing */
+  margin: 0 4px;
+
+  /* Prevent shrinking */
+  flex-shrink: 0;
+}
+
+/* ============================================================================
+ * ICONS
+ * ============================================================================ */
+
+.home-icon {
+  /* Sizing */
+  width: 16px;
+  height: 16px;
+
+  /* Color inherits from link */
+  color: currentColor;
+
+  /* Prevent shrinking */
+  flex-shrink: 0;
+}
+
+.home-label {
+  /* Hide on mobile, show on desktop */
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .home-label {
+    display: inline;
+  }
+}
+
+.item-icon {
+  /* Layout */
+  display: inline-flex;
+  align-items: center;
+
+  /* Sizing */
+  width: 16px;
+  height: 16px;
+
+  /* Prevent shrinking */
+  flex-shrink: 0;
+}
+
+/* ============================================================================
+ * ELLIPSIS (TRUNCATION)
+ * ============================================================================ */
+
+.ellipsis {
+  /* Typography */
+  color: #64748b;
+  font-weight: 600;
+  letter-spacing: 2px;
+
+  /* Padding */
+  padding: 4px 8px;
+}
+
+/* ============================================================================
+ * RESPONSIVE DESIGN
+ * ============================================================================ */
+
+@media (max-width: 640px) {
+  .breadcrumb {
+    font-size: 13px;
+  }
+
+  .breadcrumb-link,
+  .breadcrumb-current,
+  .breadcrumb-text {
+    /* Reduce padding on mobile */
+    padding: 2px 4px;
+  }
+
+  .breadcrumb-link {
+    margin: -2px -4px;
+  }
+
+  /* Truncate long labels on mobile */
+  .breadcrumb-current,
+  .breadcrumb-link,
+  .breadcrumb-text {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* ============================================================================
+ * ACCESSIBILITY
+ * ============================================================================ */
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .breadcrumb-link {
+    text-decoration: underline;
+  }
+
+  .breadcrumb-link:focus-visible {
+    outline-width: 3px;
+  }
+
+  .separator {
+    color: #1f2937;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .breadcrumb-link {
+    transition: none;
+  }
+}

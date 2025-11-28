@@ -39,11 +39,14 @@ import styles from './CreateEditTrainingProgramPage.module.css';
  */
 export const CreateEditTrainingProgramPage: React.FC = () => {
   const { programId } = useParams<{ programId?: string }>();
-  const { userId, organizationId } = useAuth();
+  const { user, userId, organizationId } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const isEditMode = !!programId;
+
+  // Determine context based on current path
+  const isOrgAdminContext = window.location.pathname.startsWith('/organization');
 
   // Form state
   const [title, setTitle] = useState('');
@@ -85,6 +88,13 @@ export const CreateEditTrainingProgramPage: React.FC = () => {
   }, [existingProgram]);
 
   /**
+   * Get redirect path based on context
+   */
+  const getRedirectPath = () => {
+    return isOrgAdminContext ? '/organization/programs' : '/instructor/programs';
+  };
+
+  /**
    * Create program mutation
    */
   const createMutation = useMutation({
@@ -92,7 +102,7 @@ export const CreateEditTrainingProgramPage: React.FC = () => {
       trainingProgramService.createTrainingProgram(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trainingPrograms'] });
-      navigate('/instructor/programs');
+      navigate(getRedirectPath());
     },
   });
 
@@ -105,7 +115,7 @@ export const CreateEditTrainingProgramPage: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trainingPrograms'] });
       queryClient.invalidateQueries({ queryKey: ['trainingProgram', programId] });
-      navigate('/instructor/programs');
+      navigate(getRedirectPath());
     },
   });
 
@@ -159,7 +169,7 @@ export const CreateEditTrainingProgramPage: React.FC = () => {
       price,
       tags,
       organization_id: organizationId,
-      instructorId: userId,
+      // Note: instructor_id will be set automatically by the backend based on the authenticated user
     };
 
     try {
@@ -195,7 +205,7 @@ export const CreateEditTrainingProgramPage: React.FC = () => {
    * Handle cancel
    */
   const handleCancel = () => {
-    navigate('/instructor/programs');
+    navigate(getRedirectPath());
   };
 
   /**

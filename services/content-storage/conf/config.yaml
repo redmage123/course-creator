@@ -8,12 +8,10 @@ log:
   format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
 cors:
-  origins:
-    - "https://localhost:3000"
-    - "https://localhost:8000"
-    - "https://localhost:8001"
-    - "https://localhost:8003"
-    - "https://localhost:8004"
+  # SECURITY: CORS origins must be set via CORS_ORIGINS environment variable
+  # Never use wildcard (*) in production - enables CSRF attacks
+  # Format: "https://localhost:3000,https://localhost:3001"
+  origins: ${oc.env:CORS_ORIGINS,https://localhost:3000,https://localhost:3001}
 
 database:
   host: ${oc.env:DB_HOST,postgres}

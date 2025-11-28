@@ -27,7 +27,7 @@ Test Coverage:
 - Multi-user labs
 - Lab analytics
 
-MANDATORY: Test HTTPS-only environment (https://localhost:3000 or https://176.9.99.103:3000)
+MANDATORY: Test HTTPS-only environment (https://localhost:3000 or https://localhost:3000)
 Following CLAUDE.md critical requirements for E2E testing all user roles.
 
 Author: Course Creator Platform Team
@@ -53,7 +53,7 @@ class TestLabEnvironmentInitialization:
     def setup(self, driver):
         """Setup for each test"""
         self.driver = driver
-        self.base_url = os.getenv('TEST_BASE_URL', 'https://176.9.99.103:3000')
+        self.base_url = os.getenv('TEST_BASE_URL', 'https://localhost:3000')
         self.wait = WebDriverWait(driver, 15)
 
         # Login as student (labs are accessible to students)
@@ -136,7 +136,7 @@ class TestMultiIDESupport:
     def setup(self, driver):
         """Setup for each test"""
         self.driver = driver
-        self.base_url = os.getenv('TEST_BASE_URL', 'https://176.9.99.103:3000')
+        self.base_url = os.getenv('TEST_BASE_URL', 'https://localhost:3000')
         self.wait = WebDriverWait(driver, 15)
 
         # Navigate to multi-IDE lab
@@ -236,7 +236,7 @@ class TestLabLifecycle:
     def setup(self, driver):
         """Setup for each test"""
         self.driver = driver
-        self.base_url = os.getenv('TEST_BASE_URL', 'https://176.9.99.103:3000')
+        self.base_url = os.getenv('TEST_BASE_URL', 'https://localhost:3000')
         self.wait = WebDriverWait(driver, 15)
 
         self.driver.get(f"{self.base_url}/html/lab-multi-ide.html")
@@ -378,7 +378,7 @@ class TestFileSystemOperations:
     def setup(self, driver):
         """Setup for each test"""
         self.driver = driver
-        self.base_url = os.getenv('TEST_BASE_URL', 'https://176.9.99.103:3000')
+        self.base_url = os.getenv('TEST_BASE_URL', 'https://localhost:3000')
         self.wait = WebDriverWait(driver, 15)
 
         self.driver.get(f"{self.base_url}/html/lab-multi-ide.html")
@@ -565,7 +565,7 @@ class TestTerminalEmulator:
     def setup(self, driver):
         """Setup for each test"""
         self.driver = driver
-        self.base_url = os.getenv('TEST_BASE_URL', 'https://176.9.99.103:3000')
+        self.base_url = os.getenv('TEST_BASE_URL', 'https://localhost:3000')
         self.wait = WebDriverWait(driver, 15)
 
         self.driver.get(f"{self.base_url}/html/lab-multi-ide.html")
@@ -674,7 +674,7 @@ class TestCodeExecution:
     def setup(self, driver):
         """Setup for each test"""
         self.driver = driver
-        self.base_url = os.getenv('TEST_BASE_URL', 'https://176.9.99.103:3000')
+        self.base_url = os.getenv('TEST_BASE_URL', 'https://localhost:3000')
         self.wait = WebDriverWait(driver, 15)
 
         self.driver.get(f"{self.base_url}/html/lab-multi-ide.html")
@@ -827,7 +827,7 @@ class TestLabPersistence:
     def setup(self, driver):
         """Setup for each test"""
         self.driver = driver
-        self.base_url = os.getenv('TEST_BASE_URL', 'https://176.9.99.103:3000')
+        self.base_url = os.getenv('TEST_BASE_URL', 'https://localhost:3000')
         self.wait = WebDriverWait(driver, 15)
 
         self.driver.get(f"{self.base_url}/html/lab-multi-ide.html")
@@ -905,7 +905,7 @@ class TestResourceManagement:
     def setup(self, driver):
         """Setup for each test"""
         self.driver = driver
-        self.base_url = os.getenv('TEST_BASE_URL', 'https://176.9.99.103:3000')
+        self.base_url = os.getenv('TEST_BASE_URL', 'https://localhost:3000')
         self.wait = WebDriverWait(driver, 15)
 
         self.driver.get(f"{self.base_url}/html/lab-multi-ide.html")
@@ -957,7 +957,7 @@ class TestAIAssistantIntegration:
     def setup(self, driver):
         """Setup for each test"""
         self.driver = driver
-        self.base_url = os.getenv('TEST_BASE_URL', 'https://176.9.99.103:3000')
+        self.base_url = os.getenv('TEST_BASE_URL', 'https://localhost:3000')
         self.wait = WebDriverWait(driver, 15)
 
         self.driver.get(f"{self.base_url}/html/lab-multi-ide.html")
@@ -1077,7 +1077,7 @@ class TestLabAnalytics:
     def setup(self, driver):
         """Setup for each test"""
         self.driver = driver
-        self.base_url = os.getenv('TEST_BASE_URL', 'https://176.9.99.103:3000')
+        self.base_url = os.getenv('TEST_BASE_URL', 'https://localhost:3000')
         self.wait = WebDriverWait(driver, 15)
 
         self.driver.get(f"{self.base_url}/html/lab-multi-ide.html")

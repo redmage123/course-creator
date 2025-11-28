@@ -14,12 +14,16 @@
 // Core services
 export { apiClient } from './apiClient';
 export { authService } from './authService';
+export { tokenManager } from './tokenManager';
 
 // Domain services
 export { trainingProgramService } from './trainingProgramService';
 export { enrollmentService } from './enrollmentService';
 export { analyticsService } from './analyticsService';
 export { organizationService } from './organizationService';
+export { memberService } from './memberService';
+export { trackService } from './trackService';
+export { courseService } from './courseService';
 
 // Type exports for convenience
 export type {
@@ -59,3 +63,31 @@ export type {
   BulkAddMembersRequest,
   OrganizationListResponse,
 } from './organizationService';
+
+export type {
+  Member,
+  MemberRole,
+  CreateMemberRequest,
+  UpdateMemberRequest,
+  MemberListResponse,
+} from './memberService';
+
+export type {
+  Track,
+  CreateTrackRequest,
+  UpdateTrackRequest,
+  TrackListResponse,
+  TrackEnrollmentRequest,
+  TrackEnrollmentResponse,
+  TrackAnalytics,
+} from './trackService';
+
+export type {
+  Course,
+  DifficultyLevel,
+  DurationUnit,
+  CreateCourseRequest,
+  UpdateCourseRequest,
+  CourseListResponse,
+  CourseFilters,
+} from './courseService';

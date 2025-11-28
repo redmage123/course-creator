@@ -10,7 +10,7 @@ from datetime import datetime, date
 import logging
 import traceback
 
-from organization_management.domain.entities.locations import Locations, LocationStatus
+from organization_management.domain.entities.location import Locations, LocationStatus
 from app_dependencies import get_container, get_current_user, verify_permission
 from organization_management.domain.entities.enhanced_role import Permission
 

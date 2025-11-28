@@ -380,12 +380,14 @@ def create_app(config: DictConfig = None) -> FastAPI:
         lifespan=lifespan
     )
 
-    # CORS middleware
+    # CORS middleware - Security: Use environment-configured origins
+    # Never use wildcard (*) in production - enables CSRF attacks
+    CORS_ORIGINS = os.getenv('CORS_ORIGINS', 'https://localhost:3000,https://localhost:3001').split(',')
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=[origin.strip() for origin in CORS_ORIGINS],
         allow_credentials=True,
-        allow_methods=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
         allow_headers=["*"],
     )
     
@@ -423,7 +425,8 @@ def create_app(config: DictConfig = None) -> FastAPI:
         )
 
     # Include API routers
-    app.include_router(organization_router)
+    # NOTE: organization_router MUST be registered after rbac_router to override
+    # the /organizations/{org_id}/members endpoint with the correct request model
     app.include_router(project_router)
     app.include_router(rbac_router)
     app.include_router(site_admin_router)
@@ -432,6 +435,7 @@ def create_app(config: DictConfig = None) -> FastAPI:
     app.include_router(instructor_assignment_router)
     app.include_router(course_assignment_router)
     app.include_router(scheduling_router)
+    app.include_router(organization_router)  # Registered last to override rbac endpoint
 
     # Health check endpoint
     @app.get("/health")

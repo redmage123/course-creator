@@ -14,7 +14,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '../test/utils';
 import { ManageOrganizations } from './ManageOrganizations';
@@ -97,7 +97,7 @@ describe('ManageOrganizations Component', () => {
         },
       });
 
-      expect(screen.getByText('Create Organization')).toBeInTheDocument();
+      expect(screen.getByText('+ Create Organization')).toBeInTheDocument();
     });
   });
 
@@ -124,7 +124,7 @@ describe('ManageOrganizations Component', () => {
         },
       });
 
-      const searchInput = screen.getByPlaceholderText(/Search organizations/i);
+      const searchInput = screen.getByPlaceholderText(/Search by organization name or email/i);
       await user.type(searchInput, 'Acme');
 
       await waitFor(() => {
@@ -188,17 +188,15 @@ describe('ManageOrganizations Component', () => {
         },
       });
 
-      // Find suspended organization's row
+      // Find suspended organization's row and the Activate button
       const suspendedRow = screen.getByText('Legacy Systems Ltd').closest('tr');
-      const activateButton = suspendedRow?.querySelector('button');
+      const activateButton = within(suspendedRow!).getByText('Activate');
 
-      if (activateButton) {
-        await user.click(activateButton);
+      await user.click(activateButton);
 
-        await waitFor(() => {
-          expect(mockAlert).toHaveBeenCalled();
-        });
-      }
+      await waitFor(() => {
+        expect(mockAlert).toHaveBeenCalled();
+      });
     });
   });
 

@@ -64,13 +64,30 @@ export const TrainingProgramListPage: React.FC<TrainingProgramListPageProps> = (
   const { data: programs, isLoading, error } = useQuery({
     queryKey: ['trainingPrograms', context, user?.id],
     queryFn: async () => {
+      let response;
       if (context === 'instructor') {
         // Instructors see only their own programs
-        return trainingProgramService.getInstructorPrograms(user!.id);
+        response = await trainingProgramService.getInstructorPrograms(user!.id);
       } else {
         // Org admins see organization programs
-        return trainingProgramService.getOrganizationPrograms(user!.organizationId!);
+        response = await trainingProgramService.getOrganizationPrograms(user!.organizationId!);
       }
+
+      // Handle both old array format and new paginated format
+      // TODO: Remove this compatibility layer once backend is fully updated
+      if (Array.isArray(response)) {
+        // Old format: direct array
+        return {
+          data: response,
+          total: response.length,
+          page: 1,
+          limit: response.length,
+          pages: 1
+        };
+      }
+
+      // New format: paginated response
+      return response;
     },
     enabled: !!user?.id && (context === 'instructor' || !!user?.organizationId),
     staleTime: 2 * 60 * 1000, // Cache for 2 minutes
@@ -148,7 +165,8 @@ export const TrainingProgramListPage: React.FC<TrainingProgramListPageProps> = (
    * Handle edit program
    */
   const handleEdit = (programId: string) => {
-    navigate(`/instructor/programs/${programId}/edit`);
+    const basePath = context === 'instructor' ? '/instructor' : '/organization';
+    navigate(`${basePath}/programs/${programId}/edit`);
   };
 
   /**
@@ -183,7 +201,12 @@ export const TrainingProgramListPage: React.FC<TrainingProgramListPageProps> = (
    * Get create button path based on context
    */
   const getCreatePath = () => {
-    return context === 'instructor' ? '/instructor/programs/create' : undefined;
+    if (context === 'instructor') {
+      return '/instructor/programs/create';
+    } else if (context === 'organization') {
+      return '/organization/programs/create';
+    }
+    return undefined;
   };
 
   /**
@@ -365,7 +388,7 @@ export const TrainingProgramListPage: React.FC<TrainingProgramListPageProps> = (
                 key={program.id}
                 program={program}
                 viewerRole={context === 'instructor' ? 'instructor' : 'org_admin'}
-                onEdit={context === 'instructor' ? handleEdit : undefined}
+                onEdit={handleEdit}
                 onDelete={context === 'instructor' ? handleDelete : undefined}
                 onTogglePublish={context === 'instructor' ? handleTogglePublish : undefined}
               />

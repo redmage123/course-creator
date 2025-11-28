@@ -31,6 +31,9 @@ Each dependency provides specialized analytics capabilities:
 from fastapi import HTTPException
 from typing import Optional
 
+# JWT Authentication - Import from auth module
+from auth.jwt_middleware import get_current_user_id as get_authenticated_user_id
+
 # Domain interfaces
 from analytics.domain.interfaces.analytics_service import (
     IStudentActivityService,
@@ -278,70 +281,5 @@ def get_risk_service() -> IRiskAssessmentService:
     return container.get_risk_assessment_service()
 
 
-# DEPRECATED: Replaced by JWT authentication middleware in analytics.auth module
-# This function maintained for backward compatibility - will be removed in v4.0
-#
-# Migration Guide:
-# OLD: user_id = get_current_user_id()
-# NEW: from analytics.auth import get_current_user_id
-#      async def endpoint(user_id: str = Depends(get_current_user_id)):
-#
-def get_current_user_id() -> str:
-    """
-    DEPRECATED: Use JWT authentication middleware from analytics.auth module.
-
-    This mock function returns a hardcoded user ID for backward compatibility only.
-    All new analytics endpoints should use the JWT authentication middleware:
-
-    ```python
-    from analytics.auth import get_current_user_id
-    from fastapi import Depends
-
-    @router.get("/analytics")
-    async def analytics_endpoint(user_id: str = Depends(get_current_user_id)):
-        # user_id is now authenticated from JWT token
-        # Includes validation, expiration checking, and role extraction
-        pass
-    ```
-
-    Security and Privacy Implementation:
-    - JWT token validation for authenticated access
-    - User role verification for appropriate data access
-    - Session tracking for audit compliance
-    - Privacy-preserving user identification
-
-    Educational Context:
-    - Enables personalized learning analytics
-    - Supports role-based dashboard customization
-    - Facilitates secure multi-tenant educational platforms
-    - Maintains user context for educational recommendations
-
-    Production JWT Authentication Features:
-    - Validates JWT token signature and expiration
-    - Extracts user ID and role information
-    - Implements rate limiting per authenticated user
-    - Logs access for security and compliance auditing
-    - Distributed authentication via user-management service
-    - Proper error handling with HTTP 401/403/503 status codes
-
-    Returns:
-        str: Mock user ID ("user_123") - for backward compatibility only
-
-    Warnings:
-        DeprecationWarning: This function will be removed in v4.0
-
-    See Also:
-        analytics.auth.jwt_middleware: Full JWT authentication implementation
-        analytics.auth.get_current_user: Complete user data extraction
-        analytics.auth.require_role: Role-based access control
-    """
-    import warnings
-    warnings.warn(
-        "analytics.api.dependencies.get_current_user_id() is deprecated. "
-        "Use JWT authentication: from analytics.auth import get_current_user_id with FastAPI Depends()",
-        DeprecationWarning,
-        stacklevel=2
-    )
-    # Mock implementation for backward compatibility
-    # Production: Use analytics.auth.get_current_user_id with FastAPI Depends()
-    return "user_123"
+# JWT-authenticated user ID extraction (replaced deprecated mock)
+get_current_user_id = get_authenticated_user_id

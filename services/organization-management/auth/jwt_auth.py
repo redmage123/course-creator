@@ -19,7 +19,23 @@ class JWTAuthenticator:
     def __init__(self, config: DictConfig):
         self._config = config
         self._logger = logging.getLogger(__name__)
-        self._secret_key = config.get('jwt', {}).get('secret_key', 'your-secret-key-change-in-production')
+        # SECURITY: JWT secret from config or environment - no default fallback
+        self._secret_key = config.get('jwt', {}).get('secret_key')
+        if not self._secret_key:
+            import os
+            self._secret_key = os.getenv('JWT_SECRET')
+        if not self._secret_key:
+            self._logger.warning(
+                "SECURITY WARNING: JWT_SECRET not configured. "
+                "Token validation will rely on user-management service. "
+                "For production, set JWT_SECRET environment variable (min 32 chars)."
+            )
+            self._secret_key = None  # Will use service-based validation
+        elif len(self._secret_key) < 32:
+            raise ValueError(
+                f"SECURITY ERROR: JWT_SECRET must be at least 32 characters. "
+                f"Current length: {len(self._secret_key)}"
+            )
         self._algorithm = config.get('jwt', {}).get('algorithm', 'HS256')
         self._user_service_url = config.get('services', {}).get('user_management_url', 'https://user-management:8000')
 
@@ -49,6 +65,7 @@ class JWTAuthenticator:
         try:
             self._logger.info(f"Validating token via user-management service")
             # Validate token by calling user-management service /users/me endpoint
+            # SSL verification disabled for self-signed certificates in development
             async with httpx.AsyncClient(verify=False) as client:
                 response = await client.get(
                     f"{self._user_service_url}/users/me",

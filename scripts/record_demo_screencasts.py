@@ -20,8 +20,8 @@ from playwright.async_api import async_playwright
 
 # Configuration
 BASE_URL = os.getenv('TEST_BASE_URL', 'https://localhost:3000')
-VIDEO_DIR = Path('frontend-legacy/static/demo/videos')
-AUDIO_DIR = Path('frontend-legacy/static/demo/audio')
+VIDEO_DIR = Path('frontend-react/public/demo/videos')
+AUDIO_DIR = Path('frontend-react/public/demo/audio')
 
 # Demo credentials
 ORG_ADMIN_EMAIL = 'sarah@acmelearning.edu'

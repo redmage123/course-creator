@@ -192,11 +192,16 @@ export const OrgAdminDashboard: React.FC = () => {
               Trainer & Student Management
             </Heading>
             <p className={styles['section-description']}>
-              Manage corporate trainers, enroll students in bulk, and assign training programs
+              Manage corporate trainers, organization members, enroll students in bulk, and organize learning tracks
             </p>
             <div className={styles['action-buttons']}>
-              <Link to="/organization/trainers">
+              <Link to="/organization/members">
                 <Button variant="primary" size="medium">
+                  Manage Members
+                </Button>
+              </Link>
+              <Link to="/organization/trainers">
+                <Button variant="secondary" size="medium">
                   Manage Trainers
                 </Button>
               </Link>
@@ -214,12 +219,49 @@ export const OrgAdminDashboard: React.FC = () => {
               Training Programs
             </Heading>
             <p className={styles['section-description']}>
-              Manage IT training courses, assign programs to students, and track completions
+              Manage IT training courses, learning tracks, assign programs to students, and track completions
             </p>
             <div className={styles['action-buttons']}>
               <Link to="/organization/programs">
                 <Button variant="primary" size="medium">
                   View Programs
+                </Button>
+              </Link>
+              <Link to="/organization/tracks">
+                <Button variant="secondary" size="medium">
+                  Manage Tracks
+                </Button>
+              </Link>
+              <Link to="/organization/programs/create">
+                <Button variant="secondary" size="medium">
+                  Create New Program
+                </Button>
+              </Link>
+            </div>
+          </Card>
+
+          {/* Import & Templates */}
+          <Card variant="elevated" padding="large">
+            <Heading level="h2" gutterBottom>
+              Import & AI Automation
+            </Heading>
+            <p className={styles['section-description']}>
+              Import organization templates and let AI automatically create projects and tracks
+            </p>
+            <div className={styles['action-buttons']}>
+              <Link to="/organization/import">
+                <Button variant="primary" size="medium" data-action="import">
+                  Import Template
+                </Button>
+              </Link>
+              <Link to="/organization/ai-create">
+                <Button variant="secondary" size="medium" data-action="ai-create-project">
+                  AI Auto Create Project
+                </Button>
+              </Link>
+              <Link to="/organization/templates/download">
+                <Button variant="secondary" size="medium" data-action="download-template">
+                  Download Template
                 </Button>
               </Link>
             </div>

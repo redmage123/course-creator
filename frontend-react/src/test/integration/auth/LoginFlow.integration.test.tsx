@@ -55,7 +55,7 @@ describe('Login Flow Integration Tests', () => {
      * Verifies outcomes: Redux state updated, localStorage set, navigation occurs
      */
 
-    // Override MSW to return student login response
+    // Override MSW to return student login response in BACKEND format
     server.use(
       http.post('https://176.9.99.103:8000/auth/login', async ({ request }) => {
         const body = await request.json() as any;
@@ -63,16 +63,16 @@ describe('Login Flow Integration Tests', () => {
         const identifier = body.username || body.email;
         if (identifier === 'student@example.com') {
           return HttpResponse.json({
-            token: 'mock-jwt-token',
-            refreshToken: 'mock-refresh-token',
+            access_token: 'mock-jwt-token',
+            refresh_token: 'mock-refresh-token',
+            expires_in: 3600, // seconds
             user: {
               id: 'student-123',
               username: 'student@example.com',
               email: 'student@example.com',
               role: 'student',
-              organizationId: 'org-123',
+              organization_id: 'org-123',
             },
-            expiresIn: 3600, // expiresIn is in seconds, not milliseconds
           });
         }
         return HttpResponse.json(
@@ -153,23 +153,23 @@ describe('Login Flow Integration Tests', () => {
      * Tests real authService.login() with MSW - verifies org_admin role routing
      */
 
-    // Override MSW to return org_admin role
+    // Override MSW to return org_admin role in BACKEND format
     server.use(
       http.post('https://176.9.99.103:8000/auth/login', async ({ request }) => {
         const body = await request.json() as any;
         const identifier = body.username || body.email;
         if (identifier === 'orgadmin@example.com') {
           return HttpResponse.json({
-            token: 'orgadmin-jwt-token',
-            refreshToken: 'orgadmin-refresh-token',
+            access_token: 'orgadmin-jwt-token',
+            refresh_token: 'orgadmin-refresh-token',
+            expires_in: 3600, // seconds
             user: {
               id: 'orgadmin-123',
               username: 'orgadmin@example.com',
               email: 'orgadmin@example.com',
-              role: 'org_admin',
-              organizationId: 'org-123',
+              role: 'organization_admin',
+              organization_id: 'org-123',
             },
-            expiresIn: 3600, // seconds
           });
         }
         return HttpResponse.json(
@@ -199,23 +199,23 @@ describe('Login Flow Integration Tests', () => {
      * Tests real authService.login() with MSW - verifies site_admin role routing
      */
 
-    // Override MSW to return site_admin role
+    // Override MSW to return site_admin role in BACKEND format
     server.use(
       http.post('https://176.9.99.103:8000/auth/login', async ({ request }) => {
         const body = await request.json() as any;
         const identifier = body.username || body.email;
         if (identifier === 'siteadmin@example.com') {
           return HttpResponse.json({
-            token: 'siteadmin-jwt-token',
-            refreshToken: 'siteadmin-refresh-token',
+            access_token: 'siteadmin-jwt-token',
+            refresh_token: 'siteadmin-refresh-token',
+            expires_in: 3600, // seconds
             user: {
               id: 'siteadmin-123',
               username: 'siteadmin@example.com',
               email: 'siteadmin@example.com',
               role: 'site_admin',
-              organizationId: undefined,
+              organization_id: null,
             },
-            expiresIn: 3600, // seconds
           });
         }
         return HttpResponse.json(
@@ -288,19 +288,21 @@ describe('Login Flow Integration Tests', () => {
      * Verifies outcome: loading indicator shown during async operation
      */
 
-    // Override MSW with delayed response
+    // Override MSW with delayed response in BACKEND format
     server.use(
       http.post('https://176.9.99.103:8000/auth/login', async () => {
         await new Promise(resolve => setTimeout(resolve, 100));
         return HttpResponse.json({
-          token: 'token',
+          access_token: 'token',
+          refresh_token: 'refresh-token',
+          expires_in: 3600, // seconds
           user: {
             id: '1',
             username: 'user',
             email: 'user@example.com',
             role: 'student',
+            organization_id: null,
           },
-          expiresIn: 3600, // seconds
         });
       })
     );

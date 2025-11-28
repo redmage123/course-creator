@@ -11,6 +11,7 @@
  */
 
 import axios, { type AxiosInstance, AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import { tokenManager } from './tokenManager';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
@@ -32,7 +33,12 @@ class APIClient {
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
+        // CSRF protection: Custom header that cross-origin requests cannot set
+        // This header indicates the request was made by our application
+        'X-Requested-With': 'XMLHttpRequest',
       },
+      // Ensure cookies are sent with requests (if any)
+      withCredentials: true,
     });
 
     this.setupInterceptors();
@@ -47,10 +53,10 @@ class APIClient {
    * - Request logging aids debugging in development
    */
   private setupInterceptors() {
-    // Request interceptor - add auth token
+    // Request interceptor - add auth token from memory
     this.client.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
-        const token = localStorage.getItem('authToken');
+        const token = tokenManager.getToken();
         if (token && config.headers) {
           config.headers.Authorization = `Bearer ${token}`;
         }
@@ -79,7 +85,7 @@ class APIClient {
       async (error: AxiosError) => {
         // Handle 401 Unauthorized - token expired
         if (error.response?.status === 401) {
-          const refreshToken = localStorage.getItem('refreshToken');
+          const refreshToken = tokenManager.getRefreshToken();
           if (refreshToken) {
             try {
               // Attempt token refresh
@@ -88,7 +94,7 @@ class APIClient {
                 { refreshToken }
               );
               const { token } = response.data;
-              localStorage.setItem('authToken', token);
+              tokenManager.setToken(token);
 
               // Retry original request with new token
               if (error.config) {
@@ -97,11 +103,13 @@ class APIClient {
               }
             } catch (refreshError) {
               // Refresh failed - logout user
+              tokenManager.clearTokens();
               localStorage.clear();
               window.location.href = '/login';
             }
           } else {
             // No refresh token - logout
+            tokenManager.clearTokens();
             localStorage.clear();
             window.location.href = '/login';
           }

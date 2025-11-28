@@ -43,7 +43,13 @@ ensuring clean separation between API presentation and educational domain logic.
 from fastapi import APIRouter, HTTPException, Depends, status
 from typing import List, Optional, Dict, Any
 import logging
+import os
+import sys
 from datetime import datetime
+
+# JWT Authentication - Import from auth module
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from auth import get_current_user_id as get_authenticated_user_id
 
 # API Models (Data Transfer Objects)
 from pydantic import BaseModel, Field
@@ -169,39 +175,8 @@ def get_syllabus_service() -> ISyllabusService:
         raise HTTPException(status_code=500, detail="Service not initialized")
     return container.get_syllabus_service()
 
-async def get_current_user() -> str:
-    """
-    Authentication dependency for educational content access control.
-
-    Provides user identification for educational content operations,
-    ensuring proper access control and audit trails for educational materials.
-
-    Educational Context:
-    - Supports role-based access to educational content (instructors, students, admins)
-    - Enables content ownership tracking for academic integrity
-    - Facilitates collaboration controls for course development
-    - Supports institutional content sharing and access policies
-
-    Security Considerations:
-    - Validates JWT tokens for secure educational content access
-    - Maintains session security for sensitive educational materials
-    - Supports fine-grained permissions for different content types
-    - Enables audit logging for educational content access patterns
-
-    Returns:
-        str: Current authenticated user identifier
-
-    Future Implementation:
-    - Will integrate with comprehensive JWT token validation
-    - Will support role-based educational content access control
-    - Will enable institutional authentication integration
-
-    Note:
-        Currently simplified for development - will be enhanced with
-        full authentication and authorization for production educational environments.
-    """
-    # In a real implementation, this would validate JWT token
-    return "current_user_id"
+# JWT-authenticated user ID extraction (replaced deprecated mock)
+get_current_user = get_authenticated_user_id
 
 # Helper function
 def _content_to_response(content) -> ContentResponse:

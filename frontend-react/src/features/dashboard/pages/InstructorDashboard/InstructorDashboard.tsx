@@ -237,12 +237,49 @@ export const InstructorDashboard: React.FC = () => {
               AI Content Generator
             </Heading>
             <p className={styles['section-description']}>
-              Generate quizzes, labs, and training materials with AI assistance
+              Generate quizzes, labs, slides, and training materials with AI assistance
             </p>
             <div className={styles['action-buttons']}>
               <Link to="/instructor/content-generator">
-                <Button variant="secondary" size="medium">
+                <Button variant="primary" size="medium" data-action="generate">
                   Generate Content
+                </Button>
+              </Link>
+              <Link to="/instructor/content-generator?type=quiz">
+                <Button variant="secondary" size="medium" data-action="create-quiz">
+                  Create Quiz
+                </Button>
+              </Link>
+              <Link to="/instructor/content-generator?type=slides">
+                <Button variant="secondary" size="medium" data-action="create-slides">
+                  Create Slides
+                </Button>
+              </Link>
+            </div>
+          </Card>
+
+          {/* Course & Lab Creation */}
+          <Card variant="elevated" padding="large">
+            <Heading level="h2" gutterBottom>
+              Course & Lab Creation
+            </Heading>
+            <p className={styles['section-description']}>
+              Create new courses with labs, quizzes, and interactive content
+            </p>
+            <div className={styles['action-buttons']}>
+              <Link to="/organization/courses/create">
+                <Button variant="primary" size="medium" data-action="create-course">
+                  Create Course
+                </Button>
+              </Link>
+              <Link to="/instructor/labs/create">
+                <Button variant="secondary" size="medium" data-action="create-lab">
+                  Create Lab
+                </Button>
+              </Link>
+              <Link to="/instructor/students/bulk-enroll">
+                <Button variant="secondary" size="medium" data-action="bulk-enroll">
+                  Bulk Enroll
                 </Button>
               </Link>
             </div>

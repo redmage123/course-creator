@@ -300,6 +300,16 @@ async def lifespan(app: FastAPI):
         logging.warning("No configuration provided, using default config")
     app.state.container = Container(current_config or {})
     await app.state.container.initialize()
+
+    # Initialize Video DAO with database pool
+    try:
+        from data_access.course_video_dao import CourseVideoDAO
+        from api import video_endpoints
+        video_endpoints.video_dao = CourseVideoDAO(app.state.container._connection_pool)
+        logging.info("Video DAO initialized successfully")
+    except Exception as e:
+        logging.warning(f"Failed to initialize Video DAO: {e}")
+
     logging.info("Course Management Service initialized successfully")
 
     yield
@@ -365,12 +375,14 @@ def create_app(config: DictConfig) -> FastAPI:
         config=config
     )
     
-    # CORS middleware
+    # CORS middleware - Security: Use environment-configured origins
+    # Never use wildcard (*) in production - enables CSRF attacks
+    CORS_ORIGINS = os.getenv('CORS_ORIGINS', 'https://localhost:3000,https://localhost:3001').split(',')
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=[origin.strip() for origin in CORS_ORIGINS],
         allow_credentials=True,
-        allow_methods=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
         allow_headers=["*"],
     )
     
@@ -436,11 +448,9 @@ def create_app(config: DictConfig) -> FastAPI:
     from api.sub_project_endpoints import router as sub_project_router
     app.include_router(sub_project_router)
 
-    # Include video API router
-    # TEMPORARILY DISABLED due to models.course_video import issue
-    # TODO: Fix models/__init__.py imports and re-enable
-    # from api.video_endpoints import router as video_router
-    # app.include_router(video_router, tags=["videos"])
+    # Include video API router (re-enabled after fixing deprecated code)
+    from api.video_endpoints import router as video_router
+    app.include_router(video_router, tags=["videos"])
 
     return app
 
@@ -472,24 +482,12 @@ def get_db_pool():
         raise HTTPException(status_code=500, detail="Database not initialized")
     return app.state.container._connection_pool
 
-def get_current_user_id() -> str:
-    """
-    Extract user ID from JWT token
-    For now, return a mock user ID - in production, this would validate JWT
-    """
-    # Use a real UUID from the database for testing
-    # orgadmin@e2etest.com = b14efecc-de51-4056-8034-30d05bf6fe80
-    return "b14efecc-de51-4056-8034-30d05bf6fe80"  # Mock implementation with valid UUID
+# JWT-authenticated user ID extraction (replaced deprecated mock)
+# Import from auth module for proper JWT-based authentication
+from auth import get_current_user_id
 
-# Initialize video DAO after app startup
-# TEMPORARILY DISABLED due to models.course_video import issue
-# from data_access.course_video_dao import CourseVideoDAO
-# from api import video_endpoints
-
-# @app.on_event("startup")
-# async def initialize_video_dao():
-#     """Initialize video DAO with database pool"""
-#     video_endpoints.video_dao = CourseVideoDAO(get_db_pool())
+# Video DAO initialization is handled during app startup via video_endpoints module
+# The video_dao is set when the app starts and the database pool is available
 
 # NOTE: Course Management Endpoints have been extracted to api/course_endpoints.py (SOLID refactoring)
 # NOTE: Enrollment Endpoints have been extracted to api/enrollment_endpoints.py (SOLID refactoring)

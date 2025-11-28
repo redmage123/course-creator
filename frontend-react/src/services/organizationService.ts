@@ -247,6 +247,42 @@ class OrganizationService {
   async toggleOrganizationStatus(id: string, active: boolean): Promise<Organization> {
     return await apiClient.put<Organization>(`${this.baseUrl}/${id}/status`, { active });
   }
+
+  /**
+   * Register new organization (public self-service registration)
+   *
+   * BUSINESS CONTEXT:
+   * Public registration endpoint for organizations to sign up.
+   * Creates organization + admin account in single transaction.
+   * Returns JWT token for auto-login after successful registration.
+   *
+   * @param formData - FormData object containing organization and admin details
+   * @returns Organization data with access_token and user info
+   */
+  async registerOrganization(formData: any): Promise<{
+    data: any;
+    access_token?: string;
+    user?: any;
+  }> {
+    // Convert FormData to JSON object for the backend endpoint
+    const data: any = {};
+    if (formData instanceof FormData) {
+      for (const [key, value] of formData.entries()) {
+        // Skip File objects - backend JSON endpoint doesn't handle file uploads
+        if (!(value instanceof File)) {
+          data[key] = value;
+        }
+      }
+    } else {
+      Object.assign(data, formData);
+    }
+
+    // Add required admin_role field
+    data.admin_role = 'organization_admin';
+
+    // Backend expects JSON at POST /api/v1/organizations
+    return await apiClient.post(`${this.baseUrl}`, data);
+  }
 }
 
 // Export singleton instance

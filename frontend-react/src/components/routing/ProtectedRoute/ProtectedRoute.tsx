@@ -90,18 +90,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { isAuthenticated, user } = useAuth();
   const location = useLocation();
 
-  // Not authenticated - redirect to login
-  if (!isAuthenticated) {
+  // Not authenticated or no user profile - redirect to login
+  // User must be both authenticated AND have a loaded user profile
+  if (!isAuthenticated || !user) {
     // Preserve the attempted location for redirect after login
     return <Navigate to={redirectTo} state={{ from: location }} replace />;
   }
 
-  // Authenticated but no user data (shouldn't happen, but defensive)
-  if (!user) {
-    return <Navigate to={redirectTo} replace />;
-  }
-
-  // Check role-based access
+  // Check role-based access (only if roles are required)
   if (requiredRoles && requiredRoles.length > 0) {
     const hasRequiredRole = requiredRoles.includes(user.role);
 

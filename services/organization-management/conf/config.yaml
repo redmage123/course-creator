@@ -34,7 +34,8 @@ logging:
   format: "json"
 
 auth:
-  jwt_secret: ${oc.env:JWT_SECRET,your-secret-key-change-in-production}
+  # SECURITY: JWT secret must be set via JWT_SECRET environment variable - no default allowed
+  jwt_secret: ${oc.env:JWT_SECRET}
   jwt_algorithm: "HS256"
   jwt_expiration_hours: 24
 

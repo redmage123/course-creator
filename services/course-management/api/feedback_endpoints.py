@@ -26,6 +26,12 @@ BI-DIRECTIONAL FEEDBACK SYSTEM:
 from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional
 import logging
+import sys
+import os
+
+# JWT Authentication - Import from auth module
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from auth import get_current_user_id as get_authenticated_user_id
 
 # Domain entities and services
 from course_management.domain.entities.feedback import CourseFeedback, StudentFeedback, FeedbackResponse
@@ -136,14 +142,8 @@ def get_feedback_service() -> IFeedbackService:
         raise HTTPException(status_code=500, detail="Service not initialized")
     return container.get_feedback_service()
 
-def get_current_user_id() -> str:
-    """
-    Extract user ID from JWT token
-    For now, return a mock user ID - in production, this would validate JWT
-    """
-    # Use a real UUID from the database for testing
-    # orgadmin@e2etest.com = b14efecc-de51-4056-8034-30d05bf6fe80
-    return "b14efecc-de51-4056-8034-30d05bf6fe80"  # Mock implementation with valid UUID
+# JWT-authenticated user ID extraction (replaced deprecated mock)
+get_current_user_id = get_authenticated_user_id
 
 # ============================================================================
 # FEEDBACK ENDPOINTS

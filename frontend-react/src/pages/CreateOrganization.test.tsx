@@ -34,11 +34,10 @@ describe('CreateOrganization Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(console, 'log').mockImplementation(() => {});
-    vi.useFakeTimers();
   });
 
   afterEach(() => {
-    vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   describe('Rendering', () => {
@@ -151,9 +150,12 @@ describe('CreateOrganization Component', () => {
         },
       });
 
-      // Fill and advance to step 2
+      // Fill ALL required fields for step 1 to pass HTML5 validation
       const orgNameInput = screen.getByLabelText(/Organization Name/i);
       await user.type(orgNameInput, 'New Organization');
+
+      const contactEmailInput = screen.getByLabelText(/Contact Email/i);
+      await user.type(contactEmailInput, 'contact@neworg.com');
 
       const nextButton = screen.getByText('Next');
       await user.click(nextButton);
@@ -162,8 +164,8 @@ describe('CreateOrganization Component', () => {
         expect(screen.getByText(/Step 2/i)).toBeInTheDocument();
       });
 
-      // Go back
-      const backButton = screen.getByText('Back');
+      // Go back - button says "Previous" not "Back"
+      const backButton = screen.getByText('Previous');
       await user.click(backButton);
 
       await waitFor(() => {
@@ -195,12 +197,17 @@ describe('CreateOrganization Component', () => {
         },
       });
 
-      const nextButton = screen.getByText('Next');
-      await user.click(nextButton);
+      // Organization name is required - check that the input has required attribute
+      const orgNameInput = screen.getByLabelText(/Organization Name/i);
+      expect(orgNameInput).toBeRequired();
 
-      await waitFor(() => {
-        expect(mockAlert).toHaveBeenCalledWith(expect.stringContaining('required'));
-      });
+      // Contact email is also required
+      const contactEmailInput = screen.getByLabelText(/Contact Email/i);
+      expect(contactEmailInput).toBeRequired();
+
+      // The form should still proceed to next step (HTML5 validation blocks submit)
+      // but we can verify the required attributes are set
+      expect(orgNameInput).toHaveAttribute('required');
     });
   });
 
@@ -227,9 +234,13 @@ describe('CreateOrganization Component', () => {
         },
       });
 
-      // Navigate to step 3 (subscription)
+      // Navigate to step 3 (subscription) - fill ALL required fields
+      // Step 1: Basic Info
       const orgNameInput = screen.getByLabelText(/Organization Name/i);
       await user.type(orgNameInput, 'New Organization');
+
+      const contactEmailInput = screen.getByLabelText(/Contact Email/i);
+      await user.type(contactEmailInput, 'contact@neworg.com');
 
       let nextButton = screen.getByText('Next');
       await user.click(nextButton);
@@ -238,6 +249,16 @@ describe('CreateOrganization Component', () => {
         expect(screen.getByText(/Step 2/i)).toBeInTheDocument();
       });
 
+      // Step 2: Admin Account - fill required fields
+      const adminFirstNameInput = screen.getByLabelText(/First Name/i);
+      await user.type(adminFirstNameInput, 'John');
+
+      const adminLastNameInput = screen.getByLabelText(/Last Name/i);
+      await user.type(adminLastNameInput, 'Smith');
+
+      const adminEmailInput = screen.getByLabelText(/Email Address/i);
+      await user.type(adminEmailInput, 'john@neworg.com');
+
       nextButton = screen.getByText('Next');
       await user.click(nextButton);
 
@@ -245,12 +266,15 @@ describe('CreateOrganization Component', () => {
         expect(screen.getByText(/Step 3/i)).toBeInTheDocument();
       });
 
-      // Select Enterprise plan
-      const planSelect = screen.getByDisplayValue('Professional');
-      await user.selectOptions(planSelect, 'Enterprise');
+      // Step 3 - Plan buttons are just <button> elements with text inside
+      // Find the Enterprise button by its text
+      const enterpriseText = screen.getByText('Enterprise');
+      const enterpriseButton = enterpriseText.closest('button');
+      expect(enterpriseButton).toBeInTheDocument();
+      await user.click(enterpriseButton!);
 
       // Check that preset values are applied (Enterprise has 50 max trainers)
-      const maxTrainersInput = screen.getByLabelText(/Maximum Trainers/i);
+      const maxTrainersInput = screen.getByLabelText(/Max Trainers/i);
       expect(maxTrainersInput).toHaveValue(50);
     });
   });

@@ -108,6 +108,30 @@
   outline-offset: 2px;
 }
 
+/* Active State - Current Page Indicator */
+.nav-link-active {
+  /* Typography */
+  color: #2563eb;
+  font-weight: 600;
+
+  /* Background */
+  background-color: #eff6ff;
+
+  /* Visual indicator - bottom border */
+  position: relative;
+}
+
+.nav-link-active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  background-color: #2563eb;
+  border-radius: 1px;
+}
+
 /* ============================================================================
  * RIGHT SECTION
  * ============================================================================ */
@@ -376,6 +400,20 @@
 .mobile-menu-link:hover {
   background-color: #ffffff;
   color: #2563eb;
+}
+
+/* Active State - Mobile Menu */
+.mobile-menu-link-active {
+  /* Typography */
+  color: #2563eb;
+  font-weight: 600;
+
+  /* Background */
+  background-color: #eff6ff;
+
+  /* Left border indicator */
+  border-left: 3px solid #2563eb;
+  padding-left: 13px;
 }
 
 /* ============================================================================

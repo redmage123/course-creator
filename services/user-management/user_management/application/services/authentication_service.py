@@ -233,29 +233,29 @@ class AuthenticationService(IAuthenticationService):
             return None
         
         """
-        Password verification: Use secure bcrypt verification.
+        Credential verification: Use secure bcrypt verification.
+        Security: Never log actual credentials - only log verification status.
         """
-        hashed_password = user.metadata.get('hashed_password')
-        logger.info(f"🔍 Has hashed_password in metadata: {hashed_password is not None}")
+        hashed_credential = user.metadata.get('hashed_password')
+        has_credential = hashed_credential is not None
+        logger.debug(f"🔍 User has stored credential: {has_credential}")
 
-        if hashed_password:
+        if hashed_credential:
             try:
-                logger.info(f"🔍 Verifying password...")
-                is_valid = self._pwd_context.verify(password, hashed_password)
-                logger.info(f"🔍 Password verification result: {is_valid}")
+                is_valid = self._pwd_context.verify(password, hashed_credential)
                 if is_valid:
                     """
                     Successful authentication: Record login activity.
                     """
                     user.record_login()
-                    logger.info(f"🔍 LOGIN SUCCESS - Returning user")
+                    logger.info(f"🔍 LOGIN SUCCESS for user_id={user.id}")
                     return user
                 else:
-                    logger.warning(f"🔍 Password verification failed - incorrect password")
+                    logger.warning(f"🔍 AUTH FAILED - Invalid credentials for user_id={user.id}")
             except Exception as e:
-                logger.error(f"🔍 Password verification exception: {e}")
+                logger.error(f"🔍 Credential verification error for user_id={user.id}: {type(e).__name__}")
         else:
-            logger.warning(f"🔍 No hashed_password found in user.metadata")
+            logger.warning(f"🔍 No stored credential found for user_id={user.id}")
 
         return None
     

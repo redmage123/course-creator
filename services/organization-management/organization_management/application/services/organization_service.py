@@ -11,6 +11,11 @@ from uuid import UUID
 import logging
 import httpx
 import os
+import sys
+
+# Add shared module to path for SSL config
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', 'shared'))
+from security.ssl_config import create_secure_client_kwargs
 
 from organization_management.domain.entities.organization import Organization
 from organization_management.data_access.organization_dao import OrganizationManagementDAO
@@ -69,10 +74,10 @@ class OrganizationService:
         self._dao = dao
         self._logger = logging.getLogger(__name__)
 
-        # HTTP client configuration for user management service with SSL certificate handling
+        # HTTP client configuration for user management service with environment-aware SSL
         self._user_management_url = os.getenv('USER_MANAGEMENT_URL') or os.getenv('USER_SERVICE_URL', 'http://user-management:8000')
-        # Configure client to accept self-signed certificates for inter-service communication
-        self._http_client = httpx.AsyncClient(timeout=30.0, verify=False)
+        # Use shared SSL config for secure inter-service communication
+        self._http_client = httpx.AsyncClient(**create_secure_client_kwargs())
 
     async def _create_organization_admin_user(self, admin_full_name: str, admin_email: str, 
                                               admin_phone: str = None, admin_roles: List[str] = None,
@@ -140,18 +145,18 @@ class OrganizationService:
                 
                 self._logger.info(f"Generated unique username: '{username}' from email: '{admin_email}' and org: '{organization_slug}'")
             
-            # Use provided password or generate temporary one
+            # Use provided credential or generate temporary one
             if admin_password:
                 password_to_use = admin_password
                 is_temp_password = False
-                self._logger.info(f"Using admin-provided password for user: {admin_email}")
+                self._logger.info(f"Using admin-provided credential for user: {admin_email}")
             else:
-                # Generate a temporary password (should be reset by admin on first login)
+                # Generate a temporary credential (should be reset by admin on first login)
                 import secrets
                 import string
                 password_to_use = ''.join(secrets.choice(string.ascii_letters + string.digits + '!@#$%^&*') for _ in range(12))
                 is_temp_password = True
-                self._logger.info(f"Generated temporary password for user: {admin_email}")
+                self._logger.info(f"Generated temporary credential for user: {admin_email}")
             
             # Default role is organization admin (using organization_admin to match user-management validation)
             primary_role = "organization_admin" if "organization_admin" in (admin_roles or []) else "organization_admin"

@@ -282,12 +282,20 @@ def create_app(config: DictConfig) -> FastAPI:
     # Initialize database manager
     db_manager = DatabaseManager(config)
     
-    # CORS middleware
+    # CORS middleware - Security: Use environment-configured origins
+    # Never use wildcard (*) in production - enables CSRF attacks
+    # Parse CORS origins from config (which reads from CORS_ORIGINS env var)
+    cors_origins_str = config.cors.origins
+    if isinstance(cors_origins_str, str):
+        cors_origins = [origin.strip() for origin in cors_origins_str.split(',')]
+    else:
+        cors_origins = cors_origins_str  # Already a list
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=config.cors.origins,
+        allow_origins=cors_origins,
         allow_credentials=True,
-        allow_methods=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
         allow_headers=["*"],
     )
     

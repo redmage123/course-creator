@@ -83,12 +83,14 @@ app = FastAPI(
 # Register privacy API router
 app.include_router(privacy_router)
 
-# CORS configuration for frontend access
+# CORS middleware - Security: Use environment-configured origins
+# Never use wildcard (*) in production - enables CSRF attacks
+CORS_ORIGINS = os.getenv('CORS_ORIGINS', 'https://localhost:3000,https://localhost:3001').split(',')
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://176.9.99.103:3000", "http://localhost:3000"],
+    allow_origins=[origin.strip() for origin in CORS_ORIGINS],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
 )
 

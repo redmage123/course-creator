@@ -562,8 +562,21 @@ class UserManagementContainer:
             Service is cryptographically secure and thread-safe for concurrent operations
         """
         if not self._token_service:
-            # Get JWT secret from config
-            jwt_secret = getattr(self._config, 'jwt_secret', 'default-secret-change-in-production')
+            # Get JWT secret from config - SECURITY: No default fallback allowed
+            jwt_secret = getattr(self._config, 'jwt_secret', None)
+            if not jwt_secret:
+                import os
+                jwt_secret = os.getenv('JWT_SECRET')
+            if not jwt_secret:
+                raise ValueError(
+                    "SECURITY ERROR: JWT_SECRET not configured. "
+                    "Set JWT_SECRET environment variable or jwt_secret in config."
+                )
+            if len(jwt_secret) < 32:
+                raise ValueError(
+                    "SECURITY ERROR: JWT_SECRET must be at least 32 characters. "
+                    "Current length: " + str(len(jwt_secret))
+                )
             self._token_service = TokenService(secret_key=jwt_secret)
 
         return self._token_service

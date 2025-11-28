@@ -63,7 +63,8 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator?options=-csearch_path=course_creator,public
       - REDIS_URL=redis://redis:6379
-      - JWT_SECRET_KEY=your-secret-key-change-in-production
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-}
+      - JWT_SECRET=${JWT_SECRET:-}
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=postgres
@@ -410,7 +411,7 @@ services:
       - DOCKER_CONTAINER=true
       - SERVICE_NAME=organization-management
       - LOG_LEVEL=INFO
-      - JWT_SECRET_KEY=your-secret-key-change-in-production
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-}
       - PYTHONPATH=/app:/app/.venv/lib/python3.12/site-packages
       - VIRTUAL_ENV=/app/.venv
     ports:
@@ -455,7 +456,7 @@ services:
       - ./frontend/css:/usr/share/nginx/html/css:ro
       - ./frontend/html:/usr/share/nginx/html/html:ro
       - ./frontend/public:/usr/share/nginx/html/public:ro
-      - ./frontend/static:/usr/share/nginx/html/static:ro
+      - ./frontend-legacy/static:/usr/share/nginx/html/static:ro
       - ./logs:/var/log/nginx
     networks:
       - course-creator-network
@@ -777,6 +778,44 @@ services:
       start_period: 40s
     restart: unless-stopped
 
+  # NIMCP Service - Neuromorphic AI Brain System (Port 8016)
+  nimcp-service:
+    image: course-creator-nimcp-service:latest
+    build:
+      context: ./services/nimcp-service
+      dockerfile: Dockerfile
+      cache_from:
+        - course-creator-nimcp-service:latest
+    env_file:
+      - .cc_env
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator?options=-csearch_path=course_creator,public
+      - BRAIN_STATES_DIR=/app/brain_states
+      - BRAIN_PERSISTENCE_INTERVAL=100
+      - BRAIN_CONFIDENCE_THRESHOLD=0.85
+      - NIMCP_SERVICE_PORT=8016
+      - LOG_LEVEL=INFO
+      - PYTHONPATH=/app
+      - SERVICE_NAME=nimcp-service
+    volumes:
+      - brain_states:/app/brain_states
+      - ./logs:/var/log/course-creator
+      - ./shared:/app/shared:ro
+    ports:
+      - "8016:8016"
+    networks:
+      - course-creator-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8016/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
   # Selenium Chrome - Stable browser automation for E2E tests
   selenium-chrome:
     image: selenium/standalone-chrome:119.0
@@ -800,6 +839,58 @@ services:
       start_period: 60s
     restart: unless-stopped
 
+  # Prometheus - Metrics Collection and Monitoring
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: course-creator-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - course-creator-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Grafana - Metrics Visualization and Dashboards
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: course-creator-grafana
+    ports:
+      - "3002:3000"  # Changed from 3001 to 3002 to avoid conflict with frontend HTTP port
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3002
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - course-creator-network
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
 
 volumes:
   postgres_data:
@@ -812,6 +903,9 @@ volumes:
   lab_storage:
   rag_chromadb_data:
   rag_huggingface_cache:
+  brain_states:
+  prometheus_data:
+  grafana_data:
 
 networks:
   course-creator-network:

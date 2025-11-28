@@ -48,7 +48,7 @@ describe('ManageUsers Component', () => {
         },
       });
 
-      expect(screen.getByText('Manage Users')).toBeInTheDocument();
+      expect(screen.getByText('Manage Platform Users')).toBeInTheDocument();
     });
 
     it('renders user list with mock data', () => {
@@ -96,9 +96,10 @@ describe('ManageUsers Component', () => {
         },
       });
 
-      expect(screen.getByText('site_admin')).toBeInTheDocument();
-      expect(screen.getAllByText('instructor').length).toBeGreaterThan(0);
-      expect(screen.getAllByText('student').length).toBeGreaterThan(0);
+      // Role badges display formatted role names (Site Admin instead of site_admin)
+      expect(screen.getAllByText('Site Admin').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Instructor').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Student').length).toBeGreaterThan(0);
     });
   });
 
@@ -125,7 +126,7 @@ describe('ManageUsers Component', () => {
         },
       });
 
-      const searchInput = screen.getByPlaceholderText(/Search users/i);
+      const searchInput = screen.getByPlaceholderText(/Search by name, email, or organization/i);
       await user.type(searchInput, 'Alice');
 
       await waitFor(() => {
@@ -165,7 +166,7 @@ describe('ManageUsers Component', () => {
       });
     });
 
-    it('filters users by organization', async () => {
+    it('filters users by status', async () => {
       const user = userEvent.setup();
 
       renderWithProviders(<ManageUsers />, {
@@ -187,13 +188,12 @@ describe('ManageUsers Component', () => {
         },
       });
 
-      const orgSelect = screen.getByDisplayValue('All Organizations');
-      await user.selectOptions(orgSelect, 'Acme Corporation');
+      const statusSelect = screen.getByDisplayValue('All Statuses');
+      await user.selectOptions(statusSelect, 'suspended');
 
       await waitFor(() => {
-        expect(screen.getByText('Bob Smith')).toBeInTheDocument();
-        expect(screen.getByText('Carol Davis')).toBeInTheDocument();
-        expect(screen.queryByText('David Wilson')).not.toBeInTheDocument();
+        expect(screen.getByText('Frank Brown')).toBeInTheDocument();
+        expect(screen.queryByText('Alice Johnson')).not.toBeInTheDocument();
       });
     });
   });

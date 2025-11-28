@@ -15,6 +15,7 @@ import { useAppDispatch, useAppSelector } from './useRedux';
 import { loginSuccess, logout as logoutAction, refreshTokenSuccess } from '@store/slices/authSlice';
 import { setUserProfile, clearUser } from '@store/slices/userSlice';
 import { authService, LoginCredentials, RegisterData } from '@services/authService';
+import { tokenManager } from '@services/tokenManager';
 import { addNotification } from '@store/slices/uiSlice';
 
 /**
@@ -74,7 +75,7 @@ export const useAuth = () => {
         // Redirect based on role
         const dashboardRoutes = {
           site_admin: '/dashboard/site-admin',
-          org_admin: '/dashboard/org-admin',
+          organization_admin: '/dashboard/org-admin',
           instructor: '/dashboard/instructor',
           student: '/dashboard/student',
           guest: '/',
@@ -166,7 +167,7 @@ export const useAuth = () => {
         // Redirect based on role (same as login)
         const dashboardRoutes = {
           site_admin: '/dashboard/site-admin',
-          org_admin: '/dashboard/org-admin',
+          organization_admin: '/dashboard/org-admin',
           instructor: '/dashboard/instructor',
           student: '/dashboard/student',
           guest: '/',
@@ -197,7 +198,7 @@ export const useAuth = () => {
    */
   const refreshToken = useCallback(async () => {
     try {
-      const refreshTokenValue = localStorage.getItem('refreshToken');
+      const refreshTokenValue = tokenManager.getRefreshToken();
       if (!refreshTokenValue) {
         throw new Error('No refresh token available');
       }
@@ -264,7 +265,7 @@ export const useAuth = () => {
     // Computed
     isStudent: role === 'student',
     isInstructor: role === 'instructor',
-    isOrgAdmin: role === 'org_admin',
+    isOrgAdmin: role === 'organization_admin',
     isSiteAdmin: role === 'site_admin',
     isGuest: role === 'guest' || !role,
   };

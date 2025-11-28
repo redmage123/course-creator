@@ -30,6 +30,12 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional
 from datetime import datetime
 import logging
+import sys
+import os
+
+# JWT Authentication - Import from auth module
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from auth import get_current_user_id as get_authenticated_user_id
 
 # Domain interfaces
 from course_management.domain.interfaces.course_service import ICourseService
@@ -56,14 +62,8 @@ def get_course_service() -> ICourseService:
         raise HTTPException(status_code=500, detail="Service not initialized")
     return container.get_course_service()
 
-def get_current_user_id() -> str:
-    """
-    Extract user ID from JWT token
-    For now, return a mock user ID - in production, this would validate JWT
-    """
-    # Use a real UUID from the database for testing
-    # orgadmin@e2etest.com = b14efecc-de51-4056-8034-30d05bf6fe80
-    return "b14efecc-de51-4056-8034-30d05bf6fe80"  # Mock implementation with valid UUID
+# JWT-authenticated user ID extraction (replaced deprecated mock)
+get_current_user_id = get_authenticated_user_id
 
 # ============================================================================
 # COURSE INSTANCE ENDPOINTS

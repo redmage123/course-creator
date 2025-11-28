@@ -1,0 +1,194 @@
+/**
+ * Error Boundary Styles
+ *
+ * DESIGN APPROACH:
+ * - Centered layout for error messages
+ * - Clear visual hierarchy
+ * - Accessible color contrast
+ * - Professional, calming aesthetic
+ */
+
+.errorBoundary {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 2rem;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8ebf0 100%);
+}
+
+.errorCard {
+  max-width: 600px;
+  width: 100%;
+  background: white;
+  border-radius: 12px;
+  padding: 3rem 2rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.errorIcon {
+  color: #e74c3c;
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.errorTitle {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0 0 1rem 0;
+}
+
+.errorMessage {
+  font-size: 1.125rem;
+  color: #5a6c7d;
+  line-height: 1.6;
+  margin: 0 0 2rem 0;
+}
+
+/* Error Details (Development Mode Only) */
+.errorDetails {
+  margin: 2rem 0;
+  text-align: left;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.errorDetailsSummary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #495057;
+  padding: 0.5rem;
+  user-select: none;
+}
+
+.errorDetailsSummary:hover {
+  color: #212529;
+}
+
+.errorDetailsContent {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #dee2e6;
+}
+
+.errorName {
+  font-size: 0.875rem;
+  color: #e74c3c;
+  margin: 0 0 1rem 0;
+  word-break: break-word;
+}
+
+.errorStack {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.75rem;
+  color: #495057;
+  background: white;
+  padding: 1rem;
+  border-radius: 4px;
+  overflow-x: auto;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Action Buttons */
+.errorActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.button {
+  padding: 0.75rem 2rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 140px;
+}
+
+.buttonPrimary {
+  background: #3498db;
+  color: white;
+}
+
+.buttonPrimary:hover {
+  background: #2980b9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.buttonPrimary:active {
+  transform: translateY(0);
+}
+
+.buttonSecondary {
+  background: #ecf0f1;
+  color: #2c3e50;
+}
+
+.buttonSecondary:hover {
+  background: #d5dbdb;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.buttonSecondary:active {
+  transform: translateY(0);
+}
+
+/* Help Text */
+.errorHelp {
+  font-size: 0.875rem;
+  color: #7f8c8d;
+  margin: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .errorBoundary {
+    padding: 1rem;
+  }
+
+  .errorCard {
+    padding: 2rem 1.5rem;
+  }
+
+  .errorTitle {
+    font-size: 1.5rem;
+  }
+
+  .errorMessage {
+    font-size: 1rem;
+  }
+
+  .errorActions {
+    flex-direction: column;
+  }
+
+  .button {
+    width: 100%;
+  }
+}
+
+/* Accessibility: Focus Styles */
+.button:focus-visible {
+  outline: 3px solid #3498db;
+  outline-offset: 2px;
+}
+
+.errorDetailsSummary:focus-visible {
+  outline: 2px solid #3498db;
+  outline-offset: 2px;
+  border-radius: 4px;
+}

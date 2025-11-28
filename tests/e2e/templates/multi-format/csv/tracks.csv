@@ -1,0 +1,3 @@
+name,description,target_audience,prerequisites,learning_objectives,duration_weeks,difficulty,max_students
+Frontend Development,Master modern frontend technologies,"career_changers, junior_developers","Basic HTML/CSS knowledge, JavaScript fundamentals","Build responsive web applications with React, Implement state management with Redux, Create accessible and performant UIs",6,beginner,30
+Backend Development,Server-side development with Node.js,"frontend_developers, junior_developers","JavaScript proficiency, Understanding of HTTP","Build RESTful APIs with Express, Work with databases (SQL and NoSQL), Implement authentication and authorization",6,intermediate,30

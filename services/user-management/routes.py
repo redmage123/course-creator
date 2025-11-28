@@ -47,6 +47,17 @@ except ImportError:
     def get_organization_context():
         return None
 
+# Rate limiting for security-sensitive endpoints
+try:
+    from shared.security.rate_limit import rate_limit, login_rate_limit, get_client_identifier
+except ImportError:
+    # Fallback if rate limiting module not available
+    def rate_limit(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
+    login_rate_limit = rate_limit()
+
 # API Models (DTOs - following Single Responsibility)
 class UserCreateRequest(BaseModel):
     email: EmailStr
@@ -280,6 +291,7 @@ def setup_auth_routes(app: FastAPI) -> None:
     # All authentication now uses the consolidated /auth/login endpoint below
 
     @app.post("/auth/login", response_model=TokenResponse)
+    @rate_limit(requests_per_minute=5, key_prefix="login")
     async def login(
         request: LoginRequest,
         raw_request: Request,
@@ -289,15 +301,16 @@ def setup_auth_routes(app: FastAPI) -> None:
     ):
         """
         CONSOLIDATED LOGIN ENDPOINT
-        
+
         Uses the single LoginRequest model from models/auth.py
         Accepts username field (can be username or email)
+
+        SECURITY: Rate limited to 5 requests per minute per IP
+        to prevent brute force attacks.
         """
         try:
-            # Log raw request body to see what we actually receive
-            raw_body = await raw_request.body()
-            logger.info(f"📦 RAW REQUEST BODY: {raw_body}")
-            logger.info(f"🔐 LOGIN ATTEMPT - Username: '{request.username}', Password: '{request.password}'")
+            # Security: Never log passwords or raw request bodies containing credentials
+            logger.info(f"🔐 LOGIN ATTEMPT - Username: '{request.username}'")
             user = await auth_service.authenticate_user(request.username, request.password)
             logger.info(f"🔍 AUTH RESULT - User found: {user is not None}")
             if user:

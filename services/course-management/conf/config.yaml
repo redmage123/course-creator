@@ -24,7 +24,8 @@ database:
   url: postgresql://${oc.env:DB_USER,postgres}:${oc.env:DB_PASSWORD,postgres_password}@${oc.env:DB_HOST,postgres}:${oc.env:DB_PORT,5432}/${oc.env:DB_NAME,course_creator}
 
 jwt:
-  secret_key: ${oc.env:JWT_SECRET_KEY,"your-secret-key-here-change-in-production"}
+  # SECURITY: JWT secret must be set via JWT_SECRET_KEY environment variable - no default allowed
+  secret_key: ${oc.env:JWT_SECRET_KEY}
   algorithm: HS256
   token_expiry: 15
 

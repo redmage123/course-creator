@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Simple Organization Template - XML Format
+  AI Assistant can parse this XML format to create organizations
+-->
+<organizationTemplate>
+  <metadata>
+    <templateType>organization</templateType>
+    <version>1.0</version>
+    <description>Simple organization template with basic course structure</description>
+  </metadata>
+
+  <organization>
+    <!-- Organization Details -->
+    <name>TechEd Academy</name>
+    <slug>teched-academy</slug>
+    <description>Modern technology education academy focusing on software development</description>
+    <domain>teched-academy.edu</domain>
+    <industry>Education &amp; Technology</industry>
+    <size>small</size>
+
+    <!-- Address Information -->
+    <address>
+      <street>456 Innovation Drive</street>
+      <city>San Francisco</city>
+      <state>CA</state>
+      <postalCode>94105</postalCode>
+      <country>US</country>
+    </address>
+
+    <!-- Contact Information -->
+    <contact>
+      <phone>+1-415-555-0199</phone>
+      <email>contact@teched-academy.edu</email>
+      <website>https://teched-academy.edu</website>
+    </contact>
+
+    <!-- Administrator Account -->
+    <administrator>
+      <fullName>Dr. Emily Chen</fullName>
+      <username>echen</username>
+      <email>admin@teched-academy.edu</email>
+      <password>AdminPass123!</password>
+      <firstName>Emily</firstName>
+      <lastName>Chen</lastName>
+      <role>organization_admin</role>
+    </administrator>
+
+    <!-- Organization Settings -->
+    <settings>
+      <timezone>America/Los_Angeles</timezone>
+      <language>en</language>
+      <currency>USD</currency>
+      <dateFormat>MM/DD/YYYY</dateFormat>
+    </settings>
+  </organization>
+
+  <!-- Training Programs -->
+  <trainingPrograms>
+    <program>
+      <name>Web Development Bootcamp 2025</name>
+      <description>Intensive 12-week program covering modern web development</description>
+      <category>Software Engineering</category>
+      <difficulty>intermediate</difficulty>
+      <duration>12 weeks</duration>
+      <price>0</price>
+      <published>false</published>
+    </program>
+  </trainingPrograms>
+
+  <!-- Learning Tracks -->
+  <tracks>
+    <track>
+      <name>Frontend Development</name>
+      <description>Master modern frontend technologies</description>
+      <targetAudience>
+        <audience>career_changers</audience>
+        <audience>junior_developers</audience>
+      </targetAudience>
+      <prerequisites>
+        <prerequisite>Basic HTML/CSS knowledge</prerequisite>
+        <prerequisite>JavaScript fundamentals</prerequisite>
+      </prerequisites>
+      <learningObjectives>
+        <objective>Build responsive web applications with React</objective>
+        <objective>Implement state management with Redux</objective>
+        <objective>Create accessible and performant UIs</objective>
+      </learningObjectives>
+      <durationWeeks>6</durationWeeks>
+      <difficulty>beginner</difficulty>
+      <maxStudents>30</maxStudents>
+    </track>
+
+    <track>
+      <name>Backend Development</name>
+      <description>Server-side development with Node.js</description>
+      <targetAudience>
+        <audience>frontend_developers</audience>
+        <audience>junior_developers</audience>
+      </targetAudience>
+      <prerequisites>
+        <prerequisite>JavaScript proficiency</prerequisite>
+        <prerequisite>Understanding of HTTP</prerequisite>
+      </prerequisites>
+      <learningObjectives>
+        <objective>Build RESTful APIs with Express</objective>
+        <objective>Work with databases (SQL and NoSQL)</objective>
+        <objective>Implement authentication and authorization</objective>
+      </learningObjectives>
+      <durationWeeks>6</durationWeeks>
+      <difficulty>intermediate</difficulty>
+      <maxStudents>30</maxStudents>
+    </track>
+  </tracks>
+
+  <!-- Courses -->
+  <courses>
+    <!-- Frontend Development Track Courses -->
+    <course trackName="Frontend Development">
+      <title>React Fundamentals</title>
+      <description>Learn React basics including components, props, and state</description>
+      <difficulty>beginner</difficulty>
+      <durationWeeks>2</durationWeeks>
+    </course>
+
+    <course trackName="Frontend Development">
+      <title>Advanced React Patterns</title>
+      <description>Master hooks, context, and performance optimization</description>
+      <difficulty>intermediate</difficulty>
+      <durationWeeks>2</durationWeeks>
+    </course>
+
+    <course trackName="Frontend Development">
+      <title>State Management with Redux</title>
+      <description>Implement complex state management in React apps</description>
+      <difficulty>intermediate</difficulty>
+      <durationWeeks>2</durationWeeks>
+    </course>
+
+    <!-- Backend Development Track Courses -->
+    <course trackName="Backend Development">
+      <title>Node.js Essentials</title>
+      <description>Build server-side applications with Node.js</description>
+      <difficulty>beginner</difficulty>
+      <durationWeeks>2</durationWeeks>
+    </course>
+
+    <course trackName="Backend Development">
+      <title>Express.js and REST APIs</title>
+      <description>Create RESTful APIs with Express framework</description>
+      <difficulty>intermediate</difficulty>
+      <durationWeeks>2</durationWeeks>
+    </course>
+
+    <course trackName="Backend Development">
+      <title>Database Integration</title>
+      <description>Work with PostgreSQL and MongoDB</description>
+      <difficulty>intermediate</difficulty>
+      <durationWeeks>2</durationWeeks>
+    </course>
+  </courses>
+
+  <!-- Instructors -->
+  <instructors>
+    <instructor>
+      <firstName>Alex</firstName>
+      <lastName>Rodriguez</lastName>
+      <email>alex.rodriguez@teched-academy.edu</email>
+      <fullName>Alex Rodriguez</fullName>
+      <username>arodriguez</username>
+      <password>InstructorPass123!</password>
+      <specialties>
+        <specialty>React</specialty>
+        <specialty>JavaScript</specialty>
+      </specialties>
+      <bio>Senior frontend developer with 8 years of experience</bio>
+    </instructor>
+
+    <instructor>
+      <firstName>Maya</firstName>
+      <lastName>Patel</lastName>
+      <email>maya.patel@teched-academy.edu</email>
+      <fullName>Maya Patel</fullName>
+      <username>mpatel</username>
+      <password>InstructorPass123!</password>
+      <specialties>
+        <specialty>Node.js</specialty>
+        <specialty>Databases</specialty>
+      </specialties>
+      <bio>Backend engineer specializing in scalable systems</bio>
+    </instructor>
+  </instructors>
+
+  <!-- Students -->
+  <students>
+    <student>
+      <firstName>Jordan</firstName>
+      <lastName>Smith</lastName>
+      <email>jordan.smith@students.teched-academy.edu</email>
+      <fullName>Jordan Smith</fullName>
+      <username>jsmith</username>
+      <password>StudentPass123!</password>
+      <background>Career changer from marketing</background>
+      <goals>
+        <goal>Become a frontend developer</goal>
+        <goal>Build portfolio projects</goal>
+      </goals>
+    </student>
+
+    <student>
+      <firstName>Taylor</firstName>
+      <lastName>Johnson</lastName>
+      <email>taylor.johnson@students.teched-academy.edu</email>
+      <fullName>Taylor Johnson</fullName>
+      <username>tjohnson</username>
+      <password>StudentPass123!</password>
+      <background>Computer science graduate</background>
+      <goals>
+        <goal>Master full-stack development</goal>
+        <goal>Get hired at a tech company</goal>
+      </goals>
+    </student>
+
+    <student>
+      <firstName>Casey</firstName>
+      <lastName>Williams</lastName>
+      <email>casey.williams@students.teched-academy.edu</email>
+      <fullName>Casey Williams</fullName>
+      <username>cwilliams</username>
+      <password>StudentPass123!</password>
+      <background>Self-taught developer</background>
+      <goals>
+        <goal>Formalize web development skills</goal>
+        <goal>Learn best practices</goal>
+      </goals>
+    </student>
+  </students>
+</organizationTemplate>

@@ -30,12 +30,10 @@ describe('OrganizationSettings Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(console, 'log').mockImplementation(() => {});
-    vi.useFakeTimers();
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    vi.useRealTimers();
   });
 
   describe('Rendering', () => {
@@ -82,7 +80,8 @@ describe('OrganizationSettings Component', () => {
         },
       });
 
-      expect(screen.getByText('Organization Profile')).toBeInTheDocument();
+      // Multiple "Organization Profile" elements exist (tab and heading), use getAllByText
+      expect(screen.getAllByText('Organization Profile').length).toBeGreaterThan(0);
       expect(screen.getByText('Branding')).toBeInTheDocument();
       expect(screen.getByText('Training Policies')).toBeInTheDocument();
       expect(screen.getByText('Integrations')).toBeInTheDocument();
@@ -228,14 +227,14 @@ describe('OrganizationSettings Component', () => {
         },
       });
 
-      const saveButton = screen.getByText('Save Profile');
+      // Button text is "Save Profile Settings", not "Save Profile"
+      const saveButton = screen.getByText('Save Profile Settings');
       await user.click(saveButton);
 
-      vi.advanceTimersByTime(1000);
-
+      // Wait for the async save operation and alert
       await waitFor(() => {
         expect(mockAlert).toHaveBeenCalledWith('Profile settings updated successfully!');
-      });
+      }, { timeout: 3000 });
     });
   });
 
@@ -289,8 +288,9 @@ describe('OrganizationSettings Component', () => {
       const subscriptionTab = screen.getByText('Subscription');
       await user.click(subscriptionTab);
 
+      // Multiple Enterprise text may appear - use getAllByText to verify at least one exists
       await waitFor(() => {
-        expect(screen.getByText(/Enterprise/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/Enterprise/i).length).toBeGreaterThan(0);
       });
     });
   });

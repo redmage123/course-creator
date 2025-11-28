@@ -26,6 +26,12 @@ from fastapi import HTTPException, status, Depends, Header
 from typing import Optional, Dict, Any
 import httpx
 import logging
+import os
+import sys
+
+# Add shared module to path for SSL config
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'shared'))
+from security.ssl_config import create_secure_client_kwargs
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +102,8 @@ async def validate_jwt_token(token: str) -> Dict[str, Any]:
     """
     try:
         # Call user-management service to validate token
-        async with httpx.AsyncClient(verify=False) as client:
+        # Environment-aware SSL verification
+        async with httpx.AsyncClient(**create_secure_client_kwargs()) as client:
             response = await client.get(
                 f"{USER_MANAGEMENT_SERVICE_URL}/auth/validate",
                 headers={"Authorization": f"Bearer {token}"},

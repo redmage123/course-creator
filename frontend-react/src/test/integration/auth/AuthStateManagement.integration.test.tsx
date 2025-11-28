@@ -388,22 +388,24 @@ describe('Auth State Management Integration Tests', () => {
 
     const store = setupStore();
 
-    // Override MSW to return login response
+    // Override MSW to return login response in BACKEND format
+    // authService.login() transforms access_token -> token, etc.
     server.use(
       http.post('https://176.9.99.103:8000/auth/login', async ({ request }) => {
         const body = await request.json() as any;
         const identifier = body.username || body.email;
         if (identifier === 'hookuser') {
           return HttpResponse.json({
-            token: 'hook-token',
-            refreshToken: 'hook-refresh',
+            access_token: 'hook-token',
+            refresh_token: 'hook-refresh',
+            expires_in: 3600, // seconds - authService converts to timestamp
             user: {
               id: 'user-hook',
               username: 'hookuser',
               email: 'hook@example.com',
               role: 'student',
+              organization_id: null,
             },
-            expiresIn: 3600, // seconds
           });
         }
         return HttpResponse.json(

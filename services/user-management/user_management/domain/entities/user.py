@@ -214,6 +214,7 @@ class User:
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     organization: Optional[str] = None
+    organization_id: Optional[str] = None
     phone: Optional[str] = None
     timezone: Optional[str] = None
     language: str = "en"
@@ -507,7 +508,7 @@ class User:
         ID, role, status, created_at, etc.
         """
         allowed_fields = {
-            'full_name', 'first_name', 'last_name', 'organization', 
+            'full_name', 'first_name', 'last_name', 'organization', 'organization_id',
             'phone', 'timezone', 'language', 'bio', 'profile_picture_url'
         }
         

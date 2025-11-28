@@ -1,0 +1,246 @@
+{
+  "test_id": "214fa8e0",
+  "started_at": "2025-11-27T10:30:48.257825",
+  "completed_at": "2025-11-27T10:34:06.941032",
+  "total_tests": 22,
+  "passed": 22,
+  "failed": 0,
+  "entities_created": {
+    "organization": {
+      "name": "Test Organization 214fa8e0",
+      "slug": "test-org-214fa8e0",
+      "email": "admin@testorg214fa8e0.com",
+      "admin_name": "Test Admin",
+      "admin_email": "admin@testorg214fa8e0.com",
+      "admin_password": "TestPassword123!"
+    },
+    "projects": [
+      {
+        "name": "Python Fundamentals Training 214fa8e0",
+        "description": "Complete Python programming course for beginners",
+        "start_date": "2025-12-04",
+        "end_date": "2026-02-25"
+      }
+    ],
+    "tracks": [
+      {
+        "name": "Python Basics Track 214fa8e0",
+        "description": "Foundational Python programming concepts"
+      }
+    ],
+    "courses": [
+      {
+        "title": "Introduction to Python 214fa8e0",
+        "description": "Learn Python programming from scratch",
+        "duration": "8 weeks"
+      }
+    ],
+    "students": [
+      {
+        "name": "Test Student",
+        "email": "student214fa8e0@testorg.com",
+        "password": "StudentPass123!"
+      }
+    ]
+  },
+  "results": [
+    {
+      "name": "org_registration_page_loads",
+      "category": "organization",
+      "passed": true,
+      "duration_ms": 693.528,
+      "details": "Verify org registration page loads",
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "create_organization",
+      "category": "organization",
+      "passed": true,
+      "duration_ms": 6146.085,
+      "details": "Create organization: Test Organization 214fa8e0",
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "org_admin_dashboard_access",
+      "category": "program",
+      "passed": true,
+      "duration_ms": 8109.185,
+      "details": "Org admin can access dashboard",
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "navigate_to_programs_page",
+      "category": "program",
+      "passed": true,
+      "duration_ms": 8419.283,
+      "details": "Navigate to programs page",
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "create_program_link_exists",
+      "category": "program",
+      "passed": true,
+      "duration_ms": 10312.514000000001,
+      "details": "Create program link exists",
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "create_training_program",
+      "category": "program",
+      "passed": true,
+      "duration_ms": 11622.448999999999,
+      "details": "Create program: Python Fundamentals Training 214fa8e0",
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "navigate_to_tracks_page",
+      "category": "track",
+      "passed": true,
+      "duration_ms": 8473.447,
+      "details": "Navigate to tracks page",
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "create_track",
+      "category": "track",
+      "passed": true,
+      "duration_ms": 13927.863000000001,
+      "details": "Create track: Python Basics Track 214fa8e0",
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "instructor_dashboard_access",
+      "category": "course",
+      "passed": true,
+      "duration_ms": 8445.199,
+      "details": "Instructor dashboard access",
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "create_course",
+      "category": "course",
+      "passed": true,
+      "duration_ms": 8333.866,
+      "details": "Create course: Introduction to Python 214fa8e0",
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "navigate_to_members_page",
+      "category": "enrollment",
+      "passed": true,
+      "duration_ms": 8466.469,
+      "details": "Navigate to members page",
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "add_student_to_organization",
+      "category": "enrollment",
+      "passed": true,
+      "duration_ms": 13917.144,
+      "details": "Add student: Test Student",
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "enroll_student_in_track",
+      "category": "enrollment",
+      "passed": true,
+      "duration_ms": 8382.225999999999,
+      "details": "Enroll student in track",
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "student_lab_access",
+      "category": "lab",
+      "passed": true,
+      "duration_ms": 8454.421999999999,
+      "details": "Student can access labs",
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "start_lab_environment",
+      "category": "lab",
+      "passed": true,
+      "duration_ms": 13657.464,
+      "details": "Start lab environment",
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "lab_ide_selection",
+      "category": "lab",
+      "passed": true,
+      "duration_ms": 8342.827,
+      "details": "Lab IDE selection",
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "instructor_quiz_creation",
+      "category": "quiz",
+      "passed": true,
+      "duration_ms": 8384.708,
+      "details": "Instructor creates quiz",
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "student_quiz_access",
+      "category": "quiz",
+      "passed": true,
+      "duration_ms": 8464.848,
+      "details": "Student can access quizzes",
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "quiz_taking_interface",
+      "category": "quiz",
+      "passed": true,
+      "duration_ms": 8440.859,
+      "details": "Quiz taking interface",
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "instructor_analytics_dashboard",
+      "category": "analytics",
+      "passed": true,
+      "duration_ms": 8452.379,
+      "details": "Instructor analytics",
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "org_admin_analytics_dashboard",
+      "category": "analytics",
+      "passed": true,
+      "duration_ms": 8421.334,
+      "details": "Org admin analytics",
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "site_admin_platform_analytics",
+      "category": "analytics",
+      "passed": true,
+      "duration_ms": 8439.357,
+      "details": "Site admin platform analytics",
+      "error": null,
+      "screenshot": null
+    }
+  ]
+}

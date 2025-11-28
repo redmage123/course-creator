@@ -217,11 +217,21 @@ class CourseService(ICourseService):
         """Get all published courses with pagination"""
         if limit <= 0 or limit > 100:
             limit = 50
-        
+
         if offset < 0:
             offset = 0
-        
+
         return await self._dao.get_published_courses(limit, offset)
+
+    async def get_all_courses(self, limit: int = 50, offset: int = 0) -> List[Course]:
+        """Get ALL courses (published and unpublished) with pagination"""
+        if limit <= 0 or limit > 100:
+            limit = 50
+
+        if offset < 0:
+            offset = 0
+
+        return await self._dao.get_all_courses(limit, offset)
     
     async def search_courses(self, query: str, category: Optional[str] = None, 
                             difficulty: Optional[str] = None) -> List[Course]:

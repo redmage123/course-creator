@@ -6,13 +6,14 @@
  * login status, and user session management.
  *
  * TECHNICAL IMPLEMENTATION:
- * Redux Toolkit slice with actions for login, logout, token refresh. Persists
- * auth token to localStorage for session persistence across page reloads.
+ * Redux Toolkit slice with actions for login, logout, token refresh. Uses in-memory
+ * token storage via tokenManager for enhanced security (no localStorage persistence).
  */
 
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { tokenManager } from '@services/tokenManager';
 
-export type UserRole = 'site_admin' | 'org_admin' | 'instructor' | 'student' | 'guest';
+export type UserRole = 'site_admin' | 'organization_admin' | 'instructor' | 'student' | 'guest';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -24,17 +25,23 @@ interface AuthState {
   expiresAt: number | null;
 }
 
-// Restore auth state from localStorage on initialization
-const storedToken = localStorage.getItem('authToken');
-const storedRefreshToken = localStorage.getItem('refreshToken');
+/**
+ * Initial auth state
+ *
+ * WHY NO TOKEN PERSISTENCE:
+ * Tokens are stored in-memory only (via tokenManager) for security.
+ * On page reload, user must re-authenticate. This prevents XSS token theft
+ * via localStorage access. Role/user metadata stored in localStorage for
+ * routing purposes only (not sensitive data).
+ */
 const storedRole = localStorage.getItem('userRole') as UserRole;
 const storedUserId = localStorage.getItem('userId');
 const storedOrganizationId = localStorage.getItem('organizationId');
 
 const initialState: AuthState = {
-  isAuthenticated: !!storedToken, // Authenticated if token exists
-  token: storedToken,
-  refreshToken: storedRefreshToken,
+  isAuthenticated: false, // Always false on reload - requires re-authentication
+  token: null,
+  refreshToken: null,
   role: storedRole || null,
   userId: storedUserId,
   organizationId: storedOrganizationId,
@@ -73,11 +80,13 @@ const authSlice = createSlice({
       state.organizationId = action.payload.organizationId || null;
       state.expiresAt = action.payload.expiresAt;
 
-      // Persist to localStorage
-      localStorage.setItem('authToken', action.payload.token);
+      // Store tokens in memory (secure - not in localStorage)
+      tokenManager.setToken(action.payload.token);
       if (action.payload.refreshToken) {
-        localStorage.setItem('refreshToken', action.payload.refreshToken);
+        tokenManager.setRefreshToken(action.payload.refreshToken);
       }
+
+      // Store non-sensitive metadata in localStorage (for routing purposes)
       localStorage.setItem('userRole', action.payload.role);
       localStorage.setItem('userId', action.payload.userId);
       if (action.payload.organizationId) {
@@ -94,9 +103,10 @@ const authSlice = createSlice({
       state.organizationId = null;
       state.expiresAt = null;
 
-      // Clear localStorage
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('refreshToken');
+      // Clear tokens from memory
+      tokenManager.clearTokens();
+
+      // Clear metadata from localStorage
       localStorage.removeItem('userRole');
       localStorage.removeItem('userId');
       localStorage.removeItem('organizationId');
@@ -108,7 +118,8 @@ const authSlice = createSlice({
     ) => {
       state.token = action.payload.token;
       state.expiresAt = action.payload.expiresAt;
-      localStorage.setItem('authToken', action.payload.token);
+      // Store refreshed token in memory (not localStorage)
+      tokenManager.setToken(action.payload.token);
     },
 
     updateOrganization: (state, action: PayloadAction<string>) => {

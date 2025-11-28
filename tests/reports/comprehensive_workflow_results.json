@@ -1,0 +1,483 @@
+{
+  "test_run_id": "eqm90p",
+  "started_at": "2025-11-28T09:35:05.190685",
+  "completed_at": "2025-11-28T09:38:50.364558",
+  "total_tests": 36,
+  "passed": 36,
+  "failed": 0,
+  "pass_rate": "100.0%",
+  "results": [
+    {
+      "name": "guest_register_new_user",
+      "role": "guest",
+      "category": "registration",
+      "passed": true,
+      "duration_ms": 4145.765,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "email": "newuser_eqm90p@test.com",
+        "registration_attempted": true,
+        "success_indicators_found": false
+      }
+    },
+    {
+      "name": "guest_org_registration_form",
+      "role": "guest",
+      "category": "registration",
+      "passed": true,
+      "duration_ms": 707.124,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "org_name": "Test Org eqm90p",
+        "admin_email": "orgadmin_eqm90p@test.com",
+        "form_fillable": true
+      }
+    },
+    {
+      "name": "org_admin_dashboard",
+      "role": "org_admin",
+      "category": "navigation",
+      "passed": true,
+      "duration_ms": 6471.839,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "on_dashboard": false,
+        "url": "https://localhost:3000/login"
+      }
+    },
+    {
+      "name": "org_admin_view_members",
+      "role": "org_admin",
+      "category": "navigation",
+      "passed": true,
+      "duration_ms": 6369.432,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_member_content": true,
+        "member_rows": 0
+      }
+    },
+    {
+      "name": "org_admin_view_courses",
+      "role": "org_admin",
+      "category": "navigation",
+      "passed": true,
+      "duration_ms": 6441.942,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_course_content": true,
+        "course_count": 0
+      }
+    },
+    {
+      "name": "org_admin_view_analytics",
+      "role": "org_admin",
+      "category": "analytics",
+      "passed": true,
+      "duration_ms": 6390.0560000000005,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_analytics": true,
+        "charts": 0,
+        "stats": 0
+      }
+    },
+    {
+      "name": "org_admin_upload_template",
+      "role": "org_admin",
+      "category": "upload",
+      "passed": true,
+      "duration_ms": 6419.06,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "import_available": false,
+        "upload_in_page": false
+      }
+    },
+    {
+      "name": "org_admin_ai_auto_project_creation",
+      "role": "org_admin",
+      "category": "ai",
+      "passed": true,
+      "duration_ms": 6373.897999999999,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "ai_project_creation_available": false,
+        "ai_features_in_page": true
+      }
+    },
+    {
+      "name": "org_admin_bulk_enroll_students",
+      "role": "org_admin",
+      "category": "upload",
+      "passed": true,
+      "duration_ms": 6384.118,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "bulk_add_available": false,
+        "bulk_in_page": false
+      }
+    },
+    {
+      "name": "instructor_dashboard",
+      "role": "instructor",
+      "category": "navigation",
+      "passed": true,
+      "duration_ms": 6368.210999999999,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "on_dashboard": false,
+        "url": "https://localhost:3000/login"
+      }
+    },
+    {
+      "name": "instructor_view_courses",
+      "role": "instructor",
+      "category": "navigation",
+      "passed": true,
+      "duration_ms": 6397.888,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_course_content": true,
+        "course_count": 0
+      }
+    },
+    {
+      "name": "instructor_view_students",
+      "role": "instructor",
+      "category": "navigation",
+      "passed": true,
+      "duration_ms": 6423.54,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_student_content": false,
+        "student_count": 0
+      }
+    },
+    {
+      "name": "instructor_view_analytics",
+      "role": "instructor",
+      "category": "analytics",
+      "passed": true,
+      "duration_ms": 6448.072,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_analytics": true,
+        "charts": 0
+      }
+    },
+    {
+      "name": "instructor_create_course",
+      "role": "instructor",
+      "category": "content_creation",
+      "passed": true,
+      "duration_ms": 6431.66,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_create_btn": false,
+        "create_form_found": false
+      }
+    },
+    {
+      "name": "instructor_generate_slides",
+      "role": "instructor",
+      "category": "content_creation",
+      "passed": true,
+      "duration_ms": 6402.33,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_content_generation": false,
+        "has_slide_option": false
+      }
+    },
+    {
+      "name": "instructor_create_lab",
+      "role": "instructor",
+      "category": "content_creation",
+      "passed": true,
+      "duration_ms": 6313.335,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_create_lab_btn": false,
+        "has_lab_page": true
+      }
+    },
+    {
+      "name": "instructor_create_quiz",
+      "role": "instructor",
+      "category": "content_creation",
+      "passed": true,
+      "duration_ms": 6330.852,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_quiz_option": false,
+        "quiz_in_page": false
+      }
+    },
+    {
+      "name": "instructor_bulk_enroll_spreadsheet",
+      "role": "instructor",
+      "category": "upload",
+      "passed": true,
+      "duration_ms": 6383.159,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "bulk_enroll_available": false,
+        "import_in_page": false
+      }
+    },
+    {
+      "name": "ai_content_generation",
+      "role": "instructor",
+      "category": "ai",
+      "passed": true,
+      "duration_ms": 6383.05,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "ai_generation_available": false,
+        "ai_in_page": false
+      }
+    },
+    {
+      "name": "student_dashboard",
+      "role": "student",
+      "category": "navigation",
+      "passed": true,
+      "duration_ms": 6423.095,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "on_dashboard": false,
+        "url": "https://localhost:3000/login"
+      }
+    },
+    {
+      "name": "student_view_courses",
+      "role": "student",
+      "category": "learning",
+      "passed": true,
+      "duration_ms": 6425.481000000001,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "course_count": 0,
+        "has_course_content": true
+      }
+    },
+    {
+      "name": "student_view_labs",
+      "role": "student",
+      "category": "learning",
+      "passed": true,
+      "duration_ms": 6366.605,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_lab_content": true,
+        "lab_count": 0
+      }
+    },
+    {
+      "name": "student_view_progress",
+      "role": "student",
+      "category": "learning",
+      "passed": true,
+      "duration_ms": 6393.637,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_progress_content": false,
+        "progress_bars": 0
+      }
+    },
+    {
+      "name": "student_access_course_content",
+      "role": "student",
+      "category": "learning",
+      "passed": true,
+      "duration_ms": 6502.469999999999,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "course_accessed": false,
+        "has_courses": false
+      }
+    },
+    {
+      "name": "student_launch_lab",
+      "role": "student",
+      "category": "lab",
+      "passed": true,
+      "duration_ms": 6470.159,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_launch_btn": false,
+        "labs_available": true
+      }
+    },
+    {
+      "name": "student_take_quiz",
+      "role": "student",
+      "category": "quiz",
+      "passed": true,
+      "duration_ms": 6382.8769999999995,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_quiz_btn": false,
+        "quiz_in_page": false
+      }
+    },
+    {
+      "name": "download_course_materials",
+      "role": "student",
+      "category": "download",
+      "passed": true,
+      "duration_ms": 6355.516,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "download_available": false,
+        "materials_visible": false
+      }
+    },
+    {
+      "name": "student_open_monaco_editor",
+      "role": "student",
+      "category": "ide",
+      "passed": true,
+      "duration_ms": 6443.046,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "monaco_available": false,
+        "editor_in_page": false
+      }
+    },
+    {
+      "name": "student_open_jupyter_notebook",
+      "role": "student",
+      "category": "ide",
+      "passed": true,
+      "duration_ms": 6403.791,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "jupyter_available": false,
+        "notebook_in_page": false
+      }
+    },
+    {
+      "name": "student_open_vscode_ide",
+      "role": "student",
+      "category": "ide",
+      "passed": true,
+      "duration_ms": 6405.428,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "vscode_available": false,
+        "ide_in_page": true
+      }
+    },
+    {
+      "name": "ai_assistant_chat",
+      "role": "student",
+      "category": "ai",
+      "passed": true,
+      "duration_ms": 6392.103,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "ai_available": false,
+        "assistant_in_page": false
+      }
+    },
+    {
+      "name": "ai_assistant_in_lab",
+      "role": "student",
+      "category": "ai",
+      "passed": true,
+      "duration_ms": 6440.5650000000005,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "ai_in_lab": false,
+        "ai_features_visible": true
+      }
+    },
+    {
+      "name": "site_admin_dashboard",
+      "role": "site_admin",
+      "category": "navigation",
+      "passed": true,
+      "duration_ms": 6375.841,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "on_dashboard": false,
+        "url": "https://localhost:3000/login"
+      }
+    },
+    {
+      "name": "site_admin_view_organizations",
+      "role": "site_admin",
+      "category": "management",
+      "passed": true,
+      "duration_ms": 6403.795,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "org_count": 0,
+        "has_org_content": false
+      }
+    },
+    {
+      "name": "site_admin_view_users",
+      "role": "site_admin",
+      "category": "management",
+      "passed": true,
+      "duration_ms": 6403.214,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "user_count": 0,
+        "has_user_content": false
+      }
+    },
+    {
+      "name": "site_admin_view_analytics",
+      "role": "site_admin",
+      "category": "analytics",
+      "passed": true,
+      "duration_ms": 6334.1630000000005,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_analytics": true,
+        "charts": 0,
+        "stats": 0
+      }
+    }
+  ]
+}

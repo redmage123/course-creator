@@ -59,13 +59,23 @@ class ApplicationFactory:
         return app
 
 def setup_cors(app: FastAPI, config: DictConfig) -> None:
-    """Setup CORS middleware."""
-    allowed_origins = config.get("cors", {}).get("origins", ["*"])
-    
+    """
+    Setup CORS middleware with environment-based configuration.
+
+    SECURITY:
+    Never use wildcard (*) origins in production - enables CSRF attacks.
+    Always use explicit origin list from environment variables.
+    """
+    import os
+
+    # Get CORS origins from environment, not config (security requirement)
+    cors_origins_env = os.getenv('CORS_ORIGINS', 'https://localhost:3000,https://localhost:3001')
+    allowed_origins = [origin.strip() for origin in cors_origins_env.split(',')]
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allowed_origins,
         allow_credentials=True,
-        allow_methods=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
         allow_headers=["*"],
     )

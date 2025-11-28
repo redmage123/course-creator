@@ -22,7 +22,8 @@ export const handlers = [
   // AUTHENTICATION SERVICE
   // ============================================================================
 
-  // Login
+  // Login - Returns BACKEND format (access_token, refresh_token, expires_in)
+  // authService.login() transforms these to frontend format
   http.post(`${API_BASE_URL}/auth/login`, async ({ request }) => {
     const body = await request.json() as any;
     // Accept either username or email as login identifier
@@ -31,16 +32,17 @@ export const handlers = [
 
     if (identifier === 'admin@example.com' && password === 'password123') {
       return HttpResponse.json({
-        token: 'mock-jwt-token',
-        refreshToken: 'mock-refresh-token',
+        access_token: 'mock-jwt-token',
+        refresh_token: 'mock-refresh-token',
+        expires_in: 3600, // seconds
         user: {
           id: 'user-123',
           username: 'admin@example.com',
           email: 'admin@example.com',
           name: 'Admin User',
           role: 'instructor',
+          organization_id: 'org-123',
         },
-        expiresIn: 3600, // seconds
       });
     }
 
@@ -55,20 +57,21 @@ export const handlers = [
     return HttpResponse.json({ success: true });
   }),
 
-  // Register
+  // Register - Returns FRONTEND format (service expects transformed response)
+  // Note: authService.register expects LoginResponse format with 'token' not 'access_token'
   http.post(`${API_BASE_URL}/auth/register`, async ({ request }) => {
     const body = await request.json() as any;
     return HttpResponse.json({
       token: 'mock-jwt-token',
       refreshToken: 'mock-refresh-token',
+      expiresIn: 3600, // seconds
       user: {
         id: 'new-user-123',
         username: body.username,
         email: body.email,
-        name: body.name,
         role: 'student',
+        organizationId: null,
       },
-      expiresIn: 3600, // seconds
     });
   }),
 

@@ -11,7 +11,7 @@ All exceptions are wrapped in custom exception classes to provide detailed conte
 and proper error tracking. Generic exceptions are never used - all errors are
 classified and contextualized for better debugging and monitoring.
 """
-from fastapi import APIRouter, HTTPException, Query, Depends, File, UploadFile, Form
+from fastapi import APIRouter, HTTPException, Query, Depends, File, UploadFile, Form, status
 from typing import List, Dict, Any, Optional
 from uuid import UUID, uuid4
 from datetime import datetime
@@ -317,6 +317,78 @@ async def create_organization(
             status_code=500,
             detail="Failed to create organization"
         )
+
+@router.get("/organizations/me", response_model=OrganizationResponse)
+async def get_my_organization(
+    current_user: Dict[str, Any] = Depends(get_current_user),
+    organization_service: OrganizationService = Depends(get_organization_service)
+):
+    """
+    Get current user's organization
+
+    BUSINESS LOGIC:
+    Returns the organization that the authenticated user belongs to.
+    Fetches user's organization_id from user-management service if not in JWT.
+    """
+    try:
+        # Try to get organization_id from JWT first (faster)
+        organization_id = current_user.get('organization_id')
+
+        # If not in JWT, fetch from user-management service
+        if not organization_id:
+            import httpx
+            import os
+            user_id = current_user.get('user_id')
+            if not user_id:
+                raise HTTPException(status_code=401, detail="User ID not found in token")
+
+            user_mgmt_url = os.getenv('USER_MANAGEMENT_URL', 'https://user-management:8000')
+            # SSL verification disabled for self-signed certificates in development
+            async with httpx.AsyncClient(verify=False) as client:
+                response = await client.get(f"{user_mgmt_url}/users/{user_id}")
+                if response.status_code == 200:
+                    user_data = response.json()
+                    organization_id = user_data.get('organization_id')
+                else:
+                    raise HTTPException(status_code=404, detail="User not found")
+
+        if not organization_id:
+            raise HTTPException(status_code=404, detail="User is not associated with any organization")
+
+        # Get organization from service
+        organization = await organization_service.get_organization(UUID(organization_id))
+
+        if not organization:
+            raise HTTPException(status_code=404, detail="Organization not found")
+
+        # Return organization response
+        return OrganizationResponse(
+            id=organization.id,
+            name=organization.name,
+            slug=organization.slug,
+            description=organization.description,
+            contact_phone=organization.contact_phone,
+            contact_email=organization.contact_email,
+            street_address=organization.street_address if hasattr(organization, 'street_address') else None,
+            city=organization.city if hasattr(organization, 'city') else None,
+            state_province=organization.state_province if hasattr(organization, 'state_province') else None,
+            postal_code=organization.postal_code if hasattr(organization, 'postal_code') else None,
+            country=organization.country if hasattr(organization, 'country') else 'US',
+            address=organization.address,
+            logo_url=organization.logo_url,
+            logo_file_path=None,
+            domain=organization.domain,
+            is_active=organization.is_active,
+            member_count=organization.member_count if hasattr(organization, 'member_count') else 0,
+            project_count=organization.project_count if hasattr(organization, 'project_count') else 0,
+            created_at=organization.created_at,
+            updated_at=organization.updated_at
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"ERROR getting my organization: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get organization: {str(e)}")
 
 @router.get("/organizations", response_model=List[OrganizationResponse])
 async def list_organizations(
@@ -639,7 +711,37 @@ def get_user_id(user: Dict[str, Any]) -> UUID:
         return UUID(user.get('id') or user.get('user_id'))
     return UUID(str(user.id))
 
-# Pydantic model for member response
+# Pydantic models for member endpoints
+class CreateOrganizationMemberRequest(BaseModel):
+    """
+    Request model for creating organization members
+
+    Business Context:
+    Organization admins need to add team members (instructors, students, admins) to their
+    organization. This model validates the required information for creating a new user
+    account that is automatically associated with the organization.
+
+    Required Fields:
+    - username: Unique identifier for login (3-30 chars, alphanumeric + underscore)
+    - email: User's email address for authentication and communication
+    - full_name: Display name for the user (2-100 chars)
+    - password: Account password (minimum 8 characters for security)
+    - role_name: User's role in the platform (student, instructor, organization_admin)
+
+    Optional Fields:
+    - first_name: Given name (extracted from full_name if not provided)
+    - last_name: Family name (extracted from full_name if not provided)
+    - phone: Contact phone number
+    """
+    username: str = Field(..., min_length=3, max_length=30, pattern="^[a-zA-Z0-9_]+$")
+    email: EmailStr
+    full_name: str = Field(..., min_length=2, max_length=100)
+    password: str = Field(..., min_length=8)
+    role_name: str = Field(..., pattern="^(student|instructor|organization_admin)$")
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone: Optional[str] = None
+
 class MemberResponse(BaseModel):
     """Member response model"""
     id: UUID
@@ -650,6 +752,125 @@ class MemberResponse(BaseModel):
     role: str
     is_active: bool
     joined_at: Optional[datetime] = None
+
+@router.post("/organizations/{organization_id}/members", response_model=MemberResponse)
+async def create_organization_member(
+    organization_id: UUID,
+    member_data: CreateOrganizationMemberRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+    membership_service: MembershipService = Depends(get_membership_service)
+):
+    """
+    Create a new member in the organization
+
+    Business Context:
+    Organization admins need the ability to add team members to their organization.
+    This endpoint creates a new user account and automatically associates it with
+    the organization, enabling immediate access to organization resources.
+
+    Permission Requirements:
+    - Must be authenticated (valid JWT token)
+    - Must be an organization admin for the target organization
+    - Cannot create members in other organizations (enforces isolation)
+
+    Technical Implementation:
+    - Validates organization admin has permission for this organization
+    - Calls user-management service to create user account
+    - Associates user with organization via organization_id
+    - Returns created member details for UI feedback
+
+    Args:
+        organization_id: UUID of the organization to add member to
+        member_data: Member creation request with user details
+        current_user: Authenticated user from JWT token
+        membership_service: Membership service for permission checks
+
+    Returns:
+        MemberResponse: Created member with user and organization details
+
+    Raises:
+        HTTPException 403: If user is not org admin for this organization
+        HTTPException 400: If user creation fails (duplicate email/username)
+        HTTPException 500: If internal service communication fails
+    """
+    try:
+        # Verify current user is org admin for this organization
+        user_id = get_user_id(current_user)
+        user_org_id = current_user.get('organization_id')
+
+        # Check if user is site admin or org admin for this organization
+        is_site_admin = current_user.get('role') == 'site_admin' or current_user.get('username') == 'admin'
+        is_org_admin = str(user_org_id) == str(organization_id) and current_user.get('role') == 'organization_admin'
+
+        if not (is_site_admin or is_org_admin):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only organization admins can create members in their organization"
+            )
+
+        # Call user-management service to create the user
+        import httpx
+        user_management_url = "https://user-management:8000/auth/register"
+
+        # Prepare user creation request
+        user_request = {
+            "username": member_data.username,
+            "email": member_data.email,
+            "full_name": member_data.full_name,
+            "password": member_data.password,
+            "role": member_data.role_name,
+            "organization_id": str(organization_id)
+        }
+
+        # Add optional fields if provided
+        if member_data.first_name:
+            user_request["first_name"] = member_data.first_name
+        if member_data.last_name:
+            user_request["last_name"] = member_data.last_name
+        if member_data.phone:
+            user_request["phone"] = member_data.phone
+
+        # Make HTTP request to user-management service
+        async with httpx.AsyncClient(verify=False) as client:  # verify=False for self-signed certs in dev
+            response = await client.post(user_management_url, json=user_request, timeout=10.0)
+
+            if response.status_code == 422:
+                # Validation error from user-management
+                error_detail = response.json()
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"User creation failed: {error_detail.get('detail', 'Validation error')}"
+                )
+            elif response.status_code >= 400:
+                # Other errors from user-management
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Failed to create user: {response.text}"
+                )
+
+            created_user = response.json()
+
+        # Return member response
+        return MemberResponse(
+            id=UUID(created_user['id']),
+            user_id=UUID(created_user['id']),
+            organization_id=organization_id,
+            username=created_user['username'],
+            email=created_user['email'],
+            role=member_data.role_name,
+            is_active=True,
+            joined_at=datetime.utcnow()
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        logging.error(f"Error creating organization member: {str(e)}\n{traceback.format_exc()}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create organization member: {str(e)}"
+        )
 
 @router.get("/organizations/{organization_id}/members")
 async def get_organization_members(

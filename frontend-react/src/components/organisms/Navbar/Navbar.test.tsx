@@ -28,11 +28,14 @@ vi.mock('../../../hooks/useAuth', () => ({
   }),
 }));
 
+let mockPathname = '/';
+
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
   return {
     ...actual,
     useNavigate: () => mockNavigate,
+    useLocation: () => ({ pathname: mockPathname }),
   };
 });
 
@@ -44,6 +47,7 @@ describe('Navbar Component', () => {
     vi.clearAllMocks();
     mockUser = null;
     mockIsAuthenticated = false;
+    mockPathname = '/';
   });
 
   const renderNavbar = (props = {}) => {
@@ -341,6 +345,134 @@ describe('Navbar Component', () => {
       const logoElement = <div data-testid="custom-logo">Custom Logo</div>;
       renderNavbar({ logo: logoElement });
       expect(screen.getByTestId('custom-logo')).toBeInTheDocument();
+    });
+  });
+
+  describe('Active Link Indicator', () => {
+    beforeEach(() => {
+      mockIsAuthenticated = true;
+      mockUser = {
+        id: '1',
+        username: 'student1',
+        email: 'student@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        role: 'student',
+      };
+    });
+
+    it('marks Dashboard link as active when on /dashboard', () => {
+      mockPathname = '/dashboard';
+      renderNavbar();
+
+      const dashboardLink = screen.getByRole('link', { name: 'Dashboard' });
+      expect(dashboardLink).toHaveAttribute('aria-current', 'page');
+    });
+
+    it('marks Dashboard link as active when on role-specific dashboard', () => {
+      mockPathname = '/dashboard/student';
+      renderNavbar();
+
+      const dashboardLink = screen.getByRole('link', { name: 'Dashboard' });
+      expect(dashboardLink).toHaveAttribute('aria-current', 'page');
+    });
+
+    it('marks My Courses link as active when on /courses/my-courses', () => {
+      mockPathname = '/courses/my-courses';
+      renderNavbar();
+
+      const myCoursesLink = screen.getByRole('link', { name: 'My Courses' });
+      expect(myCoursesLink).toHaveAttribute('aria-current', 'page');
+    });
+
+    it('marks Labs link as active when on /labs', () => {
+      mockPathname = '/labs';
+      renderNavbar();
+
+      const labsLink = screen.getByRole('link', { name: 'Labs' });
+      expect(labsLink).toHaveAttribute('aria-current', 'page');
+    });
+
+    it('marks Labs link as active when on nested lab route', () => {
+      mockPathname = '/labs/123/course/456';
+      renderNavbar();
+
+      const labsLink = screen.getByRole('link', { name: 'Labs' });
+      expect(labsLink).toHaveAttribute('aria-current', 'page');
+    });
+
+    it('does not mark non-active links with aria-current', () => {
+      mockPathname = '/dashboard';
+      renderNavbar();
+
+      const labsLink = screen.getByRole('link', { name: 'Labs' });
+      expect(labsLink).not.toHaveAttribute('aria-current');
+    });
+
+    it('active link has correct CSS class applied', () => {
+      mockPathname = '/dashboard';
+      renderNavbar();
+
+      const dashboardLink = screen.getByRole('link', { name: 'Dashboard' });
+      expect(dashboardLink.className).toContain('nav-link-active');
+    });
+
+    it('non-active link does not have active CSS class', () => {
+      mockPathname = '/dashboard';
+      renderNavbar();
+
+      const labsLink = screen.getByRole('link', { name: 'Labs' });
+      expect(labsLink.className).not.toContain('nav-link-active');
+    });
+
+    describe('Site Admin Active Links', () => {
+      beforeEach(() => {
+        mockUser = {
+          id: '4',
+          username: 'siteadmin',
+          email: 'admin@example.com',
+          firstName: 'Admin',
+          lastName: 'User',
+          role: 'site_admin',
+        };
+      });
+
+      it('marks Organizations link as active when on /admin/organizations', () => {
+        mockPathname = '/admin/organizations';
+        renderNavbar();
+
+        const orgLink = screen.getByRole('link', { name: 'Organizations' });
+        expect(orgLink).toHaveAttribute('aria-current', 'page');
+      });
+
+      it('marks Users link as active when on /admin/users', () => {
+        mockPathname = '/admin/users';
+        renderNavbar();
+
+        const usersLink = screen.getByRole('link', { name: 'Users' });
+        expect(usersLink).toHaveAttribute('aria-current', 'page');
+      });
+    });
+
+    describe('Org Admin Active Links', () => {
+      beforeEach(() => {
+        mockUser = {
+          id: '3',
+          username: 'orgadmin1',
+          email: 'orgadmin@example.com',
+          firstName: 'Jane',
+          lastName: 'Smith',
+          role: 'org_admin',
+        };
+      });
+
+      it('marks Members link as active when on /organization/members', () => {
+        mockPathname = '/organization/members';
+        renderNavbar();
+
+        const membersLink = screen.getByRole('link', { name: 'Members' });
+        expect(membersLink).toHaveAttribute('aria-current', 'page');
+      });
     });
   });
 });

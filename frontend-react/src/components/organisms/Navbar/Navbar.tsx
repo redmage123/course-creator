@@ -19,8 +19,8 @@
  * - Clean, professional appearance
  */
 
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useMemo } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
 import { Button } from '../../atoms/Button';
 import styles from './Navbar.module.css';
@@ -59,8 +59,38 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+  /**
+   * Check if a navigation link is active
+   *
+   * WHY THIS APPROACH:
+   * - Exact match for home/dashboard routes
+   * - Prefix match for nested routes (e.g., /admin/users matches /admin)
+   * - Special handling for dashboard redirect
+   */
+  const isLinkActive = useMemo(() => {
+    return (linkPath: string): boolean => {
+      const currentPath = location.pathname;
+
+      // Exact match
+      if (currentPath === linkPath) return true;
+
+      // For /dashboard, also check role-specific dashboards
+      if (linkPath === '/dashboard') {
+        return currentPath.startsWith('/dashboard');
+      }
+
+      // Prefix match for nested routes (but not root path)
+      if (linkPath !== '/' && currentPath.startsWith(linkPath + '/')) {
+        return true;
+      }
+
+      return false;
+    };
+  }, [location.pathname]);
 
   /**
    * Handle logout action
@@ -153,15 +183,19 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Navigation Links (Desktop) */}
         {isAuthenticated && navLinks.length > 0 && (
           <div className={styles['navbar-links']}>
-            {navLinks.map((link) => (
-              <Link
-                key={link.to}
-                to={link.to}
-                className={styles['nav-link']}
-              >
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              const active = isLinkActive(link.to);
+              return (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className={`${styles['nav-link']} ${active ? styles['nav-link-active'] : ''}`}
+                  aria-current={active ? 'page' : undefined}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
           </div>
         )}
 
@@ -296,16 +330,20 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Mobile Navigation Menu */}
       {isAuthenticated && isMenuOpen && navLinks.length > 0 && (
         <div className={styles['mobile-menu']}>
-          {navLinks.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              className={styles['mobile-menu-link']}
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {link.label}
-            </Link>
-          ))}
+          {navLinks.map((link) => {
+            const active = isLinkActive(link.to);
+            return (
+              <Link
+                key={link.to}
+                to={link.to}
+                className={`${styles['mobile-menu-link']} ${active ? styles['mobile-menu-link-active'] : ''}`}
+                onClick={() => setIsMenuOpen(false)}
+                aria-current={active ? 'page' : undefined}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
         </div>
       )}
     </nav>

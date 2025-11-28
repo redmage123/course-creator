@@ -27,8 +27,8 @@ class TestOrganizationRegistrationE2E:
     @classmethod
     def setup_class(cls):
         """Set up browser and test environment"""
-        cls.base_url = "https://176.9.99.103:3000"  # Frontend URL
-        cls.api_url = "https://176.9.99.103:8008"   # Organization API URL
+        cls.base_url = "https://localhost:3000"  # Frontend URL
+        cls.api_url = "https://localhost:8008"   # Organization API URL
         
         # Configure Chrome options for testing
         chrome_options = Options()

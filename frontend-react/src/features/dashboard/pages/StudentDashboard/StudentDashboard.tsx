@@ -24,6 +24,7 @@ import { Card } from '../../../../components/atoms/Card';
 import { Button } from '../../../../components/atoms/Button';
 import { Heading } from '../../../../components/atoms/Heading';
 import { Spinner } from '../../../../components/atoms/Spinner';
+import { StatCard } from '../../../../components/molecules/StatCard';
 import { useAuth } from '../../../../hooks/useAuth';
 import { analyticsService } from '../../../../services';
 import styles from './StudentDashboard.module.css';
@@ -138,37 +139,36 @@ export const StudentDashboard: React.FC = () => {
           </p>
         </div>
 
-        {/* Quick Stats - Real Data from API */}
+        {/* Quick Stats - Real Data from API with Trend Indicators */}
         <div className={styles['stats-grid']}>
-          <Card variant="elevated" padding="medium">
-            <div className={styles['stat-card']}>
-              <div className={styles['stat-value']}>{analytics?.active_courses || 0}</div>
-              <div className={styles['stat-label']}>Assigned Courses</div>
-            </div>
-          </Card>
+          <StatCard
+            value={analytics?.active_courses || 0}
+            label="Assigned Courses"
+            trend={analytics?.courses_trend}
+            trendLabel="vs last month"
+          />
 
-          <Card variant="elevated" padding="medium">
-            <div className={styles['stat-card']}>
-              <div className={styles['stat-value']}>
-                {analytics?.average_progress ? Math.round(analytics.average_progress) : 0}%
-              </div>
-              <div className={styles['stat-label']}>Average Progress</div>
-            </div>
-          </Card>
+          <StatCard
+            value={analytics?.average_progress ? Math.round(analytics.average_progress) : 0}
+            label="Average Progress"
+            valueFormat="percentage"
+            trend={analytics?.progress_trend}
+            trendLabel="vs last week"
+          />
 
-          <Card variant="elevated" padding="medium">
-            <div className={styles['stat-card']}>
-              <div className={styles['stat-value']}>{analytics?.total_labs_completed || 0}</div>
-              <div className={styles['stat-label']}>Labs Completed</div>
-            </div>
-          </Card>
+          <StatCard
+            value={analytics?.total_labs_completed || 0}
+            label="Labs Completed"
+            trend={analytics?.labs_trend}
+            trendLabel="vs last month"
+          />
 
-          <Card variant="elevated" padding="medium">
-            <div className={styles['stat-card']}>
-              <div className={styles['stat-value']}>{analytics?.certificates_earned || 0}</div>
-              <div className={styles['stat-label']}>Certificates Earned</div>
-            </div>
-          </Card>
+          <StatCard
+            value={analytics?.certificates_earned || 0}
+            label="Certificates Earned"
+            trend={analytics?.certificates_trend}
+            trendLabel="this quarter"
+          />
         </div>
 
         {/* Main Content */}
@@ -196,12 +196,44 @@ export const StudentDashboard: React.FC = () => {
               Active Labs
             </Heading>
             <p className={styles['section-description']}>
-              Practice your skills in hands-on lab environments
+              Practice your skills in hands-on lab environments with Monaco, Jupyter, or VS Code
             </p>
             <div className={styles['action-buttons']}>
               <Link to="/labs">
-                <Button variant="primary" size="medium">
+                <Button variant="primary" size="medium" data-action="launch-lab">
                   Launch Labs
+                </Button>
+              </Link>
+              <Link to="/labs?ide=vscode">
+                <Button variant="secondary" size="medium" data-ide="vscode">
+                  VS Code
+                </Button>
+              </Link>
+              <Link to="/labs?ide=jupyter">
+                <Button variant="secondary" size="medium" data-ide="jupyter">
+                  Jupyter
+                </Button>
+              </Link>
+            </div>
+          </Card>
+
+          {/* Quizzes & Assessments */}
+          <Card variant="elevated" padding="large">
+            <Heading level="h2" gutterBottom>
+              Quizzes & Assessments
+            </Heading>
+            <p className={styles['section-description']}>
+              Complete quizzes to test your knowledge and track progress
+            </p>
+            <div className={styles['action-buttons']}>
+              <Link to="/quizzes">
+                <Button variant="primary" size="medium" data-action="take-quiz">
+                  Take Quiz
+                </Button>
+              </Link>
+              <Link to="/quizzes/history">
+                <Button variant="secondary" size="medium">
+                  View History
                 </Button>
               </Link>
             </div>
@@ -221,10 +253,15 @@ export const StudentDashboard: React.FC = () => {
                   View Progress
                 </Button>
               </Link>
+              <Link to="/certificates">
+                <Button variant="secondary" size="medium">
+                  My Certificates
+                </Button>
+              </Link>
             </div>
           </Card>
 
-          {/* Learning Resources */}
+          {/* Learning Resources & Downloads */}
           <Card variant="elevated" padding="large">
             <Heading level="h2" gutterBottom>
               Learning Resources
@@ -234,8 +271,13 @@ export const StudentDashboard: React.FC = () => {
             </p>
             <div className={styles['action-buttons']}>
               <Link to="/resources">
-                <Button variant="secondary" size="medium">
+                <Button variant="primary" size="medium">
                   Browse Resources
+                </Button>
+              </Link>
+              <Link to="/resources/download">
+                <Button variant="secondary" size="medium" data-action="download">
+                  Download Materials
                 </Button>
               </Link>
             </div>

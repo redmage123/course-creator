@@ -291,6 +291,7 @@ class BulkEnrollmentService:
             Account dictionary if exists, None otherwise
         """
         try:
+            # SSL verification disabled for self-signed certificates in development
             async with httpx.AsyncClient(verify=False, timeout=self.timeout) as client:
                 response = await client.get(
                     f"{self.user_service_url}/users/by-email/{email}"
@@ -326,6 +327,7 @@ class BulkEnrollmentService:
             Exception: If account creation fails
         """
         try:
+            # SSL verification disabled for self-signed certificates in development
             async with httpx.AsyncClient(verify=False, timeout=self.timeout) as client:
                 # Prepare account creation payload
                 payload = {

@@ -38,6 +38,9 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
+// Mock scrollIntoView for jsdom
+Element.prototype.scrollIntoView = vi.fn();
+
 describe('BulkEnrollStudents Component', () => {
   const mockPrograms = [
     { id: 'prog-1', title: 'Python Basics', difficulty_level: 'Beginner', track_id: 'track-1', published: true },
@@ -47,12 +50,11 @@ describe('BulkEnrollStudents Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.useFakeTimers();
+    vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-    vi.useRealTimers();
   });
 
   describe('Rendering', () => {
@@ -137,10 +139,11 @@ describe('BulkEnrollStudents Component', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText(/Enroll in Single Course/i)).toBeInTheDocument();
+        // Component shows "Single Training Program" and "Complete Learning Track" cards
+        expect(screen.getByText(/Single Training Program/i)).toBeInTheDocument();
       });
 
-      expect(screen.getByText(/Enroll in Learning Track/i)).toBeInTheDocument();
+      expect(screen.getByText(/Complete Learning Track/i)).toBeInTheDocument();
     });
   });
 
@@ -209,7 +212,6 @@ describe('BulkEnrollStudents Component', () => {
 
   describe('Bulk Enrollment', () => {
     it('validates required fields', async () => {
-      const user = userEvent.setup({ delay: null });
       vi.mocked(trainingProgramService.trainingProgramService.getTrainingPrograms).mockResolvedValue({
         data: mockPrograms,
       } as any);
@@ -233,16 +235,17 @@ describe('BulkEnrollStudents Component', () => {
         },
       });
 
+      // Wait for page to load
       await waitFor(() => {
-        expect(screen.getByText('Enroll Students')).toBeInTheDocument();
+        expect(screen.getByText(/Enroll Students in Course/i)).toBeInTheDocument();
       });
 
-      const submitButton = screen.getByText('Enroll Students');
-      await user.click(submitButton);
-
-      await waitFor(() => {
-        expect(screen.getByText(/Please select a training program/i)).toBeInTheDocument();
-      });
+      // The submit button is disabled when no program is selected and no student IDs entered
+      // This IS the validation behavior - button is disabled until valid input
+      // Note: getByText returns the span inside the button, so we need to find the button
+      const submitButtonText = screen.getByText(/Enroll Students in Course/i);
+      const submitButton = submitButtonText.closest('button');
+      expect(submitButton).toBeDisabled();
     });
 
     it('successfully processes bulk enrollment', async () => {
@@ -275,20 +278,29 @@ describe('BulkEnrollStudents Component', () => {
         },
       });
 
+      // Wait for combobox and programs to load
       await waitFor(() => {
-        expect(screen.getByText('Python Basics (Beginner)')).toBeInTheDocument();
+        expect(screen.getByRole('combobox')).toBeInTheDocument();
       });
 
-      // Select course
+      // Select course using the custom Select component
       const courseSelect = screen.getByRole('combobox');
-      await user.selectOptions(courseSelect, 'prog-1');
+      await user.click(courseSelect);
 
-      // Enter student IDs
-      const idsTextarea = screen.getByPlaceholderText(/Enter student IDs/i);
+      // Select the first program option from dropdown
+      await waitFor(() => {
+        const options = screen.getAllByRole('option');
+        expect(options.length).toBeGreaterThan(0);
+      });
+      const programOption = screen.getByRole('option', { name: /Python Basics/i });
+      await user.click(programOption);
+
+      // Enter student IDs in the textarea
+      const idsTextarea = screen.getByRole('textbox', { name: /Student IDs/i });
       await user.type(idsTextarea, 'student1\nstudent2\nstudent3');
 
-      // Submit
-      const submitButton = screen.getByText('Enroll Students');
+      // Submit - button says "Enroll Students in Course"
+      const submitButton = screen.getByText(/Enroll Students in Course/i);
       await user.click(submitButton);
 
       await waitFor(() => {
@@ -323,15 +335,26 @@ describe('BulkEnrollStudents Component', () => {
         },
       });
 
+      // Wait for Input Method section to render
       await waitFor(() => {
-        expect(screen.getByText(/Use CSV Upload/i)).toBeInTheDocument();
+        expect(screen.getByText(/Input Method/i)).toBeInTheDocument();
       });
 
-      const csvToggle = screen.getByLabelText(/Use CSV Upload/i);
-      await user.click(csvToggle);
+      // Initially Manual Entry is selected, so student IDs textarea should be visible
+      expect(screen.getByRole('textbox', { name: /Student IDs/i })).toBeInTheDocument();
 
+      // Find and click on the CSV Upload card - it's inside a Card component
+      // Look for the "Upload file with student list" text which is unique to the CSV card
+      const csvCardText = screen.getByText(/Upload file with student list/i);
+      const csvCard = csvCardText.closest('[style*="cursor"]') || csvCardText.parentElement?.parentElement;
+      if (csvCard) {
+        await user.click(csvCard);
+      }
+
+      // After clicking, the file input should appear
       await waitFor(() => {
-        expect(screen.getByLabelText(/CSV File/i)).toBeInTheDocument();
+        const fileInput = document.querySelector('input[type="file"]');
+        expect(fileInput).toBeInTheDocument();
       });
     });
 
@@ -365,29 +388,41 @@ describe('BulkEnrollStudents Component', () => {
         },
       });
 
+      // Wait for page to load
       await waitFor(() => {
-        expect(screen.getByText(/Use CSV Upload/i)).toBeInTheDocument();
+        expect(screen.getByText(/Input Method/i)).toBeInTheDocument();
       });
 
-      // Switch to CSV mode
-      const csvToggle = screen.getByLabelText(/Use CSV Upload/i);
-      await user.click(csvToggle);
+      // Switch to CSV mode by clicking on the card
+      const csvCardText = screen.getByText(/Upload file with student list/i);
+      const csvCard = csvCardText.closest('[style*="cursor"]') || csvCardText.parentElement?.parentElement;
+      if (csvCard) {
+        await user.click(csvCard);
+      }
 
+      // Wait for file input to appear
       await waitFor(() => {
-        expect(screen.getByLabelText(/CSV File/i)).toBeInTheDocument();
+        const fileInput = document.querySelector('input[type="file"]');
+        expect(fileInput).toBeInTheDocument();
       });
 
-      // Select course
+      // Select course using the custom Select component
       const courseSelect = screen.getByRole('combobox');
-      await user.selectOptions(courseSelect, 'prog-1');
+      await user.click(courseSelect);
+      await waitFor(() => {
+        const options = screen.getAllByRole('option');
+        expect(options.length).toBeGreaterThan(0);
+      });
+      const programOption = screen.getByRole('option', { name: /Python Basics/i });
+      await user.click(programOption);
 
       // Upload file
       const file = new File(['student_id\nstudent1'], 'students.csv', { type: 'text/csv' });
-      const fileInput = screen.getByLabelText(/CSV File/i);
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       await user.upload(fileInput, file);
 
-      // Submit
-      const submitButton = screen.getByText('Enroll Students');
+      // Submit - button says "Upload & Enroll" in CSV mode
+      const submitButton = screen.getByText(/Upload & Enroll/i);
       await user.click(submitButton);
 
       await waitFor(() => {

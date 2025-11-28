@@ -82,6 +82,9 @@ const createMockEnrollmentSummary = (overrides = {}) => ({
   ...overrides,
 });
 
+// Mock scrollIntoView for jsdom
+Element.prototype.scrollIntoView = vi.fn();
+
 describe('ManageStudents Component', () => {
   const mockEnrollments = [
     createMockEnrollment({
@@ -520,9 +523,13 @@ describe('ManageStudents Component', () => {
         expect(screen.getByText('Alice Johnson')).toBeInTheDocument();
       });
 
-      // Find status filter select
-      const statusSelect = screen.getByDisplayValue('All Statuses');
-      await user.selectOptions(statusSelect, 'completed');
+      // Find status filter (custom Select component uses combobox role)
+      const statusCombobox = screen.getAllByRole('combobox')[0];
+      await user.click(statusCombobox);
+
+      // Click on the 'Completed' option in the dropdown (may be multiple, use first)
+      const completedOptions = screen.getAllByRole('option', { name: 'Completed' });
+      await user.click(completedOptions[0]);
 
       await waitFor(() => {
         expect(screen.getByText('Bob Smith')).toBeInTheDocument();
@@ -564,8 +571,8 @@ describe('ManageStudents Component', () => {
         expect(screen.getByText('Alice Johnson')).toBeInTheDocument();
       });
 
-      // Find the status select in the table row
-      const statusSelects = screen.getAllByDisplayValue('active');
+      // Find the native select element in the table row (has 'Active' as the display text)
+      const statusSelects = screen.getAllByDisplayValue('Active');
       await user.selectOptions(statusSelects[0], 'completed');
 
       await waitFor(() => {
@@ -782,7 +789,8 @@ describe('ManageStudents Component', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByText('75%')).toBeInTheDocument();
+        // Multiple 75% elements may exist (in stats card and table row)
+        expect(screen.getAllByText('75%').length).toBeGreaterThan(0);
       });
     });
   });
