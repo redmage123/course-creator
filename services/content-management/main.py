@@ -101,12 +101,12 @@ import hydra
 from omegaconf import DictConfig
 import uvicorn
 
+# Add shared directory to path for security module (needed by auth)
+sys.path.append('/app/shared')
+
 # JWT Authentication - Import from auth module
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 from auth import get_current_user_id as get_authenticated_user_id
-
-# Add shared directory to path for organization middleware
-sys.path.append('/app/shared')
 try:
     from auth.organization_middleware import OrganizationAuthorizationMiddleware, get_organization_context
 except ImportError:
@@ -425,10 +425,20 @@ def create_app(config: DictConfig = None) -> FastAPI:
         )
     
     # Include modular routers (following Open/Closed Principle)
-    from api import syllabus_router, content_router, analytics_router
+    from api import (
+        syllabus_router,
+        content_router,
+        analytics_router,
+        interactive_content_router,
+        content_version_router,
+        advanced_assessment_router
+    )
     app.include_router(syllabus_router)
     app.include_router(content_router)
     app.include_router(analytics_router)
+    app.include_router(interactive_content_router, prefix="/api/v1/interactive", tags=["Interactive Content"])
+    app.include_router(content_version_router, prefix="/api/v1/versions", tags=["Content Versioning"])
+    app.include_router(advanced_assessment_router, tags=["Advanced Assessments"])
 
     # Health check endpoint
     @app.get("/health")

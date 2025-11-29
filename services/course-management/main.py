@@ -101,7 +101,8 @@ from course_management.domain.interfaces.feedback_service import IFeedbackServic
 from course_management.infrastructure.container import Container
 
 # Organization security middleware
-sys.path.insert(0, '/app/shared')
+# Use append (not insert) so local auth module takes precedence over shared/auth
+sys.path.append('/app/shared')
 from auth.organization_middleware import OrganizationAuthorizationMiddleware, get_organization_context, require_organization_role
 from cache.organization_redis_cache import OrganizationCacheManager
 
@@ -452,6 +453,10 @@ def create_app(config: DictConfig) -> FastAPI:
     from api.video_endpoints import router as video_router
     app.include_router(video_router, tags=["videos"])
 
+    # Include adaptive learning API router (v3.5.0 - Enhancement 1)
+    from api.adaptive_learning_endpoints import router as adaptive_learning_router
+    app.include_router(adaptive_learning_router)
+
     return app
 
 # App will be created in main() after config is loaded
@@ -481,6 +486,17 @@ def get_db_pool():
     if not app or not hasattr(app.state, 'container') or not app.state.container:
         raise HTTPException(status_code=500, detail="Database not initialized")
     return app.state.container._connection_pool
+
+def get_adaptive_learning_service():
+    """
+    WHAT: Dependency injection for adaptive learning service
+    WHERE: Used by adaptive_learning_endpoints for API operations
+    WHY: Retrieves service from container for proper lifecycle management
+         enabling adaptive learning paths, recommendations, and mastery tracking
+    """
+    if not app or not hasattr(app.state, 'container') or not app.state.container:
+        raise HTTPException(status_code=500, detail="Service not initialized")
+    return app.state.container.get_adaptive_learning_service()
 
 # JWT-authenticated user ID extraction (replaced deprecated mock)
 # Import from auth module for proper JWT-based authentication

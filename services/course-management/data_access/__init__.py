@@ -22,5 +22,6 @@ New in v3.4.0:
 
 from .course_dao import CourseManagementDAO
 from .sub_project_dao import SubProjectDAO
+from .learning_path_dao import LearningPathDAO, LearningPathDAOException
 
-__all__ = ['CourseManagementDAO', 'SubProjectDAO']
+__all__ = ['CourseManagementDAO', 'SubProjectDAO', 'LearningPathDAO', 'LearningPathDAOException']

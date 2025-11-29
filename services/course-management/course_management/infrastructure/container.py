@@ -94,9 +94,11 @@ from course_management.domain.interfaces.feedback_service import IFeedbackServic
 from course_management.application.services.course_service import CourseService
 from course_management.application.services.enrollment_service import EnrollmentService
 from course_management.application.services.feedback_service import FeedbackService
+from course_management.application.services.adaptive_learning_service import AdaptiveLearningService
 
 # DAO implementation (replaces repository pattern)
 from data_access.course_dao import CourseManagementDAO
+from data_access.learning_path_dao import LearningPathDAO
 
 class Container:
     """
@@ -251,13 +253,15 @@ class Container:
         self._config = config
         self._connection_pool: Optional[asyncpg.Pool] = None
 
-        # DAO instance (replaces repository pattern)
+        # DAO instances (replaces repository pattern)
         self._course_dao: Optional[CourseManagementDAO] = None
+        self._learning_path_dao: Optional[LearningPathDAO] = None
 
         # Service instances (singletons)
         self._course_service: Optional[ICourseService] = None
         self._enrollment_service: Optional[IEnrollmentService] = None
         self._feedback_service: Optional[IFeedbackService] = None
+        self._adaptive_learning_service: Optional[AdaptiveLearningService] = None
     
     async def initialize(self) -> None:
         """
@@ -639,5 +643,86 @@ class Container:
             )
 
         return self._feedback_service
+
+    def get_learning_path_dao(self) -> LearningPathDAO:
+        """
+        WHAT: Factory method for Learning Path Data Access Object (DAO)
+        WHERE: Used by AdaptiveLearningService and adaptive learning endpoints
+        WHY: Provides singleton access to learning path database operations following
+             the DAO pattern for adaptive learning paths, recommendations, and mastery tracking
+
+        BUSINESS CONTEXT:
+        The LearningPathDAO handles all database operations for the adaptive learning system:
+        - Learning path creation and lifecycle management
+        - Node management with prerequisite enforcement
+        - AI recommendation storage and retrieval
+        - Student mastery level tracking for spaced repetition
+
+        SINGLETON PATTERN:
+        Returns the same DAO instance across all requests to:
+        - Share the PostgreSQL connection pool efficiently
+        - Reduce memory overhead from duplicate DAO instantiation
+        - Enable consistent adaptive learning operations
+
+        Returns:
+            LearningPathDAO: Singleton instance with initialized connection pool
+
+        Raises:
+            RuntimeError: If container.initialize() has not been called yet
+        """
+        if not self._learning_path_dao:
+            if not self._connection_pool:
+                raise RuntimeError("Container not initialized - call initialize() first")
+
+            self._learning_path_dao = LearningPathDAO(self._connection_pool)
+
+        return self._learning_path_dao
+
+    def get_adaptive_learning_service(self) -> AdaptiveLearningService:
+        """
+        WHAT: Factory method for Adaptive Learning Service with dependency injection
+        WHERE: Used by adaptive_learning_endpoints for API operations
+        WHY: Provides singleton access to the service orchestrating adaptive learning
+             paths, AI recommendations, and spaced repetition mastery tracking
+
+        BUSINESS CONTEXT:
+        The AdaptiveLearningService manages personalized learning experiences:
+        - Adaptive Learning Paths: Create and navigate personalized course progressions
+        - Prerequisite Enforcement: Ensure students complete required content first
+        - AI Recommendations: Generate and track AI-driven learning suggestions
+        - Mastery Tracking: Implement spaced repetition through mastery levels
+
+        DEPENDENCY INJECTION:
+        Automatically injects the LearningPathDAO dependency, implementing:
+        - Dependency Inversion: Service depends on DAO abstraction
+        - Constructor Injection: Dependencies provided at instantiation
+        - Interface Segregation: Service receives only the DAO methods it needs
+
+        EDUCATIONAL IMPACT:
+        Adaptive learning improves outcomes by:
+        - Personalizing pace based on individual student progress
+        - Identifying knowledge gaps through mastery assessment
+        - Recommending optimal next content through AI analysis
+        - Implementing spaced repetition for long-term retention
+
+        Returns:
+            AdaptiveLearningService: Singleton instance implementing adaptive learning interface
+
+        Example:
+            >>> container = Container(config)
+            >>> await container.initialize()
+            >>> adaptive_service = container.get_adaptive_learning_service()
+            >>> path = await adaptive_service.create_learning_path(
+            ...     student_id="student_123",
+            ...     course_id="course_456",
+            ...     path_type=PathType.COURSE_PROGRESSION
+            ... )
+        """
+        if not self._adaptive_learning_service:
+            self._adaptive_learning_service = AdaptiveLearningService(
+                dao=self.get_learning_path_dao()
+            )
+
+        return self._adaptive_learning_service
 
 # Mock repository implementations removed - using DAO pattern

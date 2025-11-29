@@ -931,6 +931,361 @@ class ComprehensiveWorkflowTester:
 
     # ==================== UPLOAD/DOWNLOAD WORKFLOWS ====================
 
+    # ==================== PROJECT NOTES WORKFLOW TESTS ====================
+
+    async def test_org_admin_navigate_to_project(self):
+        """Test: Org Admin can navigate to a project detail page."""
+        await self.login_as('org_admin')
+
+        # Navigate to projects page
+        await self.page.goto(f"{BASE_URL}/organization/projects")
+        await self.page.wait_for_load_state('networkidle')
+        await self.page.wait_for_timeout(2000)
+
+        # Look for project card or list item to click
+        project_link = self.page.locator(
+            '.project-card a, .project-item a, [data-project-id] a, '
+            'a[href*="/project/"], a[href*="/projects/"], '
+            'tr[data-project] td a, .project-name'
+        ).first
+
+        has_projects = await project_link.count() > 0
+
+        if has_projects:
+            await project_link.click()
+            await self.page.wait_for_timeout(2000)
+
+            current_url = self.page.url
+            page_content = await self.page.content()
+
+            is_on_project_detail = '/project' in current_url
+            has_project_content = any(term in page_content.lower() for term in ['project', 'track', 'notes', 'details'])
+
+            return {
+                "navigated_to_project": is_on_project_detail,
+                "has_project_content": has_project_content,
+                "url": current_url
+            }
+
+        return {"has_projects": False, "navigated_to_project": False}
+
+    async def test_org_admin_view_project_notes(self):
+        """Test: Org Admin can view project notes widget."""
+        await self.login_as('org_admin')
+
+        # Navigate to projects and select first project
+        await self.page.goto(f"{BASE_URL}/organization/projects")
+        await self.page.wait_for_load_state('networkidle')
+        await self.page.wait_for_timeout(2000)
+
+        # Click on first project
+        project_link = self.page.locator(
+            '.project-card a, .project-item a, [data-project-id], '
+            'a[href*="/project/"], tr[data-project] td a'
+        ).first
+
+        if await project_link.count() > 0:
+            await project_link.click()
+            await self.page.wait_for_timeout(2000)
+
+        # Look for project notes widget
+        notes_widget = self.page.locator(
+            '[data-testid="project-notes-widget"], .project-notes-widget, '
+            '.notesWidget, [class*="notesWidget"], '
+            'section:has-text("Project Notes"), div:has-text("Project Notes")'
+        ).first
+
+        has_notes_widget = await notes_widget.count() > 0
+
+        # Check for notes content elements
+        page_content = await self.page.content()
+        has_notes_section = 'notes' in page_content.lower() or 'documentation' in page_content.lower()
+
+        # Look for edit button
+        edit_btn = self.page.locator(
+            'button:has-text("Edit"), button[aria-label*="edit"], '
+            '[data-testid="edit-notes-btn"], .edit-notes-btn'
+        ).first
+        has_edit_capability = await edit_btn.count() > 0
+
+        return {
+            "notes_widget_found": has_notes_widget,
+            "has_notes_section": has_notes_section,
+            "has_edit_capability": has_edit_capability
+        }
+
+    async def test_org_admin_edit_project_notes(self):
+        """Test: Org Admin can edit and save project notes."""
+        await self.login_as('org_admin')
+
+        # Navigate to projects and select first project
+        await self.page.goto(f"{BASE_URL}/organization/projects")
+        await self.page.wait_for_load_state('networkidle')
+        await self.page.wait_for_timeout(2000)
+
+        # Click on first project
+        project_link = self.page.locator(
+            '.project-card a, .project-item a, [data-project-id], a[href*="/project/"]'
+        ).first
+
+        if await project_link.count() > 0:
+            await project_link.click()
+            await self.page.wait_for_timeout(2000)
+
+        # Find and click edit button for notes
+        edit_btn = self.page.locator(
+            'button:has-text("Edit Notes"), button:has-text("Edit"), '
+            '[data-testid="edit-notes-btn"], button[aria-label*="edit notes"]'
+        ).first
+
+        if await edit_btn.count() > 0:
+            await edit_btn.click()
+            await self.page.wait_for_timeout(1000)
+
+            # Look for textarea or editor
+            notes_input = self.page.locator(
+                'textarea[name="notes"], textarea.notes-editor, '
+                '.notes-textarea, [data-testid="notes-textarea"], '
+                '.monaco-editor, .markdown-editor, textarea'
+            ).first
+
+            has_notes_input = await notes_input.count() > 0
+
+            if has_notes_input:
+                # Enter test content
+                test_content = f"Test notes from Playwright - {self.test_run_id}"
+                await notes_input.fill(test_content)
+
+                # Look for save button
+                save_btn = self.page.locator(
+                    'button:has-text("Save"), button[type="submit"], '
+                    '[data-testid="save-notes-btn"], button[aria-label*="save"]'
+                ).first
+
+                has_save_btn = await save_btn.count() > 0
+
+                if has_save_btn:
+                    await save_btn.click()
+                    await self.page.wait_for_timeout(2000)
+
+                    # Check for success indicator
+                    page_content = await self.page.content()
+                    save_success = test_content in page_content or 'saved' in page_content.lower()
+
+                    return {
+                        "edit_mode_entered": True,
+                        "notes_input_found": True,
+                        "save_btn_found": True,
+                        "save_attempted": True,
+                        "save_success": save_success
+                    }
+
+                return {"edit_mode_entered": True, "notes_input_found": True, "save_btn_found": False}
+
+            return {"edit_mode_entered": True, "notes_input_found": False}
+
+        return {"edit_mode_entered": False, "edit_btn_found": False}
+
+    async def test_org_admin_toggle_notes_content_type(self):
+        """Test: Org Admin can switch between Markdown and HTML content types."""
+        await self.login_as('org_admin')
+
+        # Navigate to a project
+        await self.page.goto(f"{BASE_URL}/organization/projects")
+        await self.page.wait_for_load_state('networkidle')
+        await self.page.wait_for_timeout(2000)
+
+        # Click on first project
+        project_link = self.page.locator('.project-card a, [data-project-id], a[href*="/project/"]').first
+        if await project_link.count() > 0:
+            await project_link.click()
+            await self.page.wait_for_timeout(2000)
+
+        # Enter edit mode
+        edit_btn = self.page.locator('button:has-text("Edit"), [data-testid="edit-notes-btn"]').first
+        if await edit_btn.count() > 0:
+            await edit_btn.click()
+            await self.page.wait_for_timeout(1000)
+
+        # Look for content type selector
+        content_type_selector = self.page.locator(
+            'select[name="contentType"], [data-testid="content-type-select"], '
+            '.content-type-selector, button:has-text("Markdown"), button:has-text("HTML"), '
+            'input[type="radio"][value="markdown"], input[type="radio"][value="html"]'
+        ).first
+
+        has_content_type_selector = await content_type_selector.count() > 0
+
+        if has_content_type_selector:
+            # Try to switch content type
+            # Check for select element
+            select = self.page.locator('select[name="contentType"]').first
+            if await select.count() > 0:
+                await select.select_option('markdown')
+                await self.page.wait_for_timeout(500)
+
+            # Check for radio buttons
+            html_radio = self.page.locator('input[type="radio"][value="html"]').first
+            if await html_radio.count() > 0:
+                await html_radio.click()
+                await self.page.wait_for_timeout(500)
+
+            return {
+                "content_type_selector_found": True,
+                "type_switch_attempted": True
+            }
+
+        page_content = await self.page.content()
+        return {
+            "content_type_selector_found": False,
+            "markdown_mention": 'markdown' in page_content.lower(),
+            "html_mention": 'html' in page_content.lower()
+        }
+
+    async def test_org_admin_upload_notes_file(self):
+        """Test: Org Admin can upload a file to populate project notes."""
+        await self.login_as('org_admin')
+
+        # Navigate to a project
+        await self.page.goto(f"{BASE_URL}/organization/projects")
+        await self.page.wait_for_load_state('networkidle')
+        await self.page.wait_for_timeout(2000)
+
+        # Click on first project
+        project_link = self.page.locator('.project-card a, [data-project-id], a[href*="/project/"]').first
+        if await project_link.count() > 0:
+            await project_link.click()
+            await self.page.wait_for_timeout(2000)
+
+        # Enter edit mode
+        edit_btn = self.page.locator('button:has-text("Edit"), [data-testid="edit-notes-btn"]').first
+        if await edit_btn.count() > 0:
+            await edit_btn.click()
+            await self.page.wait_for_timeout(1000)
+
+        # Look for file upload button or input
+        upload_btn = self.page.locator(
+            'button:has-text("Upload"), button:has-text("Import"), '
+            '[data-testid="upload-file-btn"], .upload-notes-btn, '
+            'label:has-text("Upload"), button:has-text("Choose File")'
+        ).first
+
+        file_input = self.page.locator(
+            'input[type="file"], input[accept*=".md"], input[accept*=".html"], '
+            'input[accept*=".txt"]'
+        ).first
+
+        has_upload_option = await upload_btn.count() > 0 or await file_input.count() > 0
+
+        page_content = await self.page.content()
+        has_upload_reference = 'upload' in page_content.lower() or 'import' in page_content.lower()
+
+        return {
+            "upload_option_found": has_upload_option,
+            "file_input_found": await file_input.count() > 0,
+            "upload_btn_found": await upload_btn.count() > 0,
+            "upload_reference_in_page": has_upload_reference
+        }
+
+    async def test_org_admin_delete_project_notes(self):
+        """Test: Org Admin can delete/clear project notes."""
+        await self.login_as('org_admin')
+
+        # Navigate to a project
+        await self.page.goto(f"{BASE_URL}/organization/projects")
+        await self.page.wait_for_load_state('networkidle')
+        await self.page.wait_for_timeout(2000)
+
+        # Click on first project
+        project_link = self.page.locator('.project-card a, [data-project-id], a[href*="/project/"]').first
+        if await project_link.count() > 0:
+            await project_link.click()
+            await self.page.wait_for_timeout(2000)
+
+        # Look for delete/clear notes option
+        delete_btn = self.page.locator(
+            'button:has-text("Delete Notes"), button:has-text("Clear Notes"), '
+            'button:has-text("Delete"), [data-testid="delete-notes-btn"], '
+            'button[aria-label*="delete notes"], .delete-notes-btn'
+        ).first
+
+        has_delete_option = await delete_btn.count() > 0
+
+        if has_delete_option:
+            # Check if confirmation dialog appears
+            await delete_btn.click()
+            await self.page.wait_for_timeout(1000)
+
+            # Look for confirmation dialog
+            confirm_dialog = self.page.locator(
+                '[role="dialog"], .modal, .confirm-dialog, '
+                'button:has-text("Confirm"), button:has-text("Yes")'
+            ).first
+
+            has_confirmation = await confirm_dialog.count() > 0
+
+            # Cancel if confirmation appears
+            cancel_btn = self.page.locator(
+                'button:has-text("Cancel"), button:has-text("No"), '
+                '[data-dismiss="modal"]'
+            ).first
+            if await cancel_btn.count() > 0:
+                await cancel_btn.click()
+
+            return {
+                "delete_option_found": True,
+                "has_confirmation_dialog": has_confirmation
+            }
+
+        return {"delete_option_found": False}
+
+    async def test_org_admin_collapse_expand_notes(self):
+        """Test: Org Admin can collapse and expand the notes widget."""
+        await self.login_as('org_admin')
+
+        # Navigate to a project
+        await self.page.goto(f"{BASE_URL}/organization/projects")
+        await self.page.wait_for_load_state('networkidle')
+        await self.page.wait_for_timeout(2000)
+
+        # Click on first project
+        project_link = self.page.locator('.project-card a, [data-project-id], a[href*="/project/"]').first
+        if await project_link.count() > 0:
+            await project_link.click()
+            await self.page.wait_for_timeout(2000)
+
+        # Look for collapse/expand toggle
+        collapse_btn = self.page.locator(
+            'button[aria-expanded], button:has-text("Collapse"), button:has-text("Expand"), '
+            '[data-testid="toggle-collapse-btn"], .collapse-toggle, '
+            'button[aria-label*="collapse"], button[aria-label*="expand"]'
+        ).first
+
+        has_collapse_toggle = await collapse_btn.count() > 0
+
+        if has_collapse_toggle:
+            # Get initial state
+            is_expanded = await collapse_btn.get_attribute('aria-expanded')
+
+            # Toggle
+            await collapse_btn.click()
+            await self.page.wait_for_timeout(500)
+
+            # Get new state
+            new_state = await collapse_btn.get_attribute('aria-expanded')
+
+            # Toggle back
+            await collapse_btn.click()
+            await self.page.wait_for_timeout(500)
+
+            return {
+                "collapse_toggle_found": True,
+                "initial_expanded": is_expanded,
+                "state_changed": is_expanded != new_state
+            }
+
+        return {"collapse_toggle_found": False}
+
     async def test_org_admin_upload_template(self):
         """Test: Org Admin uploads organization template for AI project creation."""
         await self.login_as('org_admin')
@@ -1174,6 +1529,15 @@ class ComprehensiveWorkflowTester:
         await self.run_test("org_admin_view_members", "org_admin", "navigation", self.test_org_admin_view_members)
         await self.run_test("org_admin_view_courses", "org_admin", "navigation", self.test_org_admin_view_courses)
         await self.run_test("org_admin_view_analytics", "org_admin", "analytics", self.test_org_admin_view_analytics)
+
+        # Org Admin project notes tests
+        await self.run_test("org_admin_navigate_to_project", "org_admin", "project_notes", self.test_org_admin_navigate_to_project)
+        await self.run_test("org_admin_view_project_notes", "org_admin", "project_notes", self.test_org_admin_view_project_notes)
+        await self.run_test("org_admin_edit_project_notes", "org_admin", "project_notes", self.test_org_admin_edit_project_notes)
+        await self.run_test("org_admin_toggle_notes_content_type", "org_admin", "project_notes", self.test_org_admin_toggle_notes_content_type)
+        await self.run_test("org_admin_upload_notes_file", "org_admin", "project_notes", self.test_org_admin_upload_notes_file)
+        await self.run_test("org_admin_delete_project_notes", "org_admin", "project_notes", self.test_org_admin_delete_project_notes)
+        await self.run_test("org_admin_collapse_expand_notes", "org_admin", "project_notes", self.test_org_admin_collapse_expand_notes)
 
         # Org Admin upload/template tests
         await self.run_test("org_admin_upload_template", "org_admin", "upload", self.test_org_admin_upload_template)

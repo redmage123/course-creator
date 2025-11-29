@@ -457,6 +457,8 @@ services:
       - ./frontend/html:/usr/share/nginx/html/html:ro
       - ./frontend/public:/usr/share/nginx/html/public:ro
       - ./frontend-legacy/static:/usr/share/nginx/html/static:ro
+      # Demo videos - mounted for live updates without rebuilding image
+      - ./frontend-react/public/demo:/usr/share/nginx/html/demo:ro
       - ./logs:/var/log/nginx
     networks:
       - course-creator-network

@@ -811,7 +811,163 @@ class OrganizationManagementDAO:
                 details={"project_id": project_id, "org_id": org_id},
                 original_exception=e
             )
-    
+
+    # ================================================================
+    # PROJECT NOTES OPERATIONS
+    # ================================================================
+
+    async def get_project_notes(self, project_id: str, org_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve project notes with metadata.
+
+        Business Context:
+        Project notes provide extensive documentation capabilities for project managers
+        to store guidelines, requirements, schedules, and other information.
+        Notes can be in markdown or HTML format for flexible content authoring.
+
+        Args:
+            project_id: Project identifier
+            org_id: Organization identifier for validation (multi-tenant isolation)
+
+        Returns:
+            Dictionary containing notes, content_type, and metadata or None if not found
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                notes_data = await conn.fetchrow(
+                    """SELECT
+                        p.id as project_id,
+                        p.name as project_name,
+                        p.notes,
+                        p.notes_content_type,
+                        p.notes_updated_at,
+                        p.notes_updated_by,
+                        u.full_name as updated_by_name,
+                        u.email as updated_by_email
+                       FROM course_creator.projects p
+                       LEFT JOIN course_creator.users u ON p.notes_updated_by = u.id
+                       WHERE p.id = $1 AND p.organization_id = $2""",
+                    UUID(project_id), UUID(org_id)
+                )
+                return dict(notes_data) if notes_data else None
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to retrieve project notes",
+                error_code="PROJECT_NOTES_QUERY_ERROR",
+                details={"project_id": project_id, "org_id": org_id},
+                original_exception=e
+            )
+
+    async def update_project_notes(
+        self,
+        project_id: str,
+        org_id: str,
+        notes: str,
+        content_type: str,
+        updated_by: str
+    ) -> Dict[str, Any]:
+        """
+        Update project notes with content and metadata.
+
+        Business Context:
+        Allows organization admins to update project documentation. Notes are stored
+        with audit information (who updated and when) for compliance tracking.
+        Content type allows proper rendering of markdown or HTML content.
+
+        Args:
+            project_id: Project identifier
+            org_id: Organization identifier for validation (multi-tenant isolation)
+            notes: The notes content (can be extensive text in markdown or HTML)
+            content_type: Content format - 'markdown' or 'html'
+            updated_by: UUID of user updating the notes
+
+        Returns:
+            Updated notes data with metadata
+
+        Raises:
+            DatabaseException: If project not found or update fails
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                # Verify project exists and belongs to organization
+                project_exists = await conn.fetchval(
+                    """SELECT 1 FROM course_creator.projects
+                       WHERE id = $1 AND organization_id = $2""",
+                    UUID(project_id), UUID(org_id)
+                )
+
+                if not project_exists:
+                    raise DatabaseException(
+                        message="Project not found or access denied",
+                        error_code="PROJECT_NOT_FOUND",
+                        details={"project_id": project_id, "org_id": org_id}
+                    )
+
+                # Update the notes
+                result = await conn.fetchrow(
+                    """UPDATE course_creator.projects
+                       SET notes = $1,
+                           notes_content_type = $2,
+                           notes_updated_at = CURRENT_TIMESTAMP,
+                           notes_updated_by = $3
+                       WHERE id = $4 AND organization_id = $5
+                       RETURNING id, notes, notes_content_type, notes_updated_at, notes_updated_by""",
+                    notes,
+                    content_type,
+                    UUID(updated_by),
+                    UUID(project_id),
+                    UUID(org_id)
+                )
+
+                return dict(result) if result else None
+        except DatabaseException:
+            raise
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to update project notes",
+                error_code="PROJECT_NOTES_UPDATE_ERROR",
+                details={"project_id": project_id, "org_id": org_id, "content_type": content_type},
+                original_exception=e
+            )
+
+    async def delete_project_notes(self, project_id: str, org_id: str, deleted_by: str) -> bool:
+        """
+        Clear project notes (set to NULL).
+
+        Business Context:
+        Allows organization admins to remove project notes entirely.
+        The deletion is recorded via the notes_updated_by field for audit purposes.
+
+        Args:
+            project_id: Project identifier
+            org_id: Organization identifier for validation
+            deleted_by: UUID of user deleting the notes
+
+        Returns:
+            True if notes were cleared, False if project not found
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                result = await conn.execute(
+                    """UPDATE course_creator.projects
+                       SET notes = NULL,
+                           notes_content_type = 'markdown',
+                           notes_updated_at = CURRENT_TIMESTAMP,
+                           notes_updated_by = $1
+                       WHERE id = $2 AND organization_id = $3""",
+                    UUID(deleted_by),
+                    UUID(project_id),
+                    UUID(org_id)
+                )
+                return result == "UPDATE 1"
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to delete project notes",
+                error_code="PROJECT_NOTES_DELETE_ERROR",
+                details={"project_id": project_id, "org_id": org_id},
+                original_exception=e
+            )
+
     # ================================================================
     # AUDIT LOGGING AND ANALYTICS QUERIES
     # ================================================================

@@ -13,7 +13,7 @@
  * - Interactive feature cards with detailed modal popups
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { SEO } from '@components/common/SEO';
 import styles from './Homepage.module.css';
@@ -140,23 +140,44 @@ const FEATURES: Feature[] = [
  */
 export const Homepage = () => {
   const [selectedFeature, setSelectedFeature] = useState<Feature | null>(null);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
 
   const openFeatureModal = useCallback((feature: Feature) => {
     setSelectedFeature(feature);
+    setIsMinimized(false);
+    setIsMaximized(false);
     document.body.style.overflow = 'hidden'; // Prevent background scroll
   }, []);
 
   const closeFeatureModal = useCallback(() => {
     setSelectedFeature(null);
+    setIsMinimized(false);
+    setIsMaximized(false);
     document.body.style.overflow = 'auto'; // Restore scroll
   }, []);
 
-  // Close modal on Escape key
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      closeFeatureModal();
-    }
-  }, [closeFeatureModal]);
+  const toggleMinimize = useCallback(() => {
+    setIsMinimized((prev) => !prev);
+    if (isMaximized) setIsMaximized(false);
+  }, [isMaximized]);
+
+  const toggleMaximize = useCallback(() => {
+    setIsMaximized((prev) => !prev);
+    if (isMinimized) setIsMinimized(false);
+  }, [isMinimized]);
+
+  // Global Escape key handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && selectedFeature) {
+        closeFeatureModal();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [selectedFeature, closeFeatureModal]);
 
   return (
     <>
@@ -270,66 +291,93 @@ export const Homepage = () => {
         <div
           className={styles.modalOverlay}
           onClick={closeFeatureModal}
-          onKeyDown={handleKeyDown}
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-title"
         >
           <div
-            className={styles.modalContent}
+            className={`${styles.modalContent} ${isMinimized ? styles.modalMinimized : ''} ${isMaximized ? styles.modalMaximized : ''}`}
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              className={styles.modalClose}
-              onClick={closeFeatureModal}
-              aria-label="Close modal"
-            >
-              <i className="fas fa-times"></i>
-            </button>
-
-            <div className={styles.modalHeader}>
-              <div className={styles.modalIcon}>
-                <i className={selectedFeature.icon}></i>
+            {/* Window Title Bar with Controls */}
+            <div className={styles.modalTitleBar}>
+              <span className={styles.modalTitleBarText}>{selectedFeature.title}</span>
+              <div className={styles.modalWindowControls}>
+                <button
+                  className={`${styles.modalWindowBtn} ${styles.modalMinimizeBtn}`}
+                  onClick={toggleMinimize}
+                  aria-label={isMinimized ? "Restore window" : "Minimize window"}
+                  title={isMinimized ? "Restore" : "Minimize"}
+                >
+                  <i className={isMinimized ? "fas fa-window-restore" : "fas fa-window-minimize"}></i>
+                </button>
+                <button
+                  className={`${styles.modalWindowBtn} ${styles.modalMaximizeBtn}`}
+                  onClick={toggleMaximize}
+                  aria-label={isMaximized ? "Restore window" : "Maximize window"}
+                  title={isMaximized ? "Restore" : "Maximize"}
+                >
+                  <i className={isMaximized ? "fas fa-window-restore" : "fas fa-window-maximize"}></i>
+                </button>
+                <button
+                  className={`${styles.modalWindowBtn} ${styles.modalCloseBtn}`}
+                  onClick={closeFeatureModal}
+                  aria-label="Close window"
+                  title="Close (Esc)"
+                >
+                  <i className="fas fa-times"></i>
+                </button>
               </div>
-              <h2 id="modal-title" className={styles.modalTitle}>
-                {selectedFeature.title}
-              </h2>
             </div>
 
-            <div className={styles.modalBody}>
-              <p className={styles.modalDescription}>
-                {selectedFeature.detailed}
-              </p>
+            {/* Collapsible content when not minimized */}
+            {!isMinimized && (
+              <>
+                <div className={styles.modalHeader}>
+                  <div className={styles.modalIcon}>
+                    <i className={selectedFeature.icon}></i>
+                  </div>
+                  <h2 id="modal-title" className={styles.modalTitle}>
+                    {selectedFeature.title}
+                  </h2>
+                </div>
 
-              <h3 className={styles.modalHighlightsTitle}>Key Features</h3>
-              <ul className={styles.modalHighlights}>
-                {selectedFeature.highlights.map((highlight, index) => (
-                  <li key={index} className={styles.modalHighlightItem}>
-                    <i className="fas fa-check-circle"></i>
-                    <span>{highlight}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+                <div className={styles.modalBody}>
+                  <p className={styles.modalDescription}>
+                    {selectedFeature.detailed}
+                  </p>
 
-            <div className={styles.modalFooter}>
-              <Link
-                to="/demo"
-                className={`${styles.ctaButton} ${styles.ctaButtonDemo}`}
-                onClick={closeFeatureModal}
-              >
-                <i className="fas fa-play-circle"></i>
-                Watch Demo
-              </Link>
-              <Link
-                to="/register"
-                className={`${styles.ctaButton} ${styles.ctaButtonPrimary}`}
-                onClick={closeFeatureModal}
-              >
-                <i className="fas fa-user-plus"></i>
-                Get Started
-              </Link>
-            </div>
+                  <h3 className={styles.modalHighlightsTitle}>Key Features</h3>
+                  <ul className={styles.modalHighlights}>
+                    {selectedFeature.highlights.map((highlight, index) => (
+                      <li key={index} className={styles.modalHighlightItem}>
+                        <i className="fas fa-check-circle"></i>
+                        <span>{highlight}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className={styles.modalFooter}>
+                  <Link
+                    to="/demo"
+                    className={`${styles.ctaButton} ${styles.ctaButtonDemo}`}
+                    onClick={closeFeatureModal}
+                  >
+                    <i className="fas fa-play-circle"></i>
+                    Watch Demo
+                  </Link>
+                  <Link
+                    to="/register"
+                    className={`${styles.ctaButton} ${styles.ctaButtonPrimary}`}
+                    onClick={closeFeatureModal}
+                  >
+                    <i className="fas fa-user-plus"></i>
+                    Get Started
+                  </Link>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

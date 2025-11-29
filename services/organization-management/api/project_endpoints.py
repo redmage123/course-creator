@@ -174,6 +174,62 @@ class ContentGenerationRequest(BaseModel):
     quizzes: bool = True
     exercises: bool = False
 
+
+# =============================================================================
+# PROJECT NOTES REQUEST/RESPONSE MODELS
+# =============================================================================
+
+class ProjectNotesResponse(BaseModel):
+    """
+    Response model for project notes data.
+
+    BUSINESS CONTEXT:
+    Project notes provide extensive documentation capabilities for organization projects.
+    Notes can be in markdown or HTML format for flexible rendering in the UI.
+    """
+    project_id: UUID
+    project_name: str
+    notes: Optional[str] = None
+    notes_content_type: str = "markdown"  # 'markdown' or 'html'
+    notes_updated_at: Optional[datetime] = None
+    notes_updated_by: Optional[UUID] = None
+    updated_by_name: Optional[str] = None
+    updated_by_email: Optional[str] = None
+
+
+class ProjectNotesUpdateRequest(BaseModel):
+    """
+    Request model for updating project notes.
+
+    BUSINESS CONTEXT:
+    Organization admins can update project notes with markdown or HTML content.
+    Notes support extensive documentation including requirements, schedules, and guidelines.
+    """
+    notes: str = Field(..., description="The notes content in markdown or HTML format")
+    content_type: str = Field(
+        "markdown",
+        pattern=r'^(markdown|html)$',
+        description="Content format: 'markdown' or 'html'"
+    )
+
+
+class ProjectNotesUploadRequest(BaseModel):
+    """
+    Request model for uploading project notes from file content.
+
+    BUSINESS CONTEXT:
+    Allows uploading notes from external markdown or HTML files.
+    The content is base64 encoded for safe transmission.
+    """
+    file_content: str = Field(..., description="Base64 encoded file content")
+    file_name: str = Field(..., description="Original file name for content type detection")
+    content_type: Optional[str] = Field(
+        None,
+        pattern=r'^(markdown|html)$',
+        description="Override content format detection"
+    )
+
+
 # Create the router
 router = APIRouter(prefix="/api/v1", tags=["projects"])
 
@@ -357,7 +413,7 @@ async def publish_project(
         # In production, update project status to 'active'
         logging.info(f"Publishing project {project_id}")
         return {"message": "Project published successfully", "status": "active"}
-    
+
     except CourseValidationException as e:
         logging.error(f"Project validation error during publishing: {e.message}", extra=e.to_dict())
         raise HTTPException(status_code=400, detail=e.message)
@@ -373,6 +429,257 @@ async def publish_project(
             original_exception=e
         )
         raise HTTPException(status_code=500, detail=wrapped_error.message)
+
+
+# =============================================================================
+# PROJECT NOTES ENDPOINTS
+# =============================================================================
+
+@router.get("/organizations/{org_id}/projects/{project_id}/notes", response_model=ProjectNotesResponse)
+async def get_project_notes(
+    org_id: UUID,
+    project_id: UUID,
+    organization_service: OrganizationService = Depends(get_organization_service),
+    current_user: Dict[str, Any] = Depends(require_instructor_or_admin)
+):
+    """
+    Get project notes with metadata.
+
+    BUSINESS CONTEXT:
+    Retrieves the project notes content along with metadata about when and who
+    last updated the notes. Notes can be in markdown or HTML format.
+
+    AUTHORIZATION:
+    Instructors and organization admins can view project notes.
+    Multi-tenant isolation ensures notes are only accessible within the organization.
+    """
+    try:
+        notes_data = await organization_service.dao.get_project_notes(
+            str(project_id), str(org_id)
+        )
+
+        if not notes_data:
+            raise HTTPException(status_code=404, detail="Project not found")
+
+        return ProjectNotesResponse(
+            project_id=notes_data['project_id'],
+            project_name=notes_data['project_name'],
+            notes=notes_data.get('notes'),
+            notes_content_type=notes_data.get('notes_content_type', 'markdown'),
+            notes_updated_at=notes_data.get('notes_updated_at'),
+            notes_updated_by=notes_data.get('notes_updated_by'),
+            updated_by_name=notes_data.get('updated_by_name'),
+            updated_by_email=notes_data.get('updated_by_email')
+        )
+
+    except HTTPException:
+        raise
+    except DatabaseException as e:
+        logging.error(f"Database error getting project notes: {e.message}", extra=e.to_dict())
+        raise HTTPException(status_code=500, detail="Failed to retrieve project notes")
+    except Exception as e:
+        logging.exception(f"Unexpected error getting project notes: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve project notes")
+
+
+@router.put("/organizations/{org_id}/projects/{project_id}/notes", response_model=ProjectNotesResponse)
+async def update_project_notes(
+    org_id: UUID,
+    project_id: UUID,
+    request: ProjectNotesUpdateRequest,
+    organization_service: OrganizationService = Depends(get_organization_service),
+    current_user: Dict[str, Any] = Depends(require_org_admin)
+):
+    """
+    Update project notes content.
+
+    BUSINESS CONTEXT:
+    Allows organization admins to update project documentation. Notes can contain
+    extensive content in markdown or HTML format for requirements, guidelines,
+    schedules, and other project information.
+
+    AUTHORIZATION:
+    Only organization admins can update project notes.
+
+    AUDIT TRAIL:
+    Updates are tracked with timestamp and user ID for compliance purposes.
+    """
+    try:
+        result = await organization_service.dao.update_project_notes(
+            str(project_id),
+            str(org_id),
+            request.notes,
+            request.content_type,
+            current_user['user_id']
+        )
+
+        if not result:
+            raise HTTPException(status_code=404, detail="Project not found or access denied")
+
+        # Fetch the full notes data to return
+        notes_data = await organization_service.dao.get_project_notes(
+            str(project_id), str(org_id)
+        )
+
+        logging.info(f"Project notes updated for project {project_id} by user {current_user['user_id']}")
+
+        return ProjectNotesResponse(
+            project_id=notes_data['project_id'],
+            project_name=notes_data['project_name'],
+            notes=notes_data.get('notes'),
+            notes_content_type=notes_data.get('notes_content_type', 'markdown'),
+            notes_updated_at=notes_data.get('notes_updated_at'),
+            notes_updated_by=notes_data.get('notes_updated_by'),
+            updated_by_name=notes_data.get('updated_by_name'),
+            updated_by_email=notes_data.get('updated_by_email')
+        )
+
+    except HTTPException:
+        raise
+    except DatabaseException as e:
+        logging.error(f"Database error updating project notes: {e.message}", extra=e.to_dict())
+        raise HTTPException(status_code=500, detail="Failed to update project notes")
+    except Exception as e:
+        logging.exception(f"Unexpected error updating project notes: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to update project notes")
+
+
+@router.post("/organizations/{org_id}/projects/{project_id}/notes/upload", response_model=ProjectNotesResponse)
+async def upload_project_notes(
+    org_id: UUID,
+    project_id: UUID,
+    request: ProjectNotesUploadRequest,
+    organization_service: OrganizationService = Depends(get_organization_service),
+    current_user: Dict[str, Any] = Depends(require_org_admin)
+):
+    """
+    Upload project notes from a file.
+
+    BUSINESS CONTEXT:
+    Allows uploading notes from external markdown or HTML files. The file content
+    is base64 encoded for safe transmission. Content type is auto-detected from
+    the file extension or can be explicitly specified.
+
+    SUPPORTED FORMATS:
+    - Markdown files (.md, .markdown)
+    - HTML files (.html, .htm)
+
+    AUTHORIZATION:
+    Only organization admins can upload project notes.
+    """
+    import base64
+
+    try:
+        # Decode base64 content
+        try:
+            file_content = base64.b64decode(request.file_content).decode('utf-8')
+        except Exception as decode_error:
+            raise ValidationException(
+                message="Invalid base64 encoded content",
+                error_code="INVALID_FILE_CONTENT",
+                details={"error": str(decode_error)}
+            )
+
+        # Determine content type from file extension if not provided
+        content_type = request.content_type
+        if not content_type:
+            file_name_lower = request.file_name.lower()
+            if file_name_lower.endswith(('.md', '.markdown')):
+                content_type = 'markdown'
+            elif file_name_lower.endswith(('.html', '.htm')):
+                content_type = 'html'
+            else:
+                content_type = 'markdown'  # Default to markdown
+
+        # Update notes with uploaded content
+        result = await organization_service.dao.update_project_notes(
+            str(project_id),
+            str(org_id),
+            file_content,
+            content_type,
+            current_user['user_id']
+        )
+
+        if not result:
+            raise HTTPException(status_code=404, detail="Project not found or access denied")
+
+        # Fetch the full notes data to return
+        notes_data = await organization_service.dao.get_project_notes(
+            str(project_id), str(org_id)
+        )
+
+        logging.info(f"Project notes uploaded from file '{request.file_name}' for project {project_id}")
+
+        return ProjectNotesResponse(
+            project_id=notes_data['project_id'],
+            project_name=notes_data['project_name'],
+            notes=notes_data.get('notes'),
+            notes_content_type=notes_data.get('notes_content_type', 'markdown'),
+            notes_updated_at=notes_data.get('notes_updated_at'),
+            notes_updated_by=notes_data.get('notes_updated_by'),
+            updated_by_name=notes_data.get('updated_by_name'),
+            updated_by_email=notes_data.get('updated_by_email')
+        )
+
+    except HTTPException:
+        raise
+    except ValidationException as e:
+        logging.error(f"Validation error uploading notes: {e.message}", extra=e.to_dict())
+        raise HTTPException(status_code=400, detail=e.message)
+    except DatabaseException as e:
+        logging.error(f"Database error uploading project notes: {e.message}", extra=e.to_dict())
+        raise HTTPException(status_code=500, detail="Failed to upload project notes")
+    except Exception as e:
+        logging.exception(f"Unexpected error uploading project notes: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to upload project notes")
+
+
+@router.delete("/organizations/{org_id}/projects/{project_id}/notes")
+async def delete_project_notes(
+    org_id: UUID,
+    project_id: UUID,
+    organization_service: OrganizationService = Depends(get_organization_service),
+    current_user: Dict[str, Any] = Depends(require_org_admin)
+):
+    """
+    Delete (clear) project notes.
+
+    BUSINESS CONTEXT:
+    Removes all notes content from a project. The deletion is tracked with
+    timestamp and user ID for audit purposes. The notes_updated_by field
+    records who cleared the notes.
+
+    AUTHORIZATION:
+    Only organization admins can delete project notes.
+    """
+    try:
+        success = await organization_service.dao.delete_project_notes(
+            str(project_id),
+            str(org_id),
+            current_user['user_id']
+        )
+
+        if not success:
+            raise HTTPException(status_code=404, detail="Project not found or access denied")
+
+        logging.info(f"Project notes deleted for project {project_id} by user {current_user['user_id']}")
+
+        return {
+            "message": "Project notes deleted successfully",
+            "project_id": str(project_id),
+            "deleted_by": current_user['user_id'],
+            "deleted_at": datetime.utcnow().isoformat()
+        }
+
+    except HTTPException:
+        raise
+    except DatabaseException as e:
+        logging.error(f"Database error deleting project notes: {e.message}", extra=e.to_dict())
+        raise HTTPException(status_code=500, detail="Failed to delete project notes")
+    except Exception as e:
+        logging.exception(f"Unexpected error deleting project notes: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to delete project notes")
+
 
 # =============================================================================
 # TRACK ENDPOINTS

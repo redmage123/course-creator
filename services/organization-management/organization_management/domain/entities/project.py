@@ -83,6 +83,11 @@ class Project:
     created_by: Optional[UUID] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    # Notes fields for extensive project documentation
+    notes: Optional[str] = None
+    notes_content_type: str = "markdown"  # 'markdown' or 'html'
+    notes_updated_at: Optional[datetime] = None
+    notes_updated_by: Optional[UUID] = None
 
     def __post_init__(self):
         """

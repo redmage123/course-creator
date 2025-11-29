@@ -82,4 +82,129 @@ EDUCATIONAL DOMAIN CONCEPTS:
 - Projects/Sub-Projects: Organizational training program structure
 
 For detailed entity documentation, see individual module docstrings.
+
+5. Learning Path Entities (learning_path.py):
+   - LearningPath: Personalized learning journey for students
+   - LearningPathNode: Individual steps in a learning path
+   - PrerequisiteRule: Content dependency definitions
+   - AdaptiveRecommendation: AI-driven learning suggestions
+   - StudentMasteryLevel: Skill mastery tracking for spaced repetition
+   - PathType/PathStatus/NodeStatus: State taxonomies
+   - ContentType/RequirementType: Content classification enums
+   - RecommendationType/RecommendationStatus: Recommendation lifecycle
+   - MasteryLevel/DifficultyLevel: Educational progression levels
+
+6. Peer Learning Entities (peer_learning.py):
+   - StudyGroup: Collaborative learning groups for courses
+   - StudyGroupMembership: User membership in study groups
+   - PeerReview: Student-to-student assignment feedback
+   - DiscussionThread: Course-specific threaded discussions
+   - DiscussionReply: Replies to discussion threads
+   - HelpRequest: Peer-to-peer help system
+   - PeerReputation: Student reputation tracking
+   - StudyGroupStatus/MembershipRole/MembershipStatus: Study group state taxonomies
+   - PeerReviewStatus/ReviewQuality: Peer review state taxonomies
+   - ThreadStatus: Discussion thread state taxonomy
+   - HelpRequestStatus/HelpCategory: Help request state taxonomies
 """
+
+from course_management.domain.entities.learning_path import (
+    LearningPath,
+    LearningPathNode,
+    PrerequisiteRule,
+    AdaptiveRecommendation,
+    StudentMasteryLevel,
+    PathType,
+    PathStatus,
+    NodeStatus,
+    ContentType,
+    RequirementType,
+    RecommendationType,
+    RecommendationStatus,
+    MasteryLevel,
+    DifficultyLevel,
+    AdaptiveLearningException,
+    NodeNotUnlockedException,
+    InvalidProgressException,
+    CannotSkipRequiredNodeException,
+    InvalidPathStateException,
+    InvalidFeedbackException,
+    PrerequisiteNotMetException,
+    LearningPathNotFoundException,
+    RecommendationNotFoundException
+)
+
+from course_management.domain.entities.peer_learning import (
+    StudyGroup,
+    StudyGroupMembership,
+    PeerReview,
+    DiscussionThread,
+    DiscussionReply,
+    HelpRequest,
+    PeerReputation,
+    StudyGroupStatus,
+    MembershipRole,
+    MembershipStatus,
+    PeerReviewStatus,
+    ReviewQuality,
+    ThreadStatus,
+    HelpRequestStatus,
+    HelpCategory,
+    PeerLearningException,
+    StudyGroupFullException,
+    StudyGroupNotFoundException,
+    NotGroupMemberException,
+    InsufficientPermissionException,
+    ReviewAssignmentException,
+    HelpRequestNotFoundException
+)
+
+__all__ = [
+    # Learning Path Entities
+    'LearningPath',
+    'LearningPathNode',
+    'PrerequisiteRule',
+    'AdaptiveRecommendation',
+    'StudentMasteryLevel',
+    'PathType',
+    'PathStatus',
+    'NodeStatus',
+    'ContentType',
+    'RequirementType',
+    'RecommendationType',
+    'RecommendationStatus',
+    'MasteryLevel',
+    'DifficultyLevel',
+    'AdaptiveLearningException',
+    'NodeNotUnlockedException',
+    'InvalidProgressException',
+    'CannotSkipRequiredNodeException',
+    'InvalidPathStateException',
+    'InvalidFeedbackException',
+    'PrerequisiteNotMetException',
+    'LearningPathNotFoundException',
+    'RecommendationNotFoundException',
+    # Peer Learning Entities
+    'StudyGroup',
+    'StudyGroupMembership',
+    'PeerReview',
+    'DiscussionThread',
+    'DiscussionReply',
+    'HelpRequest',
+    'PeerReputation',
+    'StudyGroupStatus',
+    'MembershipRole',
+    'MembershipStatus',
+    'PeerReviewStatus',
+    'ReviewQuality',
+    'ThreadStatus',
+    'HelpRequestStatus',
+    'HelpCategory',
+    'PeerLearningException',
+    'StudyGroupFullException',
+    'StudyGroupNotFoundException',
+    'NotGroupMemberException',
+    'InsufficientPermissionException',
+    'ReviewAssignmentException',
+    'HelpRequestNotFoundException'
+]

@@ -30,6 +30,7 @@ for course relationships and learning path generation across the platform.
 """
 
 import logging
+import os
 import sys
 from contextlib import asynccontextmanager
 

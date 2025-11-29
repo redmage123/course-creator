@@ -27,24 +27,27 @@ AUDIO_DIR = Path('frontend-react/public/demo/audio')
 ORG_ADMIN_EMAIL = 'sarah@acmelearning.edu'
 ORG_ADMIN_PASSWORD = 'SecurePass123!'
 
-# Slide definitions with durations matching audio
+# Slide definitions with durations = audio length + 2 second buffer
+# Videos should be 1-2 seconds LONGER than audio to prevent audio cutoff
+VIDEO_BUFFER_SECONDS = 2.0
+
 SLIDES = [
-    # Durations match exact audio file lengths for precise sync
-    {'id': 1, 'filename': 'slide_01_platform_introduction.mp4', 'duration': 15.83, 'title': 'Platform Introduction'},
-    {'id': 2, 'filename': 'slide_02_organization_registration.mp4', 'duration': 25.94, 'title': 'Organization Registration'},
-    {'id': 3, 'filename': 'slide_03_organization_admin_dashboard.mp4', 'duration': 81.21, 'title': 'Organization Admin Dashboard'},
-    {'id': 4, 'filename': 'slide_04_creating_training_tracks.mp4', 'duration': 41.40, 'title': 'Creating Training Tracks'},
-    {'id': 5, 'filename': 'slide_05_ai_assistant.mp4', 'duration': 47.23, 'title': 'AI Assistant'},
-    {'id': 6, 'filename': 'slide_06_adding_instructors.mp4', 'duration': 18.83, 'title': 'Adding Instructors'},
-    {'id': 7, 'filename': 'slide_07_instructor_dashboard.mp4', 'duration': 31.48, 'title': 'Instructor Dashboard'},
-    {'id': 8, 'filename': 'slide_08_course_content.mp4', 'duration': 35.84, 'title': 'Course Content Generation'},
-    {'id': 9, 'filename': 'slide_09_enroll_students.mp4', 'duration': 22.23, 'title': 'Student Enrollment'},
-    {'id': 10, 'filename': 'slide_10_student_dashboard.mp4', 'duration': 17.79, 'title': 'Student Dashboard'},
-    {'id': 11, 'filename': 'slide_11_course_browsing.mp4', 'duration': 34.51, 'title': 'Course Browsing & Labs'},
-    {'id': 12, 'filename': 'slide_12_quiz_assessment.mp4', 'duration': 27.53, 'title': 'Quiz & Assessment'},
-    {'id': 13, 'filename': 'slide_13_student_progress.mp4', 'duration': 20.30, 'title': 'Student Progress'},
-    {'id': 14, 'filename': 'slide_14_instructor_analytics.mp4', 'duration': 34.22, 'title': 'Instructor Analytics'},
-    {'id': 15, 'filename': 'slide_15_summary.mp4', 'duration': 26.28, 'title': 'Summary & Next Steps'},
+    # Durations = audio length + buffer for smooth playback
+    {'id': 1, 'filename': 'slide_01_platform_introduction.mp4', 'duration': 15.83 + VIDEO_BUFFER_SECONDS + 2.5, 'title': 'Platform Introduction'},  # Extra 2.5s buffer for slide 1 audio
+    {'id': 2, 'filename': 'slide_02_organization_registration.mp4', 'duration': 25.94 + VIDEO_BUFFER_SECONDS + 8.0, 'title': 'Organization Registration'},  # Extra 8s for full form with submit
+    {'id': 3, 'filename': 'slide_03_organization_admin_dashboard.mp4', 'duration': 81.21 + VIDEO_BUFFER_SECONDS, 'title': 'Organization Admin Dashboard'},
+    {'id': 4, 'filename': 'slide_04_creating_training_tracks.mp4', 'duration': 41.40 + VIDEO_BUFFER_SECONDS, 'title': 'Creating Training Tracks'},
+    {'id': 5, 'filename': 'slide_05_ai_assistant.mp4', 'duration': 47.23 + VIDEO_BUFFER_SECONDS, 'title': 'AI Assistant'},
+    {'id': 6, 'filename': 'slide_06_adding_instructors.mp4', 'duration': 18.83 + VIDEO_BUFFER_SECONDS, 'title': 'Adding Instructors'},
+    {'id': 7, 'filename': 'slide_07_instructor_dashboard.mp4', 'duration': 31.48 + VIDEO_BUFFER_SECONDS, 'title': 'Instructor Dashboard'},
+    {'id': 8, 'filename': 'slide_08_course_content.mp4', 'duration': 35.84 + VIDEO_BUFFER_SECONDS, 'title': 'Course Content Generation'},
+    {'id': 9, 'filename': 'slide_09_enroll_students.mp4', 'duration': 22.23 + VIDEO_BUFFER_SECONDS, 'title': 'Student Enrollment'},
+    {'id': 10, 'filename': 'slide_10_student_dashboard.mp4', 'duration': 17.79 + VIDEO_BUFFER_SECONDS, 'title': 'Student Dashboard'},
+    {'id': 11, 'filename': 'slide_11_course_browsing.mp4', 'duration': 34.51 + VIDEO_BUFFER_SECONDS, 'title': 'Course Browsing & Labs'},
+    {'id': 12, 'filename': 'slide_12_quiz_assessment.mp4', 'duration': 27.53 + VIDEO_BUFFER_SECONDS, 'title': 'Quiz & Assessment'},
+    {'id': 13, 'filename': 'slide_13_student_progress.mp4', 'duration': 20.30 + VIDEO_BUFFER_SECONDS, 'title': 'Student Progress'},
+    {'id': 14, 'filename': 'slide_14_instructor_analytics.mp4', 'duration': 34.22 + VIDEO_BUFFER_SECONDS, 'title': 'Instructor Analytics'},
+    {'id': 15, 'filename': 'slide_15_summary.mp4', 'duration': 26.28 + VIDEO_BUFFER_SECONDS, 'title': 'Summary & Next Steps'},
 ]
 
 
@@ -62,28 +65,76 @@ async def apply_enhanced_visibility(page, zoom_level=1.4):
     - Zooms in for better readability
     - Increases contrast and font sizes
     - Adds visual borders and shadows for clarity
+    - Uses inline styles that persist through React re-renders
     """
+    # Wait for page to be fully loaded
+    await page.wait_for_load_state('networkidle')
+    await asyncio.sleep(0.5)
+
     # Apply zoom
     await page.evaluate(f"document.body.style.zoom = '{zoom_level}'")
+
+    # Apply inline styles to html, body, and React root that persist through re-renders
+    await page.evaluate("""
+        // Apply persistent blue background via inline styles
+        document.documentElement.style.cssText = 'background: linear-gradient(135deg, #1a365d 0%, #2563eb 50%, #3b82f6 100%) !important; min-height: 100vh !important;';
+        document.body.style.background = 'transparent';
+        document.body.style.minHeight = '100vh';
+
+        // Make React root element transparent so background shows through
+        const root = document.getElementById('root');
+        if (root) {
+            root.style.background = 'transparent';
+            root.style.minHeight = '100vh';
+        }
+
+        // Create a persistent background overlay that sits behind everything
+        if (!document.getElementById('demo-bg-overlay')) {
+            const overlay = document.createElement('div');
+            overlay.id = 'demo-bg-overlay';
+            overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: linear-gradient(135deg, #1a365d 0%, #2563eb 50%, #3b82f6 100%); z-index: -9999; pointer-events: none;';
+            document.body.insertBefore(overlay, document.body.firstChild);
+        }
+
+        // Also ensure main app wrapper backgrounds are transparent
+        const appWrappers = document.querySelectorAll('[class*="App"], [class*="app"], [class*="Layout"], [class*="layout"], [class*="Wrapper"], [class*="wrapper"]');
+        appWrappers.forEach(el => {
+            if (el.style) el.style.background = 'transparent';
+        });
+    """)
 
     # Inject CSS for better contrast and readability across ALL pages
     await page.add_style_tag(content="""
         /* ENHANCED VISIBILITY FOR DEMO RECORDINGS */
 
-        /* Better background contrast */
-        body {
-            background: #e8e8e8 !important;
+        /* Better background contrast - Blue gradient for visibility */
+        html {
+            background: linear-gradient(135deg, #1a365d 0%, #2563eb 50%, #3b82f6 100%) !important;
+            min-height: 100vh !important;
         }
 
-        /* Main content areas */
-        main, .main, [class*="container"], [class*="Container"],
+        body {
+            background: transparent !important;
+            min-height: 100vh !important;
+        }
+
+        /* Make React root and app wrappers transparent */
+        #root, [class*="App"], [class*="app-"], [class*="Layout"], [class*="layout-"],
+        [class*="Wrapper"], [class*="wrapper-"], [class*="Page"][class*="container"] {
+            background: transparent !important;
+        }
+
+        /* Main content areas - white boxes on blue background */
+        main, .main,
         .card, [class*="card"], [class*="Card"],
         .panel, [class*="panel"], [class*="Panel"],
-        .dashboard, [class*="dashboard"], [class*="Dashboard"] {
+        .dashboard, [class*="dashboard"], [class*="Dashboard"],
+        [class*="content"], [class*="Content"] {
             background: white !important;
             border: 2px solid #444 !important;
             border-radius: 12px !important;
             box-shadow: 0 6px 24px rgba(0,0,0,0.25) !important;
+            margin: 10px !important;
         }
 
         /* Forms and inputs - larger and more visible */
@@ -227,20 +278,32 @@ async def try_click(page, selectors, timeout_ms=2000):
     return False
 
 
-async def try_fill(page, selectors, text, timeout_ms=2000, delay=80):
+async def try_fill(page, selectors, text, timeout_ms=2000, delay=100):
     """
     Try to fill any of the given selectors with a short timeout.
     Returns True if successful, False otherwise.
+
+    Uses slower typing (delay=100ms) to ensure text entry is visible in recordings.
     """
     for selector in selectors:
         try:
             element = page.locator(selector).first
+            # Wait for element to be visible
+            await element.wait_for(state='visible', timeout=timeout_ms)
+            # Click to focus
             await element.click(timeout=timeout_ms)
-            await element.fill('')  # Clear first
+            await asyncio.sleep(0.3)  # Pause after click for visibility
+            # Clear the field first
+            await element.fill('')
+            await asyncio.sleep(0.2)
+            # Type character by character with visible delay
             for char in text:
                 await element.type(char, delay=delay)
+            await asyncio.sleep(0.3)  # Pause after typing to show completed text
+            print(f"    Filled '{selector}' with '{text}'")
             return True
-        except:
+        except Exception as e:
+            print(f"    Failed to fill '{selector}': {e}")
             continue
     return False
 
@@ -248,16 +311,27 @@ async def try_fill(page, selectors, text, timeout_ms=2000, delay=80):
 async def record_slide_01(page, slide):
     """Slide 1: Platform Introduction - Homepage tour"""
     print(f"  Recording: {slide['title']} ({slide['duration']}s)")
+
+    # Navigate and wait for content to be visible BEFORE starting timer
+    await page.goto(BASE_URL)
+    await page.wait_for_load_state('networkidle')
+
+    # Wait for main content to be visible (hero section)
+    try:
+        await page.locator('h1, [class*="hero"], [class*="Hero"], main').first.wait_for(state='visible', timeout=5000)
+    except:
+        pass  # Continue even if specific element not found
+
+    # Apply styling
+    await apply_enhanced_visibility(page, zoom_level=1.3)
+    await asyncio.sleep(0.5)
+
+    # NOW start the timer - content is visible
     start_time = time.time()
     target_duration = slide['duration']
 
-    await page.goto(BASE_URL)
-    await asyncio.sleep(1)
-    await apply_enhanced_visibility(page, zoom_level=1.3)
-    await asyncio.sleep(1)
-
     # Show hero section
-    await asyncio.sleep(2)
+    await asyncio.sleep(2.5)
 
     # Scroll through features
     await smooth_scroll(page, 300, 800)
@@ -278,41 +352,98 @@ async def record_slide_01(page, slide):
 
 
 async def record_slide_02(page, slide):
-    """Slide 2: Organization Registration - Show registration form (no form filling to control timing)
+    """Slide 2: Organization Registration - SYNCED WITH NARRATION
 
-    Target duration: 25.94s (matching audio)
-    SIMPLIFIED: Just show the form with scrolling - form filling adds unpredictable timing
+    Narration (25.94s):
+    "To get started, simply click Register Organization on the home page. [0-4s]
+     Now, let's fill in the details. [4-6s]
+     Enter your organization name, website, and a brief description. [6-12s]
+     Add your contact information, including business email and address. [12-17s]
+     Finally, set up your administrator account with credentials. [17-22s]
+     Click submit, and there you go! [22-24s]
+     Your organization is successfully registered. Next, we'll show you how to create projects." [24-26s]
     """
     print(f"  Recording: {slide['title']} ({slide['duration']}s)")
+
+    # Navigate and wait for form to be visible BEFORE starting timer
+    await page.goto(f"{BASE_URL}/organization/register")
+    await page.wait_for_load_state('networkidle')
+
+    # Wait for form to be visible
+    try:
+        await page.locator('form, input[name="name"]').first.wait_for(state='visible', timeout=5000)
+    except:
+        pass
+
+    # Apply styling
+    await apply_enhanced_visibility(page, zoom_level=1.4)
+    await asyncio.sleep(0.3)
+
+    # Helper to wait until a specific time point
+    async def wait_until(target_time):
+        elapsed = time.time() - start_time
+        if target_time > elapsed:
+            await asyncio.sleep(target_time - elapsed)
+
+    # START TIMER - synced with narration
     start_time = time.time()
     target_duration = slide['duration']
 
-    # Navigate to registration page
-    await page.goto(f"{BASE_URL}/organization/register")
-    await asyncio.sleep(1)
-    await apply_enhanced_visibility(page, zoom_level=1.4)
+    # 0-4s: "To get started, simply click Register Organization..."
+    # Form is already shown, just display it
+    await asyncio.sleep(4)
+
+    # 4-6s: "Now, let's fill in the details"
+    # Show form, prepare for typing
     await asyncio.sleep(2)
 
-    # Show the form - pause to let viewer see it
-    await asyncio.sleep(3)
+    # 6-12s: "Enter your organization name, website, and a brief description"
+    # 6-8s: Organization name
+    await try_fill(page, ['input[name="name"]'], "Acme Training Corp", timeout_ms=2000, delay=60)
 
-    # Scroll down to show more form fields
-    await smooth_scroll(page, 200, 600)
-    await asyncio.sleep(3)
+    # 8-10s: Website/domain
+    await wait_until(8)
+    await try_fill(page, ['input[name="domain"]'], "acmetraining.com", timeout_ms=1500, delay=60)
 
-    # Scroll further to show bottom of form
-    await smooth_scroll(page, 400, 600)
-    await asyncio.sleep(3)
+    # 10-12s: Scroll to show description area if exists, or slug
+    await wait_until(10)
+    await try_fill(page, ['input[name="slug"]'], "acme-training", timeout_ms=1500, delay=60)
 
-    # Scroll back to top to show complete form
-    await smooth_scroll(page, 0, 500)
-    await asyncio.sleep(2)
+    # 12-17s: "Add your contact information, including business email and address"
+    await wait_until(12)
+    await smooth_scroll(page, 300, 400)
+    await try_fill(page, ['input[name="contact_email"]'], "contact@acmetraining.com", timeout_ms=1500, delay=50)
 
-    # Wait precisely for remaining time
-    elapsed = time.time() - start_time
-    remaining = target_duration - elapsed - 0.3
-    if remaining > 0:
-        await asyncio.sleep(remaining)
+    # 17-22s: "Finally, set up your administrator account with credentials"
+    await wait_until(17)
+    await smooth_scroll(page, 500, 400)
+    await try_fill(page, ['input[name="admin_full_name"]'], "John Smith", timeout_ms=1500, delay=50)
+    await wait_until(18.5)
+    await try_fill(page, ['input[name="admin_username"]'], "jsmith", timeout_ms=1500, delay=50)
+    await wait_until(19.5)
+    await try_fill(page, ['input[name="admin_email"]'], "john@acmetraining.com", timeout_ms=1500, delay=50)
+    await wait_until(20.5)
+    await smooth_scroll(page, 700, 300)
+    await try_fill(page, ['input[name="admin_password"]'], "SecurePass123!", timeout_ms=1500, delay=40)
+    await wait_until(21.5)
+    await try_fill(page, ['input[name="admin_password_confirm"]'], "SecurePass123!", timeout_ms=1500, delay=40)
+
+    # 22-24s: "Click submit, and there you go!"
+    await wait_until(22)
+    await smooth_scroll(page, 900, 300)
+    try:
+        submit_btn = page.locator('button[type="submit"], button:has-text("Register"), button:has-text("Submit"), button:has-text("Create")').first
+        await submit_btn.click(timeout=2000)
+        print("    Clicked submit button")
+    except Exception as e:
+        print(f"    Submit button not found: {e}")
+
+    # 24-26s: "Your organization is successfully registered..."
+    await wait_until(24)
+    await asyncio.sleep(2)  # Show success/redirect
+
+    # Wait for remaining duration
+    await wait_until(target_duration - 0.3)
 
 
 async def record_slide_03(page, slide):
@@ -326,7 +457,7 @@ async def record_slide_03(page, slide):
     target_duration = slide['duration']
 
     # Navigate directly to org admin dashboard
-    await page.goto(f"{BASE_URL}/org-admin")
+    await page.goto(f"{BASE_URL}/dashboard/org-admin")
     await asyncio.sleep(1)
     await apply_enhanced_visibility(page, zoom_level=1.3)
     await asyncio.sleep(2)
@@ -344,7 +475,7 @@ async def record_slide_03(page, slide):
         'button:has-text("Manage Members")'
     ], timeout_ms=1000):
         await asyncio.sleep(3)
-        await page.goto(f"{BASE_URL}/org-admin")
+        await page.goto(f"{BASE_URL}/dashboard/org-admin")
         await asyncio.sleep(2)
 
     # Scroll to Training Programs section
@@ -357,7 +488,7 @@ async def record_slide_03(page, slide):
         'button:has-text("Manage Tracks")'
     ], timeout_ms=1000):
         await asyncio.sleep(3)
-        await page.goto(f"{BASE_URL}/org-admin")
+        await page.goto(f"{BASE_URL}/dashboard/org-admin")
         await asyncio.sleep(2)
 
     # Scroll to Import & AI section
@@ -370,7 +501,7 @@ async def record_slide_03(page, slide):
         'a[href="/organization/import"]'
     ], timeout_ms=1000):
         await asyncio.sleep(2)
-        await page.goto(f"{BASE_URL}/org-admin")
+        await page.goto(f"{BASE_URL}/dashboard/org-admin")
         await asyncio.sleep(2)
 
     # Scroll to Analytics section
@@ -383,7 +514,7 @@ async def record_slide_03(page, slide):
         'button:has-text("View Reports")'
     ], timeout_ms=1000):
         await asyncio.sleep(3)
-        await page.goto(f"{BASE_URL}/org-admin")
+        await page.goto(f"{BASE_URL}/dashboard/org-admin")
         await asyncio.sleep(2)
 
     # Scroll to Settings section
@@ -436,7 +567,7 @@ async def record_slide_04(page, slide):
         await try_fill(page, [
             'input[name="name"]',
             'input[name="trackName"]'
-        ], 'Python Fundamentals', delay=50)
+        ], 'Python Fundamentals', delay=80)
         await asyncio.sleep(1)
 
         # Try description
@@ -476,7 +607,7 @@ async def record_slide_05(page, slide):
     target_duration = slide['duration']
 
     # Navigate to org admin to show AI features
-    await page.goto(f"{BASE_URL}/org-admin")
+    await page.goto(f"{BASE_URL}/dashboard/org-admin")
     await asyncio.sleep(1)
     await apply_enhanced_visibility(page, zoom_level=1.4)
     await asyncio.sleep(2)
@@ -491,7 +622,7 @@ async def record_slide_05(page, slide):
         'a[href="/organization/ai-create"]'
     ], timeout_ms=1000):
         await asyncio.sleep(3)
-        await page.goto(f"{BASE_URL}/org-admin")
+        await page.goto(f"{BASE_URL}/dashboard/org-admin")
         await asyncio.sleep(1)
 
     # Now show the instructor's AI content generator
@@ -993,15 +1124,19 @@ async def record_slide(slide, headless=True):
             source_video = video_files[-1]  # Most recent
             output_path = VIDEO_DIR / slide['filename']
 
-            # Convert webm to mp4 with H.264
-            print(f"  Converting to H.264 MP4...")
+            # Convert webm to mp4 with H.264 baseline profile for maximum browser compatibility
+            # Using baseline profile, level 3.0, and faststart for web streaming
+            print(f"  Converting to H.264 MP4 (baseline profile for browser compatibility)...")
             result = subprocess.run([
                 'ffmpeg', '-y',
                 '-i', str(source_video),
                 '-c:v', 'libx264',
-                '-preset', 'medium',
+                '-profile:v', 'baseline',  # Most compatible profile
+                '-level', '3.0',  # Wide device support
+                '-preset', 'fast',
                 '-crf', '23',
                 '-pix_fmt', 'yuv420p',
+                '-movflags', '+faststart',  # Enable progressive download/streaming
                 '-an',  # No audio (we'll sync separately)
                 str(output_path)
             ], capture_output=True, text=True)
