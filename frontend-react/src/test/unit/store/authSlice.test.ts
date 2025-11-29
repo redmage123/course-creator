@@ -46,11 +46,13 @@ import authReducer, {
  * Tests must have clean localStorage state and verify persistence logic.
  *
  * TECHNICAL IMPLEMENTATION:
- * Clears localStorage before each test to ensure isolation.
+ * Uses the globally mocked localStorage from test/setup.ts.
+ * Note: authSlice now stores tokens in-memory (tokenManager), not localStorage.
+ * Only userRole, userId, organizationId are persisted to localStorage.
  */
 describe('authSlice', () => {
   beforeEach(() => {
-    // Clear localStorage before each test
+    // Clear localStorage and mock calls before each test
     localStorage.clear();
     vi.clearAllMocks();
   });
@@ -140,12 +142,14 @@ describe('authSlice', () => {
       expect(state.organizationId).toBe(payload.organizationId);
       expect(state.expiresAt).toBe(payload.expiresAt);
 
-      // Verify localStorage synchronization
-      expect(localStorage.setItem).toHaveBeenCalledWith('authToken', payload.token);
-      expect(localStorage.setItem).toHaveBeenCalledWith('refreshToken', payload.refreshToken);
+      // Verify localStorage synchronization (tokens are in-memory only, not localStorage)
+      // Only userRole, userId, organizationId are stored in localStorage
       expect(localStorage.setItem).toHaveBeenCalledWith('userRole', payload.role);
       expect(localStorage.setItem).toHaveBeenCalledWith('userId', payload.userId);
       expect(localStorage.setItem).toHaveBeenCalledWith('organizationId', payload.organizationId);
+      // authToken and refreshToken are NOT stored in localStorage (stored in tokenManager)
+      expect(localStorage.setItem).not.toHaveBeenCalledWith('authToken', expect.anything());
+      expect(localStorage.setItem).not.toHaveBeenCalledWith('refreshToken', expect.anything());
     });
 
     it('should handle login success without optional refreshToken', () => {
@@ -168,8 +172,9 @@ describe('authSlice', () => {
       expect(state.userId).toBe(payload.userId);
       expect(state.organizationId).toBe(null);
 
-      // Verify refreshToken not set in localStorage
-      expect(localStorage.setItem).not.toHaveBeenCalledWith('refreshToken', expect.anything());
+      // Verify userRole and userId still set in localStorage
+      expect(localStorage.setItem).toHaveBeenCalledWith('userRole', payload.role);
+      expect(localStorage.setItem).toHaveBeenCalledWith('userId', payload.userId);
     });
 
     it('should handle login success without optional organizationId', () => {
@@ -189,7 +194,7 @@ describe('authSlice', () => {
       expect(state.isAuthenticated).toBe(true);
       expect(state.organizationId).toBe(null);
 
-      // Verify organizationId not set in localStorage
+      // Verify organizationId not set in localStorage (since it's not provided)
       expect(localStorage.setItem).not.toHaveBeenCalledWith('organizationId', expect.anything());
     });
 
@@ -272,12 +277,13 @@ describe('authSlice', () => {
       // Perform logout
       authReducer(authenticatedState, logout());
 
-      // Verify localStorage cleanup
-      expect(localStorage.removeItem).toHaveBeenCalledWith('authToken');
-      expect(localStorage.removeItem).toHaveBeenCalledWith('refreshToken');
+      // Verify localStorage cleanup (only userRole, userId, organizationId are in localStorage)
       expect(localStorage.removeItem).toHaveBeenCalledWith('userRole');
       expect(localStorage.removeItem).toHaveBeenCalledWith('userId');
       expect(localStorage.removeItem).toHaveBeenCalledWith('organizationId');
+      // authToken and refreshToken are NOT in localStorage (stored in tokenManager)
+      expect(localStorage.removeItem).not.toHaveBeenCalledWith('authToken');
+      expect(localStorage.removeItem).not.toHaveBeenCalledWith('refreshToken');
     });
 
     it('should handle logout when already logged out (idempotent)', () => {
@@ -336,8 +342,9 @@ describe('authSlice', () => {
       expect(state.role).toBe('instructor');
       expect(state.userId).toBe('user-12345');
 
-      // Verify localStorage updated
-      expect(localStorage.setItem).toHaveBeenCalledWith('authToken', 'new-jwt-token');
+      // Tokens are stored in tokenManager (in-memory), not localStorage
+      // So we verify that authToken is NOT written to localStorage on refresh
+      expect(localStorage.setItem).not.toHaveBeenCalledWith('authToken', expect.anything());
     });
 
     it('should handle token refresh without changing other state', () => {

@@ -1,0 +1,396 @@
+/**
+ * Sync Status Widget Styles
+ *
+ * DESIGN PRINCIPLES:
+ * - Card-based compact design
+ * - Visual progress indicators
+ * - Touch-friendly controls
+ * - Mobile-first responsive
+ */
+
+/* ============================================================================
+ * MAIN CONTAINER
+ * ============================================================================ */
+
+.syncStatusWidget {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* ============================================================================
+ * SUMMARY
+ * ============================================================================ */
+
+.summary {
+  width: 100%;
+  padding: 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  transition: background-color 0.2s;
+}
+
+.summary:hover {
+  background-color: #f9fafb;
+}
+
+.summary:active {
+  background-color: #f3f4f6;
+}
+
+.summaryContent {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.summaryText {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.expandIcon {
+  font-size: 12px;
+  color: #9ca3af;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+/* ============================================================================
+ * STORAGE BAR
+ * ============================================================================ */
+
+.storageBar {
+  height: 4px;
+  background-color: #e5e7eb;
+  position: relative;
+  overflow: hidden;
+}
+
+.storageBarFill {
+  height: 100%;
+  background-color: #2563eb;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.storageBarFill.storageWarning {
+  background-color: #f59e0b;
+}
+
+/* ============================================================================
+ * DETAILS
+ * ============================================================================ */
+
+.details {
+  border-top: 1px solid #e5e7eb;
+}
+
+.emptyState {
+  padding: 32px 16px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.emptyState p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.emptyState .hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* ============================================================================
+ * ITEM LIST
+ * ============================================================================ */
+
+.itemList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.item {
+  padding: 16px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.item:last-child {
+  border-bottom: none;
+}
+
+.itemHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.statusIcon {
+  font-size: 20px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.itemInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.itemTitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.itemMeta {
+  font-size: 12px;
+  color: #6b7280;
+  display: flex;
+  gap: 4px;
+}
+
+/* ============================================================================
+ * PROGRESS
+ * ============================================================================ */
+
+.progress {
+  margin-top: 12px;
+}
+
+.progressBar {
+  height: 6px;
+  background-color: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.progressBarFill {
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
+  transition: width 0.3s ease;
+  border-radius: 3px;
+}
+
+.progressText {
+  font-size: 11px;
+  color: #6b7280;
+  text-align: right;
+}
+
+/* ============================================================================
+ * ERROR
+ * ============================================================================ */
+
+.error {
+  margin-top: 8px;
+  padding: 8px;
+  background-color: #fef3c7;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.errorIcon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.errorMessage {
+  font-size: 12px;
+  color: #92400e;
+  flex: 1;
+}
+
+/* ============================================================================
+ * ACTIONS
+ * ============================================================================ */
+
+.itemActions {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.actionButton {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #ffffff;
+  min-height: 44px; /* Touch-friendly */
+}
+
+.retryButton {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.retryButton:hover {
+  background-color: #eff6ff;
+}
+
+.retryButton:active {
+  background-color: #dbeafe;
+}
+
+.cancelButton {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+.cancelButton:hover {
+  background-color: #fef2f2;
+}
+
+.cancelButton:active {
+  background-color: #fee2e2;
+}
+
+/* ============================================================================
+ * RESPONSIVE
+ * ============================================================================ */
+
+/* Mobile devices */
+@media (max-width: 640px) {
+  .summary {
+    padding: 12px;
+  }
+
+  .icon {
+    font-size: 20px;
+  }
+
+  .title {
+    font-size: 13px;
+  }
+
+  .subtitle {
+    font-size: 11px;
+  }
+
+  .item {
+    padding: 12px;
+  }
+
+  .itemActions {
+    flex-direction: column;
+  }
+
+  .actionButton {
+    width: 100%;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .summary,
+  .storageBarFill,
+  .progressBarFill,
+  .actionButton {
+    transition: none;
+  }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .syncStatusWidget {
+    background: #1f2937;
+    border-color: #374151;
+  }
+
+  .summary:hover {
+    background-color: #374151;
+  }
+
+  .summary:active {
+    background-color: #4b5563;
+  }
+
+  .title {
+    color: #f9fafb;
+  }
+
+  .subtitle,
+  .itemMeta,
+  .progressText {
+    color: #9ca3af;
+  }
+
+  .storageBar,
+  .progressBar {
+    background-color: #374151;
+  }
+
+  .item {
+    border-bottom-color: #374151;
+  }
+
+  .itemTitle {
+    color: #f9fafb;
+  }
+
+  .error {
+    background-color: #78350f;
+  }
+
+  .errorMessage {
+    color: #fef3c7;
+  }
+
+  .actionButton {
+    background: #1f2937;
+  }
+
+  .retryButton:hover {
+    background-color: #1e3a8a;
+  }
+
+  .retryButton:active {
+    background-color: #1e40af;
+  }
+
+  .cancelButton:hover {
+    background-color: #7f1d1d;
+  }
+
+  .cancelButton:active {
+    background-color: #991b1b;
+  }
+}

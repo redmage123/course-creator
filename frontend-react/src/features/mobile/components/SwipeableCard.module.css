@@ -1,0 +1,66 @@
+/**
+ * Swipeable Card Styles
+ *
+ * DESIGN PRINCIPLES:
+ * - Smooth swipe animations
+ * - Clear visual feedback
+ * - Native-feeling interactions
+ */
+
+.swipeableCard {
+  position: relative;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+.cardContent {
+  position: relative;
+  background: #ffffff;
+  z-index: 2;
+  will-change: transform;
+}
+
+.actionBackground {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 8px;
+  z-index: 1;
+  opacity: 0.9;
+  transition: opacity 0.2s;
+}
+
+.actionBackground.active {
+  opacity: 1;
+}
+
+.leftAction {
+  left: 0;
+  justify-content: flex-start;
+}
+
+.rightAction {
+  right: 0;
+  justify-content: flex-end;
+}
+
+.actionIcon {
+  font-size: 24px;
+  color: #ffffff;
+}
+
+.actionLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cardContent {
+    transition: none !important;
+  }
+}

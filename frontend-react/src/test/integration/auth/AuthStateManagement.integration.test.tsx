@@ -81,9 +81,8 @@ describe('Auth State Management Integration Tests', () => {
     expect(authState.userId).toBe('user-123');
     expect(authState.organizationId).toBe('org-456');
 
-    // Assert - localStorage synchronized
-    expect(localStorage.getItem('authToken')).toBe('jwt-token-123');
-    expect(localStorage.getItem('refreshToken')).toBe('refresh-token-123');
+    // Assert - localStorage synchronized (only user info, not tokens)
+    // Note: Tokens are stored in tokenManager (in-memory), not localStorage
     expect(localStorage.getItem('userRole')).toBe('instructor');
     expect(localStorage.getItem('userId')).toBe('user-123');
     expect(localStorage.getItem('organizationId')).toBe('org-456');
@@ -101,8 +100,7 @@ describe('Auth State Management Integration Tests', () => {
      */
 
     // Arrange - Pre-populate localStorage (simulating previous session)
-    localStorage.setItem('authToken', 'persisted-token');
-    localStorage.setItem('refreshToken', 'persisted-refresh');
+    // Note: Only user info is stored in localStorage, not tokens
     localStorage.setItem('userRole', 'student');
     localStorage.setItem('userId', 'student-789');
     localStorage.setItem('organizationId', 'org-999');
@@ -110,10 +108,11 @@ describe('Auth State Management Integration Tests', () => {
     // Act - Create new store (simulating page reload)
     const store = setupStore();
 
-    // Assert - State restored from localStorage
+    // Assert - State restored from localStorage (user info only)
+    // Note: Tokens are NOT restored from localStorage (they're in-memory only)
     const authState = store.getState().auth;
-    expect(authState.token).toBe('persisted-token');
-    expect(authState.refreshToken).toBe('persisted-refresh');
+    expect(authState.token).toBeNull(); // Token is in-memory only
+    expect(authState.refreshToken).toBeNull(); // Refresh token is in-memory only
     expect(authState.role).toBe('student');
     expect(authState.userId).toBe('student-789');
     expect(authState.organizationId).toBe('org-999');
@@ -146,7 +145,7 @@ describe('Auth State Management Integration Tests', () => {
 
     // Verify initial state
     expect(store.getState().auth.isAuthenticated).toBe(true);
-    expect(localStorage.getItem('authToken')).toBe('token');
+    expect(localStorage.getItem('userRole')).toBe('instructor');
 
     // Act - Dispatch logout (Redux action only - API call tested elsewhere)
     store.dispatch(logout());
@@ -160,9 +159,7 @@ describe('Auth State Management Integration Tests', () => {
     expect(authState.userId).toBeNull();
     expect(authState.organizationId).toBeNull();
 
-    // Assert - localStorage cleared
-    expect(localStorage.getItem('authToken')).toBeNull();
-    expect(localStorage.getItem('refreshToken')).toBeNull();
+    // Assert - localStorage cleared (user info only, tokens were in-memory)
     expect(localStorage.getItem('userRole')).toBeNull();
     expect(localStorage.getItem('userId')).toBeNull();
     expect(localStorage.getItem('organizationId')).toBeNull();
@@ -206,8 +203,8 @@ describe('Auth State Management Integration Tests', () => {
     expect(authState.isAuthenticated).toBe(true); // Still authenticated
     expect(authState.role).toBe('student'); // Role unchanged
 
-    // Assert - localStorage updated with new token
-    expect(localStorage.getItem('authToken')).toBe(newToken);
+    // Assert - user info remains in localStorage (tokens are in-memory only)
+    expect(localStorage.getItem('userRole')).toBe('student');
   });
 
   it('should handle concurrent login/logout operations correctly', async () => {
@@ -241,7 +238,7 @@ describe('Auth State Management Integration Tests', () => {
     const authState = store.getState().auth;
     expect(authState.isAuthenticated).toBe(false);
     expect(authState.token).toBeNull();
-    expect(localStorage.getItem('authToken')).toBeNull();
+    expect(localStorage.getItem('userRole')).toBeNull();
   });
 
   it('should handle organization switching for org admins', async () => {
@@ -317,17 +314,17 @@ describe('Auth State Management Integration Tests', () => {
      * Edge case where localStorage has token but missing role
      */
 
-    // Arrange - Partial localStorage data
-    localStorage.setItem('authToken', 'token-no-role');
+    // Arrange - Partial localStorage data (only user info, no tokens in localStorage)
     localStorage.setItem('userId', 'user-1');
     // Note: No role set
 
     // Act - Initialize store
     const store = setupStore();
 
-    // Assert - State handles missing role
+    // Assert - State handles missing role gracefully
     const authState = store.getState().auth;
-    expect(authState.token).toBe('token-no-role');
+    expect(authState.token).toBeNull(); // Tokens are in-memory only
+    expect(authState.userId).toBe('user-1');
     expect(authState.role).toBeNull();
   });
 
@@ -358,7 +355,10 @@ describe('Auth State Management Integration Tests', () => {
       })
     );
 
-    expect(localStorage.getItem('authToken')).toBe('token-1');
+    // User info persisted to localStorage (tokens are in-memory only)
+    expect(localStorage.getItem('userRole')).toBe('instructor');
+    expect(localStorage.getItem('userId')).toBe('user-1');
+    expect(store.getState().auth.token).toBe('token-1');
 
     // Step 2: Token Refresh
     store.dispatch(
@@ -368,13 +368,13 @@ describe('Auth State Management Integration Tests', () => {
       })
     );
 
-    expect(localStorage.getItem('authToken')).toBe('token-2');
+    expect(store.getState().auth.token).toBe('token-2');
     expect(localStorage.getItem('userRole')).toBe('instructor'); // Unchanged
 
     // Step 3: Logout
     store.dispatch(logout());
 
-    expect(localStorage.getItem('authToken')).toBeNull();
+    expect(store.getState().auth.token).toBeNull();
     expect(localStorage.getItem('userRole')).toBeNull();
   });
 
@@ -434,7 +434,10 @@ describe('Auth State Management Integration Tests', () => {
       expect(store.getState().auth.userId).toBe('user-hook');
     });
 
-    // Assert - localStorage synchronized
-    expect(localStorage.getItem('authToken')).toBe('hook-token');
+    // Assert - localStorage synchronized (user info only, tokens in-memory)
+    expect(localStorage.getItem('userRole')).toBe('student');
+    expect(localStorage.getItem('userId')).toBe('user-hook');
+    // Token is in Redux state but NOT in localStorage
+    expect(store.getState().auth.token).toBe('hook-token');
   });
 });

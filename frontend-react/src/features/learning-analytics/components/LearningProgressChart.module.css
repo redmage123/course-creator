@@ -1,0 +1,53 @@
+/* Learning Progress Chart Styles */
+
+.chartContainer {
+  width: 100%;
+}
+
+.chartWrapper {
+  height: 300px;
+  position: relative;
+}
+
+.statsRow {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.statLabel {
+  font-size: 0.75rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.statValue {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  color: #999;
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  margin-top: 1rem;
+  opacity: 0.5;
+}

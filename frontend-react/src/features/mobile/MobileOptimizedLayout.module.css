@@ -1,0 +1,310 @@
+/**
+ * Mobile Optimized Layout Styles
+ *
+ * DESIGN PRINCIPLES:
+ * - Mobile-first responsive design
+ * - Flexbox-based layout
+ * - Safe area support for notched devices
+ * - Compact mode for smaller screens
+ * - Smooth transitions
+ */
+
+/* ============================================================================
+ * MAIN LAYOUT
+ * ============================================================================ */
+
+.mobileOptimizedLayout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height for mobile */
+  background-color: #f9fafb;
+}
+
+/* ============================================================================
+ * SAFE AREA SUPPORT
+ * ============================================================================ */
+
+.safeArea {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* ============================================================================
+ * HEADER
+ * ============================================================================ */
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* ============================================================================
+ * MAIN CONTENT
+ * ============================================================================ */
+
+.main {
+  flex: 1;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}
+
+/* ============================================================================
+ * FOOTER
+ * ============================================================================ */
+
+.footer {
+  background-color: #ffffff;
+  border-top: 1px solid #e5e7eb;
+  padding: 16px;
+}
+
+/* ============================================================================
+ * LAYOUT MODES
+ * ============================================================================ */
+
+/* Mobile layout (default) */
+.mobile .main {
+  padding: 16px;
+  padding-bottom: 80px; /* Space for bottom navigation */
+}
+
+.mobile.compact .main {
+  padding: 12px;
+}
+
+/* Tablet layout */
+.tablet .main {
+  padding: 24px;
+  max-width: 768px;
+  margin: 0 auto;
+}
+
+.tablet.compact .main {
+  padding: 16px;
+}
+
+/* Desktop layout */
+.desktop .main {
+  padding: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.desktop.compact .main {
+  padding: 24px;
+}
+
+/* ============================================================================
+ * RESPONSIVE BREAKPOINTS
+ * ============================================================================ */
+
+/* Extra small devices (phones, < 640px) */
+@media (max-width: 639px) {
+  .header {
+    font-size: 14px;
+  }
+
+  .main {
+    padding: 12px;
+  }
+
+  .footer {
+    padding: 12px;
+  }
+}
+
+/* Small devices (large phones, 640px - 767px) */
+@media (min-width: 640px) and (max-width: 767px) {
+  .main {
+    padding: 16px;
+  }
+}
+
+/* Medium devices (tablets, 768px - 1023px) */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .main {
+    padding: 24px;
+    max-width: 768px;
+    margin: 0 auto;
+  }
+}
+
+/* Large devices (desktops, 1024px - 1279px) */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .main {
+    padding: 32px;
+    max-width: 1024px;
+    margin: 0 auto;
+  }
+}
+
+/* Extra large devices (large desktops, >= 1280px) */
+@media (min-width: 1280px) {
+  .main {
+    padding: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+}
+
+/* ============================================================================
+ * ORIENTATION SUPPORT
+ * ============================================================================ */
+
+@media (orientation: landscape) and (max-height: 600px) {
+  /* Reduce header size in landscape on small screens */
+  .header {
+    padding: 8px 16px;
+  }
+
+  .main {
+    padding: 16px;
+  }
+}
+
+/* ============================================================================
+ * ACCESSIBILITY
+ * ============================================================================ */
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .mobileOptimizedLayout,
+  .header,
+  .main,
+  .footer {
+    transition: none;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .header {
+    border-bottom-width: 2px;
+  }
+
+  .footer {
+    border-top-width: 2px;
+  }
+}
+
+/* ============================================================================
+ * DARK MODE
+ * ============================================================================ */
+
+@media (prefers-color-scheme: dark) {
+  .mobileOptimizedLayout {
+    background-color: #111827;
+  }
+
+  .header {
+    background-color: #1f2937;
+    border-bottom-color: #374151;
+  }
+
+  .footer {
+    background-color: #1f2937;
+    border-top-color: #374151;
+  }
+}
+
+/* Dark mode via data attribute (for manual toggle) */
+[data-theme='dark'] .mobileOptimizedLayout {
+  background-color: #111827;
+}
+
+[data-theme='dark'] .header {
+  background-color: #1f2937;
+  border-bottom-color: #374151;
+}
+
+[data-theme='dark'] .footer {
+  background-color: #1f2937;
+  border-top-color: #374151;
+}
+
+/* Light mode via data attribute */
+[data-theme='light'] .mobileOptimizedLayout {
+  background-color: #f9fafb;
+}
+
+[data-theme='light'] .header {
+  background-color: #ffffff;
+  border-bottom-color: #e5e7eb;
+}
+
+[data-theme='light'] .footer {
+  background-color: #ffffff;
+  border-top-color: #e5e7eb;
+}
+
+/* High contrast mode via data attribute */
+[data-theme='high_contrast'] .mobileOptimizedLayout {
+  background-color: #000000;
+}
+
+[data-theme='high_contrast'] .header {
+  background-color: #000000;
+  border-bottom: 3px solid #ffffff;
+}
+
+[data-theme='high_contrast'] .footer {
+  background-color: #000000;
+  border-top: 3px solid #ffffff;
+}
+
+/* ============================================================================
+ * FONT SIZE VARIANTS
+ * ============================================================================ */
+
+[data-font-size='small'] {
+  font-size: 14px;
+}
+
+[data-font-size='medium'] {
+  font-size: 16px;
+}
+
+[data-font-size='large'] {
+  font-size: 18px;
+}
+
+[data-font-size='extra_large'] {
+  font-size: 20px;
+}
+
+/* ============================================================================
+ * COMPACT MODE
+ * ============================================================================ */
+
+[data-compact-mode='true'] .header {
+  padding: 8px 12px;
+}
+
+[data-compact-mode='true'] .main {
+  padding: 12px;
+}
+
+[data-compact-mode='true'] .footer {
+  padding: 12px;
+}
+
+/* ============================================================================
+ * REDUCED MOTION
+ * ============================================================================ */
+
+[data-reduced-motion='true'],
+[data-reduced-motion='true'] * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}

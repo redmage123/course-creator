@@ -95,6 +95,30 @@ const ResourcesPage = lazy(() => import('./pages/ResourcesPage').then(m => ({ de
 // Lazy-loaded Demo Page
 const DemoPage = lazy(() => import('./features/demo/pages/DemoPage').then(m => ({ default: m.DemoPage })));
 
+// ============================================================
+// Lazy-loaded Enhancement Features (Enhancements 9-13)
+// ============================================================
+
+// Enhancement 9: Learning Analytics Dashboard
+const LearningAnalyticsDashboard = lazy(() =>
+  import('./features/learning-analytics/LearningAnalyticsDashboard').then(m => ({ default: m.LearningAnalyticsDashboard }))
+);
+
+// Enhancement 10: Instructor Insights Dashboard
+const InstructorInsightsDashboard = lazy(() =>
+  import('./features/instructor-insights/InstructorInsightsDashboard').then(m => ({ default: m.InstructorInsightsDashboard }))
+);
+
+// Enhancement 12: Integrations Settings
+const IntegrationsSettings = lazy(() =>
+  import('./features/integrations/IntegrationsSettings').then(m => ({ default: m.IntegrationsSettings }))
+);
+
+// Enhancement 13: Accessibility Settings
+const AccessibilitySettings = lazy(() =>
+  import('./features/accessibility/AccessibilitySettings').then(m => ({ default: m.AccessibilitySettings }))
+);
+
 // Protected Route Wrapper (small, needed for routing logic)
 import { ProtectedRoute } from './components/routing/ProtectedRoute';
 
@@ -352,6 +376,16 @@ function App() {
               }
             />
 
+            {/* Enhancement 9: Learning Analytics Dashboard */}
+            <Route
+              path="/learning-analytics"
+              element={
+                <ProtectedRoute requiredRoles={['student']}>
+                  <LearningAnalyticsDashboard />
+                </ProtectedRoute>
+              }
+            />
+
             {/* ============================================================
              * PROTECTED ROUTES - INSTRUCTOR (CORPORATE TRAINER) FEATURES
              * ============================================================ */}
@@ -454,6 +488,16 @@ function App() {
               element={
                 <ProtectedRoute requiredRoles={['instructor']}>
                   <LabEnvironmentsList />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Enhancement 10: Instructor Insights Dashboard */}
+            <Route
+              path="/instructor/insights"
+              element={
+                <ProtectedRoute requiredRoles={['instructor']}>
+                  <InstructorInsightsDashboard />
                 </ProtectedRoute>
               }
             />
@@ -603,6 +647,16 @@ function App() {
               }
             />
 
+            {/* Enhancement 12: Organization Integrations Settings */}
+            <Route
+              path="/organization/integrations"
+              element={
+                <ProtectedRoute requiredRoles={['organization_admin']}>
+                  <IntegrationsSettings organizationId="" />
+                </ProtectedRoute>
+              }
+            />
+
             {/* ============================================================
              * PROTECTED ROUTES - SITE ADMIN FEATURES
              * ============================================================ */}
@@ -667,6 +721,16 @@ function App() {
               element={
                 <ProtectedRoute>
                   <PasswordChange />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Enhancement 13: Accessibility Settings */}
+            <Route
+              path="/settings/accessibility"
+              element={
+                <ProtectedRoute>
+                  <AccessibilitySettings />
                 </ProtectedRoute>
               }
             />

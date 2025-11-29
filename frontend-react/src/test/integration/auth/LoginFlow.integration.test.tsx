@@ -105,8 +105,7 @@ describe('Login Flow Integration Tests', () => {
       expect(authState.userId).toBe('student-123');
     }, { timeout: 3000 });
 
-    // Assert - Verify localStorage was updated (outcome)
-    expect(localStorage.getItem('authToken')).toBe('mock-jwt-token');
+    // Assert - Verify localStorage was updated (user info only, tokens in-memory)
     expect(localStorage.getItem('userRole')).toBe('student');
     expect(localStorage.getItem('userId')).toBe('student-123');
 
