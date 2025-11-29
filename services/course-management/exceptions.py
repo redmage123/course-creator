@@ -409,3 +409,126 @@ class QuizManagementException(CourseManagementException):
 class ContentNotFoundException(CourseManagementException):
     def __init__(self, message='Content not found', **kwargs):
         super().__init__(message, error_code='CONTENT_NOT_FOUND', **kwargs)
+
+
+class OrganizationalContextException(CourseManagementException):
+    """
+    Exception raised when organizational context validation fails.
+
+    BUSINESS RULES ENFORCED:
+    Organizations can create courses in three valid modes:
+    1. Standalone: No organization, no track (independent instructor)
+    2. Direct Org: Organization set, no track (org creates course directly)
+    3. Track-based: Organization and track both set (traditional hierarchy)
+
+    INVALID CASE:
+    - Track set without organization (orphaned track reference)
+    """
+
+    def __init__(
+        self,
+        message: str = "Invalid organizational context for course",
+        organization_id: Optional[str] = None,
+        track_id: Optional[str] = None,
+        course_id: Optional[str] = None,
+        context_mode: Optional[str] = None,
+        original_exception: Optional[Exception] = None
+    ):
+        details = {
+            "valid_modes": [
+                "standalone (no org, no track)",
+                "direct_org (org set, no track)",
+                "track_based (org and track both set)"
+            ]
+        }
+        if organization_id:
+            details["organization_id"] = organization_id
+        if track_id:
+            details["track_id"] = track_id
+        if course_id:
+            details["course_id"] = course_id
+        if context_mode:
+            details["attempted_context_mode"] = context_mode
+
+        super().__init__(
+            message=message,
+            error_code="ORGANIZATIONAL_CONTEXT_ERROR",
+            details=details,
+            original_exception=original_exception
+        )
+
+
+class SlideTemplateException(CourseManagementException):
+    """
+    Exception raised when slide template operations fail.
+
+    BUSINESS CONTEXT:
+    Slide templates provide organization-level branding for course presentations.
+    This exception handles template creation, update, and application errors.
+    """
+
+    def __init__(
+        self,
+        message: str = "Slide template operation failed",
+        template_id: Optional[str] = None,
+        organization_id: Optional[str] = None,
+        operation: Optional[str] = None,
+        original_exception: Optional[Exception] = None
+    ):
+        details = {}
+        if template_id:
+            details["template_id"] = template_id
+        if organization_id:
+            details["organization_id"] = organization_id
+        if operation:
+            details["operation"] = operation
+
+        super().__init__(
+            message=message,
+            error_code="SLIDE_TEMPLATE_ERROR",
+            details=details,
+            original_exception=original_exception
+        )
+
+
+class SlideTemplateNotFoundException(SlideTemplateException):
+    """Exception raised when a slide template is not found."""
+
+    def __init__(
+        self,
+        message: str = "Slide template not found",
+        template_id: Optional[str] = None,
+        organization_id: Optional[str] = None,
+        original_exception: Optional[Exception] = None
+    ):
+        super().__init__(
+            message=message,
+            template_id=template_id,
+            organization_id=organization_id,
+            operation="lookup",
+            original_exception=original_exception
+        )
+        self.error_code = "SLIDE_TEMPLATE_NOT_FOUND"
+
+
+class SlideTemplateValidationException(SlideTemplateException):
+    """Exception raised when slide template validation fails."""
+
+    def __init__(
+        self,
+        message: str = "Slide template validation failed",
+        validation_errors: Optional[Dict[str, str]] = None,
+        template_id: Optional[str] = None,
+        organization_id: Optional[str] = None,
+        original_exception: Optional[Exception] = None
+    ):
+        super().__init__(
+            message=message,
+            template_id=template_id,
+            organization_id=organization_id,
+            operation="validation",
+            original_exception=original_exception
+        )
+        self.error_code = "SLIDE_TEMPLATE_VALIDATION_ERROR"
+        if validation_errors:
+            self.details["validation_errors"] = validation_errors

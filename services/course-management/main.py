@@ -457,6 +457,18 @@ def create_app(config: DictConfig) -> FastAPI:
     from api.adaptive_learning_endpoints import router as adaptive_learning_router
     app.include_router(adaptive_learning_router)
 
+    # Include organization content API router (v3.3.2 - Direct org courses)
+    from api.organization_content_endpoints import router as organization_content_router
+    app.include_router(organization_content_router)
+
+    # Include slide template API router (v3.3.2 - Organization branding)
+    from api.slide_template_endpoints import router as slide_template_router
+    app.include_router(slide_template_router)
+
+    # Include project structure import API router (v3.3.2 - File-based project setup)
+    from api.project_structure_endpoints import router as project_structure_router
+    app.include_router(project_structure_router)
+
     return app
 
 # App will be created in main() after config is loaded

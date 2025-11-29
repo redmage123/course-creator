@@ -249,6 +249,10 @@ class Course:
            - If duration is specified, must be positive value
            - Aligns with educational delivery timeframes
 
+        6. Organizational Context (v3.3.2):
+           - Validates organization/track relationship
+           - Ensures no orphaned track references
+
         WHY VALIDATION MATTERS:
         - Prevents data corruption in database layer
         - Ensures consistent user experience across platform
@@ -285,6 +289,112 @@ class Course:
 
         if self.estimated_duration is not None and self.estimated_duration <= 0:
             raise ValueError("Course duration must be positive")
+
+        # Validate organizational context (v3.3.2)
+        if not self.validate_organizational_context():
+            raise ValueError(
+                "Invalid organizational context: cannot set track_id without organization_id"
+            )
+
+    def validate_organizational_context(self) -> bool:
+        """
+        Validate organizational context constraints for course creation modes.
+
+        BUSINESS RULES (v3.3.2):
+        Organizations can now create courses directly without requiring projects
+        or tracks. This method validates three valid course creation modes:
+
+        MODE 1 - STANDALONE COURSE:
+        - organization_id = None, track_id = None
+        - Independent instructor creates course without organizational hierarchy
+        - Use case: Freelance educators, independent training providers
+
+        MODE 2 - DIRECT ORGANIZATION COURSE:
+        - organization_id = set, track_id = None
+        - Organization creates course directly without project/track structure
+        - Use case: Quick course creation, simple organizational needs
+
+        MODE 3 - TRACK-BASED COURSE:
+        - organization_id = set, track_id = set
+        - Traditional hierarchical course within organization structure
+        - Use case: Structured curriculum, certification tracks
+
+        INVALID CASE:
+        - organization_id = None, track_id = set
+        - This creates an orphaned track reference which is not allowed
+        - Tracks must belong to an organization
+
+        WHY THIS MATTERS:
+        - Provides flexibility for different organizational needs
+        - Maintains referential integrity in database
+        - Supports both simple and complex course structures
+        - Enables gradual adoption of organizational features
+
+        Returns:
+            bool: True if organizational context is valid, False otherwise
+
+        Example:
+            >>> # Valid: Standalone course
+            >>> course = Course(title="Python", description="Learn", instructor_id="123")
+            >>> course.validate_organizational_context()  # True
+
+            >>> # Valid: Direct org course
+            >>> course = Course(title="Python", description="Learn", instructor_id="123",
+            ...                 organization_id="org-456")
+            >>> course.validate_organizational_context()  # True
+
+            >>> # Invalid: Orphaned track
+            >>> course = Course(title="Python", description="Learn", instructor_id="123",
+            ...                 track_id="track-789")  # No organization_id
+            >>> course.validate_organizational_context()  # False
+        """
+        has_org = self.organization_id is not None
+        has_track = self.track_id is not None
+
+        # Valid combinations:
+        # 1. Standalone: no org, no track
+        # 2. Direct org: org set, no track
+        # 3. Track-based: org and track both set
+        # Invalid: track set without org (orphaned track)
+        return (
+            (not has_org and not has_track) or  # Standalone
+            (has_org and not has_track) or       # Direct org
+            (has_org and has_track)              # Track-based
+        )
+
+    def get_organizational_context_mode(self) -> str:
+        """
+        Determine the organizational context mode for this course.
+
+        Returns a string identifier for the course's organizational mode,
+        useful for UI display, analytics, and business logic branching.
+
+        MODES:
+        - "standalone": Independent course without organizational hierarchy
+        - "direct_org": Course directly under organization (no track)
+        - "track_based": Course within track/project hierarchy
+        - "invalid": Invalid organizational context (should not occur)
+
+        Returns:
+            str: Mode identifier string
+
+        Example:
+            >>> course = Course(title="ML", description="Learn", instructor_id="123",
+            ...                 organization_id="org-456")
+            >>> course.get_organizational_context_mode()
+            "direct_org"
+        """
+        has_org = self.organization_id is not None
+        has_track = self.track_id is not None
+
+        if not has_org and not has_track:
+            return "standalone"
+        elif has_org and not has_track:
+            return "direct_org"
+        elif has_org and has_track:
+            return "track_based"
+        else:
+            return "invalid"
     
     def can_be_published(self) -> bool:
         """
