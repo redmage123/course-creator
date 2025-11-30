@@ -658,6 +658,7 @@ export const OrganizationRegistration: React.FC = () => {
                 required
                 placeholder="Create a strong password"
                 type="password"
+                showPasswordToggle
                 helpText="Min 8 chars, uppercase, lowercase, and number"
               />
 
@@ -670,6 +671,7 @@ export const OrganizationRegistration: React.FC = () => {
                 required
                 placeholder="Confirm your password"
                 type="password"
+                showPasswordToggle
               />
             </div>
           </div>

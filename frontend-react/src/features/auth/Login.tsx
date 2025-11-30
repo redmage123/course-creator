@@ -17,6 +17,7 @@ import { Card } from '../../components/atoms/Card';
 import { Button } from '../../components/atoms/Button';
 import { Heading } from '../../components/atoms/Heading';
 import { Spinner } from '../../components/atoms/Spinner';
+import { Input } from '../../components/atoms/Input';
 import styles from './Login.module.css';
 
 /**
@@ -33,8 +34,9 @@ export const LoginPage: React.FC = () => {
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');  // Can be email OR username
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
 
@@ -49,20 +51,19 @@ export const LoginPage: React.FC = () => {
     setError('');
 
     // Client-side validation
-    if (!email || !password) {
-      setError('Please enter both email and password');
+    if (!identifier || !password) {
+      setError('Please enter your email/username and password');
       return;
     }
 
-    if (!email.includes('@')) {
-      setError('Please enter a valid email address');
+    if (identifier.length < 3) {
+      setError('Please enter a valid email or username');
       return;
     }
 
     try {
-      // Note: Backend expects "username" but we're collecting email
-      // The backend will accept either email or username
-      await login({ username: email, password });
+      // Backend accepts either email or username
+      await login({ username: identifier, password });
       // Navigation is handled by useAuth hook
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed. Please try again.');
@@ -91,41 +92,34 @@ export const LoginPage: React.FC = () => {
             </div>
           )}
 
-          {/* Email Input */}
+          {/* Email or Username Input */}
           <div className={styles['form-group']}>
-            <label htmlFor="email" className={styles['form-label']}>
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={styles['form-input']}
-              placeholder="instructor@example.com"
+            <Input
+              type="text"
+              label="Email or Username"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              placeholder="you@example.com or username"
               disabled={isLoading}
-              autoComplete="email"
+              autoComplete="username"
               required
+              fullWidth
             />
           </div>
 
           {/* Password Input */}
           <div className={styles['form-group']}>
-            <label htmlFor="password" className={styles['form-label']}>
-              Password
-            </label>
-            <input
+            <Input
               type="password"
-              id="password"
-              name="password"
+              label="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className={styles['form-input']}
               placeholder="Enter your password"
               disabled={isLoading}
               autoComplete="current-password"
               required
+              fullWidth
+              showPasswordToggle
             />
           </div>
 

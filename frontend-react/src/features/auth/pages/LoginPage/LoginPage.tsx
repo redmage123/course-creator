@@ -28,13 +28,13 @@ import { useAuth } from '../../../../hooks/useAuth';
 import styles from './LoginPage.module.css';
 
 interface LoginFormData {
-  email: string;
+  identifier: string;  // Can be email OR username/userid
   password: string;
   rememberMe: boolean;
 }
 
 interface LoginFormErrors {
-  email?: string;
+  identifier?: string;
   password?: string;
   submit?: string;
 }
@@ -60,7 +60,7 @@ export const LoginPage: React.FC = () => {
   const { login, isLoading } = useAuth();
 
   const [formData, setFormData] = useState<LoginFormData>({
-    email: '',
+    identifier: '',
     password: '',
     rememberMe: false,
   });
@@ -69,15 +69,16 @@ export const LoginPage: React.FC = () => {
 
   /**
    * Validate form data
+   * Accepts either email address OR username/userid
    */
   const validateForm = (): boolean => {
     const newErrors: LoginFormErrors = {};
 
-    // Email validation
-    if (!formData.email) {
-      newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
+    // Identifier validation (email or username)
+    if (!formData.identifier) {
+      newErrors.identifier = 'Email or username is required';
+    } else if (formData.identifier.length < 3) {
+      newErrors.identifier = 'Please enter a valid email or username';
     }
 
     // Password validation
@@ -113,9 +114,9 @@ export const LoginPage: React.FC = () => {
         localStorage.removeItem('rememberMe');
       }
 
-      // Attempt login (using email as username)
+      // Attempt login (identifier can be email or username)
       await login({
-        username: formData.email,
+        username: formData.identifier,
         password: formData.password,
       });
 
@@ -184,16 +185,16 @@ export const LoginPage: React.FC = () => {
               </div>
             )}
 
-            {/* Email Input */}
+            {/* Email or Username Input */}
             <Input
-              type="email"
-              label="Email Address"
-              placeholder="you@example.com"
-              value={formData.email}
-              onChange={handleChange('email')}
-              error={errors.email}
+              type="text"
+              label="Email or Username"
+              placeholder="you@example.com or username"
+              value={formData.identifier}
+              onChange={handleChange('identifier')}
+              error={errors.identifier}
               required
-              autoComplete="email"
+              autoComplete="username"
               autoFocus
               disabled={isLoading}
             />
@@ -208,6 +209,7 @@ export const LoginPage: React.FC = () => {
               error={errors.password}
               required
               autoComplete="current-password"
+              showPasswordToggle
               disabled={isLoading}
             />
 

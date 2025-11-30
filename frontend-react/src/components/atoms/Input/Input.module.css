@@ -233,6 +233,46 @@
 }
 
 /* ============================================================================
+ * PASSWORD VISIBILITY TOGGLE
+ * ============================================================================ */
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.password-toggle:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.password-toggle:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.3);
+}
+
+.password-toggle i {
+  font-size: 16px;
+}
+
+/* Adjust input padding when password toggle is present */
+.input-wrapper:has(.password-toggle) .input {
+  padding-right: 48px;
+}
+
+/* ============================================================================
  * HELPER TEXT
  * ============================================================================ */
 

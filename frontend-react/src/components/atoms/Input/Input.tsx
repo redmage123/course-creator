@@ -17,7 +17,7 @@
  * - Proper label association for screen readers
  */
 
-import React, { InputHTMLAttributes, ReactNode, forwardRef } from 'react';
+import React, { InputHTMLAttributes, ReactNode, forwardRef, useState } from 'react';
 import styles from './Input.module.css';
 
 export type InputVariant = 'default' | 'success' | 'error' | 'warning';
@@ -83,6 +83,17 @@ export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 
    * Custom container className
    */
   containerClassName?: string;
+
+  /**
+   * Show password toggle for password fields
+   * When true and type="password", shows eye icon to toggle visibility
+   */
+  showPasswordToggle?: boolean;
+
+  /**
+   * Help text displayed below input (alternative to helperText)
+   */
+  helpText?: string;
 }
 
 /**
@@ -131,6 +142,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       size = 'medium',
       label,
       helperText,
+      helpText,
       error,
       leftIcon,
       rightIcon,
@@ -141,14 +153,25 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       containerClassName,
       id,
       type = 'text',
+      showPasswordToggle = false,
       'aria-describedby': ariaDescribedBy,
       ...props
     },
     ref
   ) => {
+    // State for password visibility toggle
+    const [showPassword, setShowPassword] = useState(false);
+
+    // Determine if this is a password field that should show the toggle
+    const isPasswordField = type === 'password';
+    const shouldShowToggle = isPasswordField && showPasswordToggle;
+
+    // Determine effective input type (for password toggle)
+    const effectiveType = isPasswordField && showPassword ? 'text' : type;
+
     // If error prop is provided, override variant and helperText
     const effectiveVariant = error ? 'error' : variant;
-    const effectiveHelperText = error || helperText;
+    const effectiveHelperText = error || helperText || helpText;
 
     // Generate unique IDs for accessibility
     const inputId = id || `input-${React.useId()}`;
@@ -200,7 +223,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             id={inputId}
-            type={type}
+            type={effectiveType}
             className={inputClasses}
             disabled={disabled}
             required={required}
@@ -209,8 +232,21 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
 
-          {/* Right icon */}
-          {rightIcon && (
+          {/* Password visibility toggle */}
+          {shouldShowToggle && (
+            <button
+              type="button"
+              className={styles['password-toggle']}
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+              tabIndex={-1}
+            >
+              <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`} aria-hidden="true"></i>
+            </button>
+          )}
+
+          {/* Right icon (only show if not showing password toggle) */}
+          {rightIcon && !shouldShowToggle && (
             <span className={styles['input-icon-right']} aria-hidden="true">
               {rightIcon}
             </span>

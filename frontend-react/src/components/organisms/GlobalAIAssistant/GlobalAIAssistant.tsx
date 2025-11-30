@@ -94,6 +94,18 @@ export const GlobalAIAssistant: React.FC = () => {
     }
   }, [isOpen, isMinimized]);
 
+  // Handle Escape key to close the widget
+  useEffect(() => {
+    const handleEscapeKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => document.removeEventListener('keydown', handleEscapeKey);
+  }, [isOpen]);
+
   /**
    * Get current page context for AI
    */
