@@ -28,6 +28,9 @@ from typing import Dict, Any
 BASE_URL = os.getenv("COURSE_GENERATOR_URL", "https://localhost:8002")
 API_PREFIX = "/api/v1/syllabus"
 
+# Feature flags for conditional test execution
+FRONTEND_UI_COMPLETE = os.getenv('FRONTEND_UI_COMPLETE') is not None
+
 # Skip all tests if service is not available
 pytestmark = pytest.mark.skipif(
     os.getenv("SKIP_E2E_TESTS", "false").lower() == "true",
@@ -521,22 +524,22 @@ class TestURLBasedGenerationPerformanceE2E:
 class TestURLBasedGenerationUIE2E:
     """Placeholder for UI E2E tests when frontend is implemented."""
 
-    @pytest.mark.skip(reason="Frontend UI not yet implemented")
+    @pytest.mark.skipif(not FRONTEND_UI_COMPLETE, reason="Frontend UI not yet implemented - set FRONTEND_UI_COMPLETE=1 when ready")
     def test_url_input_field_exists(self):
         """Test URL input field exists in course creation form."""
         pass
 
-    @pytest.mark.skip(reason="Frontend UI not yet implemented")
+    @pytest.mark.skipif(not FRONTEND_UI_COMPLETE, reason="Frontend UI not yet implemented - set FRONTEND_UI_COMPLETE=1 when ready")
     def test_multiple_url_input_support(self):
         """Test ability to add multiple URLs."""
         pass
 
-    @pytest.mark.skip(reason="Frontend UI not yet implemented")
+    @pytest.mark.skipif(not FRONTEND_UI_COMPLETE, reason="Frontend UI not yet implemented - set FRONTEND_UI_COMPLETE=1 when ready")
     def test_generation_progress_display(self):
         """Test progress is displayed during generation."""
         pass
 
-    @pytest.mark.skip(reason="Frontend UI not yet implemented")
+    @pytest.mark.skipif(not FRONTEND_UI_COMPLETE, reason="Frontend UI not yet implemented - set FRONTEND_UI_COMPLETE=1 when ready")
     def test_source_attribution_display(self):
         """Test source attribution is displayed in generated syllabus."""
         pass

@@ -28,6 +28,9 @@ from selenium.webdriver.support import expected_conditions as EC
 
 from selenium_base import BaseTest, BasePage, SeleniumConfig
 
+# Feature flags for conditional test execution
+BACKEND_UPLOAD_ENABLED = os.getenv('BACKEND_UPLOAD_ENABLED') is not None
+
 
 class InstructorDashboardPage(BasePage):
     """
@@ -431,7 +434,7 @@ class TestVideoFeatureE2E(BaseTest):
         time.sleep(1)
         assert self.link_modal.is_modal_visible(), "Modal should remain open on validation error"
 
-    @pytest.mark.skip(reason="File upload requires backend integration")
+    @pytest.mark.skipif(not BACKEND_UPLOAD_ENABLED, reason="File upload requires backend integration - set BACKEND_UPLOAD_ENABLED=1 when ready")
     def test_upload_video_file(self, test_video_file):
         """
         Test uploading a video file.

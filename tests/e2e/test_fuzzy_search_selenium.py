@@ -27,6 +27,11 @@ import os
 
 # Check for Selenium availability
 SELENIUM_AVAILABLE = os.getenv('SELENIUM_REMOTE') is not None or os.getenv('HEADLESS') is not None
+
+# Feature flags for conditional test execution
+VISUAL_SIMILARITY_ENABLED = os.getenv('VISUAL_SIMILARITY_ENABLED') is not None
+PERFORMANCE_TESTING_ENABLED = os.getenv('PERFORMANCE_TESTING_ENABLED') is not None
+
 import time
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -423,7 +428,7 @@ class TestFuzzySearchSelenium(BaseTest):
         # PROOF OF SUCCESS
         self.take_screenshot("fuzzy_search_multiple_typos_success")
 
-    @pytest.mark.skip(reason="Visual similarity badges not yet implemented - pending feature")
+    @pytest.mark.skipif(not VISUAL_SIMILARITY_ENABLED, reason="Visual similarity badges not yet implemented - set VISUAL_SIMILARITY_ENABLED=1 when ready")
     @pytest.mark.e2e
     def test_fuzzy_search_shows_similarity_scores(self):
         """
@@ -540,7 +545,7 @@ class TestFuzzySearchPerformance(BaseTest):
         super().setup_method(method)
         self.dashboard = StudentDashboardPage(self.driver, self.config)
 
-    @pytest.mark.skip(reason="Performance testing pending - needs timing instrumentation")
+    @pytest.mark.skipif(not PERFORMANCE_TESTING_ENABLED, reason="Performance testing pending - set PERFORMANCE_TESTING_ENABLED=1 when ready")
     @pytest.mark.e2e
     def test_fuzzy_search_uses_cache_for_repeated_searches(self):
         """

@@ -38,6 +38,9 @@ from typing import List, Dict, Any, Tuple
 
 # Add project root to path for imports
 PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
+
+# Feature flags for conditional test execution (TDD RED phase tests)
+SECURITY_FEATURES_COMPLETE = os.getenv('SECURITY_FEATURES_COMPLETE') is not None
 sys.path.insert(0, str(PROJECT_ROOT))
 
 
@@ -722,7 +725,7 @@ class TestJWTSecretEnforcement:
             + "\n\nFix: Remove default values and require JWT_SECRET env var"
         )
 
-    @pytest.mark.skip(reason="JWT secret validation not yet implemented - TDD RED phase")
+    @pytest.mark.skipif(not SECURITY_FEATURES_COMPLETE, reason="JWT secret validation not yet implemented - set SECURITY_FEATURES_COMPLETE=1 when ready")
     def test_jwt_secret_minimum_length(self):
         """
         Verify JWT secret configuration enforces minimum length.
@@ -830,7 +833,7 @@ class TestRateLimiting:
     - Rate limits should vary by endpoint sensitivity
     """
 
-    @pytest.mark.skip(reason="Rate limiting not yet implemented - TDD RED phase")
+    @pytest.mark.skipif(not SECURITY_FEATURES_COMPLETE, reason="Rate limiting not yet implemented - set SECURITY_FEATURES_COMPLETE=1 when ready")
     def test_rate_limiting_middleware_exists(self):
         """
         Verify rate limiting middleware is implemented.
@@ -870,7 +873,7 @@ class TestRateLimiting:
             "Implement rate limiting middleware for API protection."
         )
 
-    @pytest.mark.skip(reason="Login rate limiting not yet implemented - TDD RED phase")
+    @pytest.mark.skipif(not SECURITY_FEATURES_COMPLETE, reason="Login rate limiting not yet implemented - set SECURITY_FEATURES_COMPLETE=1 when ready")
     def test_login_endpoint_has_strict_rate_limit(self):
         """
         Verify login endpoint has strict rate limiting.
@@ -902,7 +905,7 @@ class TestRateLimiting:
             "Add @limiter.limit('5/minute') decorator to login endpoint."
         )
 
-    @pytest.mark.skip(reason="Rate limit configuration not yet implemented - TDD RED phase")
+    @pytest.mark.skipif(not SECURITY_FEATURES_COMPLETE, reason="Rate limit configuration not yet implemented - set SECURITY_FEATURES_COMPLETE=1 when ready")
     def test_rate_limit_configuration_exists(self):
         """
         Verify rate limit configuration is externalized.
