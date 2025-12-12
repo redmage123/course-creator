@@ -25,10 +25,11 @@ import styles from './Login.module.css';
  *
  * WHY THIS APPROACH:
  * - Form validation before submission
- * - Loading states for better UX
+ * - Loading states for better UX (with spinner on submit button)
  * - Error handling with user feedback
  * - Remember me functionality
  * - Links to registration and password reset
+ * - Accessibility compliance with ARIA attributes
  */
 export const LoginPage: React.FC = () => {
   const { login, isLoading } = useAuth();
@@ -45,6 +46,7 @@ export const LoginPage: React.FC = () => {
    *
    * BUSINESS LOGIC:
    * Validates inputs, calls login API, handles success/error states
+   * Uses isLoading state to provide visual feedback during authentication
    */
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -63,6 +65,7 @@ export const LoginPage: React.FC = () => {
 
     try {
       // Backend accepts either email or username
+      // Loading state is managed by useAuth hook
       await login({ username: identifier, password });
       // Navigation is handled by useAuth hook
     } catch (err) {
@@ -107,7 +110,7 @@ export const LoginPage: React.FC = () => {
             />
           </div>
 
-          {/* Password Input */}
+          {/* Password Input with Accessibility Support */}
           <div className={styles['form-group']}>
             <Input
               type="password"
@@ -120,7 +123,12 @@ export const LoginPage: React.FC = () => {
               required
               fullWidth
               showPasswordToggle
+              aria-describedby="password-requirements"
             />
+            {/* Password requirements for screen readers - hidden visually but available to assistive technologies */}
+            <div id="password-requirements" className={styles['sr-only']}>
+              Enter your password to sign in to your account
+            </div>
           </div>
 
           {/* Remember Me & Forgot Password */}
@@ -143,7 +151,7 @@ export const LoginPage: React.FC = () => {
             </Link>
           </div>
 
-          {/* Submit Button */}
+          {/* Submit Button with Loading Spinner */}
           <Button
             type="submit"
             variant="primary"
