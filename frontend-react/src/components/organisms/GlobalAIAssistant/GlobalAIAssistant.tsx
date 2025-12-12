@@ -20,6 +20,11 @@ import { useAuth } from '../../../hooks/useAuth';
 import { apiClient } from '../../../services/apiClient';
 import styles from './GlobalAIAssistant.module.css';
 
+interface Position {
+  x: number;
+  y: number;
+}
+
 interface AIMessage {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -49,6 +54,11 @@ export const GlobalAIAssistant: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
 
+  // Drag state
+  const [position, setPosition] = useState<Position | null>(null); // null means use default CSS position
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState<Position>({ x: 0, y: 0 });
+
   // Chat state
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -56,6 +66,7 @@ export const GlobalAIAssistant: React.FC = () => {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const widgetRef = useRef<HTMLDivElement>(null);
 
   // Load messages from session storage on mount
   useEffect(() => {
@@ -105,6 +116,67 @@ export const GlobalAIAssistant: React.FC = () => {
     document.addEventListener('keydown', handleEscapeKey);
     return () => document.removeEventListener('keydown', handleEscapeKey);
   }, [isOpen]);
+
+  /**
+   * Handle drag start on header
+   */
+  const handleDragStart = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    // Only start drag if clicking on header (not buttons)
+    if ((e.target as HTMLElement).closest('button')) return;
+
+    e.preventDefault();
+    setIsDragging(true);
+
+    const widget = widgetRef.current;
+    if (widget) {
+      const rect = widget.getBoundingClientRect();
+      setDragOffset({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      });
+      // Initialize position if not set
+      if (!position) {
+        setPosition({ x: rect.left, y: rect.top });
+      }
+    }
+  }, [position]);
+
+  /**
+   * Handle drag move
+   */
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const newX = e.clientX - dragOffset.x;
+      const newY = e.clientY - dragOffset.y;
+
+      // Keep widget within viewport bounds
+      const widget = widgetRef.current;
+      if (widget) {
+        const rect = widget.getBoundingClientRect();
+        const maxX = window.innerWidth - rect.width;
+        const maxY = window.innerHeight - rect.height;
+
+        setPosition({
+          x: Math.max(0, Math.min(newX, maxX)),
+          y: Math.max(0, Math.min(newY, maxY))
+        });
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragOffset]);
 
   /**
    * Get current page context for AI
@@ -254,9 +326,22 @@ export const GlobalAIAssistant: React.FC = () => {
 
       {/* Chat Widget */}
       {isOpen && (
-        <div className={`${styles.chatWidget} ${isMinimized ? styles.minimized : ''}`}>
-          {/* Header */}
-          <div className={styles.header}>
+        <div
+          ref={widgetRef}
+          className={`${styles.chatWidget} ${isMinimized ? styles.minimized : ''} ${isDragging ? styles.dragging : ''}`}
+          style={position ? {
+            left: position.x,
+            top: position.y,
+            right: 'auto',
+            bottom: 'auto'
+          } : undefined}
+        >
+          {/* Header - Draggable */}
+          <div
+            className={styles.header}
+            onMouseDown={handleDragStart}
+            style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+          >
             <div className={styles.headerTitle}>
               <span className={styles.aiIcon}>🤖</span>
               <span>AI Assistant</span>

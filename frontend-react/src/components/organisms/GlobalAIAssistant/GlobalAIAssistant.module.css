@@ -39,25 +39,33 @@
   font-size: 14px;
 }
 
-/* Chat Widget - Positioned above bug report button */
+/* Chat Widget - Positioned to stay within viewport */
 .chatWidget {
   position: fixed;
-  bottom: 96px; /* Above bug report button */
+  bottom: 24px; /* Position from bottom */
   right: 24px;
   width: 380px;
-  max-height: 500px; /* Reduced to avoid blocking too much content */
+  max-height: calc(100vh - 48px); /* Never extend past viewport (24px top + 24px bottom margin) */
+  height: 500px; /* Default height */
   background: white;
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
-  z-index: 999; /* Below modals but above page content */
+  z-index: 1000; /* Above other floating elements */
   overflow: hidden;
   transition: all 0.3s ease;
 }
 
 .chatWidget.minimized {
   max-height: 56px;
+  height: auto;
+}
+
+.chatWidget.dragging {
+  user-select: none;
+  opacity: 0.95;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.25);
 }
 
 /* Header */
@@ -306,13 +314,16 @@
   .chatWidget {
     width: calc(100vw - 32px);
     right: 16px;
-    bottom: 80px; /* Above bug button on mobile */
-    max-height: 60vh;
+    bottom: 16px;
+    left: 16px !important; /* Override inline styles on mobile */
+    top: auto !important;
+    max-height: 70vh;
+    height: auto;
   }
 
   .floatingButton {
     right: 16px;
-    bottom: 80px; /* Above bug button on mobile */
+    bottom: 80px;
     padding: 12px 16px;
   }
 
