@@ -10,9 +10,21 @@ import pytest
 import unittest
 import asyncio
 import json
-from unittest.mock import Mock
 
 FRONTEND_TEST_AVAILABLE = True  # These are static analysis tests
+
+# Simple classes to replace Mock
+class SimpleResponse:
+    """Simple response object"""
+    def __init__(self, ok=True, data=None):
+        self.ok = ok
+        self._data = data or {}
+
+    def json(self):
+        return self._data
+
+    def blob(self):
+        return self._data
 
 
 @pytest.mark.frontend
@@ -34,10 +46,11 @@ class TestEnhancedContentManagement(unittest.TestCase):
             }
         ]
         
-        # Mock DOM elements
-        self.mock_element = Mock()
-        self.mock_element.textContent = ""
-        self.mock_element.className = ""
+        # Simple DOM element
+        self.mock_element = type('obj', (object,), {
+            'textContent': "",
+            'className': ""
+        })()
         
         # Mock CONFIG endpoints
         self.mock_config = {

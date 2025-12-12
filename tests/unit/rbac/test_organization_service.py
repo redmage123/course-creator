@@ -6,7 +6,7 @@ Tests the organization management service functionality
 import pytest
 import uuid
 from datetime import datetime, timedelta
-from unittest.mock import Mock
+from collections import namedtuple
 
 # Add test fixtures path
 import sys
@@ -27,7 +27,7 @@ class TestOrganizationService:
     
     @pytest.fixture
     def organization_service(self, mock_organization_repository, mock_audit_logger, mock_email_service):
-        """Create organization service with mocked dependencies."""
+        """Create organization service with stub dependencies."""
 
         class OrganizationServiceStub:
             pass
@@ -37,23 +37,27 @@ class TestOrganizationService:
         service._organization_repository = mock_organization_repository
         service.audit_logger = mock_audit_logger
         service.email_service = mock_email_service
-        
-        # Mock service methods to behave like the real service
+
+        # Stub organization object
+        Organization = namedtuple('Organization', ['id', 'name', 'slug', 'description', 'is_active', 'created_at'])
+
+        # Stub service methods to behave like the real service
         async def mock_create_organization(name, slug, description=None, **kwargs):
             # Check for duplicate slug
             if await service._organization_repository.exists_by_slug(slug):
                 raise ValueError(f"Organization with slug '{slug}' already exists")
-            
-            # Create mock organization
+
+            # Create stub organization
             org_id = str(uuid.uuid4())
-            mock_org = Mock()
-            mock_org.id = org_id
-            mock_org.name = name
-            mock_org.slug = slug
-            mock_org.description = description
-            mock_org.is_active = True
-            mock_org.created_at = datetime.utcnow()
-            return mock_org
+            stub_org = Organization(
+                id=org_id,
+                name=name,
+                slug=slug,
+                description=description,
+                is_active=True,
+                created_at=datetime.utcnow()
+            )
+            return stub_org
         
         async def mock_get_organization_by_id(org_id):
             if org_id == "nonexistent":

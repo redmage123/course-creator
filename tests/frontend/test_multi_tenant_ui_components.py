@@ -26,7 +26,6 @@ import pytest
 import json
 import os
 from datetime import datetime
-from unittest.mock import Mock, AsyncMock, patch
 
 # Add test fixtures path
 import sys
@@ -36,6 +35,57 @@ from rbac_fixtures import rbac_test_data, RBACTestUtils
 
 FRONTEND_TEST_AVAILABLE = True  # These are static analysis tests
 
+# Simple classes to replace Mock
+class SimpleFetch:
+    """Simple fetch class"""
+    def __init__(self):
+        self.calls = []
+        self._response_data = {}
+
+    def __call__(self, url, options=None):
+        self.calls.append((url, options))
+        response = SimpleResponse()
+        response.status = 200
+        response.json_data = self._response_data
+        return response
+
+    def set_response(self, data):
+        self._response_data = data
+
+class SimpleResponse:
+    """Simple response class"""
+    def __init__(self):
+        self.status = 200
+        self.json_data = {}
+
+    async def json(self):
+        return self.json_data
+
+class SimpleElement:
+    """Simple element class"""
+    def __init__(self):
+        self.value = ""
+        self.style = type('obj', (object,), {'display': 'block'})()
+
+    def getAttribute(self, name):
+        return ""
+
+class SimpleDocument:
+    """Simple document class"""
+    def __init__(self):
+        self._elements = {}
+
+    def getElementById(self, element_id):
+        if element_id not in self._elements:
+            self._elements[element_id] = SimpleElement()
+        return self._elements[element_id]
+
+    def querySelectorAll(self, selector):
+        return []
+
+    def querySelector(self, selector):
+        return SimpleElement()
+
 
 @pytest.mark.frontend
 class TestMultiTenantUIComponents:
@@ -43,11 +93,14 @@ class TestMultiTenantUIComponents:
     
     @pytest.fixture
     def mock_ui_environment(self):
-        """Setup mock UI environment with organization context"""
+        """Setup simple UI environment with organization context"""
+        document = SimpleDocument()
+        fetch = SimpleFetch()
+
         mock_env = {
-            'document': {},
+            'document': document,
             'window': {},
-            'fetch': {},
+            'fetch': fetch,
             'console': {},
             'organization_context': {
                 'organization_id': 'org123',
@@ -55,13 +108,7 @@ class TestMultiTenantUIComponents:
                 'user_role': 'instructor'
             }
         }
-        
-        # Setup DOM elements
-        mock_env['document'].createElement = Mock(return_value=Mock())
-        mock_env['document'].getElementById = Mock(return_value=Mock())
-        mock_env['document'].querySelectorAll = Mock(return_value=[])
-        mock_env['document'].querySelector = Mock(return_value=Mock())
-        
+
         return mock_env
     
     @pytest.fixture
@@ -89,49 +136,39 @@ class TestMultiTenantUIComponents:
     def test_course_search_component_organization_filtering(self, mock_ui_environment, mock_organization_data):
         """
         Test that course search component only returns courses from user's organization
-        
+
         SECURITY REQUIREMENT:
         Course search should never return courses from other organizations,
         even if they match the search criteria.
         """
         # Setup search component
-        search_input = Mock()
-        results_container = Mock()
-        
-        mock_ui_environment['document'].getElementById.side_effect = lambda id: {
-            'courseSearchInput': search_input,
-            'searchResults': results_container
-        }.get(id, Mock())
-        
-        # Mock API response with mixed organization data
-        all_courses = mock_organization_data['org123_courses'] + mock_organization_data['org456_courses']
-        
-        with patch('builtins.fetch') as mock_fetch:
-            # Setup fetch to return all courses (backend should filter, but test UI filtering too)
-            mock_response = Mock()
-            mock_response.json = AsyncMock(return_value={
-                'courses': mock_organization_data['org123_courses']  # Properly filtered by backend
-            })
-            mock_response.status = 200
-            mock_fetch.return_value = mock_response
-            
-            # Simulate search for "programming"
-            self._simulate_course_search(mock_ui_environment, "programming")
-            
-            # Verify API call includes organization context
-            fetch_call_args = mock_fetch.call_args
-            assert fetch_call_args is not None, "Search should make API call"
-            
-            # Check headers include organization ID
-            if len(fetch_call_args) > 1 and isinstance(fetch_call_args[1], dict):
-                headers = fetch_call_args[1].get('headers', {})
-                assert 'X-Organization-ID' in headers, "Search API call should include organization ID"
-                assert headers['X-Organization-ID'] == 'org123', "Should use correct organization ID"
-            
-            # Verify displayed results are organization-scoped
-            displayed_courses = self._extract_search_results(results_container)
-            for course in displayed_courses:
-                assert course['organization_id'] == 'org123', "Search results should only include user's organization courses"
+        search_input = SimpleElement()
+        results_container = SimpleElement()
+
+        document = mock_ui_environment['document']
+        document._elements['courseSearchInput'] = search_input
+        document._elements['searchResults'] = results_container
+
+        # Setup fetch to return all courses (backend should filter, but test UI filtering too)
+        fetch = mock_ui_environment['fetch']
+        fetch.set_response({'courses': mock_organization_data['org123_courses']})
+
+        # Simulate search for "programming"
+        self._simulate_course_search(mock_ui_environment, "programming")
+
+        # Verify API call was made
+        assert len(fetch.calls) > 0, "Search should make API call"
+
+        # Check headers include organization ID
+        if len(fetch.calls) > 0 and fetch.calls[0][1]:
+            headers = fetch.calls[0][1].get('headers', {})
+            assert 'X-Organization-ID' in headers, "Search API call should include organization ID"
+            assert headers['X-Organization-ID'] == 'org123', "Should use correct organization ID"
+
+        # Verify displayed results are organization-scoped
+        displayed_courses = self._extract_search_results(results_container)
+        for course in displayed_courses:
+            assert course['organization_id'] == 'org123', "Search results should only include user's organization courses"
     
     def test_user_autocomplete_organization_isolation(self, mock_ui_environment, mock_organization_data):
         """
@@ -142,22 +179,22 @@ class TestMultiTenantUIComponents:
         preventing accidental cross-organization user selection.
         """
         # Setup autocomplete component
-        user_input = Mock()
-        suggestions_dropdown = Mock()
+        user_input = SimpleElement()
+        suggestions_dropdown = SimpleElement()
         
-        mock_ui_environment['document'].getElementById.side_effect = lambda id: {
+        mock_ui_environment['document'].getElementById# side_effect = lambda id: {
             'userAutocomplete': user_input,
             'userSuggestions': suggestions_dropdown
-        }.get(id, Mock())
+        }.get(id, SimpleElement())
         
-        with patch('builtins.fetch') as mock_fetch:
+        # with patch('builtins.fetch') # as mock_fetch:
             # Mock API response with organization-filtered users
-            mock_response = Mock()
-            mock_response.json = AsyncMock(return_value={
+            mock_response = SimpleElement()
+            mock_response.json = lambda: return_value={
                 'users': mock_organization_data['org123_users']
             })
             mock_response.status = 200
-            mock_fetch.return_value = mock_response
+            mock_fetch# return_value = mock_response
             
             # Simulate typing in autocomplete
             self._simulate_user_autocomplete(mock_ui_environment, "jo")
@@ -182,18 +219,18 @@ class TestMultiTenantUIComponents:
         with proper pagination and sorting within organization boundaries.
         """
         # Setup data table
-        table_body = Mock()
-        pagination_controls = Mock()
+        table_body = SimpleElement()
+        pagination_controls = SimpleElement()
         
-        mock_ui_environment['document'].getElementById.side_effect = lambda id: {
+        mock_ui_environment['document'].getElementById# side_effect = lambda id: {
             'dataTableBody': table_body,
             'paginationControls': pagination_controls
-        }.get(id, Mock())
+        }.get(id, SimpleElement())
         
-        with patch('builtins.fetch') as mock_fetch:
+        # with patch('builtins.fetch') # as mock_fetch:
             # Mock paginated API response
-            mock_response = Mock()
-            mock_response.json = AsyncMock(return_value={
+            mock_response = SimpleElement()
+            mock_response.json = lambda: return_value={
                 'data': mock_organization_data['org123_courses'],
                 'total': len(mock_organization_data['org123_courses']),
                 'page': 1,
@@ -201,7 +238,7 @@ class TestMultiTenantUIComponents:
                 'organization_id': 'org123'
             })
             mock_response.status = 200
-            mock_fetch.return_value = mock_response
+            mock_fetch# return_value = mock_response
             
             # Simulate loading data table
             self._simulate_data_table_load(mock_ui_environment, 'courses', 1, 10)
@@ -229,15 +266,15 @@ class TestMultiTenantUIComponents:
         are scoped to the user's organization.
         """
         # Setup modal dialog elements
-        modal = Mock()
-        form = Mock()
-        org_hidden_field = Mock()
+        modal = SimpleElement()
+        form = SimpleElement()
+        org_hidden_field = SimpleElement()
         
-        mock_ui_environment['document'].getElementById.side_effect = lambda id: {
+        mock_ui_environment['document'].getElementById# side_effect = lambda id: {
             'courseModal': modal,
             'courseForm': form,
             'organizationIdHidden': org_hidden_field
-        }.get(id, Mock())
+        }.get(id, SimpleElement())
         
         # Simulate opening modal for course creation
         self._simulate_modal_open(mock_ui_environment, 'create_course')
@@ -246,11 +283,11 @@ class TestMultiTenantUIComponents:
         assert org_hidden_field.value == 'org123', "Modal should set organization ID in hidden field"
         
         # Simulate form submission
-        with patch('builtins.fetch') as mock_fetch:
-            mock_response = Mock()
-            mock_response.json = AsyncMock(return_value={'id': 'new_course', 'organization_id': 'org123'})
+        # with patch('builtins.fetch') # as mock_fetch:
+            mock_response = SimpleElement()
+            mock_response.json = lambda: return_value={'id': 'new_course', 'organization_id': 'org123'})
             mock_response.status = 201
-            mock_fetch.return_value = mock_response
+            mock_fetch# return_value = mock_response
             
             self._simulate_modal_form_submission(mock_ui_environment, {
                 'title': 'New Course',
@@ -273,28 +310,28 @@ class TestMultiTenantUIComponents:
         preventing selection of cross-organization resources.
         """
         # Setup dropdown elements
-        course_dropdown = Mock()
-        instructor_dropdown = Mock()
+        course_dropdown = SimpleElement()
+        instructor_dropdown = SimpleElement()
         
-        mock_ui_environment['document'].getElementById.side_effect = lambda id: {
+        mock_ui_environment['document'].getElementById# side_effect = lambda id: {
             'courseDropdown': course_dropdown,
             'instructorDropdown': instructor_dropdown
-        }.get(id, Mock())
+        }.get(id, SimpleElement())
         
-        with patch('builtins.fetch') as mock_fetch:
+        # with patch('builtins.fetch') # as mock_fetch:
             # Mock API responses for dropdown data
             def mock_fetch_responses(url, options=None):
-                mock_response = Mock()
+                mock_response = SimpleElement()
                 if 'courses' in url:
-                    mock_response.json = AsyncMock(return_value={'courses': mock_organization_data['org123_courses']})
+                    mock_response.json = lambda: return_value={'courses': mock_organization_data['org123_courses']})
                 elif 'users' in url or 'instructors' in url:
-                    mock_response.json = AsyncMock(return_value={'users': mock_organization_data['org123_users']})
+                    mock_response.json = lambda: return_value={'users': mock_organization_data['org123_users']})
                 else:
-                    mock_response.json = AsyncMock(return_value={})
+                    mock_response.json = lambda: return_value={})
                 mock_response.status = 200
                 return mock_response
             
-            mock_fetch.side_effect = mock_fetch_responses
+            mock_fetch# side_effect = mock_fetch_responses
             
             # Simulate populating dropdowns
             self._simulate_dropdown_population(mock_ui_environment, 'courses')
@@ -324,15 +361,15 @@ class TestMultiTenantUIComponents:
         organization boundaries or references cross-organization resources.
         """
         # Setup form elements
-        form = Mock()
-        course_id_field = Mock()
-        instructor_id_field = Mock()
+        form = SimpleElement()
+        course_id_field = SimpleElement()
+        instructor_id_field = SimpleElement()
         
-        mock_ui_environment['document'].getElementById.side_effect = lambda id: {
+        mock_ui_environment['document'].getElementById# side_effect = lambda id: {
             'enrollmentForm': form,
             'courseId': course_id_field,
             'instructorId': instructor_id_field
-        }.get(id, Mock())
+        }.get(id, SimpleElement())
         
         # Test valid form data (within organization)
         valid_form_data = {
@@ -364,18 +401,18 @@ class TestMultiTenantUIComponents:
         preventing information leakage through the notification system.
         """
         # Setup notification elements
-        notifications_container = Mock()
-        notification_badge = Mock()
+        notifications_container = SimpleElement()
+        notification_badge = SimpleElement()
         
-        mock_ui_environment['document'].getElementById.side_effect = lambda id: {
+        mock_ui_environment['document'].getElementById# side_effect = lambda id: {
             'notificationsContainer': notifications_container,
             'notificationBadge': notification_badge
-        }.get(id, Mock())
+        }.get(id, SimpleElement())
         
-        with patch('builtins.fetch') as mock_fetch:
+        # with patch('builtins.fetch') # as mock_fetch:
             # Mock notification API response
-            mock_response = Mock()
-            mock_response.json = AsyncMock(return_value={
+            mock_response = SimpleElement()
+            mock_response.json = lambda: return_value={
                 'notifications': [
                     {
                         'id': 'notif1',
@@ -392,7 +429,7 @@ class TestMultiTenantUIComponents:
                 ]
             })
             mock_response.status = 200
-            mock_fetch.return_value = mock_response
+            mock_fetch# return_value = mock_response
             
             # Simulate loading notifications
             self._simulate_notifications_load(mock_ui_environment)

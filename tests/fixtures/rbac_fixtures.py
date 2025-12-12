@@ -6,7 +6,93 @@ Enhanced RBAC system test fixtures for comprehensive testing
 import pytest
 import uuid
 from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Callable
+from dataclasses import dataclass, field
+
+
+# Simple data classes to replace Mock objects
+@dataclass
+class MockMethod:
+    """Represents a mock method that can have side_effect and return_value."""
+    _name: str = ""
+    return_value: Any = None
+    side_effect: Any = None
+    _calls: List[tuple] = field(default_factory=list)
+
+    def __call__(self, *args, **kwargs):
+        """Call the method with optional side_effect or return_value."""
+        self._calls.append((args, kwargs))
+
+        if self.side_effect is not None:
+            if isinstance(self.side_effect, Exception):
+                raise self.side_effect
+            elif callable(self.side_effect):
+                return self.side_effect(*args, **kwargs)
+            else:
+                return self.side_effect
+
+        if self.return_value is not None:
+            return self.return_value
+
+        return kwargs if kwargs else (args[0] if args else None)
+
+
+@dataclass
+class MockRepository:
+    """Base mock repository with common methods."""
+    _data: Dict[str, Any] = field(default_factory=dict)
+    _methods: Dict[str, MockMethod] = field(default_factory=dict)
+
+    def __getattr__(self, name: str) -> MockMethod:
+        """Return a MockMethod for any method call."""
+        if name not in self._methods:
+            self._methods[name] = MockMethod(_name=name)
+        return self._methods[name]
+
+
+@dataclass
+class MockOrganizationRepository(MockRepository):
+    """Mock organization repository."""
+    exists_by_slug_return: bool = False
+
+    def __post_init__(self):
+        """Initialize specific methods."""
+        super().__init__()
+        # Set up default methods
+        self._methods['create_membership'] = MockMethod(_name='create_membership')
+        self._methods['exists_by_slug'] = MockMethod(_name='exists_by_slug', return_value=self.exists_by_slug_return)
+
+
+@dataclass
+class MockMembershipRepository(MockRepository):
+    """Mock membership repository."""
+
+    def __post_init__(self):
+        """Initialize specific methods."""
+        super().__init__()
+        # Set up default methods
+        self._methods['create_membership'] = MockMethod(_name='create_membership')
+
+
+@dataclass
+class MockService:
+    """Base mock service with common methods."""
+    _calls: List[Dict[str, Any]] = field(default_factory=list)
+    _methods: Dict[str, MockMethod] = field(default_factory=dict)
+
+    def __getattr__(self, name: str) -> MockMethod:
+        """Return a MockMethod for any method call."""
+        if name not in self._methods:
+            method = MockMethod(_name=name)
+            self._methods[name] = method
+        return self._methods[name]
+
+
+@dataclass
+class MockRequest:
+    """Mock FastAPI request object."""
+    headers: Dict[str, str] = field(default_factory=dict)
+    user: Dict[str, Any] = field(default_factory=dict)
 
 
 @pytest.fixture
@@ -271,83 +357,67 @@ def mock_student_user_data():
 @pytest.fixture
 def mock_organization_repository():
     """Create mock organization repository."""
-    from unittest.mock import Mock
-    mock_repo = Mock()
-    mock_repo.create_membership = Mock()
-    mock_repo.exists_by_slug = Mock(return_value=False)
-    return mock_repo
+    return MockOrganizationRepository()
 
 
 @pytest.fixture
 def mock_membership_repository():
     """Create mock membership repository."""
-    from unittest.mock import Mock
-    mock_repo = Mock()
-    mock_repo.create_membership = Mock()
-    return mock_repo
+    return MockMembershipRepository()
 
 
 @pytest.fixture
 def mock_track_repository():
     """Create mock track repository."""
-    from unittest.mock import Mock
-    return Mock()
+    return MockRepository()
 
 
 @pytest.fixture
 def mock_meeting_room_repository():
     """Create mock meeting room repository."""
-    from unittest.mock import Mock
-    return Mock()
+    return MockRepository()
 
 
 @pytest.fixture
 def mock_project_repository():
     """Create mock project repository."""
-    from unittest.mock import Mock
-    return Mock()
+    return MockRepository()
 
 
 @pytest.fixture
 def mock_user_repository():
     """Create mock user repository."""
-    from unittest.mock import Mock
-    return Mock()
+    return MockRepository()
 
 
 @pytest.fixture
 def mock_rbac_service():
     """Create mock RBAC service."""
-    from unittest.mock import Mock
-    return Mock()
+    return MockService()
 
 
 @pytest.fixture
 def mock_teams_integration():
     """Create mock Teams integration service."""
-    from unittest.mock import Mock
-    return Mock()
+    return MockService()
 
 
 @pytest.fixture
 def mock_zoom_integration():
     """Create mock Zoom integration service."""
-    from unittest.mock import Mock
-    return Mock()
+    return MockService()
 
 
 @pytest.fixture
 def mock_audit_logger():
     """Create mock audit logger for RBAC actions."""
-    from unittest.mock import Mock
-    return Mock()
+    return MockService()
 
 
 @pytest.fixture
 def mock_email_service():
     """Create mock email service for RBAC notifications."""
-    from unittest.mock import Mock
-    return Mock()
+    return MockService()
 
 
 @pytest.fixture
@@ -507,11 +577,10 @@ class RBACTestUtils:
     @staticmethod
     def create_mock_request_with_auth(user_data: Dict[str, Any]):
         """Create a mock FastAPI request with authentication."""
-        from unittest.mock import Mock
-        mock_request = Mock()
-        mock_request.headers = {"Authorization": f"Bearer {RBACTestUtils.create_test_jwt_token(user_data)}"}
-        mock_request.user = user_data
-        return mock_request
+        return MockRequest(
+            headers={"Authorization": f"Bearer {RBACTestUtils.create_test_jwt_token(user_data)}"},
+            user=user_data
+        )
     
     @staticmethod
     def assert_rbac_response_structure(response_data: Dict[str, Any], expected_fields: List[str]):

@@ -8,68 +8,336 @@ These are static analysis tests for JavaScript module structure.
 import pytest
 import json
 from pathlib import Path
-from unittest.mock import Mock, patch
 
 FRONTEND_TEST_AVAILABLE = True  # These are static analysis tests
 
+
+# Simple classes to replace Mock
+class SimpleElement:
+    """Simple DOM element"""
+    def __init__(self, tag_name="div", **attributes):
+        self.tagName = tag_name.upper()
+        self.innerHTML = ""
+        self.textContent = ""
+        self.value = ""
+        self.className = ""
+        self.style = SimpleStyle()
+        self.classList = SimpleClassList()
+        self._listeners = []
+        self._children = []
+        self._attributes = attributes
+
+    def addEventListener(self, event, handler):
+        self._listeners.append((event, handler))
+
+    def removeEventListener(self, event, handler):
+        self._listeners = [(e, h) for e, h in self._listeners if not (e == event and h == handler)]
+
+    def appendChild(self, child):
+        self._children.append(child)
+
+    def removeChild(self, child):
+        if child in self._children:
+            self._children.remove(child)
+
+    def getAttribute(self, name):
+        return self._attributes.get(name, "")
+
+    def setAttribute(self, name, value):
+        self._attributes[name] = value
+
+class SimpleStyle:
+    """Simple style object"""
+    def __init__(self):
+        self.display = "block"
+        self.width = "0%"
+
+class SimpleClassList:
+    """Simple classList"""
+    def __init__(self):
+        self._classes = set()
+
+    def add(self, cls):
+        self._classes.add(cls)
+
+    def remove(self, cls):
+        self._classes.discard(cls)
+
+class SimpleFormData:
+    """Simple FormData"""
+    def __init__(self, data=None):
+        self._data = data or {}
+
+    def append(self, key, value):
+        if key not in self._data:
+            self._data[key] = []
+        self._data[key].append(value)
+
+    def get(self, key):
+        return self._data.get(key, [None])[0] if key in self._data else None
+
+    def set(self, key, value):
+        self._data[key] = [value]
+
+class SimpleDocument:
+    """Simple document object"""
+    def __init__(self):
+        self._elements = {}
+
+    def getElementById(self, element_id):
+        if element_id not in self._elements:
+            self._elements[element_id] = SimpleElement()
+        return self._elements[element_id]
+
+    def querySelector(self, selector):
+        return SimpleElement()
+
+    def querySelectorAll(self, selector):
+        return []
+
+    def createElement(self, tag_name):
+        return SimpleElement(tag_name)
+
+class SimpleLocalStorage:
+    """Simple localStorage"""
+    def __init__(self):
+        self._storage = {}
+
+    def getItem(self, key):
+        return self._storage.get(key)
+
+    def setItem(self, key, value):
+        self._storage[key] = value
+
+    def removeItem(self, key):
+        self._storage.pop(key, None)
+
+class SimpleWindow:
+    """Simple window object"""
+    def __init__(self):
+        self.localStorage = SimpleLocalStorage()
+        self.sessionStorage = SimpleLocalStorage()
+        self.locations = None
+        self.fetch = SimpleFetch()
+
+class SimpleFetch:
+    """Simple fetch function"""
+    def __init__(self):
+        self.calls = []
+
+    def __call__(self, url, **kwargs):
+        self.calls.append((url, kwargs))
+        return SimpleResponse()
+
+class SimpleResponse:
+    """Simple fetch response"""
+    def __init__(self):
+        self.ok = True
+        self.status = 200
+        self._json_data = {}
+
+    def json(self):
+        return self._json_data
 
 # Test utilities for JavaScript testing
 @pytest.mark.frontend
 class JavaScriptTestHarness:
     """Test harness for JavaScript module testing"""
-    
+
     def __init__(self):
-        self.mock_dom = Mock()
-        self.mock_window = Mock()
-        self.mock_document = Mock()
-        self.mock_fetch = Mock()
-        
-        # Setup DOM mocks
-        self.mock_document.getElementById = Mock()
-        self.mock_document.querySelector = Mock()
-        self.mock_document.querySelectorAll = Mock()
-        self.mock_document.createElement = Mock()
-        
-        # Setup window mocks
-        self.mock_window.localStorage = Mock()
-        self.mock_window.sessionStorage = Mock()
-        self.mock_window.locations = Mock()
+        self.mock_dom = None
+        self.mock_window = SimpleWindow()
+        self.mock_document = SimpleDocument()
+        self.mock_fetch = SimpleFetch()
+
         self.mock_window.fetch = self.mock_fetch
-    
+
     def create_mock_element(self, tag_name="div", **attributes):
-        """Create a mock DOM element"""
-        element = Mock()
-        element.tagName = tag_name.upper()
-        element.innerHTML = ""
-        element.textContent = ""
-        element.value = ""
-        element.style = Mock()
-        element.classList = Mock()
-        element.addEventListener = Mock()
-        element.removeEventListener = Mock()
-        element.appendChild = Mock()
-        element.removeChild = Mock()
-        element.getAttribute = Mock()
-        element.setAttribute = Mock()
-        
-        # Set attributes
-        for key, value in attributes.items():
-            setattr(element, key, value)
-        
-        return element
-    
+        """Create a simple DOM element"""
+        return SimpleElement(tag_name, **attributes)
+
     def create_mock_form_data(self, data=None):
-        """Create mock FormData"""
-        form_data = Mock()
-        form_data.append = Mock()
-        form_data.get = Mock()
-        form_data.set = Mock()
-        
-        if data:
-            for key, value in data.items():
-                form_data.get.return_value = value
-        
-        return form_data
+        """Create simple FormData"""
+        return SimpleFormData(data)
+
+
+# Simple module classes to replace Mock
+class SimpleAuthModule:
+    """Simple authentication module"""
+    def __init__(self):
+        self.calls = []
+        self._should_fail = False
+
+    def login(self, credentials):
+        self.calls.append(('login', credentials))
+        if self._should_fail:
+            raise Exception("Login failed")
+        return Promise.resolve({"access_token": "mock_token", "user": {"id": "123", "email": credentials.get("email"), "role": "student"}})
+
+    def logout(self):
+        self.calls.append(('logout',))
+
+    def isAuthenticated(self):
+        self.calls.append(('isAuthenticated',))
+        return True
+
+    def getCurrentUser(self):
+        self.calls.append(('getCurrentUser',))
+        return {"id": "123", "email": "test@example.com"}
+
+    def refreshToken(self):
+        self.calls.append(('refreshToken',))
+
+class SimpleNavigationModule:
+    """Simple navigation module"""
+    def __init__(self):
+        self.calls = []
+
+    def navigateTo(self, route):
+        self.calls.append(('navigateTo', route))
+
+    def getCurrentRoute(self):
+        self.calls.append(('getCurrentRoute',))
+        return "/dashboard"
+
+    def setActiveNavItem(self, item_id):
+        self.calls.append(('setActiveNavItem', item_id))
+
+    def updateBreadcrumbs(self, breadcrumbs):
+        self.calls.append(('updateBreadcrumbs', breadcrumbs))
+
+class SimpleNotificationModule:
+    """Simple notification module"""
+    def __init__(self):
+        self.calls = []
+
+    def show(self, message, notification_type='info', timeout=3000):
+        self.calls.append(('show', message, notification_type, timeout))
+
+    def hide(self):
+        self.calls.append(('hide',))
+
+    def showSuccess(self, message):
+        self.calls.append(('showSuccess', message))
+
+    def showError(self, message):
+        self.calls.append(('showError', message))
+
+    def showWarning(self, message):
+        self.calls.append(('showWarning', message))
+
+    def showInfo(self, message):
+        self.calls.append(('showInfo', message))
+
+class SimpleValidationModule:
+    """Simple validation module"""
+    def __init__(self):
+        self.calls = []
+
+    def validateForm(self, form_data):
+        self.calls.append(('validateForm', form_data))
+        return {"isValid": True, "errors": []}
+
+    def validateField(self, field_name, value):
+        self.calls.append(('validateField', field_name, value))
+
+    def showFieldError(self, field_name, error):
+        self.calls.append(('showFieldError', field_name, error))
+
+    def clearFieldError(self, field_name):
+        self.calls.append(('clearFieldError', field_name))
+
+    def isValidEmail(self, email):
+        self.calls.append(('isValidEmail', email))
+        return '@' in email
+
+    def isValidPassword(self, password):
+        self.calls.append(('isValidPassword', password))
+        return len(password) >= 8
+
+class SimpleAPIClient:
+    """Simple API client"""
+    def __init__(self):
+        self.calls = []
+        self._should_fail = False
+        self._token = None
+
+    def get(self, endpoint):
+        self.calls.append(('get', endpoint))
+        if self._should_fail:
+            raise Exception("API Error")
+        return Promise.resolve({"status": "success"})
+
+    def post(self, endpoint, data):
+        self.calls.append(('post', endpoint, data))
+        if self._should_fail:
+            raise Exception("API Error")
+        return Promise.resolve({"id": "123", **data})
+
+    def put(self, endpoint, data):
+        self.calls.append(('put', endpoint, data))
+        return Promise.resolve({"status": "success"})
+
+    def delete(self, endpoint):
+        self.calls.append(('delete', endpoint))
+        return Promise.resolve({"status": "success"})
+
+    def setAuthToken(self, token):
+        self.calls.append(('setAuthToken', token))
+        self._token = token
+
+    def clearAuthToken(self):
+        self.calls.append(('clearAuthToken',))
+        self._token = None
+
+class SimpleUIComponents:
+    """Simple UI components"""
+    def __init__(self):
+        self.calls = []
+
+    def showModal(self, modal_id):
+        self.calls.append(('showModal', modal_id))
+
+    def hideModal(self, modal_id):
+        self.calls.append(('hideModal', modal_id))
+
+    def showLoading(self, message=None):
+        self.calls.append(('showLoading', message))
+
+    def hideLoading(self):
+        self.calls.append(('hideLoading',))
+
+    def updateProgressBar(self, value):
+        self.calls.append(('updateProgressBar', value))
+
+    def toggleAccordion(self, accordion_id):
+        self.calls.append(('toggleAccordion', accordion_id))
+
+class SimpleEventBus:
+    """Simple event bus"""
+    def __init__(self):
+        self.calls = []
+        self._handlers = {}
+
+    def on(self, event_name, callback):
+        self.calls.append(('on', event_name))
+        if event_name not in self._handlers:
+            self._handlers[event_name] = []
+        self._handlers[event_name].append(callback)
+
+    def off(self, event_name, callback):
+        self.calls.append(('off', event_name))
+        if event_name in self._handlers:
+            self._handlers[event_name] = [h for h in self._handlers[event_name] if h != callback]
+
+    def emit(self, event_name, event_data):
+        self.calls.append(('emit', event_name, event_data))
+        if event_name in self._handlers:
+            for handler in self._handlers[event_name]:
+                handler(event_data)
+
+    def once(self, event_name, callback):
+        self.calls.append(('once', event_name))
 
 
 class TestAuthModule:
@@ -81,19 +349,13 @@ class TestAuthModule:
     
     @pytest.fixture
     def mock_auth_module(self):
-        """Mock the authentication module"""
-        auth = Mock()
-        auth.login = Mock()
-        auth.logout = Mock()
-        auth.isAuthenticated = Mock()
-        auth.getCurrentUser = Mock()
-        auth.refreshToken = Mock()
-        return auth
+        """Simple authentication module"""
+        return SimpleAuthModule()
     
     def test_auth_login_success(self, js_harness, mock_auth_module):
         """Test successful login flow"""
         # Arrange
-        mock_response = Mock()
+        mock_response = type("obj", (object,), {})()
         mock_response.ok = True
         mock_response.json.return_value = {
             "access_token": "mock_token",
@@ -114,7 +376,7 @@ class TestAuthModule:
     def test_auth_login_failure(self, js_harness, mock_auth_module):
         """Test login failure handling"""
         # Arrange
-        mock_response = Mock()
+        mock_response = type("obj", (object,), {})()
         mock_response.ok = False
         mock_response.status = 401
         mock_response.json.return_value = {"error": "Invalid credentials"}
@@ -166,13 +428,8 @@ class TestNavigationModule:
     
     @pytest.fixture
     def mock_navigation_module(self):
-        """Mock the navigation module"""
-        nav = Mock()
-        nav.navigateTo = Mock()
-        nav.getCurrentRoute = Mock()
-        nav.setActiveNavItem = Mock()
-        nav.updateBreadcrumbs = Mock()
-        return nav
+        """Simple navigation module"""
+        return SimpleNavigationModule()
     
     def test_navigation_to_route(self, js_harness, mock_navigation_module):
         """Test navigation to a specific route"""
@@ -220,15 +477,8 @@ class TestNotificationModule:
     
     @pytest.fixture
     def mock_notification_module(self):
-        """Mock the notification module"""
-        notifications = Mock()
-        notifications.show = Mock()
-        notifications.hide = Mock()
-        notifications.showSuccess = Mock()
-        notifications.showError = Mock()
-        notifications.showWarning = Mock()
-        notifications.showInfo = Mock()
-        return notifications
+        """Simple notification module"""
+        return SimpleNotificationModule()
     
     def test_success_notification(self, js_harness, mock_notification_module):
         """Test success notification display"""
@@ -267,7 +517,7 @@ class TestNotificationModule:
         mock_notification_module.show(message, "info", timeout)
         
         # Simulate setTimeout behavior
-        with patch("builtins.setTimeout") as mock_timeout:
+        # with patch("builtins.setTimeout") as mock_timeout:
             mock_timeout.return_value = "timer_id"
             
             # Assert
@@ -283,15 +533,8 @@ class TestFormValidationModule:
     
     @pytest.fixture
     def mock_validation_module(self):
-        """Mock the form validation module"""
-        validation = Mock()
-        validation.validateForm = Mock()
-        validation.validateField = Mock()
-        validation.showFieldError = Mock()
-        validation.clearFieldError = Mock()
-        validation.isValidEmail = Mock()
-        validation.isValidPassword = Mock()
-        return validation
+        """Simple validation module"""
+        return SimpleValidationModule()
     
     def test_email_validation_valid(self, js_harness, mock_validation_module):
         """Test valid email validation"""
@@ -365,15 +608,8 @@ class TestAPIClientModule:
     
     @pytest.fixture
     def mock_api_client(self):
-        """Mock the API client module"""
-        api = Mock()
-        api.get = Mock()
-        api.post = Mock()
-        api.put = Mock()
-        api.delete = Mock()
-        api.setAuthToken = Mock()
-        api.clearAuthToken = Mock()
-        return api
+        """Simple API client"""
+        return SimpleAPIClient()
     
     def test_api_get_request(self, js_harness, mock_api_client):
         """Test GET API request"""
@@ -434,15 +670,8 @@ class TestUIComponentsModule:
     
     @pytest.fixture
     def mock_ui_components(self):
-        """Mock the UI components module"""
-        ui = Mock()
-        ui.showModal = Mock()
-        ui.hideModal = Mock()
-        ui.showLoading = Mock()
-        ui.hideLoading = Mock()
-        ui.updateProgressBar = Mock()
-        ui.toggleAccordion = Mock()
-        return ui
+        """Simple UI components"""
+        return SimpleUIComponents()
     
     def test_modal_show_hide(self, js_harness, mock_ui_components):
         """Test modal show/hide functionality"""
@@ -497,19 +726,14 @@ class TestEventBusModule:
     
     @pytest.fixture
     def mock_event_bus(self):
-        """Mock the event bus module"""
-        event_bus = Mock()
-        event_bus.on = Mock()
-        event_bus.off = Mock()
-        event_bus.emit = Mock()
-        event_bus.once = Mock()
-        return event_bus
+        """Simple event bus"""
+        return SimpleEventBus()
     
     def test_event_subscription(self, js_harness, mock_event_bus):
         """Test event subscription"""
         # Arrange
         event_name = "course-created"
-        callback = Mock()
+        callback = lambda x: None
         
         # Act
         mock_event_bus.on(event_name, callback)
@@ -533,7 +757,7 @@ class TestEventBusModule:
         """Test event unsubscription"""
         # Arrange
         event_name = "course-deleted"
-        callback = Mock()
+        callback = lambda x: None
         
         # Act
         mock_event_bus.off(event_name, callback)

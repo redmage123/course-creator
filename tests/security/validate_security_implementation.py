@@ -115,16 +115,21 @@ class SecurityValidationSuite:
 
             middleware = OrganizationAuthorizationMiddleware(None, config)
 
-            # Test organization ID extraction
-            from unittest.mock import Mock
-            request = Mock()  # Create mock request
-            request.headers = {'X-Organization-ID': str(uuid.uuid4())}
-            request.url.path = '/api/v1/courses'
-            request.query_params = {}
-            request.method = 'GET'
-            
+            # Create a simple request stub
+            from collections import namedtuple
+            URL = namedtuple('URL', ['path'])
+            Request = namedtuple('Request', ['headers', 'url', 'query_params', 'method'])
+
+            test_org_id = str(uuid.uuid4())
+            request = Request(
+                headers={'X-Organization-ID': test_org_id},
+                url=URL(path='/api/v1/courses'),
+                query_params={},
+                method='GET'
+            )
+
             org_id = await middleware._extract_organization_id(request)
-            
+
             if org_id:
                 self.log_test_result(
                     "Middleware Organization ID Extraction",
@@ -140,7 +145,7 @@ class SecurityValidationSuite:
                     "Failed to extract organization ID from header"
                 )
                 return False
-                
+
         except Exception as e:
             self.log_test_result(
                 "Middleware Security Validation",

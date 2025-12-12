@@ -25,7 +25,6 @@ import asyncio
 from datetime import datetime, timezone
 import sys
 from pathlib import Path
-from unittest.mock import patch
 
 # Add service to path
 project_root = Path(__file__).parent.parent.parent
@@ -332,8 +331,11 @@ class TestAssistanceResponseIntegration:
 
         assistant = RAGLabAssistant()
 
-        # Mock RAG service availability
-        with patch.object(assistant, 'is_rag_service_available', return_value=False):
+        # Create a simple stub to override RAG service availability
+        original_method = assistant.is_rag_service_available
+        assistant.is_rag_service_available = lambda: False
+
+        try:
             code_context = CodeContext(
                 code="print('hello')",
                 language="python",
@@ -368,6 +370,9 @@ class TestAssistanceResponseIntegration:
 
             # Verify pedagogical info in metadata
             assert 'pedagogical_prompts_used' in response.learning_feedback
+        finally:
+            # Restore original method
+            assistant.is_rag_service_available = original_method
 
 
 class TestWebSocketStudentPromptIntegration:
