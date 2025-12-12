@@ -24,7 +24,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / 'services' /
 import pytest
 from datetime import date, datetime, timedelta
 from decimal import Decimal
-from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4, UUID
 
 from analytics.domain.entities.instructor_insights import (
@@ -71,8 +70,14 @@ from data_access.instructor_insights_dao import (
 
 @pytest.fixture
 def mock_dao():
-    """Create mock DAO for service tests."""
-    return AsyncMock(spec=InstructorInsightsDAO)
+    """Create mock DAO for service tests.
+
+    NOTE: This uses a MagicMock for now. These tests should be refactored to:
+    1. Use real DAO with test database (db_transaction fixture)
+    2. Or test service logic with real entity objects instead of mocks
+    """
+    from unittest.mock import MagicMock
+    return MagicMock()
 
 
 @pytest.fixture

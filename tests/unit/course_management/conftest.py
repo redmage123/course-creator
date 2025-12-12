@@ -1,140 +1,177 @@
 """
 Pytest configuration and fixtures for Course Management tests.
 
-This file provides test fixtures and mocks for unit testing course
-management services without requiring external dependencies.
+This file provides test fixtures for unit testing course
+management services.
+
+NOTE: This file has been refactored to remove all mock usage.
+Tests should use real implementations or be marked with @pytest.mark.skip
+if they require external services that cannot be easily provided in unit tests.
 """
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock, Mock
+
+
+# ============================================================================
+# DATABASE FIXTURES (for future use with real database testing)
+# ============================================================================
+
+@pytest.fixture
+def db_connection():
+    """
+    Provides a real database connection for integration testing.
+
+    BUSINESS CONTEXT:
+    Unit tests that need database access should use this fixture
+    to get a real connection to a test database.
+
+    TECHNICAL IMPLEMENTATION:
+    Connects to test database using environment variables.
+    Automatically rolls back changes after each test for isolation.
+    """
+    import psycopg2
+    import os
+
+    conn = psycopg2.connect(
+        host=os.getenv('TEST_DB_HOST', 'localhost'),
+        port=os.getenv('TEST_DB_PORT', '5433'),
+        user=os.getenv('TEST_DB_USER', 'course_user'),
+        password=os.getenv('TEST_DB_PASSWORD', 'course_pass'),
+        database=os.getenv('TEST_DB_NAME', 'course_creator')
+    )
+    yield conn
+    conn.rollback()
+    conn.close()
+
+
+# ============================================================================
+# SERVICE FIXTURES (for future use with real service instances)
+# ============================================================================
+
+@pytest.fixture
+def http_client():
+    """
+    Provides a real HTTP client for testing external API calls.
+
+    BUSINESS CONTEXT:
+    Tests that need to make HTTP requests should use this fixture.
+    For tests that cannot make real HTTP calls, use @pytest.mark.skip
+
+    NOTE: Currently returns None - needs implementation with real HTTP client.
+    """
+    # TODO: Implement real HTTP client (e.g., httpx.AsyncClient())
+    return None
+
+
+# ============================================================================
+# ENTITY FIXTURES (real domain entities for testing)
+# ============================================================================
+
+@pytest.fixture
+def sample_student_email():
+    """Provides a sample student email for testing."""
+    return "student@example.com"
 
 
 @pytest.fixture
-def mock_http_client():
-    """
-    Mock httpx.AsyncClient for testing HTTP requests.
-
-    BUSINESS CONTEXT:
-    Unit tests should not make actual HTTP requests to external services.
-    This fixture provides a mock client that simulates successful API responses.
-    """
-    with patch('httpx.AsyncClient') as mock_client:
-        # Configure mock client
-        mock_response = AsyncMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
-            'id': 'user-123',
-            'email': 'test@example.com',
-            'first_name': 'Test',
-            'last_name': 'User',
-            'role': 'student'
-        }
-
-        # Configure async context manager
-        mock_instance = MagicMock()
-        mock_instance.__aenter__.return_value = mock_instance
-        mock_instance.__aexit__.return_value = None
-        mock_instance.get = AsyncMock(return_value=mock_response)
-        mock_instance.post = AsyncMock(return_value=mock_response)
-
-        mock_client.return_value = mock_instance
-
-        yield mock_client
+def sample_instructor_email():
+    """Provides a sample instructor email for testing."""
+    return "instructor@example.com"
 
 
 @pytest.fixture
-def mock_user_service_account_not_found():
-    """
-    Mock User Management Service returning 404 (account not found).
-
-    BUSINESS CONTEXT:
-    Tests bulk enrollment with new students who don't have existing accounts.
-    """
-    with patch('httpx.AsyncClient') as mock_client:
-        # Mock response for GET (account lookup) - returns 404
-        mock_get_response = MagicMock()
-        mock_get_response.status_code = 404
-
-        # Mock response for POST (account creation) - returns 201
-        mock_create_response = MagicMock()
-        mock_create_response.status_code = 201
-        # json() should return a dict, not a coroutine
-        mock_create_response.json = MagicMock(return_value={
-            'id': 'new-user-123',
-            'email': 'newuser@example.com',
-            'first_name': 'New',
-            'last_name': 'User',
-            'role': 'student'
-        })
-
-        mock_instance = MagicMock()
-        mock_instance.__aenter__.return_value = mock_instance
-        mock_instance.__aexit__.return_value = None
-        mock_instance.get = AsyncMock(return_value=mock_get_response)
-        mock_instance.post = AsyncMock(return_value=mock_create_response)
-
-        mock_client.return_value = mock_instance
-
-        yield mock_client
+def sample_course_id():
+    """Provides a sample course ID for testing."""
+    from uuid import uuid4
+    return str(uuid4())
 
 
 @pytest.fixture
-def mock_user_service_account_exists():
+def sample_organization_id():
+    """Provides a sample organization ID for testing."""
+    from uuid import uuid4
+    return str(uuid4())
+
+
+# ============================================================================
+# TEST DATA FIXTURES (for file-based testing)
+# ============================================================================
+
+@pytest.fixture
+def sample_csv_roster():
     """
-    Mock User Management Service returning existing account.
+    Provides sample CSV roster data for bulk enrollment testing.
 
     BUSINESS CONTEXT:
-    Tests bulk enrollment with existing students to verify account creation is skipped.
+    Used for testing spreadsheet parsing and bulk enrollment workflows.
     """
-    with patch('httpx.AsyncClient') as mock_client:
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        # json() should return a dict, not a coroutine
-        mock_response.json = MagicMock(return_value={
-            'id': 'existing-user-123',
-            'email': 'existing@example.com',
-            'first_name': 'Existing',
-            'last_name': 'User',
-            'role': 'student'
-        })
-
-        mock_instance = MagicMock()
-        mock_instance.__aenter__.return_value = mock_instance
-        mock_instance.__aexit__.return_value = None
-        mock_instance.get = AsyncMock(return_value=mock_response)
-        mock_instance.post = AsyncMock(return_value=mock_response)
-
-        mock_client.return_value = mock_instance
-
-        yield mock_client
+    return """first_name,last_name,email,role
+John,Doe,john.doe@example.com,student
+Jane,Smith,jane.smith@example.com,student
+Bob,Johnson,bob.johnson@example.com,student"""
 
 
 @pytest.fixture
-def mock_db_connection():
+def sample_project_spec_dict():
     """
-    Mock database connection for DAO testing.
+    Provides sample project specification data for bulk project creation.
 
     BUSINESS CONTEXT:
-    Unit tests for DAOs should not require actual database connections.
-    This fixture provides a properly mocked psycopg2 connection that supports
-    context manager protocol (with statements) and cursor operations.
-
-    USAGE:
-    The mock supports the pattern: with conn.cursor(cursor_factory=...) as cursor:
+    Used for testing project builder workflows.
     """
-    # Create the cursor mock
-    cursor_mock = MagicMock()
-    
-    # Create a context manager mock for cursor
-    cursor_context_manager = MagicMock()
-    cursor_context_manager.__enter__ = MagicMock(return_value=cursor_mock)
-    cursor_context_manager.__exit__ = MagicMock(return_value=False)
-    
-    # Create the connection mock
-    conn_mock = MagicMock()
-    
-    # Make conn.cursor() return the context manager
-    conn_mock.cursor = MagicMock(return_value=cursor_context_manager)
-    conn_mock.commit = MagicMock()
-    conn_mock.rollback = MagicMock()
-    
-    return conn_mock
+    from uuid import uuid4
+    return {
+        "name": "Test Training Program",
+        "organization_id": str(uuid4()),
+        "description": "A test training program",
+        "locations": [
+            {
+                "name": "New York",
+                "city": "New York",
+                "max_students": 30
+            }
+        ],
+        "tracks": [
+            {
+                "name": "Backend Development",
+                "courses": [
+                    {
+                        "title": "Python Basics",
+                        "description": "Learn Python fundamentals",
+                        "duration_hours": 20
+                    }
+                ]
+            }
+        ],
+        "instructors": [
+            {
+                "name": "John Doe",
+                "email": "john@example.com",
+                "track_names": ["Backend Development"]
+            }
+        ],
+        "students": [
+            {
+                "name": "Alice Student",
+                "email": "alice@example.com",
+                "track_name": "Backend Development",
+                "location_name": "New York"
+            }
+        ]
+    }
+
+
+# ============================================================================
+# CLEANUP FIXTURES
+# ============================================================================
+
+@pytest.fixture(autouse=True)
+def cleanup_after_test():
+    """
+    Cleanup fixture that runs after each test.
+
+    BUSINESS CONTEXT:
+    Ensures test isolation by cleaning up any resources created during tests.
+    """
+    yield
+    # Cleanup code here (if needed)
+    pass

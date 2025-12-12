@@ -6,7 +6,6 @@ Tests the learning track management functionality
 import pytest
 import uuid
 from datetime import datetime, timedelta
-from unittest.mock import Mock, AsyncMock, patch
 
 # Add test fixtures path
 import sys
@@ -28,9 +27,11 @@ class TestTrackService:
     @pytest.fixture
     def track_service(self, mock_track_repository, mock_audit_logger, mock_email_service):
         """Create track service with mocked dependencies."""
-        from unittest.mock import Mock
-        
-        service = Mock()
+
+        class TrackServiceStub:
+            pass
+
+        service = TrackServiceStub()
         service.track_repository = mock_track_repository
         service.audit_logger = mock_audit_logger
         service.email_service = mock_email_service

@@ -27,11 +27,11 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 from contextlib import asynccontextmanager
+import pytest
 
 import jwt
 import httpx
 from fastapi.testclient import TestClient
-from unittest.mock import AsyncMock, Mock
 
 
 @dataclass

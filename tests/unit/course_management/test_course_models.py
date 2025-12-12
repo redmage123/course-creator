@@ -18,8 +18,6 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / 'services' / 'course-management'))
 
-# Import would happen here - mocking for now since we're creating the structure
-from unittest.mock import Mock
 from typing import List, Optional
 from enum import Enum
 

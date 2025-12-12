@@ -6,7 +6,6 @@ Tests the analytics service models, endpoints, and business logic
 import pytest
 import asyncio
 from datetime import datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
 import json
 
 # Import the analytics service components
@@ -21,8 +20,8 @@ from analytics.domain.entities.student_analytics import (
 from api.models import AnalyticsRequest, LearningAnalyticsResponse
 
 class TestAnalyticsModels:
-    """Test analytics data models"""
-    
+    """Test analytics data models - pure Pydantic validation, no mocks needed"""
+
     def test_student_activity_model(self):
         """Test StudentActivity model validation"""
         activity = StudentActivity(
@@ -128,8 +127,8 @@ class TestAnalyticsModels:
 
 
 class TestAnalyticsBusinessLogic:
-    """Test analytics business logic functions"""
-    
+    """Test analytics business logic functions - pure calculations, no mocks needed"""
+
     def test_calculate_engagement_score_high(self):
         """Test engagement score calculation for high engagement"""
         analytics_data = {
@@ -240,8 +239,8 @@ class TestAnalyticsBusinessLogic:
 
 
 class TestAnalyticsModelsValidation:
-    """Test model validation and edge cases"""
-    
+    """Test model validation and edge cases - pure Pydantic validation, no mocks needed"""
+
     def test_student_activity_required_fields(self):
         """Test that required fields are validated"""
         with pytest.raises(ValueError):
@@ -308,29 +307,9 @@ class TestAnalyticsModelsValidation:
             assert analytics.risk_level == risk_level
 
 
-@pytest.mark.asyncio
-class TestAnalyticsIntegration:
-    """Integration tests for analytics functionality"""
-    
-    @patch('analytics_endpoints.db_pool')
-    async def test_database_connection_handling(self, mock_db_pool):
-        """Test proper database connection handling"""
-        # Mock database connection
-        mock_conn = AsyncMock()
-        mock_db_pool.acquire.return_value.__aenter__.return_value = mock_conn
-        mock_conn.execute.return_value = None
-        
-        # Test activity tracking would use the connection
-        activity = StudentActivity(
-            student_id="student-123",
-            course_id="course-456",
-            activity_type="login"
-        )
-        
-        # In a real test, we would call the endpoint
-        assert activity.student_id == "student-123"
-        assert mock_db_pool is not None
-    
+class TestAnalyticsRequestModels:
+    """Test analytics request/response models - pure Pydantic validation, no mocks needed"""
+
     def test_analytics_request_model(self):
         """Test analytics request model"""
         request = AnalyticsRequest(

@@ -33,7 +33,6 @@ import httpx
 import ssl
 from pathlib import Path
 from typing import Dict, Any, Optional
-from unittest.mock import patch, MagicMock
 
 # Add project root to path
 PROJECT_ROOT = Path(__file__).parent.parent.parent.parent

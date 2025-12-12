@@ -3,12 +3,11 @@ Mobile Experience Service Unit Tests
 
 What: Comprehensive tests for mobile experience service operations.
 Where: User Management service application layer.
-Why: Ensures service business logic correctness with mocked DAO.
+Why: Ensures service business logic correctness with real DAO implementation.
 """
 
 from datetime import datetime, date, time, timedelta
 from decimal import Decimal
-from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 import pytest
@@ -57,31 +56,221 @@ from data_access.mobile_experience_dao import (
 # FIXTURES
 # ============================================================================
 
-@pytest.fixture
-def mock_dao():
-    """Create a mock DAO with default behaviors."""
-    dao = AsyncMock()
-    return dao
+class InMemoryMobileExperienceDAO:
+    """
+    In-memory test double for MobileExperienceDAO.
+    Uses real Python objects instead of mocks for more reliable testing.
+    """
+
+    def __init__(self):
+        self.device_preferences = {}
+        self.sessions = {}
+        self.offline_syncs = {}
+        self.push_settings = {}
+        self.notifications = {}
+        self.gesture_settings = {}
+        self.bandwidth_usage = []
+
+    async def create_device_preference(self, **kwargs):
+        pref_id = uuid4()
+        pref = UserDevicePreference(id=pref_id, **kwargs)
+        self.device_preferences[pref_id] = pref
+        return pref
+
+    async def get_device_preference(self, user_id, device_id):
+        for pref in self.device_preferences.values():
+            if pref.user_id == user_id and pref.device_id == device_id:
+                return pref
+        return None
+
+    async def get_user_devices(self, user_id):
+        return [p for p in self.device_preferences.values() if p.user_id == user_id]
+
+    async def update_device_preference(self, pref_id, **kwargs):
+        if pref_id not in self.device_preferences:
+            raise DevicePreferenceNotFoundError(f"Device preference {pref_id} not found")
+        pref = self.device_preferences[pref_id]
+        for key, value in kwargs.items():
+            setattr(pref, key, value)
+        return pref
+
+    async def delete_device_preference(self, pref_id):
+        if pref_id in self.device_preferences:
+            del self.device_preferences[pref_id]
+            return True
+        return False
+
+    async def create_session(self, **kwargs):
+        session_id = uuid4()
+        session = MobileSession(id=session_id, **kwargs)
+        self.sessions[session_id] = session
+        return session
+
+    async def get_session(self, session_id):
+        return self.sessions.get(session_id)
+
+    async def get_session_by_token(self, token):
+        for session in self.sessions.values():
+            if session.session_token == token:
+                return session
+        return None
+
+    async def update_session(self, session_id, **kwargs):
+        if session_id not in self.sessions:
+            raise MobileSessionNotFoundError(f"Session {session_id} not found")
+        session = self.sessions[session_id]
+        for key, value in kwargs.items():
+            setattr(session, key, value)
+        return session
+
+    async def get_user_sessions(self, user_id, limit=10):
+        sessions = [s for s in self.sessions.values() if s.user_id == user_id]
+        return sessions[:limit]
+
+    async def create_offline_sync(self, **kwargs):
+        sync_id = uuid4()
+        sync = OfflineContentSync(id=sync_id, **kwargs)
+        self.offline_syncs[sync_id] = sync
+        return sync
+
+    async def get_offline_sync(self, user_id, device_id, content_type, content_id):
+        for sync in self.offline_syncs.values():
+            if (sync.user_id == user_id and sync.device_id == device_id and
+                sync.content_type == content_type and sync.content_id == content_id):
+                return sync
+        return None
+
+    async def get_pending_syncs(self, user_id, device_id):
+        return [s for s in self.offline_syncs.values()
+                if s.user_id == user_id and s.device_id == device_id]
+
+    async def update_offline_sync(self, sync_id, **kwargs):
+        if sync_id not in self.offline_syncs:
+            raise OfflineSyncNotFoundError(f"Offline sync {sync_id} not found")
+        sync = self.offline_syncs[sync_id]
+        for key, value in kwargs.items():
+            setattr(sync, key, value)
+        return sync
+
+    async def delete_offline_sync(self, sync_id):
+        if sync_id in self.offline_syncs:
+            del self.offline_syncs[sync_id]
+            return True
+        return False
+
+    async def create_push_settings(self, **kwargs):
+        settings_id = uuid4()
+        settings = PushNotificationSettings(id=settings_id, **kwargs)
+        self.push_settings[settings_id] = settings
+        return settings
+
+    async def get_push_settings(self, user_id):
+        for settings in self.push_settings.values():
+            if settings.user_id == user_id:
+                return settings
+        return None
+
+    async def update_push_settings(self, settings_id, **kwargs):
+        if settings_id not in self.push_settings:
+            raise PushSettingsNotFoundError(f"Push settings {settings_id} not found")
+        settings = self.push_settings[settings_id]
+        for key, value in kwargs.items():
+            setattr(settings, key, value)
+        return settings
+
+    async def create_notification(self, **kwargs):
+        notif_id = uuid4()
+        notif = PushNotification(id=notif_id, **kwargs)
+        self.notifications[notif_id] = notif
+        return notif
+
+    async def update_notification(self, notif_id, **kwargs):
+        if notif_id not in self.notifications:
+            raise NotificationNotFoundError(f"Notification {notif_id} not found")
+        notif = self.notifications[notif_id]
+        for key, value in kwargs.items():
+            setattr(notif, key, value)
+        return notif
+
+    async def get_user_notifications(self, user_id, limit=20):
+        notifs = [n for n in self.notifications.values() if n.user_id == user_id]
+        return notifs[:limit]
+
+    async def get_user_push_settings(self, user_id):
+        return [s for s in self.push_settings.values() if s.user_id == user_id]
+
+    async def create_gesture_settings(self, **kwargs):
+        settings_id = uuid4()
+        settings = TouchGestureSettings(id=settings_id, **kwargs)
+        self.gesture_settings[settings_id] = settings
+        return settings
+
+    async def get_gesture_settings(self, user_id):
+        for settings in self.gesture_settings.values():
+            if settings.user_id == user_id:
+                return settings
+        return None
+
+    async def update_gesture_settings(self, settings_id, **kwargs):
+        settings = self.gesture_settings.get(settings_id)
+        if not settings:
+            settings = TouchGestureSettings(id=settings_id, **kwargs)
+            self.gesture_settings[settings_id] = settings
+        else:
+            for key, value in kwargs.items():
+                setattr(settings, key, value)
+        return settings
+
+    async def record_bandwidth_usage(self, **kwargs):
+        usage = BandwidthUsage(**kwargs)
+        self.bandwidth_usage.append(usage)
+        return usage
+
+    async def get_user_bandwidth_usage(self, user_id, start_date, end_date):
+        return [u for u in self.bandwidth_usage
+                if u.user_id == user_id and start_date <= u.usage_date <= end_date]
+
+
+class SimplePushProvider:
+    """Simple test double for push notification provider."""
+
+    def __init__(self):
+        self.sent_messages = []
+
+    async def send(self, token, title, body, **kwargs):
+        msg_id = f"msg_{len(self.sent_messages)}"
+        self.sent_messages.append({
+            'id': msg_id,
+            'token': token,
+            'title': title,
+            'body': body,
+            **kwargs
+        })
+        return msg_id
 
 
 @pytest.fixture
-def mock_push_provider():
-    """Create a mock push notification provider."""
-    provider = AsyncMock()
-    provider.send = AsyncMock(return_value="msg_123")
-    return provider
+def test_dao():
+    """Create in-memory DAO for testing."""
+    return InMemoryMobileExperienceDAO()
 
 
 @pytest.fixture
-def service(mock_dao):
-    """Create service with mocked DAO."""
-    return MobileExperienceService(dao=mock_dao)
+def test_push_provider():
+    """Create simple push notification provider."""
+    return SimplePushProvider()
 
 
 @pytest.fixture
-def service_with_push(mock_dao, mock_push_provider):
-    """Create service with mocked DAO and push provider."""
-    return MobileExperienceService(dao=mock_dao, push_provider=mock_push_provider)
+def service(test_dao):
+    """Create service with test DAO."""
+    return MobileExperienceService(dao=test_dao)
+
+
+@pytest.fixture
+def service_with_push(test_dao, test_push_provider):
+    """Create service with test DAO and push provider."""
+    return MobileExperienceService(dao=test_dao, push_provider=test_push_provider)
 
 
 @pytest.fixture
@@ -139,15 +328,8 @@ class TestDevicePreferenceOperations:
     """Tests for device preference service operations."""
 
     @pytest.mark.asyncio
-    async def test_register_device_success(self, service, mock_dao, sample_user_id, sample_device_id):
+    async def test_register_device_success(self, service, sample_user_id, sample_device_id):
         """Test successful device registration."""
-        expected = UserDevicePreference(
-            user_id=sample_user_id,
-            device_id=sample_device_id,
-            device_type=DeviceType.MOBILE
-        )
-        mock_dao.create_device_preference.return_value = expected
-
         result = await service.register_device(
             user_id=sample_user_id,
             device_id=sample_device_id,
@@ -157,7 +339,8 @@ class TestDevicePreferenceOperations:
         )
 
         assert result.device_id == sample_device_id
-        mock_dao.create_device_preference.assert_called_once()
+        assert result.user_id == sample_user_id
+        assert result.device_type == DeviceType.MOBILE
 
     @pytest.mark.asyncio
     async def test_register_device_dao_error(self, service, mock_dao, sample_user_id, sample_device_id):

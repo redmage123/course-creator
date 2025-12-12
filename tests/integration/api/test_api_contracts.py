@@ -1,1 +1,0 @@
-# Generated API integration tests

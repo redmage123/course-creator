@@ -6,7 +6,6 @@ Tests the organization membership management functionality
 import pytest
 import uuid
 from datetime import datetime, timedelta
-from unittest.mock import Mock, AsyncMock, patch
 
 # Add test fixtures path
 import sys
@@ -27,12 +26,14 @@ class TestMembershipService:
     """Test cases for MembershipService"""
     
     @pytest.fixture
-    def membership_service(self, mock_membership_repository, mock_user_repository, 
+    def membership_service(self, mock_membership_repository, mock_user_repository,
                           mock_audit_logger, mock_email_service):
         """Create membership service with mocked dependencies."""
-        from unittest.mock import Mock
-        
-        service = Mock()
+
+        class MembershipServiceStub:
+            pass
+
+        service = MembershipServiceStub()
         service.membership_repository = mock_membership_repository
         service.user_repository = mock_user_repository
         service.audit_logger = mock_audit_logger

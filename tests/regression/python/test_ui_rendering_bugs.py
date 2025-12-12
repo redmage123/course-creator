@@ -25,7 +25,6 @@ Git Commits:
 """
 
 import pytest
-from unittest.mock import Mock, MagicMock
 import re
 
 

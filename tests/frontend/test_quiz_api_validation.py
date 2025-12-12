@@ -7,7 +7,6 @@ import pytest
 import requests
 import json
 import time
-from unittest.mock import patch, Mock
 
 
 class TestQuizAPIValidation:

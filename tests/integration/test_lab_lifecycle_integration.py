@@ -7,13 +7,12 @@ import pytest
 import asyncio
 import json
 import time
-from unittest.mock import Mock, patch, AsyncMock, MagicMock
 from datetime import datetime, timedelta
 import tempfile
 import requests
 import docker
 
-# Mock the lab manager service for integration testing
+# Lab manager service for integration testing
 @pytest.fixture
 def mock_lab_service():
     """Mock lab manager service for integration testing"""

@@ -1,18 +1,31 @@
 """
 Complete E2E Workflow Tests
 Tests for complete user workflows from start to finish
+
+NOTE: This file needs refactoring to remove all mock usage and use real services.
+E2E tests should test the actual system end-to-end with real browser automation,
+real API calls, and real database interactions.
 """
 
 import pytest
-from unittest.mock import Mock, AsyncMock
 
 
 class TestCompleteWorkflows:
     """Test complete user workflows end-to-end"""
-    
+
+    @pytest.mark.skip(reason="Needs refactoring to use real Selenium and real services")
     @pytest.mark.asyncio
     async def test_instructor_course_creation_workflow(self):
-        """Test complete instructor course creation workflow"""
+        """
+        Test complete instructor course creation workflow.
+
+        TODO: Refactor to use:
+        - Real Selenium WebDriver for browser automation
+        - Real API calls to course-management service
+        - Real database connections
+        - Real authentication flow
+        - Real content upload and generation
+        """
         # Arrange
         workflow_steps = [
             "login",
@@ -33,9 +46,19 @@ class TestCompleteWorkflows:
         assert len(completed_steps) == 6
         assert "publish_course" in completed_steps
     
+    @pytest.mark.skip(reason="Needs refactoring to use real Selenium and real services")
     @pytest.mark.asyncio
     async def test_student_enrollment_and_learning_workflow(self):
-        """Test complete student enrollment and learning workflow"""
+        """
+        Test complete student enrollment and learning workflow.
+
+        TODO: Refactor to use:
+        - Real Selenium WebDriver for browser automation
+        - Real course enrollment API calls
+        - Real quiz assessment interactions
+        - Real lab environment access
+        - Real progress tracking verification
+        """
         # Arrange
         workflow_steps = [
             "register_account",

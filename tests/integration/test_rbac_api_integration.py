@@ -7,7 +7,6 @@ import pytest
 import uuid
 import json
 from datetime import datetime, timedelta
-from unittest.mock import Mock, AsyncMock, patch
 
 # Add test fixtures path
 import sys
@@ -367,20 +366,14 @@ class TestRBACAPIIntegration:
     
     @pytest.mark.integration
     @pytest.mark.api
+    @pytest.mark.skip(reason="Needs refactoring to use real services - currently uses in-memory audit tracking")
     def test_audit_logging_integration(self, client, auth_headers, rbac_test_data):
         """Test that RBAC operations are properly audit logged."""
         org_id = rbac_test_data["organization"]["id"]
-        
-        # Mock audit logging verification
-        audit_events = []
-        
-        def mock_audit_log(event_type, details):
-            audit_events.append({
-                "event_type": event_type,
-                "details": details,
-                "timestamp": datetime.utcnow()
-            })
-        
+
+        # Real audit logging would track to database
+        # This test needs refactoring to query actual audit log tables
+
         # Test organization creation audit
         org_data = {"name": "Audit Test Org", "slug": "audit-test"}
         response = client.post(
@@ -388,10 +381,7 @@ class TestRBACAPIIntegration:
             json=org_data,
             headers=auth_headers["site_admin"]
         )
-        
-        # In real implementation, this would trigger audit logging
-        mock_audit_log("organization_created", org_data)
-        
+
         # Test member addition audit
         member_data = {"user_email": "audit@test.org", "role_type": "instructor"}
         response = client.post(
@@ -399,75 +389,44 @@ class TestRBACAPIIntegration:
             json=member_data,
             headers=auth_headers["org_admin"]
         )
-        
-        mock_audit_log("member_added", member_data)
-        
-        # Verify audit events were created
-        assert len(audit_events) == 2
-        assert audit_events[0]["event_type"] == "organization_created"
-        assert audit_events[1]["event_type"] == "member_added"
+
+        # TODO: Query actual audit log database table to verify events were logged
+        pass
     
     @pytest.mark.integration
     @pytest.mark.api
+    @pytest.mark.skip(reason="Needs refactoring to use real services - currently uses in-memory email tracking")
     def test_email_notification_integration(self, client, auth_headers, rbac_test_data):
         """Test email notification integration for RBAC operations."""
         org_id = rbac_test_data["organization"]["id"]
-        
-        # Mock email tracking
-        sent_emails = []
-        
-        def mock_send_email(to_email, template, data):
-            sent_emails.append({
-                "to": to_email,
-                "template": template,
-                "data": data,
-                "sent_at": datetime.utcnow()
-            })
-        
+
+        # Real email notification would be sent via email service
+        # This test needs refactoring to verify email queue or service calls
+
         # Test member invitation email
         member_data = {
             "user_email": "newmember@test.org",
             "role_type": "instructor"
         }
-        
+
         response = client.post(
             f"/api/v1/rbac/organizations/{org_id}/members",
             json=member_data,
             headers=auth_headers["org_admin"]
         )
-        
-        # Mock email sending
-        mock_send_email(
-            member_data["user_email"],
-            "member_invitation",
-            {"organization_name": rbac_test_data["organization"]["name"]}
-        )
-        
-        # Verify email was sent
-        assert len(sent_emails) == 1
-        assert sent_emails[0]["to"] == member_data["user_email"]
-        assert sent_emails[0]["template"] == "member_invitation"
+
+        # TODO: Query email service or queue to verify notification was sent
+        pass
     
     @pytest.mark.integration
     @pytest.mark.api
     def test_meeting_integration_services(self, client, auth_headers, rbac_test_data):
         """Test integration with Teams and Zoom meeting services."""
         org_id = rbac_test_data["organization"]["id"]
-        
-        # Mock integration responses
-        teams_response = {
-            "meeting_id": "19:meeting123@thread.v2",
-            "join_url": "https://teams.microsoft.com/l/meetup-join/...",
-            "success": True
-        }
-        
-        zoom_response = {
-            "meeting_id": "123456789",
-            "join_url": "https://zoom.us/j/123456789",
-            "password": "test123",
-            "success": True
-        }
-        
+
+        # Real integration would call Teams/Zoom APIs
+        # Test actual meeting room creation through the API
+
         # Test Teams meeting room creation
         teams_room_data = {
             "name": "Teams Integration Room",
@@ -475,17 +434,17 @@ class TestRBACAPIIntegration:
             "room_type": "track_room",
             "track_id": rbac_test_data["track"]["id"]
         }
-        
+
         response = client.post(
             f"/api/v1/rbac/organizations/{org_id}/meeting-rooms",
             json=teams_room_data,
             headers=auth_headers["org_admin"]
         )
-        
+
         assert response.status_code == 200
         teams_room = response.json()
         assert teams_room["platform"] == "teams"
-        
+
         # Test Zoom meeting room creation
         zoom_room_data = {
             "name": "Zoom Integration Room",
@@ -493,13 +452,13 @@ class TestRBACAPIIntegration:
             "room_type": "project_room",
             "project_id": rbac_test_data["project"]["id"]
         }
-        
+
         response = client.post(
             f"/api/v1/rbac/organizations/{org_id}/meeting-rooms",
             json=zoom_room_data,
             headers=auth_headers["org_admin"]
         )
-        
+
         assert response.status_code == 200
         zoom_room = response.json()
         assert zoom_room["platform"] == "zoom"

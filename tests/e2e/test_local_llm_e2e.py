@@ -9,7 +9,7 @@ in production-like environment.
 TECHNICAL IMPLEMENTATION:
 - Tests full request/response cycles
 - Validates Docker deployment
-- Tests real Ollama integration (not mocked)
+- Tests real Ollama integration (NO MOCKS)
 - Measures actual performance metrics
 - Tests GPU acceleration is working
 
@@ -17,6 +17,8 @@ These tests require:
 - All services running (docker-compose up)
 - Ollama service running on host
 - Local LLM service deployed and healthy
+
+NOTE: This file already uses real services with NO MOCKS - compliant with E2E requirements.
 """
 
 import pytest

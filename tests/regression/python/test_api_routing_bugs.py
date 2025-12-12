@@ -22,7 +22,6 @@ Git Commits:
 
 import pytest
 import requests
-from unittest.mock import Mock, patch, MagicMock
 from urllib.parse import urlparse, urljoin
 
 

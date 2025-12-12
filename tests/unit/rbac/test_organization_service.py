@@ -6,7 +6,7 @@ Tests the organization management service functionality
 import pytest
 import uuid
 from datetime import datetime, timedelta
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import Mock
 
 # Add test fixtures path
 import sys
@@ -28,10 +28,12 @@ class TestOrganizationService:
     @pytest.fixture
     def organization_service(self, mock_organization_repository, mock_audit_logger, mock_email_service):
         """Create organization service with mocked dependencies."""
-        from unittest.mock import Mock, AsyncMock
-        
-        # Mock the service class
-        service = Mock()
+
+        class OrganizationServiceStub:
+            pass
+
+        # Create the service class
+        service = OrganizationServiceStub()
         service._organization_repository = mock_organization_repository
         service.audit_logger = mock_audit_logger
         service.email_service = mock_email_service
@@ -112,9 +114,10 @@ class TestOrganizationService:
         slug = "new-test-org" 
         description = "A new test organization"
         
-        # Mock repository to return False for slug existence check
-        from unittest.mock import AsyncMock
-        organization_service._organization_repository.exists_by_slug = AsyncMock(return_value=False)
+        # Configure repository to return False for slug existence check
+        async def exists_by_slug_false(slug):
+            return False
+        organization_service._organization_repository.exists_by_slug = exists_by_slug_false
         
         # Act
         result = await organization_service.create_organization(name=name, slug=slug, description=description)
@@ -135,8 +138,10 @@ class TestOrganizationService:
         slug = "existing-slug"
         description = "Organization with duplicate slug"
         
-        # Mock repository to simulate duplicate slug exists
-        organization_service._organization_repository.exists_by_slug = AsyncMock(return_value=True)
+        # Configure repository to simulate duplicate slug exists
+        async def exists_by_slug_true(slug):
+            return True
+        organization_service._organization_repository.exists_by_slug = exists_by_slug_true
         
         # Act & Assert
         with pytest.raises(ValueError, match="Organization with slug 'existing-slug' already exists"):

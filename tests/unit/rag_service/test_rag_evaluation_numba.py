@@ -15,6 +15,9 @@ CPU-INTENSIVE FUNCTIONS IDENTIFIED:
 1. _simple_text_similarity() - Called N*M times for context matching
 2. _calculate_faithfulness() - Sentence-level word overlap calculations
 3. _calculate_aggregated_metrics() - Array operations on large result sets
+
+NOTE: This is a TDD test file - tests are written before implementation.
+These tests define the expected behavior of the numba-optimized functions.
 """
 
 import pytest
@@ -42,6 +45,8 @@ class TestNumbaTextSimilarity:
     - Convert word sets to numpy arrays
     - Use numba-optimized set operations
     - Avoid Python string operations in hot loop
+
+    NOTE: Tests define expected behavior - implementation pending
     """
 
     def test_identical_texts_should_return_1(self):
@@ -82,6 +87,8 @@ class TestNumbaFaithfulness:
     - Vectorize sentence word overlap calculations
     - Use numpy for set operations
     - Parallelize sentence-level computations if possible
+
+    NOTE: Tests define expected behavior - implementation pending
     """
 
     @pytest.mark.asyncio
@@ -124,6 +131,8 @@ class TestNumbaAggregatedMetrics:
     - List comprehensions extracting metric values
     - Multiple passes over results list
     - Can be optimized with single-pass extraction into numpy arrays
+
+    NOTE: Tests define expected behavior - implementation pending
     """
 
     def test_should_calculate_correct_statistics(self):
@@ -151,6 +160,8 @@ class TestNumbaHelperFunctions:
     1. Word tokenization (split + lowercase)
     2. Set operations (intersection, union)
     3. Array extraction from results
+
+    NOTE: Tests define expected behavior - implementation pending
     """
 
     def test_tokenize_text_numba(self):
@@ -182,6 +193,8 @@ class TestBehavioralEquivalence:
     - Generate diverse test cases
     - Run both Python and numba implementations
     - Assert exact equality (within floating point tolerance)
+
+    NOTE: Tests define expected behavior - implementation pending
     """
 
     def test_text_similarity_equivalence_comprehensive(self):
@@ -213,6 +226,8 @@ class TestPerformanceImprovement:
     - Aggregation: 10x+ speedup (target: 20x)
 
     These tests will be run after implementation to validate speedup
+
+    NOTE: Performance tests - will be implemented after optimization
     """
 
     def test_similarity_speedup_meets_target(self, benchmark):

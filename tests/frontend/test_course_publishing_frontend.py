@@ -14,7 +14,6 @@ from selenium.webdriver.support.ui import Select
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 import time
-from unittest.mock import patch, Mock
 
 # Test configuration
 FRONTEND_BASE_URL = 'http://localhost:3000'

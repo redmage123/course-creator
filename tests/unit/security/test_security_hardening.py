@@ -35,7 +35,6 @@ import sys
 import pytest
 from pathlib import Path
 from typing import List, Dict, Any, Tuple
-from unittest.mock import MagicMock, patch, AsyncMock
 
 # Add project root to path for imports
 PROJECT_ROOT = Path(__file__).parent.parent.parent.parent

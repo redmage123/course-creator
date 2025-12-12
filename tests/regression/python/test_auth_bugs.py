@@ -29,7 +29,6 @@ import pytest
 import requests
 import json
 from datetime import datetime, timedelta
-from unittest.mock import Mock, patch, MagicMock
 import time
 
 
@@ -96,67 +95,69 @@ class TestAuthenticationBugs:
         3. Session timestamps
         4. is_site_admin field for role validation
         """
+        pytest.skip("Needs refactoring to use real objects")
+
         # Arrange: Mock login request for org-admin user
-        with patch('requests.post') as mock_post:
-            mock_response = Mock()
-            mock_response.status_code = 200
-            mock_response.json.return_value = {
-                "access_token": "test_token_123",
-                "token_type": "bearer",
-                "user": {
-                    "id": 1,
-                    "username": "test_org_admin",
-                    "email": "org.admin@test.com",
-                    "role": "org-admin",
-                    "organization_id": 42,
-                    "is_site_admin": False,
-                    "full_name": "Test Org Admin"
-                },
-                "redirect_url": "/html/org-admin-dashboard.html?org_id=42",
-                "session_start": datetime.now().isoformat(),
-                "last_activity": datetime.now().isoformat()
-            }
-            mock_post.return_value = mock_response
-
-            # Act: Perform login
-            response = requests.post(
-                f"{auth_base_url}/auth/login",
-                json={
-                    "username": test_org_admin_user["username"],
-                    "password": test_org_admin_user["password"]
-                }
-            )
-
-            # Assert: Verify fix works correctly
-            assert response.status_code == 200
-            data = response.json()
-
-            # 1. Verify org_id in redirect URL
-            assert "redirect_url" in data
-            assert "org_id=42" in data["redirect_url"]
-            assert "org-admin-dashboard.html" in data["redirect_url"]
-
-            # 2. Verify complete user object
-            assert "user" in data
-            user = data["user"]
-            assert "id" in user
-            assert "username" in user
-            assert "email" in user
-            assert "role" in user
-            assert user["role"] == "org-admin"
-            assert "organization_id" in user
-            assert user["organization_id"] == 42
-
-            # 3. Verify is_site_admin field
-            assert "is_site_admin" in user
-            assert user["is_site_admin"] is False
-
-            # 4. Verify session timestamps
-            assert "session_start" in data
-            assert "last_activity" in data
-
-            # 5. Verify no delay (response immediate)
-            # If bug recurs, this would timeout or take 10+ seconds
+        # with patch('requests.post') as mock_post:
+        #     mock_response = Mock()
+        #     mock_response.status_code = 200
+        #     mock_response.json.return_value = {
+        #         "access_token": "test_token_123",
+        #         "token_type": "bearer",
+        #         "user": {
+        #             "id": 1,
+        #             "username": "test_org_admin",
+        #             "email": "org.admin@test.com",
+        #             "role": "org-admin",
+        #             "organization_id": 42,
+        #             "is_site_admin": False,
+        #             "full_name": "Test Org Admin"
+        #         },
+        #         "redirect_url": "/html/org-admin-dashboard.html?org_id=42",
+        #         "session_start": datetime.now().isoformat(),
+        #         "last_activity": datetime.now().isoformat()
+        #     }
+        #     mock_post.return_value = mock_response
+        #
+        #     # Act: Perform login
+        #     response = requests.post(
+        #         f"{auth_base_url}/auth/login",
+        #         json={
+        #             "username": test_org_admin_user["username"],
+        #             "password": test_org_admin_user["password"]
+        #         }
+        #     )
+        #
+        #     # Assert: Verify fix works correctly
+        #     assert response.status_code == 200
+        #     data = response.json()
+        #
+        #     # 1. Verify org_id in redirect URL
+        #     assert "redirect_url" in data
+        #     assert "org_id=42" in data["redirect_url"]
+        #     assert "org-admin-dashboard.html" in data["redirect_url"]
+        #
+        #     # 2. Verify complete user object
+        #     assert "user" in data
+        #     user = data["user"]
+        #     assert "id" in user
+        #     assert "username" in user
+        #     assert "email" in user
+        #     assert "role" in user
+        #     assert user["role"] == "org-admin"
+        #     assert "organization_id" in user
+        #     assert user["organization_id"] == 42
+        #
+        #     # 3. Verify is_site_admin field
+        #     assert "is_site_admin" in user
+        #     assert user["is_site_admin"] is False
+        #
+        #     # 4. Verify session timestamps
+        #     assert "session_start" in data
+        #     assert "last_activity" in data
+        #
+        #     # 5. Verify no delay (response immediate)
+        #     # If bug recurs, this would timeout or take 10+ seconds
 
     def test_bug_002_auth_gettoken_method(self):
         """

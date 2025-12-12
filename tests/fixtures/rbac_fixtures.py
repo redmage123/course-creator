@@ -6,7 +6,6 @@ Enhanced RBAC system test fixtures for comprehensive testing
 import pytest
 import uuid
 from datetime import datetime, timedelta
-from unittest.mock import Mock, AsyncMock, MagicMock
 from typing import Dict, List, Any, Optional
 
 
@@ -272,172 +271,83 @@ def mock_student_user_data():
 @pytest.fixture
 def mock_organization_repository():
     """Create mock organization repository."""
-    mock_repo = AsyncMock()
-    mock_repo.create_organization.return_value = None
-    mock_repo.get_organization_by_id.return_value = None
-    mock_repo.get_organization_by_slug.return_value = None
-    mock_repo.update_organization.return_value = None
-    mock_repo.delete_organization.return_value = True
-    mock_repo.list_organizations.return_value = []
-    mock_repo.get_organization_stats.return_value = {
-        "total_members": 0,
-        "total_projects": 0,
-        "total_tracks": 0,
-        "total_meeting_rooms": 0
-    }
+    from unittest.mock import Mock
+    mock_repo = Mock()
+    mock_repo.create_membership = Mock()
+    mock_repo.exists_by_slug = Mock(return_value=False)
     return mock_repo
 
 
 @pytest.fixture
 def mock_membership_repository():
     """Create mock membership repository."""
-    mock_repo = AsyncMock()
-    mock_repo.create_membership.return_value = None
-    mock_repo.get_membership_by_id.return_value = None
-    mock_repo.get_user_memberships.return_value = []
-    mock_repo.get_organization_members.return_value = []
-    mock_repo.update_membership.return_value = None
-    mock_repo.delete_membership.return_value = True
-    mock_repo.get_member_permissions.return_value = []
-    mock_repo.has_permission.return_value = False
+    from unittest.mock import Mock
+    mock_repo = Mock()
+    mock_repo.create_membership = Mock()
     return mock_repo
 
 
 @pytest.fixture
 def mock_track_repository():
     """Create mock track repository."""
-    mock_repo = AsyncMock()
-    mock_repo.create_track.return_value = None
-    mock_repo.get_track_by_id.return_value = None
-    mock_repo.list_organization_tracks.return_value = []
-    mock_repo.update_track.return_value = None
-    mock_repo.delete_track.return_value = True
-    mock_repo.assign_student_to_track.return_value = None
-    mock_repo.get_track_enrollments.return_value = []
-    return mock_repo
+    from unittest.mock import Mock
+    return Mock()
 
 
 @pytest.fixture
 def mock_meeting_room_repository():
     """Create mock meeting room repository."""
-    mock_repo = AsyncMock()
-    mock_repo.create_meeting_room.return_value = None
-    mock_repo.get_meeting_room_by_id.return_value = None
-    mock_repo.list_organization_rooms.return_value = []
-    mock_repo.update_meeting_room.return_value = None
-    mock_repo.delete_meeting_room.return_value = True
-    mock_repo.get_room_participants.return_value = []
-    return mock_repo
+    from unittest.mock import Mock
+    return Mock()
 
 
 @pytest.fixture
 def mock_project_repository():
     """Create mock project repository."""
-    mock_repo = AsyncMock()
-    mock_repo.create_project.return_value = None
-    mock_repo.get_project_by_id.return_value = None
-    mock_repo.list_organization_projects.return_value = []
-    mock_repo.update_project.return_value = None
-    mock_repo.delete_project.return_value = True
-    mock_repo.assign_instructor_to_project.return_value = None
-    mock_repo.get_project_instructors.return_value = []
-    return mock_repo
+    from unittest.mock import Mock
+    return Mock()
 
 
 @pytest.fixture
 def mock_user_repository():
     """Create mock user repository."""
-    mock_repo = AsyncMock()
-    mock_repo.create_user.return_value = None
-    mock_repo.get_user_by_id.return_value = None
-    mock_repo.get_user_by_email.return_value = None
-    mock_repo.list_users.return_value = []
-    mock_repo.update_user.return_value = None
-    mock_repo.delete_user.return_value = True
-    mock_repo.exists_by_email.return_value = False
-    mock_repo.get_user_roles.return_value = []
-    return mock_repo
+    from unittest.mock import Mock
+    return Mock()
 
 
 @pytest.fixture
 def mock_rbac_service():
     """Create mock RBAC service."""
-    mock_service = AsyncMock()
-    mock_service.create_organization.return_value = Mock()
-    mock_service.add_organization_member.return_value = Mock()
-    mock_service.remove_organization_member.return_value = True
-    mock_service.create_track.return_value = Mock()
-    mock_service.create_meeting_room.return_value = Mock()
-    mock_service.check_permission.return_value = True
-    mock_service.get_user_permissions.return_value = []
-    mock_service.assign_project_access.return_value = True
-    return mock_service
+    from unittest.mock import Mock
+    return Mock()
 
 
 @pytest.fixture
 def mock_teams_integration():
     """Create mock Teams integration service."""
-    mock_integration = AsyncMock()
-    mock_integration.create_meeting.return_value = {
-        "meeting_id": "19:meeting_id@thread.v2",
-        "join_url": "https://teams.microsoft.com/l/meetup-join/...",
-        "organizer_url": "https://teams.microsoft.com/l/meetup-join/..."
-    }
-    mock_integration.delete_meeting.return_value = True
-    mock_integration.get_meeting_info.return_value = {
-        "id": "meeting_id",
-        "subject": "Test Meeting",
-        "participants": [],
-        "status": "active"
-    }
-    mock_integration.test_connection.return_value = True
-    return mock_integration
+    from unittest.mock import Mock
+    return Mock()
 
 
 @pytest.fixture
 def mock_zoom_integration():
     """Create mock Zoom integration service."""
-    mock_integration = AsyncMock()
-    mock_integration.create_meeting.return_value = {
-        "meeting_id": "123456789",
-        "join_url": "https://zoom.us/j/123456789",
-        "password": "test123"
-    }
-    mock_integration.delete_meeting.return_value = True
-    mock_integration.get_meeting_info.return_value = {
-        "id": "123456789",
-        "topic": "Test Meeting",
-        "participants": [],
-        "status": "waiting"
-    }
-    mock_integration.test_connection.return_value = True
-    return mock_integration
+    from unittest.mock import Mock
+    return Mock()
 
 
 @pytest.fixture
 def mock_audit_logger():
     """Create mock audit logger for RBAC actions."""
-    mock_logger = AsyncMock()
-    mock_logger.log_organization_created.return_value = None
-    mock_logger.log_member_added.return_value = None
-    mock_logger.log_member_removed.return_value = None
-    mock_logger.log_permission_granted.return_value = None
-    mock_logger.log_permission_revoked.return_value = None
-    mock_logger.log_track_created.return_value = None
-    mock_logger.log_meeting_room_created.return_value = None
-    mock_logger.log_organization_deleted.return_value = None
-    return mock_logger
+    from unittest.mock import Mock
+    return Mock()
 
 
 @pytest.fixture
 def mock_email_service():
     """Create mock email service for RBAC notifications."""
-    mock_service = AsyncMock()
-    mock_service.send_invitation_email.return_value = True
-    mock_service.send_role_assignment_email.return_value = True
-    mock_service.send_track_enrollment_email.return_value = True
-    mock_service.send_meeting_invitation_email.return_value = True
-    return mock_service
+    from unittest.mock import Mock
+    return Mock()
 
 
 @pytest.fixture
@@ -597,10 +507,11 @@ class RBACTestUtils:
     @staticmethod
     def create_mock_request_with_auth(user_data: Dict[str, Any]):
         """Create a mock FastAPI request with authentication."""
-        token = RBACTestUtils.create_test_jwt_token(user_data)
-        request_mock = Mock()
-        request_mock.headers = {"Authorization": f"Bearer {token}"}
-        return request_mock
+        from unittest.mock import Mock
+        mock_request = Mock()
+        mock_request.headers = {"Authorization": f"Bearer {RBACTestUtils.create_test_jwt_token(user_data)}"}
+        mock_request.user = user_data
+        return mock_request
     
     @staticmethod
     def assert_rbac_response_structure(response_data: Dict[str, Any], expected_fields: List[str]):

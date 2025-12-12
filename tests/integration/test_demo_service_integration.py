@@ -9,7 +9,6 @@ import asyncio
 from datetime import datetime, timedelta
 import json
 import time
-from unittest.mock import patch, MagicMock
 
 from tests.framework.test_config import TestConfig
 from tests.utils import wait_for_service, create_test_session

@@ -6,7 +6,6 @@ Tests JavaScript modules, UI interactions, and browser-based functionality
 import pytest
 import json
 import time
-from unittest.mock import Mock, patch, MagicMock
 from pathlib import Path
 import tempfile
 import asyncio
@@ -18,11 +17,11 @@ class MockWindow:
     def __init__(self):
         self.localStorage = MockLocalStorage()
         self.locations = MockLocation()
-        self.addEventListener = Mock()
-        self.removeEventListener = Mock()
-        self.open = Mock()
-        self.focus = Mock()
-        self.postMessage = Mock()
+        self.addEventListener = lambda *args: None
+        self.removeEventListener = lambda *args: None
+        self.open = lambda *args: None
+        self.focus = lambda *args: None
+        self.postMessage = lambda *args: None
         self.closed = False
         
     def alert(self, message):
@@ -66,12 +65,12 @@ class MockDocument:
         self.readyState = "complete"
         self.hidden = False
         self.visibilityState = "visible"
-        self.addEventListener = Mock()
-        self.removeEventListener = Mock()
-        self.createElement = Mock(return_value=MockElement())
-        self.getElementById = Mock(return_value=MockElement())
-        self.querySelector = Mock(return_value=MockElement())
-        self.querySelectorAll = Mock(return_value=[MockElement()])
+        self.addEventListener = lambda *args: None
+        self.removeEventListener = lambda *args: None
+        self.createElement = lambda *args: MockElement()
+        self.getElementById = lambda *args: MockElement()
+        self.querySelector = lambda *args: MockElement()
+        self.querySelectorAll = lambda *args: [MockElement()]
         self.body = MockElement()
         self.head = MockElement()
 
@@ -88,10 +87,10 @@ class MockElement:
         self.dataset = {}
         self.parentElement = None
         self.children = []
-        self.addEventListener = Mock()
-        self.removeEventListener = Mock()
-        self.appendChild = Mock()
-        self.remove = Mock()
+        self.addEventListener = lambda *args: None
+        self.removeEventListener = lambda *args: None
+        self.appendChild = lambda *args: None
+        self.remove = lambda *args: None
         
     def getAttribute(self, name):
         return getattr(self, name, None)

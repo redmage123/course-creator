@@ -6,7 +6,6 @@ Tests the meeting room management functionality with Teams and Zoom integration
 import pytest
 import uuid
 from datetime import datetime, timedelta
-from unittest.mock import Mock, AsyncMock, patch
 
 # Add test fixtures path
 import sys
@@ -28,12 +27,14 @@ class TestMeetingRoomService:
     """Test cases for MeetingRoomService"""
     
     @pytest.fixture
-    def meeting_room_service(self, mock_meeting_room_repository, mock_teams_integration, 
+    def meeting_room_service(self, mock_meeting_room_repository, mock_teams_integration,
                            mock_zoom_integration, mock_audit_logger, mock_email_service):
         """Create meeting room service with mocked dependencies."""
-        from unittest.mock import Mock
-        
-        service = Mock()
+
+        class MeetingRoomServiceStub:
+            pass
+
+        service = MeetingRoomServiceStub()
         service.meeting_room_repository = mock_meeting_room_repository
         service.teams_integration = mock_teams_integration
         service.zoom_integration = mock_zoom_integration

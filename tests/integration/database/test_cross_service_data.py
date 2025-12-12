@@ -1,1 +1,0 @@
-# Generated database integration tests

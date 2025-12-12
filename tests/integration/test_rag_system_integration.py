@@ -33,7 +33,6 @@ from typing import Dict, List, Any, Optional
 
 import pytest
 import httpx
-from unittest.mock import AsyncMock, patch
 
 # Setup logging for test execution
 logging.basicConfig(level=logging.INFO)

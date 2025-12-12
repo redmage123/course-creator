@@ -1,1 +1,0 @@
-# Generated event integration tests
