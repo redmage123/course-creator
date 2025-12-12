@@ -141,17 +141,19 @@ export const OrgAdminDashboard: React.FC = () => {
       {seoElement}
       <DashboardLayout>
       <div className={styles['org-admin-dashboard']}>
+        {/* Organization Title - Prominent at top */}
+        <div className={styles['org-header']}>
+          <div className={styles['org-title-row']}>
+            <i className="fas fa-building" aria-hidden="true"></i>
+            <h1 className={styles['org-title']}>{orgName}</h1>
+          </div>
+          <p className={styles['org-subtitle']}>Organization Administration Dashboard</p>
+        </div>
+
         {/* Welcome Section */}
         <div className={styles['welcome-section']}>
-          <div className={styles['org-name-badge']}>
-            <i className="fas fa-building" aria-hidden="true"></i>
-            <span>{orgName}</span>
-          </div>
-          <Heading level="h1" gutterBottom>
-            Organization Administration
-          </Heading>
           <p className={styles['welcome-text']}>
-            Welcome, {displayName}! Manage {orgName}'s corporate trainers, enroll students in IT training programs, and track organizational learning metrics.
+            Welcome, {displayName}! Manage your corporate trainers, enroll students in IT training programs, and track organizational learning metrics.
           </p>
         </div>
 

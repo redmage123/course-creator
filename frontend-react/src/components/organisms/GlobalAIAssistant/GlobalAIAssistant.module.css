@@ -108,10 +108,29 @@
 /* Messages Container */
 .messagesContainer {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: scroll; /* Always show scrollbar */
   padding: 16px;
   max-height: 400px;
   min-height: 200px;
+}
+
+/* Custom scrollbar styling for the chat widget */
+.messagesContainer::-webkit-scrollbar {
+  width: 8px;
+}
+
+.messagesContainer::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.messagesContainer::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 4px;
+}
+
+.messagesContainer::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }
 
 /* Empty State */

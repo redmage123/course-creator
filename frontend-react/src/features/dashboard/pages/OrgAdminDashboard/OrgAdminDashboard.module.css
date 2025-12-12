@@ -19,6 +19,43 @@
 }
 
 /* ============================================================================
+ * ORGANIZATION HEADER - First thing at the top
+ * ============================================================================ */
+
+.org-header {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.org-title-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.org-title-row i {
+  font-size: 32px;
+  color: #2563eb;
+}
+
+.org-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.org-subtitle {
+  font-size: 16px;
+  color: #64748b;
+  margin: 0;
+  padding-left: 48px; /* Align with title text (icon width + gap) */
+}
+
+/* ============================================================================
  * WELCOME SECTION
  * ============================================================================ */
 
@@ -29,28 +66,8 @@
 .welcome-text {
   font-size: 16px;
   color: #64748b;
-  margin: 8px 0 0 0;
+  margin: 0;
   line-height: 1.6;
-}
-
-/* Organization Name Badge - Prominent display */
-.org-name-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 20px;
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  color: #ffffff;
-  font-size: 18px;
-  font-weight: 600;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
-}
-
-.org-name-badge i {
-  font-size: 20px;
-  opacity: 0.9;
 }
 
 /* ============================================================================
