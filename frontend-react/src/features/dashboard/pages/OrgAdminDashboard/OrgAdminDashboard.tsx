@@ -143,6 +143,10 @@ export const OrgAdminDashboard: React.FC = () => {
       <div className={styles['org-admin-dashboard']}>
         {/* Welcome Section */}
         <div className={styles['welcome-section']}>
+          <div className={styles['org-name-badge']}>
+            <i className="fas fa-building" aria-hidden="true"></i>
+            <span>{orgName}</span>
+          </div>
           <Heading level="h1" gutterBottom>
             Organization Administration
           </Heading>

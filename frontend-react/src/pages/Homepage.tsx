@@ -14,8 +14,9 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { SEO } from '@components/common/SEO';
+import { useAuth } from '@hooks/useAuth';
 import styles from './Homepage.module.css';
 
 /**
@@ -142,6 +143,32 @@ export const Homepage = () => {
   const [selectedFeature, setSelectedFeature] = useState<Feature | null>(null);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
+  const navigate = useNavigate();
+  const { isAuthenticated, role } = useAuth();
+
+  /**
+   * Redirect authenticated users to their appropriate dashboard
+   *
+   * BUSINESS LOGIC:
+   * When a logged-in user navigates to the homepage (e.g., clicking the logo
+   * or typing "/" in the URL), redirect them to their role-appropriate dashboard
+   * instead of showing the public landing page with login buttons.
+   */
+  useEffect(() => {
+    if (isAuthenticated && role) {
+      const dashboardRoutes: Record<string, string> = {
+        site_admin: '/dashboard/site-admin',
+        organization_admin: '/dashboard/org-admin',
+        instructor: '/dashboard/instructor',
+        student: '/dashboard/student',
+      };
+
+      const targetDashboard = dashboardRoutes[role];
+      if (targetDashboard) {
+        navigate(targetDashboard, { replace: true });
+      }
+    }
+  }, [isAuthenticated, role, navigate]);
 
   const openFeatureModal = useCallback((feature: Feature) => {
     setSelectedFeature(feature);

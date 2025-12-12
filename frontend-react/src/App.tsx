@@ -32,6 +32,9 @@ import { ComingSoon } from './pages/ComingSoon';
 // Global AI Assistant Widget
 import { GlobalAIAssistant } from './components/organisms/GlobalAIAssistant';
 
+// Floating Bug Report Button
+import { FloatingBugButton } from './components/common/FloatingBugButton';
+
 // Global Keyboard Handler (keyboard shortcuts)
 import { GlobalKeyboardHandler } from './components/common/GlobalKeyboardHandler';
 
@@ -804,6 +807,8 @@ function App() {
               </Suspense>
               {/* Global AI Assistant - Available on all pages */}
               <GlobalAIAssistant />
+              {/* Floating Bug Report Button - Available on all pages for authenticated users */}
+              <FloatingBugButton />
               {/* AI Assistant Welcome Popup - Shown on first login */}
               <WelcomePopupManager />
               {/* Global Keyboard Handler - Shortcuts available everywhere */}

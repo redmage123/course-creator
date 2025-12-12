@@ -33,6 +33,26 @@
   line-height: 1.6;
 }
 
+/* Organization Name Badge - Prominent display */
+.org-name-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 600;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+}
+
+.org-name-badge i {
+  font-size: 20px;
+  opacity: 0.9;
+}
+
 /* ============================================================================
  * STATS GRID
  * ============================================================================ */

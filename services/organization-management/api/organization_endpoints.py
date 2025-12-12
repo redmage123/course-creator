@@ -44,9 +44,9 @@ class OrganizationResponse(BaseModel):
     name: str
     slug: str
     description: Optional[str] = None
-    # Contact information
-    contact_phone: str
-    contact_email: str
+    # Contact information (optional for backwards compatibility)
+    contact_phone: Optional[str] = None
+    contact_email: Optional[str] = None
     # Subdivided address fields
     street_address: Optional[str] = None
     city: Optional[str] = None
