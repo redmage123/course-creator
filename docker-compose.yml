@@ -818,6 +818,62 @@ services:
       start_period: 40s
     restart: unless-stopped
 
+  # Bug Tracking Service - Automated bug analysis and fix generation (Port 8017)
+  bug-tracking:
+    image: course-creator-bug-tracking:latest
+    build:
+      context: ./services/bug-tracking
+      dockerfile: Dockerfile
+      cache_from:
+        - course-creator-bug-tracking:latest
+    env_file:
+      - .cc_env
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator?options=-csearch_path=course_creator,public
+      - REDIS_URL=redis://redis:6379
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres_password
+      - DB_NAME=course_creator
+      - ENVIRONMENT=docker
+      - DOCKER_CONTAINER=true
+      - SERVICE_NAME=bug-tracking
+      - LOG_LEVEL=INFO
+      - BUG_TRACKING_PORT=8017
+      - CLAUDE_MODEL=${CLAUDE_MODEL:-claude-sonnet-4-20250514}
+      - CODEBASE_PATH=/workspace
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_FROM_EMAIL=${SMTP_FROM_EMAIL:-noreply@coursecreator.ai}
+      - SERVICE_SSL_CERT=/app/ssl/nginx-selfsigned.crt
+      - SERVICE_SSL_KEY=/app/ssl/nginx-selfsigned.key
+      - REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+      - PYTHONPATH=/app
+    ports:
+      - "8017:8017"
+    volumes:
+      - ./shared:/app/shared:ro
+      - ./logs:/var/log/course-creator
+      - ./ssl:/app/ssl:ro
+      - .:/workspace:rw
+    networks:
+      - course-creator-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-k", "https://localhost:8017/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
   # Selenium Chrome - Stable browser automation for E2E tests
   selenium-chrome:
     image: selenium/standalone-chrome:119.0

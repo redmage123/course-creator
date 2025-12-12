@@ -118,7 +118,8 @@ parse_compose_config() {
     SERVICE_NAMES["frontend"]="Frontend"
     SERVICE_NAMES["postgres"]="PostgreSQL"
     SERVICE_NAMES["redis"]="Redis"
-    
+    SERVICE_NAMES["bug-tracking"]="Bug Tracking"
+
     return 0
 }
 
