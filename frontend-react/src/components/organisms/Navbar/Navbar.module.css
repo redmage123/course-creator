@@ -169,6 +169,33 @@
   outline-offset: 2px;
 }
 
+/* Icon Button (Bug Report, etc.) */
+.icon-button {
+  /* Layout */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 6px;
+
+  /* Color */
+  color: #64748b;
+  text-decoration: none;
+
+  /* Transitions */
+  transition: all 0.2s ease;
+}
+
+.icon-button:hover {
+  background-color: #fef2f2;
+  color: #dc2626;
+}
+
+.icon-button:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
 /* ============================================================================
  * USER MENU
  * ============================================================================ */

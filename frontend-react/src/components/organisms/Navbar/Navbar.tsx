@@ -244,6 +244,24 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className={styles['navbar-right']}>
           {isAuthenticated && user ? (
             <>
+              {/* Bug Report Icon */}
+              <Link
+                to="/bugs/submit"
+                className={styles['icon-button']}
+                title="Report a Bug"
+                aria-label="Report a bug"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M8 2v4M16 2v4M12 14v4M12 14l-3 3m3-3l3 3M9 10h.01M15 10h.01M3 8h18v13a2 2 0 01-2 2H5a2 2 0 01-2-2V8zM5 8V6a2 2 0 012-2h10a2 2 0 012 2v2"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </Link>
+
               {/* User Menu */}
               <div ref={userMenuRef} className={styles['user-menu-container']}>
                 <button
