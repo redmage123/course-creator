@@ -39,6 +39,7 @@ import pytest
 import requests
 import time
 import uuid
+import os
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 
@@ -48,6 +49,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 from tests.e2e.selenium_base import BasePage, BaseTest
+
+# Check if Selenium is configured
+SELENIUM_AVAILABLE = os.getenv('SELENIUM_REMOTE') is not None or os.getenv('HEADLESS') is not None
 
 
 # ============================================================================
@@ -314,6 +318,7 @@ class LearningPathPage(BasePage):
 # TEST CLASSES
 # ============================================================================
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.adaptive_learning
 class TestLearningPathCreation(BaseTest):
@@ -405,6 +410,7 @@ class TestLearningPathCreation(BaseTest):
             f"Expected validation error, got {result['status']}"
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.adaptive_learning
 class TestLearningPathNodeManagement(BaseTest):
@@ -515,6 +521,7 @@ class TestLearningPathNodeManagement(BaseTest):
                 assert result["status"] in [200, 401, 403, 404, 422]
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.adaptive_learning
 class TestPrerequisiteEnforcement(BaseTest):
@@ -570,6 +577,7 @@ class TestPrerequisiteEnforcement(BaseTest):
                     break
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.adaptive_learning
 class TestAIRecommendations(BaseTest):
@@ -654,6 +662,7 @@ class TestAIRecommendations(BaseTest):
             assert result["status"] in [200, 401, 403, 404, 422]
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.adaptive_learning
 class TestMasteryTracking(BaseTest):
@@ -768,6 +777,7 @@ class TestMasteryTracking(BaseTest):
                 assert skill_mastery.get("assessments_completed", 0) > 0
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.adaptive_learning
 class TestLearningPathLifecycle(BaseTest):
@@ -845,6 +855,7 @@ class TestLearningPathLifecycle(BaseTest):
             assert final_path["data"]["overall_progress"] >= 0
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.adaptive_learning
 class TestErrorHandling(BaseTest):
@@ -918,6 +929,7 @@ class TestErrorHandling(BaseTest):
                 assert result["status"] in [400, 422]
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.adaptive_learning
 class TestAccessControl(BaseTest):

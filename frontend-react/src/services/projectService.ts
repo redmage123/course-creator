@@ -225,6 +225,41 @@ class ProjectService {
   }
 
   /**
+   * Delete a project and all associated tracks, sub-projects, and assignments.
+   *
+   * BUSINESS CONTEXT:
+   * Organization admins can delete projects that are no longer needed.
+   * This is a destructive operation that cascades to all related entities:
+   * - All tracks under the project
+   * - All sub-projects/locations under the project
+   * - All track assignments (enrollments) under those tracks
+   *
+   * SAFETY FEATURES:
+   * - By default, projects with active enrollments cannot be deleted
+   * - Use force=true to override this safety check
+   *
+   * @param organizationId - Organization UUID
+   * @param projectId - Project UUID to delete
+   * @param force - If true, delete even with active enrollments
+   * @returns Deletion result with counts of deleted entities
+   */
+  async deleteProject(
+    organizationId: string,
+    projectId: string,
+    force: boolean = false
+  ): Promise<{
+    message: string;
+    project_id: string;
+    deleted_tracks: number;
+    deleted_subprojects: number;
+  }> {
+    const queryParam = force ? '?force=true' : '';
+    return await apiClient.delete(
+      `${this.baseUrl}/${organizationId}/projects/${projectId}${queryParam}`
+    );
+  }
+
+  /**
    * Helper: Read file as base64 encoded string
    */
   private readFileAsBase64(file: File): Promise<string> {

@@ -22,6 +22,7 @@ class RoomType(Enum):
     INSTRUCTOR_ROOM = "instructor_room"  # Personal instructor room
     PROJECT_ROOM = "project_room"    # Room for entire project
     ORGANIZATION_ROOM = "organization_room"  # Organization-wide room
+    VIRTUAL_CLASSROOM = "virtual_classroom"  # Schedule-based classroom room
 
 @dataclass
 

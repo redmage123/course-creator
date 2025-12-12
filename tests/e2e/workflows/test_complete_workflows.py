@@ -8,12 +8,17 @@ real API calls, and real database interactions.
 """
 
 import pytest
+import os
+
+# Check if Selenium is configured
+SELENIUM_AVAILABLE = os.getenv('SELENIUM_REMOTE') is not None or os.getenv('HEADLESS') is not None
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
+@pytest.mark.e2e
 class TestCompleteWorkflows:
     """Test complete user workflows end-to-end"""
 
-    @pytest.mark.skip(reason="Needs refactoring to use real Selenium and real services")
     @pytest.mark.asyncio
     async def test_instructor_course_creation_workflow(self):
         """
@@ -46,7 +51,6 @@ class TestCompleteWorkflows:
         assert len(completed_steps) == 6
         assert "publish_course" in completed_steps
     
-    @pytest.mark.skip(reason="Needs refactoring to use real Selenium and real services")
     @pytest.mark.asyncio
     async def test_student_enrollment_and_learning_workflow(self):
         """

@@ -23,6 +23,10 @@ and reducing frustration from "no results" searches.
 """
 
 import pytest
+import os
+
+# Check for Selenium availability
+SELENIUM_AVAILABLE = os.getenv('SELENIUM_REMOTE') is not None or os.getenv('HEADLESS') is not None
 import time
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -232,6 +236,7 @@ class StudentDashboardPage(BasePage):
         return titles[0] if titles else None
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.fuzzy_search
 class TestFuzzySearchSelenium(BaseTest):
@@ -419,6 +424,7 @@ class TestFuzzySearchSelenium(BaseTest):
         self.take_screenshot("fuzzy_search_multiple_typos_success")
 
     @pytest.mark.skip(reason="Visual similarity badges not yet implemented - pending feature")
+    @pytest.mark.e2e
     def test_fuzzy_search_shows_similarity_scores(self):
         """
         TEST 4: Similarity score badges displayed to user
@@ -517,6 +523,7 @@ class TestFuzzySearchSelenium(BaseTest):
         self.take_screenshot("fuzzy_search_no_match_fallback")
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.fuzzy_search
 @pytest.mark.performance
@@ -534,6 +541,7 @@ class TestFuzzySearchPerformance(BaseTest):
         self.dashboard = StudentDashboardPage(self.driver, self.config)
 
     @pytest.mark.skip(reason="Performance testing pending - needs timing instrumentation")
+    @pytest.mark.e2e
     def test_fuzzy_search_uses_cache_for_repeated_searches(self):
         """
         TEST 6: Repeated searches use client-side cache

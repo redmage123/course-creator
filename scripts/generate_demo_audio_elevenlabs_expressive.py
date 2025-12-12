@@ -123,7 +123,7 @@ First, <break time="0.2s"/> navigate to the home page and click the Login button
 
 <break time="0.3s"/>
 
-Now, enter the email address: <break time="0.3s"/> sarah at acmelearning dot edu.
+Now, enter the email address: <break time="0.3s"/> sarah at acmelearning dot <say-as interpret-as="characters">edu</say-as>.
 
 <break time="0.2s"/>
 

@@ -13,13 +13,15 @@
  * - Multi-IDE support (VSCode, JupyterLab, RStudio, Terminal)
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { DashboardLayout } from '../components/templates/DashboardLayout';
 import { Card } from '../components/atoms/Card';
 import { Button } from '../components/atoms/Button';
 import { Heading } from '../components/atoms/Heading';
 import { Input } from '../components/atoms/Input';
+import { useAuth } from '../hooks/useAuth';
+import { studentLabService } from '../features/labs/services/labService';
 
 /**
  * Lab Environment Interface
@@ -217,13 +219,123 @@ const mockLabEnvironments: LabEnvironment[] = [
  * - Quick access to resume in-progress labs
  * - IDE type badges help students identify lab environment type
  * - Difficulty and time estimates help with planning
+ *
+ * SECURITY FIX (v3.3.2):
+ * - Now fetches student-specific lab data from API
+ * - Prevents cross-user data leakage (OWASP A01:2021)
+ * - "Retry Lab" buttons only show for labs the student actually completed
  */
 export const LabEnvironmentsList: React.FC = () => {
-  const [labs] = useState<LabEnvironment[]>(mockLabEnvironments);
+  const { user } = useAuth();
+  const [labs, setLabs] = useState<LabEnvironment[]>(mockLabEnvironments);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'available' | 'in-progress' | 'completed'>('all');
   const [courseFilter, setCourseFilter] = useState<string>('all');
   const [difficultyFilter, setDifficultyFilter] = useState<'all' | 'beginner' | 'intermediate' | 'advanced'>('all');
+
+  /**
+   * Fetch student-specific lab data from API.
+   *
+   * SECURITY: This ensures each student only sees their own lab history,
+   * preventing the "Retry Lab" button from appearing for labs never attempted.
+   */
+  useEffect(() => {
+    const fetchStudentLabs = async () => {
+      if (!user?.id) {
+        // If no user logged in, show available labs only (all as 'available')
+        setLabs(mockLabEnvironments.map(lab => ({
+          ...lab,
+          status: 'available' as const,
+          progressPercentage: 0,
+          lastAccessedAt: undefined,
+          completedAt: undefined,
+          containerUrl: undefined
+        })));
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // Fetch student's actual lab history from API
+        const studentLabData = await studentLabService.getStudentLabs(user.id);
+
+        // Create a map of lab_id -> status from API response
+        const labStatusMap = new Map<string, {
+          status: string;
+          lastAccessedAt: string | null;
+          containerUrl?: string;
+        }>();
+
+        studentLabData.labs.forEach(lab => {
+          // Map API status to frontend status
+          let frontendStatus: 'available' | 'in-progress' | 'completed' = 'available';
+          if (lab.status === 'completed' || lab.status === 'stopped') {
+            frontendStatus = 'completed';
+          } else if (lab.status === 'running' || lab.status === 'paused') {
+            frontendStatus = 'in-progress';
+          }
+
+          labStatusMap.set(lab.lab_id, {
+            status: frontendStatus,
+            lastAccessedAt: lab.last_accessed,
+            containerUrl: lab.ide_urls?.vscode || lab.ide_urls?.jupyter || undefined
+          });
+        });
+
+        // Merge API data with available labs catalog
+        // Only show "completed" or "in-progress" for labs the student has actually used
+        const mergedLabs = mockLabEnvironments.map(lab => {
+          const studentLabStatus = labStatusMap.get(lab.id);
+
+          if (studentLabStatus) {
+            return {
+              ...lab,
+              status: studentLabStatus.status as LabEnvironment['status'],
+              progressPercentage: studentLabStatus.status === 'completed' ? 100 :
+                                  studentLabStatus.status === 'in-progress' ? 50 : 0,
+              lastAccessedAt: studentLabStatus.lastAccessedAt || undefined,
+              completedAt: studentLabStatus.status === 'completed' ?
+                           studentLabStatus.lastAccessedAt || undefined : undefined,
+              containerUrl: studentLabStatus.containerUrl
+            };
+          }
+
+          // Student has never used this lab - show as available
+          return {
+            ...lab,
+            status: 'available' as const,
+            progressPercentage: 0,
+            lastAccessedAt: undefined,
+            completedAt: undefined,
+            containerUrl: undefined
+          };
+        });
+
+        setLabs(mergedLabs);
+      } catch (err) {
+        console.error('Failed to fetch student labs:', err);
+        setError('Failed to load lab status. Showing available labs.');
+        // On error, show all labs as available (safe default)
+        setLabs(mockLabEnvironments.map(lab => ({
+          ...lab,
+          status: 'available' as const,
+          progressPercentage: 0,
+          lastAccessedAt: undefined,
+          completedAt: undefined,
+          containerUrl: undefined
+        })));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchStudentLabs();
+  }, [user?.id]);
 
   /**
    * Get unique course list for filter dropdown
@@ -338,6 +450,20 @@ export const LabEnvironmentsList: React.FC = () => {
             </Button>
           </Link>
         </div>
+
+        {/* Loading State */}
+        {isLoading && (
+          <Card variant="outlined" padding="large" style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+            <p style={{ margin: 0, color: '#666' }}>Loading lab environments...</p>
+          </Card>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <Card variant="outlined" padding="medium" style={{ marginBottom: '1.5rem', backgroundColor: '#fef3c7', borderColor: '#f59e0b' }}>
+            <p style={{ margin: 0, color: '#92400e' }}>⚠️ {error}</p>
+          </Card>
+        )}
 
         {/* Summary Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>

@@ -24,6 +24,10 @@ TECHNICAL IMPLEMENTATION:
 """
 
 import pytest
+import os as os_module
+
+# Check for Selenium availability
+SELENIUM_AVAILABLE = os_module.getenv('SELENIUM_REMOTE') is not None or os_module.getenv('HEADLESS') is not None
 import time
 import json
 from selenium import webdriver
@@ -40,6 +44,8 @@ sys.path.insert(0, os.path.dirname(__file__))
 from selenium_base import SeleniumConfig, ChromeDriverSetup
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
+@pytest.mark.e2e
 class TestGuestPrivacyJourneyE2E:
     """
     End-to-end tests for guest user privacy and cookie consent workflows

@@ -136,11 +136,12 @@ def driver(chrome_options, frontend_server, backend_services):
             pass
         
         yield driver
-        
+
         driver.quit()
-        
+
     except Exception as e:
-        pytest.skip(f"Chrome WebDriver setup failed: {e}. This is expected in environments without GUI support.")
+        # Allow tests to handle missing browser gracefully
+        pytest.skip(f"Chrome WebDriver not available: {e}")
 
 
 @pytest.fixture

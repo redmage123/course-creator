@@ -1,0 +1,331 @@
+/**
+ * Project Dropdown Styles
+ *
+ * Searchable dropdown with project hierarchy display.
+ * Follows design system patterns for consistency.
+ */
+
+.container {
+  position: relative;
+  width: 100%;
+}
+
+.container.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Label */
+.label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.required {
+  color: #ef4444;
+  margin-left: 4px;
+}
+
+/* Trigger Button */
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.trigger:hover {
+  border-color: #9ca3af;
+}
+
+.trigger:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.trigger.open {
+  border-color: #3b82f6;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.trigger.error {
+  border-color: #ef4444;
+}
+
+.trigger.error:focus {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+/* Placeholder */
+.placeholder {
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+/* Selected Value */
+.selectedValue {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.selectedName {
+  font-size: 14px;
+  color: #111827;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.selectedLocation {
+  font-size: 12px;
+  color: #6b7280;
+  padding: 2px 6px;
+  background: #f3f4f6;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.clearBtn {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  background: #e5e7eb;
+  border-radius: 50%;
+  color: #6b7280;
+  font-size: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.clearBtn:hover {
+  background: #d1d5db;
+  color: #374151;
+}
+
+/* Arrow */
+.arrow {
+  font-size: 10px;
+  color: #6b7280;
+  margin-left: 8px;
+}
+
+/* Dropdown */
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #3b82f6;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  max-height: 320px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Search */
+.searchContainer {
+  padding: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.searchInput:focus {
+  border-color: #3b82f6;
+}
+
+.searchInput::placeholder {
+  color: #9ca3af;
+}
+
+/* Options List */
+.optionsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Option */
+.option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.option:hover,
+.option.highlighted {
+  background: #f3f4f6;
+}
+
+.option.selected {
+  background: #eff6ff;
+}
+
+.option.subProject {
+  padding-left: 28px;
+  background: #fafafa;
+}
+
+.option.subProject:hover,
+.option.subProject.highlighted {
+  background: #f3f4f6;
+}
+
+.optionContent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.projectName {
+  font-size: 14px;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.subProjectIndicator {
+  color: #9ca3af;
+  margin-right: 4px;
+}
+
+.locationBadge {
+  font-size: 11px;
+  padding: 2px 6px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.optionMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.trackCount {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.statusBadge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: white;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+/* States */
+.loadingState,
+.errorState,
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 16px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e5e7eb;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.errorIcon {
+  font-size: 18px;
+}
+
+.retryBtn {
+  padding: 4px 10px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  margin-left: 8px;
+}
+
+.retryBtn:hover {
+  background: #2563eb;
+}
+
+/* Error Message */
+.errorMessage {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #ef4444;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .dropdown {
+    max-height: 250px;
+  }
+
+  .option {
+    padding: 12px;
+  }
+
+  .optionMeta {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+}

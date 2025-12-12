@@ -60,8 +60,9 @@ class TestBugJobProcessor:
     @pytest.fixture
     def job_processor(self):
         """Create job processor with test doubles."""
-        # Requires real implementations or proper test doubles
-        pytest.skip("Needs refactoring to use real services")
+        import os
+        if not os.getenv('TEST_DB_HOST'):
+            pytest.skip("TEST_DB_HOST not configured")
 
     @pytest.fixture
     def sample_bug(self):

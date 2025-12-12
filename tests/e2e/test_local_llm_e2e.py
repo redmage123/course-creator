@@ -22,6 +22,10 @@ NOTE: This file already uses real services with NO MOCKS - compliant with E2E re
 """
 
 import pytest
+import os
+
+# Check for Selenium availability - though this test doesn't use Selenium, we keep the pattern
+SELENIUM_AVAILABLE = os.getenv('SELENIUM_REMOTE') is not None or os.getenv('HEADLESS') is not None
 import requests
 import time
 from typing import Dict, Any

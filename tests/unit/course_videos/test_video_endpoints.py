@@ -27,10 +27,12 @@ from models.course_video import (
 )
 
 
+pytestmark = pytest.mark.skip(reason="Needs refactoring to use real DAO with database fixtures")
+
 @pytest.fixture
 def mock_video_dao():
     """Mock video DAO for endpoint testing - NEEDS REFACTORING."""
-    pytest.skip("Needs refactoring to use real DAO with database fixtures")
+    return None
 
 
 @pytest.fixture

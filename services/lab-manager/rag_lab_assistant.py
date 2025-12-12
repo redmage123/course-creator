@@ -35,8 +35,11 @@ INTEGRATION POINTS:
 import asyncio
 import json
 import logging
+import random
 import re
 import time
+import sys
+from pathlib import Path
 from typing import Dict, List, Optional, Any, Union, Tuple
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
@@ -47,6 +50,38 @@ import ast
 from pydantic import BaseModel
 
 from logging_setup import setup_docker_logging
+
+# Add AI assistant service to path for student prompts integration
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root / "services" / "ai-assistant-service"))
+
+# Import student AI prompts for pedagogically sound assistance
+try:
+    from ai_assistant_service.application.services.student_ai_prompts import (
+        # Enums
+        StudentInteractionContext,
+        StudentSkillLevel,
+        AssistanceIntensity,
+        # Constants
+        STUDENT_SYSTEM_PROMPT,
+        LEARNING_CONTEXT_PROMPTS,
+        SKILL_LEVEL_PROMPTS,
+        EMOTIONAL_SUPPORT_PROMPTS,
+        ERROR_EXPLANATION_PROMPTS,
+        # Functions
+        get_student_prompt,
+        get_emotional_support,
+        get_error_explanation,
+        get_encouragement_for_level,
+        build_contextual_prompt
+    )
+    STUDENT_PROMPTS_AVAILABLE = True
+except ImportError as e:
+    # Graceful degradation if student prompts not available
+    STUDENT_PROMPTS_AVAILABLE = False
+    logging.getLogger(__name__).warning(
+        f"Student AI prompts not available, using fallback prompts: {e}"
+    )
 
 # Setup logging
 logger = setup_docker_logging(__name__)
@@ -160,20 +195,38 @@ class AssistanceResponse:
 class RAGLabAssistant:
     """
     RAG-Enhanced Lab Assistant for Intelligent Programming Help
-    
+
     ARCHITECTURAL RESPONSIBILITY:
     Provides comprehensive programming assistance that learns and improves over time
     through RAG integration, offering personalized help that becomes more effective
     with each student interaction.
-    
+
     INTELLIGENCE FEATURES:
     - Context-aware assistance based on code and learning situation
     - Progressive learning from successful problem resolutions
     - Personalized help adapted to student skill level and preferences
     - Multi-language programming support with specialized knowledge bases
     - Error pattern recognition and resolution strategy optimization
+
+    PEDAGOGICAL INTEGRATION (v2.0):
+    - Uses student AI prompts for consistent, pedagogically-sound responses
+    - Applies Socratic method, scaffolding, and growth mindset approaches
+    - Provides emotional support for frustrated or struggling students
+    - Maps assistance types to learning contexts for tailored responses
     """
-    
+
+    # Mapping from AssistanceType to StudentInteractionContext for prompt selection
+    # WHY: Different assistance types require different pedagogical approaches
+    # HOW: Maps local enums to student prompt enums for contextual prompts
+    ASSISTANCE_TO_CONTEXT_MAP = {
+        "debugging": "lab_programming",
+        "code_review": "lab_programming",
+        "concept_explanation": "concept_clarification",
+        "implementation_help": "assignment_help",
+        "optimization": "lab_programming",
+        "general_question": "general_learning"
+    }
+
     def __init__(self, rag_service_url: str = "http://rag-service:8009"):
         """
         Initialize RAG-Enhanced Lab Assistant
@@ -200,7 +253,268 @@ class RAGLabAssistant:
         }
         
         logger.info(f"RAG Lab Assistant initialized with RAG service: {rag_service_url}")
-    
+        logger.info(f"Student AI prompts available: {STUDENT_PROMPTS_AVAILABLE}")
+
+    def _get_student_interaction_context(
+        self,
+        assistance_type: AssistanceType
+    ) -> Optional[Any]:
+        """
+        Map AssistanceType to StudentInteractionContext for prompt selection.
+
+        WHAT: Converts local assistance type enum to student prompt context enum.
+        WHY: Student prompts are organized by learning context, not assistance type.
+        HOW: Uses class-level mapping and gracefully handles missing student prompts.
+
+        Args:
+            assistance_type: The type of assistance being requested
+
+        Returns:
+            StudentInteractionContext enum if prompts available, None otherwise
+        """
+        if not STUDENT_PROMPTS_AVAILABLE:
+            return None
+
+        context_key = self.ASSISTANCE_TO_CONTEXT_MAP.get(
+            assistance_type.value,
+            "general_learning"
+        )
+
+        try:
+            return StudentInteractionContext(context_key)
+        except ValueError:
+            logger.warning(f"Unknown context key: {context_key}")
+            return StudentInteractionContext.GENERAL_LEARNING
+
+    def _get_student_skill_level(
+        self,
+        skill_level: SkillLevel
+    ) -> Optional[Any]:
+        """
+        Convert local SkillLevel to StudentSkillLevel for prompt selection.
+
+        WHAT: Maps local skill level enum to student prompt skill level.
+        WHY: Ensures consistent skill level handling across the system.
+        HOW: Direct mapping since values are identical.
+
+        Args:
+            skill_level: Local SkillLevel enum
+
+        Returns:
+            StudentSkillLevel enum if prompts available, None otherwise
+        """
+        if not STUDENT_PROMPTS_AVAILABLE:
+            return None
+
+        try:
+            return StudentSkillLevel(skill_level.value)
+        except ValueError:
+            return StudentSkillLevel.INTERMEDIATE
+
+    def _get_pedagogical_system_prompt(
+        self,
+        assistance_type: AssistanceType,
+        skill_level: SkillLevel,
+        student_name: Optional[str] = None,
+        topic: Optional[str] = None
+    ) -> str:
+        """
+        Get the complete pedagogical system prompt for AI interactions.
+
+        WHAT: Builds a comprehensive system prompt tailored to the student.
+        WHY: Ensures AI responses follow pedagogical best practices.
+        HOW: Combines base prompt with context and skill level adaptations.
+
+        Args:
+            assistance_type: Type of assistance being provided
+            skill_level: Student's skill level
+            student_name: Optional student name for personalization
+            topic: Optional current topic for context
+
+        Returns:
+            Complete system prompt string for AI configuration
+        """
+        if not STUDENT_PROMPTS_AVAILABLE:
+            return self._get_fallback_system_prompt(assistance_type, skill_level)
+
+        # Get context and skill level enums
+        context = self._get_student_interaction_context(assistance_type)
+        student_skill = self._get_student_skill_level(skill_level)
+
+        if context is None or student_skill is None:
+            return self._get_fallback_system_prompt(assistance_type, skill_level)
+
+        # Build contextual prompt using student prompts module
+        prompt_config = build_contextual_prompt(
+            context=context,
+            skill_level=student_skill,
+            student_name=student_name,
+            topic=topic
+        )
+
+        return prompt_config["system_prompt"]
+
+    def _get_fallback_system_prompt(
+        self,
+        assistance_type: AssistanceType,
+        skill_level: SkillLevel
+    ) -> str:
+        """
+        Get fallback system prompt when student prompts module is not available.
+
+        WHAT: Provides basic system prompt for AI interactions.
+        WHY: Ensures service works even without student prompts module.
+        HOW: Returns type and level-specific guidance.
+
+        Args:
+            assistance_type: Type of assistance being provided
+            skill_level: Student's skill level
+
+        Returns:
+            Basic system prompt string
+        """
+        return f"""You are a helpful programming assistant helping students learn.
+
+CURRENT CONTEXT:
+- Assistance Type: {assistance_type.value}
+- Student Skill Level: {skill_level.value}
+
+GUIDELINES:
+- Be patient and encouraging
+- Use the Socratic method - guide students to discover answers
+- For {skill_level.value} students, adjust explanation complexity accordingly
+- Don't give away answers directly for assignments or quizzes
+- Explain the 'why' behind solutions
+- Celebrate learning moments and progress"""
+
+    def get_error_explanation_prompt(
+        self,
+        error_message: str
+    ) -> Dict[str, Any]:
+        """
+        Get pedagogically sound error explanation for a given error.
+
+        WHAT: Provides student-friendly error explanation with teaching moment.
+        WHY: Helps students understand errors, not just fix them.
+        HOW: Detects error type and retrieves appropriate explanation.
+
+        Args:
+            error_message: The error message from the student's code
+
+        Returns:
+            Dict with explanation, common_causes, and teaching_moment
+        """
+        if not STUDENT_PROMPTS_AVAILABLE:
+            return {
+                "explanation": f"An error occurred: {error_message}",
+                "common_causes": ["Check the error message for details"],
+                "teaching_moment": "Reading error messages carefully is an important skill!"
+            }
+
+        # Detect error type from error message
+        error_type = self._detect_error_type(error_message)
+        return get_error_explanation(error_type)
+
+    def _detect_error_type(self, error_message: str) -> str:
+        """
+        Detect the type of error from an error message.
+
+        WHAT: Parses error message to identify error category.
+        WHY: Enables retrieval of appropriate error explanation.
+        HOW: Uses keyword matching against known Python error types.
+
+        Args:
+            error_message: The error message string
+
+        Returns:
+            Error type string (e.g., "syntax_error", "name_error")
+        """
+        error_lower = error_message.lower()
+
+        error_patterns = [
+            ("syntaxerror", "syntax_error"),
+            ("syntax error", "syntax_error"),
+            ("nameerror", "name_error"),
+            ("name error", "name_error"),
+            ("typeerror", "type_error"),
+            ("type error", "type_error"),
+            ("indexerror", "index_error"),
+            ("index error", "index_error"),
+            ("keyerror", "key_error"),
+            ("key error", "key_error"),
+            ("attributeerror", "attribute_error"),
+            ("attribute error", "attribute_error"),
+            ("valueerror", "value_error"),
+            ("value error", "value_error"),
+        ]
+
+        for pattern, error_type in error_patterns:
+            if pattern in error_lower:
+                return error_type
+
+        return "general_error"
+
+    def get_emotional_support_response(
+        self,
+        detected_emotion: str,
+        student_context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Get emotional support response for a student's emotional state.
+
+        WHAT: Provides recognition, validation, and support for student emotions.
+        WHY: Learning is emotional - students need support beyond just content.
+        HOW: Uses student prompts module for pedagogically sound responses.
+
+        Args:
+            detected_emotion: The detected or reported emotion (e.g., "frustrated")
+            student_context: Optional additional context about the student
+
+        Returns:
+            Dict with recognition, validation, and support prompts
+        """
+        if not STUDENT_PROMPTS_AVAILABLE:
+            return {
+                "recognition": f"I understand you're feeling {detected_emotion}.",
+                "validation": "Those feelings are completely normal when learning.",
+                "support": [
+                    "Let's take this step by step.",
+                    "Would you like to try a different approach?",
+                    "Remember, struggling means you're learning!"
+                ]
+            }
+
+        return get_emotional_support(detected_emotion, student_context)
+
+    def get_encouragement(
+        self,
+        skill_level: SkillLevel
+    ) -> List[str]:
+        """
+        Get skill-level-appropriate encouragement phrases.
+
+        WHAT: Returns motivational phrases tailored to skill level.
+        WHY: Appropriate encouragement motivates continued learning.
+        HOW: Uses student prompts for level-specific encouragement.
+
+        Args:
+            skill_level: The student's skill level
+
+        Returns:
+            List of encouragement phrases
+        """
+        if not STUDENT_PROMPTS_AVAILABLE:
+            return [
+                "Great effort!",
+                "You're making progress!",
+                "Keep up the good work!"
+            ]
+
+        student_skill = self._get_student_skill_level(skill_level)
+        if student_skill:
+            return get_encouragement_for_level(student_skill)
+        return ["Keep learning!"]
+
     async def is_rag_service_available(self) -> bool:
         """
         Check RAG service availability with circuit breaker pattern
@@ -361,15 +675,30 @@ class RAGLabAssistant:
         rag_context: str
     ) -> AssistanceResponse:
         """
-        Generate comprehensive assistance response using RAG context
-        
+        Generate comprehensive assistance response using RAG context and student prompts.
+
         RESPONSE GENERATION STRATEGY:
         - Integrate RAG context with current code situation
+        - Use pedagogical system prompt for consistent AI behavior
         - Adapt explanation style to student skill level and preferences
         - Provide practical examples and actionable guidance
         - Include relevant resources and learning materials
+        - Add emotional support and encouragement where appropriate
+
+        PEDAGOGICAL INTEGRATION:
+        - Uses student AI prompts for context-appropriate responses
+        - Applies Socratic method for problem-solving assistance
+        - Includes skill-level-adapted language and explanations
         """
-        
+
+        # Get pedagogical system prompt for this assistance type
+        system_prompt = self._get_pedagogical_system_prompt(
+            assistance_type=request.assistance_type,
+            skill_level=request.student_context.skill_level,
+            student_name=None,  # Could be extracted from student_context if available
+            topic=request.code_context.language  # Use programming language as topic
+        )
+
         # Analyze code context for specific insights
         code_insights = self._analyze_code_context(request.code_context)
         
@@ -401,7 +730,15 @@ class RAGLabAssistant:
         
         # Calculate confidence score based on RAG context quality
         confidence_score = self._calculate_confidence_score(rag_context, code_insights)
-        
+
+        # Get skill-level-appropriate encouragement
+        encouragement = self.get_encouragement(request.student_context.skill_level)
+
+        # Add encouragement to response if not already included
+        if encouragement and not any(enc in response_text for enc in encouragement[:1]):
+            selected_encouragement = random.choice(encouragement)
+            response_text = f"{response_text}\n\n💡 {selected_encouragement}"
+
         return AssistanceResponse(
             response_text=response_text,
             code_examples=code_examples,
@@ -413,12 +750,17 @@ class RAGLabAssistant:
                 "assistance_type": request.assistance_type.value,
                 "student_level": request.student_context.skill_level.value,
                 "code_language": request.code_context.language,
-                "context_quality": len(rag_context) > 0
+                "context_quality": len(rag_context) > 0,
+                "pedagogical_prompts_used": STUDENT_PROMPTS_AVAILABLE
             },
             response_metadata={
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "rag_enhanced": bool(rag_context),
-                "code_analysis_insights": len(code_insights)
+                "code_analysis_insights": len(code_insights),
+                "system_prompt_type": "pedagogical" if STUDENT_PROMPTS_AVAILABLE else "fallback",
+                "interaction_context": self.ASSISTANCE_TO_CONTEXT_MAP.get(
+                    request.assistance_type.value, "general_learning"
+                )
             }
         )
     
@@ -493,22 +835,42 @@ class RAGLabAssistant:
         code_insights: Dict[str, Any]
     ) -> Tuple[str, List[str], str]:
         """
-        Generate debugging assistance with RAG-enhanced context
-        
+        Generate debugging assistance with RAG-enhanced context and pedagogical prompts.
+
         DEBUGGING INTELLIGENCE:
         - Error pattern recognition from accumulated knowledge
         - Solution strategies from successful debugging sessions
         - Code-specific debugging approaches
         - Step-by-step debugging guidance
+
+        PEDAGOGICAL APPROACH:
+        - Uses student-friendly error explanations from student prompts
+        - Includes teaching moments to build debugging skills
+        - Provides skill-level-appropriate guidance
+        - Adds encouragement for frustrated students
         """
-        
+
         response_parts = []
         code_examples = []
-        
-        # Error analysis
+
+        # Error analysis with pedagogical explanation
         if request.code_context.error_message:
+            # Get pedagogical error explanation
+            error_info = self.get_error_explanation_prompt(request.code_context.error_message)
+
             response_parts.append(f"**Error Analysis:**\n{request.code_context.error_message}")
-            
+            response_parts.append(f"\n**What This Means:**\n{error_info['explanation']}")
+
+            # Add common causes
+            if error_info.get("common_causes"):
+                response_parts.append("\n**Common Causes:**")
+                for cause in error_info["common_causes"][:3]:  # Top 3 causes
+                    response_parts.append(f"• {cause}")
+
+            # Add teaching moment
+            if error_info.get("teaching_moment"):
+                response_parts.append(f"\n**Learning Tip:** {error_info['teaching_moment']}")
+
             # Add RAG context if available
             if rag_context:
                 response_parts.append(f"\n**Similar Issues and Solutions:**\n{rag_context}")
@@ -830,13 +1192,19 @@ async def get_programming_help(
 
 # Export key components for lab integration
 __all__ = [
+    # Core classes
     'RAGLabAssistant',
     'AssistanceRequest',
-    'AssistanceResponse', 
+    'AssistanceResponse',
     'CodeContext',
     'StudentContext',
+    # Enums
     'AssistanceType',
     'SkillLevel',
+    # Convenience functions
     'get_programming_help',
-    'rag_lab_assistant'
+    # Global instance
+    'rag_lab_assistant',
+    # Prompt availability flag
+    'STUDENT_PROMPTS_AVAILABLE'
 ]

@@ -14,17 +14,21 @@ from passlib.context import CryptContext
 @pytest.fixture
 def mock_database():
     """Mock database for testing"""
-    pytest.skip("Needs refactoring to use real objects")
+    import os
+    if not os.getenv('TEST_DB_HOST'):
+        pytest.skip("TEST_DB_HOST not configured")
     database = {}
     return database
 
 @pytest.fixture
 def mock_config():
     """Mock configuration"""
-    pytest.skip("Needs refactoring to use real objects")
+    import os
+    if not os.getenv('JWT_SECRET_KEY'):
+        pytest.skip("JWT_SECRET_KEY not configured")
     config = {}
     config['jwt'] = {}
-    config['jwt']['secret_key'] = "test-secret-key-for-testing-only"
+    config['jwt']['secret_key'] = os.getenv('JWT_SECRET_KEY', "test-secret-key-for-testing-only")
     config['jwt']['algorithm'] = "HS256"
     config['jwt']['token_expiry'] = 15
     return config
@@ -257,7 +261,9 @@ class TestSessionEndpoints:
     @pytest.fixture
     def mock_app_client(self):
         """Mock FastAPI test client"""
-        pytest.skip("Needs refactoring to use real objects")
+        import os
+        if not os.getenv('TEST_API_URL'):
+            pytest.skip("TEST_API_URL not configured")
         client = {}
         return client
     

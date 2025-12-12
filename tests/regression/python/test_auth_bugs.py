@@ -95,7 +95,7 @@ class TestAuthenticationBugs:
         3. Session timestamps
         4. is_site_admin field for role validation
         """
-        pytest.skip("Needs refactoring to use real objects")
+        pytest.fail("Needs refactoring to use real objects")
 
         # Arrange: Mock login request for org-admin user
         # with patch('requests.post') as mock_post:
@@ -453,10 +453,6 @@ class TestAuthenticationBugsIntegration:
         return "https://localhost:8000"
 
     @pytest.mark.integration
-    @pytest.mark.skipif(
-        "not config.getoption('--run-integration')",
-        reason="Integration tests require --run-integration flag"
-    )
     def test_bug_001_integration_org_admin_redirect(self, auth_service_url):
         """
         Integration test for BUG-001: Org admin login redirect.
@@ -482,7 +478,7 @@ class TestAuthenticationBugsIntegration:
                     assert "org_id=" in data["redirect_url"]
 
         except requests.exceptions.RequestException:
-            pytest.skip("User management service not available")
+            pytest.fail("User management service not available")
 
 
 # Pytest configuration for regression tests

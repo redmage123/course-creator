@@ -156,82 +156,82 @@ class TestURLContentFetcherIntegration:
             await fetcher.fetch_and_parse(f"{mock_server}/nonexistent")
 
 
-@pytest.mark.skip(reason="Needs refactoring to use real services - currently uses AsyncMock and Mock")
 class TestURLBasedGenerationServiceIntegration:
     """Integration tests for complete generation workflow.
 
+    NOTE: Currently uses AsyncMock and Mock instead of real services.
     TODO: Refactor to use real RAG service, URL fetcher, and test database.
     """
 
     @pytest.mark.asyncio
     async def test_complete_generation_workflow_mocked(self):
         """Test complete generation workflow with mocked fetcher."""
-        pass
+        pytest.skip("Needs refactoring to use real RAG service and URL fetcher")
 
     @pytest.mark.asyncio
     async def test_multiple_urls_generation(self):
         """Test generation from multiple URLs."""
-        pass
+        pytest.skip("Needs refactoring to use real RAG service and URL fetcher")
 
     @pytest.mark.asyncio
     async def test_generation_with_rag_disabled(self):
         """Test generation with RAG enhancement disabled."""
-        pass
+        pytest.skip("Needs refactoring to use real RAG service and URL fetcher")
 
 
-@pytest.mark.skip(reason="Needs refactoring to use real services - currently uses AsyncMock and Mock")
 class TestAPIEndpointIntegration:
     """Integration tests for API endpoint.
 
+    NOTE: Currently uses mocked generation service.
     TODO: Refactor to use real generation service instances.
     """
 
     def test_generate_endpoint_with_url(self):
         """Test /generate endpoint with source URL."""
-        pass
+        pytest.skip("Needs refactoring to use real generation service instances")
 
     def test_generate_endpoint_without_url(self):
         """Test /generate endpoint without source URL (standard generation)."""
-        pass
+        pytest.skip("Needs refactoring to use real generation service instances")
 
     def test_generate_endpoint_invalid_url(self):
         """Test /generate endpoint with invalid URL."""
-        pass
+        pytest.skip("Needs refactoring to use real generation service instances")
 
     def test_generate_endpoint_too_many_urls(self):
         """Test /generate endpoint with too many URLs."""
-        pass
+        pytest.skip("Needs refactoring to use real generation service instances")
 
 
-@pytest.mark.skip(reason="Needs refactoring to use real services - currently uses mocks")
 class TestProgressTrackingIntegration:
     """Integration tests for generation progress tracking.
 
+    NOTE: Currently uses mocked progress tracking.
     TODO: Refactor to use real progress tracking system.
     """
 
     def test_progress_endpoint(self):
         """Test /generate/progress endpoint."""
-        pass
+        pytest.skip("Needs refactoring to use real progress tracking system")
 
     def test_progress_invalid_uuid(self):
         """Test progress endpoint with invalid UUID."""
-        pass
+        pytest.skip("Needs refactoring to use real progress tracking system")
 
 
-@pytest.mark.skip(reason="Needs refactoring to use real services - currently uses AsyncMock")
 class TestErrorHandlingIntegration:
     """Integration tests for error handling across components.
 
+    NOTE: Currently uses AsyncMock for error simulation.
     TODO: Refactor to test real error handling with actual services.
     """
 
     @pytest.mark.asyncio
     async def test_url_fetch_error_propagation(self):
         """Test URL fetch errors propagate correctly."""
-        pass
+        pytest.skip("Needs refactoring to test with actual services")
 
     @pytest.mark.asyncio
     async def test_rag_error_handled_gracefully(self):
         """Test RAG errors don't break generation."""
-        pass
+        pytest.skip("Needs refactoring to test with actual services")

@@ -13,6 +13,10 @@ TECHNICAL IMPLEMENTATION:
 """
 
 import pytest
+import os
+
+# Check for Selenium availability
+SELENIUM_AVAILABLE = os.getenv('SELENIUM_REMOTE') is not None or os.getenv('HEADLESS') is not None
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -99,6 +103,7 @@ def authenticated_driver(driver):
     yield driver
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 class TestInstructorAuthentication:
     """Test instructor authentication and access control."""
@@ -153,6 +158,7 @@ class TestInstructorAuthentication:
             pytest.skip("Logout button not found - dashboard structure may vary")
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 class TestInstructorDashboardNavigation:
     """Test instructor dashboard navigation and tab switching."""
@@ -251,6 +257,7 @@ class TestInstructorDashboardNavigation:
             pytest.skip("Feedback tab not found - dashboard structure may vary")
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 class TestCourseManagementWorkflows:
     """Test complete course management workflows."""
@@ -386,6 +393,7 @@ class TestCourseManagementWorkflows:
             pytest.skip("No courses found - may need test data")
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 class TestStudentManagementWorkflows:
     """Test complete student management workflows."""
@@ -437,6 +445,7 @@ class TestStudentManagementWorkflows:
             pytest.skip("Students tab content not found - UI structure may vary")
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 class TestFeedbackWorkflows:
     """Test complete feedback management workflows."""
@@ -484,6 +493,7 @@ class TestFeedbackWorkflows:
             pytest.skip("Feedback filters not found - UI structure may vary")
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 class TestCourseInstanceWorkflows:
     """Test complete course instance management workflows."""
@@ -533,6 +543,7 @@ class TestCourseInstanceWorkflows:
             pytest.skip("Course instances section not found - UI structure may vary")
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 class TestAnalyticsWorkflows:
     """Test analytics dashboard workflows."""

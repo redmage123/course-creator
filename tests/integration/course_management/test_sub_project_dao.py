@@ -37,6 +37,9 @@ except ImportError:
 @pytest.fixture
 def sub_project_dao(db_connection):
     """Create SubProjectDAO instance with real database connection"""
+    import os
+    if not os.getenv('TEST_DB_HOST'):
+        pytest.skip("TEST_DB_HOST not configured")
     if SubProjectDAO is None:
         pytest.skip("SubProjectDAO not yet implemented (TDD RED PHASE)")
     return SubProjectDAO(db_connection)

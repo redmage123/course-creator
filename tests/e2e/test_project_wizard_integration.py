@@ -4,7 +4,7 @@ Test Suite: Project Creation Wizard Integration (Wave 4) - DEPRECATED
 ⚠️ WARNING: These tests are for Wave 4 features that were never implemented.
 Wave 5 refactored wizards using WizardFramework instead.
 
-STATUS: All tests in this file are SKIPPED
+STATUS: Tests conditionally skipped if Selenium not configured
 REASON: Tests expect Wave 4 components (WizardProgress, WizardValidator, WizardDraft)
         with specific HTML data attributes that don't exist in Wave 5 implementation.
 
@@ -20,7 +20,7 @@ These features were designed but never implemented. Wave 5 took a different
 approach using WizardFramework component instead.
 
 EXECUTION:
-    pytest tests/e2e/test_project_wizard_integration.py -v  (all tests will skip)
+    pytest tests/e2e/test_project_wizard_integration.py -v  (tests will skip if Selenium not configured)
 
 For working tests, run:
     pytest tests/e2e/test_project_wizard_wave5.py -v
@@ -33,14 +33,18 @@ For working tests, run:
 
 import pytest
 import time
+import os
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
+# Check if Selenium is configured
+SELENIUM_AVAILABLE = os.getenv('SELENIUM_REMOTE') is not None or os.getenv('HEADLESS') is not None
 
-@pytest.mark.skip(reason="Wave 4 features never implemented - use test_project_wizard_wave5.py instead")
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
+@pytest.mark.e2e
 class TestProjectWizardIntegration:
     """
     Test class for Project Creation Wizard Wave 4 Integration

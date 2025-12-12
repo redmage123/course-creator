@@ -19,6 +19,10 @@ TEST USERS:
 """
 import pytest
 import os
+
+# Check for Selenium availability
+SELENIUM_AVAILABLE = os.getenv('SELENIUM_REMOTE') is not None or os.getenv('HEADLESS') is not None
+import os
 import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -34,6 +38,8 @@ HEADLESS = os.getenv("HEADLESS", "true").lower() == "true"
 TIMEOUT = 30
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
+@pytest.mark.e2e
 class TestOrganizationContentE2E:
     """
     E2E tests for organization content management.

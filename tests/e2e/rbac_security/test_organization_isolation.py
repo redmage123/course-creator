@@ -50,6 +50,10 @@ COMPLIANCE: GDPR Article 32, CCPA Section 1798.150, ISO 27001
 """
 
 import pytest
+import os
+
+# Check for Selenium availability
+SELENIUM_AVAILABLE = os.getenv('SELENIUM_REMOTE') is not None or os.getenv('HEADLESS') is not None
 import time
 import uuid
 import asyncio
@@ -408,6 +412,7 @@ class OrganizationSearchPage(BasePage):
 # TEST CLASS - Data Isolation Tests
 # ============================================================================
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.rbac
 class TestOrganizationDataIsolation(BaseTest):
@@ -844,6 +849,7 @@ class TestOrganizationDataIsolation(BaseTest):
 # TEST CLASS - Resource Isolation Tests
 # ============================================================================
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.rbac
 class TestOrganizationResourceIsolation(BaseTest):

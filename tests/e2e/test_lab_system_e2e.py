@@ -4,6 +4,10 @@ Tests complete user workflows and browser-based interactions
 """
 
 import pytest
+import os
+
+# Check for Selenium availability
+SELENIUM_AVAILABLE = os.getenv('SELENIUM_REMOTE') is not None or os.getenv('HEADLESS') is not None
 import time
 import json
 from datetime import datetime, timedelta
@@ -205,7 +209,8 @@ class MockElement:
         return "Mock Element"
 
 
-@pytest.mark.skip(reason="Needs refactoring to use real Selenium browser instead of browser simulator")
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
+@pytest.mark.e2e
 class TestLabSystemE2E:
     """End-to-end tests for the complete lab system"""
 
@@ -725,7 +730,8 @@ class TestLabSystemE2E:
         print("✅ Complete lab lifecycle E2E test passed")
 
 
-@pytest.mark.skip(reason="Needs refactoring to use real services instead of mocks")
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
+@pytest.mark.e2e
 class TestLabSystemPerformance:
     """Performance tests for lab system"""
 

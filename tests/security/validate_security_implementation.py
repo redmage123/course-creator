@@ -116,8 +116,8 @@ class SecurityValidationSuite:
             middleware = OrganizationAuthorizationMiddleware(None, config)
 
             # Test organization ID extraction
-            pytest.skip("Needs refactoring to use real objects")
-            request = None  # Placeholder
+            from unittest.mock import Mock
+            request = Mock()  # Create mock request
             request.headers = {'X-Organization-ID': str(uuid.uuid4())}
             request.url.path = '/api/v1/courses'
             request.query_params = {}

@@ -184,7 +184,8 @@ class TestSessionSecurity:
     @pytest.fixture
     def mock_database(self):
         """Mock database for session testing"""
-        pytest.skip("Needs refactoring to use real objects")
+        from unittest.mock import Mock
+        return Mock()
     
     def test_session_concurrent_limit(self, mock_database):
         """Test concurrent session limits are enforced"""
@@ -246,7 +247,6 @@ class TestSessionSecurity:
     
     def test_session_cleanup_security(self, mock_database):
         """Test expired sessions are properly cleaned up"""
-        pytest.skip("Needs refactoring to use real objects")
         
         def cleanup_expired_sessions():
             # Delete expired sessions

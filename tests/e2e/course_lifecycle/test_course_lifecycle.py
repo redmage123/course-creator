@@ -8,12 +8,16 @@ implemented with actual E2E workflows.
 """
 
 import pytest
+import os
+
+# Check if Selenium is configured
+SELENIUM_AVAILABLE = os.getenv('SELENIUM_REMOTE') is not None or os.getenv('HEADLESS') is not None
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 class TestCourseLifecycle:
     """Test complete course lifecycle management"""
 
-    @pytest.mark.skip(reason="Needs refactoring to use real services - placeholder test")
     @pytest.mark.asyncio
     async def test_course_creation_to_student_completion(self, db_connection):
         """
@@ -51,7 +55,6 @@ class TestCourseLifecycle:
         assert len(completed_phases) == 8
         assert "course_improvement" in completed_phases
 
-    @pytest.mark.skip(reason="Needs refactoring to use real services - placeholder test")
     @pytest.mark.asyncio
     async def test_course_version_management(self, db_connection):
         """

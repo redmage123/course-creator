@@ -1,0 +1,173 @@
+# Data Flow Diagram
+# D2 Diagram - How data flows through the platform
+
+direction: right
+
+title: {
+  label: Platform Data Flow
+  near: top-center
+  shape: text
+  style: {
+    font-size: 22
+    bold: true
+  }
+}
+
+# User Actions
+user_actions: {
+  label: User Actions
+  style: {
+    fill: "#E3F2FD"
+    stroke: "#1976D2"
+  }
+
+  login: Login/Register
+  browse: Browse Courses
+  learn: Take Course
+  quiz: Complete Quiz
+  lab: Use Lab
+  chat: AI Chat
+}
+
+# API Layer
+api: {
+  label: API Gateway
+  shape: hexagon
+  style: {
+    fill: "#C8E6C9"
+    stroke: "#388E3C"
+  }
+}
+
+# Authentication Flow
+auth_flow: {
+  label: Authentication
+  style: {
+    fill: "#FFF3E0"
+    stroke: "#F57C00"
+  }
+
+  validate: Validate\nCredentials
+  jwt: Generate\nJWT Token
+  session: Create\nSession
+  rbac: Check\nPermissions
+}
+
+# Content Flow
+content_flow: {
+  label: Content Delivery
+  style: {
+    fill: "#F3E5F5"
+    stroke: "#7B1FA2"
+  }
+
+  fetch: Fetch Course\nData
+  stream: Stream\nVideos
+  generate: AI Generate\nContent
+  cache: Cache\nContent
+}
+
+# Learning Flow
+learning_flow: {
+  label: Learning Data
+  style: {
+    fill: "#FFEBEE"
+    stroke: "#D32F2F"
+  }
+
+  progress: Track\nProgress
+  analytics: Send\nAnalytics
+  score: Calculate\nScores
+  certificate: Generate\nCertificate
+}
+
+# AI Flow
+ai_flow: {
+  label: AI Processing
+  style: {
+    fill: "#E0F7FA"
+    stroke: "#00ACC1"
+  }
+
+  query: Process\nQuery
+  rag: RAG\nSearch
+  llm: LLM\nResponse
+  context: Add\nContext
+}
+
+# Data Stores
+stores: {
+  label: Data Persistence
+  style: {
+    fill: "#ECEFF1"
+    stroke: "#607D8B"
+  }
+
+  postgres: PostgreSQL {
+    shape: cylinder
+    label: "Users, Courses\nProgress, Analytics"
+  }
+  redis: Redis {
+    shape: cylinder
+    label: "Sessions\nCache"
+  }
+  chromadb: ChromaDB {
+    shape: cylinder
+    label: "Embeddings\nRAG Data"
+  }
+}
+
+# External APIs
+external: {
+  label: External Services
+  style: {
+    fill: "#F5F5F5"
+    stroke: "#9E9E9E"
+  }
+
+  openai: OpenAI {
+    shape: cloud
+  }
+  zoom: Zoom {
+    shape: cloud
+  }
+}
+
+# Connections - Auth Flow
+user_actions.login -> api
+api -> auth_flow.validate
+auth_flow.validate -> stores.postgres: Verify User
+auth_flow.validate -> auth_flow.jwt
+auth_flow.jwt -> auth_flow.session
+auth_flow.session -> stores.redis: Store Session
+auth_flow.session -> auth_flow.rbac
+
+# Connections - Content Flow
+user_actions.browse -> api
+api -> content_flow.fetch
+content_flow.fetch -> stores.postgres: Get Courses
+content_flow.fetch -> content_flow.cache
+content_flow.cache -> stores.redis
+user_actions.learn -> content_flow.stream
+
+# Connections - Learning Flow
+user_actions.quiz -> api
+api -> learning_flow.progress
+learning_flow.progress -> stores.postgres: Save Progress
+learning_flow.progress -> learning_flow.analytics
+learning_flow.analytics -> learning_flow.score
+learning_flow.score -> learning_flow.certificate
+
+# Connections - AI Flow
+user_actions.chat -> api
+api -> ai_flow.query
+ai_flow.query -> ai_flow.rag
+ai_flow.rag -> stores.chromadb: Search Context
+ai_flow.rag -> ai_flow.context
+ai_flow.context -> ai_flow.llm
+ai_flow.llm -> external.openai
+
+# Connections - Lab Flow
+user_actions.lab -> api
+api -> content_flow.generate
+content_flow.generate -> external.openai: AI Assistance

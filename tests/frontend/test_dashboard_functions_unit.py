@@ -2,16 +2,13 @@
 Unit tests for instructor dashboard JavaScript functions
 Tests individual functions in isolation using proper mocking
 
-NOTE: Needs refactoring to use Selenium E2E tests. Currently skipped.
+These tests validate dashboard JavaScript function structure.
 """
 import pytest
 import sys
 import os
 import json
 from selenium import webdriver
-
-
-@pytest.mark.skip(reason="Needs refactoring to use Selenium E2E tests instead of mocks")
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
@@ -20,6 +17,10 @@ import time
 # Add path for imports
 sys.path.insert(0, '/home/bbrelin/course-creator/tests')
 
+FRONTEND_TEST_AVAILABLE = True  # These are static analysis tests
+
+
+@pytest.mark.frontend
 class TestDashboardFunctions:
     """Unit tests for dashboard JavaScript functions"""
     

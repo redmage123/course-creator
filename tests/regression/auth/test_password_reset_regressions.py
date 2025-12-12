@@ -425,7 +425,7 @@ async def test_BUG456_password_reset_ui_workflow(
     except Exception as e:
         # If password reset page doesn't exist or has different structure,
         # this test needs to be adapted to actual implementation
-        pytest.skip(f"Password reset UI not available or has different structure: {e}")
+        pytest.fail(f"Password reset UI not available or has different structure: {e}")
 
 
 @pytest.mark.regression

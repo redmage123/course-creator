@@ -15,6 +15,7 @@ import json
 import requests
 from datetime import datetime
 import asyncpg
+import os
 
 # Test configuration
 API_BASE_URL = "http://localhost"
@@ -26,7 +27,8 @@ SERVICES = {
 }
 
 # Test database configuration
-TEST_DATABASE_URL = "postgresql://test_user:test_password@localhost:5434/course_creator_test"
+TEST_DATABASE_URL = os.getenv('TEST_DATABASE_URL', "postgresql://test_user:test_password@localhost:5434/course_creator_test")
+DB_AVAILABLE = os.getenv('TEST_DB_HOST') is not None or os.getenv('TEST_DATABASE_URL') is not None
 
 
 class TestAuthenticationWorkflow:
@@ -135,45 +137,44 @@ class TestAuthenticationWorkflow:
         assert len(sessions_data["sessions"]) >= 1
 
 
+@pytest.mark.skipif(not DB_AVAILABLE, reason="Database not configured")
 class TestContentGenerationWorkflow:
     """Test complete content generation workflow"""
 
-    @pytest.mark.skip(reason="Needs real services running - no mocks allowed")
     def test_complete_content_generation_workflow(self):
         """Test complete content generation from syllabus to content - needs real services"""
-        pass
+        pytest.skip("Needs real services running - no mocks allowed")
 
-    @pytest.mark.skip(reason="Needs real services running - no mocks allowed")
     def test_syllabus_refinement_workflow(self):
         """Test syllabus refinement workflow - needs real services"""
-        pass
+        pytest.skip("Needs real services running - no mocks allowed")
 
 
+@pytest.mark.skipif(not DB_AVAILABLE, reason="Database not configured")
 class TestLabEnvironmentWorkflow:
     """Test lab environment workflow"""
 
-    @pytest.mark.skip(reason="Needs real services running - no mocks allowed")
     def test_lab_creation_and_management(self):
         """Test lab environment creation and management - needs real services"""
-        pass
+        pytest.skip("Needs real services running - no mocks allowed")
 
 
+@pytest.mark.skipif(not DB_AVAILABLE, reason="Database not configured")
 class TestCourseManagementWorkflow:
     """Test course management workflow"""
 
-    @pytest.mark.skip(reason="Needs real services running - no mocks allowed")
     def test_course_lifecycle_workflow(self):
         """Test complete course lifecycle - needs real services"""
-        pass
+        pytest.skip("Needs real services running - no mocks allowed")
 
 
+@pytest.mark.skipif(not DB_AVAILABLE, reason="Database not configured")
 class TestCrossServiceIntegration:
     """Test integration between multiple services"""
 
-    @pytest.mark.skip(reason="Needs all real services running - no mocks allowed")
     def test_full_platform_workflow(self):
         """Test complete platform workflow across all services - needs all real services"""
-        pass
+        pytest.skip("Needs all real services running - no mocks allowed")
 
 
 class TestErrorHandlingIntegration:

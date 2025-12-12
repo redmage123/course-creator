@@ -48,6 +48,43 @@ async function handleResponse<T>(response: Response): Promise<T> {
 }
 
 /**
+ * Student Labs List
+ * Fetches student-specific lab data with proper data isolation
+ */
+export const studentLabService = {
+  /**
+   * Get all labs for the authenticated student.
+   *
+   * Security Context:
+   * Uses student_id from JWT token to ensure data isolation.
+   * Prevents cross-user data leakage (OWASP A01:2021).
+   *
+   * Business Context:
+   * Returns labs the student has actually interacted with,
+   * fixing the "Retry Lab" button appearing for labs never attempted.
+   */
+  async getStudentLabs(studentId: string): Promise<{
+    student_id: string;
+    total_labs: number;
+    labs: Array<{
+      lab_id: string;
+      course_id: string;
+      status: string;
+      created_at: string;
+      last_accessed: string | null;
+      ide_urls: Record<string, string>;
+      container_name: string;
+    }>;
+  }> {
+    const response = await fetch(`${LAB_API_BASE}/student/${studentId}`, {
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    return handleResponse(response);
+  }
+};
+
+/**
  * Lab Session Management
  */
 export const labSessionService = {
@@ -437,6 +474,7 @@ export const labAnalyticsService = {
  * Unified lab service export
  */
 export const labService = {
+  student: studentLabService,
   session: labSessionService,
   files: labFileService,
   terminal: labTerminalService,

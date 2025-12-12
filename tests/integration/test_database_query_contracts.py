@@ -25,6 +25,7 @@ import asyncio
 from uuid import UUID, uuid4
 from datetime import datetime
 import sys
+import os
 from pathlib import Path
 from pydantic import BaseModel
 from typing import Optional
@@ -33,13 +34,17 @@ from typing import Optional
 org_mgmt_path = Path(__file__).parent.parent.parent / 'services' / 'organization-management'
 sys.path.insert(0, str(org_mgmt_path))
 
+# Check if database is available
+DB_AVAILABLE = os.getenv('TEST_DB_HOST') is not None
+
 try:
     from database.connection_pool import ConnectionPool
     from services.membership_service import MembershipService
     from services.organization_service import OrganizationService
     from models.organization import Organization
-except ImportError as e:
-    pytest.skip(f"organization-management service not available: {e}", allow_module_level=True)
+    IMPORTS_AVAILABLE = True
+except ImportError:
+    IMPORTS_AVAILABLE = False
 
 # Define MemberResponse locally
 class MemberResponse(BaseModel):
@@ -65,12 +70,15 @@ def event_loop():
 @pytest.fixture(scope="session")
 async def db_pool():
     """Setup database connection pool"""
+    if not IMPORTS_AVAILABLE:
+        pytest.skip("Required imports not available")
     pool = ConnectionPool.get_instance()
     await pool.initialize()
     yield pool
     # Don't close pool - it's a singleton used by other tests
 
 
+@pytest.mark.skipif(not DB_AVAILABLE and not IMPORTS_AVAILABLE, reason="Database or imports not configured")
 class TestMembershipQueryStructure:
     """
     Test Suite: Membership Query Field Validation
@@ -239,6 +247,7 @@ class TestMembershipQueryStructure:
             raise
 
 
+@pytest.mark.skipif(not DB_AVAILABLE and not IMPORTS_AVAILABLE, reason="Database or imports not configured")
 class TestOrganizationQueryStructure:
     """
     Test Suite: Organization Query Field Validation
@@ -295,6 +304,7 @@ class TestOrganizationQueryStructure:
         print("✅ Query handles non-existent IDs gracefully")
 
 
+@pytest.mark.skipif(not DB_AVAILABLE and not IMPORTS_AVAILABLE, reason="Database or imports not configured")
 class TestUserManagementQueryStructure:
     """
     Test Suite: User Management Query Validation
@@ -388,6 +398,7 @@ class TestUserManagementQueryStructure:
             print(f"   Columns: {column_names}")
 
 
+@pytest.mark.skipif(not DB_AVAILABLE and not IMPORTS_AVAILABLE, reason="Database or imports not configured")
 class TestQueryPerformance:
     """
     Test Suite: Database Query Performance
@@ -440,6 +451,7 @@ class TestQueryPerformance:
             print(f"✅ Found {len(indexes)} indexes: {index_names}")
 
 
+@pytest.mark.skipif(not DB_AVAILABLE and not IMPORTS_AVAILABLE, reason="Database or imports not configured")
 class TestDataIntegrity:
     """
     Test Suite: Data Integrity Validation

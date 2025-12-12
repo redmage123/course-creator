@@ -25,6 +25,7 @@ import asyncio
 from datetime import datetime, timezone
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 # Add service to path
 project_root = Path(__file__).parent.parent.parent
@@ -369,7 +370,6 @@ class TestAssistanceResponseIntegration:
             assert 'pedagogical_prompts_used' in response.learning_feedback
 
 
-@pytest.mark.skip(reason="Needs refactoring to use real services - currently uses MagicMock")
 class TestWebSocketStudentPromptIntegration:
     """
     Tests for WebSocket handler student prompt integration.
@@ -378,20 +378,21 @@ class TestWebSocketStudentPromptIntegration:
     Verifies that the WebSocket handler correctly
     uses student prompts for student users.
 
+    NOTE: Currently uses MagicMock instead of real service instances.
     TODO: Refactor to use real service instances instead of MagicMock.
     """
 
     def test_student_role_detection(self):
         """Verify student role detection works."""
-        pass
+        pytest.skip("Needs refactoring to use real services - currently uses MagicMock")
 
     def test_emotion_detection(self):
         """Verify emotion detection in messages."""
-        pass
+        pytest.skip("Needs refactoring to use real services - currently uses MagicMock")
 
     def test_interaction_context_detection(self):
         """Verify interaction context detection."""
-        pass
+        pytest.skip("Needs refactoring to use real services - currently uses MagicMock")
 
 
 class TestAPIEndpointIntegration:

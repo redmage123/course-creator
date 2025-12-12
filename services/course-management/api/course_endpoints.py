@@ -215,6 +215,39 @@ def get_current_user_id(authorization: str = Header(None)) -> str:
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"Invalid JWT token: {str(e)}")
 
+
+def get_current_user_context(authorization: str = Header(None)) -> dict:
+    """
+    Extract user context (user_id and role) from JWT token.
+
+    BUSINESS CONTEXT:
+    Some operations like course deletion need to check both user identity
+    and role to allow org admins to delete any course in their organization.
+
+    Returns:
+        dict with user_id and role keys
+    """
+    if not authorization or not authorization.startswith('Bearer '):
+        raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
+
+    token = authorization.split(' ')[1]
+
+    try:
+        import jwt
+        payload = jwt.decode(token, options={"verify_signature": False})
+        user_id = payload.get('user_id')
+        role = payload.get('role', 'student')
+
+        if not user_id:
+            raise HTTPException(status_code=401, detail="user_id claim not found in token")
+
+        return {
+            "user_id": user_id,
+            "role": role
+        }
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Invalid JWT token: {str(e)}")
+
 # Helper function to convert domain entity to API response
 def _course_to_response(course: Course) -> CourseResponse:
     """
@@ -587,7 +620,7 @@ async def unpublish_course(
 async def delete_course(
     course_id: str,
     course_service: ICourseService = Depends(get_course_service),
-    current_user_id: str = Depends(get_current_user_id)
+    user_context: dict = Depends(get_current_user_context)
 ):
     """
     Delete a course permanently.
@@ -597,22 +630,33 @@ async def delete_course(
     operation and should be used with caution.
 
     WORKFLOW:
-    1. Validates course ownership
+    1. Validates course ownership OR org admin role
     2. Checks for active enrollments
     3. Removes course and all associated data
     4. Returns success confirmation
 
-    AUTHORIZATION:
-    - Only course owner can delete
+    AUTHORIZATION (Updated):
+    - Course owner (instructor) can delete their own courses
+    - Organization admins can delete any course in their organization
+    - Site admins can delete any course
     - Cannot delete if active enrollments exist
-    - Soft delete may be used for audit trail
 
     WARNING:
     This operation cannot be undone. Consider unpublishing instead
     if you want to preserve course data.
     """
     try:
-        success = await course_service.delete_course(course_id, current_user_id)
+        user_id = user_context["user_id"]
+        user_role = user_context["role"]
+
+        # Organization admins and site admins can delete any course
+        is_admin = user_role in ['organization_admin', 'site_admin']
+
+        success = await course_service.delete_course(
+            course_id,
+            user_id,
+            is_admin=is_admin
+        )
         if success:
             return {"message": "Course deleted successfully"}
         else:

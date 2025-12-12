@@ -34,6 +34,7 @@ import pytest
 import time
 import uuid
 import asyncio
+import os
 from datetime import datetime, timedelta
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -41,6 +42,9 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
+
+# Check if Selenium is configured
+SELENIUM_AVAILABLE = os.getenv('SELENIUM_REMOTE') is not None or os.getenv('HEADLESS') is not None
 
 
 # ============================================================================
@@ -168,6 +172,7 @@ class DashboardPage:
 # TEST CLASS: Session Creation
 # ============================================================================
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.authentication
 @pytest.mark.session_management
@@ -325,6 +330,7 @@ class TestSessionCreation:
 # TEST CLASS: Session Validation
 # ============================================================================
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.authentication
 @pytest.mark.session_management
@@ -536,6 +542,7 @@ class TestSessionValidation:
 # TEST CLASS: Session Security
 # ============================================================================
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.authentication
 @pytest.mark.session_management

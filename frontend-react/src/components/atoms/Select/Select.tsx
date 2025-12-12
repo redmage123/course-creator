@@ -315,6 +315,38 @@ export const Select = forwardRef<HTMLDivElement, SelectProps>(({
           setIsOpen(false);
         }
         break;
+
+      case 'Home':
+        event.preventDefault();
+        if (isOpen) {
+          setHighlightedIndex(0);
+        }
+        break;
+
+      case 'End':
+        event.preventDefault();
+        if (isOpen) {
+          setHighlightedIndex(filteredOptions.length - 1);
+        }
+        break;
+
+      case 'PageUp':
+        event.preventDefault();
+        if (isOpen) {
+          // Jump 5 options up
+          setHighlightedIndex(prev => Math.max(0, prev - 5));
+        }
+        break;
+
+      case 'PageDown':
+        event.preventDefault();
+        if (isOpen) {
+          // Jump 5 options down
+          setHighlightedIndex(prev =>
+            Math.min(filteredOptions.length - 1, prev + 5)
+          );
+        }
+        break;
     }
   };
 

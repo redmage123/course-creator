@@ -4,6 +4,10 @@ Tests the complete analytics workflow from frontend dashboard to backend analyti
 """
 
 import pytest
+import os
+
+# Check for Selenium availability
+SELENIUM_AVAILABLE = os.getenv('SELENIUM_REMOTE') is not None or os.getenv('HEADLESS') is not None
 import asyncio
 import time
 from datetime import datetime, timedelta
@@ -16,9 +20,11 @@ from selenium.common.exceptions import WebDriverException, TimeoutException
 import requests
 import json
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
+@pytest.mark.e2e
 class TestAnalyticsDashboardE2E:
     """End-to-end tests for the analytics dashboard functionality"""
-    
+
     @classmethod
     def setup_class(cls):
         """Set up test environment"""
@@ -313,9 +319,11 @@ class TestAnalyticsDashboardE2E:
             assert controls.is_displayed()
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
+@pytest.mark.e2e
 class TestAnalyticsDataVisualization:
     """Test analytics data visualization components"""
-    
+
     @classmethod
     def setup_class(cls):
         """Set up test environment for visualization tests"""
@@ -410,9 +418,11 @@ class TestAnalyticsDataVisualization:
             assert chart_element.is_displayed()
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
+@pytest.mark.e2e
 class TestAnalyticsWorkflow:
     """Test complete analytics workflow scenarios"""
-    
+
     @classmethod
     def setup_class(cls):
         """Set up test environment for workflow tests"""

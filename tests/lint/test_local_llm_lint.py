@@ -202,7 +202,7 @@ class TestSecurityChecks:
                         line_with_pattern = [line for line in content.split('\n') if pattern in line]
                         for line in line_with_pattern:
                             if "os.getenv" not in line and "os.environ" not in line:
-                                pytest.skip(f"Potential hardcoded secret in {file_path}: {line[:50]}")
+                                pytest.fail(f"Potential hardcoded secret in {file_path}: {line[:50]}")
 
     @pytest.mark.unit
     def test_no_sql_injection_risk(self):
@@ -221,7 +221,7 @@ class TestSecurityChecks:
                     lines = content.split('\n')
                     for i, line in enumerate(lines):
                         if ("SELECT" in line or "INSERT" in line) and ("%" in line or ".format" in line):
-                            pytest.skip(f"Potential SQL injection risk in {file_path}:{i+1}")
+                            pytest.fail(f"Potential SQL injection risk in {file_path}:{i+1}")
 
 
 class TestTypeHints:

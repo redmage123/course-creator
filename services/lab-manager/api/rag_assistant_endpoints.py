@@ -46,8 +46,11 @@ from pydantic import BaseModel
 from rag_lab_assistant import (
     AssistanceResponse,
     get_programming_help,
-    rag_lab_assistant
+    rag_lab_assistant,
+    SkillLevel,
+    STUDENT_PROMPTS_AVAILABLE
 )
+from typing import List
 
 # Initialize router
 router = APIRouter(
@@ -100,6 +103,92 @@ class AssistantStatsResponse(BaseModel):
     assistant_stats: Dict[str, int]
     rag_service_stats: Dict
     timestamp: str
+
+
+class EmotionalSupportRequest(BaseModel):
+    """
+    Request for emotional support response.
+
+    Educational Context:
+    - Students may feel frustrated, confused, or discouraged while learning
+    - Emotional support helps maintain motivation and engagement
+    - Personalized encouragement improves learning outcomes
+
+    Fields:
+    - detected_emotion: The emotion detected or reported (frustrated, confused, etc.)
+    - student_context: Optional additional context about the student situation
+    """
+    detected_emotion: str
+    student_context: Optional[Dict] = None
+
+
+class EmotionalSupportResponse(BaseModel):
+    """
+    Emotional support response with recognition, validation, and support.
+
+    Pedagogical Elements:
+    - Recognition: Acknowledging the student's emotional state
+    - Validation: Affirming that their feelings are normal
+    - Support: Actionable encouragement and next steps
+    """
+    recognition: str
+    validation: str
+    support: List[str]
+
+
+class ErrorExplanationRequest(BaseModel):
+    """
+    Request for student-friendly error explanation.
+
+    Educational Context:
+    - Error messages can be confusing for students
+    - Understanding errors helps build debugging skills
+    - Teaching moments help students learn to read errors themselves
+
+    Fields:
+    - error_message: The error message from the student's code
+    """
+    error_message: str
+
+
+class ErrorExplanationResponse(BaseModel):
+    """
+    Student-friendly error explanation with teaching moment.
+
+    Educational Elements:
+    - Explanation: What the error means in simple terms
+    - Common causes: Likely reasons for this error
+    - Teaching moment: Skill-building insight for the student
+    """
+    explanation: str
+    common_causes: List[str]
+    teaching_moment: str
+
+
+class EncouragementRequest(BaseModel):
+    """
+    Request for skill-level-appropriate encouragement.
+
+    Fields:
+    - skill_level: beginner, intermediate, or advanced
+    """
+    skill_level: str = "intermediate"
+
+
+class EncouragementResponse(BaseModel):
+    """
+    List of encouragement phrases for the skill level.
+    """
+    encouragement_phrases: List[str]
+    skill_level: str
+
+
+class PromptStatusResponse(BaseModel):
+    """
+    Status of student AI prompts availability.
+    """
+    prompts_available: bool
+    message: str
 
 # RAG-Enhanced Lab Assistant Endpoints
 
@@ -248,4 +337,242 @@ async def get_assistant_statistics():
         raise HTTPException(
             status_code=500,
             detail=f"Statistics retrieval failed: {str(e)}"
+        )
+
+
+@router.post("/emotional-support", response_model=EmotionalSupportResponse, status_code=status.HTTP_200_OK)
+async def get_emotional_support(request: EmotionalSupportRequest):
+    """
+    Get emotional support response for a student's emotional state.
+
+    Educational Workflow:
+    1. Detect student frustration, confusion, or discouragement
+    2. Request appropriate emotional support response
+    3. Provide recognition, validation, and supportive next steps
+    4. Help student regain motivation and continue learning
+
+    Supported Emotions:
+    - **Frustrated**: Student is stuck and becoming upset
+    - **Confused**: Student doesn't understand the concept
+    - **Discouraged**: Student is losing confidence
+    - **Anxious**: Student is worried about performance
+    - **Excited**: Student is enthusiastic and engaged
+    - **Accomplished**: Student has achieved a milestone
+
+    Pedagogical Approach:
+    - Recognition: "I can see you're feeling frustrated..."
+    - Validation: "That's completely normal when learning..."
+    - Support: Actionable suggestions and encouragement
+
+    Example Request:
+    ```json
+    {
+      "detected_emotion": "frustrated",
+      "student_context": {"attempts": 5, "topic": "recursion"}
+    }
+    ```
+
+    Example Response:
+    ```json
+    {
+      "recognition": "It sounds like you're feeling frustrated. That's completely normal!",
+      "validation": "This is a challenging topic - many students struggle with it.",
+      "support": ["Let's take a step back...", "Would you like to take a short break?"]
+    }
+    ```
+
+    Args:
+        request: Emotional support request with detected emotion
+
+    Returns:
+        EmotionalSupportResponse: Recognition, validation, and support
+
+    Raises:
+        HTTPException 500: If emotional support generation fails
+    """
+    try:
+        support_data = rag_lab_assistant.get_emotional_support_response(
+            detected_emotion=request.detected_emotion,
+            student_context=request.student_context
+        )
+
+        logger.info(f"Provided emotional support for emotion: {request.detected_emotion}")
+
+        return EmotionalSupportResponse(
+            recognition=support_data["recognition"],
+            validation=support_data["validation"],
+            support=support_data["support"]
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to provide emotional support: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Emotional support failed: {str(e)}"
+        )
+
+
+@router.post("/explain-error", response_model=ErrorExplanationResponse, status_code=status.HTTP_200_OK)
+async def get_error_explanation(request: ErrorExplanationRequest):
+    """
+    Get student-friendly explanation for a programming error.
+
+    Educational Workflow:
+    1. Student encounters an error in their code
+    2. System analyzes the error message
+    3. Returns explanation, common causes, and teaching moment
+    4. Student learns to understand and fix errors independently
+
+    Supported Error Types:
+    - **SyntaxError**: Code structure problems
+    - **NameError**: Undefined variables/functions
+    - **TypeError**: Wrong data type operations
+    - **IndexError**: List/array index out of bounds
+    - **KeyError**: Dictionary key not found
+    - **AttributeError**: Invalid attribute access
+    - **ValueError**: Invalid value for operation
+
+    Pedagogical Elements:
+    - **Explanation**: What the error means in simple terms
+    - **Common Causes**: Most likely reasons for this error
+    - **Teaching Moment**: Skill-building insight
+
+    Example Request:
+    ```json
+    {
+      "error_message": "NameError: name 'counter' is not defined"
+    }
+    ```
+
+    Example Response:
+    ```json
+    {
+      "explanation": "A NameError means you're using a variable that Python doesn't recognize.",
+      "common_causes": [
+        "Typo in the variable name",
+        "Using a variable before defining it",
+        "Variable defined inside a function but used outside"
+      ],
+      "teaching_moment": "Check the exact spelling of your variable..."
+    }
+    ```
+
+    Args:
+        request: Error explanation request with error message
+
+    Returns:
+        ErrorExplanationResponse: Explanation, causes, and teaching moment
+
+    Raises:
+        HTTPException 500: If error explanation fails
+    """
+    try:
+        error_data = rag_lab_assistant.get_error_explanation_prompt(request.error_message)
+
+        logger.info(f"Provided error explanation for: {request.error_message[:50]}...")
+
+        return ErrorExplanationResponse(
+            explanation=error_data.get("explanation", "Unknown error"),
+            common_causes=error_data.get("common_causes", []),
+            teaching_moment=error_data.get("teaching_moment", "")
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to provide error explanation: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error explanation failed: {str(e)}"
+        )
+
+
+@router.post("/encouragement", response_model=EncouragementResponse, status_code=status.HTTP_200_OK)
+async def get_encouragement(request: EncouragementRequest):
+    """
+    Get skill-level-appropriate encouragement phrases.
+
+    Educational Purpose:
+    - Beginners need more basic, supportive encouragement
+    - Intermediate students need challenge acknowledgment
+    - Advanced students need peer-level recognition
+
+    Example Request:
+    ```json
+    {
+      "skill_level": "beginner"
+    }
+    ```
+
+    Example Response:
+    ```json
+    {
+      "encouragement_phrases": [
+        "That's a great question - asking questions is how we learn!",
+        "Don't worry if this feels challenging at first...",
+        "You're making excellent progress!"
+      ],
+      "skill_level": "beginner"
+    }
+    ```
+
+    Args:
+        request: Encouragement request with skill level
+
+    Returns:
+        EncouragementResponse: List of appropriate phrases
+
+    Raises:
+        HTTPException 500: If encouragement retrieval fails
+    """
+    try:
+        # Convert string to SkillLevel enum
+        try:
+            skill_level_enum = SkillLevel(request.skill_level.lower())
+        except ValueError:
+            skill_level_enum = SkillLevel.INTERMEDIATE
+
+        phrases = rag_lab_assistant.get_encouragement(skill_level_enum)
+
+        logger.info(f"Provided encouragement for skill level: {request.skill_level}")
+
+        return EncouragementResponse(
+            encouragement_phrases=phrases,
+            skill_level=request.skill_level
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to provide encouragement: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Encouragement retrieval failed: {str(e)}"
+        )
+
+
+@router.get("/prompts-status", response_model=PromptStatusResponse, status_code=status.HTTP_200_OK)
+async def get_prompts_status():
+    """
+    Check if student AI prompts module is available.
+
+    Returns availability status and message about the prompts system.
+    Useful for monitoring and debugging prompt integration.
+
+    Example Response:
+    ```json
+    {
+      "prompts_available": true,
+      "message": "Student AI prompts are fully integrated and available."
+    }
+    ```
+
+    Returns:
+        PromptStatusResponse: Availability status and message
+    """
+    if STUDENT_PROMPTS_AVAILABLE:
+        return PromptStatusResponse(
+            prompts_available=True,
+            message="Student AI prompts are fully integrated and available."
+        )
+    else:
+        return PromptStatusResponse(
+            prompts_available=False,
+            message="Student AI prompts not available. Using fallback prompts."
         )

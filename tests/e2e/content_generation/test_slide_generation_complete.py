@@ -57,6 +57,9 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 from e2e.selenium_base import BaseTest, BasePage
 
+# Check if Selenium is configured
+SELENIUM_AVAILABLE = os.getenv('SELENIUM_REMOTE') is not None or os.getenv('HEADLESS') is not None
+
 
 # Test Configuration
 BASE_URL = "https://localhost:3000"
@@ -610,6 +613,7 @@ class SlidePreviewPage(BasePage):
 # ============================================================================
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.content_generation
 class TestSlideCreation(BaseTest):
@@ -1012,6 +1016,7 @@ class TestSlideCreation(BaseTest):
         cursor.close()
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.content_generation
 class TestSlideCustomization(BaseTest):
@@ -1404,6 +1409,7 @@ class TestSlideCustomization(BaseTest):
         cursor.close()
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.content_generation
 class TestSlideQualityValidation(BaseTest):

@@ -81,7 +81,6 @@ def security_client():
     return SecurityTestClient()
 
 
-@pytest.mark.skip(reason="Needs refactoring to use real objects")
 class TestCompleteSecurityWorkflows:
     """End-to-end tests for complete security workflows"""
 
@@ -400,7 +399,6 @@ class TestCompleteSecurityWorkflows:
         assert all(result['blocked'] for result in blocked_access)
 
 
-@pytest.mark.skip(reason="Needs refactoring to use real objects")
 class TestRealWorldAttackScenarios:
     """Tests simulating real-world attack scenarios"""
     

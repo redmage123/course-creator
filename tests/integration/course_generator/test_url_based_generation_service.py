@@ -181,7 +181,9 @@ class TestGenerateFromUrls:
     @pytest.fixture
     def service(self):
         """Create service - needs real implementations."""
-        pytest.skip("Needs real URL fetcher and RAG service implementations")
+        import os
+        if not os.getenv('CONTENT_FETCHER_URL'):
+            pytest.skip("CONTENT_FETCHER_URL not configured")
 
     @pytest.fixture
     def sample_request(self):

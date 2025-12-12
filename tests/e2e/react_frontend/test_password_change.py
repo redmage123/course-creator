@@ -20,6 +20,10 @@ TECHNICAL IMPLEMENTATION:
 """
 
 import pytest
+import os
+
+# Check for Selenium availability
+SELENIUM_AVAILABLE = os.getenv('SELENIUM_REMOTE') is not None or os.getenv('HEADLESS') is not None
 import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -110,6 +114,8 @@ class PasswordChangePage:
             pass
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
+@pytest.mark.e2e
 class TestPasswordChange:
     """Test suite for Password Change page."""
 

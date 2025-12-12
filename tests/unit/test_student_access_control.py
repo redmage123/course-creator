@@ -11,7 +11,6 @@ import uuid
 import sys
 from pathlib import Path
 
-# Skip - needs refactoring to remove mocks
 pytestmark = pytest.mark.skip(reason="Needs refactoring to remove mock usage and use real service objects")
 
 # Add the project root to the Python path

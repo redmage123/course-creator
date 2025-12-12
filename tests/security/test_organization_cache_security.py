@@ -93,7 +93,6 @@ class TestOrganizationRedisCache:
 
     async def test_cache_key_format_validation(self, cache, org_a_id):
         """Test cache key format follows security standards"""
-        pytest.skip("Needs refactoring to use real objects")
 
         course_id = 'test-course'
         data = {'test': 'data'}
@@ -282,7 +281,6 @@ class TestOrganizationRedisCache:
 
     async def test_cache_error_handling_security(self, cache, org_a_id):
         """Test secure error handling without information disclosure"""
-        pytest.skip("Needs refactoring to use real objects")
 
         # Test with mock Redis errors
         result = await cache.get(org_a_id, 'course', 'test')
@@ -315,7 +313,6 @@ class TestOrganizationRedisCache:
 
     async def test_cache_logging_security_events(self, cache, org_a_id):
         """Test security event logging for cache operations"""
-        pytest.skip("Needs refactoring to use real objects")
 
         # Perform cache operations
         await cache.set(org_a_id, 'course', 'test', {'data': 'test'})
@@ -329,7 +326,6 @@ class TestOrganizationCacheManager:
     @pytest.fixture
     def cache_manager(self):
         """Create cache manager with fake Redis"""
-        pytest.skip("Needs refactoring to use real objects")
     
     @pytest.fixture
     def org_id(self):
@@ -400,7 +396,6 @@ class TestOrganizationCacheManager:
 
     async def test_health_check(self, cache_manager):
         """Test cache health check functionality"""
-        pytest.skip("Needs refactoring to use real objects")
 
         health = await cache_manager.health_check()
 

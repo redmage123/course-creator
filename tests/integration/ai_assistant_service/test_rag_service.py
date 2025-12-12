@@ -42,8 +42,10 @@ class TestRAGService:
         BUSINESS SCENARIO: AI assistant needs codebase knowledge
         TECHNICAL SETUP: Initialize RAG service with mock HTTP client
         """
-        pytest.skip("Needs refactoring to use real objects")
-        service = RAGService(base_url="https://localhost:8009")
+        import os
+        if not os.getenv('RAG_SERVICE_URL'):
+            pytest.skip("RAG_SERVICE_URL not configured")
+        service = RAGService(base_url=os.getenv('RAG_SERVICE_URL', "https://localhost:8009"))
         return service
 
     @pytest.fixture

@@ -38,6 +38,38 @@ ENTITY CATALOG:
    - SubProject: Organizational locations/instance of main project
    - Supports multi-locations training programs with independent scheduling
 
+7. Project Builder Entities (project_builder.py):
+   - ProjectBuilderSpec: Complete specification for AI-assisted project creation
+   - LocationSpec: Specification for sub-projects (training locations)
+   - TrackSpec: Specification for learning tracks with courses
+   - CourseSpec: Specification for individual courses
+   - InstructorSpec: Specification for instructor assignments
+   - StudentSpec: Specification for student enrollments
+   - ScheduleConfig: Configuration for schedule generation
+   - ContentGenerationConfig: Configuration for content auto-generation
+   - ZoomConfig: Configuration for Zoom room creation
+   - ScheduleEntry: Individual scheduled session
+   - ScheduleProposal: Generated schedule with conflict analysis
+   - Conflict: Schedule conflict detection result
+   - ProjectCreationResult: Result of bulk project creation
+   - ProjectBuilderState: State machine states for conversation flow
+   - ContentType: Types of auto-generated content
+   - ConflictType: Types of scheduling conflicts
+   - ZoomRoomType: Types of Zoom rooms to create
+
+8. File Import Entities (file_import.py):
+   - FileUpload: Metadata for uploaded roster files
+   - ColumnMapping: Maps source columns to target fields
+   - ParsedRoster: Container for parsed roster data
+   - InstructorRosterEntry: Parsed instructor from roster file
+   - StudentRosterEntry: Parsed student from roster file
+   - RosterValidationResult: Validation results for roster
+   - ValidationIssue: Individual validation issue
+   - ImportProgress: Tracks multi-file import progress
+   - FileFormat: Supported file formats (CSV, Excel, JSON)
+   - RosterType: Types of rosters (instructor, student)
+   - FileUploadStatus: Status of file processing
+
 DESIGN PATTERNS:
 
 Entity Pattern:
@@ -159,6 +191,68 @@ from course_management.domain.entities.peer_learning import (
     HelpRequestNotFoundException
 )
 
+from course_management.domain.entities.project_builder import (
+    # Main specification entities
+    ProjectBuilderSpec,
+    LocationSpec,
+    TrackSpec,
+    CourseSpec,
+    InstructorSpec,
+    StudentSpec,
+    # Configuration entities
+    ScheduleConfig,
+    ContentGenerationConfig,
+    ZoomConfig,
+    # Schedule entities
+    ScheduleEntry,
+    ScheduleProposal,
+    Conflict,
+    # Result entities
+    ProjectCreationResult,
+    # Enumerations
+    ProjectBuilderState,
+    ContentType as ProjectContentType,  # Aliased to avoid conflict with learning_path.ContentType
+    ConflictType,
+    ZoomRoomType,
+    # Exceptions
+    ProjectBuilderException,
+    InvalidSpecificationException,
+    ScheduleConflictException,
+    RosterParseException,
+    ZoomConfigurationException,
+    ContentGenerationException
+)
+
+from course_management.domain.entities.file_import import (
+    # File upload entities
+    FileUpload,
+    ColumnMapping,
+    ColumnAlias,
+    ParsedRoster,
+    # Roster entry entities
+    InstructorRosterEntry,
+    StudentRosterEntry,
+    # Validation entities
+    ValidationIssue,
+    RosterValidationResult,
+    ImportProgress,
+    # Column alias configurations
+    INSTRUCTOR_COLUMN_ALIASES,
+    STUDENT_COLUMN_ALIASES,
+    # Enumerations
+    FileFormat,
+    RosterType,
+    FileUploadStatus,
+    ValidationSeverity,
+    # Exceptions
+    FileImportException,
+    UnsupportedFileFormatException,
+    MissingRequiredColumnException,
+    InvalidDataException,
+    EmptyFileException,
+    DuplicateEntryException
+)
+
 __all__ = [
     # Learning Path Entities
     'LearningPath',
@@ -206,5 +300,51 @@ __all__ = [
     'NotGroupMemberException',
     'InsufficientPermissionException',
     'ReviewAssignmentException',
-    'HelpRequestNotFoundException'
+    'HelpRequestNotFoundException',
+    # Project Builder Entities
+    'ProjectBuilderSpec',
+    'LocationSpec',
+    'TrackSpec',
+    'CourseSpec',
+    'InstructorSpec',
+    'StudentSpec',
+    'ScheduleConfig',
+    'ContentGenerationConfig',
+    'ZoomConfig',
+    'ScheduleEntry',
+    'ScheduleProposal',
+    'Conflict',
+    'ProjectCreationResult',
+    'ProjectBuilderState',
+    'ProjectContentType',
+    'ConflictType',
+    'ZoomRoomType',
+    'ProjectBuilderException',
+    'InvalidSpecificationException',
+    'ScheduleConflictException',
+    'RosterParseException',
+    'ZoomConfigurationException',
+    'ContentGenerationException',
+    # File Import Entities
+    'FileUpload',
+    'ColumnMapping',
+    'ColumnAlias',
+    'ParsedRoster',
+    'InstructorRosterEntry',
+    'StudentRosterEntry',
+    'ValidationIssue',
+    'RosterValidationResult',
+    'ImportProgress',
+    'INSTRUCTOR_COLUMN_ALIASES',
+    'STUDENT_COLUMN_ALIASES',
+    'FileFormat',
+    'RosterType',
+    'FileUploadStatus',
+    'ValidationSeverity',
+    'FileImportException',
+    'UnsupportedFileFormatException',
+    'MissingRequiredColumnException',
+    'InvalidDataException',
+    'EmptyFileException',
+    'DuplicateEntryException'
 ]

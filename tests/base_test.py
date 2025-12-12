@@ -103,9 +103,10 @@ class BaseUnitTest(BaseTest):
             text: Response text
 
         Returns:
-            Mock response object
+            Mock response object (placeholder - use real HTTP client instead)
         """
-        pytest.skip("Needs refactoring to use real objects")
+        # Deprecated: Use real HTTP client for integration tests
+        # This method is kept for backward compatibility but should not be used
         return None
 
     def create_mock_user(

@@ -2,16 +2,17 @@
 Test-Driven Development for Syllabus Generation Functionality
 Tests for the generate syllabus link and API interaction
 
-NOTE: These tests are skipped because they test async fetch behavior
-and need refactoring to use real API integration tests instead of mocks.
+These tests validate syllabus generation logic patterns.
 """
 
 import pytest
 import json
 import asyncio
 
+FRONTEND_TEST_AVAILABLE = True  # These are static analysis tests
 
-@pytest.mark.skip(reason="Needs refactoring to use real API integration instead of async mocks")
+
+@pytest.mark.frontend
 class TestSyllabusGeneration:
     """Test suite for syllabus generation functionality using TDD approach"""
 
@@ -52,7 +53,7 @@ class TestSyllabusGeneration:
         assert payload["difficulty_level"] == "beginner"
 
 
-@pytest.mark.skip(reason="Needs refactoring to use real API integration instead of mocks")
+@pytest.mark.frontend
 class TestSyllabusGenerationErrorCases:
     """Test specific error cases that cause syllabus generation failures"""
 

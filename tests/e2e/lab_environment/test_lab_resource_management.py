@@ -53,6 +53,9 @@ from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 import asyncpg
 
+# Check if Selenium is configured
+SELENIUM_AVAILABLE = os.getenv('SELENIUM_REMOTE') is not None or os.getenv('HEADLESS') is not None
+
 
 # ============================================================================
 # FIXTURES
@@ -239,6 +242,7 @@ def execute_code_in_lab(browser, code):
 # CPU RESOURCE MANAGEMENT TESTS (4 tests)
 # ============================================================================
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.lab_environment
 @pytest.mark.resource_management
@@ -307,6 +311,7 @@ async def test_cpu_limit_enforced_per_student(browser, test_base_url, student_cr
     assert cpu_period == 100000, f"Expected cpu_period=100000, got {cpu_period}"
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.lab_environment
 @pytest.mark.resource_management
@@ -367,6 +372,7 @@ while time.time() - start < 15:
         pytest.skip("CPU warning UI not yet implemented")
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.lab_environment
 @pytest.mark.resource_management
@@ -445,6 +451,7 @@ while True:
         assert max_cpu <= 110.0, f"CPU usage exceeded limit: {max_cpu}% (expected ≤110%)"
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.lab_environment
 @pytest.mark.resource_management
@@ -518,6 +525,7 @@ async def test_instructor_views_cpu_usage_analytics(browser, test_base_url, inst
 # MEMORY RESOURCE MANAGEMENT TESTS (4 tests)
 # ============================================================================
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.lab_environment
 @pytest.mark.resource_management
@@ -572,6 +580,7 @@ def test_memory_limit_enforced_per_student(browser, test_base_url, student_crede
         f"Expected memory_limit=2147483648 bytes, got {memory_limit}"
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.lab_environment
 @pytest.mark.resource_management
@@ -635,6 +644,7 @@ time.sleep(10)
         pytest.skip("Memory warning UI not yet implemented")
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.lab_environment
 @pytest.mark.resource_management
@@ -722,6 +732,7 @@ except MemoryError:
         pytest.skip(f"Container OOM testing not available: {e}")
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.lab_environment
 @pytest.mark.resource_management
@@ -787,6 +798,7 @@ async def test_instructor_views_memory_usage_analytics(browser, test_base_url, i
 # STORAGE RESOURCE MANAGEMENT TESTS (3 tests)
 # ============================================================================
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.lab_environment
 @pytest.mark.resource_management
@@ -865,6 +877,7 @@ if os.path.exists('/home/student/large_file.dat'):
         pytest.skip("Could not execute code in lab environment")
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.lab_environment
 @pytest.mark.resource_management
@@ -932,6 +945,7 @@ except Exception as e:
         pytest.skip("Storage warning UI not yet implemented")
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.lab_environment
 @pytest.mark.resource_management
@@ -1007,6 +1021,7 @@ except Exception as e:
 # NETWORK RESOURCE MANAGEMENT TESTS (2 tests)
 # ============================================================================
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.lab_environment
 @pytest.mark.resource_management
@@ -1095,6 +1110,7 @@ except Exception as e:
         pytest.skip("Network test output not visible")
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.lab_environment
 @pytest.mark.resource_management
@@ -1181,6 +1197,7 @@ except Exception as e:
 # RESOURCE ANALYTICS TESTS (2 tests)
 # ============================================================================
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.lab_environment
 @pytest.mark.resource_management
@@ -1281,6 +1298,7 @@ async def test_instructor_views_resource_usage_dashboard(browser, test_base_url,
         pytest.skip("Instructor analytics not yet implemented")
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.lab_environment
 @pytest.mark.resource_management

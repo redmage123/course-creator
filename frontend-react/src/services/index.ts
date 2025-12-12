@@ -24,6 +24,8 @@ export { organizationService } from './organizationService';
 export { memberService } from './memberService';
 export { trackService } from './trackService';
 export { courseService } from './courseService';
+export { syllabusService } from './syllabusService';
+export { bugService } from './bugService';
 
 // Type exports for convenience
 export type {
@@ -91,3 +93,30 @@ export type {
   CourseListResponse,
   CourseFilters,
 } from './courseService';
+
+export type {
+  CourseLevel,
+  ContentSourceType,
+  ExternalSourceConfig,
+  SyllabusModule,
+  ModuleTopic,
+  SyllabusData,
+  GenerateSyllabusRequest,
+  GenerateSyllabusResponse,
+  GenerationProgress,
+  GetProgressResponse,
+  SourceSummary,
+} from './syllabusService';
+
+export type {
+  BugSeverity,
+  BugStatus,
+  ComplexityEstimate,
+  BugSubmissionRequest,
+  BugReport,
+  BugAnalysis,
+  BugFix,
+  BugDetail,
+  BugListResponse,
+  BugFilters,
+} from './bugService';

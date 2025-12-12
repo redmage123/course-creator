@@ -19,7 +19,7 @@
  * - CSRF protection via API client
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Card } from '../components/atoms/Card';
 import { Button } from '../components/atoms/Button';
@@ -28,8 +28,10 @@ import { Input } from '../components/atoms/Input';
 import { Textarea } from '../components/atoms/Textarea';
 import { Select } from '../components/atoms/Select';
 import { Spinner } from '../components/atoms/Spinner';
+import { PhoneInput } from '../components/atoms/PhoneInput';
 import { organizationService } from '../services/organizationService';
 import { authService } from '../services/authService';
+import { countries } from '../data/countries';
 import styles from './OrganizationRegistration.module.css';
 
 /**
@@ -42,6 +44,7 @@ interface OrganizationRegistrationForm {
   description: string;
   domain: string;
   logo: File | null;
+  logoPreviewUrl: string | null;
 
   // Organization Address
   street_address: string;
@@ -50,8 +53,8 @@ interface OrganizationRegistrationForm {
   postal_code: string;
   country: string;
 
-  // Contact Information
-  contact_phone_country: string;
+  // Organization Contact Information (defaults to admin if empty)
+  contact_phone_country_code: string;
   contact_phone: string;
   contact_email: string;
 
@@ -59,6 +62,8 @@ interface OrganizationRegistrationForm {
   admin_full_name: string;
   admin_username: string;
   admin_email: string;
+  admin_phone_country_code: string;
+  admin_phone: string;
   admin_password: string;
   admin_password_confirm: string;
 
@@ -95,17 +100,20 @@ export const OrganizationRegistration: React.FC = () => {
     description: '',
     domain: '',
     logo: null,
+    logoPreviewUrl: null,
     street_address: '',
     city: '',
     state_province: '',
     postal_code: '',
-    country: '',
-    contact_phone_country: '+1',
+    country: 'US',
+    contact_phone_country_code: 'US',
     contact_phone: '',
     contact_email: '',
     admin_full_name: '',
     admin_username: '',
     admin_email: '',
+    admin_phone_country_code: 'US',
+    admin_phone: '',
     admin_password: '',
     admin_password_confirm: '',
     terms_accepted: false,
@@ -113,10 +121,13 @@ export const OrganizationRegistration: React.FC = () => {
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [slugGenerated, setSlugGenerated] = useState(false);
+
+  // Track if org contact fields have been manually edited (to prevent auto-fill override)
+  const [orgEmailManuallyEdited, setOrgEmailManuallyEdited] = useState(false);
+  const [orgPhoneManuallyEdited, setOrgPhoneManuallyEdited] = useState(false);
 
   /**
    * Auto-generate slug from organization name
@@ -131,6 +142,83 @@ export const OrganizationRegistration: React.FC = () => {
       setFormData(prev => ({ ...prev, slug: generatedSlug }));
     }
   }, [formData.name, slugGenerated]);
+
+  /**
+   * Auto-default organization email from admin email (if not manually edited)
+   */
+  useEffect(() => {
+    if (formData.admin_email && !orgEmailManuallyEdited && !formData.contact_email) {
+      setFormData(prev => ({ ...prev, contact_email: formData.admin_email }));
+    }
+  }, [formData.admin_email, orgEmailManuallyEdited, formData.contact_email]);
+
+  /**
+   * Auto-default organization phone from admin phone (if not manually edited)
+   */
+  useEffect(() => {
+    if (formData.admin_phone && !orgPhoneManuallyEdited && !formData.contact_phone) {
+      setFormData(prev => ({
+        ...prev,
+        contact_phone: formData.admin_phone,
+        contact_phone_country_code: formData.admin_phone_country_code,
+      }));
+    }
+  }, [formData.admin_phone, formData.admin_phone_country_code, orgPhoneManuallyEdited, formData.contact_phone]);
+
+  /**
+   * Handle clipboard paste for logo image
+   */
+  const handlePaste = useCallback((e: ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          // Validate file size (max 5MB)
+          if (file.size > 5 * 1024 * 1024) {
+            setErrors(prev => ({ ...prev, logo: 'Logo file must be less than 5MB' }));
+            return;
+          }
+
+          // Create preview URL
+          const previewUrl = URL.createObjectURL(file);
+          setFormData(prev => ({
+            ...prev,
+            logo: file,
+            logoPreviewUrl: previewUrl,
+          }));
+
+          // Clear any logo errors
+          if (errors.logo) {
+            setErrors(prev => {
+              const newErrors = { ...prev };
+              delete newErrors.logo;
+              return newErrors;
+            });
+          }
+        }
+        break;
+      }
+    }
+  }, [errors.logo]);
+
+  /**
+   * Set up paste event listener for logo
+   */
+  useEffect(() => {
+    document.addEventListener('paste', handlePaste);
+    return () => {
+      document.removeEventListener('paste', handlePaste);
+      // Clean up object URL when component unmounts
+      if (formData.logoPreviewUrl) {
+        URL.revokeObjectURL(formData.logoPreviewUrl);
+      }
+    };
+  }, [handlePaste, formData.logoPreviewUrl]);
 
   /**
    * Handle input changes
@@ -158,6 +246,14 @@ export const OrganizationRegistration: React.FC = () => {
     // If user manually edits slug, mark as manually edited
     if (name === 'slug') {
       setSlugGenerated(true);
+    }
+
+    // Track manual editing of org contact fields
+    if (name === 'contact_email' && value !== formData.admin_email) {
+      setOrgEmailManuallyEdited(true);
+    }
+    if (name === 'contact_phone' && value !== formData.admin_phone) {
+      setOrgPhoneManuallyEdited(true);
     }
   };
 
@@ -200,14 +296,18 @@ export const OrganizationRegistration: React.FC = () => {
         return;
       }
 
-      setFormData(prev => ({ ...prev, logo: file }));
+      // Clean up previous preview URL
+      if (formData.logoPreviewUrl) {
+        URL.revokeObjectURL(formData.logoPreviewUrl);
+      }
 
-      // Generate preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      // Create new preview URL
+      const previewUrl = URL.createObjectURL(file);
+      setFormData(prev => ({
+        ...prev,
+        logo: file,
+        logoPreviewUrl: previewUrl,
+      }));
 
       // Clear logo error
       if (errors.logo) {
@@ -224,11 +324,58 @@ export const OrganizationRegistration: React.FC = () => {
    * Remove selected logo
    */
   const handleRemoveLogo = () => {
-    setFormData(prev => ({ ...prev, logo: null }));
-    setLogoPreview(null);
+    // Clean up preview URL
+    if (formData.logoPreviewUrl) {
+      URL.revokeObjectURL(formData.logoPreviewUrl);
+    }
+    setFormData(prev => ({ ...prev, logo: null, logoPreviewUrl: null }));
     if (logoInputRef.current) {
       logoInputRef.current.value = '';
     }
+  };
+
+  /**
+   * Handle admin phone number change
+   */
+  const handleAdminPhoneChange = (phone: string) => {
+    setFormData(prev => ({ ...prev, admin_phone: phone }));
+    if (errors.admin_phone) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.admin_phone;
+        return newErrors;
+      });
+    }
+  };
+
+  /**
+   * Handle admin phone country code change
+   */
+  const handleAdminPhoneCountryChange = (countryCode: string, dialCode: string) => {
+    setFormData(prev => ({ ...prev, admin_phone_country_code: countryCode }));
+  };
+
+  /**
+   * Handle organization contact phone number change
+   */
+  const handleContactPhoneChange = (phone: string) => {
+    setFormData(prev => ({ ...prev, contact_phone: phone }));
+    setOrgPhoneManuallyEdited(true);
+    if (errors.contact_phone) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.contact_phone;
+        return newErrors;
+      });
+    }
+  };
+
+  /**
+   * Handle organization contact phone country code change
+   */
+  const handleContactPhoneCountryChange = (countryCode: string, dialCode: string) => {
+    setFormData(prev => ({ ...prev, contact_phone_country_code: countryCode }));
+    setOrgPhoneManuallyEdited(true);
   };
 
   /**
@@ -269,6 +416,9 @@ export const OrganizationRegistration: React.FC = () => {
       newErrors.admin_email = 'Admin email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.admin_email)) {
       newErrors.admin_email = 'Invalid email format';
+    }
+    if (!formData.admin_phone.trim()) {
+      newErrors.admin_phone = 'Admin phone number is required';
     }
 
     // Password validation
@@ -330,15 +480,21 @@ export const OrganizationRegistration: React.FC = () => {
       submitData.append('postal_code', formData.postal_code);
       submitData.append('country', formData.country);
 
-      // Append contact fields
-      submitData.append('contact_phone_country', formData.contact_phone_country);
-      submitData.append('contact_phone', formData.contact_phone);
-      submitData.append('contact_email', formData.contact_email);
+      // Get dial codes from country codes
+      const contactCountry = countries.find(c => c.code === formData.contact_phone_country_code);
+      const adminCountry = countries.find(c => c.code === formData.admin_phone_country_code);
+
+      // Append contact fields (use admin values as defaults if not manually edited)
+      submitData.append('contact_phone_country', contactCountry?.dialCode || '+1');
+      submitData.append('contact_phone', formData.contact_phone || formData.admin_phone);
+      submitData.append('contact_email', formData.contact_email || formData.admin_email);
 
       // Append admin fields
       submitData.append('admin_full_name', formData.admin_full_name);
       submitData.append('admin_username', formData.admin_username);
       submitData.append('admin_email', formData.admin_email);
+      submitData.append('admin_phone_country', adminCountry?.dialCode || '+1');
+      submitData.append('admin_phone', formData.admin_phone);
       submitData.append('admin_password', formData.admin_password);
 
       // Call organization registration API
@@ -438,7 +594,7 @@ export const OrganizationRegistration: React.FC = () => {
               />
             </div>
 
-            {/* Logo Upload */}
+            {/* Logo Upload with Paste Support */}
             <div className={styles.formGroup}>
               <label className={styles.formLabel}>
                 Organization Logo
@@ -446,9 +602,9 @@ export const OrganizationRegistration: React.FC = () => {
               </label>
 
               <div className={styles.logoUploadArea} onClick={() => logoInputRef.current?.click()}>
-                {logoPreview ? (
+                {formData.logoPreviewUrl ? (
                   <div className={styles.logoPreview}>
-                    <img src={logoPreview} alt="Logo preview" className={styles.previewImage} />
+                    <img src={formData.logoPreviewUrl} alt="Logo preview" className={styles.previewImage} />
                     <Button
                       type="button"
                       onClick={(e) => {
@@ -466,8 +622,8 @@ export const OrganizationRegistration: React.FC = () => {
                 ) : (
                   <div className={styles.uploadPlaceholder}>
                     <i className="fas fa-cloud-upload-alt fa-3x"></i>
-                    <p>Click to upload logo or drag and drop</p>
-                    <small>PNG, JPG, GIF up to 5MB</small>
+                    <p>Click to upload logo, drag and drop, or paste from clipboard</p>
+                    <small>PNG, JPG, GIF up to 5MB • Ctrl+V to paste image</small>
                   </div>
                 )}
               </div>
@@ -537,18 +693,11 @@ export const OrganizationRegistration: React.FC = () => {
                 onChange={handleSelectChange('country')}
                 error={errors.country}
                 required
-                options={[
-                  { value: '', label: 'Select Country' },
-                  { value: 'US', label: 'United States' },
-                  { value: 'CA', label: 'Canada' },
-                  { value: 'GB', label: 'United Kingdom' },
-                  { value: 'AU', label: 'Australia' },
-                  { value: 'DE', label: 'Germany' },
-                  { value: 'FR', label: 'France' },
-                  { value: 'IN', label: 'India' },
-                  { value: 'JP', label: 'Japan' },
-                  { value: 'Other', label: 'Other' },
-                ]}
+                searchable
+                options={countries.map(c => ({
+                  value: c.code,
+                  label: `${c.flag} ${c.name}`,
+                }))}
               />
             </div>
           </div>
@@ -557,49 +706,34 @@ export const OrganizationRegistration: React.FC = () => {
           <div className={styles.formSection}>
             <div className={styles.sectionTitle}>
               <i className="fas fa-phone"></i>
-              Contact Information
+              Organization Contact Information
             </div>
 
-            <div className={styles.formGrid}>
-              <div className={styles.phoneGroup}>
-                <Select
-                  label="Phone Country"
-                  name="contact_phone_country"
-                  value={formData.contact_phone_country}
-                  onChange={handleSelectChange('contact_phone_country')}
-                  required
-                  options={[
-                    { value: '+1', label: '+1 (US/CA)' },
-                    { value: '+44', label: '+44 (UK)' },
-                    { value: '+61', label: '+61 (AU)' },
-                    { value: '+49', label: '+49 (DE)' },
-                    { value: '+33', label: '+33 (FR)' },
-                    { value: '+91', label: '+91 (IN)' },
-                    { value: '+81', label: '+81 (JP)' },
-                  ]}
-                  className={styles.countryCodeSelect}
-                />
+            <p className={styles.sectionDescription}>
+              These fields will default to the administrator's information if left empty.
+            </p>
 
-                <Input
-                  label="Phone Number"
-                  name="contact_phone"
-                  value={formData.contact_phone}
-                  onChange={handleInputChange}
-                  error={errors.contact_phone}
-                  placeholder="Phone number"
-                  type="tel"
-                />
-              </div>
+            <div className={styles.formGrid}>
+              <PhoneInput
+                label="Organization Phone Number"
+                countryCode={formData.contact_phone_country_code}
+                value={formData.contact_phone}
+                onChange={handleContactPhoneChange}
+                onCountryChange={handleContactPhoneCountryChange}
+                error={errors.contact_phone}
+                placeholder="Phone number (defaults to admin)"
+                helperText="Leave empty to use admin's phone number"
+              />
 
               <Input
-                label="Contact Email"
+                label="Organization Email"
                 name="contact_email"
                 value={formData.contact_email}
                 onChange={handleInputChange}
                 error={errors.contact_email}
-                required
-                placeholder="contact@example.com"
+                placeholder="contact@example.com (defaults to admin)"
                 type="email"
+                helperText="Leave empty to use admin's email"
               />
             </div>
           </div>
@@ -647,7 +781,17 @@ export const OrganizationRegistration: React.FC = () => {
                 type="email"
               />
 
-              <div></div> {/* Empty grid cell for layout */}
+              <PhoneInput
+                label="Phone Number"
+                countryCode={formData.admin_phone_country_code}
+                value={formData.admin_phone}
+                onChange={handleAdminPhoneChange}
+                onCountryChange={handleAdminPhoneCountryChange}
+                error={errors.admin_phone}
+                required
+                placeholder="Phone number"
+                name="admin_phone"
+              />
 
               <Input
                 label="Password"

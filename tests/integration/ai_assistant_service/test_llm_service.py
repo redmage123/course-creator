@@ -49,7 +49,9 @@ class TestLLMService:
         BUSINESS SCENARIO: Instructor needs AI-powered content generation
         TECHNICAL SETUP: Initialize LLM service with OpenAI provider
         """
-        pytest.skip("Needs refactoring to use real objects")
+        import os
+        if not os.getenv('OPENAI_API_KEY'):
+            pytest.skip("OPENAI_API_KEY not configured")
         service = LLMService(provider=LLMProvider.OPENAI)
         return service
 
@@ -61,7 +63,9 @@ class TestLLMService:
         BUSINESS SCENARIO: Platform needs alternative LLM for diversity
         TECHNICAL SETUP: Initialize LLM service with Claude provider
         """
-        pytest.skip("Needs refactoring to use real objects")
+        import os
+        if not os.getenv('ANTHROPIC_API_KEY'):
+            pytest.skip("ANTHROPIC_API_KEY not configured")
         service = LLMService(provider=LLMProvider.CLAUDE)
         return service
 

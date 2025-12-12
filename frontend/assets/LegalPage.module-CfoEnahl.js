@@ -1,0 +1,2 @@
+const t="_legalContainer_12bvf_10",n="_backLink_12bvf_16",o="_legalCard_12bvf_36",e="_title_12bvf_45",_="_lastUpdated_12bvf_52",a="_content_12bvf_60",c="_section_12bvf_65",l="_contactInfo_12bvf_102",s="_footer_12bvf_109",f="_relatedLink_12bvf_118",i={legalContainer:t,backLink:n,legalCard:o,title:e,lastUpdated:_,content:a,section:c,contactInfo:l,footer:s,relatedLink:f};export{i as s};
+//# sourceMappingURL=LegalPage.module-CfoEnahl.js.map

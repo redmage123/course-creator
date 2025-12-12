@@ -14,8 +14,37 @@ import logging
 
 from organization_management.domain.entities.meeting_room import MeetingRoom, MeetingPlatform, RoomType
 
-@dataclass
 
+@dataclass
+class BulkRoomCreationResult:
+    """
+    Result of bulk room creation operation.
+
+    BUSINESS PURPOSE:
+    Provides detailed results when creating multiple Zoom rooms at once,
+    including success/failure counts and individual room results.
+
+    ATTRIBUTES:
+        total_requested: Number of rooms requested to create
+        successful: Number of rooms successfully created
+        failed: Number of rooms that failed to create
+        room_results: List of individual room creation results
+        errors: List of error messages for failed rooms
+    """
+    total_requested: int = 0
+    successful: int = 0
+    failed: int = 0
+    room_results: List[Dict] = None
+    errors: List[Dict] = None
+
+    def __post_init__(self):
+        if self.room_results is None:
+            self.room_results = []
+        if self.errors is None:
+            self.errors = []
+
+
+@dataclass
 class ZoomCredentials:
     """Zoom API credentials"""
     api_key: str
@@ -349,6 +378,221 @@ class ZoomIntegrationService:
         except Exception as e:
             self.logger.error(f"Failed to get Zoom user info: {e}")
             return {}
+
+    async def create_bulk_meeting_rooms(
+        self,
+        rooms: List[MeetingRoom],
+        max_concurrent: int = 5,
+        continue_on_error: bool = True
+    ) -> BulkRoomCreationResult:
+        """
+        Create multiple Zoom meeting rooms in parallel.
+
+        BUSINESS PURPOSE:
+        Enables bulk creation of Zoom rooms for training programs with
+        multiple locations, tracks, or courses. Creates rooms efficiently
+        using controlled parallelism to respect API rate limits.
+
+        TECHNICAL IMPLEMENTATION:
+        Uses asyncio.Semaphore to limit concurrent API calls to avoid
+        rate limiting. Collects results and errors for all rooms.
+        Supports continue-on-error mode for partial success.
+
+        ARGS:
+            rooms: List of MeetingRoom objects to create
+            max_concurrent: Maximum concurrent API calls (default 5)
+            continue_on_error: If True, continue creating other rooms on failure
+
+        RETURNS:
+            BulkRoomCreationResult with summary and individual results
+
+        EXAMPLE:
+            rooms = [MeetingRoom(...), MeetingRoom(...)]
+            async with ZoomIntegrationService(credentials) as zoom:
+                result = await zoom.create_bulk_meeting_rooms(rooms)
+                print(f"Created {result.successful} of {result.total_requested}")
+        """
+        result = BulkRoomCreationResult(
+            total_requested=len(rooms),
+            successful=0,
+            failed=0,
+            room_results=[],
+            errors=[]
+        )
+
+        if not rooms:
+            return result
+
+        # Semaphore for rate limiting
+        semaphore = asyncio.Semaphore(max_concurrent)
+
+        async def create_single_room(room: MeetingRoom, index: int) -> Dict:
+            """Create a single room with semaphore control."""
+            async with semaphore:
+                try:
+                    room_result = await self.create_meeting_room(room)
+                    return {
+                        "index": index,
+                        "success": True,
+                        "room_name": room.get_display_name(),
+                        "result": room_result
+                    }
+                except Exception as e:
+                    self.logger.error(f"Failed to create room {room.get_display_name()}: {e}")
+                    return {
+                        "index": index,
+                        "success": False,
+                        "room_name": room.get_display_name(),
+                        "error": str(e)
+                    }
+
+        # Create all rooms in parallel (controlled by semaphore)
+        tasks = [create_single_room(room, i) for i, room in enumerate(rooms)]
+
+        if continue_on_error:
+            # Use gather with return_exceptions to continue on failure
+            room_results = await asyncio.gather(*tasks, return_exceptions=True)
+        else:
+            # Stop on first exception
+            room_results = await asyncio.gather(*tasks)
+
+        # Process results
+        for room_result in room_results:
+            if isinstance(room_result, Exception):
+                # Exception from gather
+                result.failed += 1
+                result.errors.append({
+                    "error": str(room_result),
+                    "type": "exception"
+                })
+            elif room_result.get("success"):
+                result.successful += 1
+                result.room_results.append(room_result)
+            else:
+                result.failed += 1
+                result.errors.append({
+                    "room_name": room_result.get("room_name"),
+                    "error": room_result.get("error"),
+                    "index": room_result.get("index")
+                })
+
+        self.logger.info(
+            f"Bulk room creation complete: {result.successful} succeeded, "
+            f"{result.failed} failed out of {result.total_requested}"
+        )
+
+        return result
+
+    async def create_rooms_for_schedule(
+        self,
+        schedule_entries: List[Dict],
+        room_name_template: str = "{track} - {course} - {location}"
+    ) -> BulkRoomCreationResult:
+        """
+        Create Zoom rooms for schedule entries.
+
+        BUSINESS PURPOSE:
+        Automatically creates Zoom rooms for all scheduled sessions in
+        a training program. Links rooms to specific tracks, courses,
+        and locations based on schedule.
+
+        TECHNICAL IMPLEMENTATION:
+        Converts schedule entries to MeetingRoom objects using template
+        for naming. Calls bulk creation for efficiency.
+
+        ARGS:
+            schedule_entries: List of schedule entry dicts with track, course, location info
+            room_name_template: Template string for room names
+
+        RETURNS:
+            BulkRoomCreationResult with created rooms
+
+        EXAMPLE:
+            entries = [
+                {"track": "Python", "course": "Basics", "location": "NYC"},
+                {"track": "Python", "course": "Advanced", "location": "LA"}
+            ]
+            result = await zoom.create_rooms_for_schedule(entries)
+        """
+        rooms = []
+
+        for entry in schedule_entries:
+            # Build room name from template
+            room_name = room_name_template.format(
+                track=entry.get("track_name", "Track"),
+                course=entry.get("course_name", "Course"),
+                location=entry.get("location_name", "Location"),
+                date=entry.get("date", ""),
+                instructor=entry.get("instructor_name", "")
+            )
+
+            # Create MeetingRoom object
+            room = MeetingRoom(
+                name=room_name,
+                platform=MeetingPlatform.ZOOM,
+                room_type=RoomType.VIRTUAL_CLASSROOM,
+                is_recurring=entry.get("is_recurring", False),
+                settings={
+                    "waiting_room": True,
+                    "mute_on_entry": True,
+                    "video_on_entry": False,
+                    "allow_screen_sharing": True,
+                    "breakout_rooms_enabled": entry.get("breakout_rooms", False)
+                }
+            )
+            rooms.append(room)
+
+        return await self.create_bulk_meeting_rooms(rooms)
+
+    async def delete_bulk_meeting_rooms(
+        self,
+        external_room_ids: List[str],
+        max_concurrent: int = 5
+    ) -> Dict:
+        """
+        Delete multiple Zoom meeting rooms.
+
+        BUSINESS PURPOSE:
+        Enables cleanup of multiple Zoom rooms when training programs
+        are cancelled or completed.
+
+        ARGS:
+            external_room_ids: List of Zoom meeting IDs to delete
+            max_concurrent: Maximum concurrent API calls
+
+        RETURNS:
+            Dict with successful and failed counts
+        """
+        result = {
+            "total_requested": len(external_room_ids),
+            "successful": 0,
+            "failed": 0,
+            "errors": []
+        }
+
+        semaphore = asyncio.Semaphore(max_concurrent)
+
+        async def delete_single_room(room_id: str) -> bool:
+            async with semaphore:
+                try:
+                    return await self.delete_meeting_room(room_id)
+                except Exception as e:
+                    result["errors"].append({
+                        "room_id": room_id,
+                        "error": str(e)
+                    })
+                    return False
+
+        tasks = [delete_single_room(room_id) for room_id in external_room_ids]
+        delete_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        for success in delete_results:
+            if success is True:
+                result["successful"] += 1
+            else:
+                result["failed"] += 1
+
+        return result
 
     def validate_configuration(self) -> bool:
         """Validate Zoom integration configuration"""

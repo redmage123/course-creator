@@ -16,7 +16,9 @@ class TestSyllabusGeneration:
     @pytest.fixture
     def mock_claude_client(self):
         """Mock Claude API client"""
-        pytest.skip("Needs refactoring to use real objects")
+        import os
+        if not os.getenv('ANTHROPIC_API_KEY'):
+            pytest.skip("ANTHROPIC_API_KEY not configured")
         client = {}
         response = {}
         response['content'] = [{}]

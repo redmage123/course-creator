@@ -366,9 +366,14 @@ class TestRBACAPIIntegration:
     
     @pytest.mark.integration
     @pytest.mark.api
-    @pytest.mark.skip(reason="Needs refactoring to use real services - currently uses in-memory audit tracking")
     def test_audit_logging_integration(self, client, auth_headers, rbac_test_data):
-        """Test that RBAC operations are properly audit logged."""
+        """Test that RBAC operations are properly audit logged.
+
+        NOTE: This test currently uses in-memory audit tracking.
+        TODO: Refactor to query actual audit log database tables.
+        """
+        pytest.skip("Needs refactoring to use real audit database - currently uses in-memory tracking")
+
         org_id = rbac_test_data["organization"]["id"]
 
         # Real audit logging would track to database
@@ -391,13 +396,17 @@ class TestRBACAPIIntegration:
         )
 
         # TODO: Query actual audit log database table to verify events were logged
-        pass
     
     @pytest.mark.integration
     @pytest.mark.api
-    @pytest.mark.skip(reason="Needs refactoring to use real services - currently uses in-memory email tracking")
     def test_email_notification_integration(self, client, auth_headers, rbac_test_data):
-        """Test email notification integration for RBAC operations."""
+        """Test email notification integration for RBAC operations.
+
+        NOTE: This test currently uses in-memory email tracking.
+        TODO: Refactor to verify email queue or service calls.
+        """
+        pytest.skip("Needs refactoring to use real email service - currently uses in-memory tracking")
+
         org_id = rbac_test_data["organization"]["id"]
 
         # Real email notification would be sent via email service
@@ -416,7 +425,6 @@ class TestRBACAPIIntegration:
         )
 
         # TODO: Query email service or queue to verify notification was sent
-        pass
     
     @pytest.mark.integration
     @pytest.mark.api

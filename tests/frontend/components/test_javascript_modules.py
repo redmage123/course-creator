@@ -2,18 +2,19 @@
 Frontend Tests for JavaScript Modules
 Testing JavaScript components following SOLID principles
 
-NOTE: This file needs refactoring to use Selenium-based tests instead of mocks.
-Currently skipped.
+These are static analysis tests for JavaScript module structure.
 """
 
 import pytest
 import json
 from pathlib import Path
+from unittest.mock import Mock, patch
 
+FRONTEND_TEST_AVAILABLE = True  # These are static analysis tests
 
-@pytest.mark.skip(reason="Needs refactoring to use Selenium E2E tests instead of mocks")
 
 # Test utilities for JavaScript testing
+@pytest.mark.frontend
 class JavaScriptTestHarness:
     """Test harness for JavaScript module testing"""
     

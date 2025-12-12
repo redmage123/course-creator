@@ -2,6 +2,8 @@
 """
 Frontend Tests for Complete Project Management System
 Tests all project management UI components, modals, and JavaScript functions
+
+These tests validate project management UI component patterns.
 """
 import pytest
 import sys
@@ -22,7 +24,10 @@ from webdriver_manager.chrome import ChromeDriverManager
 # Add path for imports
 sys.path.insert(0, '/home/bbrelin/course-creator/tests')
 
+FRONTEND_TEST_AVAILABLE = True  # These are static analysis tests
 
+
+@pytest.mark.frontend
 class TestProjectManagementFrontend:
     """
     Frontend tests for complete project management functionality

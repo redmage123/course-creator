@@ -66,8 +66,9 @@ def event_loop():
 
 @pytest.fixture
 def mock_db_pool():
-    """Create a mock database connection pool."""
-    pytest.skip("Needs refactoring to use real objects")
+    """Create a mock database connection pool (deprecated - use real db_connection)."""
+    # Deprecated: Use db_connection fixture for real database testing
+    # This fixture is kept for backward compatibility
     return None
 
 
@@ -132,57 +133,57 @@ def mock_jwt_token():
 
 @pytest.fixture
 def mock_password_manager():
-    """Create a mock password manager."""
-    pytest.skip("Needs refactoring to use real objects")
+    """Create a mock password manager (deprecated)."""
+    # Deprecated: Use real password manager from services
     return None
 
 
 @pytest.fixture
 def mock_jwt_manager():
-    """Create a mock JWT manager."""
-    pytest.skip("Needs refactoring to use real objects")
+    """Create a mock JWT manager (deprecated)."""
+    # Deprecated: Use real JWT manager from services
     return None
 
 
 @pytest.fixture
 def mock_session_manager():
-    """Create a mock session manager."""
-    pytest.skip("Needs refactoring to use real objects")
+    """Create a mock session manager (deprecated)."""
+    # Deprecated: Use real session manager from services
     return None
 
 
 @pytest.fixture
 def mock_user_repository():
-    """Create a mock user repository."""
-    pytest.skip("Needs refactoring to use real objects")
+    """Create a mock user repository (deprecated)."""
+    # Deprecated: Use real repository with test database
     return None
 
 
 @pytest.fixture
 def mock_course_repository():
-    """Create a mock course repository."""
-    pytest.skip("Needs refactoring to use real objects")
+    """Create a mock course repository (deprecated)."""
+    # Deprecated: Use real repository with test database
     return None
 
 
 @pytest.fixture
 def mock_content_repository():
-    """Create a mock content repository."""
-    pytest.skip("Needs refactoring to use real objects")
+    """Create a mock content repository (deprecated)."""
+    # Deprecated: Use real repository with test database
     return None
 
 
 @pytest.fixture
 def mock_enrollment_repository():
-    """Create a mock enrollment repository."""
-    pytest.skip("Needs refactoring to use real objects")
+    """Create a mock enrollment repository (deprecated)."""
+    # Deprecated: Use real repository with test database
     return None
 
 
 @pytest.fixture
 def mock_storage_service():
-    """Create a mock storage service."""
-    pytest.skip("Needs refactoring to use real objects")
+    """Create a mock storage service (deprecated)."""
+    # Deprecated: Use real storage service with test configuration
     return None
 
 
@@ -308,8 +309,8 @@ def selenium_config():
 
 @pytest.fixture
 def mock_ai_service():
-    """Create a mock AI service."""
-    pytest.skip("Needs refactoring to use real objects")
+    """Create a mock AI service (deprecated)."""
+    # Deprecated: Use real AI service with test configuration
     return None
 
 
@@ -333,8 +334,8 @@ def temp_file():
 
 @pytest.fixture
 def mock_file_upload():
-    """Create a mock file upload object."""
-    pytest.skip("Needs refactoring to use real objects")
+    """Create a mock file upload object (deprecated)."""
+    # Deprecated: Use real file upload with test files
     return None
 
 
@@ -414,23 +415,27 @@ def setup_test_environment():
 
 @pytest.fixture
 def mock_logger():
-    """Create a mock logger for testing."""
-    pytest.skip("Needs refactoring to use real objects")
-    return None
+    """Create a mock logger for testing (deprecated)."""
+    # Deprecated: Use real logger from logging module
+    import logging
+    return logging.getLogger('test')
 
 
 @pytest.fixture
 def mock_syslog_logger():
-    """Create a mock syslog logger for centralized logging tests."""
-    pytest.skip("Needs refactoring to use real objects")
-    return None
+    """Create a mock syslog logger for centralized logging tests (deprecated)."""
+    # Deprecated: Use real syslog logger configuration
+    import logging
+    return logging.getLogger('test.syslog')
 
 
 @pytest.fixture
 def mock_logging_setup():
-    """Mock the centralized logging setup."""
-    pytest.skip("Needs refactoring to use real objects")
-    return None
+    """Mock the centralized logging setup (deprecated)."""
+    # Deprecated: Use real logging configuration
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    return logging
 
 
 @pytest.fixture
@@ -649,21 +654,51 @@ class TestUtils:
 
     @staticmethod
     def create_mock_user(**kwargs):
-        """Create a mock user with default values."""
-        pytest.skip("Needs refactoring to use real objects")
-        return None
+        """Create a mock user with default values (deprecated - use real user creation)."""
+        # Deprecated: Use real user creation with database
+        from datetime import datetime
+        import uuid
+        defaults = {
+            "id": str(uuid.uuid4()),
+            "username": "testuser",
+            "email": "test@example.com",
+            "role": "student",
+            "is_active": True,
+            "created_at": datetime.utcnow()
+        }
+        defaults.update(kwargs)
+        return defaults
 
     @staticmethod
     def create_mock_course(**kwargs):
-        """Create a mock course with default values."""
-        pytest.skip("Needs refactoring to use real objects")
-        return None
+        """Create a mock course with default values (deprecated - use real course creation)."""
+        # Deprecated: Use real course creation with database
+        from datetime import datetime
+        import uuid
+        defaults = {
+            "id": str(uuid.uuid4()),
+            "title": "Test Course",
+            "description": "A test course",
+            "instructor_id": str(uuid.uuid4()),
+            "created_at": datetime.utcnow()
+        }
+        defaults.update(kwargs)
+        return defaults
 
     @staticmethod
     def create_mock_content(**kwargs):
-        """Create a mock content with default values."""
-        pytest.skip("Needs refactoring to use real objects")
-        return None
+        """Create a mock content with default values (deprecated - use real content creation)."""
+        # Deprecated: Use real content creation with database
+        from datetime import datetime
+        import uuid
+        defaults = {
+            "id": str(uuid.uuid4()),
+            "filename": "test_file.pdf",
+            "content_type": "application/pdf",
+            "uploaded_at": datetime.utcnow()
+        }
+        defaults.update(kwargs)
+        return defaults
 
 
 # Make utility functions available to all tests

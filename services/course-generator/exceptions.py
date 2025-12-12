@@ -496,17 +496,279 @@ class RAGException(CourseCreatorBaseException):
 class EmbeddingException(RAGException):
     """
     Exception raised for text embedding generation failures.
-    
+
     Business Context:
     Embedding generation failures prevent effective semantic search and context retrieval,
     directly impacting the quality of AI-generated educational content and assistance.
     These exceptions help identify API failures, model issues, and text processing problems.
-    
+
     Technical Context:
     - OpenAI API embedding failures
     - Local embedding model errors
     - Text preprocessing issues
     - Token limit exceeded errors
+    """
+    pass
+
+
+# URL Fetching and Content Parsing Exceptions
+class URLFetchException(CourseCreatorBaseException):
+    """
+    Base exception for URL fetching operations.
+
+    Business Context:
+    URL-based course generation requires fetching external documentation from third-party
+    software websites. These exceptions handle network failures, invalid URLs, and access
+    issues that prevent content retrieval from external sources.
+
+    Technical Context:
+    - HTTP request failures (timeouts, connection errors)
+    - Invalid or malformed URLs
+    - DNS resolution failures
+    - SSL/TLS certificate issues
+    """
+
+    def __init__(
+        self,
+        message: str,
+        url: str = None,
+        status_code: int = None,
+        **kwargs
+    ):
+        super().__init__(message, **kwargs)
+        self.url = url
+        self.status_code = status_code
+        self.details["url"] = url
+        self.details["status_code"] = status_code
+
+
+class URLValidationException(URLFetchException):
+    """
+    Exception for invalid or malformed URL inputs.
+
+    Business Context:
+    Validates that user-provided URLs are properly formatted and point to accessible
+    resources before attempting content retrieval. Prevents wasted API calls and
+    provides immediate user feedback for invalid inputs.
+
+    Technical Context:
+    - Malformed URL syntax (missing protocol, invalid characters)
+    - Unsupported URL schemes (must be http/https)
+    - URLs pointing to internal/private networks (security)
+    - URLs exceeding maximum length limits
+    """
+    pass
+
+
+class URLConnectionException(URLFetchException):
+    """
+    Exception for network connectivity failures when fetching URLs.
+
+    Business Context:
+    Network issues can prevent retrieval of external documentation. This exception
+    helps distinguish between user errors (bad URL) and infrastructure issues
+    (network problems) for appropriate error handling and user messaging.
+
+    Technical Context:
+    - Connection timeouts
+    - DNS resolution failures
+    - Connection refused errors
+    - Network unreachable errors
+    """
+    pass
+
+
+class URLTimeoutException(URLFetchException):
+    """
+    Exception for URL fetch operations that exceed timeout limits.
+
+    Business Context:
+    External documentation sites may be slow or unresponsive. Timeout handling
+    ensures the platform doesn't hang indefinitely waiting for content, providing
+    users with timely feedback about retrieval issues.
+
+    Technical Context:
+    - Connection timeout (server not responding)
+    - Read timeout (server responding slowly)
+    - Total request timeout exceeded
+    """
+    pass
+
+
+class URLAccessDeniedException(URLFetchException):
+    """
+    Exception for URLs that return access denied responses (401, 403).
+
+    Business Context:
+    Some documentation may be behind authentication or access controls.
+    This exception helps users understand that the URL exists but requires
+    credentials or is otherwise restricted.
+
+    Technical Context:
+    - HTTP 401 Unauthorized responses
+    - HTTP 403 Forbidden responses
+    - Rate limiting responses (429)
+    - IP-based access restrictions
+    """
+    pass
+
+
+class URLNotFoundException(URLFetchException):
+    """
+    Exception for URLs that return 404 Not Found responses.
+
+    Business Context:
+    Documentation URLs may become stale or be incorrectly entered.
+    This exception provides clear feedback that the specific page
+    does not exist at the given location.
+
+    Technical Context:
+    - HTTP 404 Not Found responses
+    - Redirects to error pages
+    - Soft 404s (200 status with error content)
+    """
+    pass
+
+
+class ContentParsingException(CourseCreatorBaseException):
+    """
+    Base exception for content parsing and extraction operations.
+
+    Business Context:
+    After fetching external documentation, content must be extracted and cleaned
+    for use in course generation. These exceptions handle failures in the parsing
+    and text extraction process from various content formats.
+
+    Technical Context:
+    - HTML parsing failures
+    - Markdown conversion errors
+    - Character encoding issues
+    - Malformed document structure
+    """
+
+    def __init__(
+        self,
+        message: str,
+        content_type: str = None,
+        parsing_stage: str = None,
+        **kwargs
+    ):
+        super().__init__(message, **kwargs)
+        self.content_type = content_type
+        self.parsing_stage = parsing_stage
+        self.details["content_type"] = content_type
+        self.details["parsing_stage"] = parsing_stage
+
+
+class HTMLParsingException(ContentParsingException):
+    """
+    Exception for HTML parsing and text extraction failures.
+
+    Business Context:
+    Most external documentation is served as HTML. Parsing failures prevent
+    content extraction needed for course generation. This exception helps
+    identify malformed HTML or incompatible page structures.
+
+    Technical Context:
+    - Invalid HTML structure
+    - Encoding mismatches
+    - JavaScript-rendered content (not accessible)
+    - Deeply nested or complex DOM structures
+    """
+    pass
+
+
+class ContentExtractionException(ContentParsingException):
+    """
+    Exception for failures in extracting meaningful content from parsed documents.
+
+    Business Context:
+    Even with successful HTML parsing, meaningful content extraction may fail
+    if the page structure doesn't contain extractable documentation content
+    (e.g., login pages, captchas, or navigation-only pages).
+
+    Technical Context:
+    - No extractable text content found
+    - Content below minimum length threshold
+    - Only boilerplate/navigation content detected
+    - Content language detection failures
+    """
+    pass
+
+
+class ContentTooLargeException(ContentParsingException):
+    """
+    Exception for content that exceeds processing size limits.
+
+    Business Context:
+    Large documentation pages may exceed processing limits or token limits
+    for AI models. This exception ensures graceful handling of oversized
+    content with clear feedback about size constraints.
+
+    Technical Context:
+    - Content exceeds maximum character limit
+    - Too many chunks created from single URL
+    - Memory limits exceeded during processing
+    - Token limits for AI model context
+    """
+
+    def __init__(
+        self,
+        message: str,
+        content_size: int = None,
+        max_size: int = None,
+        **kwargs
+    ):
+        super().__init__(message, **kwargs)
+        self.content_size = content_size
+        self.max_size = max_size
+        self.details["content_size"] = content_size
+        self.details["max_size"] = max_size
+
+
+class UnsupportedContentTypeException(ContentParsingException):
+    """
+    Exception for content types that cannot be processed.
+
+    Business Context:
+    The URL fetcher supports specific content types (HTML, Markdown, plain text).
+    This exception handles attempts to process unsupported formats like PDFs,
+    images, or binary files.
+
+    Technical Context:
+    - Unsupported MIME types (application/pdf, image/*, etc.)
+    - Binary content detection
+    - Non-text content responses
+    - Unsupported character encodings
+    """
+
+    def __init__(
+        self,
+        message: str,
+        actual_content_type: str = None,
+        supported_types: list = None,
+        **kwargs
+    ):
+        super().__init__(message, **kwargs)
+        self.actual_content_type = actual_content_type
+        self.supported_types = supported_types or []
+        self.details["actual_content_type"] = actual_content_type
+        self.details["supported_types"] = self.supported_types
+
+
+class RobotsDisallowedException(URLFetchException):
+    """
+    Exception for URLs disallowed by robots.txt.
+
+    Business Context:
+    Respecting robots.txt is important for ethical web scraping and maintaining
+    good relationships with content providers. This exception is raised when
+    attempting to fetch URLs that the site owner has explicitly disallowed.
+
+    Technical Context:
+    - robots.txt Disallow rules
+    - Crawl-delay requirements
+    - User-agent specific restrictions
     """
     pass
 

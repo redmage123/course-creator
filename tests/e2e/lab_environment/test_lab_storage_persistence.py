@@ -33,6 +33,9 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 from tests.e2e.selenium_base import BasePage, BaseTest
 
+# Check if Selenium is configured
+SELENIUM_AVAILABLE = os.getenv('SELENIUM_REMOTE') is not None or os.getenv('HEADLESS') is not None
+
 
 # ============================================================================
 # PAGE OBJECTS - Following Page Object Model Pattern
@@ -120,6 +123,7 @@ class LabStoragePage(BasePage):
 # TEST CLASS 1: File Persistence (4 tests)
 # ============================================================================
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.lab_environment
 @pytest.mark.priority_critical
@@ -413,6 +417,7 @@ class TestFilePersistence(BaseTest):
 # TEST CLASS 2: Storage Limits (3 tests)
 # ============================================================================
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.lab_environment
 @pytest.mark.priority_high
@@ -637,6 +642,7 @@ class TestStorageLimits(BaseTest):
 # TEST CLASS 3: Backup and Recovery (3 tests)
 # ============================================================================
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.lab_environment
 @pytest.mark.priority_critical

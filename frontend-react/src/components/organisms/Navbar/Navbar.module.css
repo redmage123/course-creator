@@ -143,6 +143,32 @@
   gap: 12px;
 }
 
+/* Help Link (User Guide Download) */
+.help-link {
+  /* Layout */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 6px;
+
+  /* Color */
+  color: #64748b;
+
+  /* Transitions */
+  transition: all 0.2s ease;
+}
+
+.help-link:hover {
+  background-color: #f1f5f9;
+  color: #2563eb;
+}
+
+.help-link:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
 /* ============================================================================
  * USER MENU
  * ============================================================================ */

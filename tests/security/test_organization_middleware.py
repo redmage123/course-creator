@@ -40,7 +40,6 @@ sys.path.insert(0, '/app')
 from shared.auth.organization_middleware import OrganizationAuthorizationMiddleware, get_organization_context
 
 
-@pytest.mark.skip(reason="Needs refactoring to use real objects")
 class TestOrganizationAuthorizationMiddleware:
     """Test suite for organization authorization middleware"""
     
@@ -395,7 +394,6 @@ class TestOrganizationAuthorizationMiddleware:
             assert 'user_agent' in call_args[1]
 
 
-@pytest.mark.skip(reason="Needs refactoring to use real objects")
 class TestOrganizationDependency:
     """Test suite for organization context dependency"""
     
@@ -429,7 +427,6 @@ class TestOrganizationDependency:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip(reason="Needs refactoring to use real objects")
 class TestSecurityScenarios:
     """Integration tests for security scenarios"""
 

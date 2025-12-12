@@ -13,9 +13,9 @@
  * - Role-based access control (org_admin can edit)
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { SEO } from '@components/common/SEO';
 import { DashboardLayout } from '@components/templates/DashboardLayout';
 import { Card } from '@components/atoms/Card';
@@ -40,7 +40,13 @@ import styles from './ProjectDetailPage.module.css';
 export const ProjectDetailPage: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
+
+  // State for delete confirmation
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Determine if user can edit (org_admin role)
   const canEdit = user?.role === 'org_admin' || user?.role === 'site_admin';
@@ -84,6 +90,50 @@ export const ProjectDetailPage: React.FC = () => {
    */
   const handleNotesError = (error: string) => {
     console.error('Project notes error:', error);
+  };
+
+  /**
+   * Handle project deletion
+   */
+  const handleDeleteProject = async (force: boolean = false) => {
+    if (!organization?.id || !projectId) return;
+
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    try {
+      const result = await projectService.deleteProject(organization.id, projectId, force);
+      console.log('Project deleted:', result);
+
+      // Invalidate queries and navigate back
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      navigate('/organization/projects', {
+        replace: true,
+        state: {
+          message: `Project "${result.message}" - Deleted ${result.deleted_tracks} tracks and ${result.deleted_subprojects} sub-projects.`
+        }
+      });
+    } catch (error: any) {
+      console.error('Failed to delete project:', error);
+
+      // Check if it's a conflict error (active enrollments)
+      if (error?.response?.status === 409) {
+        const detail = error.response?.data?.detail;
+        const activeEnrollments = detail?.active_enrollments || 0;
+        setDeleteError(
+          `Cannot delete project with ${activeEnrollments} active enrollments. ` +
+          `Would you like to force delete anyway? This will remove all enrollments.`
+        );
+      } else {
+        setDeleteError(
+          error?.response?.data?.detail ||
+          error?.message ||
+          'Failed to delete project. Please try again.'
+        );
+      }
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   /**
@@ -210,6 +260,15 @@ export const ProjectDetailPage: React.FC = () => {
                       Publish
                     </Button>
                   )}
+                  <Button
+                    variant="secondary"
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className={styles.deleteButton}
+                    aria-label="Delete project"
+                  >
+                    <i className="fas fa-trash" aria-hidden="true"></i>
+                    Delete
+                  </Button>
                 </>
               )}
             </div>
@@ -331,6 +390,70 @@ export const ProjectDetailPage: React.FC = () => {
               </Card>
             </div>
           </div>
+
+          {/* Delete Confirmation Modal */}
+          {showDeleteConfirm && (
+            <div className={styles.modalOverlay} onClick={() => !isDeleting && setShowDeleteConfirm(false)}>
+              <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+                <Heading level="h2">Delete Project</Heading>
+                <p className={styles.warningText}>
+                  <i className="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                  Are you sure you want to delete <strong>"{project.name}"</strong>?
+                </p>
+                <p>This action will permanently delete:</p>
+                <ul className={styles.deleteWarningList}>
+                  <li>All tracks in this project</li>
+                  <li>All sub-projects/locations</li>
+                  <li>All track assignments and enrollments</li>
+                </ul>
+                <p className={styles.warningEmphasis}>This action cannot be undone.</p>
+
+                {deleteError && (
+                  <div className={styles.errorMessage}>
+                    <p>{deleteError}</p>
+                    {deleteError.includes('force delete') && (
+                      <Button
+                        variant="primary"
+                        onClick={() => handleDeleteProject(true)}
+                        disabled={isDeleting}
+                        className={styles.forceDeleteButton}
+                      >
+                        {isDeleting ? 'Deleting...' : 'Force Delete (Remove All Enrollments)'}
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                <div className={styles.modalActions}>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setShowDeleteConfirm(false);
+                      setDeleteError(null);
+                    }}
+                    disabled={isDeleting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={() => handleDeleteProject(false)}
+                    disabled={isDeleting}
+                    className={styles.confirmDeleteButton}
+                  >
+                    {isDeleting ? (
+                      <>
+                        <Spinner size="small" />
+                        Deleting...
+                      </>
+                    ) : (
+                      'Delete Project'
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </DashboardLayout>
     </>

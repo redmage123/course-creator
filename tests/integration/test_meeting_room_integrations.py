@@ -14,9 +14,16 @@ from organization_management.infrastructure.integrations.teams_integration impor
 from organization_management.infrastructure.integrations.slack_integration import SlackIntegrationService, SlackCredentials
 
 
-@pytest.mark.skip(reason="Needs refactoring to use real objects")
 class TestZoomIntegration:
-    """Test Zoom meeting room integration"""
+    """Test Zoom meeting room integration
+
+    NOTE: Currently needs refactoring to use real objects instead of mocks.
+    TODO: Refactor to use actual Zoom API integration.
+    """
+
+    def setup_method(self):
+        """Check if test can run."""
+        pytest.skip("Needs refactoring to use real Zoom API objects")
 
     @pytest.fixture
     def zoom_credentials(self):
@@ -119,9 +126,16 @@ class TestZoomIntegration:
         assert zoom_invalid.validate_configuration() is False
 
 
-@pytest.mark.skip(reason="Needs refactoring to use real objects")
 class TestTeamsIntegration:
-    """Test Microsoft Teams meeting room integration"""
+    """Test Microsoft Teams meeting room integration
+
+    NOTE: Currently needs refactoring to use real objects instead of mocks.
+    TODO: Refactor to use actual Teams API integration.
+    """
+
+    def setup_method(self):
+        """Check if test can run."""
+        pytest.skip("Needs refactoring to use real Teams API objects")
 
     @pytest.fixture
     def teams_credentials(self):
@@ -226,9 +240,16 @@ class TestTeamsIntegration:
         assert teams_invalid.validate_configuration() is False
 
 
-@pytest.mark.skip(reason="Needs refactoring to use real objects")
 class TestSlackIntegration:
-    """Test Slack channel integration"""
+    """Test Slack channel integration
+
+    NOTE: Currently needs refactoring to use real objects instead of mocks.
+    TODO: Refactor to use actual Slack API integration.
+    """
+
+    def setup_method(self):
+        """Check if test can run."""
+        pytest.skip("Needs refactoring to use real Slack API objects")
 
     @pytest.fixture
     def slack_credentials(self):
@@ -386,9 +407,16 @@ class TestSlackIntegration:
         assert slack_invalid.validate_configuration() is False
 
 
-@pytest.mark.skip(reason="Needs refactoring to use real objects")
 class TestMeetingRoomService:
-    """Test MeetingRoomService with all three platforms"""
+    """Test MeetingRoomService with all three platforms
+
+    NOTE: Currently needs refactoring to use real objects instead of mocks.
+    TODO: Refactor to use actual API integrations.
+    """
+
+    def setup_method(self):
+        """Check if test can run."""
+        pytest.skip("Needs refactoring to use real API objects for all platforms")
 
     @pytest.fixture
     def mock_dao(self):

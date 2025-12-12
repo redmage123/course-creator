@@ -1,0 +1,55 @@
+"""
+Analytics Tracker Plugin Metadata
+
+This plugin tracks detailed user analytics and
+provides insights using the advice system.
+"""
+name: analytics-tracker
+version: 1.0.0
+description: Tracks detailed user analytics and provides learning insights
+author: Course Creator Team
+author_email: dev@coursecreator.io
+license: MIT
+
+min_platform_version: "3.0.0"
+
+# Events this plugin listens to
+events:
+  - user.login
+  - user.logout
+  - course.viewed
+  - content.accessed
+  - video.watched
+  - quiz.started
+  - quiz.submitted
+  - lab.session_started
+  - lab.code_executed
+
+# Plugin settings
+settings_schema:
+  track_page_views:
+    type: boolean
+    default: true
+    description: Track page view analytics
+  track_time_spent:
+    type: boolean
+    default: true
+    description: Track time spent on content
+  anonymize_data:
+    type: boolean
+    default: false
+    description: Anonymize user data for privacy
+  retention_days:
+    type: integer
+    default: 365
+    description: Days to retain analytics data
+  enable_insights:
+    type: boolean
+    default: true
+    description: Generate learning insights
+
+tags:
+  - analytics
+  - tracking
+  - insights
+  - learning

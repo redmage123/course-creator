@@ -40,6 +40,9 @@ import os
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
 
+# Check if Selenium is configured
+SELENIUM_AVAILABLE = os.getenv('SELENIUM_REMOTE') is not None or os.getenv('HEADLESS') is not None
+
 
 class StudentLoginE2ETest:
     """Base class for student login end-to-end tests."""
@@ -89,8 +92,8 @@ class StudentLoginE2ETest:
             self.driver.quit()
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
-@pytest.mark.skip(reason="Needs refactoring to use real objects")
 class TestStudentLoginCompleteWorkflow(StudentLoginE2ETest):
     """Test complete student login workflows end-to-end."""
 
@@ -241,8 +244,8 @@ class TestStudentLoginCompleteWorkflow(StudentLoginE2ETest):
         assert password_field.get_attribute("value") == test_temp_password
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
-@pytest.mark.skip(reason="Needs refactoring to use real objects")
 class TestStudentLoginErrorHandling(StudentLoginE2ETest):
     """Test error handling workflows in student login."""
 
@@ -332,8 +335,8 @@ class TestStudentLoginErrorHandling(StudentLoginE2ETest):
             assert login_button.is_enabled()
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
-@pytest.mark.skip(reason="Needs refactoring to use real objects")
 class TestStudentLoginGDPRWorkflow(StudentLoginE2ETest):
     """Test GDPR compliance workflows end-to-end."""
 
@@ -421,8 +424,8 @@ class TestStudentLoginGDPRWorkflow(StudentLoginE2ETest):
             assert any(keyword in label_text for keyword in ["analytics", "notification", "instructor"])
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
-@pytest.mark.skip(reason="Needs refactoring to use real objects")
 class TestStudentLoginPerformance(StudentLoginE2ETest):
     """Test performance aspects of student login."""
 
@@ -489,8 +492,8 @@ class TestStudentLoginPerformance(StudentLoginE2ETest):
         assert consent_interaction_time < 2.0
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
-@pytest.mark.skip(reason="Needs refactoring to use real objects")
 class TestStudentLoginAccessibility(StudentLoginE2ETest):
     """Test accessibility compliance in student login workflow."""
 

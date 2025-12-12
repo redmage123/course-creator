@@ -31,6 +31,7 @@ import styles from './RegistrationPage.module.css';
 interface RegistrationFormData {
   email: string;
   username: string;
+  fullName: string;
   password: string;
   confirmPassword: string;
   acceptTerms: boolean;
@@ -41,6 +42,7 @@ interface RegistrationFormData {
 interface RegistrationFormErrors {
   email?: string;
   username?: string;
+  fullName?: string;
   password?: string;
   confirmPassword?: string;
   acceptTerms?: string;
@@ -72,6 +74,7 @@ export const RegistrationPage: React.FC = () => {
   const [formData, setFormData] = useState<RegistrationFormData>({
     email: '',
     username: '',
+    fullName: '',
     password: '',
     confirmPassword: '',
     acceptTerms: false,
@@ -103,6 +106,15 @@ export const RegistrationPage: React.FC = () => {
       newErrors.username = 'Username must be at most 30 characters';
     } else if (!/^[a-zA-Z0-9_-]+$/.test(formData.username)) {
       newErrors.username = 'Username can only contain letters, numbers, hyphens, and underscores';
+    }
+
+    // Full name validation
+    if (!formData.fullName) {
+      newErrors.fullName = 'Full name is required';
+    } else if (formData.fullName.length < 2) {
+      newErrors.fullName = 'Full name must be at least 2 characters';
+    } else if (formData.fullName.length > 100) {
+      newErrors.fullName = 'Full name must be at most 100 characters';
     }
 
     // Password validation
@@ -158,6 +170,7 @@ export const RegistrationPage: React.FC = () => {
       await register({
         email: formData.email,
         username: formData.username,
+        fullName: formData.fullName,
         password: formData.password,
         acceptTerms: formData.acceptTerms,
         acceptPrivacy: formData.acceptPrivacy,
@@ -259,6 +272,19 @@ export const RegistrationPage: React.FC = () => {
               error={errors.username}
               required
               autoComplete="username"
+              disabled={isLoading}
+            />
+
+            {/* Full Name Input */}
+            <Input
+              type="text"
+              label="Full Name"
+              placeholder="Enter your full name"
+              value={formData.fullName}
+              onChange={handleChange('fullName')}
+              error={errors.fullName}
+              required
+              autoComplete="name"
               disabled={isLoading}
             />
 

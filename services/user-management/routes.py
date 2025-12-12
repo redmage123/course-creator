@@ -28,10 +28,8 @@ from user_management.domain.entities.session import Session
 from user_management.domain.interfaces.user_service import IUserService, IAuthenticationService
 from user_management.domain.interfaces.session_service import ISessionService
 
-# Custom exceptions
-import sys
-sys.path.append('../../shared')
-from shared.exceptions import (
+# Custom exceptions - using local service exceptions module
+from exceptions import (
     UserManagementException, AuthenticationException, AuthorizationException,
     UserNotFoundException, UserValidationException, DatabaseException,
     SessionException, JWTException, EmailServiceException
@@ -136,6 +134,7 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     expires_in: int = 3600
     user: UserResponse
+    is_first_login: bool = False  # True when user logs in for the first time
 
 class StudentTokenResponse(BaseModel):
     """
@@ -311,6 +310,34 @@ def setup_auth_routes(app: FastAPI) -> None:
         try:
             # Security: Never log passwords or raw request bodies containing credentials
             logger.info(f"🔐 LOGIN ATTEMPT - Username: '{request.username}'")
+
+            # Pre-check: Query database to see if this is user's first login (last_login is NULL)
+            # This must be done BEFORE authenticate_user() which updates last_login
+            is_first_login = False
+            try:
+                pool = raw_request.app.state.container._connection_pool
+                async with pool.acquire() as conn:
+                    # Check if last_login is NULL for this user (username can be email or username)
+                    first_login_query = """
+                        SELECT last_login IS NULL as is_first_login
+                        FROM course_creator.users
+                        WHERE (username = $1 OR email = $1) AND is_active = true
+                        LIMIT 1
+                    """
+                    result = await conn.fetchrow(first_login_query, request.username)
+                    if result:
+                        is_first_login = result['is_first_login']
+                        logger.info(f"🆕 First login check for {request.username}: {is_first_login}")
+            except Exception as e:
+                # Wrap in DatabaseException for proper error tracking
+                db_error = DatabaseException(
+                    message=f"Could not check first login status: {e}",
+                    operation="first_login_check",
+                    details={"username": request.username},
+                    original_exception=e
+                )
+                logger.warning(f"⚠️ {db_error.message}")
+
             user = await auth_service.authenticate_user(request.username, request.password)
             logger.info(f"🔍 AUTH RESULT - User found: {user is not None}")
             if user:
@@ -348,7 +375,14 @@ def setup_auth_routes(app: FastAPI) -> None:
                         else:
                             logger.warning(f"⚠️ No organization membership found for org admin: {user.username}")
                 except Exception as e:
-                    logger.error(f"❌ Error fetching organization_id: {e}")
+                    # Wrap in DatabaseException for proper error tracking
+                    db_error = DatabaseException(
+                        message=f"Error fetching organization_id: {e}",
+                        operation="fetch_organization_id",
+                        details={"user_id": str(user.id), "username": user.username},
+                        original_exception=e
+                    )
+                    logger.error(f"❌ {db_error.message}")
 
             # Generate JWT token with user information including role and organization_id
             # Note: JWT tokens are stateless, no need to store session in database
@@ -362,14 +396,24 @@ def setup_auth_routes(app: FastAPI) -> None:
 
             return TokenResponse(
                 access_token=access_token,
-                user=user_response
+                user=user_response,
+                is_first_login=is_first_login
             )
             
         except HTTPException:
             raise
         except Exception as e:
-            logging.error("Error during login: %s", e)
-            raise HTTPException(status_code=500, detail="Internal server error") from e
+            # Wrap in AuthenticationException for proper error tracking and logging
+            auth_error = AuthenticationException(
+                message=f"Error during login: {e}",
+                details={"username": request.username},
+                original_exception=e
+            )
+            logger.error(f"❌ {auth_error.message}")
+            raise HTTPException(
+                status_code=500,
+                detail="Internal server error during authentication"
+            ) from auth_error
 
     @app.post("/auth/student-login", response_model=StudentTokenResponse)
     async def student_login(
@@ -461,7 +505,13 @@ def setup_auth_routes(app: FastAPI) -> None:
                         }]
                 except Exception as e:
                     # Log but don't fail login for enrollment lookup errors
-                    logging.warning(f"Could not fetch enrollment for student {user.id}: {e}")
+                    db_error = DatabaseException(
+                        message=f"Could not fetch enrollment for student {user.id}: {e}",
+                        operation="fetch_student_enrollment",
+                        details={"user_id": str(user.id), "course_instance_id": request.course_instance_id},
+                        original_exception=e
+                    )
+                    logger.warning(f"⚠️ {db_error.message}")
             
             # GDPR-compliant analytics logging (only with explicit consent)
             if request.consent_analytics:
@@ -499,11 +549,17 @@ def setup_auth_routes(app: FastAPI) -> None:
             # Re-raise HTTP exceptions
             raise
         except Exception as e:
-            logging.error("Error during student login: %s", e)
+            # Wrap in AuthenticationException for proper error tracking
+            auth_error = AuthenticationException(
+                message=f"Error during student login: {e}",
+                details={"username": request.username},
+                original_exception=e
+            )
+            logger.error(f"❌ {auth_error.message}")
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Login system temporarily unavailable"
-            ) from e
+            ) from auth_error
 
     @app.post("/auth/logout")
     async def logout(
@@ -516,7 +572,13 @@ def setup_auth_routes(app: FastAPI) -> None:
             return {"message": "Successfully logged out"}
 
         except Exception as e:
-            logging.error("Error during logout: %s", e)
+            # Wrap in SessionException for proper error tracking
+            session_error = SessionException(
+                message=f"Error during logout: {e}",
+                details={"action": "revoke_session"},
+                original_exception=e
+            )
+            logger.warning(f"⚠️ {session_error.message}")
             # Don't return error - logout should always succeed
             return {"message": "Logged out"}
 
@@ -571,7 +633,14 @@ def setup_auth_routes(app: FastAPI) -> None:
                             user_response.organization_id = str(result['organization_id'])
                             logger.info(f"✅ Refreshed organization_id for {current_user.username}: {user_response.organization_id}")
                 except Exception as e:
-                    logger.error(f"❌ Error fetching organization_id during refresh: {e}")
+                    # Wrap in DatabaseException for proper error tracking
+                    db_error = DatabaseException(
+                        message=f"Error fetching organization_id during refresh: {e}",
+                        operation="fetch_organization_id_refresh",
+                        details={"user_id": str(current_user.id), "username": current_user.username},
+                        original_exception=e
+                    )
+                    logger.error(f"❌ {db_error.message}")
 
             # Generate new JWT token with fresh expiration including role and organization_id
             session_id = f"sess_{current_user.id[:8]}"
@@ -592,11 +661,18 @@ def setup_auth_routes(app: FastAPI) -> None:
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(f"Error refreshing token: {e}")
+            # Wrap in JWTException for proper error tracking
+            jwt_error = JWTException(
+                message=f"Error refreshing token: {e}",
+                token_type="access",
+                details={"user_id": str(current_user.id), "username": current_user.username},
+                original_exception=e
+            )
+            logger.error(f"❌ {jwt_error.message}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Token refresh failed"
-            ) from e
+            ) from jwt_error
 
     @app.post("/auth/password/change")
     async def change_password(
@@ -618,10 +694,23 @@ def setup_auth_routes(app: FastAPI) -> None:
             return {"message": "Password changed successfully"}
             
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            # Wrap validation error in UserValidationException
+            validation_error = UserValidationException(
+                message=f"Password change validation failed: {e}",
+                validation_errors={"password": str(e)},
+                original_exception=e
+            )
+            logger.warning(f"⚠️ {validation_error.message}")
+            raise HTTPException(status_code=400, detail=str(e)) from validation_error
         except Exception as e:
-            logging.error("Error changing password: %s", e)
-            raise HTTPException(status_code=500, detail="Internal server error") from e
+            # Wrap in AuthenticationException for proper error tracking
+            auth_error = AuthenticationException(
+                message=f"Error changing password: {e}",
+                details={"user_id": str(current_user.id)},
+                original_exception=e
+            )
+            logger.error(f"❌ {auth_error.message}")
+            raise HTTPException(status_code=500, detail="Internal server error") from auth_error
 
     @app.post("/auth/password/reset")
     async def reset_password(
@@ -647,10 +736,23 @@ def setup_auth_routes(app: FastAPI) -> None:
             }
 
         except ValueError as e:
-            raise HTTPException(status_code=404, detail=str(e))
+            # Wrap in UserNotFoundException for proper error tracking
+            user_error = UserNotFoundException(
+                user_id=request.email,
+                details={"action": "password_reset"},
+                original_exception=e
+            )
+            logger.warning(f"⚠️ {user_error.message}")
+            raise HTTPException(status_code=404, detail=str(e)) from user_error
         except Exception as e:
-            logging.error("Error resetting password: %s", e)
-            raise HTTPException(status_code=500, detail="Internal server error") from e
+            # Wrap in AuthenticationException for proper error tracking
+            auth_error = AuthenticationException(
+                message=f"Error resetting password: {e}",
+                details={"email": request.email},
+                original_exception=e
+            )
+            logger.error(f"❌ {auth_error.message}")
+            raise HTTPException(status_code=500, detail="Internal server error") from auth_error
 
     @app.post("/auth/password/reset/request", response_model=PasswordResetRequestResponse)
     async def request_password_reset(
@@ -1040,7 +1142,14 @@ def setup_user_routes(app: FastAPI) -> None:
                     else:
                         logger.warning(f"⚠️ No organization membership found for org admin: {current_user.username}")
             except Exception as e:
-                logger.error(f"❌ Error fetching organization_id in /users/me: {e}")
+                # Wrap in DatabaseException for proper error tracking
+                db_error = DatabaseException(
+                    message=f"Error fetching organization_id in /users/me: {e}",
+                    operation="fetch_organization_id_me",
+                    details={"user_id": str(current_user.id), "username": current_user.username},
+                    original_exception=e
+                )
+                logger.error(f"❌ {db_error.message}")
 
         return user_response
 
@@ -1057,10 +1166,24 @@ def setup_user_routes(app: FastAPI) -> None:
             return _user_to_response(updated_user)
 
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            # Wrap validation error in UserValidationException
+            validation_error = UserValidationException(
+                message=f"Profile update validation failed: {e}",
+                validation_errors={"profile": str(e)},
+                original_exception=e
+            )
+            logger.warning(f"⚠️ {validation_error.message}")
+            raise HTTPException(status_code=400, detail=str(e)) from validation_error
         except Exception as e:
-            logging.error("Error updating profile: %s", e)
-            raise HTTPException(status_code=500, detail="Internal server error") from e
+            # Wrap in DatabaseException for proper error tracking
+            db_error = DatabaseException(
+                message=f"Error updating profile: {e}",
+                operation="update_user_profile",
+                details={"user_id": str(current_user.id)},
+                original_exception=e
+            )
+            logger.error(f"❌ {db_error.message}")
+            raise HTTPException(status_code=500, detail="Internal server error") from db_error
 
     @app.get("/users/{user_id}", response_model=UserResponse)
     async def get_user_by_id_endpoint(
@@ -1079,11 +1202,25 @@ def setup_user_routes(app: FastAPI) -> None:
             if not user:
                 raise HTTPException(status_code=404, detail="User not found")
             return _user_to_response(user)
-        except ValueError:
-            raise HTTPException(status_code=404, detail="User not found")
+        except ValueError as e:
+            # Wrap in UserNotFoundException for proper error tracking
+            user_error = UserNotFoundException(
+                user_id=user_id,
+                details={"action": "get_user_by_id"},
+                original_exception=e
+            )
+            logger.warning(f"⚠️ {user_error.message}")
+            raise HTTPException(status_code=404, detail="User not found") from user_error
         except Exception as e:
-            logging.error(f"Error getting user {user_id}: %s", e)
-            raise HTTPException(status_code=500, detail="Internal server error") from e
+            # Wrap in DatabaseException for proper error tracking
+            db_error = DatabaseException(
+                message=f"Error getting user {user_id}: {e}",
+                operation="get_user_by_id",
+                details={"user_id": user_id},
+                original_exception=e
+            )
+            logger.error(f"❌ {db_error.message}")
+            raise HTTPException(status_code=500, detail="Internal server error") from db_error
 
     @app.patch("/users/{user_id}", response_model=UserResponse)
     async def patch_user(
@@ -1111,10 +1248,24 @@ def setup_user_routes(app: FastAPI) -> None:
             return _user_to_response(updated_user)
 
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            # Wrap validation error in UserValidationException
+            validation_error = UserValidationException(
+                message=f"User update validation failed: {e}",
+                validation_errors={"user_update": str(e)},
+                original_exception=e
+            )
+            logger.warning(f"⚠️ {validation_error.message}")
+            raise HTTPException(status_code=400, detail=str(e)) from validation_error
         except Exception as e:
-            logging.error(f"Error updating user {user_id}: %s", e)
-            raise HTTPException(status_code=500, detail="Internal server error") from e
+            # Wrap in DatabaseException for proper error tracking
+            db_error = DatabaseException(
+                message=f"Error updating user {user_id}: {e}",
+                operation="patch_user",
+                details={"user_id": user_id},
+                original_exception=e
+            )
+            logger.error(f"❌ {db_error.message}")
+            raise HTTPException(status_code=500, detail="Internal server error") from db_error
 
     @app.get("/users/search")
     async def search_users(
@@ -1130,10 +1281,24 @@ def setup_user_routes(app: FastAPI) -> None:
             return [_user_to_response(user) for user in users]
             
         except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+            # Wrap validation error in UserValidationException
+            validation_error = UserValidationException(
+                message=f"User search validation failed: {e}",
+                validation_errors={"search_query": str(e)},
+                original_exception=e
+            )
+            logger.warning(f"⚠️ {validation_error.message}")
+            raise HTTPException(status_code=400, detail=str(e)) from validation_error
         except Exception as e:
-            logging.error("Error searching users: %s", e)
-            raise HTTPException(status_code=500, detail="Internal server error") from e
+            # Wrap in DatabaseException for proper error tracking
+            db_error = DatabaseException(
+                message=f"Error searching users: {e}",
+                operation="search_users",
+                details={"query": q, "limit": limit},
+                original_exception=e
+            )
+            logger.error(f"❌ {db_error.message}")
+            raise HTTPException(status_code=500, detail="Internal server error") from db_error
 
 def setup_session_routes(app: FastAPI) -> None:
     """Setup session management routes"""
@@ -1149,8 +1314,14 @@ def setup_session_routes(app: FastAPI) -> None:
             return [_session_to_response(session) for session in sessions]
             
         except Exception as e:
-            logging.error("Error getting sessions: %s", e)
-            raise HTTPException(status_code=500, detail="Internal server error") from e
+            # Wrap in SessionException for proper error tracking
+            session_error = SessionException(
+                message=f"Error getting sessions: {e}",
+                details={"user_id": str(current_user.id), "action": "get_sessions"},
+                original_exception=e
+            )
+            logger.error(f"❌ {session_error.message}")
+            raise HTTPException(status_code=500, detail="Internal server error") from session_error
 
     @app.delete("/sessions/all")
     async def revoke_all_sessions(
@@ -1163,8 +1334,14 @@ def setup_session_routes(app: FastAPI) -> None:
             return {"message": f"Revoked {count} sessions"}
             
         except Exception as e:
-            logging.error("Error revoking sessions: %s", e)
-            raise HTTPException(status_code=500, detail="Internal server error") from e
+            # Wrap in SessionException for proper error tracking
+            session_error = SessionException(
+                message=f"Error revoking sessions: {e}",
+                details={"user_id": str(current_user.id), "action": "revoke_all_sessions"},
+                original_exception=e
+            )
+            logger.error(f"❌ {session_error.message}")
+            raise HTTPException(status_code=500, detail="Internal server error") from session_error
 
 def setup_admin_routes(app: FastAPI) -> None:
     """Setup admin routes"""
@@ -1186,8 +1363,15 @@ def setup_admin_routes(app: FastAPI) -> None:
             return [_user_to_response(user) for user in users]
             
         except Exception as e:
-            logging.error("Error getting users: %s", e)
-            raise HTTPException(status_code=500, detail="Internal server error") from e
+            # Wrap in DatabaseException for proper error tracking
+            db_error = DatabaseException(
+                message=f"Error getting users: {e}",
+                operation="get_all_users",
+                details={"admin_user_id": str(current_user.id)},
+                original_exception=e
+            )
+            logger.error(f"❌ {db_error.message}")
+            raise HTTPException(status_code=500, detail="Internal server error") from db_error
 
     @app.get("/admin/statistics")
     async def get_user_statistics(
@@ -1203,8 +1387,15 @@ def setup_admin_routes(app: FastAPI) -> None:
             return stats
             
         except Exception as e:
-            logging.error("Error getting statistics: %s", e)
-            raise HTTPException(status_code=500, detail="Internal server error") from e
+            # Wrap in DatabaseException for proper error tracking
+            db_error = DatabaseException(
+                message=f"Error getting statistics: {e}",
+                operation="get_user_statistics",
+                details={"admin_user_id": str(current_user.id)},
+                original_exception=e
+            )
+            logger.error(f"❌ {db_error.message}")
+            raise HTTPException(status_code=500, detail="Internal server error") from db_error
 
 # Helper functions (following Single Responsibility)
 def _user_to_response(user: User) -> UserResponse:

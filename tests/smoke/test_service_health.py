@@ -39,7 +39,7 @@ class TestServiceHealth:
             client = docker.from_env()
             return client
         except Exception as e:
-            pytest.skip(f"Docker not available: {e}")
+            pytest.fail(f"Docker not available: {e}")
 
     @pytest.mark.order(3)
     def test_docker_containers_running(self, docker_client):
@@ -82,7 +82,7 @@ class TestServiceHealth:
         missing_services = set(required_services) - set(running_services)
 
         if missing_services:
-            pytest.skip(
+            pytest.fail(
                 f"Required services not running: {', '.join(missing_services)}. "
                 f"Start services with: docker-compose up -d"
             )
@@ -159,7 +159,7 @@ class TestServiceHealth:
             )
             conn.close()
         except Exception as e:
-            pytest.skip(f"Database not accessible: {e}")
+            pytest.fail(f"Database not accessible: {e}")
 
     @pytest.mark.order(3)
     def test_redis_connectivity(self):
@@ -183,4 +183,4 @@ class TestServiceHealth:
             # Test basic operation
             r.ping()
         except Exception as e:
-            pytest.skip(f"Redis not accessible: {e}")
+            pytest.fail(f"Redis not accessible: {e}")

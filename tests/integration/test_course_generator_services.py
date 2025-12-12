@@ -4,10 +4,13 @@ Testing service integration and dependency injection following SOLID principles
 """
 import pytest
 import asyncio
+import os
 from datetime import datetime, timedelta
 from omegaconf import DictConfig
 
 from services.course_generator.infrastructure.container import Container
+
+DB_AVAILABLE = os.getenv('TEST_DB_HOST') is not None or os.getenv('TEST_DATABASE_URL') is not None
 from services.course_generator.domain.entities.course_content import (
     Syllabus, Slide, Exercise, DifficultyLevel, ExerciseType
 )
@@ -20,6 +23,7 @@ from services.course_generator.domain.interfaces.content_generation_service impo
 from services.course_generator.application.services.syllabus_generation_service import SyllabusGenerationService
 from services.course_generator.application.services.quiz_generation_service import QuizGenerationService
 
+@pytest.mark.skipif(not DB_AVAILABLE, reason="Database not configured")
 class TestSyllabusGenerationServiceIntegration:
     """Test syllabus generation service integration with dependencies"""
 
@@ -40,44 +44,39 @@ class TestSyllabusGenerationServiceIntegration:
         yield container
         await container.cleanup()
 
-    @pytest.mark.skip(reason="Needs refactoring to use real database and services")
     @pytest.mark.asyncio
     async def test_generate_syllabus_integration(self, container):
         """Test complete syllabus generation workflow"""
-        pass
+        pytest.skip("Needs refactoring to use real database and services")
 
-    @pytest.mark.skip(reason="Needs refactoring to use real database and services")
     @pytest.mark.asyncio
     async def test_generate_syllabus_duplicate_course(self, container):
         """Test syllabus generation with existing course"""
-        pass
+        pytest.skip("Needs refactoring to use real database and services")
 
-    @pytest.mark.skip(reason="Needs refactoring to use real database and services")
     @pytest.mark.asyncio
     async def test_analyze_syllabus_content_integration(self, container):
         """Test syllabus content analysis workflow"""
-        pass
+        pytest.skip("Needs refactoring to use real database and services")
 
+@pytest.mark.skipif(not DB_AVAILABLE, reason="Database not configured")
 class TestQuizGenerationServiceIntegration:
     """Test quiz generation service integration with dependencies"""
 
-    @pytest.mark.skip(reason="Needs refactoring to use real database and services")
     @pytest.mark.asyncio
     async def test_generate_quiz_integration(self):
         """Test complete quiz generation workflow"""
-        pass
+        pytest.skip("Needs refactoring to use real database and services")
 
-    @pytest.mark.skip(reason="Needs refactoring to use real database and services")
     @pytest.mark.asyncio
     async def test_generate_adaptive_quiz_integration(self):
         """Test adaptive quiz generation workflow"""
-        pass
+        pytest.skip("Needs refactoring to use real database and services")
 
-    @pytest.mark.skip(reason="Needs refactoring to use real database and services")
     @pytest.mark.asyncio
     async def test_validate_quiz_answers_integration(self):
         """Test quiz answer validation workflow"""
-        pass
+        pytest.skip("Needs refactoring to use real database and services")
 
 class TestContainerIntegration:
     """Test dependency injection container integration"""
@@ -143,14 +142,14 @@ class TestContainerIntegration:
         ai_service2 = container.get_ai_service()
         assert ai_service is ai_service2
 
+@pytest.mark.skipif(not DB_AVAILABLE, reason="Database not configured")
 class TestCrossServiceIntegration:
     """Test integration between different services"""
 
-    @pytest.mark.skip(reason="Needs refactoring to use real database and services")
     @pytest.mark.asyncio
     async def test_syllabus_to_quiz_workflow(self):
         """Test workflow from syllabus creation to quiz generation"""
-        pass
+        pytest.skip("Needs refactoring to use real database and services")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,457 @@
+/**
+ * Welcome Popup Styles
+ *
+ * DESIGN PHILOSOPHY:
+ * - Warm, welcoming aesthetic with AI assistant personality
+ * - Accessible and responsive design
+ * - Smooth animations for engaging UX
+ * - Clear visual hierarchy
+ */
+
+/* Overlay */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.3s ease-out;
+  backdrop-filter: blur(4px);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Main popup container */
+.popup {
+  background: var(--color-background, #ffffff);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 520px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp 0.4s ease-out;
+  position: relative;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Header */
+.header {
+  padding: 24px 24px 0;
+  display: flex;
+  justify-content: center;
+  position: relative;
+}
+
+.closeButton {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: var(--color-surface, #f5f5f5);
+  border-radius: 50%;
+  font-size: 24px;
+  color: var(--color-text-secondary, #666);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.closeButton:hover {
+  background: var(--color-surface-hover, #e0e0e0);
+  color: var(--color-text, #333);
+}
+
+/* Avatar */
+.avatarContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+  position: relative;
+  z-index: 1;
+}
+
+.avatarEmoji {
+  font-size: 40px;
+}
+
+.avatarPulse {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  opacity: 0.3;
+  animation: pulse 2s ease-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.1;
+  }
+  100% {
+    transform: scale(0.8);
+    opacity: 0.3;
+  }
+}
+
+/* Content */
+.content {
+  padding: 24px;
+}
+
+/* Loading state */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.loadingDots {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.loadingDots span {
+  width: 10px;
+  height: 10px;
+  background: var(--color-primary, #6366f1);
+  border-radius: 50%;
+  animation: bounce 1.4s ease-in-out infinite both;
+}
+
+.loadingDots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.loadingDots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+.loading p {
+  color: var(--color-text-secondary, #666);
+  font-size: 14px;
+}
+
+/* Welcome message */
+.welcomeMessage {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.welcomeMessage p {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--color-text, #333);
+  margin: 0 0 12px;
+}
+
+.welcomeMessage p:last-child {
+  margin-bottom: 0;
+}
+
+/* Highlights */
+.highlights {
+  background: var(--color-surface, #f8f9fa);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+
+.highlights h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary, #666);
+  margin: 0 0 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.highlights ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.highlights li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  font-size: 14px;
+  color: var(--color-text, #333);
+}
+
+.checkmark {
+  color: #10b981;
+  font-weight: bold;
+}
+
+/* Quick actions */
+.quickActions {
+  margin-bottom: 8px;
+}
+
+.quickActions h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary, #666);
+  margin: 0 0 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.actionButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.actionButton {
+  padding: 10px 16px;
+  background: var(--color-surface, #f0f0f0);
+  border: 1px solid var(--color-border, #e0e0e0);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--color-text, #333);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.actionButton:hover {
+  background: var(--color-primary, #6366f1);
+  color: white;
+  border-color: var(--color-primary, #6366f1);
+}
+
+/* Footer */
+.footer {
+  padding: 16px 24px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--color-border, #e0e0e0);
+  margin-top: 8px;
+}
+
+.dontShowButton {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary, #999);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 8px 0;
+}
+
+.dontShowButton:hover {
+  color: var(--color-text, #666);
+  text-decoration: underline;
+}
+
+.mainActions {
+  display: flex;
+  gap: 12px;
+}
+
+/* Tour overlay */
+.tourOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10001;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.tourPopup {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+  max-width: 400px;
+  width: 90%;
+  animation: slideUp 0.3s ease-out;
+}
+
+.tourHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border, #e0e0e0);
+}
+
+.tourProgress {
+  font-size: 13px;
+  color: var(--color-text-secondary, #666);
+  font-weight: 500;
+}
+
+.skipButton {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary, #999);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.skipButton:hover {
+  color: var(--color-text, #666);
+}
+
+.tourContent {
+  padding: 24px 20px;
+}
+
+.tourTitle {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 12px;
+  color: var(--color-text, #333);
+}
+
+.tourDescription {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text-secondary, #666);
+  margin: 0;
+}
+
+.tourNavigation {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--color-border, #e0e0e0);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .popup {
+    width: 95%;
+    max-height: 85vh;
+  }
+
+  .footer {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .mainActions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .mainActions button {
+    width: 100%;
+  }
+
+  .actionButtons {
+    flex-direction: column;
+  }
+
+  .actionButton {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .popup {
+    background: #1e1e2e;
+  }
+
+  .welcomeMessage p {
+    color: #e0e0e0;
+  }
+
+  .highlights {
+    background: #2a2a3e;
+  }
+
+  .highlights li,
+  .tourTitle {
+    color: #e0e0e0;
+  }
+
+  .tourDescription,
+  .highlights h4,
+  .quickActions h4 {
+    color: #a0a0a0;
+  }
+
+  .actionButton {
+    background: #2a2a3e;
+    border-color: #3a3a4e;
+    color: #e0e0e0;
+  }
+
+  .closeButton {
+    background: #2a2a3e;
+    color: #a0a0a0;
+  }
+
+  .tourPopup {
+    background: #1e1e2e;
+  }
+}

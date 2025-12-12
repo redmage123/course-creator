@@ -230,6 +230,405 @@
   cursor: not-allowed;
 }
 
+/* URL-Based Generation Section */
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.sectionHeader h2 {
+  margin-bottom: 0;
+}
+
+.toggleLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.toggleCheckbox {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggleSwitch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  background-color: #d1d5db;
+  border-radius: 12px;
+  transition: background-color 0.2s;
+}
+
+.toggleSwitch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background-color: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.toggleCheckbox:checked + .toggleSwitch {
+  background-color: #3b82f6;
+}
+
+.toggleCheckbox:checked + .toggleSwitch::after {
+  transform: translateX(20px);
+}
+
+.urlGenerationContent {
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.featureDescription {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.urlInputList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.urlInputRow {
+  position: relative;
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.urlInputRow input {
+  flex: 1;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.9375rem;
+  transition: all 0.2s;
+}
+
+.urlInputRow input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.inputError {
+  border-color: #ef4444 !important;
+}
+
+.urlError {
+  position: absolute;
+  bottom: -18px;
+  left: 0;
+  font-size: 0.75rem;
+  color: #ef4444;
+}
+
+.removeUrlBtn {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fee2e2;
+  color: #dc2626;
+  border: none;
+  border-radius: 6px;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.removeUrlBtn:hover:not(:disabled) {
+  background-color: #fecaca;
+}
+
+.removeUrlBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.addUrlBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.75rem;
+  padding: 0.5rem 1rem;
+  background: none;
+  color: #3b82f6;
+  border: 1px dashed #3b82f6;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.addUrlBtn:hover:not(:disabled) {
+  background-color: #eff6ff;
+}
+
+.addUrlBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.generationOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.checkboxLabel input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: #3b82f6;
+}
+
+.generateBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.25);
+}
+
+.generateBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 10px -1px rgba(59, 130, 246, 0.35);
+}
+
+.generateBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Progress Indicator */
+.progressContainer {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.progressHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.progressStep {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #334155;
+}
+
+.progressTime {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.progressBar {
+  height: 8px;
+  background-color: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  border-radius: 4px;
+  transition: width 0.3s ease-out;
+}
+
+.progressDetails {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.progressWarning {
+  color: #f59e0b;
+}
+
+/* Syllabus Preview */
+.syllabusPreview {
+  margin-top: 1.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.syllabusPreview h3 {
+  background-color: #f1f5f9;
+  padding: 0.75rem 1rem;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #334155;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.syllabusContent {
+  padding: 1rem;
+}
+
+.syllabusHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.syllabusLevel {
+  padding: 0.25rem 0.75rem;
+  background-color: #dbeafe;
+  color: #1e40af;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.syllabusDescription {
+  color: #475569;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.syllabusObjectives {
+  margin-bottom: 1rem;
+}
+
+.syllabusObjectives strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: #334155;
+}
+
+.syllabusObjectives ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  list-style-type: disc;
+}
+
+.syllabusObjectives li {
+  font-size: 0.8125rem;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.syllabusModules {
+  margin-bottom: 1rem;
+}
+
+.syllabusModules strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: #334155;
+}
+
+.syllabusModules ol {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.syllabusModules li {
+  margin-bottom: 0.5rem;
+}
+
+.syllabusModules li strong {
+  display: inline;
+  font-size: 0.875rem;
+  color: #334155;
+}
+
+.moduleDescription {
+  margin: 0.25rem 0 0;
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+
+.syllabusSources {
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.syllabusSources strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: #334155;
+}
+
+.syllabusSources ul {
+  margin: 0;
+  padding-left: 1.25rem;
+  list-style-type: none;
+}
+
+.syllabusSources li {
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.syllabusSources a {
+  color: #3b82f6;
+  text-decoration: none;
+}
+
+.syllabusSources a:hover {
+  text-decoration: underline;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .container {
@@ -242,5 +641,15 @@
 
   .formRow {
     grid-template-columns: 1fr;
+  }
+
+  .sectionHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .generationOptions {
+    flex-direction: column;
+    gap: 1rem;
   }
 }

@@ -18,6 +18,8 @@ TEST_CONFIG = {
     'DATABASE_URL': os.getenv('TEST_DATABASE_URL', 'postgresql://postgres:postgres_password@localhost:5433/course_creator_test')
 }
 
+DB_AVAILABLE = os.getenv('TEST_DB_HOST') is not None or os.getenv('TEST_DATABASE_URL') is not None
+
 @pytest.fixture(scope='session')
 async def test_db_pool():
     """Create test database connection pool."""
@@ -91,7 +93,7 @@ async def mock_auth_token():
 def mock_get_current_user(test_instructor):
     pytest.skip("Needs refactoring to use real objects")
 
-@pytest.mark.skip(reason="Needs refactoring to use real objects")
+@pytest.mark.skipif(not DB_AVAILABLE, reason="Database not configured")
 class TestCoursePublishingIntegration:
     """Integration tests for course publishing workflow."""
 

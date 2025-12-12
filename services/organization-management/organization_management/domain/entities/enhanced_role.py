@@ -35,6 +35,10 @@ class Permission(Enum):
     # Course Management Powers
     VIEW_COURSES = "view_courses"
     MANAGE_COURSES = "manage_courses"
+    DELETE_COURSES = "delete_courses"
+
+    # Sub-Project Management Powers
+    DELETE_SUBPROJECTS = "delete_subprojects"
 
     # Instructor Assignment Powers
     MANAGE_INSTRUCTORS = "manage_instructors"
@@ -123,11 +127,13 @@ class EnhancedRole:
                 Permission.DELETE_PROJECTS,
                 Permission.CREATE_TRACKS,
                 Permission.DELETE_TRACKS,
+                Permission.DELETE_SUBPROJECTS,
                 Permission.ASSIGN_STUDENTS_TO_TRACKS,
                 Permission.ASSIGN_INSTRUCTORS_TO_TRACKS,
                 Permission.MANAGE_TRACK_MODULES,
                 Permission.VIEW_COURSES,
                 Permission.MANAGE_COURSES,
+                Permission.DELETE_COURSES,
                 Permission.MANAGE_INSTRUCTORS,
                 Permission.VIEW_INSTRUCTORS,
                 Permission.VIEW_SCHEDULES,
@@ -150,11 +156,13 @@ class EnhancedRole:
                 Permission.DELETE_PROJECTS,
                 Permission.CREATE_TRACKS,
                 Permission.DELETE_TRACKS,
+                Permission.DELETE_SUBPROJECTS,
                 Permission.ASSIGN_STUDENTS_TO_TRACKS,
                 Permission.ASSIGN_INSTRUCTORS_TO_TRACKS,
                 Permission.MANAGE_TRACK_MODULES,
                 Permission.VIEW_COURSES,
                 Permission.MANAGE_COURSES,
+                Permission.DELETE_COURSES,
                 Permission.MANAGE_INSTRUCTORS,
                 Permission.VIEW_INSTRUCTORS,
                 Permission.VIEW_SCHEDULES,

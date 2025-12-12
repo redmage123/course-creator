@@ -1,0 +1,180 @@
+# Course Creator Platform - System Architecture
+# D2 Diagram - High-level architecture overview
+
+direction: right
+
+title: {
+  label: Course Creator Platform Architecture
+  near: top-center
+  shape: text
+  style: {
+    font-size: 24
+    bold: true
+  }
+}
+
+# Client Layer
+clients: {
+  label: Client Layer
+  style: {
+    fill: "#E3F2FD"
+    stroke: "#1976D2"
+  }
+
+  web: Web Browser {
+    shape: rectangle
+  }
+  mobile: Mobile App {
+    shape: rectangle
+  }
+}
+
+# Load Balancer / Reverse Proxy
+nginx: {
+  label: NGINX Reverse Proxy
+  shape: hexagon
+  style: {
+    fill: "#C8E6C9"
+    stroke: "#388E3C"
+  }
+}
+
+# Frontend
+frontend: {
+  label: Frontend Layer
+  style: {
+    fill: "#FFF3E0"
+    stroke: "#F57C00"
+  }
+
+  react: React SPA {
+    label: "React 18 + TypeScript\nVite Build"
+    shape: rectangle
+  }
+}
+
+# API Gateway
+gateway: {
+  label: API Gateway
+  shape: parallelogram
+  style: {
+    fill: "#F3E5F5"
+    stroke: "#7B1FA2"
+  }
+}
+
+# Microservices
+services: {
+  label: Microservices Layer
+  style: {
+    fill: "#E8F5E9"
+    stroke: "#4CAF50"
+  }
+
+  user: User Management\n(Port 8000) {
+    shape: rectangle
+  }
+  org: Organization\nManagement\n(Port 8001) {
+    shape: rectangle
+  }
+  course: Course\nManagement\n(Port 8002) {
+    shape: rectangle
+  }
+  content: Content\nManagement\n(Port 8003) {
+    shape: rectangle
+  }
+  generator: Course\nGenerator\n(Port 8004) {
+    shape: rectangle
+  }
+  lab: Lab Manager\n(Port 8005) {
+    shape: rectangle
+  }
+  analytics: Analytics\n(Port 8006) {
+    shape: rectangle
+  }
+  metadata: Metadata\nService\n(Port 8007) {
+    shape: rectangle
+  }
+  rag: RAG Service\n(Port 8009) {
+    shape: rectangle
+  }
+  ai: AI Assistant\n(Port 8011) {
+    shape: rectangle
+  }
+}
+
+# Data Layer
+data: {
+  label: Data Layer
+  style: {
+    fill: "#FFEBEE"
+    stroke: "#D32F2F"
+  }
+
+  postgres: PostgreSQL {
+    shape: cylinder
+    label: "PostgreSQL\nPort 5433"
+  }
+  redis: Redis {
+    shape: cylinder
+    label: "Redis Cache\nPort 6379"
+  }
+  chromadb: ChromaDB {
+    shape: cylinder
+    label: "Vector DB\n(RAG)"
+  }
+}
+
+# External Services
+external: {
+  label: External Services
+  style: {
+    fill: "#ECEFF1"
+    stroke: "#607D8B"
+  }
+
+  openai: OpenAI API {
+    shape: cloud
+  }
+  zoom: Zoom API {
+    shape: cloud
+  }
+  slack: Slack API {
+    shape: cloud
+  }
+}
+
+# Connections
+clients.web -> nginx
+clients.mobile -> nginx
+nginx -> frontend.react
+nginx -> gateway
+
+gateway -> services.user
+gateway -> services.org
+gateway -> services.course
+gateway -> services.content
+gateway -> services.generator
+gateway -> services.lab
+gateway -> services.analytics
+gateway -> services.metadata
+gateway -> services.rag
+gateway -> services.ai
+
+services.user -> data.postgres
+services.org -> data.postgres
+services.course -> data.postgres
+services.content -> data.postgres
+services.analytics -> data.postgres
+services.metadata -> data.postgres
+
+services.user -> data.redis
+services.lab -> data.redis
+
+services.rag -> data.chromadb
+services.ai -> services.rag
+
+services.generator -> external.openai
+services.ai -> external.openai
+services.org -> external.zoom
+services.org -> external.slack

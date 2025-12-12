@@ -179,6 +179,7 @@ package-lock.json
 postgres_data/
 redis_data/
 lab-storage/
+chromadb_data/
 .aider*
 
 # LLM Models and Ollama

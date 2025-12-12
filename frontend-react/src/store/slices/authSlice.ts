@@ -23,6 +23,7 @@ interface AuthState {
   userId: string | null;
   organizationId: string | null;
   expiresAt: number | null;
+  isFirstLogin: boolean;
 }
 
 /**
@@ -46,6 +47,7 @@ const initialState: AuthState = {
   userId: storedUserId,
   organizationId: storedOrganizationId,
   expiresAt: null,
+  isFirstLogin: false,
 };
 
 /**
@@ -70,6 +72,7 @@ const authSlice = createSlice({
         userId: string;
         organizationId?: string;
         expiresAt: number;
+        isFirstLogin?: boolean;
       }>
     ) => {
       state.isAuthenticated = true;
@@ -79,6 +82,7 @@ const authSlice = createSlice({
       state.userId = action.payload.userId;
       state.organizationId = action.payload.organizationId || null;
       state.expiresAt = action.payload.expiresAt;
+      state.isFirstLogin = action.payload.isFirstLogin || false;
 
       // Store tokens in memory (secure - not in localStorage)
       tokenManager.setToken(action.payload.token);
@@ -102,6 +106,7 @@ const authSlice = createSlice({
       state.userId = null;
       state.organizationId = null;
       state.expiresAt = null;
+      state.isFirstLogin = false;
 
       // Clear tokens from memory
       tokenManager.clearTokens();
@@ -110,6 +115,10 @@ const authSlice = createSlice({
       localStorage.removeItem('userRole');
       localStorage.removeItem('userId');
       localStorage.removeItem('organizationId');
+    },
+
+    clearFirstLoginFlag: (state) => {
+      state.isFirstLogin = false;
     },
 
     refreshTokenSuccess: (
@@ -129,7 +138,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { loginSuccess, logout, refreshTokenSuccess, updateOrganization } =
+export const { loginSuccess, logout, refreshTokenSuccess, updateOrganization, clearFirstLoginFlag } =
   authSlice.actions;
 
 export default authSlice.reducer;

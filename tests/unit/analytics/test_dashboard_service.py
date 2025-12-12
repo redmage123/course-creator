@@ -80,8 +80,9 @@ from data_access.dashboard_dao import (
 
 @pytest.fixture
 def mock_dao():
-    """Create a mock DAO for testing."""
-    pytest.skip("Needs refactoring to use real objects")
+    """Create a mock DAO for testing - using real DAO objects."""
+    # Skip all tests in this class until proper fixtures are implemented
+    pytest.skip("Needs real DAO implementation with database fixtures")
 
 
 @pytest.fixture

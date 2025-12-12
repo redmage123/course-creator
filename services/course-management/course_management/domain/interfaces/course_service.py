@@ -31,8 +31,8 @@ class ICourseService(ABC):
         pass
 
     @abstractmethod
-    async def delete_course(self, course_id: str, instructor_id: str) -> bool:
-        """Delete a course (only if instructor owns it)"""
+    async def delete_course(self, course_id: str, user_id: str, is_admin: bool = False) -> bool:
+        """Delete a course (instructor owner or admin can delete)"""
         pass
 
     @abstractmethod

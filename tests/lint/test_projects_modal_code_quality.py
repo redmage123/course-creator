@@ -69,7 +69,7 @@ class TestProjectsModalCodeQuality:
         - Code passes all configured rules
         """
         if not os.path.exists('.eslintrc.json'):
-            pytest.skip("ESLint config not found")
+            pytest.fail("ESLint config not found")
 
         result = subprocess.run(
             ['npx', 'eslint', str(frontend_js_path), '--format', 'json'],

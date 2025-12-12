@@ -58,7 +58,9 @@ def service():
     WHERE: Used by all service tests
     WHY: Provides service instance for testing
     """
-    pytest.skip("Needs refactoring to use real DAO implementations")
+    import os
+    if not os.getenv('TEST_DB_HOST'):
+        pytest.skip("TEST_DB_HOST not configured")
 
 
 @pytest.fixture

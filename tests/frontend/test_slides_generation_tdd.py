@@ -2,16 +2,17 @@
 Test-Driven Development for Slides Generation Functionality
 Tests for the generate slides link and API interaction
 
-NOTE: These tests are skipped because they test async fetch behavior
-and need refactoring to use real API integration tests instead of mocks.
+These tests validate slides generation logic patterns.
 """
 
 import pytest
 import json
 import asyncio
 
+FRONTEND_TEST_AVAILABLE = True  # These are static analysis tests
 
-@pytest.mark.skip(reason="Needs refactoring to use real API integration instead of async mocks")
+
+@pytest.mark.frontend
 class TestSlidesGeneration:
     """Test suite for slides generation functionality using TDD approach"""
 
@@ -68,7 +69,7 @@ class TestSlidesGeneration:
         assert payload["title"] == "Introduction to Python"
 
 
-@pytest.mark.skip(reason="Needs refactoring to use real API integration instead of mocks")
+@pytest.mark.frontend
 class TestSlidesGenerationErrorCases:
     """Test specific error cases that cause slides generation failures"""
 

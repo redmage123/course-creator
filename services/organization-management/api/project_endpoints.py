@@ -681,6 +681,92 @@ async def delete_project_notes(
         raise HTTPException(status_code=500, detail="Failed to delete project notes")
 
 
+@router.delete("/organizations/{org_id}/projects/{project_id}")
+async def delete_project(
+    org_id: UUID,
+    project_id: UUID,
+    force: bool = Query(False, description="Force delete even with active enrollments"),
+    organization_service: OrganizationService = Depends(get_organization_service),
+    current_user: Dict[str, Any] = Depends(require_org_admin)
+):
+    """
+    Delete a project and all associated tracks, sub-projects, and assignments.
+
+    BUSINESS CONTEXT:
+    Organization admins can delete projects that are no longer needed. This is
+    a destructive operation that cascades to all related entities:
+    - All tracks under the project
+    - All sub-projects/locations under the project
+    - All track assignments (enrollments) under those tracks
+    - All sub-project track assignments
+
+    SAFETY FEATURES:
+    - By default, projects with active enrollments cannot be deleted
+    - Use force=true to override this safety check
+    - All deletions are logged to the audit trail
+
+    AUTHORIZATION:
+    - Requires organization admin role
+    - User must be admin of the organization owning the project
+
+    WARNING:
+    This operation CANNOT be undone. Consider archiving the project
+    instead if you want to preserve the data.
+
+    Args:
+        org_id: Organization UUID
+        project_id: Project UUID to delete
+        force: If true, delete even with active enrollments
+
+    Returns:
+        Deletion result including counts of deleted entities
+    """
+    try:
+        result = await organization_service.dao.delete_project(
+            str(project_id),
+            str(org_id),
+            current_user['user_id'],
+            force=force
+        )
+
+        if not result.get("success"):
+            blocked_reason = result.get("blocked_reason", "Unknown error")
+            if "active enrollments" in blocked_reason.lower():
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "error": blocked_reason,
+                        "active_enrollments": result.get("active_enrollments", 0),
+                        "hint": "Use force=true query parameter to delete anyway"
+                    }
+                )
+            raise HTTPException(status_code=404, detail=blocked_reason)
+
+        logging.info(
+            f"Project {project_id} deleted by user {current_user['user_id']} - "
+            f"tracks: {result.get('deleted_tracks', 0)}, "
+            f"subprojects: {result.get('deleted_subprojects', 0)}"
+        )
+
+        return {
+            "message": f"Project '{result.get('project_name', '')}' deleted successfully",
+            "project_id": str(project_id),
+            "deleted_tracks": result.get("deleted_tracks", 0),
+            "deleted_subprojects": result.get("deleted_subprojects", 0),
+            "deleted_by": current_user['user_id'],
+            "deleted_at": datetime.utcnow().isoformat()
+        }
+
+    except HTTPException:
+        raise
+    except DatabaseException as e:
+        logging.error(f"Database error deleting project: {e.message}", extra=e.to_dict())
+        raise HTTPException(status_code=500, detail="Failed to delete project")
+    except Exception as e:
+        logging.exception(f"Unexpected error deleting project: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to delete project")
+
+
 # =============================================================================
 # TRACK ENDPOINTS
 # =============================================================================

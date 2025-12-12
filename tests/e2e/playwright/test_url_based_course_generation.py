@@ -246,6 +246,7 @@ def authenticated_page(browser_context):
     page.close()
 
 
+@pytest.mark.skipif(not PLAYWRIGHT_AVAILABLE, reason="Playwright not installed")
 class TestURLBasedCourseGenerationUI:
     """
     Playwright tests for URL-based course generation user interface.
@@ -880,6 +881,7 @@ class TestURLBasedCourseGenerationUI:
                 f"Error should clear after valid URL: {text}"
 
 
+@pytest.mark.skipif(not PLAYWRIGHT_AVAILABLE, reason="Playwright not installed")
 class TestURLBasedGenerationAccessControl:
     """
     Tests for access control of URL-based generation feature.
@@ -889,7 +891,6 @@ class TestURLBasedGenerationAccessControl:
     users with appropriate roles (instructor, org admin).
     """
 
-    @pytest.mark.skipif(not PLAYWRIGHT_AVAILABLE, reason="Playwright not installed")
     def test_unauthenticated_redirect_to_login(self, page: Page):
         """
         Test that unauthenticated users are redirected to login.
@@ -907,6 +908,7 @@ class TestURLBasedGenerationAccessControl:
             f"Unauthenticated user should be redirected to login, got {current_url}"
 
 
+@pytest.mark.skipif(not PLAYWRIGHT_AVAILABLE, reason="Playwright not installed")
 class TestURLBasedGenerationIntegration:
     """
     Integration tests for URL-based generation with backend services.

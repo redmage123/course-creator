@@ -27,7 +27,7 @@ import asyncpg
 import logging
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime, timedelta
-from uuid import UUID
+from uuid import UUID, uuid4
 import json
 import sys
 sys.path.append('/app/shared')
@@ -964,6 +964,158 @@ class OrganizationManagementDAO:
             raise DatabaseException(
                 message=f"Failed to delete project notes",
                 error_code="PROJECT_NOTES_DELETE_ERROR",
+                details={"project_id": project_id, "org_id": org_id},
+                original_exception=e
+            )
+
+    async def delete_project(
+        self,
+        project_id: str,
+        org_id: str,
+        deleted_by: str,
+        force: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Delete a project and optionally cascade to related entities.
+
+        Business Context:
+        Organization admins can delete projects that are no longer needed.
+        This is a destructive operation that removes the project and related data.
+        Active enrollments will block deletion unless force=True.
+
+        Args:
+            project_id: Project identifier to delete
+            org_id: Organization identifier for validation
+            deleted_by: UUID of user performing the deletion
+            force: If True, cascade delete even with active enrollments
+
+        Returns:
+            Dictionary with deletion results:
+            - success: bool indicating if deletion was successful
+            - deleted_tracks: count of tracks deleted
+            - deleted_subprojects: count of sub-projects deleted
+            - blocked_reason: reason if deletion was blocked (if any)
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                # Verify project exists and belongs to organization
+                project = await conn.fetchrow(
+                    """SELECT id, name, is_active
+                       FROM course_creator.projects
+                       WHERE id = $1 AND organization_id = $2""",
+                    UUID(project_id),
+                    UUID(org_id)
+                )
+
+                if not project:
+                    return {
+                        "success": False,
+                        "blocked_reason": "Project not found or access denied"
+                    }
+
+                # Check for active enrollments in tracks under this project
+                if not force:
+                    active_enrollments = await conn.fetchval(
+                        """SELECT COUNT(*) FROM course_creator.track_assignments ta
+                           JOIN course_creator.tracks t ON ta.track_id = t.id
+                           WHERE t.project_id = $1 AND ta.status = 'active'""",
+                        UUID(project_id)
+                    )
+
+                    if active_enrollments > 0:
+                        return {
+                            "success": False,
+                            "blocked_reason": f"Cannot delete project with {active_enrollments} active enrollments. Use force=true to override.",
+                            "active_enrollments": active_enrollments
+                        }
+
+                # Begin transaction for cascade deletion
+                async with conn.transaction():
+                    # Count tracks and sub-projects before deletion
+                    track_count = await conn.fetchval(
+                        """SELECT COUNT(*) FROM course_creator.tracks
+                           WHERE project_id = $1""",
+                        UUID(project_id)
+                    )
+
+                    subproject_count = await conn.fetchval(
+                        """SELECT COUNT(*) FROM course_creator.sub_projects
+                           WHERE project_id = $1""",
+                        UUID(project_id)
+                    )
+
+                    # Delete track assignments first (foreign key constraint)
+                    await conn.execute(
+                        """DELETE FROM course_creator.track_assignments
+                           WHERE track_id IN (
+                               SELECT id FROM course_creator.tracks WHERE project_id = $1
+                           )""",
+                        UUID(project_id)
+                    )
+
+                    # Delete tracks
+                    await conn.execute(
+                        """DELETE FROM course_creator.tracks WHERE project_id = $1""",
+                        UUID(project_id)
+                    )
+
+                    # Delete sub-project track assignments
+                    await conn.execute(
+                        """DELETE FROM course_creator.sub_project_track_assignments
+                           WHERE sub_project_id IN (
+                               SELECT id FROM course_creator.sub_projects WHERE project_id = $1
+                           )""",
+                        UUID(project_id)
+                    )
+
+                    # Delete sub-projects
+                    await conn.execute(
+                        """DELETE FROM course_creator.sub_projects WHERE project_id = $1""",
+                        UUID(project_id)
+                    )
+
+                    # Delete the project itself
+                    result = await conn.execute(
+                        """DELETE FROM course_creator.projects
+                           WHERE id = $1 AND organization_id = $2""",
+                        UUID(project_id),
+                        UUID(org_id)
+                    )
+
+                    # Log the audit event
+                    await conn.execute(
+                        """INSERT INTO course_creator.audit_logs (
+                            id, user_id, organization_id, action, resource_type,
+                            resource_id, details, created_at
+                        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)""",
+                        uuid4(),
+                        UUID(deleted_by),
+                        UUID(org_id),
+                        "delete",
+                        "project",
+                        UUID(project_id),
+                        json.dumps({
+                            "project_name": project["name"],
+                            "tracks_deleted": track_count,
+                            "subprojects_deleted": subproject_count,
+                            "force": force
+                        }),
+                        datetime.utcnow()
+                    )
+
+                    return {
+                        "success": result == "DELETE 1",
+                        "deleted_tracks": track_count,
+                        "deleted_subprojects": subproject_count,
+                        "project_name": project["name"]
+                    }
+
+        except DatabaseException:
+            raise
+        except Exception as e:
+            raise DatabaseException(
+                message="Failed to delete project",
+                error_code="PROJECT_DELETE_ERROR",
                 details={"project_id": project_id, "org_id": org_id},
                 original_exception=e
             )

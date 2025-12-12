@@ -19,7 +19,7 @@
  * - Clean, professional appearance
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../hooks/useAuth';
 import { Button } from '../../atoms/Button';
@@ -62,6 +62,47 @@ export const Navbar: React.FC<NavbarProps> = ({
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const userMenuTriggerRef = useRef<HTMLButtonElement>(null);
+
+  /**
+   * Close dropdowns on Escape key
+   */
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (isUserMenuOpen) {
+          setIsUserMenuOpen(false);
+          userMenuTriggerRef.current?.focus();
+        }
+        if (isMenuOpen) {
+          setIsMenuOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isUserMenuOpen, isMenuOpen]);
+
+  /**
+   * Close user menu when clicking outside
+   */
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    if (isUserMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isUserMenuOpen]);
 
   /**
    * Check if a navigation link is active
@@ -204,8 +245,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           {isAuthenticated && user ? (
             <>
               {/* User Menu */}
-              <div className={styles['user-menu-container']}>
+              <div ref={userMenuRef} className={styles['user-menu-container']}>
                 <button
+                  ref={userMenuTriggerRef}
                   className={styles['user-menu-trigger']}
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   aria-label="User menu"
@@ -273,6 +315,36 @@ export const Navbar: React.FC<NavbarProps> = ({
                     >
                       Profile
                     </Link>
+                    <a
+                      href="/docs/USER_GUIDE.pdf"
+                      download="Course_Creator_User_Guide.pdf"
+                      className={styles['dropdown-item']}
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        style={{ marginRight: '8px', verticalAlign: 'middle' }}
+                      >
+                        <path
+                          d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                      User Guide (PDF)
+                    </a>
                     <div className={styles['dropdown-divider']} />
                     <button
                       className={styles['dropdown-item-button']}
@@ -312,6 +384,34 @@ export const Navbar: React.FC<NavbarProps> = ({
             </>
           ) : (
             <>
+              <a
+                href="/docs/USER_GUIDE.pdf"
+                download="Course_Creator_User_Guide.pdf"
+                className={styles['help-link']}
+                title="Download User Guide"
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <path
+                    d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </a>
               <Link to="/login">
                 <Button variant="ghost" size="medium">
                   Login

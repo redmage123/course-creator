@@ -52,15 +52,18 @@ class IntentType(str, Enum):
 @dataclass
 class FunctionParameter:
     """
-    Function parameter definition
+    Function parameter definition with interactive clarification support
 
     BUSINESS PURPOSE:
     Defines required and optional parameters for platform actions.
-    Used by LLM to extract information from user message.
+    Used by LLM to extract information from user message. Includes
+    clarification prompts for interactive information gathering when
+    admins provide incomplete information.
 
     TECHNICAL IMPLEMENTATION:
     JSON Schema-compatible parameter definition. Used in OpenAI
-    function calling and Claude tool use.
+    function calling and Claude tool use. clarification_prompt enables
+    the AI to ask specific questions when this parameter is missing.
 
     ATTRIBUTES:
         name: Parameter name
@@ -68,37 +71,73 @@ class FunctionParameter:
         description: Human-readable parameter description
         required: Whether parameter is required
         enum: Optional list of allowed values
+        clarification_prompt: Question to ask user when this parameter is missing
     """
     name: str
     type: str
     description: str
     required: bool = True
     enum: Optional[List[str]] = None
+    clarification_prompt: Optional[str] = None
 
 
 @dataclass
 class FunctionSchema:
     """
-    Function schema for LLM function calling
+    Function schema for LLM function calling with interactive clarification
 
     BUSINESS PURPOSE:
     Defines available platform actions for AI assistant. Tells LLM
     what functions it can call and what parameters are needed.
+    Supports interactive information gathering when admins provide
+    incomplete data for administrative actions.
 
     TECHNICAL IMPLEMENTATION:
     OpenAI function calling schema format. Used in LLM API calls
-    to enable function calling capability.
+    to enable function calling capability. interaction_examples
+    demonstrate how the AI should conduct conversations to gather
+    missing information.
 
     ATTRIBUTES:
         name: Function name (matches API endpoint)
         description: What the function does
         parameters: List of function parameters
         rbac_required: Roles required to execute function
+        interaction_examples: Example conversations showing how to gather info
     """
     name: str
     description: str
     parameters: List[FunctionParameter]
     rbac_required: List[str] = field(default_factory=list)
+    interaction_examples: Optional[List[str]] = None
+
+    def get_missing_param_clarifications(self, provided_args: Dict[str, Any]) -> List[str]:
+        """
+        Get clarification prompts for missing required parameters
+
+        BUSINESS PURPOSE:
+        Enables interactive information gathering. When user provides
+        incomplete data, returns appropriate questions to ask.
+
+        TECHNICAL IMPLEMENTATION:
+        Iterates through required parameters, checks which are missing
+        from provided_args, returns clarification_prompt for each.
+
+        ARGS:
+            provided_args: Arguments already provided by user
+
+        RETURNS:
+            List of clarification prompts for missing parameters
+        """
+        clarifications = []
+        for param in self.parameters:
+            if param.required and param.name not in provided_args:
+                if param.clarification_prompt:
+                    clarifications.append(param.clarification_prompt)
+                else:
+                    # Default clarification if none specified
+                    clarifications.append(f"What {param.description.lower()} would you like to use?")
+        return clarifications
 
     def to_openai_format(self) -> Dict[str, Any]:
         """

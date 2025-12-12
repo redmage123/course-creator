@@ -25,6 +25,7 @@ import pytest
 import time
 import uuid
 import docker
+import os
 from datetime import datetime, timedelta
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -32,6 +33,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 from tests.e2e.selenium_base import BasePage, BaseTest
+
+# Check if Selenium is configured
+SELENIUM_AVAILABLE = os.getenv('SELENIUM_REMOTE') is not None or os.getenv('HEADLESS') is not None
 
 
 # ============================================================================
@@ -126,6 +130,7 @@ class LabEnvironmentPage(BasePage):
 # TEST CLASS 1: Lab Startup and Initialization (5 tests)
 # ============================================================================
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.lab_environment
 @pytest.mark.priority_critical
@@ -381,6 +386,7 @@ class TestLabStartupAndInitialization(BaseTest):
 # TEST CLASS 2: Lab Session Management (8 tests)
 # ============================================================================
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.lab_environment
 @pytest.mark.priority_critical
@@ -697,6 +703,7 @@ class TestLabSessionManagement(BaseTest):
 # TEST CLASS 3: Multi-Student Concurrency (4 tests)
 # ============================================================================
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.lab_environment
 @pytest.mark.priority_high
@@ -951,6 +958,7 @@ class TestMultiStudentConcurrency(BaseTest):
 # TEST CLASS 4: Lab Cleanup (4 tests)
 # ============================================================================
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.lab_environment
 @pytest.mark.priority_high
@@ -1193,6 +1201,7 @@ class TestLabCleanup(BaseTest):
 # TEST CLASS 5: Lab Access Control (4 tests)
 # ============================================================================
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 @pytest.mark.lab_environment
 @pytest.mark.priority_critical

@@ -1,0 +1,51 @@
+"""
+Course Validator Plugin Metadata
+
+This plugin validates courses before they are saved,
+ensuring quality standards are met.
+"""
+name: course-validator
+version: 1.0.0
+description: Validates course content against quality standards before saving
+author: Course Creator Team
+author_email: dev@coursecreator.io
+license: MIT
+
+# Required platform version
+min_platform_version: "3.0.0"
+
+# Hooks this plugin subscribes to
+hooks:
+  - before-course-save
+  - before-quiz-save
+  - before-content-publish
+
+# Events this plugin listens to
+events:
+  - course.created
+  - course.updated
+  - content.generated
+
+# Plugin settings schema
+settings_schema:
+  min_course_title_length:
+    type: integer
+    default: 5
+    description: Minimum characters for course title
+  min_description_length:
+    type: integer
+    default: 50
+    description: Minimum characters for course description
+  require_learning_objectives:
+    type: boolean
+    default: true
+    description: Require at least one learning objective
+  max_quiz_questions:
+    type: integer
+    default: 50
+    description: Maximum questions per quiz
+
+tags:
+  - quality
+  - validation
+  - content

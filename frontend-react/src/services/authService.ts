@@ -26,15 +26,19 @@ export interface LoginResponse {
     id: string;
     username: string;
     email: string;
+    full_name?: string;
     role: UserRole;
     organizationId?: string;
+    organization?: string;
   };
   expiresIn: number;
+  isFirstLogin?: boolean;
 }
 
 export interface RegisterData {
   username: string;
   email: string;
+  fullName: string;
   password: string;
   firstName?: string;
   lastName?: string;
@@ -90,10 +94,13 @@ class AuthService {
           id: backendResponse.user.id,
           username: backendResponse.user.username,
           email: backendResponse.user.email,
+          full_name: backendResponse.user.full_name,
           role: backendResponse.user.role,
           organizationId: backendResponse.user.organization_id,
+          organization: backendResponse.user.organization,
         },
         expiresIn: expiresAt,
+        isFirstLogin: backendResponse.is_first_login || false,
       };
     } catch (error: any) {
       console.error('[AuthService] Login failed:', error);
@@ -170,17 +177,55 @@ class AuthService {
    */
   async register(data: RegisterData): Promise<LoginResponse> {
     try {
-      const response = await apiClient.post<LoginResponse>('/auth/register', data);
-
-      const expiresAt = Date.now() + response.expiresIn * 1000;
-
-      return {
-        ...response,
-        expiresIn: expiresAt,
+      // Transform camelCase frontend data to snake_case for backend
+      const backendData = {
+        username: data.username,
+        email: data.email,
+        full_name: data.fullName,
+        password: data.password,
+        first_name: data.firstName,
+        last_name: data.lastName,
+        role: 'student', // Default role for self-registration
       };
-    } catch (error) {
+
+      const response = await apiClient.post<any>('/auth/register', backendData);
+
+      // Backend returns user object, need to construct login response
+      // After successful registration, user may need to login separately
+      // or backend may return a token - handle both cases
+      if (response.access_token) {
+        const expiresAt = Date.now() + (response.expires_in || 3600) * 1000;
+        return {
+          token: response.access_token,
+          user: {
+            id: response.user?.id || response.id,
+            username: response.user?.username || response.username,
+            email: response.user?.email || response.email,
+            role: response.user?.role || response.role || 'student',
+            organizationId: response.user?.organization_id,
+          },
+          expiresIn: expiresAt,
+        };
+      }
+
+      // If no token returned, registration succeeded but user needs to login
+      return {
+        token: '',
+        user: {
+          id: response.id,
+          username: response.username,
+          email: response.email,
+          role: response.role || 'student',
+        },
+        expiresIn: 0,
+      };
+    } catch (error: any) {
       console.error('[AuthService] Registration failed:', error);
-      throw new Error('Registration failed. Username or email may already exist.');
+      // Extract error message from response if available
+      const errorMessage = error?.response?.data?.detail ||
+                          error?.message ||
+                          'Registration failed. Username or email may already exist.';
+      throw new Error(errorMessage);
     }
   }
 

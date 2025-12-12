@@ -34,7 +34,11 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from selenium_base import BaseTest
 
+# Check if Selenium is configured
+SELENIUM_AVAILABLE = os.getenv('SELENIUM_REMOTE') is not None or os.getenv('HEADLESS') is not None
 
+
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 class TestConsoleErrors(BaseTest):
     """
     Browser Console Error Detection Tests

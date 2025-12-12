@@ -46,6 +46,9 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 from e2e.selenium_base import BaseTest, BasePage
 
+# Check if Selenium is configured
+SELENIUM_AVAILABLE = os.getenv('SELENIUM_REMOTE') is not None or os.getenv('HEADLESS') is not None
+
 
 # Test Configuration
 BASE_URL = "https://localhost:3000"
@@ -480,6 +483,7 @@ class ContentExportPage(BasePage):
         time.sleep(2)
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 class TestSyllabusGeneration(BaseTest):
     """Test AI-powered syllabus generation workflow."""
@@ -595,6 +599,7 @@ class TestSyllabusGeneration(BaseTest):
             pytest.skip("Syllabus save not functional")
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 class TestSlideGeneration(BaseTest):
     """Test AI-powered slide generation workflow."""
@@ -702,6 +707,7 @@ class TestSlideGeneration(BaseTest):
             pytest.skip("Slide save not functional")
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 class TestQuizGeneration(BaseTest):
     """Test AI-powered quiz generation workflow."""
@@ -819,6 +825,7 @@ class TestQuizGeneration(BaseTest):
             pytest.skip("Quiz save not functional")
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 class TestLabGeneration(BaseTest):
     """Test AI-powered lab exercise generation workflow."""
@@ -950,6 +957,7 @@ class TestLabGeneration(BaseTest):
             pytest.skip("Lab save not functional")
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 class TestContentQuality(BaseTest):
     """Test content quality validation and standards."""
@@ -991,6 +999,7 @@ class TestContentQuality(BaseTest):
         assert "edit" in page_content or "modify" in page_content or "update" in page_content
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 class TestContentExport(BaseTest):
     """Test multi-format content export functionality."""
@@ -1050,6 +1059,7 @@ class TestContentExport(BaseTest):
         assert "json" in page_content or "export" in page_content
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 class TestKnowledgeGraphIntegration(BaseTest):
     """Test knowledge graph integration with content generation."""
@@ -1079,6 +1089,7 @@ class TestKnowledgeGraphIntegration(BaseTest):
         assert "prerequisite" in page_content or "required" in page_content or "depends" in page_content
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 class TestRAGEnhancement(BaseTest):
     """Test RAG (Retrieval-Augmented Generation) enhancement."""
@@ -1110,6 +1121,7 @@ class TestRAGEnhancement(BaseTest):
         assert "related" in page_content or "reference" in page_content or "similar" in page_content or True
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 @pytest.mark.e2e
 class TestCompleteContentGenerationPipeline(BaseTest):
     """

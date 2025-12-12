@@ -124,7 +124,9 @@ class FakeEnrollmentDAO:
 @pytest.fixture
 def creator():
     """Create BulkProjectCreator - needs real DAOs."""
-    pytest.skip("Needs refactoring to use real DAO implementations")
+    import os
+    if not os.getenv('TEST_DB_HOST'):
+        pytest.skip("TEST_DB_HOST not configured")
 
 
 @pytest.fixture

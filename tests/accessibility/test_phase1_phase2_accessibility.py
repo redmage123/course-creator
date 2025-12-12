@@ -333,7 +333,7 @@ class TestSlideshowControl(AccessibilityTestBase):
                 f"Pause button should have descriptive aria-label, got: {aria_label}"
 
         except NoSuchElementException:
-            pytest.skip("Slideshow pause button not found - may not be implemented yet")
+            pytest.fail("Slideshow pause button not found - may not be implemented yet")
 
     def test_slideshow_pause_keyboard(self):
         """Test slideshow pause with keyboard"""
@@ -353,7 +353,7 @@ class TestSlideshowControl(AccessibilityTestBase):
                 "Pause button should have aria-pressed attribute"
 
         except NoSuchElementException:
-            pytest.skip("Slideshow pause button not found")
+            pytest.fail("Slideshow pause button not found")
 
 
 class TestModalARIA(AccessibilityTestBase):
@@ -407,7 +407,7 @@ class TestKeyboardAccessibility(AccessibilityTestBase):
                 "Interactive elements should be keyboard focusable"
 
         except NoSuchElementException:
-            pytest.skip("Sidebar toggle not found on this page")
+            pytest.fail("Sidebar toggle not found on this page")
 
 
 if __name__ == "__main__":

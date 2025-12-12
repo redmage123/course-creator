@@ -1,0 +1,167 @@
+# Organization Admin Workflow
+# D2 Diagram - Organization management and training programs
+
+direction: down
+
+title: {
+  label: Organization Admin Workflow
+  near: top-center
+  shape: text
+  style: {
+    font-size: 22
+    bold: true
+  }
+}
+
+# Dashboard
+dashboard: {
+  label: Org Admin Dashboard
+  style: {
+    fill: "#E3F2FD"
+    stroke: "#1976D2"
+  }
+
+  overview: Organization\nOverview
+  metrics: Key Metrics
+  alerts: Alerts &\nNotifications
+  quick: Quick Actions
+}
+
+# Organization Setup
+org_setup: {
+  label: Organization Setup
+  style: {
+    fill: "#E8F5E9"
+    stroke: "#4CAF50"
+  }
+
+  settings: Organization\nSettings
+  branding: Branding &\nCustomization
+  integrations: Configure\nIntegrations
+  compliance: Compliance\nSettings
+}
+
+# Member Management
+members: {
+  label: Member Management
+  style: {
+    fill: "#FFF3E0"
+    stroke: "#F57C00"
+  }
+
+  invite: Invite\nMembers
+  roles: Assign Roles
+  instructors: Manage\nInstructors
+  students: Manage\nStudents
+  bulk: Bulk Import
+}
+
+# Training Tracks
+tracks: {
+  label: Training Tracks
+  style: {
+    fill: "#F3E5F5"
+    stroke: "#7B1FA2"
+  }
+
+  create: Create Track
+  courses: Assign Courses
+  sequence: Set Learning\nSequence
+  prerequisites: Define\nPrerequisites
+  publish: Publish Track
+}
+
+# Project Management
+projects: {
+  label: Projects & Cohorts
+  style: {
+    fill: "#FFEBEE"
+    stroke: "#D32F2F"
+  }
+
+  create_proj: Create Project
+  cohorts: Create Cohorts
+  schedule: Set Schedule
+  assign: Assign\nParticipants
+  monitor: Monitor\nProgress
+}
+
+# Integrations
+integrations: {
+  label: External Integrations
+  style: {
+    fill: "#E0F7FA"
+    stroke: "#00ACC1"
+  }
+
+  zoom: Zoom Rooms
+  slack: Slack\nChannels
+  calendar: Calendar\nSync
+  sso: SSO Setup
+}
+
+# Analytics & Reporting
+analytics: {
+  label: Analytics & Compliance
+  style: {
+    fill: "#F1F8E9"
+    stroke: "#689F38"
+  }
+
+  completion: Completion\nReports
+  compliance: Compliance\nDashboard
+  engagement: Engagement\nMetrics
+  export: Export\nReports
+}
+
+# Notifications
+notifications: {
+  label: Communication
+  style: {
+    fill: "#FFF8E1"
+    stroke: "#FFA000"
+  }
+
+  announce: Send\nAnnouncements
+  reminders: Training\nReminders
+  templates: Notification\nTemplates
+  broadcast: Broadcast\nMessages
+}
+
+# Connections
+dashboard.overview -> dashboard.metrics
+dashboard.metrics -> dashboard.alerts
+dashboard.quick -> org_setup.settings
+dashboard.quick -> members.invite
+dashboard.quick -> tracks.create
+
+org_setup.settings -> org_setup.branding
+org_setup.branding -> org_setup.integrations
+org_setup.integrations -> integrations.zoom
+
+members.invite -> members.roles
+members.roles -> members.instructors
+members.roles -> members.students
+members.students -> members.bulk
+
+tracks.create -> tracks.courses
+tracks.courses -> tracks.sequence
+tracks.sequence -> tracks.prerequisites
+tracks.prerequisites -> tracks.publish
+
+projects.create_proj -> projects.cohorts
+projects.cohorts -> projects.schedule
+projects.schedule -> projects.assign
+projects.assign -> projects.monitor
+
+integrations.zoom -> notifications.announce
+integrations.slack -> notifications.broadcast
+integrations.calendar -> projects.schedule
+
+analytics.completion -> analytics.compliance
+analytics.compliance -> analytics.engagement
+analytics.engagement -> analytics.export
+projects.monitor -> analytics.completion
+
+members.instructors -> tracks.create: Creates
+members.students -> projects.assign: Enrolled In

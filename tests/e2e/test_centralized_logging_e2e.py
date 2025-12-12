@@ -47,7 +47,7 @@ class TestEndToEndLoggingWorkflows:
         # Cleanup
         shutil.rmtree(temp_dir)
     
-    @pytest.mark.skip(reason="Needs refactoring to use real services instead of mocks")
+    @pytest.mark.e2e
     def test_complete_user_registration_workflow_logging(self, e2e_logging_environment):
         """Test logging throughout complete user registration workflow."""
         services = e2e_logging_environment['services']
@@ -90,7 +90,7 @@ class TestEndToEndLoggingWorkflows:
         # assert analytics_service.logger.info.call_count >= 2
         # assert course_service.logger.info.call_count >= 2
 
-    @pytest.mark.skip(reason="Needs refactoring to use real services instead of mocks")
+    @pytest.mark.e2e
     def test_complete_course_creation_workflow_logging(self, e2e_logging_environment):
         """Test logging throughout complete course creation workflow."""
         services = e2e_logging_environment['services']
@@ -142,7 +142,7 @@ class TestEndToEndLoggingWorkflows:
         # assert course_service.logger.info.call_count >= 2
         # assert analytics_service.logger.info.call_count >= 2
 
-    @pytest.mark.skip(reason="Needs refactoring to use real services instead of mocks")
+    @pytest.mark.e2e
     def test_complete_lab_session_workflow_logging(self, e2e_logging_environment):
         """Test logging throughout complete lab session workflow."""
         services = e2e_logging_environment['services']
@@ -209,7 +209,7 @@ class TestEndToEndErrorHandlingLogging:
 
         return services
 
-    @pytest.mark.skip(reason="Needs refactoring to use real services instead of mocks")
+    @pytest.mark.e2e
     def test_database_failure_recovery_logging(self, error_scenario_environment):
         """Test logging during database failure and recovery."""
         services = error_scenario_environment
@@ -241,7 +241,7 @@ class TestEndToEndErrorHandlingLogging:
         # user_service.logger.warning.assert_called_with(f"Initiating fallback for transaction {transaction_id}")
         # user_service.logger.info.assert_any_call(f"Transaction completed successfully: {transaction_id}")
 
-    @pytest.mark.skip(reason="Needs refactoring to use real services instead of mocks")
+    @pytest.mark.e2e
     def test_service_cascade_failure_logging(self, error_scenario_environment):
         """Test logging during cascading service failures."""
         services = error_scenario_environment
@@ -275,7 +275,7 @@ class TestEndToEndErrorHandlingLogging:
         # analytics_service.logger.critical.assert_called_with("Service cascade failure in progress")
         # analytics_service.logger.info.assert_called_with("Service cascade recovery completed")
 
-    @pytest.mark.skip(reason="Needs refactoring to use real services instead of mocks")
+    @pytest.mark.e2e
     def test_data_corruption_detection_logging(self, error_scenario_environment):
         """Test logging during data corruption detection and recovery."""
         services = error_scenario_environment
@@ -323,7 +323,7 @@ class TestEndToEndPerformanceLogging:
 
         return services
 
-    @pytest.mark.skip(reason="Needs refactoring to use real services instead of mocks")
+    @pytest.mark.e2e
     def test_system_wide_performance_monitoring(self, performance_monitoring_environment):
         """Test system-wide performance monitoring logging."""
         services = performance_monitoring_environment
@@ -359,7 +359,7 @@ class TestEndToEndPerformanceLogging:
         # services['course-generator'].logger.warning.assert_called_with("Performance alert: content_generation took 2500ms")
         # analytics_service.logger.info.assert_any_call(f"Performance monitoring completed: {monitoring_session}")
 
-    @pytest.mark.skip(reason="Needs refactoring to use real services instead of mocks")
+    @pytest.mark.e2e
     def test_load_testing_performance_logging(self, performance_monitoring_environment):
         """Test performance logging during load testing scenarios."""
         services = performance_monitoring_environment
@@ -398,7 +398,7 @@ class TestEndToEndPerformanceLogging:
         # for service in services.values():
         #     assert service.logger.info.call_count >= 5  # At least 5 load metrics logged
 
-    @pytest.mark.skip(reason="Needs refactoring to use real services instead of mocks")
+    @pytest.mark.e2e
     def test_resource_exhaustion_logging(self, performance_monitoring_environment):
         """Test logging during resource exhaustion scenarios."""
         services = performance_monitoring_environment

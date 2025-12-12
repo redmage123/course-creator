@@ -77,7 +77,7 @@ class TestWizardNavigationLint:
                     f"Found {len(errors)} ESLint errors in wizard navigation:\n" + \
                     "\n".join([f"  Line {e['line']}:{e['column']}: {e['message']} ({e['ruleId']})" for e in errors])
         except FileNotFoundError:
-            pytest.skip("ESLint not installed (run npm install)")
+            pytest.fail("ESLint not installed (run npm install)")
         except subprocess.TimeoutExpired:
             pytest.fail("ESLint timed out")
 
@@ -149,7 +149,7 @@ class TestWizardNavigationLint:
             assert result.returncode == 0, \
                 f"Syntax error in wizard navigation module:\n{result.stderr}"
         except FileNotFoundError:
-            pytest.skip("Node.js not installed")
+            pytest.fail("Node.js not installed")
         except subprocess.TimeoutExpired:
             pytest.fail("Syntax check timed out")
 

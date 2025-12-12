@@ -4,6 +4,10 @@ End-to-End Tests for Organization Registration Flow
 Tests complete user workflow from frontend form to backend API
 """
 import pytest
+import os as os_module
+
+# Check for Selenium availability
+SELENIUM_AVAILABLE = os_module.getenv('SELENIUM_REMOTE') is not None or os_module.getenv('HEADLESS') is not None
 import time
 import os
 import tempfile
@@ -18,6 +22,8 @@ from PIL import Image
 import io
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
+@pytest.mark.e2e
 class TestOrganizationRegistrationE2E:
     """
     End-to-End test suite for Organization Registration

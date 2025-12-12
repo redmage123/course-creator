@@ -18,12 +18,15 @@ COVERAGE:
 SECURITY IMPORTANCE:
 Individual UI components must enforce organization boundaries to prevent
 accidental cross-tenant data exposure through shared interface elements.
+
+These tests validate multi-tenant UI component isolation patterns.
 """
 
 import pytest
 import json
 import os
 from datetime import datetime
+from unittest.mock import Mock, AsyncMock, patch
 
 # Add test fixtures path
 import sys
@@ -31,15 +34,16 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../fixtures'))
 
 from rbac_fixtures import rbac_test_data, RBACTestUtils
 
+FRONTEND_TEST_AVAILABLE = True  # These are static analysis tests
 
-@pytest.mark.skip(reason="Needs refactoring to use real objects")
+
+@pytest.mark.frontend
 class TestMultiTenantUIComponents:
     """Test suite for multi-tenant UI component isolation"""
     
     @pytest.fixture
     def mock_ui_environment(self):
         """Setup mock UI environment with organization context"""
-        pytest.skip("Needs refactoring to use real objects")
         mock_env = {
             'document': {},
             'window': {},

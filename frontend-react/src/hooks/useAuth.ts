@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from './useRedux';
-import { loginSuccess, logout as logoutAction, refreshTokenSuccess } from '@store/slices/authSlice';
+import { loginSuccess, logout as logoutAction, refreshTokenSuccess, clearFirstLoginFlag } from '@store/slices/authSlice';
 import { setUserProfile, clearUser } from '@store/slices/userSlice';
 import { authService, LoginCredentials, RegisterData } from '@services/authService';
 import { tokenManager } from '@services/tokenManager';
@@ -32,7 +32,7 @@ import { addNotification } from '@store/slices/uiSlice';
 export const useAuth = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { isAuthenticated, token, role, userId, organizationId } = useAppSelector((state) => state.auth);
+  const { isAuthenticated, token, role, userId, organizationId, isFirstLogin } = useAppSelector((state) => state.auth);
   const { profile } = useAppSelector((state) => state.user);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -58,6 +58,7 @@ export const useAuth = () => {
             userId: response.user.id,
             organizationId: response.user.organizationId,
             expiresAt: response.expiresIn,
+            isFirstLogin: response.isFirstLogin,
           })
         );
 
@@ -237,6 +238,17 @@ export const useAuth = () => {
   }, [token, dispatch]);
 
   /**
+   * Clear first login flag
+   *
+   * BUSINESS LOGIC:
+   * Called after the welcome popup is shown/dismissed to prevent
+   * showing it again on subsequent page loads.
+   */
+  const clearFirstLogin = useCallback(() => {
+    dispatch(clearFirstLoginFlag());
+  }, [dispatch]);
+
+  /**
    * Auto-restore session on mount
    */
   useEffect(() => {
@@ -254,6 +266,7 @@ export const useAuth = () => {
     organizationId,
     user: profile,
     isLoading,
+    isFirstLogin,
 
     // Methods
     login,
@@ -261,6 +274,7 @@ export const useAuth = () => {
     register,
     refreshToken,
     restoreSession,
+    clearFirstLogin,
 
     // Computed
     isStudent: role === 'student',

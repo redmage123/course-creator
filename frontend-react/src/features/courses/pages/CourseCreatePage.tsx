@@ -6,16 +6,32 @@
  * (individual instructors) and organizational course creation (corporate training with
  * track/project hierarchy).
  *
+ * URL-BASED GENERATION (v3.3.2):
+ * Instructors can now provide external documentation URLs (Salesforce, AWS, internal wikis)
+ * to automatically generate course syllabi and content. The system fetches, parses, and
+ * uses RAG to create comprehensive training materials from third-party documentation.
+ *
  * TECHNICAL IMPLEMENTATION:
  * - Form validation with real-time feedback
  * - Integration with course-management API
+ * - URL-based generation with progress tracking
  * - Automatic redirect after creation
  * - Support for organizational context (track_id) from URL params
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { courseService, type CreateCourseRequest, type DifficultyLevel, type DurationUnit } from '../../../services';
+import {
+  courseService,
+  syllabusService,
+  type CreateCourseRequest,
+  type DifficultyLevel,
+  type DurationUnit,
+  type GenerateSyllabusRequest,
+  type SyllabusData,
+  type GenerationProgress,
+  type CourseLevel,
+} from '../../../services';
 import { useAuth } from '../../../hooks/useAuth';
 import styles from './CourseCreatePage.module.css';
 
@@ -45,7 +61,19 @@ export const CourseCreatePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // URL-based generation state
+  const [useUrlGeneration, setUseUrlGeneration] = useState(false);
+  const [sourceUrls, setSourceUrls] = useState<string[]>(['']);
+  const [urlErrors, setUrlErrors] = useState<string[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState<GenerationProgress | null>(null);
+  const [generatedSyllabus, setGeneratedSyllabus] = useState<SyllabusData | null>(null);
+  const [useRagEnhancement, setUseRagEnhancement] = useState(true);
+  const [includeCodeExamples, setIncludeCodeExamples] = useState(true);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
   const difficultyOptions: DifficultyLevel[] = ['beginner', 'intermediate', 'advanced'];
+  const courseLevelOptions: CourseLevel[] = ['beginner', 'intermediate', 'advanced'];
   const durationUnits: DurationUnit[] = ['hours', 'days', 'weeks', 'months'];
 
   const handleInputChange = (
@@ -76,6 +104,138 @@ export const CourseCreatePage: React.FC = () => {
       ...prev,
       tags: prev.tags?.filter((tag) => tag !== tagToRemove) || [],
     }));
+  };
+
+  // URL-based generation handlers
+  const handleUrlChange = (index: number, value: string) => {
+    const newUrls = [...sourceUrls];
+    newUrls[index] = value;
+    setSourceUrls(newUrls);
+
+    // Validate as user types
+    const newErrors = [...urlErrors];
+    if (value.trim()) {
+      const validation = syllabusService.validateUrl(value);
+      newErrors[index] = validation.error || '';
+    } else {
+      newErrors[index] = '';
+    }
+    setUrlErrors(newErrors);
+  };
+
+  const handleAddUrl = () => {
+    if (sourceUrls.length < 10) {
+      setSourceUrls([...sourceUrls, '']);
+      setUrlErrors([...urlErrors, '']);
+    }
+  };
+
+  const handleRemoveUrl = (index: number) => {
+    if (sourceUrls.length > 1) {
+      const newUrls = sourceUrls.filter((_, i) => i !== index);
+      const newErrors = urlErrors.filter((_, i) => i !== index);
+      setSourceUrls(newUrls);
+      setUrlErrors(newErrors);
+    }
+  };
+
+  const getValidUrls = useCallback(() => {
+    return sourceUrls.filter((url) => {
+      const trimmed = url.trim();
+      return trimmed && syllabusService.validateUrl(trimmed).valid;
+    });
+  }, [sourceUrls]);
+
+  // Cleanup progress polling on unmount
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+    };
+  }, []);
+
+  const startProgressPolling = useCallback((requestId: string) => {
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+    }
+
+    progressIntervalRef.current = setInterval(async () => {
+      try {
+        const response = await syllabusService.getGenerationProgress(requestId);
+        if (response.success) {
+          setGenerationProgress(response.progress);
+
+          // Stop polling when complete
+          if (response.progress.generation_complete) {
+            if (progressIntervalRef.current) {
+              clearInterval(progressIntervalRef.current);
+              progressIntervalRef.current = null;
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Progress polling error:', err);
+      }
+    }, 2000);
+  }, []);
+
+  const handleGenerateSyllabus = async () => {
+    const validUrls = getValidUrls();
+    if (validUrls.length === 0) {
+      setError('Please enter at least one valid URL');
+      return;
+    }
+
+    if (!formData.title.trim()) {
+      setError('Please enter a course title before generating');
+      return;
+    }
+
+    setIsGenerating(true);
+    setError(null);
+    setGeneratedSyllabus(null);
+    setGenerationProgress(null);
+
+    try {
+      const request: GenerateSyllabusRequest = {
+        title: formData.title,
+        description: formData.description || `Training course generated from external documentation`,
+        level: formData.difficulty_level as CourseLevel,
+        source_urls: validUrls,
+        use_rag_enhancement: useRagEnhancement,
+        include_code_examples: includeCodeExamples,
+      };
+
+      const response = await syllabusService.generateSyllabus(request);
+
+      if (response.request_id) {
+        startProgressPolling(response.request_id);
+      }
+
+      if (response.success && response.syllabus) {
+        setGeneratedSyllabus(response.syllabus);
+
+        // Auto-fill form with generated content
+        if (response.syllabus.description && !formData.description) {
+          setFormData((prev) => ({
+            ...prev,
+            description: response.syllabus!.description,
+          }));
+        }
+      } else {
+        setError(response.message || 'Failed to generate syllabus');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Generation failed');
+      console.error('Syllabus generation error:', err);
+    } finally {
+      setIsGenerating(false);
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -178,6 +338,197 @@ export const CourseCreatePage: React.FC = () => {
               placeholder="e.g., Programming, Data Science, Business"
             />
           </div>
+        </section>
+
+        {/* URL-Based Generation Section */}
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <h2>AI-Powered Content Generation</h2>
+            <label className={styles.toggleLabel}>
+              <input
+                type="checkbox"
+                checked={useUrlGeneration}
+                onChange={(e) => setUseUrlGeneration(e.target.checked)}
+                className={styles.toggleCheckbox}
+              />
+              <span className={styles.toggleSwitch} />
+              Generate from external documentation
+            </label>
+          </div>
+
+          {useUrlGeneration && (
+            <div className={styles.urlGenerationContent}>
+              <p className={styles.featureDescription}>
+                Automatically generate course content by providing URLs to external documentation.
+                Works with Salesforce docs, AWS documentation, internal wikis, and more.
+              </p>
+
+              {/* URL Input Fields */}
+              <div className={styles.formGroup}>
+                <label>Documentation URLs</label>
+                <div className={styles.urlInputList}>
+                  {sourceUrls.map((url, index) => (
+                    <div key={index} className={styles.urlInputRow}>
+                      <input
+                        type="url"
+                        value={url}
+                        onChange={(e) => handleUrlChange(index, e.target.value)}
+                        placeholder="https://docs.example.com/guide"
+                        className={urlErrors[index] ? styles.inputError : ''}
+                        disabled={isGenerating}
+                      />
+                      {sourceUrls.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveUrl(index)}
+                          className={styles.removeUrlBtn}
+                          disabled={isGenerating}
+                          aria-label="Remove URL"
+                        >
+                          ×
+                        </button>
+                      )}
+                      {urlErrors[index] && (
+                        <span className={styles.urlError}>{urlErrors[index]}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {sourceUrls.length < 10 && (
+                  <button
+                    type="button"
+                    onClick={handleAddUrl}
+                    className={styles.addUrlBtn}
+                    disabled={isGenerating}
+                  >
+                    + Add another URL
+                  </button>
+                )}
+                <span className={styles.helpText}>
+                  Add up to 10 URLs. Supports HTTP/HTTPS documentation pages.
+                </span>
+              </div>
+
+              {/* Generation Options */}
+              <div className={styles.generationOptions}>
+                <label className={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={useRagEnhancement}
+                    onChange={(e) => setUseRagEnhancement(e.target.checked)}
+                    disabled={isGenerating}
+                  />
+                  Use RAG enhancement for better context
+                </label>
+                <label className={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={includeCodeExamples}
+                    onChange={(e) => setIncludeCodeExamples(e.target.checked)}
+                    disabled={isGenerating}
+                  />
+                  Include code examples from documentation
+                </label>
+              </div>
+
+              {/* Generate Button */}
+              <button
+                type="button"
+                onClick={handleGenerateSyllabus}
+                className={styles.generateBtn}
+                disabled={isGenerating || getValidUrls().length === 0 || !formData.title.trim()}
+              >
+                {isGenerating ? 'Generating...' : 'Generate Syllabus from URLs'}
+              </button>
+
+              {/* Generation Progress */}
+              {isGenerating && generationProgress && (
+                <div className={styles.progressContainer}>
+                  <div className={styles.progressHeader}>
+                    <span className={styles.progressStep}>{generationProgress.current_step}</span>
+                    <span className={styles.progressTime}>
+                      {Math.round(generationProgress.elapsed_seconds)}s
+                    </span>
+                  </div>
+                  <div className={styles.progressBar}>
+                    <div
+                      className={styles.progressFill}
+                      style={{
+                        width: `${Math.min(
+                          ((generationProgress.urls_fetched + generationProgress.chunks_ingested) /
+                            (generationProgress.total_urls * 2 + 10)) *
+                            100,
+                          95
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                  <div className={styles.progressDetails}>
+                    <span>URLs: {generationProgress.urls_fetched}/{generationProgress.total_urls}</span>
+                    {generationProgress.urls_failed > 0 && (
+                      <span className={styles.progressWarning}>
+                        ({generationProgress.urls_failed} failed)
+                      </span>
+                    )}
+                    <span>Chunks: {generationProgress.chunks_ingested}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Generated Syllabus Preview */}
+              {generatedSyllabus && (
+                <div className={styles.syllabusPreview}>
+                  <h3>Generated Syllabus Preview</h3>
+                  <div className={styles.syllabusContent}>
+                    <div className={styles.syllabusHeader}>
+                      <strong>{generatedSyllabus.title}</strong>
+                      <span className={styles.syllabusLevel}>{generatedSyllabus.level}</span>
+                    </div>
+                    {generatedSyllabus.description && (
+                      <p className={styles.syllabusDescription}>{generatedSyllabus.description}</p>
+                    )}
+                    {generatedSyllabus.objectives && generatedSyllabus.objectives.length > 0 && (
+                      <div className={styles.syllabusObjectives}>
+                        <strong>Learning Objectives:</strong>
+                        <ul>
+                          {generatedSyllabus.objectives.map((obj, i) => (
+                            <li key={i}>{obj}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    <div className={styles.syllabusModules}>
+                      <strong>Modules ({generatedSyllabus.modules.length}):</strong>
+                      <ol>
+                        {generatedSyllabus.modules.map((module, i) => (
+                          <li key={i}>
+                            <strong>{module.title}</strong>
+                            {module.description && (
+                              <p className={styles.moduleDescription}>{module.description}</p>
+                            )}
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                    {generatedSyllabus.external_sources && generatedSyllabus.external_sources.length > 0 && (
+                      <div className={styles.syllabusSources}>
+                        <strong>Sources:</strong>
+                        <ul>
+                          {generatedSyllabus.external_sources.map((source, i) => (
+                            <li key={i}>
+                              <a href={source.url} target="_blank" rel="noopener noreferrer">
+                                {source.title || source.url}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </section>
 
         {/* Course Settings */}

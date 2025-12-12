@@ -2,15 +2,20 @@
 """
 Test Enhanced Content Management Functionality
 Tests all the new upload/download functions in the instructor dashboard
+
+These tests validate content management logic patterns.
 """
 
 import pytest
 import unittest
 import asyncio
 import json
+from unittest.mock import Mock
+
+FRONTEND_TEST_AVAILABLE = True  # These are static analysis tests
 
 
-@pytest.mark.skip(reason="Needs refactoring to use real objects")
+@pytest.mark.frontend
 class TestEnhancedContentManagement(unittest.TestCase):
     """Unit tests for enhanced content management functions"""
     
@@ -172,7 +177,7 @@ class TestEnhancedContentManagement(unittest.TestCase):
         self.assertIsNotNone(metadata['last_updated'])
 
 
-@pytest.mark.skip(reason="Needs refactoring to use real objects")
+@pytest.mark.frontend
 class TestContentGenerationIntegration:
     """Integration tests for AI content generation with templates"""
     

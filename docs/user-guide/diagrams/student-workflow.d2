@@ -1,0 +1,151 @@
+# Student Learning Journey Workflow
+# D2 Diagram - Complete student experience
+
+direction: down
+
+title: {
+  label: Student Learning Journey
+  near: top-center
+  shape: text
+  style: {
+    font-size: 22
+    bold: true
+  }
+}
+
+# Entry Points
+entry: {
+  label: Entry
+  style: {
+    fill: "#E8F5E9"
+    stroke: "#4CAF50"
+  }
+
+  login: Login {
+    shape: oval
+    style.fill: "#81C784"
+  }
+  register: Register {
+    shape: oval
+    style.fill: "#81C784"
+  }
+}
+
+# Dashboard
+dashboard: {
+  label: Student Dashboard
+  style: {
+    fill: "#E3F2FD"
+    stroke: "#1976D2"
+  }
+
+  enrolled: View Enrolled\nCourses
+  progress: Check Progress
+  certificates: View Certificates
+  upcoming: Upcoming\nDeadlines
+}
+
+# Course Discovery
+discovery: {
+  label: Course Discovery
+  style: {
+    fill: "#FFF3E0"
+    stroke: "#F57C00"
+  }
+
+  catalog: Browse Catalog
+  search: Search Courses
+  filter: Filter by Topic
+  details: View Course\nDetails
+}
+
+# Learning Activities
+learning: {
+  label: Learning Activities
+  style: {
+    fill: "#F3E5F5"
+    stroke: "#7B1FA2"
+  }
+
+  content: View Course\nContent
+  video: Watch Videos
+  slides: Review Slides
+  materials: Download\nMaterials
+}
+
+# Interactive Learning
+interactive: {
+  label: Interactive Learning
+  style: {
+    fill: "#FFEBEE"
+    stroke: "#D32F2F"
+  }
+
+  lab: Start Lab\nEnvironment
+  code: Write & Run\nCode
+  ai_help: AI Assistant\nHelp
+  submit: Submit Lab\nWork
+}
+
+# Assessment
+assessment: {
+  label: Assessment
+  style: {
+    fill: "#E0F7FA"
+    stroke: "#00ACC1"
+  }
+
+  quiz: Take Quiz
+  review: Review\nAnswers
+  feedback: Get AI\nFeedback
+  retry: Retry Quiz
+}
+
+# Completion
+completion: {
+  label: Completion
+  style: {
+    fill: "#F1F8E9"
+    stroke: "#689F38"
+  }
+
+  complete: Complete\nCourse
+  certificate: Earn\nCertificate
+  download: Download\nCertificate
+  next: Next Course
+}
+
+# Connections - Flow
+entry.login -> dashboard
+entry.register -> dashboard
+
+dashboard.enrolled -> learning.content
+dashboard.progress -> assessment
+dashboard.certificates -> completion.download
+dashboard.upcoming -> learning.content
+
+discovery.catalog -> discovery.search
+discovery.search -> discovery.filter
+discovery.filter -> discovery.details
+discovery.details -> dashboard.enrolled: Enroll
+
+learning.content -> learning.video
+learning.content -> learning.slides
+learning.content -> learning.materials
+learning.video -> interactive.lab
+learning.slides -> assessment.quiz
+
+interactive.lab -> interactive.code
+interactive.code -> interactive.ai_help: Need Help?
+interactive.ai_help -> interactive.code
+interactive.code -> interactive.submit
+
+assessment.quiz -> assessment.review
+assessment.review -> assessment.feedback
+assessment.feedback -> assessment.retry: Failed
+assessment.feedback -> completion.complete: Passed
+
+completion.complete -> completion.certificate
+completion.certificate -> completion.download
+completion.download -> completion.next
+completion.next -> discovery.catalog

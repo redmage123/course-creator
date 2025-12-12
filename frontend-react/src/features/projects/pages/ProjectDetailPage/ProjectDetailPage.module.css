@@ -369,3 +369,120 @@
     background-color: rgba(13, 110, 253, 0.2);
   }
 }
+
+/* ==========================================================================
+   DELETE BUTTON & MODAL
+   ========================================================================== */
+
+.deleteButton {
+  color: var(--color-error, #dc3545) !important;
+  border-color: var(--color-error, #dc3545) !important;
+}
+
+.deleteButton:hover {
+  background-color: var(--color-error, #dc3545) !important;
+  color: white !important;
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modalContent {
+  background-color: var(--color-surface, #fff);
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.modalContent h2 {
+  margin: 0 0 1rem 0;
+  color: var(--color-error, #dc3545);
+}
+
+.warningText {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-warning, #ffc107);
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+.warningText i {
+  font-size: 1.25rem;
+}
+
+.deleteWarningList {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+  color: var(--color-text-secondary, #6c757d);
+}
+
+.deleteWarningList li {
+  margin: 0.25rem 0;
+}
+
+.warningEmphasis {
+  font-weight: 600;
+  color: var(--color-error, #dc3545);
+  margin-top: 1rem;
+}
+
+.errorMessage {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  color: #664d03;
+}
+
+.errorMessage p {
+  margin: 0 0 0.75rem 0;
+}
+
+.forceDeleteButton {
+  background-color: var(--color-error, #dc3545) !important;
+  border-color: var(--color-error, #dc3545) !important;
+  width: 100%;
+}
+
+.modalActions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  justify-content: flex-end;
+}
+
+.confirmDeleteButton {
+  background-color: var(--color-error, #dc3545) !important;
+  border-color: var(--color-error, #dc3545) !important;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .modalContent {
+    background-color: var(--color-surface-dark, #1a1a1a);
+  }
+
+  .errorMessage {
+    background-color: rgba(255, 193, 7, 0.15);
+    border-color: rgba(255, 193, 7, 0.3);
+    color: #ffda6a;
+  }
+}

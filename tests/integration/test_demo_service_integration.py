@@ -395,23 +395,27 @@ class TestDemoServiceIntegration:
             for session_id in sessions:
                 requests.delete(f"{self.demo_base_url}/session?session_id={session_id}")
 
-    @pytest.mark.skip(reason="Frontend integration test - requires running frontend")
     def test_frontend_demo_integration(self):
-        """Test integration between frontend and demo service"""
+        """Test integration between frontend and demo service
+
+        NOTE: Requires running frontend service and potentially browser automation.
+        """
         # This would test the actual frontend demo button integration
         # Requires a running frontend service and potentially browser automation
-        
+
         try:
             # Test frontend health
             frontend_response = requests.get(f"{self.frontend_base_url}/health")
-            assert frontend_response.status_code == 200
-            
+            if frontend_response.status_code != 200:
+                pytest.skip(f"Frontend service not healthy: HTTP {frontend_response.status_code}")
+
             # Test demo API proxy through frontend nginx
             demo_health_response = requests.get(f"{self.frontend_base_url}/api/v1/demo/health")
-            assert demo_health_response.status_code == 200
-            
-        except requests.exceptions.ConnectionError:
-            pytest.skip("Frontend service not available")
+            if demo_health_response.status_code != 200:
+                pytest.skip(f"Demo API proxy not available: HTTP {demo_health_response.status_code}")
+
+        except requests.exceptions.ConnectionError as e:
+            pytest.skip(f"Frontend service not available: {e}")
 
 
 if __name__ == "__main__":

@@ -185,8 +185,11 @@ def sample_submission(sample_assessment):
 # NOTE: All tests in these classes require database access
 #       Pending refactoring to use real database fixtures instead of mocks
 
+import os
+DB_AVAILABLE = os.getenv('TEST_DB_HOST') is not None
+
 @pytest.mark.integration
-@pytest.mark.skip(reason="Needs refactoring to use real database fixtures - see file header")
+@pytest.mark.skipif(not DB_AVAILABLE, reason="Database not configured - TEST_DB_HOST not set")
 class TestRubricCreation:
     """
     WHAT: Tests for rubric creation functionality
@@ -323,7 +326,7 @@ class TestRubricCreation:
 
 
 @pytest.mark.integration
-@pytest.mark.skip(reason="Needs refactoring to use real database fixtures - see file header")
+@pytest.mark.skipif(not DB_AVAILABLE, reason="Database not configured - TEST_DB_HOST not set")
 class TestRubricRetrieval:
     """
     WHAT: Tests for rubric retrieval operations
@@ -378,7 +381,7 @@ class TestRubricRetrieval:
 
 
 @pytest.mark.integration
-@pytest.mark.skip(reason="Needs refactoring to use real database fixtures - see file header")
+@pytest.mark.skipif(not DB_AVAILABLE, reason="Database not configured - TEST_DB_HOST not set")
 class TestRubricModification:
     """
     WHAT: Tests for rubric update and delete operations
@@ -445,7 +448,7 @@ class TestRubricModification:
 # ============================================================================
 
 @pytest.mark.integration
-@pytest.mark.skip(reason="Needs refactoring to use real database fixtures - see file header")
+@pytest.mark.skipif(not DB_AVAILABLE, reason="Database not configured - TEST_DB_HOST not set")
 class TestAssessmentCreation:
     """
     WHAT: Tests for assessment creation
@@ -595,7 +598,7 @@ class TestAssessmentCreation:
 
 
 @pytest.mark.integration
-@pytest.mark.skip(reason="Needs refactoring to use real database fixtures - see file header")
+@pytest.mark.skipif(not DB_AVAILABLE, reason="Database not configured - TEST_DB_HOST not set")
 class TestAssessmentLifecycle:
     """
     WHAT: Tests for assessment lifecycle management
@@ -664,7 +667,7 @@ class TestAssessmentLifecycle:
 # ============================================================================
 
 @pytest.mark.integration
-@pytest.mark.skip(reason="Needs refactoring to use real database fixtures - see file header")
+@pytest.mark.skipif(not DB_AVAILABLE, reason="Database not configured - TEST_DB_HOST not set")
 class TestSubmissionCreation:
     """
     WHAT: Tests for submission creation
@@ -814,7 +817,7 @@ class TestSubmissionCreation:
 
 
 @pytest.mark.integration
-@pytest.mark.skip(reason="Needs refactoring to use real database fixtures - see file header")
+@pytest.mark.skipif(not DB_AVAILABLE, reason="Database not configured - TEST_DB_HOST not set")
 class TestSubmissionWorkflow:
     """
     WHAT: Tests for submission workflow operations
@@ -878,7 +881,7 @@ class TestSubmissionWorkflow:
 
 
 @pytest.mark.integration
-@pytest.mark.skip(reason="Needs refactoring to use real database fixtures - see file header")
+@pytest.mark.skipif(not DB_AVAILABLE, reason="Database not configured - TEST_DB_HOST not set")
 class TestGrading:
     """
     WHAT: Tests for grading operations
@@ -995,7 +998,7 @@ class TestGrading:
 # ============================================================================
 
 @pytest.mark.integration
-@pytest.mark.skip(reason="Needs refactoring to use real database fixtures - see file header")
+@pytest.mark.skipif(not DB_AVAILABLE, reason="Database not configured - TEST_DB_HOST not set")
 class TestPeerReview:
     """
     WHAT: Tests for peer review operations
@@ -1135,7 +1138,7 @@ class TestPeerReview:
 # ============================================================================
 
 @pytest.mark.integration
-@pytest.mark.skip(reason="Needs refactoring to use real database fixtures - see file header")
+@pytest.mark.skipif(not DB_AVAILABLE, reason="Database not configured - TEST_DB_HOST not set")
 class TestCompetencyOperations:
     """
     WHAT: Tests for competency operations
@@ -1238,7 +1241,7 @@ class TestCompetencyOperations:
 # ============================================================================
 
 @pytest.mark.integration
-@pytest.mark.skip(reason="Needs refactoring to use real database fixtures - see file header")
+@pytest.mark.skipif(not DB_AVAILABLE, reason="Database not configured - TEST_DB_HOST not set")
 class TestPortfolioOperations:
     """
     WHAT: Tests for portfolio artifact operations
@@ -1307,7 +1310,7 @@ class TestPortfolioOperations:
 # ============================================================================
 
 @pytest.mark.integration
-@pytest.mark.skip(reason="Needs refactoring to use real database fixtures - see file header")
+@pytest.mark.skipif(not DB_AVAILABLE, reason="Database not configured - TEST_DB_HOST not set")
 class TestMilestoneOperations:
     """
     WHAT: Tests for project milestone operations
@@ -1360,7 +1363,7 @@ class TestMilestoneOperations:
 # ============================================================================
 
 @pytest.mark.integration
-@pytest.mark.skip(reason="Needs refactoring to use real database fixtures - see file header")
+@pytest.mark.skipif(not DB_AVAILABLE, reason="Database not configured - TEST_DB_HOST not set")
 class TestAnalytics:
     """
     WHAT: Tests for analytics operations
@@ -1429,7 +1432,7 @@ class TestAnalytics:
 # ============================================================================
 
 @pytest.mark.integration
-@pytest.mark.skip(reason="Needs refactoring to use real database fixtures - see file header")
+@pytest.mark.skipif(not DB_AVAILABLE, reason="Database not configured - TEST_DB_HOST not set")
 class TestEdgeCases:
     """
     WHAT: Tests for edge cases and error handling

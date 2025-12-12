@@ -265,7 +265,7 @@ class TestAPIRoutingBugs:
                 f"Expected 200 or 401, got {response.status_code}"
 
         except requests.exceptions.RequestException as e:
-            pytest.skip(f"Services not available for integration test: {e}")
+            pytest.fail(f"Services not available for integration test: {e}")
 
 
 class TestNginxConfiguration:

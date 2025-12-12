@@ -19,12 +19,15 @@ SECURITY IMPORTANCE:
 UI isolation is a critical security layer that prevents users from seeing or
 accessing data from organizations they don't belong to, even if backend
 security fails. This provides defense-in-depth security architecture.
+
+These tests validate organization-based UI isolation patterns.
 """
 
 import pytest
 import json
 import os
 from datetime import datetime, timedelta
+from unittest.mock import Mock
 
 # Add test fixtures path
 import sys
@@ -35,8 +38,10 @@ from rbac_fixtures import (
     RBACTestUtils
 )
 
+FRONTEND_TEST_AVAILABLE = True  # These are static analysis tests
 
-@pytest.mark.skip(reason="Needs refactoring to use real objects")
+
+@pytest.mark.frontend
 class TestOrganizationUIIsolation:
     """
     Comprehensive test suite for organization-based UI isolation
@@ -57,7 +62,6 @@ class TestOrganizationUIIsolation:
         - Simulated localStorage
         - Organization context setup
         """
-        pytest.skip("Needs refactoring to use real objects")
         mock_env = {
             'window': {},
             'document': {},

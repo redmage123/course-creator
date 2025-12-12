@@ -74,7 +74,9 @@ class TestRAGDAOCollectionInitialization:
         - Collection accessible via DAO
         - Configuration applied
         """
-        pytest.skip("Mock-based test needs refactoring")
+        import os
+        if not os.getenv('CHROMADB_HOST'):
+            pytest.skip("CHROMADB_HOST not configured")
 
         dao = RAGDAO(mock_client)
 

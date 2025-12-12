@@ -41,6 +41,7 @@ import pytest
 import time
 import uuid
 import asyncpg
+import os
 from datetime import datetime, timedelta
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -49,6 +50,9 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 from tests.e2e.selenium_base import BasePage, BaseTest
+
+# Check if Selenium is configured
+SELENIUM_AVAILABLE = os.getenv('SELENIUM_REMOTE') is not None or os.getenv('HEADLESS') is not None
 
 
 # ============================================================================
@@ -370,6 +374,7 @@ def student_credentials():
 # INSTRUCTOR ANALYTICS TESTS
 # ============================================================================
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 class TestInstructorQuizAnalytics(BaseTest):
     """
     Test suite for instructor quiz analytics dashboard.
@@ -941,6 +946,7 @@ class TestInstructorQuizAnalytics(BaseTest):
 # STUDENT ANALYTICS TESTS
 # ============================================================================
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
 class TestStudentQuizAnalytics(BaseTest):
     """
     Test suite for student personal quiz analytics.

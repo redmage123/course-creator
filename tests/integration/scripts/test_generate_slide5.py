@@ -80,7 +80,9 @@ class TestSlide5VideoGeneration:
 
     def test_ffmpeg_command_structure(self):
         """Test that FFmpeg command has correct structure"""
-        pytest.skip("Needs refactoring to use real objects")
+        import os
+        if not os.getenv('FFMPEG_AVAILABLE'):
+            pytest.skip("FFMPEG not available")
         ffmpeg_cmd = [
             "ffmpeg", "-y",
             "-framerate", "30",

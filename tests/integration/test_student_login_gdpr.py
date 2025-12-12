@@ -60,86 +60,85 @@ def test_client(app):
 
 
 @pytest.mark.integration
-@pytest.mark.skip(reason="Entire test class needs refactoring to use real services instead of mocks")
 class TestStudentLoginGDPRCompliance:
     """Test GDPR compliance across service integrations.
 
+    NOTE: Currently uses mocked HTTP clients which is not appropriate for integration tests.
     TODO: Refactor to use real analytics service, course management service, and test database.
-    Currently uses mocked HTTP clients which is not appropriate for integration tests.
     """
 
     @pytest.mark.asyncio
     async def test_consent_based_analytics_integration(self):
         """Test that analytics are only sent with explicit consent."""
-        pass
+        pytest.skip("Needs refactoring to use real services instead of mocks")
 
     @pytest.mark.asyncio
     async def test_instructor_notification_consent_integration(self):
         """Test instructor notifications are only sent with explicit consent."""
-        pass
+        pytest.skip("Needs refactoring to use real services instead of mocks")
 
     @pytest.mark.asyncio
     async def test_error_resilience_preserves_privacy(self):
         """Test that service errors don't expose private data."""
-        pass
+        pytest.skip("Needs refactoring to use real services instead of mocks")
 
     @pytest.mark.asyncio
     async def test_data_retention_compliance(self):
         """Test that data retention policies are properly communicated."""
-        pass
+        pytest.skip("Needs refactoring to use real services instead of mocks")
 
     @pytest.mark.asyncio
     async def test_cross_service_privacy_boundaries(self):
         """Test that privacy boundaries are maintained across services."""
-        pass
+        pytest.skip("Needs refactoring to use real services instead of mocks")
 
 
 @pytest.mark.integration
-@pytest.mark.skip(reason="Entire test class needs refactoring to use real services instead of mocks")
 class TestStudentLoginServiceIntegration:
     """Test integration with actual services while maintaining GDPR compliance.
 
+    NOTE: Currently uses mocked services.
     TODO: Refactor to use real user management, analytics, and course management services.
     """
 
     @pytest.mark.asyncio
     async def test_complete_gdpr_compliant_login_flow(self):
         """Test complete login flow with GDPR compliance."""
-        pass
+        pytest.skip("Needs refactoring to use real services instead of mocks")
 
     @pytest.mark.asyncio
     async def test_partial_consent_service_integration(self):
         """Test service integration with partial consent (analytics only)."""
-        pass
+        pytest.skip("Needs refactoring to use real services instead of mocks")
 
     @pytest.mark.asyncio
     async def test_no_consent_no_service_calls(self):
         """Test that no service calls are made without consent."""
-        pass
+        pytest.skip("Needs refactoring to use real services instead of mocks")
 
 
 @pytest.mark.integration
-@pytest.mark.skip(reason="Entire test class needs refactoring to use real services instead of mocks")
 class TestStudentLoginErrorHandling:
     """Test error handling preserves privacy in service integrations.
 
+    NOTE: Currently uses mocked services.
     TODO: Refactor to use real services and test database.
     """
 
     @pytest.mark.asyncio
     async def test_analytics_service_down_graceful_degradation(self):
         """Test graceful degradation when analytics service is unavailable."""
-        pass
+        pytest.skip("Needs refactoring to use real services and test database")
 
     @pytest.mark.asyncio
     async def test_notification_service_timeout_handling(self):
         """Test handling of notification service timeouts."""
-        pass
+        pytest.skip("Needs refactoring to use real services and test database")
 
     @pytest.mark.asyncio
     async def test_malformed_response_handling(self):
         """Test handling of malformed responses from services."""
-        pass
+        pytest.skip("Needs refactoring to use real services and test database")
 
 
 if __name__ == "__main__":

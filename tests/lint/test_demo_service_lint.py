@@ -133,7 +133,7 @@ class TestDemoServiceLinting:
                     break
         
         if not has_type_hints:
-            pytest.skip("No type hints found, skipping mypy check")
+            pytest.fail("No type hints found, skipping mypy check")
         
         result = subprocess.run([
             sys.executable, "-m", "mypy",

@@ -92,9 +92,9 @@ class TestDockerComposeStartup:
         start_process = subprocess.run([
             'docker-compose', '-f', str(compose_file), 'up', '-d'
         ], capture_output=True, text=True)
-        
+
         if start_process.returncode != 0:
-            pytest.skip(f"Could not start docker-compose: {start_process.stderr}")
+            pytest.fail(f"Could not start docker-compose: {start_process.stderr}")
         
         # Wait for services to be ready
         time.sleep(30)
@@ -130,9 +130,9 @@ class TestDockerComposeStartup:
             
             if failed_services:
                 pytest.fail(f"Unhealthy containers: {failed_services}")
-                
+
         except docker.errors.DockerException as e:
-            pytest.skip(f"Docker not available: {e}")
+            pytest.fail(f"Docker not available: {e}")
     
     def test_docker_compose_service_dependencies(self, docker_compose_environment):
         """Test that service dependencies start in correct order"""

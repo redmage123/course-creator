@@ -433,7 +433,7 @@ async def test_BUG445_multiple_modals_dont_stack_incorrectly(browser, test_base_
 
     except (TimeoutException, NoSuchElementException):
         # Modal flow not available in current implementation - skip test
-        pytest.skip("Create course modal flow not available")
+        pytest.fail("Create course modal flow not available")
 
 
 # ============================================================================
@@ -607,7 +607,7 @@ async def test_BUG478_field_level_validation_on_blur(browser, test_base_url):
         assert username_error.is_displayed(), "Username error should appear after blur with empty value"
     except TimeoutException:
         # Some implementations may only show errors on submit - that's acceptable
-        pytest.skip("Blur validation not implemented (submit-only validation is acceptable)")
+        pytest.fail("Blur validation not implemented (submit-only validation is acceptable)")
 
     # Fill in valid username
     username_input.click()
@@ -795,7 +795,7 @@ async def test_BUG478_form_shake_animation_with_visible_errors(browser, test_bas
         assert animation_name != "none", "Form should have animation applied"
     else:
         # Shake animation might not be implemented - skip test
-        pytest.skip("Shake animation not implemented (optional UX enhancement)")
+        pytest.fail("Shake animation not implemented (optional UX enhancement)")
 
     # REGRESSION CHECK 2: Errors displayed despite animation
     username_error = wait.until(
@@ -946,7 +946,7 @@ async def test_BUG512_breadcrumb_hierarchy_correct_for_nested_routes(
             pass
 
     except (TimeoutException, NoSuchElementException):
-        pytest.skip("Courses section not available for breadcrumb testing")
+        pytest.fail("Courses section not available for breadcrumb testing")
 
 
 @pytest.mark.regression
@@ -1048,7 +1048,7 @@ async def test_BUG512_breadcrumb_updates_on_navigation(browser, test_base_url, s
             "Breadcrumb should update when navigating forward"
 
     except (TimeoutException, NoSuchElementException):
-        pytest.skip("Breadcrumb navigation not available for testing")
+        pytest.fail("Breadcrumb navigation not available for testing")
 
 
 @pytest.mark.regression
@@ -1146,4 +1146,4 @@ async def test_BUG512_breadcrumb_links_navigate_correctly(browser, test_base_url
                 "Clicking dashboard breadcrumb should navigate to dashboard"
 
     except (TimeoutException, NoSuchElementException):
-        pytest.skip("Courses navigation not available for breadcrumb link testing")
+        pytest.fail("Courses navigation not available for breadcrumb link testing")

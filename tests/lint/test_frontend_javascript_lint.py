@@ -83,7 +83,7 @@ class TestFrontendJavaScriptLinting:
                 print("Warning: ESLint found issues. Consider installing ESLint globally.")
             
         except FileNotFoundError:
-            pytest.skip("ESLint not available, skipping JavaScript linting")
+            pytest.fail("ESLint not available, skipping JavaScript linting")
     
     def test_javascript_syntax_validation(self):
         """

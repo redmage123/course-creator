@@ -11,6 +11,10 @@ Tests against real frontend running on test server.
 """
 
 import pytest
+import os
+
+# Check for Selenium availability
+SELENIUM_AVAILABLE = os.getenv('SELENIUM_REMOTE') is not None or os.getenv('HEADLESS') is not None
 import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -26,6 +30,8 @@ BASE_URL = os.environ.get("TEST_BASE_URL", "https://localhost:3000")
 HEADLESS = os.environ.get("HEADLESS", "true").lower() == "true"
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
+@pytest.mark.e2e
 class TestBugTrackingE2E:
     """E2E tests for bug tracking system."""
 
@@ -282,6 +288,8 @@ class TestBugTrackingE2E:
         assert report_link is not None, "Report new bug button not found"
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
+@pytest.mark.e2e
 class TestBugStatusPageE2E:
     """E2E tests for bug status page."""
 
@@ -313,6 +321,8 @@ class TestBugStatusPageE2E:
         assert "not found" in page_text or "error" in page_text or "login" in page_text
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
+@pytest.mark.e2e
 class TestBugTrackingAccessibility:
     """Accessibility tests for bug tracking pages."""
 
@@ -377,6 +387,8 @@ class TestBugTrackingAccessibility:
         assert len(submit_button.text) > 0
 
 
+@pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured")
+@pytest.mark.e2e
 class TestBugTrackingNavigation:
     """Navigation tests for bug tracking."""
 

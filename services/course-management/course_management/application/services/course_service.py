@@ -155,24 +155,52 @@ class CourseService(ICourseService):
         
         return await self._dao.update(course)
     
-    async def delete_course(self, course_id: str, instructor_id: str) -> bool:
-        """Delete a course (only if instructor owns it)"""
-        if not course_id or not instructor_id:
-            raise ValueError("Course ID and instructor ID are required")
-        
-        # Check if course exists and belongs to instructor
+    async def delete_course(
+        self,
+        course_id: str,
+        user_id: str,
+        is_admin: bool = False
+    ) -> bool:
+        """
+        Delete a course permanently.
+
+        BUSINESS CONTEXT:
+        Course deletion is allowed for:
+        - The instructor who owns the course
+        - Organization admins (can delete any course in their org)
+        - Site admins (can delete any course)
+
+        Args:
+            course_id: The ID of the course to delete
+            user_id: The ID of the user requesting deletion
+            is_admin: If True, skip ownership check (org admin/site admin)
+
+        Returns:
+            True if course was successfully deleted
+
+        Raises:
+            ValueError: If course not found, permission denied, or has active enrollments
+        """
+        if not course_id or not user_id:
+            raise ValueError("Course ID and user ID are required")
+
+        # Check if course exists
         course = await self._dao.get_by_id(course_id)
         if not course:
             raise ValueError(f"Course with ID {course_id} not found")
-        
-        if course.instructor_id != instructor_id:
-            raise ValueError("Instructor can only delete their own courses")
-        
+
+        # Check ownership unless user is an admin
+        if not is_admin and course.instructor_id != user_id:
+            raise ValueError("Only the course owner or an admin can delete this course")
+
         # Check if there are active enrollments
         enrollment_count = await self._dao.count_active_by_course(course_id)
         if enrollment_count > 0:
-            raise ValueError("Cannot delete course with active enrollments")
-        
+            raise ValueError(
+                f"Cannot delete course with {enrollment_count} active enrollments. "
+                "Please unenroll all students first."
+            )
+
         return await self._dao.delete(course_id)
     
     async def publish_course(self, course_id: str, instructor_id: str) -> Course:

@@ -61,7 +61,7 @@ class TestTracksBackendCodeQuality:
         """
         for file_path in tracks_backend_files:
             if not file_path.exists():
-                pytest.skip(f"File not found: {file_path}")
+                pytest.fail(f"File not found: {file_path}")
 
             result = subprocess.run(
                 ["flake8", str(file_path), "--max-line-length=120"],
@@ -83,7 +83,7 @@ class TestTracksBackendCodeQuality:
         """
         for file_path in tracks_backend_files:
             if not file_path.exists():
-                pytest.skip(f"File not found: {file_path}")
+                pytest.fail(f"File not found: {file_path}")
 
             result = subprocess.run(
                 ["pylint", str(file_path), "--rcfile=/home/bbrelin/course-creator/.pylintrc"],
@@ -108,7 +108,7 @@ class TestTracksBackendCodeQuality:
         """
         for file_path in tracks_backend_files:
             if not file_path.exists():
-                pytest.skip(f"File not found: {file_path}")
+                pytest.fail(f"File not found: {file_path}")
 
             result = subprocess.run(
                 ["black", "--check", "--line-length=120", str(file_path)],
@@ -128,7 +128,7 @@ class TestTracksBackendCodeQuality:
         """
         for file_path in tracks_backend_files:
             if not file_path.exists():
-                pytest.skip(f"File not found: {file_path}")
+                pytest.fail(f"File not found: {file_path}")
 
             with open(file_path, 'r') as f:
                 content = f.read()
@@ -149,7 +149,7 @@ class TestTracksBackendCodeQuality:
         """
         for file_path in tracks_backend_files:
             if not file_path.exists():
-                pytest.skip(f"File not found: {file_path}")
+                pytest.fail(f"File not found: {file_path}")
 
             with open(file_path, 'r') as f:
                 lines = f.readlines()
@@ -176,7 +176,7 @@ class TestTracksBackendCodeQuality:
         """
         for file_path in tracks_backend_files:
             if not file_path.exists():
-                pytest.skip(f"File not found: {file_path}")
+                pytest.fail(f"File not found: {file_path}")
 
             with open(file_path, 'r') as f:
                 content = f.read()
@@ -234,11 +234,11 @@ class TestTracksFrontendCodeQuality:
         eslint_config = "/home/bbrelin/course-creator/.eslintrc.json"
 
         if not Path(eslint_config).exists():
-            pytest.skip("ESLint config not found")
+            pytest.fail("ESLint config not found")
 
         for file_path in tracks_frontend_files:
             if not file_path.exists():
-                pytest.skip(f"File not found: {file_path}")
+                pytest.fail(f"File not found: {file_path}")
 
             result = subprocess.run(
                 ["npx", "eslint", str(file_path), "-c", eslint_config],
@@ -260,7 +260,7 @@ class TestTracksFrontendCodeQuality:
         """
         for file_path in tracks_frontend_files:
             if not file_path.exists():
-                pytest.skip(f"File not found: {file_path}")
+                pytest.fail(f"File not found: {file_path}")
 
             with open(file_path, 'r') as f:
                 content = f.read()
@@ -287,7 +287,7 @@ class TestTracksFrontendCodeQuality:
         """
         for file_path in tracks_frontend_files:
             if not file_path.exists():
-                pytest.skip(f"File not found: {file_path}")
+                pytest.fail(f"File not found: {file_path}")
 
             with open(file_path, 'r') as f:
                 content = f.read()
@@ -311,7 +311,7 @@ class TestTracksFrontendCodeQuality:
         """
         for file_path in tracks_frontend_files:
             if not file_path.exists():
-                pytest.skip(f"File not found: {file_path}")
+                pytest.fail(f"File not found: {file_path}")
 
             with open(file_path, 'r') as f:
                 lines = f.readlines()
@@ -345,7 +345,7 @@ class TestTracksFrontendCodeQuality:
         """
         for file_path in tracks_frontend_files:
             if not file_path.exists():
-                pytest.skip(f"File not found: {file_path}")
+                pytest.fail(f"File not found: {file_path}")
 
             with open(file_path, 'r') as f:
                 content = f.read()
@@ -415,7 +415,7 @@ class TestTracksArchitecture:
         tracks_file = Path("/home/bbrelin/course-creator/frontend/js/modules/org-admin-tracks.js")
 
         if not tracks_file.exists():
-            pytest.skip("Tracks module not found")
+            pytest.fail("Tracks module not found")
 
         with open(tracks_file, 'r') as f:
             content = f.read()
@@ -437,7 +437,7 @@ class TestTracksArchitecture:
         frontend_modules = Path("/home/bbrelin/course-creator/frontend/js/modules")
 
         if not frontend_modules.exists():
-            pytest.skip("Modules directory not found")
+            pytest.fail("Modules directory not found")
 
         for js_file in frontend_modules.glob("*.js"):
             with open(js_file, 'r') as f:
@@ -478,7 +478,7 @@ class TestTracksConfiguration:
         # At least one should exist (create if needed)
         exists = any(p.exists() for p in test_data_paths)
         if not exists:
-            pytest.skip("No test data fixtures found - consider creating them")
+            pytest.fail("No test data fixtures found - consider creating them")
 
 
 if __name__ == "__main__":

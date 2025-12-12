@@ -32,6 +32,12 @@ import { ComingSoon } from './pages/ComingSoon';
 // Global AI Assistant Widget
 import { GlobalAIAssistant } from './components/organisms/GlobalAIAssistant';
 
+// Global Keyboard Handler (keyboard shortcuts)
+import { GlobalKeyboardHandler } from './components/common/GlobalKeyboardHandler';
+
+// AI Assistant Welcome Popup Manager (for first-time users)
+import { WelcomePopupManager } from './features/ai-assistant';
+
 // Lazy-loaded Auth Pages
 const LoginPage = lazy(() => import('./features/auth/Login').then(m => ({ default: m.LoginPage })));
 const RegisterPage = lazy(() => import('./features/auth/Register').then(m => ({ default: m.RegisterPage })));
@@ -40,6 +46,10 @@ const ResetPasswordPage = lazy(() => import('./features/auth/ResetPassword').the
 
 // Lazy-loaded Organization Registration (public self-service)
 const OrganizationRegistration = lazy(() => import('./pages/OrganizationRegistration').then(m => ({ default: m.OrganizationRegistration })));
+
+// Lazy-loaded Legal Pages (Terms of Service, Privacy Policy)
+const TermsOfService = lazy(() => import('./pages/TermsOfService').then(m => ({ default: m.TermsOfService })));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy').then(m => ({ default: m.PrivacyPolicy })));
 
 // Lazy-loaded Student Certificates
 const StudentCertificates = lazy(() => import('./pages/StudentCertificates').then(m => ({ default: m.StudentCertificates })));
@@ -94,6 +104,11 @@ const ResourcesPage = lazy(() => import('./pages/ResourcesPage').then(m => ({ de
 
 // Lazy-loaded Demo Page
 const DemoPage = lazy(() => import('./features/demo/pages/DemoPage').then(m => ({ default: m.DemoPage })));
+
+// Lazy-loaded Bug Tracking Pages
+const BugSubmissionPage = lazy(() => import('./features/bug-tracking').then(m => ({ default: m.BugSubmissionPage })));
+const BugStatusPage = lazy(() => import('./features/bug-tracking').then(m => ({ default: m.BugStatusPage })));
+const BugListPage = lazy(() => import('./features/bug-tracking').then(m => ({ default: m.BugListPage })));
 
 // ============================================================
 // Lazy-loaded Enhancement Features (Enhancements 9-13)
@@ -183,6 +198,10 @@ function App() {
 
             {/* Organization Registration - Public self-service */}
             <Route path="/organization/register" element={<OrganizationRegistration />} />
+
+            {/* Legal Pages */}
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
 
             {/* Demo Page - Interactive platform walkthrough */}
             <Route path="/demo" element={<DemoPage />} />
@@ -736,6 +755,40 @@ function App() {
             />
 
             {/* ============================================================
+             * BUG TRACKING ROUTES (ALL AUTHENTICATED USERS)
+             * ============================================================ */}
+
+            {/* Submit Bug Report */}
+            <Route
+              path="/bugs/submit"
+              element={
+                <ProtectedRoute>
+                  <BugSubmissionPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* View Bug Details */}
+            <Route
+              path="/bugs/:bugId"
+              element={
+                <ProtectedRoute>
+                  <BugStatusPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* My Bug Reports */}
+            <Route
+              path="/bugs/my"
+              element={
+                <ProtectedRoute>
+                  <BugListPage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* ============================================================
              * ERROR PAGES
              * ============================================================ */}
 
@@ -751,6 +804,10 @@ function App() {
               </Suspense>
               {/* Global AI Assistant - Available on all pages */}
               <GlobalAIAssistant />
+              {/* AI Assistant Welcome Popup - Shown on first login */}
+              <WelcomePopupManager />
+              {/* Global Keyboard Handler - Shortcuts available everywhere */}
+              <GlobalKeyboardHandler />
             </ErrorBoundary>
           </BrowserRouter>
         </QueryClientProvider>

@@ -217,6 +217,70 @@ async def create_student_lab(
             original_exception=e
         )
 
+
+@router.get("/student/{student_id}", status_code=status.HTTP_200_OK)
+async def get_student_labs(student_id: str):
+    """
+    Get all labs for a specific student with proper data isolation.
+
+    Security Context:
+    This endpoint ensures students can ONLY see their own lab data,
+    preventing cross-user data leakage (OWASP A01:2021 - Broken Access Control).
+
+    Business Context:
+    Returns lab history including:
+    - Active/running lab sessions
+    - Completed lab sessions (for "Retry Lab" feature)
+    - Paused lab sessions that can be resumed
+
+    Data Isolation:
+    - Filters by authenticated student_id only
+    - Does NOT return other students' lab data
+    - Prevents the "Retry Lab" button appearing for labs never attempted
+
+    Args:
+        student_id: Authenticated student's unique identifier
+
+    Returns:
+        Dict containing student's labs with status and metadata
+
+    Raises:
+        ContentException: If lab retrieval fails
+    """
+    try:
+        lifecycle_service = get_lab_lifecycle_service()
+
+        # SECURITY: Filter labs by student_id to prevent cross-user data leakage
+        student_labs = lifecycle_service.list_student_labs(student_id)
+
+        return {
+            "student_id": student_id,
+            "total_labs": len(student_labs),
+            "labs": [
+                {
+                    "lab_id": lab.id,
+                    "course_id": lab.course_id,
+                    "status": lab.status.value,
+                    "created_at": lab.created_at,
+                    "last_accessed": lab.last_accessed,
+                    "ide_urls": lab.ide_urls,
+                    "container_name": lab.container_name
+                }
+                for lab in student_labs
+            ]
+        }
+
+    except ContentException:
+        raise
+    except Exception as e:
+        raise ContentException(
+            message="Failed to retrieve student labs",
+            error_code="LAB_RETRIEVAL_ERROR",
+            details={"student_id": student_id, "operation": "list_student_labs"},
+            original_exception=e
+        )
+
+
 @router.get("", response_model=LabListResponse, status_code=status.HTTP_200_OK)
 async def list_labs():
     """

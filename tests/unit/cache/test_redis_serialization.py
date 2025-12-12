@@ -45,9 +45,14 @@ shared_path = Path(__file__).parent.parent.parent.parent / 'shared'
 sys.path.insert(0, str(shared_path))
 
 try:
+    import redis
+    REDIS_AVAILABLE = True
     from cache.redis_cache import RedisCacheManager
 except ImportError:
-    pytest.skip("Redis cache module not available", allow_module_level=True)
+    REDIS_AVAILABLE = False
+    RedisCacheManager = None
+
+pytestmark = pytest.mark.skipif(not REDIS_AVAILABLE, reason="Redis not available")
 
 
 class TestBasicTypeSerialization:

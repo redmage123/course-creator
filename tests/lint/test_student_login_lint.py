@@ -65,7 +65,7 @@ class TestPythonCodeQuality(LintTestBase):
         python_files = [str(f) for f in self.student_login_files['python'] if f.exists()]
         
         if not python_files:
-            pytest.skip("No Python files found for student login system")
+            pytest.fail("No Python files found for student login system")
         
         # Act
         result = subprocess.run(

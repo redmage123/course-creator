@@ -44,6 +44,7 @@ from ai_assistant_service.application.services.knowledge_graph_service import (
 )
 from ai_assistant_service.application.services.hybrid_llm_router import HybridLLMRouter
 from api.websocket import AIAssistantWebSocketHandler
+from api.onboarding_endpoints import router as onboarding_router, set_websocket_handler
 
 # Configure logging FIRST (before using logger)
 logging.basicConfig(
@@ -181,6 +182,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
         )
         logger.info(f"✓ WebSocket Handler initialized")
 
+        # Set websocket handler for onboarding endpoints
+        set_websocket_handler(websocket_handler)
+        logger.info(f"✓ Onboarding endpoints connected to WebSocket handler")
+
         logger.info(f"=== AI Assistant Service Ready on port {SERVICE_PORT} ===")
 
     except Exception as e:
@@ -233,6 +238,9 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"]
 )
+
+# Register onboarding and help endpoints
+app.include_router(onboarding_router)
 
 
 @app.get("/")

@@ -22,11 +22,14 @@ from rbac_fixtures import (
     RBACTestUtils
 )
 
+# Check if Selenium is configured
+SELENIUM_AVAILABLE = os.getenv('SELENIUM_REMOTE') is not None or os.getenv('HEADLESS') is not None
+
 
 class TestRBACCompleteWorkflows:
     """End-to-end test cases for complete RBAC workflows"""
 
-    @pytest.mark.skip(reason="Needs refactoring to use real services - currently uses mock browser session")
+    @pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured - needs real WebDriver")
     @pytest.fixture
     def mock_browser_session(self):
         """
@@ -85,7 +88,7 @@ class TestRBACCompleteWorkflows:
         }
         return api_responses
     
-    @pytest.mark.skip(reason="Needs refactoring to use real Selenium and real API calls")
+    @pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured - needs real Selenium and real API calls")
     @pytest.mark.e2e
     @pytest.mark.asyncio
     async def test_complete_organization_admin_workflow(self, mock_browser_session, mock_api_server, rbac_test_data):
@@ -242,7 +245,7 @@ class TestRBACCompleteWorkflows:
         assert 'authToken' not in mock_browser_session.local_storage
         assert mock_browser_session.current_url.endswith('login.html')
     
-    @pytest.mark.skip(reason="Needs refactoring to use real Selenium and real API calls")
+    @pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured - needs real Selenium and real API calls")
     @pytest.mark.e2e
     @pytest.mark.asyncio
     async def test_complete_site_admin_workflow(self, mock_browser_session, mock_api_server, rbac_test_data):
@@ -399,7 +402,7 @@ class TestRBACCompleteWorkflows:
         assert "organization_deleted" in audit_elements['auditContainer'].innerHTML
         assert "integration_tested" in audit_elements['auditContainer'].innerHTML
     
-    @pytest.mark.skip(reason="Needs refactoring to use real Selenium and real API calls")
+    @pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured - needs real Selenium and real API calls")
     @pytest.mark.e2e
     @pytest.mark.asyncio
     async def test_instructor_student_interaction_workflow(self, mock_browser_session, mock_api_server, rbac_test_data):
@@ -584,7 +587,7 @@ class TestRBACCompleteWorkflows:
         assert "5 students" in analytics_elements['enrolledStudents'].text
         assert "45%" in analytics_elements['averageProgress'].text
     
-    @pytest.mark.skip(reason="Needs refactoring to use real Selenium and real API calls")
+    @pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured - needs real Selenium and real API calls")
     @pytest.mark.e2e
     @pytest.mark.asyncio
     async def test_permission_boundary_testing(self, mock_browser_session, mock_api_server, rbac_test_data):
@@ -650,7 +653,7 @@ class TestRBACCompleteWorkflows:
         # Verify error notification
         assert "Only site administrators" in error_notification.text
     
-    @pytest.mark.skip(reason="Needs refactoring to use real Selenium with multiple browsers")
+    @pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured - needs real Selenium with multiple browsers")
     @pytest.mark.e2e
     @pytest.mark.asyncio
     async def test_cross_browser_compatibility(self, rbac_test_data):
@@ -710,7 +713,7 @@ class TestRBACCompleteWorkflows:
             # Verify browser-specific functionality
             assert 'compatible' in dashboard_elements['membersContainer'].innerHTML or 'functionality' in dashboard_elements['membersContainer'].innerHTML
     
-    @pytest.mark.skip(reason="Needs refactoring to use real Selenium and real network simulation")
+    @pytest.mark.skipif(not SELENIUM_AVAILABLE, reason="Selenium not configured - needs real Selenium and real network simulation")
     @pytest.mark.e2e
     @pytest.mark.asyncio
     async def test_network_failure_recovery(self, mock_browser_session, rbac_test_data):
