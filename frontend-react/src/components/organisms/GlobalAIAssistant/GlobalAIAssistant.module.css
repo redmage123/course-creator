@@ -5,10 +5,10 @@
  * Responsive design with mobile considerations.
  */
 
-/* Floating Button */
+/* Floating Button - Positioned above the bug report FAB */
 .floatingButton {
   position: fixed;
-  bottom: 24px;
+  bottom: 96px; /* Above bug report button (56px height + 24px bottom + 16px gap) */
   right: 24px;
   display: flex;
   align-items: center;
@@ -23,7 +23,7 @@
   font-size: 14px;
   font-weight: 600;
   transition: all 0.2s ease;
-  z-index: 1000;
+  z-index: 999; /* Below modals but above page content */
 }
 
 .floatingButton:hover {
@@ -39,19 +39,19 @@
   font-size: 14px;
 }
 
-/* Chat Widget */
+/* Chat Widget - Positioned above bug report button */
 .chatWidget {
   position: fixed;
-  bottom: 24px;
+  bottom: 96px; /* Above bug report button */
   right: 24px;
   width: 380px;
-  max-height: 600px;
+  max-height: 500px; /* Reduced to avoid blocking too much content */
   background: white;
   border-radius: 16px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
-  z-index: 1000;
+  z-index: 999; /* Below modals but above page content */
   overflow: hidden;
   transition: all 0.3s ease;
 }
@@ -287,13 +287,13 @@
   .chatWidget {
     width: calc(100vw - 32px);
     right: 16px;
-    bottom: 16px;
-    max-height: 70vh;
+    bottom: 80px; /* Above bug button on mobile */
+    max-height: 60vh;
   }
 
   .floatingButton {
     right: 16px;
-    bottom: 16px;
+    bottom: 80px; /* Above bug button on mobile */
     padding: 12px 16px;
   }
 
