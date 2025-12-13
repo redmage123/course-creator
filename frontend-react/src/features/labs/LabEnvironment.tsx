@@ -34,6 +34,7 @@ import { LabControls } from './components/LabControls';
 import { useLabSession } from './hooks/useLabSession';
 import { useFileSystem } from './hooks/useFileSystem';
 import { useTerminal } from './hooks/useTerminal';
+import { useJupyterNotebook } from './hooks/useJupyterNotebook';
 import styles from './LabEnvironment.module.css';
 
 export type IDEType = 'vscode' | 'jupyter' | 'terminal';
@@ -101,6 +102,18 @@ export const LabEnvironment: React.FC = () => {
     clearTerminal,
     isExecuting
   } = useTerminal(session?.id);
+
+  // Jupyter notebook integration
+  const {
+    context: jupyterContext,
+    getAIContext: getJupyterAIContext,
+    refresh: refreshJupyter
+  } = useJupyterNotebook({
+    labId: session?.id,
+    enablePolling: true,
+    pollInterval: 5000,
+    isJupyterActive: selectedIDE === 'jupyter'
+  });
 
   // UI State
   const [selectedIDE, setSelectedIDE] = useState<IDEType>('vscode');
@@ -509,10 +522,12 @@ export const LabEnvironment: React.FC = () => {
             <div className={styles.aiAssistantPanel} id="ai-assistant-panel">
               <AIAssistant
                 currentFile={currentFile}
-                codeContent={codeContent}
+                codeContent={selectedIDE === 'jupyter' ? '' : codeContent}
                 terminalHistory={history}
                 sessionId={session?.id}
                 courseId={courseId}
+                jupyterContext={selectedIDE === 'jupyter' ? jupyterContext : undefined}
+                getJupyterAIContext={selectedIDE === 'jupyter' ? getJupyterAIContext : undefined}
               />
             </div>
           )}

@@ -9,3 +9,10 @@
 export { useLabSession } from './useLabSession';
 export { useFileSystem } from './useFileSystem';
 export { useTerminal } from './useTerminal';
+export { useJupyterNotebook } from './useJupyterNotebook';
+export type {
+  NotebookCell,
+  JupyterNotebookContext,
+  UseJupyterNotebookOptions,
+  UseJupyterNotebookReturn
+} from './useJupyterNotebook';

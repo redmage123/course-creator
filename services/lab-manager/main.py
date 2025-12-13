@@ -87,9 +87,10 @@ app = FastAPI(
 )
 
 # Include modular routers (following Open/Closed Principle)
-from api import lab_lifecycle_router, rag_assistant_router
+from api import lab_lifecycle_router, rag_assistant_router, jupyter_proxy_router
 app.include_router(lab_lifecycle_router)
 app.include_router(rag_assistant_router)
+app.include_router(jupyter_proxy_router)
 
 # Exception type to HTTP status code mapping (Open/Closed Principle)
 EXCEPTION_STATUS_MAPPING = {

@@ -32,6 +32,31 @@ export interface AIMessage {
   };
 }
 
+/**
+ * Jupyter notebook context from useJupyterNotebook hook
+ */
+export interface JupyterNotebookContext {
+  hasActiveNotebook: boolean;
+  notebookName: string;
+  notebookPath: string;
+  totalCells: number;
+  codeCells: number;
+  kernelStatus: 'idle' | 'busy' | 'starting' | 'unknown';
+  recentCodeCells: Array<{
+    index: number;
+    source: string;
+    hasError: boolean;
+    errorMessage?: string;
+  }>;
+  errorCells: Array<{
+    index: number;
+    source: string;
+    hasError: boolean;
+    errorMessage?: string;
+  }>;
+  hasErrors: boolean;
+}
+
 export interface AIAssistantProps {
   /** Current file being edited (LabFile object or filename string) */
   currentFile?: { name: string; path: string; language?: string } | string | null;
@@ -45,6 +70,10 @@ export interface AIAssistantProps {
   sessionId?: string;
   /** Course ID for context */
   courseId?: string;
+  /** Jupyter notebook context (when Jupyter IDE is active) */
+  jupyterContext?: JupyterNotebookContext | null;
+  /** Function to get formatted Jupyter context for AI */
+  getJupyterAIContext?: () => string;
 }
 
 /**
@@ -72,7 +101,9 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
   terminalHistory = [],
   lastError,
   sessionId,
-  courseId
+  courseId,
+  jupyterContext,
+  getJupyterAIContext
 }) => {
   const { user, token } = useAuth();
 
@@ -287,6 +318,11 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
   }, [messages]);
 
   /**
+   * Check if Jupyter context is available
+   */
+  const hasJupyterContext = Boolean(jupyterContext?.hasActiveNotebook);
+
+  /**
    * Send message via WebSocket with lab context
    */
   const sendMessage = useCallback((messageText?: string) => {
@@ -300,11 +336,12 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
       return;
     }
 
-    // Build context if enabled
+    // Build context if enabled - use Jupyter context when available
     const context = includeContext ? {
-      file: getFileName(),
-      code: codeContent?.substring(0, 2000), // Limit code length
-      error: getLastTerminalError()
+      file: hasJupyterContext ? jupyterContext?.notebookName : getFileName(),
+      code: hasJupyterContext ? undefined : codeContent?.substring(0, 2000),
+      error: getLastTerminalError(),
+      jupyter: hasJupyterContext
     } : undefined;
 
     const userMessage: AIMessage = {
@@ -322,18 +359,27 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
     // Build message with lab context
     let fullMessage = text;
 
-    if (includeContext && context) {
+    if (includeContext) {
       const contextParts: string[] = [];
 
-      if (context.file) {
-        contextParts.push(`[Current file: ${context.file}]`);
+      // Use Jupyter context when available
+      if (hasJupyterContext && getJupyterAIContext) {
+        const jupyterContextStr = getJupyterAIContext();
+        if (jupyterContextStr) {
+          contextParts.push(jupyterContextStr);
+        }
+      } else {
+        // Use VSCode/file context
+        if (context?.file) {
+          contextParts.push(`[Current file: ${context.file}]`);
+        }
+
+        if (context?.code) {
+          contextParts.push(`[Code context:\n\`\`\`\n${context.code}\n\`\`\`]`);
+        }
       }
 
-      if (context.code) {
-        contextParts.push(`[Code context:\n\`\`\`\n${context.code}\n\`\`\`]`);
-      }
-
-      if (context.error) {
+      if (context?.error) {
         contextParts.push(`[Error output:\n${context.error}]`);
       }
 
@@ -350,7 +396,7 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
 
     wsRef.current.send(JSON.stringify(wsMessage));
     console.log('[Lab AI Assistant] Sent message with context');
-  }, [inputMessage, isLoading, includeContext, codeContent, getFileName, getLastTerminalError, connectWebSocket]);
+  }, [inputMessage, isLoading, includeContext, codeContent, getFileName, getLastTerminalError, connectWebSocket, hasJupyterContext, jupyterContext, getJupyterAIContext]);
 
   /**
    * Handle keyboard shortcuts
@@ -364,8 +410,38 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
 
   /**
    * Quick action buttons for lab assistance
+   * Includes Jupyter-specific actions when notebook is active
    */
-  const quickActions = [
+  const quickActions = hasJupyterContext ? [
+    {
+      id: 'explain-cell',
+      label: 'Explain Cell',
+      icon: '📖',
+      message: 'Can you explain what the code in my current notebook cells does?',
+      requiresCode: false
+    },
+    {
+      id: 'debug-notebook',
+      label: 'Debug Notebook',
+      icon: '🐛',
+      message: 'Help me debug the errors in my Jupyter notebook. What is causing them and how can I fix them?',
+      requiresError: true
+    },
+    {
+      id: 'next-step',
+      label: 'Next Step',
+      icon: '➡️',
+      message: 'Based on my notebook so far, what should I do next?',
+      requiresCode: false
+    },
+    {
+      id: 'hint',
+      label: 'Get Hint',
+      icon: '💡',
+      message: 'Can you give me a hint for solving this exercise without giving away the full solution?',
+      requiresCode: false
+    }
+  ] : [
     {
       id: 'explain-code',
       label: 'Explain Code',
@@ -423,8 +499,15 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
     }).format(date);
   };
 
-  const hasCode = Boolean(codeContent);
-  const hasError = Boolean(getLastTerminalError());
+  // Check for code availability - from VSCode or Jupyter
+  const hasCode = hasJupyterContext
+    ? Boolean(jupyterContext?.codeCells && jupyterContext.codeCells > 0)
+    : Boolean(codeContent);
+
+  // Check for errors - from terminal or Jupyter notebook
+  const hasError = hasJupyterContext
+    ? Boolean(jupyterContext?.hasErrors)
+    : Boolean(getLastTerminalError());
 
   return (
     <div className={styles.aiAssistant} id="ai-assistant">
@@ -457,9 +540,9 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({
         <label htmlFor="include-context" className={styles.checkboxLabel}>
           Include code context
         </label>
-        {includeContext && hasCode && (
-          <span className={styles.contextIndicator} title="Code will be included">
-            📄 {getFileName() || 'code'}
+        {includeContext && (hasCode || hasJupyterContext) && (
+          <span className={styles.contextIndicator} title={hasJupyterContext ? "Notebook context will be included" : "Code will be included"}>
+            {hasJupyterContext ? '📓' : '📄'} {hasJupyterContext ? jupyterContext?.notebookName : getFileName() || 'code'}
           </span>
         )}
       </div>
