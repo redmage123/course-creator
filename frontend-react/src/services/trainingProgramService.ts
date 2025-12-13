@@ -27,7 +27,7 @@ export interface TrainingProgram {
   difficulty_level: 'beginner' | 'intermediate' | 'advanced';
   estimated_duration?: number;
   duration_unit: 'hours' | 'days' | 'weeks' | 'months';
-  price: number;
+  price?: number;
   tags: string[];
   instructor_id: string;
   instructor_name?: string;

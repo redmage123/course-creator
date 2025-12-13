@@ -55,7 +55,6 @@ export const CreateEditTrainingProgramPage: React.FC = () => {
   const [difficultyLevel, setDifficultyLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
   const [estimatedDuration, setEstimatedDuration] = useState<number>(0);
   const [durationUnit, setDurationUnit] = useState<'hours' | 'days' | 'weeks' | 'months'>('hours');
-  const [price, setPrice] = useState<number>(0);
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
 
@@ -82,7 +81,6 @@ export const CreateEditTrainingProgramPage: React.FC = () => {
       setDifficultyLevel(existingProgram.difficulty_level);
       setEstimatedDuration(existingProgram.estimated_duration || 0);
       setDurationUnit(existingProgram.duration_unit);
-      setPrice(existingProgram.price);
       setTags(existingProgram.tags || []);
     }
   }, [existingProgram]);
@@ -141,10 +139,6 @@ export const CreateEditTrainingProgramPage: React.FC = () => {
       newErrors.estimatedDuration = 'Duration must be greater than 0';
     }
 
-    if (price && price < 0) {
-      newErrors.price = 'Price cannot be negative';
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -166,7 +160,6 @@ export const CreateEditTrainingProgramPage: React.FC = () => {
       difficulty_level: difficultyLevel,
       estimated_duration: estimatedDuration || undefined,
       duration_unit: durationUnit,
-      price,
       tags,
       organization_id: organizationId,
       // Note: instructor_id will be set automatically by the backend based on the authenticated user
@@ -371,28 +364,6 @@ export const CreateEditTrainingProgramPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Price */}
-              <div className={styles['form-group']}>
-                <label htmlFor="price" className={styles['form-label']}>
-                  Price (USD)
-                </label>
-                <input
-                  id="price"
-                  type="number"
-                  value={price || ''}
-                  onChange={(e) => setPrice(Number(e.target.value))}
-                  className={`${styles['form-input']} ${errors.price ? styles['input-error'] : ''}`}
-                  placeholder="0.00"
-                  min="0"
-                  step="0.01"
-                />
-                {errors.price && (
-                  <span className={styles['error-message']} role="alert">{errors.price}</span>
-                )}
-                <span className={styles['helper-text']}>
-                  Set to 0 for free programs
-                </span>
-              </div>
             </div>
 
             {/* Tags Section */}
