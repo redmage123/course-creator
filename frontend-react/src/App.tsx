@@ -32,6 +32,9 @@ import { ComingSoon } from './pages/ComingSoon';
 // Global AI Assistant Widget
 import { GlobalAIAssistant } from './components/organisms/GlobalAIAssistant';
 
+// Global Notification Manager (Toast notifications from Redux)
+import { NotificationManager } from './components/common/NotificationManager';
+
 // Global Keyboard Handler (keyboard shortcuts)
 import { GlobalKeyboardHandler } from './components/common/GlobalKeyboardHandler';
 
@@ -802,6 +805,8 @@ function App() {
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
               </Suspense>
+              {/* Global Notification Manager - Toast notifications */}
+              <NotificationManager />
               {/* Global AI Assistant - Available on all pages */}
               <GlobalAIAssistant />
               {/* AI Assistant Welcome Popup - Shown on first login */}

@@ -84,7 +84,11 @@ class APIClient {
       },
       async (error: AxiosError) => {
         // Handle 401 Unauthorized - token expired
-        if (error.response?.status === 401) {
+        // IMPORTANT: Don't redirect for login endpoint - let the error propagate
+        // so the Login component can display the error message to the user
+        const isLoginRequest = error.config?.url?.includes('/auth/login');
+
+        if (error.response?.status === 401 && !isLoginRequest) {
           const refreshToken = tokenManager.getRefreshToken();
           if (refreshToken) {
             try {
