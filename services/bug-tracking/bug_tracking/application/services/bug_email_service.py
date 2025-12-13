@@ -30,6 +30,9 @@ from bug_tracking.domain.entities.bug_fix import BugFixAttempt
 
 logger = logging.getLogger(__name__)
 
+# Site admin email - always receives bug notifications
+SITE_ADMIN_EMAIL = "braun.brelin@ai-elevate.ai"
+
 
 class BugEmailService:
     """
@@ -338,7 +341,8 @@ Tests: {fix_attempt.tests_passed} passed, {fix_attempt.tests_failed} failed
         to_email: str,
         subject: str,
         html_body: str,
-        text_body: str
+        text_body: str,
+        cc_site_admin: bool = True
     ) -> bool:
         """
         Send an email.
@@ -348,12 +352,18 @@ Tests: {fix_attempt.tests_passed} passed, {fix_attempt.tests_failed} failed
             subject: Email subject
             html_body: HTML content
             text_body: Plain text content
+            cc_site_admin: If True, also send to site admin (default True)
 
         Returns:
             bool: True if sent successfully
         """
+        # Build recipient list - always include site admin for bug notifications
+        recipients = [to_email]
+        if cc_site_admin and SITE_ADMIN_EMAIL not in recipients:
+            recipients.append(SITE_ADMIN_EMAIL)
+
         if self.mock_mode:
-            logger.info(f"[MOCK EMAIL] To: {to_email}, Subject: {subject}")
+            logger.info(f"[MOCK EMAIL] To: {', '.join(recipients)}, Subject: {subject}")
             return True
 
         try:
@@ -361,21 +371,24 @@ Tests: {fix_attempt.tests_passed} passed, {fix_attempt.tests_failed} failed
             msg['Subject'] = subject
             msg['From'] = self.from_email
             msg['To'] = to_email
+            # CC the site admin so they see all bug reports
+            if cc_site_admin and to_email != SITE_ADMIN_EMAIL:
+                msg['Cc'] = SITE_ADMIN_EMAIL
 
             # Attach both plain text and HTML versions
             msg.attach(MIMEText(text_body, 'plain'))
             msg.attach(MIMEText(html_body, 'html'))
 
-            # Send via SMTP
+            # Send via SMTP to all recipients
             with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
                 server.starttls()
                 if self.smtp_user and self.smtp_password:
                     server.login(self.smtp_user, self.smtp_password)
-                server.send_message(msg)
+                server.send_message(msg, to_addrs=recipients)
 
-            logger.info(f"Email sent to {to_email}: {subject}")
+            logger.info(f"Email sent to {', '.join(recipients)}: {subject}")
             return True
 
         except Exception as e:
-            logger.error(f"Failed to send email to {to_email}: {e}")
+            logger.error(f"Failed to send email to {', '.join(recipients)}: {e}")
             return False
