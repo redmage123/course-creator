@@ -508,10 +508,11 @@ export const LabEnvironment: React.FC = () => {
           {isAIAssistantOpen && (
             <div className={styles.aiAssistantPanel} id="ai-assistant-panel">
               <AIAssistant
-                // @ts-ignore - currentFile is LabFile | null but expects string | undefined
                 currentFile={currentFile}
                 codeContent={codeContent}
                 terminalHistory={history}
+                sessionId={session?.id}
+                courseId={courseId}
               />
             </div>
           )}
