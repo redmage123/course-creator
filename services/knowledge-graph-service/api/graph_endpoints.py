@@ -122,7 +122,7 @@ async def get_graph_service() -> GraphService:
 
     TODO: Initialize with actual database connection pool
     """
-    from infrastructure.database import get_database_pool
+    from knowledge_graph_service.infrastructure.database import get_database_pool
     from data_access.graph_dao import GraphDAO
 
     pool = await get_database_pool()

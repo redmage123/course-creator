@@ -82,11 +82,14 @@ class KnowledgeGraphService:
         """
         try:
             response = await self.client.get(
-                f"{self.base_url}/api/v1/knowledge-graph/health"
+                f"{self.base_url}/health"
             )
             return response.status_code == 200
-        except Exception as e:
-            logger.error(f"Knowledge Graph service health check failed: {e}")
+        except httpx.ConnectError as e:
+            logger.error(f"Knowledge Graph service health check failed (connection error): {e}")
+            return False
+        except httpx.RequestError as e:
+            logger.error(f"Knowledge Graph service health check failed (request error): {e}")
             return False
 
     async def get_node(
@@ -109,7 +112,7 @@ class KnowledgeGraphService:
         """
         try:
             response = await self.client.get(
-                f"{self.base_url}/api/v1/knowledge-graph/nodes/{node_type}/{node_id}"
+                f"{self.base_url}/api/v1/graph/nodes/{node_type}/{node_id}"
             )
             response.raise_for_status()
             return response.json()
@@ -129,7 +132,7 @@ class KnowledgeGraphService:
         """
         try:
             response = await self.client.get(
-                f"{self.base_url}/api/v1/knowledge-graph/courses/{course_id}/prerequisites"
+                f"{self.base_url}/api/v1/graph/courses/{course_id}/prerequisites"
             )
             response.raise_for_status()
             return response.json().get("prerequisites", [])
@@ -157,7 +160,7 @@ class KnowledgeGraphService:
         """
         try:
             response = await self.client.post(
-                f"{self.base_url}/api/v1/knowledge-graph/learning-paths",
+                f"{self.base_url}/api/v1/graph/learning-paths",
                 json={
                     "user_id": user_id,
                     "target_skill": target_skill
@@ -193,7 +196,7 @@ class KnowledgeGraphService:
         """
         try:
             response = await self.client.get(
-                f"{self.base_url}/api/v1/knowledge-graph/courses/{course_id}/related",
+                f"{self.base_url}/api/v1/graph/courses/{course_id}/related",
                 params={"max_results": max_results}
             )
             response.raise_for_status()
@@ -222,7 +225,7 @@ class KnowledgeGraphService:
         """
         try:
             response = await self.client.post(
-                f"{self.base_url}/api/v1/knowledge-graph/prerequisites/check",
+                f"{self.base_url}/api/v1/graph/prerequisites/check",
                 json={
                     "user_id": user_id,
                     "course_id": course_id
@@ -252,7 +255,7 @@ class KnowledgeGraphService:
         """
         try:
             response = await self.client.get(
-                f"{self.base_url}/api/v1/knowledge-graph/tracks/{track_id}/sequence"
+                f"{self.base_url}/api/v1/graph/tracks/{track_id}/sequence"
             )
             response.raise_for_status()
             return response.json().get("sequence", [])
@@ -280,7 +283,7 @@ class KnowledgeGraphService:
         """
         try:
             response = await self.client.get(
-                f"{self.base_url}/api/v1/knowledge-graph/users/{user_id}/recommendations",
+                f"{self.base_url}/api/v1/graph/users/{user_id}/recommendations",
                 params={"max_recommendations": max_recommendations}
             )
             response.raise_for_status()
@@ -304,7 +307,7 @@ class KnowledgeGraphService:
         """
         try:
             response = await self.client.get(
-                f"{self.base_url}/api/v1/knowledge-graph/users/{user_id}/skills"
+                f"{self.base_url}/api/v1/graph/users/{user_id}/skills"
             )
             response.raise_for_status()
             return response.json()
@@ -334,7 +337,7 @@ class KnowledgeGraphService:
         """
         try:
             response = await self.client.post(
-                f"{self.base_url}/api/v1/knowledge-graph/sequences/validate",
+                f"{self.base_url}/api/v1/graph/sequences/validate",
                 json={"course_ids": course_ids}
             )
             response.raise_for_status()
@@ -355,7 +358,7 @@ class KnowledgeGraphService:
         """
         try:
             response = await self.client.get(
-                f"{self.base_url}/api/v1/knowledge-graph/statistics"
+                f"{self.base_url}/api/v1/graph/statistics"
             )
             response.raise_for_status()
             return response.json()
@@ -388,7 +391,7 @@ class KnowledgeGraphService:
         """
         try:
             response = await self.client.get(
-                f"{self.base_url}/api/v1/knowledge-graph/search",
+                f"{self.base_url}/api/v1/graph/search",
                 params={
                     "topic": topic,
                     "max_results": max_results
@@ -420,7 +423,7 @@ class KnowledgeGraphService:
         """
         try:
             response = await self.client.get(
-                f"{self.base_url}/api/v1/knowledge-graph/courses/{course_id}/dependencies",
+                f"{self.base_url}/api/v1/graph/courses/{course_id}/dependencies",
                 params={"depth": depth}
             )
             response.raise_for_status()
@@ -453,7 +456,7 @@ class KnowledgeGraphService:
         """
         try:
             response = await self.client.post(
-                f"{self.base_url}/api/v1/knowledge-graph/paths/shortest",
+                f"{self.base_url}/api/v1/graph/paths/shortest",
                 json={
                     "user_id": user_id,
                     "target_skill": target_skill
@@ -483,7 +486,7 @@ class KnowledgeGraphService:
         """
         try:
             response = await self.client.get(
-                f"{self.base_url}/api/v1/knowledge-graph/paths/popular",
+                f"{self.base_url}/api/v1/graph/paths/popular",
                 params={"max_results": max_results}
             )
             response.raise_for_status()
@@ -512,7 +515,7 @@ class KnowledgeGraphService:
         """
         try:
             response = await self.client.post(
-                f"{self.base_url}/api/v1/knowledge-graph/prerequisites/suggest",
+                f"{self.base_url}/api/v1/graph/prerequisites/suggest",
                 json={
                     "course_title": course_title,
                     "topics": topics
@@ -539,7 +542,7 @@ class KnowledgeGraphService:
         """
         try:
             response = await self.client.post(
-                f"{self.base_url}/api/v1/knowledge-graph/courses/{course_id}/impact"
+                f"{self.base_url}/api/v1/graph/courses/{course_id}/impact"
             )
             response.raise_for_status()
             return response.json()

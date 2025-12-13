@@ -348,12 +348,81 @@ class EmailServiceException(CourseCreatorBaseException):
 class AIServiceException(CourseCreatorBaseException):
     """
     AI service exceptions for course generation and RAG operations.
-    
+
     Business Context:
     Handles AI service failures for course generation, content analysis,
     and RAG-enhanced features. Critical for platform's AI capabilities.
     """
     pass
+
+
+class NLPServiceException(ExternalServiceException):
+    """
+    NLP preprocessing service exceptions for intent classification and entity extraction.
+
+    Business Context:
+    Handles NLP preprocessing failures that affect AI assistant query optimization.
+    The AI assistant should gracefully degrade when NLP service is unavailable,
+    proceeding directly to LLM calls without preprocessing.
+
+    Technical Context:
+    - Intent classification failures
+    - Entity extraction errors
+    - Query expansion unavailability
+    - Conversation deduplication failures
+    """
+    pass
+
+
+class NLPServiceConnectionException(NLPServiceException):
+    """
+    NLP service connection exceptions for network and availability issues.
+
+    Business Context:
+    Handles connection failures to NLP preprocessing service. The AI assistant
+    should gracefully degrade by skipping NLP preprocessing and proceeding
+    directly to LLM calls when this occurs.
+
+    Technical Context:
+    - Network connectivity issues
+    - Service unavailability (port 8013)
+    - Connection timeouts
+    - SSL/TLS handshake failures
+    """
+
+    def __init__(self, operation: str, original_error: str = "", **kwargs):
+        message = f"NLP service connection failed during {operation}: {original_error}"
+        super().__init__(
+            message,
+            error_code="NLP_SERVICE_CONNECTION_ERROR",
+            details={"operation": operation},
+            **kwargs
+        )
+
+
+class NLPServiceResponseException(NLPServiceException):
+    """
+    NLP service response exceptions for HTTP errors and malformed responses.
+
+    Business Context:
+    Handles HTTP error responses from NLP service including 4xx/5xx errors.
+    The AI assistant should use default values when this occurs.
+
+    Technical Context:
+    - HTTP 404 (endpoint not found)
+    - HTTP 500 (internal server error)
+    - Malformed JSON responses
+    - Response validation failures
+    """
+
+    def __init__(self, operation: str, status_code: int, detail: str = "", **kwargs):
+        message = f"NLP service error during {operation}: HTTP {status_code} - {detail}"
+        super().__init__(
+            message,
+            error_code="NLP_SERVICE_RESPONSE_ERROR",
+            details={"operation": operation, "status_code": status_code},
+            **kwargs
+        )
 
 
 # Lab and Container Management Exceptions

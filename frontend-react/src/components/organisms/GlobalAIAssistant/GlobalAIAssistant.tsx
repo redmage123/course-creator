@@ -410,9 +410,12 @@ export const GlobalAIAssistant: React.FC = () => {
 
   /**
    * Handle keyboard shortcuts
+   * Enter: Send message
+   * Shift+Enter: Add new line
+   * Ctrl/Cmd+Enter: Also send message (for consistency)
    */
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
@@ -615,7 +618,7 @@ export const GlobalAIAssistant: React.FC = () => {
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder={isConnected ? "Ask me anything... (Ctrl+Enter to send)" : "Connecting..."}
+                  placeholder={isConnected ? "Ask me anything... (Enter to send, Shift+Enter for new line)" : "Connecting..."}
                   rows={2}
                   disabled={isLoading || !isConnected}
                 />
