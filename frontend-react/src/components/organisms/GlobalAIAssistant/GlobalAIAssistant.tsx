@@ -4,20 +4,21 @@
  * BUSINESS CONTEXT:
  * Floating AI assistant available across all dashboards and pages.
  * Provides contextual help based on current page and user role.
- * Uses RAG (Retrieval Augmented Generation) for intelligent responses.
+ * Uses the FULL CC AI Pipeline via WebSocket:
+ *   NLP Preprocessing → Knowledge Graph → RAG → Hybrid LLM Router → LLM
  *
  * TECHNICAL IMPLEMENTATION:
+ * - WebSocket connection to /ws/ai-assistant for full AI pipeline
  * - Floating widget that can be minimized/expanded
  * - Context-aware based on current route and user role
- * - Connects to AI assistant backend service
  * - Persists conversation in session storage
+ * - Auto-reconnect on connection loss
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Button } from '../../atoms/Button';
 import { useAuth } from '../../../hooks/useAuth';
-import { apiClient } from '../../../services/apiClient';
 import styles from './GlobalAIAssistant.module.css';
 
 interface Position {
@@ -30,24 +31,34 @@ interface AIMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
+  functionCall?: string;
+  actionSuccess?: boolean;
 }
 
-interface AIAssistantResponse {
-  response: string;
-  sources?: string[];
+/**
+ * WebSocket message types from the AI Assistant service
+ */
+type WSMessageType = 'connected' | 'thinking' | 'response' | 'error' | 'history_cleared';
+
+interface WSMessage {
+  type: WSMessageType;
+  conversation_id?: string;
+  content?: string;
+  function_call?: string;
+  action_success?: boolean;
 }
 
 /**
  * Global AI Assistant Component
  *
- * WHY THIS APPROACH:
- * - Floating widget for accessibility from any page
- * - Minimized state to not obstruct UI
- * - Context-aware responses based on current page
- * - Session persistence for conversation continuity
+ * WHY WebSocket:
+ * - Uses the full CC AI Pipeline (NLP → KG → RAG → LLM)
+ * - Real-time "thinking" indicators during processing
+ * - Supports function calling for platform actions
+ * - More efficient for conversational AI
  */
 export const GlobalAIAssistant: React.FC = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, token } = useAuth();
   const location = useLocation();
 
   // Widget state
@@ -55,7 +66,7 @@ export const GlobalAIAssistant: React.FC = () => {
   const [isMinimized, setIsMinimized] = useState(false);
 
   // Drag state
-  const [position, setPosition] = useState<Position | null>(null); // null means use default CSS position
+  const [position, setPosition] = useState<Position | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState<Position>({ x: 0, y: 0 });
 
@@ -63,10 +74,198 @@ export const GlobalAIAssistant: React.FC = () => {
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+
+  // WebSocket state
+  const wsRef = useRef<WebSocket | null>(null);
+  const conversationIdRef = useRef<string | null>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectAttemptsRef = useRef(0);
+  const MAX_RECONNECT_ATTEMPTS = 5;
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const widgetRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * Get current page context for AI
+   */
+  const getPageContext = useCallback((): string => {
+    const path = location.pathname;
+
+    if (path.includes('/dashboard/student')) return 'student dashboard';
+    if (path.includes('/dashboard/instructor')) return 'instructor dashboard';
+    if (path.includes('/dashboard/org-admin')) return 'organization admin dashboard';
+    if (path.includes('/dashboard/site-admin')) return 'site admin dashboard';
+    if (path.includes('/courses')) return 'courses page';
+    if (path.includes('/labs')) return 'lab environment';
+    if (path.includes('/quizzes')) return 'quizzes page';
+    if (path.includes('/analytics')) return 'analytics dashboard';
+    if (path.includes('/organization')) return 'organization management';
+    if (path.includes('/instructor')) return 'instructor tools';
+
+    return 'Course Creator Platform';
+  }, [location.pathname]);
+
+  /**
+   * Connect to WebSocket
+   */
+  const connectWebSocket = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      return; // Already connected
+    }
+
+    // Determine WebSocket URL based on current location
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/ai-assistant`;
+
+    console.log('[AI Assistant] Connecting to WebSocket:', wsUrl);
+    setConnectionError(null);
+
+    try {
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        console.log('[AI Assistant] WebSocket connected');
+        reconnectAttemptsRef.current = 0;
+
+        // Send initialization message with user context
+        const initMessage = {
+          type: 'init',
+          user_context: {
+            user_id: user?.id || 'anonymous',
+            username: user?.username || 'User',
+            role: user?.role || 'guest',
+            organization_id: user?.organizationId,
+            current_page: getPageContext()
+          },
+          auth_token: token || ''
+        };
+
+        ws.send(JSON.stringify(initMessage));
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data: WSMessage = JSON.parse(event.data);
+          console.log('[AI Assistant] Received:', data.type);
+
+          switch (data.type) {
+            case 'connected':
+              setIsConnected(true);
+              conversationIdRef.current = data.conversation_id || null;
+              console.log('[AI Assistant] Conversation started:', data.conversation_id);
+              break;
+
+            case 'thinking':
+              setIsLoading(true);
+              break;
+
+            case 'response':
+              setIsLoading(false);
+              if (data.content) {
+                const assistantMessage: AIMessage = {
+                  id: `assistant-${Date.now()}`,
+                  role: 'assistant',
+                  content: data.content,
+                  timestamp: new Date(),
+                  functionCall: data.function_call,
+                  actionSuccess: data.action_success
+                };
+                setMessages(prev => [...prev, assistantMessage]);
+              }
+              break;
+
+            case 'error':
+              setIsLoading(false);
+              const errorMessage: AIMessage = {
+                id: `error-${Date.now()}`,
+                role: 'assistant',
+                content: data.content || 'An error occurred. Please try again.',
+                timestamp: new Date()
+              };
+              setMessages(prev => [...prev, errorMessage]);
+              break;
+
+            case 'history_cleared':
+              setMessages([]);
+              break;
+          }
+        } catch (e) {
+          console.error('[AI Assistant] Failed to parse message:', e);
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('[AI Assistant] WebSocket error:', error);
+        setConnectionError('Connection error. Retrying...');
+      };
+
+      ws.onclose = (event) => {
+        console.log('[AI Assistant] WebSocket closed:', event.code, event.reason);
+        setIsConnected(false);
+        wsRef.current = null;
+        conversationIdRef.current = null;
+
+        // Attempt reconnection if widget is still open
+        if (isOpen && reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
+          const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 10000);
+          reconnectAttemptsRef.current += 1;
+          console.log(`[AI Assistant] Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current})`);
+
+          reconnectTimeoutRef.current = setTimeout(() => {
+            connectWebSocket();
+          }, delay);
+        } else if (reconnectAttemptsRef.current >= MAX_RECONNECT_ATTEMPTS) {
+          setConnectionError('Unable to connect. Please refresh the page.');
+        }
+      };
+    } catch (e) {
+      console.error('[AI Assistant] Failed to create WebSocket:', e);
+      setConnectionError('Failed to connect to AI assistant.');
+    }
+  }, [user, token, getPageContext, isOpen]);
+
+  /**
+   * Disconnect WebSocket
+   */
+  const disconnectWebSocket = useCallback(() => {
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+
+    setIsConnected(false);
+    conversationIdRef.current = null;
+  }, []);
+
+  // Connect when widget opens, disconnect when it closes
+  useEffect(() => {
+    if (isOpen && isAuthenticated) {
+      connectWebSocket();
+    } else {
+      disconnectWebSocket();
+    }
+
+    return () => {
+      disconnectWebSocket();
+    };
+  }, [isOpen, isAuthenticated, connectWebSocket, disconnectWebSocket]);
+
+  // Update page context when location changes
+  useEffect(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN && isConnected) {
+      // Could send a context update message here if needed
+      console.log('[AI Assistant] Page context changed:', getPageContext());
+    }
+  }, [location.pathname, isConnected, getPageContext]);
 
   // Load messages from session storage on mount
   useEffect(() => {
@@ -100,10 +299,10 @@ export const GlobalAIAssistant: React.FC = () => {
 
   // Focus input when opening
   useEffect(() => {
-    if (isOpen && !isMinimized) {
+    if (isOpen && !isMinimized && isConnected) {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
-  }, [isOpen, isMinimized]);
+  }, [isOpen, isMinimized, isConnected]);
 
   // Handle Escape key to close the widget
   useEffect(() => {
@@ -121,7 +320,6 @@ export const GlobalAIAssistant: React.FC = () => {
    * Handle drag start on header
    */
   const handleDragStart = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    // Only start drag if clicking on header (not buttons)
     if ((e.target as HTMLElement).closest('button')) return;
 
     e.preventDefault();
@@ -134,7 +332,6 @@ export const GlobalAIAssistant: React.FC = () => {
         x: e.clientX - rect.left,
         y: e.clientY - rect.top
       });
-      // Initialize position if not set
       if (!position) {
         setPosition({ x: rect.left, y: rect.top });
       }
@@ -151,7 +348,6 @@ export const GlobalAIAssistant: React.FC = () => {
       const newX = e.clientX - dragOffset.x;
       const newY = e.clientY - dragOffset.y;
 
-      // Keep widget within viewport bounds
       const widget = widgetRef.current;
       if (widget) {
         const rect = widget.getBoundingClientRect();
@@ -179,30 +375,17 @@ export const GlobalAIAssistant: React.FC = () => {
   }, [isDragging, dragOffset]);
 
   /**
-   * Get current page context for AI
+   * Send message via WebSocket
    */
-  const getPageContext = useCallback((): string => {
-    const path = location.pathname;
-
-    if (path.includes('/dashboard/student')) return 'student dashboard';
-    if (path.includes('/dashboard/instructor')) return 'instructor dashboard';
-    if (path.includes('/dashboard/org-admin')) return 'organization admin dashboard';
-    if (path.includes('/dashboard/site-admin')) return 'site admin dashboard';
-    if (path.includes('/courses')) return 'courses page';
-    if (path.includes('/labs')) return 'lab environment';
-    if (path.includes('/quizzes')) return 'quizzes page';
-    if (path.includes('/analytics')) return 'analytics dashboard';
-    if (path.includes('/organization')) return 'organization management';
-    if (path.includes('/instructor')) return 'instructor tools';
-
-    return 'Course Creator Platform';
-  }, [location.pathname]);
-
-  /**
-   * Send message to AI backend
-   */
-  const sendMessage = async () => {
+  const sendMessage = useCallback(() => {
     if (!inputMessage.trim() || isLoading) return;
+
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      console.error('[AI Assistant] WebSocket not connected');
+      setConnectionError('Not connected. Reconnecting...');
+      connectWebSocket();
+      return;
+    }
 
     const userMessage: AIMessage = {
       id: `user-${Date.now()}`,
@@ -215,73 +398,15 @@ export const GlobalAIAssistant: React.FC = () => {
     setInputMessage('');
     setIsLoading(true);
 
-    try {
-      const context = {
-        page: getPageContext(),
-        role: user?.role || 'guest',
-        organization: user?.organizationName
-      };
+    // Send message via WebSocket
+    const wsMessage = {
+      type: 'user_message',
+      content: userMessage.content
+    };
 
-      const response = await apiClient.post<{ response?: string; faq_matches?: Array<{question: string; answer: string}>; hints?: string[] }>(
-        '/api/ai/help',
-        {
-          query: userMessage.content,
-          current_page: context.page,
-          user_context: {
-            user_id: user?.id || 'anonymous',
-            username: user?.username || 'User',
-            role: user?.role || 'guest',
-            organization_id: user?.organizationId,
-            organization_name: user?.organizationName,
-            current_page: context.page
-          }
-        }
-      );
-
-      // Build response from API data
-      let responseContent = response.data.response || '';
-
-      // Add FAQ matches if available
-      if (response.data.faq_matches && response.data.faq_matches.length > 0) {
-        if (responseContent) responseContent += '\n\n';
-        responseContent += response.data.faq_matches.map(faq =>
-          `**${faq.question}**\n${faq.answer}`
-        ).join('\n\n');
-      }
-
-      // Add hints if available and no other content
-      if (!responseContent && response.data.hints && response.data.hints.length > 0) {
-        responseContent = response.data.hints.join('\n');
-      }
-
-      // Fallback message
-      if (!responseContent) {
-        responseContent = "I'm here to help! Try asking about courses, navigation, or your dashboard.";
-      }
-
-      const assistantMessage: AIMessage = {
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        content: responseContent,
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
-    } catch (error) {
-      console.error('AI Assistant error:', error);
-
-      const errorMessage: AIMessage = {
-        id: `error-${Date.now()}`,
-        role: 'assistant',
-        content: 'I apologize, but I encountered an error processing your request. Please try again or contact support if the issue persists.',
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    wsRef.current.send(JSON.stringify(wsMessage));
+    console.log('[AI Assistant] Sent message:', userMessage.content.substring(0, 50));
+  }, [inputMessage, isLoading, connectWebSocket]);
 
   /**
    * Handle keyboard shortcuts
@@ -312,12 +437,15 @@ export const GlobalAIAssistant: React.FC = () => {
   };
 
   /**
-   * Clear conversation
+   * Clear conversation via WebSocket
    */
-  const clearConversation = () => {
+  const clearConversation = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: 'clear_history' }));
+    }
     setMessages([]);
     sessionStorage.removeItem('ai_assistant_messages');
-  };
+  }, []);
 
   /**
    * Format timestamp
@@ -370,6 +498,7 @@ export const GlobalAIAssistant: React.FC = () => {
             <div className={styles.headerTitle}>
               <span className={styles.aiIcon}>🤖</span>
               <span>AI Assistant</span>
+              {isConnected && <span className={styles.connectedDot} title="Connected to AI Pipeline">●</span>}
             </div>
             <div className={styles.headerActions}>
               <button
@@ -398,14 +527,29 @@ export const GlobalAIAssistant: React.FC = () => {
 
           {!isMinimized && (
             <>
+              {/* Connection Status */}
+              {connectionError && (
+                <div className={styles.connectionError}>
+                  {connectionError}
+                </div>
+              )}
+
+              {/* Connecting State */}
+              {!isConnected && !connectionError && (
+                <div className={styles.connecting}>
+                  <span className={styles.connectingSpinner}></span>
+                  Connecting to AI Pipeline...
+                </div>
+              )}
+
               {/* Messages */}
               <div className={styles.messagesContainer}>
-                {messages.length === 0 && (
+                {messages.length === 0 && isConnected && (
                   <div className={styles.emptyState}>
                     <div className={styles.emptyIcon}>💬</div>
                     <p className={styles.emptyTitle}>Hi! I'm your AI Assistant</p>
                     <p className={styles.emptyHint}>
-                      I can help you navigate the platform, answer questions about courses, and provide guidance.
+                      I use the full AI pipeline with NLP, Knowledge Graph, and RAG to provide intelligent, context-aware responses.
                     </p>
 
                     {/* Quick Actions */}
@@ -439,6 +583,11 @@ export const GlobalAIAssistant: React.FC = () => {
                     <div className={styles.messageContent}>
                       {message.content}
                     </div>
+                    {message.functionCall && (
+                      <div className={styles.functionCallBadge}>
+                        {message.actionSuccess ? '✅' : '❌'} Action: {message.functionCall}
+                      </div>
+                    )}
                   </div>
                 ))}
 
@@ -466,15 +615,15 @@ export const GlobalAIAssistant: React.FC = () => {
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Ask me anything... (Ctrl+Enter to send)"
+                  placeholder={isConnected ? "Ask me anything... (Ctrl+Enter to send)" : "Connecting..."}
                   rows={2}
-                  disabled={isLoading}
+                  disabled={isLoading || !isConnected}
                 />
                 <Button
                   variant="primary"
                   size="small"
                   onClick={sendMessage}
-                  disabled={!inputMessage.trim() || isLoading}
+                  disabled={!inputMessage.trim() || isLoading || !isConnected}
                 >
                   Send
                 </Button>

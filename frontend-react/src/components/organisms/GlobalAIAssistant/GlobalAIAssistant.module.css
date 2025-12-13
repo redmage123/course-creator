@@ -85,6 +85,18 @@
   font-weight: 600;
 }
 
+.connectedDot {
+  color: #22c55e;
+  font-size: 10px;
+  margin-left: 4px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 .aiIcon {
   font-size: 20px;
 }
@@ -111,6 +123,41 @@
 
 .headerBtn:hover {
   background: rgba(255, 255, 255, 0.2);
+}
+
+/* Connection Status */
+.connectionError {
+  background: #fef2f2;
+  color: #dc2626;
+  padding: 8px 16px;
+  font-size: 13px;
+  text-align: center;
+  border-bottom: 1px solid #fecaca;
+}
+
+.connecting {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #f0f9ff;
+  color: #0369a1;
+  font-size: 13px;
+  border-bottom: 1px solid #bae6fd;
+}
+
+.connectingSpinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #bae6fd;
+  border-top-color: #0369a1;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 /* Messages Container */
@@ -244,6 +291,18 @@
   background: #f3f4f6;
   color: #1f2937;
   border-radius: 12px 12px 12px 4px;
+}
+
+/* Function Call Badge */
+.functionCallBadge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 10px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  font-size: 12px;
+  color: #166534;
 }
 
 /* Loading Indicator */
