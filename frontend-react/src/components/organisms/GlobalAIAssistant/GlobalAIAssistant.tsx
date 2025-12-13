@@ -222,22 +222,47 @@ export const GlobalAIAssistant: React.FC = () => {
         organization: user?.organizationName
       };
 
-      const response = await apiClient.post<AIAssistantResponse>(
-        '/api/v1/ai-assistant/chat',
+      const response = await apiClient.post<{ response?: string; faq_matches?: Array<{question: string; answer: string}>; hints?: string[] }>(
+        '/api/ai/help',
         {
-          message: userMessage.content,
-          context,
-          history: messages.slice(-10).map(m => ({
-            role: m.role,
-            content: m.content
-          }))
+          query: userMessage.content,
+          current_page: context.page,
+          user_context: {
+            user_id: user?.id || 'anonymous',
+            username: user?.username || 'User',
+            role: user?.role || 'guest',
+            organization_id: user?.organizationId,
+            organization_name: user?.organizationName,
+            current_page: context.page
+          }
         }
       );
+
+      // Build response from API data
+      let responseContent = response.data.response || '';
+
+      // Add FAQ matches if available
+      if (response.data.faq_matches && response.data.faq_matches.length > 0) {
+        if (responseContent) responseContent += '\n\n';
+        responseContent += response.data.faq_matches.map(faq =>
+          `**${faq.question}**\n${faq.answer}`
+        ).join('\n\n');
+      }
+
+      // Add hints if available and no other content
+      if (!responseContent && response.data.hints && response.data.hints.length > 0) {
+        responseContent = response.data.hints.join('\n');
+      }
+
+      // Fallback message
+      if (!responseContent) {
+        responseContent = "I'm here to help! Try asking about courses, navigation, or your dashboard.";
+      }
 
       const assistantMessage: AIMessage = {
         id: `assistant-${Date.now()}`,
         role: 'assistant',
-        content: response.data.response,
+        content: responseContent,
         timestamp: new Date()
       };
 
