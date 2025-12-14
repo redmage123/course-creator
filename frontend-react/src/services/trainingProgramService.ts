@@ -86,6 +86,8 @@ export interface TrainingProgramFilters {
   instructor_id?: string;
   difficulty_level?: 'beginner' | 'intermediate' | 'advanced';
   published?: boolean;
+  /** Backend parameter for filtering published status (use this for API calls) */
+  published_only?: boolean;
   page?: number;
   limit?: number;
 }
@@ -117,6 +119,8 @@ class TrainingProgramService {
       if (filters.instructor_id) params.append('instructor_id', filters.instructor_id);
       if (filters.difficulty_level) params.append('difficulty_level', filters.difficulty_level);
       if (filters.published !== undefined) params.append('published', String(filters.published));
+      // Backend expects published_only parameter for filtering published status
+      if (filters.published_only !== undefined) params.append('published_only', String(filters.published_only));
       if (filters.page) params.append('page', String(filters.page));
       if (filters.limit) params.append('limit', String(filters.limit));
     }
@@ -185,16 +189,22 @@ class TrainingProgramService {
 
   /**
    * Get training programs by instructor
+   *
+   * Note: Instructors should see ALL their programs (published and unpublished),
+   * so we pass published_only=false to the backend.
    */
   async getInstructorPrograms(instructorId: string): Promise<TrainingProgramListResponse> {
-    return this.getTrainingPrograms({ instructor_id: instructorId });
+    return this.getTrainingPrograms({ instructor_id: instructorId, published_only: false });
   }
 
   /**
    * Get training programs by organization
+   *
+   * Note: Org admins should see ALL programs (published and unpublished),
+   * so we pass published_only=false to the backend.
    */
   async getOrganizationPrograms(organizationId: string): Promise<TrainingProgramListResponse> {
-    return this.getTrainingPrograms({ organization_id: organizationId });
+    return this.getTrainingPrograms({ organization_id: organizationId, published_only: false });
   }
 }
 
