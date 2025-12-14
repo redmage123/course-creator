@@ -87,6 +87,33 @@ class TrainingProgramPage(BasePage):
         """Wait for page to be fully loaded."""
         self.waits.wait_for_loading_complete()
         self.waits.wait_for_react_query_idle()
+        self._dismiss_modals()
+
+    def _dismiss_modals(self) -> None:
+        """Dismiss any modals (like AI welcome modal) that might be blocking."""
+        import time
+
+        modal_close_selectors = [
+            (By.XPATH, "//button[text()='×']"),
+            (By.XPATH, "//button[normalize-space()='×']"),
+            (By.XPATH, "//button[contains(., 'Maybe Later')]"),
+            (By.XPATH, "//button[contains(., 'Close')]"),
+            (By.XPATH, "//button[contains(., \"Don't show\")]"),
+            (By.CSS_SELECTOR, ".modal-close"),
+            (By.CSS_SELECTOR, "[aria-label='Close']"),
+            (By.CSS_SELECTOR, "[aria-label='close']"),
+        ]
+
+        for selector in modal_close_selectors:
+            try:
+                buttons = self.driver.find_elements(*selector)
+                for btn in buttons:
+                    if btn.is_displayed():
+                        logger.debug(f"Dismissing modal with button: {btn.text}")
+                        btn.click()
+                        time.sleep(0.3)
+            except:
+                pass
 
     # ========================================================================
     # LIST VIEW METHODS
@@ -237,29 +264,48 @@ class TrainingProgramPage(BasePage):
         """
         Click Create Program button.
 
+        The instructor programs page has these buttons:
+        - "Create New Program" (in header when programs exist)
+        - "Create First Program" (in empty state when no programs)
+
+        NOTE: These buttons have nested <span> elements, so text() doesn't work.
+        We must use normalize-space() or . (full text content) in XPath.
+
         Returns:
             True if button was clicked
         """
         create_selectors = [
+            # Match using normalize-space (handles nested spans)
+            (By.XPATH, "//button[normalize-space()='Create New Program']"),
+            (By.XPATH, "//button[normalize-space()='Create First Program']"),
+            # Match using . (full text content)
+            (By.XPATH, "//button[.='Create New Program']"),
+            (By.XPATH, "//button[.='Create First Program']"),
+            # Partial matches
+            (By.XPATH, "//button[contains(., 'Create New')]"),
+            (By.XPATH, "//button[contains(., 'Create First')]"),
+            (By.XPATH, "//button[contains(., 'Create Program')]"),
+            # Generic matches
             (By.CSS_SELECTOR, "[data-testid='create-program']"),
-            (By.XPATH, "//button[contains(text(), 'Create')]"),
-            (By.XPATH, "//button[contains(text(), 'New')]"),
-            (By.XPATH, "//a[contains(text(), 'Create')]"),
+            (By.XPATH, "//button[contains(., 'Create')]"),
+            (By.XPATH, "//a[contains(., 'Create')]"),
             (By.CSS_SELECTOR, ".create-button"),
         ]
 
         for selector in create_selectors:
             try:
-                button = WebDriverWait(self.driver, 10).until(
+                button = WebDriverWait(self.driver, 5).until(
                     EC.element_to_be_clickable(selector)
                 )
                 if button.is_displayed():
+                    logger.info(f"Found create button with selector: {selector}")
                     button.click()
                     self._wait_for_page_ready()
                     return True
             except:
                 continue
 
+        logger.warning("Could not find create program button")
         return False
 
     def has_empty_state(self) -> bool:
@@ -371,14 +417,21 @@ class TrainingProgramPage(BasePage):
         """
         Submit the program form.
 
+        The submit button on the create form is "Create Program" with nested span.
+
         Returns:
             True if form was submitted successfully
         """
         submit_selectors = [
+            # Specific to create form - "Create Program" button
+            (By.XPATH, "//button[normalize-space()='Create Program']"),
+            (By.XPATH, "//button[.='Create Program']"),
+            (By.XPATH, "//button[contains(., 'Create Program')]"),
+            # Generic submit button
             (By.CSS_SELECTOR, "button[type='submit']"),
-            (By.XPATH, "//button[contains(text(), 'Save')]"),
-            (By.XPATH, "//button[contains(text(), 'Create')]"),
-            (By.XPATH, "//button[contains(text(), 'Submit')]"),
+            # Other possible button texts (using . for nested spans)
+            (By.XPATH, "//button[contains(., 'Save')]"),
+            (By.XPATH, "//button[contains(., 'Submit')]"),
         ]
 
         for selector in submit_selectors:
@@ -387,12 +440,14 @@ class TrainingProgramPage(BasePage):
                     EC.element_to_be_clickable(selector)
                 )
                 if button.is_displayed():
+                    logger.info(f"Found submit button with selector: {selector}")
                     button.click()
                     self._wait_for_page_ready()
                     return True
             except:
                 continue
 
+        logger.warning("Could not find submit button")
         return False
 
     def cancel_form(self) -> None:
