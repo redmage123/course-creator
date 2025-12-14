@@ -76,7 +76,7 @@ class CourseCreateRequest(BaseModel):
     - Example: TechCorp creates "Python for Data Science" in their "Data Analytics" track
     """
     title: str = Field(..., min_length=1, max_length=200)
-    description: str = Field(..., min_length=1, max_length=2000)
+    description: str = Field(default="", max_length=2000)
     category: Optional[str] = None
     difficulty_level: str = Field(default="beginner", pattern="^(beginner|intermediate|advanced)$")
     estimated_duration: Optional[int] = Field(None, ge=1)

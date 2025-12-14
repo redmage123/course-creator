@@ -275,10 +275,8 @@ class Course:
         if len(self.title) > 200:
             raise ValueError("Course title cannot exceed 200 characters")
 
-        if not self.description or len(self.description.strip()) == 0:
-            raise ValueError("Course description cannot be empty")
-
-        if len(self.description) > 2000:
+        # Description is optional but has max length if provided
+        if self.description and len(self.description) > 2000:
             raise ValueError("Course description cannot exceed 2000 characters")
 
         if not self.instructor_id:
