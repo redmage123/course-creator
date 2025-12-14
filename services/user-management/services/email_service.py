@@ -21,16 +21,19 @@ class EmailService:
     def __init__(self, smtp_config: Optional[Dict] = None):
         """
         Initialize email service with SMTP configuration.
-        
+
         Args:
             smtp_config: Dictionary with SMTP settings (host, port, username, password)
         """
+        import os
         self.smtp_config = smtp_config or {
-            'host': 'localhost',
-            'port': 1025,  # Default for development (mailhog/similar)
-            'username': None,
-            'password': None,
-            'use_tls': False
+            'host': os.getenv('SMTP_HOST', 'localhost'),
+            'port': int(os.getenv('SMTP_PORT', '25')),  # Default to local postfix
+            'username': os.getenv('SMTP_USER'),
+            'password': os.getenv('SMTP_PASSWORD'),
+            'use_tls': os.getenv('SMTP_USE_TLS', 'false').lower() == 'true',
+            'from_email': os.getenv('FROM_EMAIL', 'noreply@techuni.ai'),
+            'development_mode': os.getenv('EMAIL_DEV_MODE', 'false').lower() == 'true'
         }
     
     async def send_enrollment_notification(
@@ -141,27 +144,34 @@ class EmailService:
     
     async def _send_email(self, msg: MIMEMultipart) -> None:
         """
-        Send email using SMTP configuration.
-        
+        Send email using SMTP configuration (postfix on localhost by default).
+
         Args:
             msg: Email message to send
-            
+
         Raises:
             Exception: If email sending fails
         """
         # For development/testing, we'll log the email instead of actually sending
-        # In production, this would use real SMTP
-        if self.smtp_config.get('development_mode', True):
+        if self.smtp_config.get('development_mode', False):
             logger.info(f"[DEV MODE] Email would be sent:")
             logger.info(f"To: {msg['To']}")
             logger.info(f"Subject: {msg['Subject']}")
             logger.info(f"Body preview: {str(msg.get_payload()[0])[:200]}...")
             return
-        
-        # Real SMTP sending (commented out for development)
-        # with smtplib.SMTP(self.smtp_config['host'], self.smtp_config['port']) as server:
-        #     if self.smtp_config.get('use_tls'):
-        #         server.starttls()
-        #     if self.smtp_config.get('username'):
-        #         server.login(self.smtp_config['username'], self.smtp_config['password'])
-        #     server.send_message(msg)
+
+        # Send via SMTP (postfix on localhost:25 by default)
+        try:
+            with smtplib.SMTP(self.smtp_config['host'], self.smtp_config['port']) as server:
+                if self.smtp_config.get('use_tls'):
+                    server.starttls()
+                if self.smtp_config.get('username') and self.smtp_config.get('password'):
+                    server.login(self.smtp_config['username'], self.smtp_config['password'])
+                server.send_message(msg)
+                logger.info(f"Email sent successfully to {msg['To']}")
+        except smtplib.SMTPException as e:
+            logger.error(f"SMTP error sending email to {msg['To']}: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Error sending email to {msg['To']}: {e}")
+            raise
