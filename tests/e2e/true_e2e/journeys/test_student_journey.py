@@ -75,7 +75,7 @@ class TestStudentJourney:
         # Verify user exists in database
         user = db_verifier.get_user_by_email(student.email)
         assert user is not None, "Student should exist in database"
-        assert user.role_name == 'student', "User role should be student"
+        assert user.role == 'student', "User role should be student"
 
     def test_student_sees_enrolled_courses(
         self,

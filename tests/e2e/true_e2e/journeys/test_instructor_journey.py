@@ -72,7 +72,7 @@ class TestInstructorJourney:
         # Verify user exists in database
         user = db_verifier.get_user_by_email(instructor.email)
         assert user is not None, "Instructor should exist in database"
-        assert user.role_name == 'instructor', "User role should be instructor"
+        assert user.role == 'instructor', "User role should be instructor"
 
     def test_instructor_sees_all_programs_including_unpublished(
         self,

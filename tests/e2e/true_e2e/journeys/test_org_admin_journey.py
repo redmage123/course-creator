@@ -70,7 +70,7 @@ class TestOrgAdminJourney:
         # Verify user exists in database
         user = db_verifier.get_user_by_email(org_admin.email)
         assert user is not None, "Org admin should exist in database"
-        assert user.role_name == 'organization_admin', "User role should be organization_admin"
+        assert user.role == 'organization_admin', "User role should be organization_admin"
 
     def test_org_admin_sees_all_programs_including_unpublished(
         self,

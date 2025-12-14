@@ -51,7 +51,7 @@ class UserRecord:
     id: str
     email: str
     username: str
-    role_name: str
+    role: str  # Column is 'role' not 'role_name'
     organization_id: Optional[str]
     is_active: bool
     created_at: datetime
@@ -61,10 +61,10 @@ class UserRecord:
 class EnrollmentRecord:
     """Represents an enrollment database record."""
     id: str
-    course_id: str
+    course_instance_id: str  # References course_instances, not courses directly
     student_id: str
     status: str
-    created_at: datetime
+    enrollment_date: datetime  # Column is 'enrollment_date' not 'created_at'
 
 
 @dataclass
@@ -102,7 +102,7 @@ class DatabaseVerifier:
         if db_url:
             import urllib.parse
             parsed = urllib.parse.urlparse(db_url)
-            return psycopg2.connect(
+            conn = psycopg2.connect(
                 host=parsed.hostname,
                 port=parsed.port or 5432,
                 user=parsed.username,
@@ -111,14 +111,22 @@ class DatabaseVerifier:
                 cursor_factory=RealDictCursor
             )
         else:
-            return psycopg2.connect(
+            # Use default connection parameters matching docker-compose.yml
+            conn = psycopg2.connect(
                 host=os.getenv('DB_HOST', 'localhost'),
                 port=int(os.getenv('DB_PORT', '5433')),
-                user=os.getenv('DB_USER', 'course_user'),
-                password=os.getenv('DB_PASSWORD', 'course_pass'),
+                user=os.getenv('DB_USER', 'postgres'),
+                password=os.getenv('DB_PASSWORD', 'postgres_password'),
                 database=os.getenv('DB_NAME', 'course_creator'),
                 cursor_factory=RealDictCursor
             )
+
+        # Set search_path to course_creator schema where tables reside
+        with conn.cursor() as cursor:
+            cursor.execute("SET search_path TO course_creator, public")
+        conn.commit()
+
+        return conn
 
     def _execute(self, query: str, params: tuple = None) -> List[Dict]:
         """Execute a query and return all results."""
@@ -285,7 +293,7 @@ class DatabaseVerifier:
             UserRecord or None if not found
         """
         query = """
-            SELECT id, email, username, role_name, organization_id,
+            SELECT id, email, username, role, organization_id,
                    is_active, created_at
             FROM users
             WHERE id = %s
@@ -306,7 +314,7 @@ class DatabaseVerifier:
             UserRecord or None if not found
         """
         query = """
-            SELECT id, email, username, role_name, organization_id,
+            SELECT id, email, username, role, organization_id,
                    is_active, created_at
             FROM users
             WHERE email = %s
@@ -319,30 +327,30 @@ class DatabaseVerifier:
     def get_users_for_organization(
         self,
         organization_id: str,
-        role: str = None
+        role_filter: str = None
     ) -> List[UserRecord]:
         """
         Get all users for an organization.
 
         Args:
             organization_id: Organization UUID
-            role: Optional role filter
+            role_filter: Optional role filter
 
         Returns:
             List of UserRecord objects
         """
-        if role:
+        if role_filter:
             query = """
-                SELECT id, email, username, role_name, organization_id,
+                SELECT id, email, username, role, organization_id,
                        is_active, created_at
                 FROM users
-                WHERE organization_id = %s AND role_name = %s
+                WHERE organization_id = %s AND role = %s
                 ORDER BY created_at DESC
             """
-            params = (organization_id, role)
+            params = (organization_id, role_filter)
         else:
             query = """
-                SELECT id, email, username, role_name, organization_id,
+                SELECT id, email, username, role, organization_id,
                        is_active, created_at
                 FROM users
                 WHERE organization_id = %s
@@ -361,26 +369,26 @@ class DatabaseVerifier:
     # ENROLLMENT QUERIES
     # ========================================================================
 
-    def get_enrollments_for_course(
+    def get_enrollments_for_course_instance(
         self,
-        course_id: str
+        course_instance_id: str
     ) -> List[EnrollmentRecord]:
         """
-        Get all enrollments for a course.
+        Get all enrollments for a course instance.
 
         Args:
-            course_id: Course UUID
+            course_instance_id: Course Instance UUID
 
         Returns:
             List of EnrollmentRecord objects
         """
         query = """
-            SELECT id, course_id, student_id, status, created_at
-            FROM enrollments
-            WHERE course_id = %s
-            ORDER BY created_at DESC
+            SELECT id, course_instance_id, student_id, status, enrollment_date
+            FROM student_course_enrollments
+            WHERE course_instance_id = %s
+            ORDER BY enrollment_date DESC
         """
-        results = self._execute(query, (course_id,))
+        results = self._execute(query, (course_instance_id,))
         return [EnrollmentRecord(**r) for r in results]
 
     def get_enrollments_for_student(
@@ -397,24 +405,24 @@ class DatabaseVerifier:
             List of EnrollmentRecord objects
         """
         query = """
-            SELECT id, course_id, student_id, status, created_at
-            FROM enrollments
+            SELECT id, course_instance_id, student_id, status, enrollment_date
+            FROM student_course_enrollments
             WHERE student_id = %s
-            ORDER BY created_at DESC
+            ORDER BY enrollment_date DESC
         """
         results = self._execute(query, (student_id,))
         return [EnrollmentRecord(**r) for r in results]
 
     def get_enrollment_count(
         self,
-        course_id: str = None,
+        course_instance_id: str = None,
         student_id: str = None
     ) -> int:
         """
         Get count of enrollments matching criteria.
 
         Args:
-            course_id: Filter by course
+            course_instance_id: Filter by course instance
             student_id: Filter by student
 
         Returns:
@@ -423,31 +431,31 @@ class DatabaseVerifier:
         conditions = []
         params = []
 
-        if course_id:
-            conditions.append("course_id = %s")
-            params.append(course_id)
+        if course_instance_id:
+            conditions.append("course_instance_id = %s")
+            params.append(course_instance_id)
 
         if student_id:
             conditions.append("student_id = %s")
             params.append(student_id)
 
         where_clause = " AND ".join(conditions) if conditions else "1=1"
-        query = f"SELECT COUNT(*) as count FROM enrollments WHERE {where_clause}"
+        query = f"SELECT COUNT(*) as count FROM student_course_enrollments WHERE {where_clause}"
 
         result = self._execute_one(query, tuple(params))
         return result['count'] if result else 0
 
     def verify_enrollment_exists(
         self,
-        course_id: str,
+        course_instance_id: str,
         student_id: str
     ) -> bool:
         """Check if enrollment exists."""
         query = """
-            SELECT id FROM enrollments
-            WHERE course_id = %s AND student_id = %s
+            SELECT id FROM student_course_enrollments
+            WHERE course_instance_id = %s AND student_id = %s
         """
-        result = self._execute_one(query, (course_id, student_id))
+        result = self._execute_one(query, (course_instance_id, student_id))
         return result is not None
 
     # ========================================================================
@@ -537,19 +545,19 @@ class DatabaseVerifier:
     def compare_enrollment_counts(
         self,
         ui_count: int,
-        course_id: str
+        course_instance_id: str
     ) -> Dict[str, Any]:
         """
         Compare UI enrollment count with database count.
 
         Args:
             ui_count: Number of enrollments shown in UI
-            course_id: Course to check
+            course_instance_id: Course instance to check
 
         Returns:
             Comparison result with match status and details
         """
-        db_count = self.get_enrollment_count(course_id=course_id)
+        db_count = self.get_enrollment_count(course_instance_id=course_instance_id)
 
         return {
             'match': ui_count == db_count,

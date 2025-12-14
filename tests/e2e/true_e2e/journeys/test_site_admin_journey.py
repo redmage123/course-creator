@@ -64,7 +64,7 @@ class TestSiteAdminJourney:
         # Verify user exists in database
         user = db_verifier.get_user_by_email(site_admin.email)
         assert user is not None, "Site admin should exist in database"
-        assert user.role_name == 'site_admin', "User role should be site_admin"
+        assert user.role == 'site_admin', "User role should be site_admin"
 
     def test_site_admin_can_view_all_organizations(
         self,

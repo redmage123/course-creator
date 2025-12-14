@@ -25,6 +25,24 @@ import pytest
 from typing import Generator
 from uuid import uuid4
 
+# ============================================================================
+# DATABASE CONFIGURATION FOR TRUE E2E TESTS
+# ============================================================================
+# Override any incorrect DATABASE_URL settings from parent conftest files.
+# True E2E tests use the main database (not test database) because they
+# test against the real running application.
+
+# Clear any test database settings that would conflict
+if 'TEST_DATABASE_URL' in os.environ:
+    del os.environ['TEST_DATABASE_URL']
+
+# Set correct database URL for the running platform
+# Port 5433 is the externally-mapped postgres port from docker-compose.yml
+os.environ['DATABASE_URL'] = (
+    'postgresql://postgres:postgres_password@localhost:5433/course_creator'
+    '?options=-csearch_path=course_creator,public'
+)
+
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -38,6 +56,41 @@ from tests.e2e.true_e2e.data.data_seeder import DataSeeder
 from tests.e2e.true_e2e.data.database_verifier import DatabaseVerifier
 
 logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# DATABASE OVERRIDE FIXTURE
+# ============================================================================
+# The parent tests/conftest.py has an autouse fixture that sets DATABASE_URL
+# to a test database. We need to override this for true E2E tests which
+# connect to the real running platform database.
+
+@pytest.fixture(autouse=True, scope="function")
+def override_database_url_for_true_e2e():
+    """
+    Override DATABASE_URL for true E2E tests.
+
+    This runs AFTER the parent conftest's setup_test_environment fixture
+    but BEFORE our test fixtures that need database access.
+    """
+    # Store original value
+    original_url = os.environ.get('DATABASE_URL')
+
+    # Set correct database URL for the running platform
+    os.environ['DATABASE_URL'] = (
+        'postgresql://postgres:postgres_password@localhost:5433/course_creator'
+        '?options=-csearch_path=course_creator,public'
+    )
+
+    # Clear test database URL if set
+    if 'TEST_DATABASE_URL' in os.environ:
+        del os.environ['TEST_DATABASE_URL']
+
+    yield
+
+    # Restore original (optional - for cleanliness)
+    if original_url:
+        os.environ['DATABASE_URL'] = original_url
 
 
 # ============================================================================

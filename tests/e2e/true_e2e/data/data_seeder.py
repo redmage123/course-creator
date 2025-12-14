@@ -64,10 +64,20 @@ class SeededCourse:
 
 
 @dataclass
+class SeededCourseInstance:
+    """Represents a seeded course instance."""
+    id: str
+    course_id: str
+    organization_id: Optional[str]
+    instructor_id: str
+    instance_name: str
+
+
+@dataclass
 class SeededEnrollment:
     """Represents a seeded enrollment."""
     id: str
-    course_id: str
+    course_instance_id: str
     student_id: str
 
 
@@ -92,6 +102,7 @@ class DataSeeder:
             'organizations': [],
             'users': [],
             'courses': [],
+            'course_instances': [],
             'enrollments': [],
             'projects': [],
             'tracks': [],
@@ -115,7 +126,7 @@ class DataSeeder:
             # Format: postgresql://user:password@host:port/database
             import urllib.parse
             parsed = urllib.parse.urlparse(db_url)
-            return psycopg2.connect(
+            conn = psycopg2.connect(
                 host=parsed.hostname,
                 port=parsed.port or 5432,
                 user=parsed.username,
@@ -124,15 +135,22 @@ class DataSeeder:
                 cursor_factory=RealDictCursor
             )
         else:
-            # Use default test connection parameters
-            return psycopg2.connect(
+            # Use default connection parameters matching docker-compose.yml
+            conn = psycopg2.connect(
                 host=os.getenv('DB_HOST', 'localhost'),
                 port=int(os.getenv('DB_PORT', '5433')),
-                user=os.getenv('DB_USER', 'course_user'),
-                password=os.getenv('DB_PASSWORD', 'course_pass'),
+                user=os.getenv('DB_USER', 'postgres'),
+                password=os.getenv('DB_PASSWORD', 'postgres_password'),
                 database=os.getenv('DB_NAME', 'course_creator'),
                 cursor_factory=RealDictCursor
             )
+
+        # Set search_path to course_creator schema where tables reside
+        with conn.cursor() as cursor:
+            cursor.execute("SET search_path TO course_creator, public")
+        conn.commit()
+
+        return conn
 
     def _hash_password(self, password: str) -> str:
         """Hash password using bcrypt (matching application implementation)."""
@@ -234,23 +252,27 @@ class DataSeeder:
         """
         user_id = str(uuid4())
         username = username or email.split('@')[0]
-        password_hash = self._hash_password(password)
+        hashed_password = self._hash_password(password)
         first_name = first_name or self.test_prefix
         last_name = last_name or "User"
+        full_name = f"{first_name} {last_name}"
 
+        # Column names match actual schema:
+        # - hashed_password (not password_hash)
+        # - role (not role_name)
         query = """
             INSERT INTO users (
-                id, email, username, password_hash, role_name,
-                organization_id, first_name, last_name,
+                id, email, username, hashed_password, role,
+                organization_id, first_name, last_name, full_name,
                 is_active, created_at, updated_at
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            RETURNING id, email, username, role_name, organization_id
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, email, username, role, organization_id
         """
         now = datetime.utcnow()
         result = self._insert(query, (
-            user_id, email, username, password_hash, role,
-            organization_id, first_name, last_name,
+            user_id, email, username, hashed_password, role,
+            organization_id, first_name, last_name, full_name,
             True, now, now
         ))
 
@@ -261,7 +283,7 @@ class DataSeeder:
             id=result['id'],
             email=result['email'],
             username=result['username'],
-            role=result['role_name'],
+            role=result['role'],
             organization_id=result['organization_id'],
             password=password  # Return plaintext for test login
         )
@@ -371,44 +393,105 @@ class DataSeeder:
         )
 
     # ========================================================================
+    # COURSE INSTANCE SEEDING
+    # ========================================================================
+
+    def create_course_instance(
+        self,
+        course_id: str,
+        instructor_id: str,
+        organization_id: str = None,
+        instance_name: str = None,
+        start_date: datetime = None,
+        end_date: datetime = None
+    ) -> SeededCourseInstance:
+        """
+        Create a course instance (specific offering of a course).
+
+        Args:
+            course_id: Parent course ID
+            instructor_id: Instructor user ID
+            organization_id: Associated organization ID
+            instance_name: Instance name (auto-generated if not provided)
+            start_date: Course start date
+            end_date: Course end date
+
+        Returns:
+            SeededCourseInstance with created data
+        """
+        from datetime import timedelta
+
+        instance_id = str(uuid4())
+        instance_name = instance_name or f"{self.test_prefix}_instance"
+        now = datetime.utcnow()
+        start_date = start_date or now.date()
+        end_date = end_date or (now + timedelta(days=90)).date()
+
+        query = """
+            INSERT INTO course_instances (
+                id, course_id, organization_id, instance_name,
+                instructor_id, start_date, end_date, is_active, created_at
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING id, course_id, organization_id, instructor_id, instance_name
+        """
+        result = self._insert(query, (
+            instance_id, course_id, organization_id, instance_name,
+            instructor_id, start_date, end_date, True, now
+        ))
+
+        self._seeded_entities['course_instances'].append(instance_id)
+        logger.info(f"Seeded course instance: {instance_name}")
+
+        return SeededCourseInstance(
+            id=result['id'],
+            course_id=result['course_id'],
+            organization_id=result['organization_id'],
+            instructor_id=result['instructor_id'],
+            instance_name=result['instance_name']
+        )
+
+    # ========================================================================
     # ENROLLMENT SEEDING
     # ========================================================================
 
     def create_enrollment(
         self,
-        course_id: str,
+        course_instance_id: str,
         student_id: str
     ) -> SeededEnrollment:
         """
         Create a course enrollment.
 
+        Note: Enrollments are linked to course_instances, not courses directly.
+
         Args:
-            course_id: Course ID
+            course_instance_id: Course instance ID
             student_id: Student user ID
 
         Returns:
             SeededEnrollment with created data
         """
         enrollment_id = str(uuid4())
+        now = datetime.utcnow()
 
         query = """
-            INSERT INTO enrollments (
-                id, course_id, student_id, status, created_at, updated_at
+            INSERT INTO student_course_enrollments (
+                id, course_instance_id, student_id, enrollment_date, status
             )
-            VALUES (%s, %s, %s, %s, %s, %s)
-            RETURNING id, course_id, student_id
+            VALUES (%s, %s, %s, %s, %s)
+            RETURNING id, course_instance_id, student_id
         """
-        now = datetime.utcnow()
         result = self._insert(query, (
-            enrollment_id, course_id, student_id, 'active', now, now
+            enrollment_id, course_instance_id, student_id, now, 'active'
         ))
 
         self._seeded_entities['enrollments'].append(enrollment_id)
-        logger.info(f"Seeded enrollment: student {student_id} in course {course_id}")
+        logger.info(f"Seeded enrollment: student {student_id} in instance {course_instance_id}")
 
         return SeededEnrollment(
             id=result['id'],
-            course_id=result['course_id'],
+            course_instance_id=result['course_instance_id'],
             student_id=result['student_id']
         )
 
@@ -429,6 +512,7 @@ class DataSeeder:
         - 2 Instructors
         - 3 Students
         - 2 Courses (1 published, 1 unpublished)
+        - Course instances for published course
         - Enrollments for all students
 
         Returns:
@@ -467,11 +551,19 @@ class DataSeeder:
             is_published=False
         )
 
-        # Enroll students in published course
+        # Create course instance for the published course
+        course_instance = self.create_course_instance(
+            course_id=published_course.id,
+            instructor_id=instructor1.id,
+            organization_id=org.id,
+            instance_name=f"{self.test_prefix}_Current Instance"
+        )
+
+        # Enroll students in the course instance
         enrollments = []
         for student in students:
             enrollments.append(self.create_enrollment(
-                published_course.id,
+                course_instance.id,
                 student.id
             ))
 
@@ -481,6 +573,7 @@ class DataSeeder:
             'instructors': [instructor1, instructor2],
             'students': students,
             'courses': [published_course, unpublished_course],
+            'course_instances': [course_instance],
             'enrollments': enrollments,
         }
 
@@ -499,8 +592,14 @@ class DataSeeder:
             # Delete in reverse order of dependencies
             for enrollment_id in self._seeded_entities['enrollments']:
                 self._execute(
-                    "DELETE FROM enrollments WHERE id = %s",
+                    "DELETE FROM student_course_enrollments WHERE id = %s",
                     (enrollment_id,)
+                )
+
+            for instance_id in self._seeded_entities['course_instances']:
+                self._execute(
+                    "DELETE FROM course_instances WHERE id = %s",
+                    (instance_id,)
                 )
 
             for course_id in self._seeded_entities['courses']:
@@ -533,6 +632,7 @@ class DataSeeder:
                 'organizations': [],
                 'users': [],
                 'courses': [],
+                'course_instances': [],
                 'enrollments': [],
                 'projects': [],
                 'tracks': [],
