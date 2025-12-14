@@ -29,15 +29,22 @@ class TrainingProgramPage(BasePage):
     - Program detail view
     - Program creation form
     - Program editing
+
+    NOTE: CSS Modules are used in the frontend, so class names are hashed.
+    We use robust selectors based on semantic structure rather than class names.
     """
 
-    # List view locators
-    PROGRAM_LIST = (By.CSS_SELECTOR, ".program-list, [data-testid='program-list']")
-    PROGRAM_CARDS = (By.CSS_SELECTOR, ".program-card, .course-card, [data-testid='program-card']")
-    PROGRAM_TITLE = (By.CSS_SELECTOR, ".program-title, .course-title, .card-title, h3")
-    PROGRAM_STATUS_BADGE = (By.CSS_SELECTOR, ".status-badge, [data-testid='status']")
-    CREATE_BUTTON = (By.CSS_SELECTOR, "[data-testid='create-program'], .create-button")
-    FILTER_DROPDOWN = (By.CSS_SELECTOR, "[data-testid='filter'], .filter-dropdown")
+    # List view locators - using semantic structure instead of hashed class names
+    # Programs are displayed in cards with links to /courses/{id}
+    PROGRAM_LIST = (By.CSS_SELECTOR, "main, [role='main'], .list-page")
+    # Cards are divs containing links that start with /courses/
+    PROGRAM_CARDS = (By.XPATH, "//a[starts-with(@href, '/courses/')]/ancestor::div[contains(@class, 'card') or contains(@class, 'Card') or position()=1]")
+    # Alternative: Find all links to courses (these are inside program cards)
+    PROGRAM_LINKS = (By.CSS_SELECTOR, "a[href^='/courses/']")
+    PROGRAM_TITLE = (By.CSS_SELECTOR, "a[href^='/courses/'], h3, h4")
+    PROGRAM_STATUS_BADGE = (By.XPATH, "//*[contains(text(), 'Published') or contains(text(), 'Draft')]")
+    CREATE_BUTTON = (By.XPATH, "//button[contains(text(), 'Create') or contains(text(), 'New Program')]")
+    FILTER_DROPDOWN = (By.CSS_SELECTOR, "select, [data-testid='filter'], .filter-dropdown")
 
     # Detail view locators
     DETAIL_TITLE = (By.CSS_SELECTOR, "h1, .program-title, [data-testid='program-title']")
@@ -87,7 +94,11 @@ class TrainingProgramPage(BasePage):
 
     def navigate_to_list(self, role: str = "instructor") -> "TrainingProgramPage":
         """
-        Navigate to the program list page.
+        Navigate to the program list page using SPA navigation.
+
+        CRITICAL: Uses JavaScript pushState navigation to preserve in-memory
+        auth tokens. The frontend stores JWT tokens in memory (not localStorage)
+        for security, so full page reloads (driver.get) lose authentication.
 
         Args:
             role: User role (instructor, org-admin)
@@ -96,14 +107,25 @@ class TrainingProgramPage(BasePage):
             Self for method chaining
         """
         if role == "instructor":
-            url = f"{self.base_url}/instructor/programs"
+            path = "/instructor/programs"
         elif role in ["org-admin", "organization_admin"]:
-            url = f"{self.base_url}/organization/programs"
+            path = "/organization/programs"
         else:
-            url = f"{self.base_url}/programs"
+            path = "/programs"
 
-        logger.info(f"Navigating to program list: {url}")
-        self.driver.get(url)
+        logger.info(f"SPA navigating to program list: {path}")
+
+        # Use pushState + popstate event to trigger React Router navigation
+        # without losing in-memory auth tokens
+        self.driver.execute_script(f"""
+            window.history.pushState({{}}, '', '{path}');
+            window.dispatchEvent(new PopStateEvent('popstate', {{ state: {{}} }}));
+        """)
+
+        # Wait for React Router to process navigation
+        import time
+        time.sleep(0.5)
+
         self._wait_for_page_ready()
         return self
 
@@ -112,33 +134,34 @@ class TrainingProgramPage(BasePage):
         Get count of programs in list.
 
         Returns:
-            Number of visible program cards
+            Number of visible program cards (based on links to /courses/)
         """
         self._wait_for_page_ready()
-        elements = self.find_elements(*self.PROGRAM_CARDS)
-        return sum(1 for el in elements if el.is_displayed())
+        # Use PROGRAM_LINKS selector which finds links to courses
+        elements = self.find_elements(*self.PROGRAM_LINKS)
+        visible_count = sum(1 for el in elements if el.is_displayed())
+        logger.info(f"Found {visible_count} program links in UI")
+        return visible_count
 
     def get_program_titles(self) -> List[str]:
         """
         Get titles of all programs in list.
 
         Returns:
-            List of program titles
+            List of program titles (from links to /courses/)
         """
         self._wait_for_page_ready()
-        cards = self.find_elements(*self.PROGRAM_CARDS)
+        # Use PROGRAM_LINKS to find course links - their text is the title
+        links = self.find_elements(*self.PROGRAM_LINKS)
         titles = []
 
-        for card in cards:
-            if card.is_displayed():
-                try:
-                    title_el = card.find_element(*self.PROGRAM_TITLE)
-                    titles.append(title_el.text)
-                except:
-                    text = card.text.split('\n')[0]
-                    if text:
-                        titles.append(text)
+        for link in links:
+            if link.is_displayed():
+                title = link.text.strip()
+                if title:
+                    titles.append(title)
 
+        logger.info(f"Found program titles: {titles}")
         return titles
 
     def get_programs_with_status(self) -> List[dict]:
@@ -149,19 +172,24 @@ class TrainingProgramPage(BasePage):
             List of dicts with 'title' and 'published' keys
         """
         self._wait_for_page_ready()
-        cards = self.find_elements(*self.PROGRAM_CARDS)
+        # Find course links
+        links = self.find_elements(*self.PROGRAM_LINKS)
         programs = []
 
-        for card in cards:
-            if card.is_displayed():
-                try:
-                    title_el = card.find_element(*self.PROGRAM_TITLE)
-                    title = title_el.text
-                except:
-                    title = card.text.split('\n')[0]
+        for link in links:
+            if link.is_displayed():
+                title = link.text.strip()
+                if not title:
+                    continue
 
-                card_text = card.text.lower()
-                published = 'published' in card_text or 'live' in card_text
+                # Look for status badge in parent container
+                try:
+                    # Get parent card container (traverse up the DOM)
+                    parent = link.find_element(By.XPATH, "./ancestor::div[1]")
+                    card_text = parent.text.lower()
+                    published = 'published' in card_text and 'draft' not in card_text
+                except:
+                    published = False
 
                 programs.append({
                     'title': title,
@@ -193,12 +221,12 @@ class TrainingProgramPage(BasePage):
         Returns:
             True if program was found and clicked
         """
-        cards = self.find_elements(*self.PROGRAM_CARDS)
+        links = self.find_elements(*self.PROGRAM_LINKS)
 
-        for card in cards:
-            if title in card.text:
-                self.scroll_to_element(card)
-                card.click()
+        for link in links:
+            if title in link.text:
+                self.scroll_to_element(link)
+                link.click()
                 self._wait_for_page_ready()
                 return True
 

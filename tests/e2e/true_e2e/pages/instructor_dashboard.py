@@ -30,10 +30,15 @@ class InstructorDashboard(BasePage):
     - Viewing analytics
     """
 
-    # Locators
-    DASHBOARD_TITLE = (By.CSS_SELECTOR, "h1, .dashboard-title")
-    PROGRAM_CARDS = (By.CSS_SELECTOR, ".program-card, .course-card, [data-testid='program-card']")
-    PROGRAM_TITLE = (By.CSS_SELECTOR, ".program-title, .course-title, .card-title, h3")
+    # Locators - using semantic structure instead of hashed class names
+    # NOTE: CSS Modules are used in the frontend, so class names are hashed.
+    # We use robust selectors based on semantic structure (links, headings) rather than class names.
+    DASHBOARD_TITLE = (By.CSS_SELECTOR, "h1, .dashboard-title, [data-testid='dashboard-title']")
+
+    # Programs are displayed in cards with links to /courses/{id}
+    PROGRAM_LINKS = (By.CSS_SELECTOR, "a[href^='/courses/']")
+    PROGRAM_CARDS = (By.XPATH, "//a[starts-with(@href, '/courses/')]/ancestor::div[contains(@class, 'card') or contains(@class, 'Card') or position()=1]")
+    PROGRAM_TITLE = (By.CSS_SELECTOR, "a[href^='/courses/'], h3, h4")
     CREATE_PROGRAM_BUTTON = (By.CSS_SELECTOR, "[data-testid='create-program'], .create-program, button[class*='create']")
     STUDENT_COUNT = (By.CSS_SELECTOR, ".student-count, [data-testid='student-count']")
 
@@ -43,7 +48,8 @@ class InstructorDashboard(BasePage):
     NAV_ANALYTICS = (By.XPATH, "//a[contains(text(), 'Analytics')]")
     NAV_CONTENT = (By.XPATH, "//a[contains(text(), 'Content')]")
 
-    # Program status indicators
+    # Program status indicators - check text content
+    PROGRAM_STATUS = (By.XPATH, "//*[contains(text(), 'Published') or contains(text(), 'Draft')]")
     PUBLISHED_BADGE = (By.CSS_SELECTOR, ".published-badge, [data-status='published']")
     DRAFT_BADGE = (By.CSS_SELECTOR, ".draft-badge, [data-status='draft']")
 
@@ -85,33 +91,36 @@ class InstructorDashboard(BasePage):
         Get the number of programs displayed.
 
         Returns:
-            Count of program cards visible
+            Count of program links visible (based on links to /courses/)
         """
         self.waits.wait_for_loading_complete()
-        elements = self.find_elements(*self.PROGRAM_CARDS)
-        return sum(1 for el in elements if el.is_displayed())
+        self.waits.wait_for_react_query_idle()
+        # Use PROGRAM_LINKS selector which finds links to courses
+        elements = self.find_elements(*self.PROGRAM_LINKS)
+        visible_count = sum(1 for el in elements if el.is_displayed())
+        logger.info(f"Found {visible_count} program links in UI")
+        return visible_count
 
     def get_program_titles(self) -> List[str]:
         """
         Get titles of all programs.
 
         Returns:
-            List of program titles
+            List of program titles (from links to /courses/)
         """
         self.waits.wait_for_loading_complete()
-        program_cards = self.find_elements(*self.PROGRAM_CARDS)
+        self.waits.wait_for_react_query_idle()
+        # Use PROGRAM_LINKS to find course links - their text is the title
+        links = self.find_elements(*self.PROGRAM_LINKS)
         titles = []
 
-        for card in program_cards:
-            if card.is_displayed():
-                try:
-                    title_element = card.find_element(*self.PROGRAM_TITLE)
-                    titles.append(title_element.text)
-                except:
-                    text = card.text.split('\n')[0]
-                    if text:
-                        titles.append(text)
+        for link in links:
+            if link.is_displayed():
+                title = link.text.strip()
+                if title:
+                    titles.append(title)
 
+        logger.info(f"Found program titles: {titles}")
         return titles
 
     def click_create_program(self) -> bool:
@@ -154,12 +163,12 @@ class InstructorDashboard(BasePage):
         Returns:
             True if program was found and clicked
         """
-        program_cards = self.find_elements(*self.PROGRAM_CARDS)
+        links = self.find_elements(*self.PROGRAM_LINKS)
 
-        for card in program_cards:
-            if program_title in card.text:
-                self.scroll_to_element(card)
-                card.click()
+        for link in links:
+            if program_title in link.text:
+                self.scroll_to_element(link)
+                link.click()
                 self.waits.wait_for_loading_complete()
                 return True
 
@@ -176,30 +185,22 @@ class InstructorDashboard(BasePage):
         Returns:
             True if published, False if draft, None if not found
         """
-        program_cards = self.find_elements(*self.PROGRAM_CARDS)
+        links = self.find_elements(*self.PROGRAM_LINKS)
 
-        for card in program_cards:
-            if program_title in card.text:
-                # Check for published badge
+        for link in links:
+            if program_title in link.text:
+                # Get parent card container
                 try:
-                    card.find_element(*self.PUBLISHED_BADGE)
-                    return True
+                    parent = link.find_element(By.XPATH, "./ancestor::div[1]")
+                    card_text = parent.text.lower()
+
+                    # Check text content for status
+                    if 'published' in card_text and 'draft' not in card_text:
+                        return True
+                    if 'draft' in card_text:
+                        return False
                 except:
                     pass
-
-                # Check for draft badge
-                try:
-                    card.find_element(*self.DRAFT_BADGE)
-                    return False
-                except:
-                    pass
-
-                # Check text content
-                card_text = card.text.lower()
-                if 'published' in card_text:
-                    return True
-                if 'draft' in card_text:
-                    return False
 
         return None
 
@@ -254,16 +255,18 @@ class InstructorDashboard(BasePage):
         Returns:
             Student count or None if not found
         """
-        program_cards = self.find_elements(*self.PROGRAM_CARDS)
+        links = self.find_elements(*self.PROGRAM_LINKS)
 
-        for card in program_cards:
-            if program_title in card.text:
+        for link in links:
+            if program_title in link.text:
                 try:
-                    count_element = card.find_element(*self.STUDENT_COUNT)
-                    count_text = count_element.text
-                    # Extract number from text like "5 students"
+                    # Get parent card container
+                    parent = link.find_element(By.XPATH, "./ancestor::div[1]")
+                    # Look for student count in parent text
+                    card_text = parent.text
                     import re
-                    match = re.search(r'(\d+)', count_text)
+                    # Match patterns like "5 students" or "5 enrolled"
+                    match = re.search(r'(\d+)\s*(student|enrolled)', card_text.lower())
                     if match:
                         return int(match.group(1))
                 except:

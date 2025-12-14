@@ -29,17 +29,22 @@ class StudentDashboard(BasePage):
     - Viewing progress
     - Starting labs
     - Taking quizzes
+
+    NOTE: CSS Modules are used in the frontend, so class names are hashed.
+    We use robust selectors based on semantic structure rather than class names.
     """
 
-    # Locators
+    # Locators - using semantic structure instead of hashed class names
     DASHBOARD_TITLE = (By.CSS_SELECTOR, "h1, .dashboard-title, [data-testid='dashboard-title']")
-    ENROLLED_COURSES = (By.CSS_SELECTOR, ".course-card, [data-testid='course-card'], .enrolled-course")
-    COURSE_TITLE = (By.CSS_SELECTOR, ".course-title, .card-title, h3")
-    PROGRESS_BAR = (By.CSS_SELECTOR, ".progress-bar, [role='progressbar']")
-    START_COURSE_BUTTON = (By.CSS_SELECTOR, ".start-course, [data-testid='start-course']")
-    CONTINUE_COURSE_BUTTON = (By.CSS_SELECTOR, ".continue-course, [data-testid='continue-course']")
-    LAB_BUTTON = (By.CSS_SELECTOR, ".lab-button, [data-testid='start-lab']")
-    QUIZ_BUTTON = (By.CSS_SELECTOR, ".quiz-button, [data-testid='take-quiz']")
+    # Courses are displayed as links to /courses/{id}
+    COURSE_LINKS = (By.CSS_SELECTOR, "a[href^='/courses/']")
+    ENROLLED_COURSES = (By.XPATH, "//a[starts-with(@href, '/courses/')]/ancestor::div[contains(@class, 'card') or contains(@class, 'Card') or position()=1]")
+    COURSE_TITLE = (By.CSS_SELECTOR, "a[href^='/courses/'], h3, h4")
+    PROGRESS_BAR = (By.CSS_SELECTOR, "[role='progressbar'], progress, .progress-bar")
+    START_COURSE_BUTTON = (By.XPATH, "//button[contains(text(), 'Start') or contains(text(), 'View')]")
+    CONTINUE_COURSE_BUTTON = (By.XPATH, "//button[contains(text(), 'Continue')]")
+    LAB_BUTTON = (By.XPATH, "//button[contains(text(), 'Lab') or contains(text(), 'Start Lab')]")
+    QUIZ_BUTTON = (By.XPATH, "//button[contains(text(), 'Quiz') or contains(text(), 'Take Quiz')]")
 
     # Navigation
     NAV_MY_COURSES = (By.XPATH, "//a[contains(text(), 'My Courses') or contains(text(), 'Courses')]")
@@ -47,7 +52,7 @@ class StudentDashboard(BasePage):
     NAV_CERTIFICATES = (By.XPATH, "//a[contains(text(), 'Certificates')]")
 
     # Dashboard sections
-    WELCOME_MESSAGE = (By.CSS_SELECTOR, ".welcome-message, [data-testid='welcome']")
+    WELCOME_MESSAGE = (By.CSS_SELECTOR, "h1, h2, .welcome-message, [data-testid='welcome']")
     RECENT_ACTIVITY = (By.CSS_SELECTOR, ".recent-activity, [data-testid='recent-activity']")
     UPCOMING_DEADLINES = (By.CSS_SELECTOR, ".deadlines, [data-testid='deadlines']")
 
@@ -92,34 +97,34 @@ class StudentDashboard(BasePage):
         Get the number of enrolled courses displayed.
 
         Returns:
-            Count of course cards visible on dashboard
+            Count of course links visible on dashboard
         """
         self.waits.wait_for_loading_complete()
-        elements = self.find_elements(*self.ENROLLED_COURSES)
-        return sum(1 for el in elements if el.is_displayed())
+        # Use COURSE_LINKS selector which finds links to courses
+        elements = self.find_elements(*self.COURSE_LINKS)
+        visible_count = sum(1 for el in elements if el.is_displayed())
+        logger.info(f"Found {visible_count} course links in UI")
+        return visible_count
 
     def get_enrolled_course_titles(self) -> List[str]:
         """
         Get titles of all enrolled courses.
 
         Returns:
-            List of course titles
+            List of course titles (from links to /courses/)
         """
         self.waits.wait_for_loading_complete()
-        course_cards = self.find_elements(*self.ENROLLED_COURSES)
+        # Use COURSE_LINKS to find course links - their text is the title
+        links = self.find_elements(*self.COURSE_LINKS)
         titles = []
 
-        for card in course_cards:
-            if card.is_displayed():
-                try:
-                    title_element = card.find_element(*self.COURSE_TITLE)
-                    titles.append(title_element.text)
-                except:
-                    # Try card text if no specific title element
-                    text = card.text.split('\n')[0]
-                    if text:
-                        titles.append(text)
+        for link in links:
+            if link.is_displayed():
+                title = link.text.strip()
+                if title:
+                    titles.append(title)
 
+        logger.info(f"Found course titles: {titles}")
         return titles
 
     def click_course(self, course_title: str) -> bool:
@@ -132,12 +137,12 @@ class StudentDashboard(BasePage):
         Returns:
             True if course was found and clicked
         """
-        course_cards = self.find_elements(*self.ENROLLED_COURSES)
+        links = self.find_elements(*self.COURSE_LINKS)
 
-        for card in course_cards:
-            if course_title in card.text:
-                self.scroll_to_element(card)
-                card.click()
+        for link in links:
+            if course_title in link.text:
+                self.scroll_to_element(link)
+                link.click()
                 self.waits.wait_for_loading_complete()
                 return True
 

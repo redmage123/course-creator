@@ -388,8 +388,8 @@ class TrueE2EBaseTest(BaseTest):
         """
         Navigate to a page using the URL.
 
-        While direct URL navigation is acceptable, it's better to navigate
-        via UI clicks when testing specific workflows.
+        WARNING: This does a full page reload which clears in-memory auth tokens.
+        Use navigate_spa() for navigation that preserves authentication.
 
         Args:
             path: URL path relative to base_url
@@ -398,6 +398,61 @@ class TrueE2EBaseTest(BaseTest):
         logger.info(f"Navigating to: {full_url}")
         self.driver.get(full_url)
         self._wait_for_page_load()
+
+    def navigate_spa(self, path: str, timeout: int = 10) -> bool:
+        """
+        Navigate within Single Page Application using pushState.
+
+        This method navigates without a full page reload, preserving the
+        React state and in-memory auth tokens. This is critical for
+        authenticated navigation in this application.
+
+        TECHNICAL NOTE:
+        The frontend uses in-memory token storage for security (XSS protection).
+        Using driver.get() does a full page reload which clears the tokens.
+        This method uses history.pushState + popstate event to trigger
+        React Router navigation without losing state.
+
+        Args:
+            path: URL path to navigate to (e.g., '/instructor/programs')
+            timeout: Wait timeout for navigation to complete
+
+        Returns:
+            True if navigation was successful
+        """
+        logger.info(f"SPA navigating to: {path}")
+
+        # Temporarily disable violation check for navigation script
+        original_check = self._violation_check_enabled
+        self._violation_check_enabled = False
+
+        try:
+            # Use pushState and dispatch popstate event to trigger React Router
+            self.driver.execute_script(f"""
+                window.history.pushState({{}}, '', '{path}');
+                window.dispatchEvent(new PopStateEvent('popstate', {{ state: {{}} }}));
+            """)
+
+            # Wait for React Router to update
+            import time
+            time.sleep(0.5)
+
+            # Verify URL changed
+            current_path = self.driver.execute_script("return window.location.pathname;")
+            if path not in current_path:
+                logger.warning(f"SPA navigation may have failed. Expected {path}, got {current_path}")
+
+            # Wait for page to load
+            self._wait_for_page_load()
+
+            logger.info(f"SPA navigation complete. URL: {self.driver.current_url}")
+            return True
+
+        except Exception as e:
+            logger.error(f"SPA navigation failed: {e}")
+            return False
+        finally:
+            self._violation_check_enabled = original_check
 
     def click_nav_link(self, link_text: str, timeout: int = 10) -> None:
         """

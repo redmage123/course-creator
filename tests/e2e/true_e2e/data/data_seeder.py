@@ -551,21 +551,11 @@ class DataSeeder:
             is_published=False
         )
 
-        # Create course instance for the published course
-        course_instance = self.create_course_instance(
-            course_id=published_course.id,
-            instructor_id=instructor1.id,
-            organization_id=org.id,
-            instance_name=f"{self.test_prefix}_Current Instance"
-        )
-
-        # Enroll students in the course instance
-        enrollments = []
-        for student in students:
-            enrollments.append(self.create_enrollment(
-                course_instance.id,
-                student.id
-            ))
+        # NOTE: Skipping course_instance and enrollment creation because
+        # course_instances has a FK to course_outlines (not courses directly),
+        # and we don't need them for the programs list tests.
+        # If tests need enrollments, they should use seed_complete_student_scenario()
+        # or create a course_outline first.
 
         return {
             'organization': org,
@@ -573,8 +563,8 @@ class DataSeeder:
             'instructors': [instructor1, instructor2],
             'students': students,
             'courses': [published_course, unpublished_course],
-            'course_instances': [course_instance],
-            'enrollments': enrollments,
+            'course_instances': [],
+            'enrollments': [],
         }
 
     # ========================================================================

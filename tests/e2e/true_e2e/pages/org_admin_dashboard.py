@@ -28,16 +28,20 @@ class OrgAdminDashboard(BasePage):
     - Viewing all programs/courses
     - Managing tracks and projects
     - Organization settings
+
+    NOTE: CSS Modules are used in the frontend, so class names are hashed.
+    We use robust selectors based on semantic structure rather than class names.
     """
 
-    # Locators
+    # Locators - using semantic structure instead of hashed class names
     DASHBOARD_TITLE = (By.CSS_SELECTOR, "h1, .dashboard-title")
-    ORG_NAME = (By.CSS_SELECTOR, ".org-name, [data-testid='org-name']")
+    ORG_NAME = (By.CSS_SELECTOR, "h1, h2, .org-name, [data-testid='org-name']")
 
-    # Program/Course management
-    PROGRAM_CARDS = (By.CSS_SELECTOR, ".program-card, .course-card, [data-testid='program-card']")
-    PROGRAM_TITLE = (By.CSS_SELECTOR, ".program-title, .course-title, h3")
-    PROGRAM_STATUS = (By.CSS_SELECTOR, ".status-badge, [data-testid='status']")
+    # Program/Course management - use links to /courses/
+    PROGRAM_LINKS = (By.CSS_SELECTOR, "a[href^='/courses/']")
+    PROGRAM_CARDS = (By.XPATH, "//a[starts-with(@href, '/courses/')]/ancestor::div[1]")
+    PROGRAM_TITLE = (By.CSS_SELECTOR, "a[href^='/courses/'], h3, h4")
+    PROGRAM_STATUS = (By.XPATH, "//*[contains(text(), 'Published') or contains(text(), 'Draft')]")
 
     # Member management
     MEMBER_LIST = (By.CSS_SELECTOR, ".member-list, [data-testid='member-list']")
