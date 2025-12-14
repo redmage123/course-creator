@@ -672,3 +672,20 @@ Always respond with valid JSON when requested."""
 
         finally:
             await provider.close()
+
+
+# Factory function for dependency injection
+_generator_instance: Optional["ScreenshotCourseGenerator"] = None
+
+
+def create_screenshot_course_generator() -> "ScreenshotCourseGenerator":
+    """
+    Factory function to create or return singleton ScreenshotCourseGenerator
+
+    Returns:
+        ScreenshotCourseGenerator instance
+    """
+    global _generator_instance
+    if _generator_instance is None:
+        _generator_instance = ScreenshotCourseGenerator()
+    return _generator_instance

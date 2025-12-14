@@ -773,6 +773,146 @@ class RobotsDisallowedException(URLFetchException):
     pass
 
 
+# ================================================================
+# LLM PROVIDER AND VISION EXCEPTIONS
+# ================================================================
+
+class LLMProviderException(ExternalServiceException):
+    """
+    Base exception for LLM provider operations.
+
+    Business Context:
+    Handles failures in external LLM provider integrations including OpenAI, Anthropic,
+    Deepseek, Qwen, Ollama, Llama, Gemini, and Mistral. These exceptions help identify
+    provider-specific issues and enable appropriate fallback strategies.
+
+    Technical Context:
+    - API call failures
+    - Model availability issues
+    - Token limit exceeded
+    - Response parsing errors
+    """
+    pass
+
+
+class LLMProviderConnectionException(LLMProviderException):
+    """
+    Exception raised when unable to connect to an LLM provider.
+
+    Business Context:
+    Connection failures prevent AI-powered features from functioning and may indicate
+    network issues, provider outages, or configuration problems that need resolution.
+
+    Technical Context:
+    - Network connectivity issues
+    - DNS resolution failures
+    - TLS/SSL handshake errors
+    - Connection timeouts
+    """
+    pass
+
+
+class LLMProviderAuthenticationException(LLMProviderException):
+    """
+    Exception raised for LLM provider authentication failures.
+
+    Business Context:
+    Authentication failures indicate invalid, expired, or revoked API keys that need
+    to be updated by organization administrators before AI features can be used.
+
+    Technical Context:
+    - Invalid API key
+    - Expired credentials
+    - Insufficient permissions
+    - Account suspended
+    """
+    pass
+
+
+class LLMProviderRateLimitException(LLMProviderException):
+    """
+    Exception raised when rate limits are exceeded.
+
+    Business Context:
+    Rate limit exceptions indicate that the organization has exceeded their API quota
+    and should either wait for limit reset or consider upgrading their plan.
+
+    Technical Context:
+    - Per-minute request limits
+    - Per-day token limits
+    - Concurrent request limits
+    - Organization-wide quotas
+    """
+    pass
+
+
+class VisionAnalysisException(LLMProviderException):
+    """
+    Exception raised for vision/image analysis failures.
+
+    Business Context:
+    Vision analysis failures prevent screenshot-to-course generation from working.
+    May indicate issues with image quality, unsupported content, or provider issues.
+
+    Technical Context:
+    - Image encoding errors
+    - Vision model unavailable
+    - Image content blocked
+    - Analysis response parsing failures
+    """
+    pass
+
+
+class ScreenshotUploadException(FileStorageException):
+    """
+    Exception raised for screenshot upload failures.
+
+    Business Context:
+    Screenshot upload failures prevent users from using the screenshot-to-course
+    feature. May indicate file issues, storage problems, or validation failures.
+
+    Technical Context:
+    - File size limits exceeded
+    - Storage quota exceeded
+    - Invalid file content
+    - Upload timeout
+    """
+    pass
+
+
+class UnsupportedImageFormatException(ValidationException):
+    """
+    Exception raised for unsupported image formats.
+
+    Business Context:
+    Users may attempt to upload images in formats not supported by the vision
+    analysis system. This exception provides clear guidance on supported formats.
+
+    Technical Context:
+    - Supported formats: PNG, JPEG, WebP, GIF
+    - Image header validation
+    - MIME type checking
+    """
+    pass
+
+
+class CourseGenerationException(CourseCreatorBaseException):
+    """
+    Exception raised for course generation failures.
+
+    Business Context:
+    Course generation from screenshots may fail due to various reasons including
+    insufficient content, AI failures, or validation issues.
+
+    Technical Context:
+    - Course structure validation failures
+    - Module expansion errors
+    - Content generation timeouts
+    - Database storage failures
+    """
+    pass
+
+
 # Factory functions for common exception patterns
 def create_not_found_exception(resource_type: str, resource_id: str, **kwargs) -> CourseCreatorBaseException:
     """

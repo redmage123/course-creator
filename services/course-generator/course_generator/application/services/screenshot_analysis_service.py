@@ -654,3 +654,36 @@ Be thorough and extract all visible educational content. If certain fields are n
             "cached_results": len(self._result_cache),
             "cache_enabled": self.cache_results
         }
+
+
+# Factory function for dependency injection
+_singleton_instance: Optional[ScreenshotAnalysisService] = None
+
+
+def create_screenshot_analysis_service(
+    enable_fallback: bool = True,
+    max_fallback_attempts: int = 2,
+    cache_results: bool = True
+) -> ScreenshotAnalysisService:
+    """
+    Factory function to create or return singleton ScreenshotAnalysisService
+
+    This provides a clean dependency injection pattern for the API layer.
+    Returns a singleton instance to avoid recreating the service on each request.
+
+    Args:
+        enable_fallback: Whether to try fallback providers on failure
+        max_fallback_attempts: Maximum number of fallback providers to try
+        cache_results: Whether to cache analysis results
+
+    Returns:
+        ScreenshotAnalysisService instance
+    """
+    global _singleton_instance
+    if _singleton_instance is None:
+        _singleton_instance = ScreenshotAnalysisService(
+            enable_fallback=enable_fallback,
+            max_fallback_attempts=max_fallback_attempts,
+            cache_results=cache_results
+        )
+    return _singleton_instance
