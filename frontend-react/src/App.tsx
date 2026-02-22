@@ -16,11 +16,11 @@
  * - Suspense provides loading states during chunk downloads
  */
 
-import { lazy, Suspense } from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Provider } from 'react-redux';
-import { store } from '@store/index';
+import { Provider, useSelector } from 'react-redux';
+import { store, RootState } from '@store/index';
 import { Spinner } from './components/atoms/Spinner';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
@@ -181,6 +181,21 @@ const RouteLoadingFallback = () => (
  * - Suspense enables lazy loading with fallback UI
  * - Route-based code splitting reduces initial bundle size by ~80%
  */
+/**
+ * Wrapper for IntegrationsSettings that provides organizationId from Redux state
+ */
+const IntegrationsSettingsWrapper: React.FC = () => {
+  const organizationId = useSelector((state: RootState) => state.auth.organizationId) || '';
+  return <IntegrationsSettings organizationId={organizationId} />;
+};
+
+/**
+ * Wrapper for LearningAnalyticsDashboard that provides viewType based on route context
+ */
+const StudentLearningAnalyticsWrapper: React.FC = () => {
+  return <LearningAnalyticsDashboard viewType="student" />;
+};
+
 function App() {
   return (
     <ErrorBoundary>
@@ -403,7 +418,7 @@ function App() {
               path="/learning-analytics"
               element={
                 <ProtectedRoute requiredRoles={['student']}>
-                  <LearningAnalyticsDashboard />
+                  <StudentLearningAnalyticsWrapper />
                 </ProtectedRoute>
               }
             />
@@ -559,6 +574,16 @@ function App() {
               }
             />
 
+            {/* Organization Courses (alias for programs list) */}
+            <Route
+              path="/organization/courses"
+              element={
+                <ProtectedRoute requiredRoles={['organization_admin']}>
+                  <TrainingProgramListPage context="organization" />
+                </ProtectedRoute>
+              }
+            />
+
             {/* Create Training Program (Organization Admin) */}
             <Route
               path="/organization/programs/create"
@@ -674,7 +699,7 @@ function App() {
               path="/organization/integrations"
               element={
                 <ProtectedRoute requiredRoles={['organization_admin']}>
-                  <IntegrationsSettings organizationId="" />
+                  <IntegrationsSettingsWrapper />
                 </ProtectedRoute>
               }
             />

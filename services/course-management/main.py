@@ -295,12 +295,14 @@ async def lifespan(app: FastAPI):
     - Graceful degradation for non-critical component failures
     - Automatic retry mechanisms for transient initialization issues
     """
-    # Startup - container stored in app.state for access by route handlers
+    # Startup - container stored in app.state and global for access by route handlers
+    global container
     logging.info("Initializing Course Management Service...")
     if not current_config:
         logging.warning("No configuration provided, using default config")
-    app.state.container = Container(current_config or {})
-    await app.state.container.initialize()
+    container = Container(current_config or {})
+    app.state.container = container
+    await container.initialize()
 
     # Initialize Video DAO with database pool
     try:

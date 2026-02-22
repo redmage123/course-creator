@@ -105,7 +105,7 @@ async def validate_jwt_token(token: str) -> Dict[str, Any]:
         # Environment-aware SSL verification
         async with httpx.AsyncClient(**create_secure_client_kwargs()) as client:
             response = await client.get(
-                f"{USER_MANAGEMENT_SERVICE_URL}/auth/validate",
+                f"{USER_MANAGEMENT_SERVICE_URL}/auth/me",
                 headers={"Authorization": f"Bearer {token}"},
                 timeout=5.0
             )

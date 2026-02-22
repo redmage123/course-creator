@@ -26,7 +26,7 @@ SUPPORTED FORMATS (Bulk Enrollment):
 
 @module api/enrollment_endpoints
 """
-from fastapi import APIRouter, HTTPException, Depends, File, UploadFile
+from fastapi import APIRouter, HTTPException, Depends, File, UploadFile, Request
 from typing import List
 import logging
 import sys
@@ -95,12 +95,11 @@ SUPPORTED_MIME_TYPES = {
 router = APIRouter(tags=["enrollments"])
 
 # Dependency injection helpers
-def get_enrollment_service() -> IEnrollmentService:
-    """Dependency injection for enrollment service"""
-    from main import container
-    if not container:
-        raise HTTPException(status_code=500, detail="Service not initialized")
-    return container.get_enrollment_service()
+def get_enrollment_service(request: Request = None) -> IEnrollmentService:
+    """Dependency injection for enrollment service via app.state."""
+    if request and hasattr(request.app.state, 'container') and request.app.state.container:
+        return request.app.state.container.get_enrollment_service()
+    raise HTTPException(status_code=500, detail="Service not initialized")
 
 # JWT-authenticated user ID extraction (replaced deprecated mock)
 get_current_user_id = get_authenticated_user_id

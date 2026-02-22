@@ -84,7 +84,7 @@ class BulkEnrollmentService:
         - Uses Student Validator for data validation
         """
         self.validator = StudentDataValidator()
-        self.user_service_url = "https://localhost:8000"  # User Management Service
+        self.user_service_url = "https://user-management:8000"  # User Management Service
         self.timeout = 30.0  # HTTP request timeout
 
     async def enroll_in_course(

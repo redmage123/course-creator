@@ -169,9 +169,9 @@ export const Navbar: React.FC<NavbarProps> = ({
       case 'instructor':
         return [
           ...commonLinks,
-          { to: '/courses', label: 'My Courses' },
-          { to: '/students', label: 'Students' },
-          { to: '/analytics', label: 'Analytics' },
+          { to: '/instructor/programs', label: 'My Courses' },
+          { to: '/instructor/students', label: 'Students' },
+          { to: '/instructor/analytics', label: 'Analytics' },
         ];
       case 'student':
         return [

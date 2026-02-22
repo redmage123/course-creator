@@ -8,6 +8,7 @@ from api.syllabus import router as syllabus_router
 from api.jobs import router as jobs_router
 from api.cache import router as cache_router
 from api.chat import router as chat_router
+from api.quiz import router as quiz_router
 
 def setup_routes(app: FastAPI) -> None:
     """Setup all API routes."""
@@ -17,6 +18,9 @@ def setup_routes(app: FastAPI) -> None:
 
     # Core business routes
     app.include_router(syllabus_router, prefix="/api/v1/syllabus", tags=["syllabus"])
+
+    # Quiz generation routes
+    app.include_router(quiz_router, prefix="/api/v1/course-generator/quiz", tags=["quiz"])
 
     # Job management routes
     app.include_router(jobs_router, prefix="/api/v1/jobs", tags=["jobs"])
