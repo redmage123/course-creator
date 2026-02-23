@@ -425,7 +425,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                     <div className={styles['dropdown-divider']} />
                     <Link
-                      to="/settings"
+                      to="/settings/password"
                       className={styles['dropdown-item']}
                       onClick={() => setIsUserMenuOpen(false)}
                     >

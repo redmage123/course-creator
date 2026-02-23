@@ -39,7 +39,7 @@ import styles from './OrgAdminDashboard.module.css';
  * - Real-time analytics from backend API
  */
 export const OrgAdminDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, organizationId } = useAuth();
 
   // SEO for Organization Admin Dashboard
   const seoElement = (
@@ -51,13 +51,16 @@ export const OrgAdminDashboard: React.FC = () => {
   );
 
   /**
-   * Fetch organization data first
-   * Needed to get organization ID for analytics
+   * Fetch organization data using Redux organizationId
+   * When the org switcher changes organizationId in Redux, the query key changes,
+   * triggering a fresh fetch for the correct organization.
    */
   const { data: organization, isLoading: orgLoading, error: orgError } = useQuery({
-    queryKey: ['organization', 'me'],
-    queryFn: () => organizationService.getMyOrganization(),
-    staleTime: 10 * 60 * 1000, // Cache for 10 minutes
+    queryKey: ['organization', organizationId],
+    queryFn: () => organizationId
+      ? organizationService.getOrganizationById(organizationId)
+      : organizationService.getMyOrganization(),
+    staleTime: 5 * 60 * 1000,
     retry: 2,
   });
 
@@ -77,7 +80,7 @@ export const OrgAdminDashboard: React.FC = () => {
     ? `${user.firstName} ${user.lastName || ''}`
     : user?.username || 'Admin';
 
-  const orgName = organization?.name || user?.organizationName || 'Your Organization';
+  const orgName = organization?.name || 'Your Organization';
 
   const isLoading = orgLoading || analyticsLoading;
   const error = orgError || analyticsError;
