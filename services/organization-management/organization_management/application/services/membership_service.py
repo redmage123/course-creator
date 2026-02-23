@@ -185,10 +185,10 @@ class MembershipService:
                 assigned_by=assigned_by
             )
 
-            created_assignment = await self._organization_dao.create_assignment(assignment)
+            await self._organization_dao.create_assignment(assignment)
 
             self._logger.info(f"Added student {user_email} to project {project_id} and track {track_id}")
-            return membership, created_assignment
+            return membership, assignment
 
         except Exception as e:
             self._logger.error(f"Failed to add student to project: {e}")
@@ -217,13 +217,10 @@ class MembershipService:
                 assigned_by=assigned_by
             )
 
-            created_assignment = await self._organization_dao.create_assignment(assignment)
-
-            # Update instructor's organization membership to include track access
-            # This would require getting the instructor's membership and updating it
+            await self._organization_dao.create_assignment(assignment)
 
             self._logger.info(f"Assigned instructor {instructor_id} to track {track_id}")
-            return created_assignment
+            return assignment
 
         except Exception as e:
             self._logger.error(f"Failed to assign instructor to track: {e}")
@@ -283,15 +280,19 @@ class MembershipService:
 
             instructors = []
             for assignment in assignments:
-                user = await self._organization_dao.get_by_id(assignment.user_id)
+                user_id = assignment['user_id'] if isinstance(assignment, dict) else assignment.user_id
+                user = await self._organization_dao.get_user_by_id(user_id)
                 if user:
+                    assigned_at = assignment['assigned_at'] if isinstance(assignment, dict) else assignment.assigned_at
+                    a_status = assignment['status'] if isinstance(assignment, dict) else assignment.status
+                    a_id = assignment['id'] if isinstance(assignment, dict) else assignment.id
                     instructors.append({
-                        "assignment_id": str(assignment.id),
-                        "user_id": str(user.id),
-                        "email": user.email,
-                        "name": user.name,
-                        "assigned_at": assignment.assigned_at.isoformat(),
-                        "status": assignment.status
+                        "assignment_id": str(a_id),
+                        "user_id": str(user['id']),
+                        "email": user['email'],
+                        "name": user.get('full_name', user.get('username', '')),
+                        "assigned_at": assigned_at.isoformat() if hasattr(assigned_at, 'isoformat') else str(assigned_at),
+                        "status": a_status
                     })
 
             return instructors
@@ -309,15 +310,19 @@ class MembershipService:
 
             students = []
             for assignment in assignments:
-                user = await self._organization_dao.get_by_id(assignment.user_id)
+                user_id = assignment['user_id'] if isinstance(assignment, dict) else assignment.user_id
+                user = await self._organization_dao.get_user_by_id(user_id)
                 if user:
+                    assigned_at = assignment['assigned_at'] if isinstance(assignment, dict) else assignment.assigned_at
+                    a_status = assignment['status'] if isinstance(assignment, dict) else assignment.status
+                    a_id = assignment['id'] if isinstance(assignment, dict) else assignment.id
                     students.append({
-                        "assignment_id": str(assignment.id),
-                        "user_id": str(user.id),
-                        "email": user.email,
-                        "name": user.name,
-                        "assigned_at": assignment.assigned_at.isoformat(),
-                        "status": assignment.status
+                        "assignment_id": str(a_id),
+                        "user_id": str(user['id']),
+                        "email": user['email'],
+                        "name": user.get('full_name', user.get('username', '')),
+                        "assigned_at": assigned_at.isoformat() if hasattr(assigned_at, 'isoformat') else str(assigned_at),
+                        "status": a_status
                     })
 
             return students

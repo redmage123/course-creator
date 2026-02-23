@@ -1268,6 +1268,202 @@ class OrganizationManagementDAO:
                 original_exception=e
             )
 
+    async def get_by_id(self, track_id: UUID) -> Optional[Dict[str, Any]]:
+        """
+        Get a track by its ID.
+
+        Args:
+            track_id: UUID of the track
+
+        Returns:
+            Track record as dictionary, or None if not found
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                track = await conn.fetchrow(
+                    """SELECT * FROM course_creator.tracks WHERE id = $1""",
+                    track_id
+                )
+                return dict(track) if track else None
+        except Exception as e:
+            logging.error(f"Failed to get track by ID {track_id}: {e}")
+            return None
+
+    async def get_by_project_and_slug(self, project_id: UUID, slug: str) -> Optional[Dict[str, Any]]:
+        """
+        Get a track by project ID and slug.
+
+        Args:
+            project_id: UUID of the project
+            slug: URL-friendly track identifier
+
+        Returns:
+            Track record as dictionary, or None if not found
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                track = await conn.fetchrow(
+                    """SELECT * FROM course_creator.tracks
+                       WHERE project_id = $1 AND slug = $2""",
+                    project_id, slug
+                )
+                return dict(track) if track else None
+        except Exception as e:
+            logging.error(f"Failed to get track by project {project_id} and slug {slug}: {e}")
+            return None
+
+    async def update(self, track) -> Optional[Dict[str, Any]]:
+        """
+        Update an existing track in the database.
+
+        Args:
+            track: Track entity with updated fields
+
+        Returns:
+            Updated track record as dictionary
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                result = await conn.fetchrow(
+                    """UPDATE course_creator.tracks SET
+                        name = $2, slug = $3, description = $4, track_type = $5,
+                        target_audience = $6::jsonb, prerequisites = $7::jsonb,
+                        duration_weeks = $8, max_students = $9,
+                        learning_objectives = $10::jsonb, skills_taught = $11::jsonb,
+                        difficulty_level = $12, display_order = $13,
+                        auto_enroll_enabled = $14, status = $15,
+                        settings = $16::jsonb, updated_at = $17
+                    WHERE id = $1
+                    RETURNING *""",
+                    track.id,
+                    track.name,
+                    track.slug,
+                    track.description,
+                    json.dumps(track.track_type.value if hasattr(track.track_type, 'value') else str(track.track_type)) if hasattr(track, 'track_type') and track.track_type else json.dumps(None),
+                    json.dumps(track.target_audience or []),
+                    json.dumps(track.prerequisites or []),
+                    track.duration_weeks,
+                    track.max_enrolled if hasattr(track, 'max_enrolled') else track.max_students if hasattr(track, 'max_students') else None,
+                    json.dumps(track.learning_objectives or []),
+                    json.dumps(track.skills_taught or []),
+                    track.difficulty_level,
+                    track.display_order if hasattr(track, 'display_order') else 0,
+                    track.auto_enroll_enabled if hasattr(track, 'auto_enroll_enabled') else False,
+                    track.status.value if hasattr(track.status, 'value') else str(track.status) if track.status else 'draft',
+                    json.dumps(track.settings or {}),
+                    datetime.utcnow()
+                )
+                return dict(result) if result else None
+        except Exception as e:
+            logging.error(f"Failed to update track {track.id}: {e}")
+            raise
+
+    async def delete(self, track_id: UUID) -> bool:
+        """
+        Delete a track by ID.
+
+        Args:
+            track_id: UUID of the track to delete
+
+        Returns:
+            True if deleted successfully
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                result = await conn.execute(
+                    """DELETE FROM course_creator.tracks WHERE id = $1""",
+                    track_id
+                )
+                return result == "DELETE 1"
+        except Exception as e:
+            logging.error(f"Failed to delete track {track_id}: {e}")
+            raise
+
+    async def get_user_by_id(self, user_id: UUID) -> Optional[Dict[str, Any]]:
+        """
+        Get user by ID.
+
+        Args:
+            user_id: UUID of the user
+
+        Returns:
+            User record as dictionary, or None if not found
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                user = await conn.fetchrow(
+                    """SELECT id, email, username, full_name, role, status
+                       FROM course_creator.users WHERE id = $1""",
+                    user_id
+                )
+                return dict(user) if user else None
+        except Exception as e:
+            logging.error(f"Failed to get user by ID {user_id}: {e}")
+            return None
+
+    async def exists_assignment(
+        self,
+        user_id: UUID,
+        track_id: UUID,
+        role_type: RoleType
+    ) -> bool:
+        """
+        Check if a track assignment already exists.
+
+        Args:
+            user_id: UUID of the user
+            track_id: UUID of the track
+            role_type: Role type (INSTRUCTOR or STUDENT)
+
+        Returns:
+            True if assignment exists
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                result = await conn.fetchval(
+                    """SELECT EXISTS(
+                        SELECT 1 FROM course_creator.track_assignments
+                        WHERE user_id = $1 AND track_id = $2 AND role_type = $3 AND is_active = true
+                    )""",
+                    user_id, track_id,
+                    role_type.value if hasattr(role_type, 'value') else str(role_type)
+                )
+                return result
+        except Exception as e:
+            logging.error(f"Failed to check assignment existence: {e}")
+            return False
+
+    async def create_assignment(self, assignment) -> Dict[str, Any]:
+        """
+        Create a track assignment (instructor or student to track).
+
+        Args:
+            assignment: TrackAssignment entity
+
+        Returns:
+            Created assignment as dictionary
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                result = await conn.fetchrow(
+                    """INSERT INTO course_creator.track_assignments (
+                        id, user_id, track_id, role_type, assigned_by, assigned_at, status, is_active
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    RETURNING *""",
+                    assignment.id,
+                    assignment.user_id,
+                    assignment.track_id,
+                    assignment.role_type.value if hasattr(assignment.role_type, 'value') else str(assignment.role_type),
+                    assignment.assigned_by,
+                    assignment.assigned_at,
+                    assignment.status,
+                    True
+                )
+                return dict(result) if result else None
+        except Exception as e:
+            logging.error(f"Failed to create track assignment: {e}")
+            raise
+
     async def get_track_assignments(
         self,
         track_id: UUID,

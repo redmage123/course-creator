@@ -136,8 +136,15 @@ class CourseService {
     const queryString = params.toString();
     const url = `/courses${queryString ? `?${queryString}` : ''}`;
 
-    const response = await apiClient.get<Course[]>(url);
-    return response;
+    const response = await apiClient.get<Course[] | { data: Course[] }>(url);
+    // Backend returns paginated response { data: [...], total, page, limit, pages }
+    if (Array.isArray(response)) {
+      return response;
+    }
+    if (response && typeof response === 'object' && 'data' in response && Array.isArray(response.data)) {
+      return response.data;
+    }
+    return [];
   }
 
   /**
@@ -222,8 +229,8 @@ class CourseService {
    * @param trackId - Track ID
    * @returns List of courses in the track
    */
-  async getCoursesByTrack(trackId: string): Promise<Course[]> {
-    return this.getCourses({ track_id: trackId });
+  async getCoursesByTrack(trackId: string, publishedOnly: boolean = false): Promise<Course[]> {
+    return this.getCourses({ track_id: trackId, published_only: publishedOnly });
   }
 
   /**

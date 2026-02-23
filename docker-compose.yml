@@ -18,12 +18,12 @@ services:
     environment:
       POSTGRES_DB: course_creator
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres_password
+      POSTGRES_PASSWORD: bY9QwaxIoTFo705wxqT8jd0UnTsejDNW
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./data:/docker-entrypoint-initdb.d:ro
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     networks:
       - course-creator-network
     healthcheck:
@@ -61,14 +61,14 @@ services:
     env_file:
       - .cc_env
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator?options=-csearch_path=course_creator,public
+      - DATABASE_URL=postgresql://postgres:bY9QwaxIoTFo705wxqT8jd0UnTsejDNW@postgres:5432/course_creator?options=-csearch_path=course_creator,public
       - REDIS_URL=redis://redis:6379
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-}
       - JWT_SECRET=${JWT_SECRET:-}
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=postgres
-      - DB_PASSWORD=postgres_password
+      - DB_PASSWORD=bY9QwaxIoTFo705wxqT8jd0UnTsejDNW
       - DB_NAME=course_creator
       - ENVIRONMENT=docker
       - DOCKER_CONTAINER=true
@@ -81,6 +81,9 @@ services:
       - ./shared:/app/shared:ro
       - ./logs:/var/log/course-creator
       - ./ssl:/app/ssl:ro
+      - ./services/user-management/conf:/app/conf:ro
+      - ./services/user-management/user_management:/app/user_management:ro
+      - ./services/user-management/app:/app/app:ro
     ports:
       - "8000:8000"
     networks:
@@ -107,14 +110,14 @@ services:
     env_file:
       - .cc_env
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
+      - DATABASE_URL=postgresql://postgres:bY9QwaxIoTFo705wxqT8jd0UnTsejDNW@postgres:5432/course_creator
       - REDIS_URL=redis://redis:6379
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - RAG_SERVICE_URL=https://rag-service:8009
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=postgres
-      - DB_PASSWORD=postgres_password
+      - DB_PASSWORD=bY9QwaxIoTFo705wxqT8jd0UnTsejDNW
       - DB_NAME=course_creator
       - DOCKER_CONTAINER=true
       - SERVICE_NAME=course-generator
@@ -127,6 +130,7 @@ services:
       - ./shared:/app/shared:ro
       - ./logs:/var/log/course-creator
       - ./ssl:/app/ssl:ro
+      - ./services/course-generator/conf:/app/conf:ro
     networks:
       - course-creator-network
     depends_on:
@@ -153,7 +157,7 @@ services:
     env_file:
       - .cc_env
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
+      - DATABASE_URL=postgresql://postgres:bY9QwaxIoTFo705wxqT8jd0UnTsejDNW@postgres:5432/course_creator
       - REDIS_URL=redis://redis:6379
       - ENVIRONMENT=docker
       - DOCKER_CONTAINER=true
@@ -170,6 +174,7 @@ services:
       - content_storage:/app/storage
       - ./logs:/var/log/course-creator
       - ./ssl:/app/ssl:ro
+      - ./services/content-storage/conf:/app/conf:ro
     networks:
       - course-creator-network
     depends_on:
@@ -194,7 +199,7 @@ services:
     env_file:
       - .cc_env
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
+      - DATABASE_URL=postgresql://postgres:bY9QwaxIoTFo705wxqT8jd0UnTsejDNW@postgres:5432/course_creator
       - REDIS_URL=redis://redis:6379
       - USER_SERVICE_URL=https://user-management:8000
       - COURSE_GENERATOR_URL=https://course-generator:8001
@@ -202,7 +207,7 @@ services:
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=postgres
-      - DB_PASSWORD=postgres_password
+      - DB_PASSWORD=bY9QwaxIoTFo705wxqT8jd0UnTsejDNW
       - DB_NAME=course_creator
       - ENVIRONMENT=docker
       - DOCKER_CONTAINER=true
@@ -227,6 +232,7 @@ services:
       - ./shared:/app/shared:ro
       - ./logs:/var/log/course-creator
       - ./ssl:/app/ssl:ro
+      - ./services/course-management/conf:/app/conf:ro
     networks:
       - course-creator-network
     depends_on:
@@ -257,12 +263,12 @@ services:
       - COURSE_GENERATOR_URL=https://course-generator:8001
       - CONTENT_STORAGE_URL=https://content-storage:8003
       - COURSE_MANAGEMENT_URL=https://course-management:8004
-      - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
+      - DATABASE_URL=postgresql://postgres:bY9QwaxIoTFo705wxqT8jd0UnTsejDNW@postgres:5432/course_creator
       - REDIS_URL=redis://redis:6379
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=postgres
-      - DB_PASSWORD=postgres_password
+      - DB_PASSWORD=bY9QwaxIoTFo705wxqT8jd0UnTsejDNW
       - DB_NAME=course_creator
       - ENVIRONMENT=docker
       - DOCKER_CONTAINER=true
@@ -281,6 +287,7 @@ services:
       - template_storage:/app/storage
       - ./logs:/var/log/course-creator
       - ./ssl:/app/ssl:ro
+      - ./services/content-management/conf:/app/conf:ro
     networks:
       - course-creator-network
     depends_on:
@@ -345,7 +352,7 @@ services:
     env_file:
       - .cc_env
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
+      - DATABASE_URL=postgresql://postgres:bY9QwaxIoTFo705wxqT8jd0UnTsejDNW@postgres:5432/course_creator
       - REDIS_URL=redis://redis:6379
       - USER_SERVICE_URL=https://user-management:8000
       - COURSE_SERVICE_URL=https://course-management:8004
@@ -354,7 +361,7 @@ services:
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=postgres
-      - DB_PASSWORD=postgres_password
+      - DB_PASSWORD=bY9QwaxIoTFo705wxqT8jd0UnTsejDNW
       - DB_NAME=course_creator
       - ENVIRONMENT=docker
       - DOCKER_CONTAINER=true
@@ -369,6 +376,7 @@ services:
       - ./shared:/app/shared:ro
       - ./logs:/var/log/course-creator
       - ./ssl:/app/ssl:ro
+      - ./services/analytics/conf:/app/conf:ro
     networks:
       - course-creator-network
     depends_on:
@@ -398,14 +406,14 @@ services:
     env_file:
       - .cc_env
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator?options=-csearch_path=course_creator,public
+      - DATABASE_URL=postgresql://postgres:bY9QwaxIoTFo705wxqT8jd0UnTsejDNW@postgres:5432/course_creator?options=-csearch_path=course_creator,public
       - REDIS_URL=redis://redis:6379
       - USER_MANAGEMENT_URL=https://user-management:8000
       - COURSE_SERVICE_URL=https://course-management:8004
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=postgres
-      - DB_PASSWORD=postgres_password
+      - DB_PASSWORD=bY9QwaxIoTFo705wxqT8jd0UnTsejDNW
       - DB_NAME=course_creator
       - ENVIRONMENT=docker
       - DOCKER_CONTAINER=true
@@ -421,6 +429,7 @@ services:
       - ./shared:/app/shared:ro
       - ./logs:/var/log/course-creator
       - ./ssl:/app/ssl:ro
+      - ./services/organization-management/conf:/app/conf:ro
     networks:
       - course-creator-network
     depends_on:
@@ -452,6 +461,8 @@ services:
       - "3001:80"    # HTTP (redirects to HTTPS)
     volumes:
       # Enable live reloading for development
+      - ./frontend/index.html:/usr/share/nginx/html/index.html:ro
+      - ./frontend/assets:/usr/share/nginx/html/assets:ro
       - ./frontend/js:/usr/share/nginx/html/js:ro
       - ./frontend/css:/usr/share/nginx/html/css:ro
       - ./frontend/html:/usr/share/nginx/html/html:ro
@@ -529,13 +540,13 @@ services:
       - LAB_IMAGE_REGISTRY=course-creator/labs
       - MAX_CONCURRENT_LABS=10
       - LAB_SESSION_TIMEOUT=3600
-      - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
+      - DATABASE_URL=postgresql://postgres:bY9QwaxIoTFo705wxqT8jd0UnTsejDNW@postgres:5432/course_creator
       - REDIS_URL=redis://redis:6379
       - RAG_SERVICE_URL=https://rag-service:8009
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=postgres
-      - DB_PASSWORD=postgres_password
+      - DB_PASSWORD=bY9QwaxIoTFo705wxqT8jd0UnTsejDNW
       - DB_NAME=course_creator
       - ENVIRONMENT=docker
       - DOCKER_CONTAINER=true
@@ -604,12 +615,12 @@ services:
     env_file:
       - .cc_env
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
+      - DATABASE_URL=postgresql://postgres:bY9QwaxIoTFo705wxqT8jd0UnTsejDNW@postgres:5432/course_creator
       - REDIS_URL=redis://redis:6379
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=postgres
-      - DB_PASSWORD=postgres_password
+      - DB_PASSWORD=bY9QwaxIoTFo705wxqT8jd0UnTsejDNW
       - DB_NAME=course_creator
       - ENVIRONMENT=docker
       - DOCKER_CONTAINER=true
@@ -649,11 +660,11 @@ services:
     env_file:
       - .cc_env
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator
+      - DATABASE_URL=postgresql://postgres:bY9QwaxIoTFo705wxqT8jd0UnTsejDNW@postgres:5432/course_creator
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=postgres
-      - DB_PASSWORD=postgres_password
+      - DB_PASSWORD=bY9QwaxIoTFo705wxqT8jd0UnTsejDNW
       - DB_NAME=course_creator
       - ENVIRONMENT=docker
       - DOCKER_CONTAINER=true
@@ -791,7 +802,7 @@ services:
     env_file:
       - .cc_env
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator?options=-csearch_path=course_creator,public
+      - DATABASE_URL=postgresql://postgres:bY9QwaxIoTFo705wxqT8jd0UnTsejDNW@postgres:5432/course_creator?options=-csearch_path=course_creator,public
       - BRAIN_STATES_DIR=/app/brain_states
       - BRAIN_PERSISTENCE_INTERVAL=100
       - BRAIN_CONFIDENCE_THRESHOLD=0.85
@@ -829,12 +840,12 @@ services:
     env_file:
       - .cc_env
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres_password@postgres:5432/course_creator?options=-csearch_path=course_creator,public
+      - DATABASE_URL=postgresql://postgres:bY9QwaxIoTFo705wxqT8jd0UnTsejDNW@postgres:5432/course_creator?options=-csearch_path=course_creator,public
       - REDIS_URL=redis://redis:6379
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_USER=postgres
-      - DB_PASSWORD=postgres_password
+      - DB_PASSWORD=bY9QwaxIoTFo705wxqT8jd0UnTsejDNW
       - DB_NAME=course_creator
       - ENVIRONMENT=docker
       - DOCKER_CONTAINER=true
@@ -872,29 +883,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
-    restart: unless-stopped
-
-  # Selenium Chrome - Stable browser automation for E2E tests
-  selenium-chrome:
-    image: selenium/standalone-chrome:119.0
-    ports:
-      - "4444:4444"
-      - "7900:7900"  # VNC viewer port for debugging
-    shm_size: "2g"
-    environment:
-      - SE_NODE_MAX_SESSIONS=10
-      - SE_NODE_SESSION_TIMEOUT=300
-      - SE_START_XVFB=true
-      - SE_SCREEN_WIDTH=1920
-      - SE_SCREEN_HEIGHT=1080
-    networks:
-      - course-creator-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4444/wd/hub/status"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
     restart: unless-stopped
 
   # Prometheus - Metrics Collection and Monitoring
