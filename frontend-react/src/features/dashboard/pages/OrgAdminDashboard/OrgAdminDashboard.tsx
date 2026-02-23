@@ -148,6 +148,26 @@ export const OrgAdminDashboard: React.FC = () => {
             <h1 className={styles['org-title']}>{orgName}</h1>
           </div>
           <p className={styles['org-subtitle']}>Organization Administration Dashboard</p>
+
+          {/* Organization Info Bar */}
+          <div className={styles['org-info-bar']}>
+            <div className={styles['org-info-item']}>
+              <i className="fas fa-user-shield" aria-hidden="true"></i>
+              <span><strong>Admin:</strong> {user?.username || 'N/A'}</span>
+            </div>
+            {organization?.contact_phone && (
+              <div className={styles['org-info-item']}>
+                <i className="fas fa-phone" aria-hidden="true"></i>
+                <span><strong>Phone:</strong> {organization.contact_phone}</span>
+              </div>
+            )}
+            {organization?.contact_email && (
+              <div className={styles['org-info-item']}>
+                <i className="fas fa-envelope" aria-hidden="true"></i>
+                <span><strong>Email:</strong> {organization.contact_email}</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Welcome Section */}
@@ -302,6 +322,23 @@ export const OrgAdminDashboard: React.FC = () => {
               <Link to="/organization/settings">
                 <Button variant="secondary" size="medium">
                   Manage Settings
+                </Button>
+              </Link>
+            </div>
+          </Card>
+
+          {/* Create New Organization */}
+          <Card variant="elevated" padding="large">
+            <Heading level="h2" gutterBottom>
+              Create New Organization
+            </Heading>
+            <p className={styles['section-description']}>
+              Set up a new organization and become its administrator. You can switch between organizations using the org switcher.
+            </p>
+            <div className={styles['action-buttons']}>
+              <Link to="/organization/create">
+                <Button variant="primary" size="medium">
+                  Create Organization
                 </Button>
               </Link>
             </div>

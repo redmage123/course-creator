@@ -14,11 +14,14 @@
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { DashboardLayout } from '../components/templates/DashboardLayout';
 import { Card } from '../components/atoms/Card';
 import { Button } from '../components/atoms/Button';
 import { Heading } from '../components/atoms/Heading';
 import { Input } from '../components/atoms/Input';
+import { useAuth } from '../hooks/useAuth';
+import { organizationService } from '../services';
 
 /**
  * Form data interface for organization creation
@@ -36,6 +39,7 @@ interface OrganizationFormData {
   adminLastName: string;
   adminEmail: string;
   adminPhone: string;
+  adminPassword: string;
 
   // Step 3: Subscription
   subscriptionPlan: 'Trial' | 'Professional' | 'Enterprise';
@@ -80,9 +84,12 @@ const PLAN_PRESETS = {
  */
 export const CreateOrganization: React.FC = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [formData, setFormData] = useState<OrganizationFormData>({
     organizationName: '',
     contactEmail: '',
@@ -93,6 +100,7 @@ export const CreateOrganization: React.FC = () => {
     adminLastName: '',
     adminEmail: '',
     adminPhone: '',
+    adminPassword: '',
     subscriptionPlan: 'Professional',
     maxTrainers: 10,
     maxStudents: 200,
@@ -123,10 +131,24 @@ export const CreateOrganization: React.FC = () => {
   };
 
   /**
-   * Handle form submission
+   * Generate URL-friendly slug from organization name
+   */
+  const generateSlug = (name: string): string => {
+    return name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .substring(0, 100);
+  };
+
+  /**
+   * Handle form submission - calls real API
    */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError(null);
 
     if (currentStep < 3) {
       setCurrentStep((currentStep + 1) as 1 | 2 | 3);
@@ -135,14 +157,33 @@ export const CreateOrganization: React.FC = () => {
 
     try {
       setIsSubmitting(true);
-      // TODO: Implement API call to create organization
-      console.log('Creating organization:', formData);
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
-      alert('Organization created successfully!');
-      navigate('/admin/organizations');
-    } catch (err) {
+
+      const payload = {
+        name: formData.organizationName,
+        slug: generateSlug(formData.organizationName),
+        contact_email: formData.contactEmail,
+        contact_phone: formData.contactPhone,
+        address: formData.address || undefined,
+        domain: formData.website ? formData.website.replace(/^https?:\/\//, '') : undefined,
+        admin_full_name: `${formData.adminFirstName} ${formData.adminLastName}`.trim(),
+        admin_email: formData.adminEmail,
+        admin_phone: formData.adminPhone || undefined,
+        admin_password: formData.adminPassword,
+        admin_role: 'organization_admin',
+      };
+
+      await organizationService.registerOrganization(payload);
+
+      // Invalidate memberships cache so new org appears in org switcher
+      queryClient.invalidateQueries({ queryKey: ['user-memberships'] });
+      queryClient.invalidateQueries({ queryKey: ['organizations'] });
+
+      // Navigate to dashboard — user can switch to new org via org switcher
+      navigate('/dashboard');
+    } catch (err: any) {
       console.error('Failed to create organization:', err);
-      alert('Failed to create organization. Please try again.');
+      const message = err?.response?.data?.detail || err?.message || 'Failed to create organization. Please try again.';
+      setSubmitError(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -354,6 +395,24 @@ export const CreateOrganization: React.FC = () => {
             />
           </div>
         </div>
+
+        <div>
+          <label htmlFor="adminPassword" style={{ display: 'block', fontWeight: 500, marginBottom: '0.5rem' }}>
+            Admin Password *
+          </label>
+          <Input
+            id="adminPassword"
+            name="adminPassword"
+            type="password"
+            placeholder="Minimum 8 characters"
+            value={formData.adminPassword}
+            onChange={(e) => handleInputChange('adminPassword', e.target.value)}
+            required
+          />
+          <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.25rem' }}>
+            Password for the organization admin account (min 8 characters)
+          </p>
+        </div>
       </div>
     </>
   );
@@ -491,7 +550,7 @@ export const CreateOrganization: React.FC = () => {
               Onboard a new corporate training customer
             </p>
           </div>
-          <Link to="/admin/organizations">
+          <Link to={user?.role === 'site_admin' ? '/admin/organizations' : '/dashboard'}>
             <Button variant="secondary">
               Cancel
             </Button>
@@ -506,6 +565,21 @@ export const CreateOrganization: React.FC = () => {
             {currentStep === 1 && renderStep1()}
             {currentStep === 2 && renderStep2()}
             {currentStep === 3 && renderStep3()}
+
+            {/* Error Display */}
+            {submitError && (
+              <div style={{
+                padding: '0.75rem 1rem',
+                backgroundColor: '#fef2f2',
+                border: '1px solid #fecaca',
+                borderRadius: '0.375rem',
+                color: '#dc2626',
+                fontSize: '0.875rem',
+                marginTop: '1rem'
+              }}>
+                {submitError}
+              </div>
+            )}
 
             {/* Navigation Buttons */}
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'space-between', paddingTop: '2rem', borderTop: '1px solid #e5e7eb', marginTop: '2rem' }}>

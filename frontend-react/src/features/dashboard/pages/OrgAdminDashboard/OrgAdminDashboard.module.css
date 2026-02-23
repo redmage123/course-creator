@@ -56,6 +56,34 @@
 }
 
 /* ============================================================================
+ * ORGANIZATION INFO BAR
+ * ============================================================================ */
+
+.org-info-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-top: 16px;
+  padding: 12px 20px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.org-info-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #475569;
+}
+
+.org-info-item i {
+  font-size: 14px;
+  color: #64748b;
+}
+
+/* ============================================================================
  * WELCOME SECTION
  * ============================================================================ */
 

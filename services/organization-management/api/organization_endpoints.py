@@ -19,7 +19,7 @@ import logging
 import re
 
 # Import dependency injection
-from app_dependencies import get_organization_service, get_current_user, require_org_admin, get_dao
+from app_dependencies import get_organization_service, get_current_user, get_optional_current_user, require_org_admin, get_dao
 from organization_management.application.services.organization_service import OrganizationService
 from organization_management.data_access.organization_dao import OrganizationManagementDAO
 
@@ -201,27 +201,24 @@ class ValidationException(Exception):
 @router.post("/organizations", response_model=OrganizationResponse)
 async def create_organization(
     request: OrganizationCreateRequest,
-    organization_service: OrganizationService = Depends(get_organization_service)
+    organization_service: OrganizationService = Depends(get_organization_service),
+    dao: OrganizationManagementDAO = Depends(get_dao),
+    current_user: Optional[Dict[str, Any]] = Depends(get_optional_current_user)
 ):
     """
     Create a new organization with professional requirements and admin user.
-    
+
     BUSINESS REQUIREMENTS:
     - Organization must have complete contact information
     - Contact email must be professional domain (no Gmail, Yahoo, etc.)
     - Organization admin user is created with appropriate roles
     - All fields validated according to business rules
+    - If caller is already authenticated, they get an organization_admin
+      membership in the new org so they can switch to it
     """
     try:
-        print(f"=== API ENDPOINT DEBUG: Received organization registration request")
-        print(f"=== API REQUEST DATA: name='{request.name}', slug='{request.slug}', admin_email='{request.admin_email}'")
-        logging.info(f"API ENDPOINT DEBUG: Received organization registration request")
-        logging.info(f"API REQUEST DATA: name='{request.name}', slug='{request.slug}', admin_email='{request.admin_email}'")
-        
-        # Create organization with automatic admin user registration
         logging.info(f"Creating organization: {request.name} with administrator: {request.admin_email}")
-        print(f"=== API DEBUG: About to call organization_service.create_organization")
-        
+
         # Use enhanced organization service to create both organization and admin user
         result = await organization_service.create_organization(
             name=request.name,
@@ -245,19 +242,33 @@ async def create_organization(
             admin_roles=request.admin_roles or [request.admin_role],
             admin_password=request.admin_password
         )
-        
-        print(f"=== API DEBUG: Service call completed successfully")
-        logging.info(f"API DEBUG: Service call completed successfully")
-        
+
         # Extract organization data from result
         org_data = result["organization"]
         admin_data = result["admin_user"]
-        
-        print(f"=== API DEBUG: Extracted organization and admin data")
+        new_org_id = str(org_data["id"])
+
         logging.info(f"Organization and admin user created successfully: {request.name}")
-        logging.info(f"Admin user: {admin_data['email']} (temp password generated)")
-        
-        print(f"=== API DEBUG: About to create OrganizationResponse")
+
+        # If the caller is authenticated, add them as a member of the new org
+        # so they can switch to it via the org switcher
+        if current_user:
+            caller_user_id = str(current_user.get("user_id") or current_user.get("id"))
+            try:
+                existing = await dao.get_user_membership(caller_user_id, new_org_id)
+                if not existing:
+                    await dao.create_membership({
+                        "id": str(uuid4()),
+                        "user_id": caller_user_id,
+                        "organization_id": new_org_id,
+                        "role": "organization_admin",
+                        "is_active": True
+                    })
+                    logging.info(f"Added creator {caller_user_id} as org_admin member in new org {new_org_id}")
+            except Exception as membership_err:
+                # Non-fatal — org was created, just membership failed
+                logging.warning(f"Could not add creator membership: {membership_err}")
+
         # Return organization response (admin user info is logged but not returned for security)
         return OrganizationResponse(
             id=org_data["id"],

@@ -69,6 +69,7 @@ const SiteAdminDashboard = lazy(() => import('./features/dashboard/pages/SiteAdm
 // Lazy-loaded Training Program Pages
 const TrainingProgramListPage = lazy(() => import('./features/courses/pages').then(m => ({ default: m.TrainingProgramListPage })));
 const TrainingProgramDetailPage = lazy(() => import('./features/courses/pages').then(m => ({ default: m.TrainingProgramDetailPage })));
+const ProgramWizard = lazy(() => import('./features/courses/pages').then(m => ({ default: m.ProgramWizard })));
 const CreateEditTrainingProgramPage = lazy(() => import('./features/courses/pages').then(m => ({ default: m.CreateEditTrainingProgramPage })));
 const ContentGenerationPage = lazy(() => import('./features/courses/pages').then(m => ({ default: m.ContentGenerationPage })));
 
@@ -301,12 +302,12 @@ function App() {
               }
             />
 
-            {/* Course Details (for all roles) */}
+            {/* Program Setup Wizard (instructors/admins edit, students read-only) */}
             <Route
               path="/courses/:courseId"
               element={
                 <ProtectedRoute>
-                  <TrainingProgramDetailPage />
+                  <ProgramWizard />
                 </ProtectedRoute>
               }
             />
@@ -690,6 +691,16 @@ function App() {
               element={
                 <ProtectedRoute requiredRoles={['organization_admin']}>
                   <ImportTemplatePage />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Create Organization (Org Admin & Site Admin) */}
+            <Route
+              path="/organization/create"
+              element={
+                <ProtectedRoute requiredRoles={['organization_admin', 'site_admin']}>
+                  <CreateOrganization />
                 </ProtectedRoute>
               }
             />

@@ -2,9 +2,9 @@
 FastAPI Dependencies for Organization Management Service
 Single Responsibility: Dependency injection for FastAPI endpoints
 """
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from uuid import UUID
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from organization_management.infrastructure.container import get_container
 from organization_management.application.services.organization_service import OrganizationService
@@ -14,6 +14,8 @@ from organization_management.application.services.meeting_room_service import Me
 from organization_management.application.services.notification_service import NotificationService
 from organization_management.domain.entities.enhanced_role import Permission
 from organization_management.data_access.organization_dao import OrganizationManagementDAO
+from organization_management.data_access.llm_config_dao import LLMConfigDAO
+import asyncpg
 
 security = HTTPBearer()
 
@@ -47,6 +49,25 @@ async def get_current_user(
         )
 
     return await auth_service.authenticate_user(credentials.credentials)
+
+
+async def get_optional_current_user(
+    request: Request,
+    auth_service: AuthService = Depends(get_auth_service)
+) -> Optional[Dict[str, Any]]:
+    """Get current user if authenticated, otherwise return None.
+
+    Used on endpoints that are public but can optionally use auth context
+    (e.g., org creation adds creator membership when caller is authenticated).
+    """
+    auth_header = request.headers.get("authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return None
+    token = auth_header.split(" ", 1)[1]
+    try:
+        return await auth_service.authenticate_user(token)
+    except Exception:
+        return None
 
 
 async def require_org_admin(
@@ -207,3 +228,33 @@ async def verify_site_admin_permission(current_user: Dict[str, Any]) -> bool:
         status_code=status.HTTP_403_FORBIDDEN,
         detail="Site administrator access required"
     )
+
+
+async def get_db_pool() -> asyncpg.Pool:
+    """
+    Get database connection pool for FastAPI dependency injection
+
+    BUSINESS CONTEXT:
+    Provides direct access to the database connection pool for DAOs
+    that need to perform database operations outside of services.
+
+    TECHNICAL IMPLEMENTATION:
+    Returns the asyncpg connection pool from the container.
+    """
+    container = get_container()
+    return container._connection_pool
+
+
+async def get_llm_config_dao() -> LLMConfigDAO:
+    """
+    Get LLM configuration DAO for FastAPI dependency injection
+
+    BUSINESS CONTEXT:
+    Provides access to LLM provider configuration data for managing
+    organization-level AI provider settings, API keys, and usage tracking.
+
+    TECHNICAL IMPLEMENTATION:
+    Creates an LLMConfigDAO instance using the container's connection pool.
+    """
+    pool = await get_db_pool()
+    return LLMConfigDAO(pool)
