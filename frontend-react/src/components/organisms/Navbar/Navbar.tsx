@@ -21,7 +21,11 @@
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../../hooks/useAuth';
+import { useAppDispatch } from '../../../store/hooks';
+import { updateOrganization } from '../../../store/slices/authSlice';
+import { organizationService } from '../../../services';
 import { Button } from '../../atoms/Button';
 import styles from './Navbar.module.css';
 
@@ -57,13 +61,54 @@ export const Navbar: React.FC<NavbarProps> = ({
   logo = 'Course Creator',
   className,
 }) => {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, organizationId, isOrgAdmin, isSiteAdmin } = useAuth();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [showOrgSwitcher, setShowOrgSwitcher] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const userMenuTriggerRef = useRef<HTMLButtonElement>(null);
+
+  /**
+   * Fetch current organization name for display
+   */
+  const { data: currentOrg } = useQuery({
+    queryKey: ['organization', organizationId],
+    queryFn: () => organizationService.getOrganizationById(organizationId!),
+    enabled: isAuthenticated && !!organizationId,
+    staleTime: 10 * 60 * 1000,
+    retry: 1,
+  });
+
+  /**
+   * Fetch user's organization memberships (for org switcher)
+   * Any authenticated user with 2+ memberships can switch orgs.
+   */
+  const { data: userMemberships } = useQuery({
+    queryKey: ['user-memberships'],
+    queryFn: () => organizationService.getMyOrganizations(),
+    enabled: isAuthenticated,
+    staleTime: 10 * 60 * 1000,
+    retry: 1,
+  });
+
+  const hasMultipleOrgs = (userMemberships?.length ?? 0) > 1;
+
+  /**
+   * Handle switching to a different organization
+   */
+  const handleSwitchOrg = useCallback((orgId: string) => {
+    dispatch(updateOrganization(orgId));
+    setShowOrgSwitcher(false);
+    setIsUserMenuOpen(false);
+    // Invalidate all cached queries so they refetch with the new org context
+    queryClient.invalidateQueries();
+    // Navigate to dashboard to reflect the new org
+    navigate('/dashboard');
+  }, [dispatch, queryClient, navigate]);
 
   /**
    * Close dropdowns on Escape key
@@ -165,11 +210,12 @@ export const Navbar: React.FC<NavbarProps> = ({
           { to: '/organization/members', label: 'Members' },
           { to: '/organization/courses', label: 'Courses' },
           { to: '/organization/analytics', label: 'Analytics' },
+          { to: '/organization/settings', label: 'Settings' },
         ];
       case 'instructor':
         return [
           ...commonLinks,
-          { to: '/instructor/programs', label: 'My Courses' },
+          { to: '/instructor/programs', label: 'Programs' },
           { to: '/instructor/students', label: 'Students' },
           { to: '/instructor/analytics', label: 'Analytics' },
         ];
@@ -318,6 +364,65 @@ export const Navbar: React.FC<NavbarProps> = ({
                         {user.role.replace('_', ' ').toUpperCase()}
                       </div>
                     </div>
+
+                    {/* Organization Section */}
+                    {organizationId && (
+                      <>
+                        <div className={styles['dropdown-divider']} />
+                        <div className={styles['org-section']}>
+                          <div className={styles['org-current']}>
+                            <span className={styles['org-label']}>Organization</span>
+                            <span className={styles['org-name']}>
+                              {currentOrg?.name || 'Loading...'}
+                            </span>
+                          </div>
+                          {hasMultipleOrgs && (
+                            <button
+                              className={styles['org-switch-btn']}
+                              onClick={() => setShowOrgSwitcher(!showOrgSwitcher)}
+                            >
+                              Switch
+                            </button>
+                          )}
+                        </div>
+                        {showOrgSwitcher && userMemberships && (
+                          <div className={styles['org-list']}>
+                            {userMemberships.map((membership) => (
+                              <button
+                                key={membership.org_id}
+                                className={`${styles['org-list-item']} ${membership.org_id === organizationId ? styles['org-list-item-active'] : ''}`}
+                                onClick={() => handleSwitchOrg(membership.org_id)}
+                                disabled={membership.org_id === organizationId}
+                              >
+                                {membership.org_name}
+                                {membership.org_id === organizationId && (
+                                  <span className={styles['org-current-badge']}>Current</span>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {(isOrgAdmin || isSiteAdmin) && (
+                          <Link
+                            to="/organization/settings"
+                            className={styles['dropdown-item']}
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            Org Settings
+                          </Link>
+                        )}
+                        {isSiteAdmin && (
+                          <Link
+                            to="/admin/organizations/create"
+                            className={styles['dropdown-item']}
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            Create Organization
+                          </Link>
+                        )}
+                      </>
+                    )}
+
                     <div className={styles['dropdown-divider']} />
                     <Link
                       to="/settings"

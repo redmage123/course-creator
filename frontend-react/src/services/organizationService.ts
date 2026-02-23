@@ -103,6 +103,19 @@ export interface OrganizationListResponse {
 }
 
 /**
+ * User's organization membership (returned by /my-memberships endpoint)
+ */
+export interface UserOrganizationMembership {
+  id: string;
+  org_id: string;
+  org_name: string;
+  org_slug?: string;
+  org_logo?: string;
+  role: string;
+  created_at: string;
+}
+
+/**
  * Organization Service Class
  *
  * WHY THIS APPROACH:
@@ -135,6 +148,15 @@ class OrganizationService {
    */
   async getMyOrganization(): Promise<Organization> {
     return await apiClient.get<Organization>(`${this.baseUrl}/me`);
+  }
+
+  /**
+   * Get current user's organization memberships (for org switcher)
+   */
+  async getMyOrganizations(): Promise<UserOrganizationMembership[]> {
+    return await apiClient.get<UserOrganizationMembership[]>(
+      `${this.baseUrl}/my-memberships`
+    );
   }
 
   /**

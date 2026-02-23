@@ -390,6 +390,28 @@ async def get_my_organization(
         print(f"ERROR getting my organization: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to get organization: {str(e)}")
 
+@router.get("/organizations/my-memberships")
+async def get_my_memberships(
+    current_user: Dict[str, Any] = Depends(get_current_user),
+    dao: OrganizationManagementDAO = Depends(get_dao)
+):
+    """
+    Get all organization memberships for the current user.
+
+    Returns a list of organizations the authenticated user belongs to,
+    enabling the org switcher UI for users with multiple memberships.
+    """
+    try:
+        user_id = str(current_user.get("user_id") or current_user.get("id"))
+        memberships = await dao.get_user_memberships(user_id)
+        return memberships
+    except DatabaseException as e:
+        logging.error(f"Database error fetching user memberships: {e.message}", extra=e.to_dict())
+        raise HTTPException(status_code=500, detail="Failed to retrieve memberships")
+    except Exception as e:
+        logging.error(f"Error fetching user memberships: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve memberships")
+
 @router.get("/organizations", response_model=List[OrganizationResponse])
 async def list_organizations(
     skip: int = Query(0, ge=0),
