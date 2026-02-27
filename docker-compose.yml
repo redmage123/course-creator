@@ -885,6 +885,59 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  # Payment Service - Provider-agnostic payment processing (port 8018)
+  payment-service:
+    image: course-creator-payment-service:latest
+    build:
+      context: ./services/payment-service
+      dockerfile: Dockerfile
+      cache_from:
+        - course-creator-payment-service:latest
+    env_file:
+      - .cc_env
+    environment:
+      - DATABASE_URL=postgresql://postgres:bY9QwaxIoTFo705wxqT8jd0UnTsejDNW@postgres:5432/course_creator?options=-csearch_path=course_creator,public
+      - REDIS_URL=redis://redis:6379
+      - USER_MANAGEMENT_URL=https://user-management:8000
+      - ORGANIZATION_MANAGEMENT_URL=https://organization-management:8008
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=bY9QwaxIoTFo705wxqT8jd0UnTsejDNW
+      - DB_NAME=course_creator
+      - ENVIRONMENT=docker
+      - DOCKER_CONTAINER=true
+      - SERVICE_NAME=payment-service
+      - LOG_LEVEL=INFO
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-}
+      - SERVICE_SSL_CERT=/app/ssl/nginx-selfsigned.crt
+      - SERVICE_SSL_KEY=/app/ssl/nginx-selfsigned.key
+      - PYTHONPATH=/app:/app/.venv/lib/python3.12/site-packages
+      - VIRTUAL_ENV=/app/.venv
+    ports:
+      - "8018:8018"
+    volumes:
+      - ./shared:/app/shared:ro
+      - ./logs:/var/log/course-creator
+      - ./ssl:/app/ssl:ro
+      - ./.venv:/app/.venv:ro
+    networks:
+      - course-creator-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      user-management:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-k", "https://localhost:8018/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
   # Prometheus - Metrics Collection and Monitoring
   prometheus:
     image: prom/prometheus:v2.48.0

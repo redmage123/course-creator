@@ -1,0 +1,66 @@
+# Payment Service Configuration
+
+hydra:
+  run:
+    dir: /tmp/hydra_outputs
+  output_subdir: null
+  job:
+    chdir: false
+
+server:
+  host: "0.0.0.0"
+  port: 8018
+  debug: false
+  reload: false
+
+database:
+  host: postgres
+  port: 5432
+  name: course_creator
+  user: postgres
+  password: bY9QwaxIoTFo705wxqT8jd0UnTsejDNW
+  pool_size: 10
+  max_overflow: 15
+  min_connections: 3
+  max_connections: 15
+  command_timeout: 60
+
+logging:
+  level: ${oc.env:LOG_LEVEL,INFO}
+  service_name: "payment-service"
+  format: "json"
+
+services:
+  user_management_url: ${oc.env:USER_MANAGEMENT_URL,https://user-management:8000}
+  organization_management_url: ${oc.env:ORGANIZATION_MANAGEMENT_URL,https://organization-management:8008}
+
+auth:
+  jwt_secret: ${oc.env:JWT_SECRET,}
+  jwt_algorithm: "HS256"
+
+payment:
+  default_provider: "null"
+  default_currency: "USD"
+  providers:
+    "null":
+      enabled: true
+      description: "Built-in provider for free and trial plans"
+    # stripe:
+    #   enabled: false
+    #   secret_key: ${oc.env:STRIPE_SECRET_KEY,}
+    #   webhook_secret: ${oc.env:STRIPE_WEBHOOK_SECRET,}
+    #   publishable_key: ${oc.env:STRIPE_PUBLISHABLE_KEY,}
+    # square:
+    #   enabled: false
+    #   access_token: ${oc.env:SQUARE_ACCESS_TOKEN,}
+    #   environment: ${oc.env:SQUARE_ENVIRONMENT,sandbox}
+
+cors:
+  origins:
+    - "http://localhost:3000"
+    - "https://localhost:3000"
+    - "http://localhost:3001"
+    - "https://localhost:3001"
+  allow_credentials: true
+  allow_methods: ["*"]
+  allow_headers: ["*"]

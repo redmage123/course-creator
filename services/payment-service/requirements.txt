@@ -1,0 +1,20 @@
+# Payment Service - Service-Specific Dependencies
+# Base dependencies are installed from requirements-base.txt
+
+# =============================================================================
+# JWT TOKEN MANAGEMENT
+# =============================================================================
+PyJWT>=2.8.0
+
+# =============================================================================
+# HTTP CLIENT FOR INTER-SERVICE COMMUNICATION
+# =============================================================================
+httpx>=0.25.0
+
+# =============================================================================
+# ASYNC UTILITIES
+# =============================================================================
+asyncio>=3.4.3
+
+# Note: All other dependencies (FastAPI, asyncpg, Hydra, Uvicorn, etc.)
+# are provided by requirements-base.txt
