@@ -63,7 +63,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     title: 'Organization Admin Dashboard',
     video: '/demo/videos/slide_03_organization_admin_dashboard.mp4',
     audio: '/demo/audio/slide_03_narration.mp3',
-    duration: 81, // Actual: 81.2s
+    duration: 91, // Actual: 91.1s
     narration: 'Let\'s log in as the organization admin we just created. First, navigate to the home page and click the Login button in the header. Now, enter the email address: sarah at acmelearning dot e-d-u. Then enter the password. Click the login button to sign in. Notice the user icon in the header changes to show you\'re logged in. You\'re now redirected to your organization admin dashboard! From here, you can manage everything. Notice the purple AI assistant button in the bottom right corner. You can use it to manage your organization through natural language instead of filling out forms.'
   },
   {
@@ -159,7 +159,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     title: 'Learning Analytics Dashboard',
     video: '/demo/videos/slide_15_learning_analytics.mp4',
     audio: '/demo/audio/slide_15_learning_analytics_narration.mp3',
-    duration: 32, // Estimated
+    duration: 45, // Actual: max(video 44.5s, audio 42.5s)
     narration: 'But students want more than just progress bars! Our Learning Analytics Dashboard gives them deep insights. See skill mastery across different topics with visual radar charts. Track learning velocity to understand how quickly concepts are being absorbed. View session activity patterns to optimize study habits. Monitor learning path progress through multi-course tracks. Students can identify their strengths and areas for improvement. It\'s not just about completing courses. It\'s about truly understanding your learning journey!'
   },
   {
@@ -167,7 +167,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     title: 'Instructor Insights Dashboard',
     video: '/demo/videos/slide_16_instructor_insights.mp4',
     audio: '/demo/audio/slide_16_instructor_insights_narration.mp3',
-    duration: 35, // Estimated
+    duration: 50, // Actual: max(video 50.0s, audio 48.0s)
     narration: 'Now let\'s see the Instructor Insights Dashboard! This is where AI truly shines. Course performance metrics show completion rates, engagement levels, and average scores at a glance. Student engagement widgets reveal who\'s thriving and who needs support. Content effectiveness charts identify which lessons drive the most learning. And the best part? AI-powered teaching recommendations! The system analyzes patterns across all your courses and suggests specific improvements. Maybe a lesson needs more examples. Maybe a quiz is too difficult. The AI tells you exactly what to optimize!'
   },
   {
@@ -175,7 +175,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     title: 'Third-Party Integrations',
     video: '/demo/videos/slide_17_integrations.mp4',
     audio: '/demo/audio/slide_17_integrations_narration.mp3',
-    duration: 38, // Estimated
+    duration: 42, // Actual: max(video 42.0s, audio 40.1s)
     narration: 'Your organization doesn\'t exist in isolation! Let\'s set up integrations. Click the Integrations tab. Here you can connect Slack for instant notifications when students complete courses. Link your Google Calendar or Outlook for automatic scheduling. Set up OAuth connections for single sign-on with your existing identity provider. Configure webhooks to trigger your own automation workflows. LTI integration lets you embed our courses directly in your existing LMS. Everything works together seamlessly!'
   },
   {
@@ -183,7 +183,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     title: 'Accessibility Settings',
     video: '/demo/videos/slide_18_accessibility.mp4',
     audio: '/demo/audio/slide_18_accessibility_narration.mp3',
-    duration: 30, // Estimated
+    duration: 48, // Actual: max(video 47.8s, audio 45.8s)
     narration: 'Accessibility isn\'t an afterthought. It\'s built into everything we do! Every user can customize their experience. Adjust font sizes from default to extra large. Switch between light, dark, or high contrast color schemes. Reduce motion for users sensitive to animations. Choose your preferred focus indicator style. Enable screen reader optimizations. Configure keyboard shortcuts to match your workflow. Skip links are always available for keyboard navigation. We\'re committed to WCAG 2.1 double-A compliance because learning should be accessible to everyone!'
   },
   {
@@ -191,15 +191,15 @@ const DEMO_SLIDES: DemoSlide[] = [
     title: 'Mobile Experience',
     video: '/demo/videos/slide_19_mobile.mp4',
     audio: '/demo/audio/slide_19_mobile_narration.mp3',
-    duration: 28, // Estimated
+    duration: 41, // Actual: max(video 41.3s, audio 39.3s)
     narration: 'Learning doesn\'t stop when you leave your desk! Our mobile experience brings the full platform to any device. Responsive design adapts beautifully to phones and tablets. Swipe through course cards with touch gestures. Pull down to refresh for the latest content. And the game changer? Offline sync! Download courses to learn on the go, even without internet. Your progress syncs automatically when you\'re back online. Train your team anywhere, anytime. That\'s the power of mobile-first design!'
   },
   {
     id: 20,
     title: 'Summary & Next Steps',
     video: '/demo/videos/slide_15_summary.mp4',
-    audio: '/demo/audio/slide_15_narration.mp3',
-    duration: 26, // Actual: 26.3s
+    audio: '/demo/audio/slide_20_summary_narration.mp3',
+    duration: 49, // Actual: audio 48.7s, video 28.2s
     narration: 'So that\'s Course Creator Platform! AI handles course development, content generation, and intelligent analytics. Deep learning insights for both students and instructors. Third-party integrations with Slack, Teams, Zoom, and your existing systems. Full accessibility support and mobile-first design. Your team works inside the tools they already use, and everything integrates seamlessly. Whether you\'re building corporate training programs or teaching as an independent instructor, we turn weeks of work into minutes of guided setup. Ready to see it in action? Visit our site to get started!'
   }
 ];
@@ -240,6 +240,8 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
   const syncIntervalRef = useRef<number | null>(null);
   const slideTimelineRef = useRef<HTMLDivElement>(null);
   const shouldContinuePlayingRef = useRef<boolean>(false);  // Track auto-continue across slides
+  const videoEndedRef = useRef<boolean>(false);  // Track video ended for sync
+  const audioEndedRef = useRef<boolean>(false);  // Track audio ended for sync
 
   // Current slide data
   const currentSlide = DEMO_SLIDES[currentSlideIndex];
@@ -306,10 +308,12 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
 
     console.log(`[DemoPlayer] Loading slide ${slide.id}: ${slide.title}`);
 
-    // Stop current playback
+    // Stop current playback and reset ended tracking
     video.pause();
     audio.pause();
     stopSyncEngine();
+    videoEndedRef.current = false;
+    audioEndedRef.current = false;
 
     // Update sources
     video.src = slide.video;
@@ -451,31 +455,27 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
   }, []);
 
   /**
-   * Handle video ended - auto-advance to next slide
+   * Advance to next slide once both audio and video have ended.
    *
-   * WHY USE REF:
-   * The shouldContinuePlayingRef avoids stale closure issues. When video ends,
-   * we need to know if user was watching the demo continuously (should auto-advance)
-   * or manually navigating. Using a ref ensures we always get the current value.
+   * WHY WAIT FOR BOTH:
+   * Audio narration can be longer than the video (e.g., slides 2 and 3).
+   * Previously, handleVideoEnded would immediately stop the audio mid-sentence.
+   * Now we wait for both media to finish so narration is never cut off.
    */
-  const handleVideoEnded = useCallback(() => {
-    const audio = audioRef.current;
-    if (audio) {
-      audio.pause();
-      audio.currentTime = 0;
-    }
+  const advanceToNextSlide = useCallback(() => {
+    if (!videoEndedRef.current || !audioEndedRef.current) return;
 
-    // Capture the ref value immediately - this is the true "should continue" state
+    // Reset for next slide
+    videoEndedRef.current = false;
+    audioEndedRef.current = false;
+
     const shouldContinue = shouldContinuePlayingRef.current;
 
     if (currentSlideIndex < DEMO_SLIDES.length - 1) {
-      // Auto-advance after brief delay for smooth transition
       setTimeout(() => {
         loadSlide(currentSlideIndex + 1);
 
-        // Auto-play next slide if user was watching continuously
         if (shouldContinue) {
-          // Wait for video to load, then auto-play
           setTimeout(() => {
             play();
           }, 600);
@@ -489,6 +489,23 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
       if (onComplete) onComplete();
     }
   }, [currentSlideIndex, loadSlide, play, stopSyncEngine, onComplete]);
+
+  /**
+   * Handle video ended - mark video as done, advance if audio also done
+   */
+  const handleVideoEnded = useCallback(() => {
+    videoEndedRef.current = true;
+    stopSyncEngine();
+    advanceToNextSlide();
+  }, [stopSyncEngine, advanceToNextSlide]);
+
+  /**
+   * Handle audio ended - mark audio as done, advance if video also done
+   */
+  const handleAudioEnded = useCallback(() => {
+    audioEndedRef.current = true;
+    advanceToNextSlide();
+  }, [advanceToNextSlide]);
 
   /**
    * Handle video can play - ready to start
@@ -605,7 +622,7 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
         />
 
         {/* Hidden Audio Player for Narration */}
-        <audio ref={audioRef} preload="auto" />
+        <audio ref={audioRef} preload="auto" onEnded={handleAudioEnded} />
       </div>
 
       {/* Narration Section - Below video, not overlaid */}

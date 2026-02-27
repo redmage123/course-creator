@@ -215,6 +215,25 @@ export const Homepage = () => {
       />
 
       <div className={styles.homepage}>
+        {/* Top Navigation Bar */}
+        <nav className={styles.topNav}>
+          <div className={styles.topNavContent}>
+            <Link to="/" className={styles.brandLink}>
+              <span className={styles.brandName}>AI Elevate</span>
+            </Link>
+            <div className={styles.topNavLinks}>
+              <Link to="/login" className={styles.topNavLink}>
+                <i className="fas fa-sign-in-alt"></i>
+                Sign In
+              </Link>
+              <Link to="/register" className={styles.topNavLinkHighlight}>
+                <i className="fas fa-user-plus"></i>
+                Register
+              </Link>
+            </div>
+          </div>
+        </nav>
+
         {/* Hero Section */}
         <section className={styles.hero}>
           <h1 className={styles.heroTitle}>
@@ -294,10 +313,6 @@ export const Homepage = () => {
         {/* Footer */}
         <footer className={styles.footer}>
           <div className={styles.footerContent}>
-            <p className={styles.footerText}>
-              Course Creator Platform - Built with React, TypeScript, and FastAPI
-            </p>
-
             <div className={styles.footerLinks}>
               <Link to="/login" className={styles.footerLink}>
                 Sign In
@@ -309,6 +324,9 @@ export const Homepage = () => {
                 Organization Registration
               </Link>
             </div>
+            <p className={styles.footerText}>
+              &copy; {new Date().getFullYear()} AI Elevate. All rights reserved.
+            </p>
           </div>
         </footer>
       </div>
