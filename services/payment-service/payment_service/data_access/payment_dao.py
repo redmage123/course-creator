@@ -395,12 +395,13 @@ class PaymentDAO:
             async with self.db_pool.acquire() as conn:
                 sub_id = await conn.fetchval(
                     """INSERT INTO course_creator.subscriptions (
-                        organization_id, plan_id, status, provider_name,
+                        id, organization_id, plan_id, status, provider_name,
                         provider_subscription_id, current_period_start,
                         current_period_end, trial_end,
                         created_at, updated_at
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
                     RETURNING id""",
+                    UUID(sub_data["id"]),
                     UUID(sub_data["organization_id"]),
                     UUID(sub_data["plan_id"]),
                     sub_data.get("status", "trial"),
@@ -996,12 +997,13 @@ class PaymentDAO:
                 payment_method_id = txn_data.get("payment_method_id")
                 txn_id = await conn.fetchval(
                     """INSERT INTO course_creator.transactions (
-                        organization_id, invoice_id, amount_cents, currency,
+                        id, organization_id, invoice_id, amount_cents, currency,
                         status, provider_name, provider_transaction_id,
                         payment_method_id, refund_amount_cents, failure_reason,
                         metadata, created_at, updated_at
-                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
                     RETURNING id""",
+                    UUID(txn_data["id"]),
                     UUID(txn_data["organization_id"]),
                     UUID(invoice_id) if invoice_id else None,
                     txn_data.get("amount_cents", 0),
