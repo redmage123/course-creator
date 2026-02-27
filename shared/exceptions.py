@@ -565,12 +565,12 @@ class RAGException(CourseCreatorBaseException):
 class EmbeddingException(RAGException):
     """
     Exception raised for text embedding generation failures.
-    
+
     Business Context:
     Embedding generation failures prevent effective semantic search and context retrieval,
     directly impacting the quality of AI-generated educational content and assistance.
     These exceptions help identify API failures, model issues, and text processing problems.
-    
+
     Technical Context:
     - OpenAI API embedding failures
     - Local embedding model errors
@@ -578,6 +578,254 @@ class EmbeddingException(RAGException):
     - Token limit exceeded errors
     """
     pass
+
+
+# LLM Provider Exceptions
+class LLMProviderException(ExternalServiceException):
+    """
+    Base exception for LLM provider operations.
+
+    Business Context:
+    Handles all LLM API failures across multiple providers (OpenAI, Anthropic, Deepseek,
+    Qwen, Ollama, Llama). Essential for screenshot-to-course generation and AI features.
+    Enables graceful degradation when specific providers are unavailable.
+
+    Technical Context:
+    - Provider API communication issues
+    - Model availability problems
+    - Token limit exceeded
+    - Invalid API responses
+    """
+    pass
+
+
+class LLMProviderConnectionException(LLMProviderException):
+    """
+    LLM provider connection exceptions for network and availability issues.
+
+    Business Context:
+    Handles connection failures to LLM providers. The system should attempt fallback
+    to alternative providers when this occurs.
+
+    Technical Context:
+    - Network connectivity issues
+    - Provider service unavailability
+    - Connection timeouts
+    - SSL/TLS handshake failures
+    """
+
+    def __init__(self, provider: str, operation: str, original_error: str = "", **kwargs):
+        message = f"LLM provider '{provider}' connection failed during {operation}: {original_error}"
+        super().__init__(
+            message,
+            error_code="LLM_PROVIDER_CONNECTION_ERROR",
+            details={"provider": provider, "operation": operation},
+            **kwargs
+        )
+
+
+class LLMProviderAuthenticationException(LLMProviderException):
+    """
+    LLM provider authentication exceptions for API key and credential issues.
+
+    Business Context:
+    Handles authentication failures when org-configured API keys are invalid or expired.
+    Prompts organization admins to update their LLM configuration.
+
+    Technical Context:
+    - Invalid API keys
+    - Expired credentials
+    - Permission denied
+    - Account suspended
+    """
+
+    def __init__(self, provider: str, detail: str = "", **kwargs):
+        message = f"LLM provider '{provider}' authentication failed: {detail}"
+        super().__init__(
+            message,
+            error_code="LLM_PROVIDER_AUTH_ERROR",
+            details={"provider": provider},
+            **kwargs
+        )
+
+
+class LLMProviderRateLimitException(LLMProviderException):
+    """
+    LLM provider rate limit exceptions for quota and throttling issues.
+
+    Business Context:
+    Handles rate limiting from LLM providers. The system should queue requests
+    or attempt fallback to alternative providers when this occurs.
+
+    Technical Context:
+    - API rate limits exceeded
+    - Token quota exhausted
+    - Request throttling
+    - Daily/monthly limits
+    """
+
+    def __init__(self, provider: str, retry_after: int = None, **kwargs):
+        message = f"LLM provider '{provider}' rate limit exceeded"
+        if retry_after:
+            message += f". Retry after {retry_after} seconds"
+        super().__init__(
+            message,
+            error_code="LLM_PROVIDER_RATE_LIMIT",
+            details={"provider": provider, "retry_after": retry_after},
+            **kwargs
+        )
+
+
+class LLMProviderResponseException(LLMProviderException):
+    """
+    LLM provider response exceptions for invalid or unexpected responses.
+
+    Business Context:
+    Handles malformed responses, content filtering, and unexpected output formats
+    from LLM providers. Enables proper error reporting and debugging.
+
+    Technical Context:
+    - Invalid JSON responses
+    - Content filtering triggered
+    - Model output validation failures
+    - Unexpected response format
+    """
+
+    def __init__(self, provider: str, status_code: int = None, detail: str = "", **kwargs):
+        message = f"LLM provider '{provider}' response error"
+        if status_code:
+            message += f" (HTTP {status_code})"
+        if detail:
+            message += f": {detail}"
+        super().__init__(
+            message,
+            error_code="LLM_PROVIDER_RESPONSE_ERROR",
+            details={"provider": provider, "status_code": status_code},
+            **kwargs
+        )
+
+
+# Vision Analysis Exceptions
+class VisionAnalysisException(CourseCreatorBaseException):
+    """
+    Exception for vision/image analysis operations.
+
+    Business Context:
+    Handles all vision AI failures during screenshot-to-course generation.
+    Critical for the screenshot upload feature that uses multimodal LLMs
+    to extract course content from images.
+
+    Technical Context:
+    - Image processing failures
+    - Vision model errors
+    - OCR extraction issues
+    - Content structure detection problems
+    """
+    pass
+
+
+class ScreenshotUploadException(CourseCreatorBaseException):
+    """
+    Exception for screenshot upload operations.
+
+    Business Context:
+    Handles file upload failures for screenshot-to-course generation feature.
+    Ensures proper error messages for file validation and storage issues.
+
+    Technical Context:
+    - File size limits exceeded
+    - Upload interruptions
+    - Storage failures
+    - File corruption detection
+    """
+
+    def __init__(self, filename: str, reason: str, **kwargs):
+        message = f"Screenshot upload failed for '{filename}': {reason}"
+        super().__init__(
+            message,
+            error_code="SCREENSHOT_UPLOAD_ERROR",
+            details={"filename": filename, "reason": reason},
+            **kwargs
+        )
+
+
+class UnsupportedImageFormatException(ValidationException):
+    """
+    Exception for unsupported image format uploads.
+
+    Business Context:
+    Handles cases where users upload images in unsupported formats.
+    Provides clear feedback about accepted formats (PNG, JPG, WEBP).
+
+    Technical Context:
+    - Invalid MIME types
+    - Unsupported file extensions
+    - Corrupted image headers
+    """
+
+    def __init__(self, filename: str, detected_format: str, supported_formats: list = None, **kwargs):
+        supported = supported_formats or ['PNG', 'JPG', 'JPEG', 'WEBP']
+        message = f"Unsupported image format '{detected_format}' for file '{filename}'. Supported formats: {', '.join(supported)}"
+        super().__init__(
+            message,
+            error_code="UNSUPPORTED_IMAGE_FORMAT",
+            field_errors={"file": f"Format {detected_format} not supported"},
+            details={"filename": filename, "detected_format": detected_format, "supported_formats": supported},
+            **kwargs
+        )
+
+
+class CourseGenerationException(CourseCreatorBaseException):
+    """
+    Exception for AI-powered course generation operations.
+
+    Business Context:
+    Handles failures during the course generation pipeline including
+    screenshot analysis, content structuring, and course creation.
+    Critical for the screenshot-to-course feature.
+
+    Technical Context:
+    - Analysis result parsing errors
+    - Course structure validation failures
+    - Module/lesson generation errors
+    - Database creation failures
+    """
+
+    def __init__(self, stage: str, reason: str, screenshot_id: str = None, **kwargs):
+        message = f"Course generation failed at '{stage}' stage: {reason}"
+        super().__init__(
+            message,
+            error_code="COURSE_GENERATION_ERROR",
+            details={"stage": stage, "reason": reason, "screenshot_id": screenshot_id},
+            **kwargs
+        )
+
+
+class ScreenshotAnalysisException(VisionAnalysisException):
+    """
+    Exception for screenshot analysis failures.
+
+    Business Context:
+    Handles specific failures during screenshot content extraction.
+    Provides detailed error information for debugging and user feedback.
+
+    Technical Context:
+    - Text extraction failures
+    - Structure detection errors
+    - Low confidence results
+    - Timeout during analysis
+    """
+
+    def __init__(self, screenshot_id: str, reason: str, provider: str = None, **kwargs):
+        message = f"Screenshot analysis failed for '{screenshot_id}': {reason}"
+        if provider:
+            message += f" (using {provider})"
+        super().__init__(
+            message,
+            error_code="SCREENSHOT_ANALYSIS_ERROR",
+            details={"screenshot_id": screenshot_id, "reason": reason, "provider": provider},
+            **kwargs
+        )
 
 
 # Factory functions for common exception patterns

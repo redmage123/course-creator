@@ -1,0 +1,116 @@
+{
+  "timestamp": "2026-02-22T20:29:51.862133",
+  "organization": "Apex Graduate Academy",
+  "program": "Graduate Training Program 2026",
+  "cities": [
+    "Toronto",
+    "Vancouver",
+    "Montreal",
+    "Calgary"
+  ],
+  "stats": {
+    "api_calls": 1649,
+    "api_successes": 36,
+    "api_failures": 1611,
+    "entities": {
+      "organizations": 0,
+      "projects": 1,
+      "tracks": 3,
+      "courses": 10,
+      "instructors": 12,
+      "students": 80,
+      "enrollments": 268
+    },
+    "phase_results": {
+      "Organization Registration": {
+        "status": "SUCCESS",
+        "details": "Already exists, ID: 833d8437-5ba4-409f-9b68-1fc90d60296d"
+      },
+      "Program Setup": {
+        "status": "SUCCESS",
+        "details": "Program ID: a40d622c-641e-46bf-a3e5-8301f79a2884"
+      },
+      "Track Creation": {
+        "status": "SUCCESS",
+        "details": "3/3 tracks created"
+      },
+      "User Registration": {
+        "status": "SUCCESS",
+        "details": "12 instructors, 80 students"
+      },
+      "Course Creation": {
+        "status": "SUCCESS",
+        "details": "10/10 courses created"
+      },
+      "Content Generation": {
+        "status": "SUCCESS",
+        "details": "10/10 quizzes generated (optional phase)"
+      },
+      "Student Enrollment": {
+        "status": "SUCCESS",
+        "details": "80 track + 268 course enrollments"
+      },
+      "Weekly Simulation": {
+        "status": "SUCCESS",
+        "details": "6 weeks simulated, 64/80 completions"
+      },
+      "Screenshots": {
+        "status": "SUCCESS",
+        "details": "10/10 screenshots taken, 0 validation errors (0 navbar, 0 interaction)"
+      }
+    },
+    "start_time": 1771788449.3966753
+  },
+  "simulation_summary": {
+    "weekly_summaries": [
+      {
+        "week": 1,
+        "activities": 80,
+        "avg_progress": 12.8,
+        "quiz_attempts": 80,
+        "lab_sessions": 80
+      },
+      {
+        "week": 2,
+        "activities": 80,
+        "avg_progress": 29.8,
+        "quiz_attempts": 80,
+        "lab_sessions": 80
+      },
+      {
+        "week": 3,
+        "activities": 80,
+        "avg_progress": 47.4,
+        "quiz_attempts": 80,
+        "lab_sessions": 80
+      },
+      {
+        "week": 4,
+        "activities": 80,
+        "avg_progress": 63.3,
+        "quiz_attempts": 80,
+        "lab_sessions": 80
+      },
+      {
+        "week": 5,
+        "activities": 80,
+        "avg_progress": 77.5,
+        "quiz_attempts": 80,
+        "lab_sessions": 80
+      },
+      {
+        "week": 6,
+        "activities": 80,
+        "avg_progress": 89.8,
+        "quiz_attempts": 80,
+        "lab_sessions": 80
+      }
+    ]
+  },
+  "elapsed_seconds": 142.4652078151703,
+  "quiz_averages_by_track": {
+    "Application Developers": 76.1,
+    "Data Analysts": 76.2,
+    "Systems Engineering": 76.5
+  }
+}

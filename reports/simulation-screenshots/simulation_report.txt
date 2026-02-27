@@ -1,0 +1,99 @@
+Apex Graduate Academy — Simulation Report
+Generated: 2026-02-22 20:29:51
+============================================================
+
+Entities Created:
+  Organizations        0
+  Projects             1
+  Tracks               3
+  Courses              10
+  Instructors          12
+  Students             80
+  Enrollments          268
+
+API Calls: 1649 (success rate: 2.2%)
+Simulation Time: 142.5s
+
+Student Records:
+Name                           City         Track                     Profile      Progress   Completed 
+----------------------------------------------------------------------------------------------------
+Aiden Mitchell                 Toronto      Application Developers    solid            92.6% Yes       
+Sophia Nguyen                  Toronto      Application Developers    star             99.3% Yes       
+Marcus Johnson                 Toronto      Application Developers    solid            96.9% Yes       
+Emma Kowalski                  Toronto      Application Developers    solid            88.0% Yes       
+Liam Okafor                    Toronto      Application Developers    solid            87.1% Yes       
+Olivia Fitzgerald              Toronto      Application Developers    solid            94.1% Yes       
+Noah Yamamoto                  Toronto      Application Developers    struggling       74.3% No        
+Jackson Lee                    Vancouver    Application Developers    struggling       80.5% No        
+Scarlett Wong                  Vancouver    Application Developers    solid            88.7% Yes       
+Sebastian Cruz                 Vancouver    Application Developers    solid            89.5% Yes       
+Aria Nakamura                  Vancouver    Application Developers    star             98.5% Yes       
+Henry Gill                     Vancouver    Application Developers    at_risk          57.9% No        
+Chloe Prasad                   Vancouver    Application Developers    solid            99.7% Yes       
+Owen Robertson                 Vancouver    Application Developers    star             98.4% Yes       
+Gabriel Lemieux                Montreal     Application Developers    solid            89.3% Yes       
+Camille Bouchard               Montreal     Application Developers    star             99.9% Yes       
+Felix Lapointe                 Montreal     Application Developers    solid            86.7% Yes       
+Juliette Roy                   Montreal     Application Developers    solid            87.8% Yes       
+Mathis Gagnon                  Montreal     Application Developers    star             99.5% Yes       
+Lea Belanger                   Montreal     Application Developers    solid            97.4% Yes       
+Raphael Cote                   Montreal     Application Developers    star             98.2% Yes       
+Wyatt Makenzie                 Calgary      Application Developers    at_risk          63.1% No        
+Sadie Blackwood                Calgary      Application Developers    solid            85.9% Yes       
+Hudson Rempel                  Calgary      Application Developers    solid            90.9% Yes       
+Nadia Fehr                     Calgary      Application Developers    solid            85.7% Yes       
+Chase Oliphant                 Calgary      Application Developers    struggling       84.2% No        
+Piper Thiessen                 Calgary      Application Developers    struggling       77.5% No        
+Colton Driedger                Calgary      Application Developers    solid            94.7% Yes       
+Ava Petrova                    Toronto      Data Analysts             star             98.5% Yes       
+Ethan Rossi                    Toronto      Data Analysts             solid            89.5% Yes       
+Isabella Chandra               Toronto      Data Analysts             star            100.0% Yes       
+Lucas Hoffman                  Toronto      Data Analysts             solid            95.3% Yes       
+Mia Johansson                  Toronto      Data Analysts             solid            96.7% Yes       
+Benjamin Abubakar              Toronto      Data Analysts             star             99.1% Yes       
+Charlotte Kim                  Toronto      Data Analysts             star             99.6% Yes       
+Layla Khoury                   Vancouver    Data Analysts             star             98.7% Yes       
+Samuel Fraser                  Vancouver    Data Analysts             struggling       79.1% No        
+Zoe Tremblay                   Vancouver    Data Analysts             solid            94.2% Yes       
+Caleb Singh                    Vancouver    Data Analysts             struggling       79.0% No        
+Penelope Olsen                 Vancouver    Data Analysts             solid            95.8% Yes       
+Theodore Huang                 Vancouver    Data Analysts             solid            93.3% Yes       
+Riley Bergeron                 Vancouver    Data Analysts             at_risk          63.8% No        
+Emilie Fortin                  Montreal     Data Analysts             solid            88.9% Yes       
+Thomas Pelletier               Montreal     Data Analysts             solid            89.5% Yes       
+Clara Morin                    Montreal     Data Analysts             solid            95.4% Yes       
+Louis Gauthier                 Montreal     Data Analysts             solid            91.1% Yes       
+Maeve O'Sullivan               Montreal     Data Analysts             solid            89.7% Yes       
+Hugo Bergeron                  Montreal     Data Analysts             solid            94.2% Yes       
+Nora Hassan                    Montreal     Data Analysts             struggling       81.8% No        
+Ivy Brandt                     Calgary      Data Analysts             star             99.7% Yes       
+Beckett Fonseca                Calgary      Data Analysts             solid            94.9% Yes       
+Stella Mukherjee               Calgary      Data Analysts             solid            87.7% Yes       
+Asher Parikh                   Calgary      Data Analysts             solid            88.3% Yes       
+Ruby Takahashi                 Calgary      Data Analysts             struggling       80.8% No        
+Rowan Chicklis                 Calgary      Data Analysts             struggling       75.4% No        
+Violet Agarwal                 Calgary      Data Analysts             solid            95.9% Yes       
+Alexander Reyes                Toronto      Systems Engineering       solid            99.2% Yes       
+Amelia Zheng                   Toronto      Systems Engineering       solid            87.3% Yes       
+Daniel Moreau                  Toronto      Systems Engineering       solid            98.8% Yes       
+Harper Sullivan                Toronto      Systems Engineering       solid            87.1% Yes       
+William Andersen               Toronto      Systems Engineering       struggling       78.9% No        
+Ella Mbeki                     Toronto      Systems Engineering       star             98.5% Yes       
+Nathan Osei                    Vancouver    Systems Engineering       solid            89.8% Yes       
+Lily Dubois                    Vancouver    Systems Engineering       solid            93.6% Yes       
+Ryan McAllister                Vancouver    Systems Engineering       struggling       83.9% No        
+Aurora Joshi                   Vancouver    Systems Engineering       solid            98.8% Yes       
+Dylan Fernandez                Vancouver    Systems Engineering       struggling       84.2% No        
+Hannah Choi                    Vancouver    Systems Engineering       solid            85.1% Yes       
+Alexis Levesque                Montreal     Systems Engineering       solid            92.1% Yes       
+Zara Rousseau                  Montreal     Systems Engineering       solid            88.7% Yes       
+Victor Tran                    Montreal     Systems Engineering       star             98.8% Yes       
+Simone Perreault               Montreal     Systems Engineering       solid            85.9% Yes       
+Maxime Dube                    Montreal     Systems Engineering       star             98.1% Yes       
+Florence Diallo                Montreal     Systems Engineering       solid            88.1% Yes       
+Miles Henriksen                Calgary      Systems Engineering       solid            96.5% Yes       
+Hazel Ramirez                  Calgary      Systems Engineering       solid            86.5% Yes       
+Leo Gustafson                  Calgary      Systems Engineering       struggling       72.9% No        
+Willow Siddiqui                Calgary      Systems Engineering       solid            88.3% Yes       
+Ezra Mahmood                   Calgary      Systems Engineering       solid            89.3% Yes       
+Luna Svenson                   Calgary      Systems Engineering       solid            94.0% Yes       

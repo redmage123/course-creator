@@ -526,6 +526,23 @@ class RAGService:
                     "type": "string",  # documentation, faq, feature_description
                     "category": "string"  # pricing, integrations, target_audience, etc.
                 }
+            },
+            {
+                "name": "screenshot_courses",
+                "description": "Screenshot-generated courses with extracted text and visual analysis",
+                "metadata_schema": {
+                    "organization_id": "string",  # Owning organization
+                    "course_id": "string",  # Generated course ID (if created)
+                    "screenshot_id": "string",  # Source screenshot ID
+                    "llm_provider": "string",  # Provider used for analysis (openai, anthropic, etc.)
+                    "extracted_text": "string",  # Raw extracted text from vision analysis
+                    "content_type": "string",  # slide, diagram, table, code, mixed
+                    "subject_area": "string",  # Detected subject area
+                    "difficulty_level": "string",  # beginner, intermediate, advanced
+                    "confidence_score": "float",  # Analysis confidence (0.0-1.0)
+                    "generation_status": "string",  # analyzed, course_generated, published
+                    "file_hash": "string"  # For deduplication
+                }
             }
         ]
         
@@ -973,6 +990,372 @@ class RAGService:
                 original_exception=e
             )
 
+    async def add_screenshot_analysis(
+        self,
+        screenshot_id: str,
+        organization_id: str,
+        extracted_text: str,
+        course_structure: Dict[str, Any],
+        llm_provider: str,
+        content_type: str = "mixed",
+        subject_area: str = "",
+        difficulty_level: str = "intermediate",
+        confidence_score: float = 0.8,
+        file_hash: str = "",
+        course_id: Optional[str] = None
+    ) -> str:
+        """
+        Add screenshot analysis results to the RAG system for semantic search
+
+        BUSINESS PURPOSE:
+        Enables semantic search across screenshot-generated courses, allowing users
+        to find similar courses, content, and educational materials based on visual
+        content extracted from screenshots.
+
+        TECHNICAL IMPLEMENTATION:
+        - Generates embeddings from extracted text and course structure
+        - Stores rich metadata for filtering by org, provider, content type, etc.
+        - Enables "find similar courses" functionality
+        - Supports deduplication via file_hash
+
+        Args:
+            screenshot_id: Unique identifier for the source screenshot
+            organization_id: Organization that uploaded the screenshot
+            extracted_text: Raw text extracted via vision analysis
+            course_structure: Generated course structure (title, modules, lessons)
+            llm_provider: Provider used for analysis (openai, anthropic, etc.)
+            content_type: Type of content detected (slide, diagram, table, code, mixed)
+            subject_area: Detected educational subject area
+            difficulty_level: Difficulty level (beginner, intermediate, advanced)
+            confidence_score: Analysis confidence score (0.0-1.0)
+            file_hash: Hash of original file for deduplication
+            course_id: Generated course ID (if course was created)
+
+        Returns:
+            Document ID for the stored analysis
+        """
+        try:
+            # Build comprehensive content for embedding
+            content_parts = [
+                f"Screenshot Analysis - {content_type}",
+                f"Subject: {subject_area}" if subject_area else "",
+                f"Extracted Text:\n{extracted_text}",
+                f"Course Structure:",
+                f"Title: {course_structure.get('title', 'Untitled')}",
+                f"Description: {course_structure.get('description', '')}",
+            ]
+
+            # Add module information
+            modules = course_structure.get('modules', [])
+            for i, module in enumerate(modules[:5]):  # Limit to first 5 modules
+                content_parts.append(f"Module {i+1}: {module.get('title', 'Untitled')}")
+                lessons = module.get('lessons', [])
+                for lesson in lessons[:3]:  # Limit to first 3 lessons per module
+                    content_parts.append(f"  - {lesson.get('title', 'Untitled')}")
+
+            # Add learning objectives if present
+            objectives = course_structure.get('learning_objectives', [])
+            if objectives:
+                content_parts.append("Learning Objectives:")
+                content_parts.extend([f"  - {obj}" for obj in objectives[:5]])
+
+            document_content = "\n".join([p for p in content_parts if p])
+
+            # Determine generation status
+            generation_status = "course_generated" if course_id else "analyzed"
+
+            # Create RAG document with rich metadata
+            doc_id = f"screenshot_{screenshot_id}"
+            screenshot_doc = RAGDocument(
+                id=doc_id,
+                content=document_content,
+                metadata={
+                    "organization_id": organization_id,
+                    "course_id": course_id or "",
+                    "screenshot_id": screenshot_id,
+                    "llm_provider": llm_provider,
+                    "extracted_text": extracted_text[:1000],  # Truncate for metadata storage
+                    "content_type": content_type,
+                    "subject_area": subject_area,
+                    "difficulty_level": difficulty_level,
+                    "confidence_score": confidence_score,
+                    "generation_status": generation_status,
+                    "file_hash": file_hash,
+                    "course_title": course_structure.get('title', ''),
+                    "module_count": len(modules),
+                    "learning_objectives": json.dumps(objectives[:5]) if objectives else "[]"
+                },
+                domain="screenshot_courses",
+                source="screenshot_analysis",
+                timestamp=datetime.now(timezone.utc)
+            )
+
+            await self.add_document(screenshot_doc)
+            logger.info(f"Added screenshot analysis to RAG: {doc_id} (org: {organization_id})")
+            return doc_id
+
+        except (ValidationException, RAGException, EmbeddingException):
+            raise
+        except Exception as e:
+            raise RAGException(
+                message="Failed to add screenshot analysis to RAG system",
+                error_code="SCREENSHOT_RAG_ADD_ERROR",
+                details={
+                    "screenshot_id": screenshot_id,
+                    "organization_id": organization_id,
+                    "content_type": content_type
+                },
+                original_exception=e
+            )
+
+    async def find_similar_screenshots(
+        self,
+        query_text: str,
+        organization_id: Optional[str] = None,
+        content_type: Optional[str] = None,
+        subject_area: Optional[str] = None,
+        n_results: int = 5
+    ) -> List[Dict[str, Any]]:
+        """
+        Find similar screenshot-generated courses based on semantic search
+
+        BUSINESS PURPOSE:
+        Enables users to discover existing courses that are semantically similar
+        to their screenshot content, preventing duplicate course creation and
+        facilitating content reuse across organizations.
+
+        TECHNICAL IMPLEMENTATION:
+        - Uses semantic search on the screenshot_courses collection
+        - Filters by organization, content type, and subject area
+        - Returns ranked results with similarity scores
+
+        Args:
+            query_text: Text to search for (extracted text or course description)
+            organization_id: Filter by specific organization (optional)
+            content_type: Filter by content type (slide, diagram, etc.)
+            subject_area: Filter by subject area
+            n_results: Maximum number of results to return
+
+        Returns:
+            List of similar screenshot analyses with metadata and scores
+        """
+        try:
+            # Build metadata filter
+            metadata_filter = {}
+            if organization_id:
+                metadata_filter["organization_id"] = organization_id
+            if content_type:
+                metadata_filter["content_type"] = content_type
+            if subject_area:
+                metadata_filter["subject_area"] = subject_area
+
+            # Query the screenshot_courses collection
+            result = await self.query_rag(
+                query=query_text,
+                domain="screenshot_courses",
+                n_results=n_results,
+                metadata_filter=metadata_filter if metadata_filter else None
+            )
+
+            # Format results
+            similar_screenshots = []
+            for i, doc in enumerate(result.retrieved_documents):
+                similar_screenshots.append({
+                    "screenshot_id": doc.metadata.get("screenshot_id"),
+                    "organization_id": doc.metadata.get("organization_id"),
+                    "course_id": doc.metadata.get("course_id"),
+                    "course_title": doc.metadata.get("course_title"),
+                    "content_type": doc.metadata.get("content_type"),
+                    "subject_area": doc.metadata.get("subject_area"),
+                    "difficulty_level": doc.metadata.get("difficulty_level"),
+                    "llm_provider": doc.metadata.get("llm_provider"),
+                    "similarity_score": result.similarity_scores[i] if i < len(result.similarity_scores) else 0.0,
+                    "generation_status": doc.metadata.get("generation_status"),
+                    "extracted_text_preview": doc.metadata.get("extracted_text", "")[:200]
+                })
+
+            logger.info(f"Found {len(similar_screenshots)} similar screenshots for query")
+            return similar_screenshots
+
+        except (ValidationException, RAGException, EmbeddingException):
+            raise
+        except Exception as e:
+            raise RAGException(
+                message="Failed to search for similar screenshots",
+                error_code="SCREENSHOT_SEARCH_ERROR",
+                details={
+                    "query_length": len(query_text),
+                    "organization_id": organization_id,
+                    "content_type": content_type
+                },
+                original_exception=e
+            )
+
+    async def update_screenshot_course_id(
+        self,
+        screenshot_id: str,
+        course_id: str
+    ) -> bool:
+        """
+        Update screenshot analysis with generated course ID
+
+        BUSINESS PURPOSE:
+        Links screenshot analysis to the course that was generated from it,
+        enabling tracking of screenshot-to-course conversion and allowing
+        users to find courses by their source screenshots.
+
+        Args:
+            screenshot_id: Screenshot analysis document ID
+            course_id: Generated course ID to link
+
+        Returns:
+            True if update was successful
+        """
+        try:
+            collection = self.collections.get("screenshot_courses")
+            if not collection:
+                raise RAGException(
+                    message="Screenshot courses collection not initialized",
+                    error_code="COLLECTION_NOT_FOUND",
+                    details={"collection": "screenshot_courses"}
+                )
+
+            doc_id = f"screenshot_{screenshot_id}"
+
+            # Get existing document
+            try:
+                existing = collection.get(ids=[doc_id], include=["metadatas", "documents"])
+            except Exception as e:
+                raise RAGException(
+                    message="Failed to retrieve screenshot document for update",
+                    error_code="SCREENSHOT_GET_ERROR",
+                    details={"doc_id": doc_id},
+                    original_exception=e
+                )
+
+            if not existing["ids"]:
+                raise ValidationException(
+                    message="Screenshot analysis not found",
+                    error_code="SCREENSHOT_NOT_FOUND",
+                    validation_errors={"screenshot_id": f"No analysis found for screenshot {screenshot_id}"}
+                )
+
+            # Update metadata with course_id
+            updated_metadata = existing["metadatas"][0].copy()
+            updated_metadata["course_id"] = course_id
+            updated_metadata["generation_status"] = "course_generated"
+
+            # Update document in collection
+            try:
+                collection.update(
+                    ids=[doc_id],
+                    metadatas=[updated_metadata]
+                )
+            except Exception as e:
+                raise RAGException(
+                    message="Failed to update screenshot document with course ID",
+                    error_code="SCREENSHOT_UPDATE_ERROR",
+                    details={"doc_id": doc_id, "course_id": course_id},
+                    original_exception=e
+                )
+
+            logger.info(f"Updated screenshot {screenshot_id} with course_id {course_id}")
+            return True
+
+        except (ValidationException, RAGException):
+            raise
+        except Exception as e:
+            raise RAGException(
+                message="Unexpected error updating screenshot course link",
+                error_code="SCREENSHOT_LINK_ERROR",
+                details={"screenshot_id": screenshot_id, "course_id": course_id},
+                original_exception=e
+            )
+
+    async def get_screenshot_stats(
+        self,
+        organization_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Get statistics about screenshot-generated courses
+
+        BUSINESS PURPOSE:
+        Provides analytics on screenshot course generation usage, helping
+        organizations understand their content creation patterns and
+        optimize their LLM provider selection.
+
+        Args:
+            organization_id: Filter stats by organization (optional)
+
+        Returns:
+            Dictionary with statistics (counts by provider, content type, status, etc.)
+        """
+        try:
+            collection = self.collections.get("screenshot_courses")
+            if not collection:
+                return {
+                    "total_screenshots": 0,
+                    "by_provider": {},
+                    "by_content_type": {},
+                    "by_status": {},
+                    "by_difficulty": {}
+                }
+
+            # Get all documents (or filtered by org)
+            try:
+                if organization_id:
+                    results = collection.get(
+                        where={"organization_id": organization_id},
+                        include=["metadatas"]
+                    )
+                else:
+                    results = collection.get(include=["metadatas"])
+            except Exception as e:
+                raise RAGException(
+                    message="Failed to retrieve screenshot statistics",
+                    error_code="SCREENSHOT_STATS_ERROR",
+                    details={"organization_id": organization_id},
+                    original_exception=e
+                )
+
+            metadatas = results.get("metadatas", [])
+
+            # Calculate statistics
+            by_provider = Counter()
+            by_content_type = Counter()
+            by_status = Counter()
+            by_difficulty = Counter()
+            by_subject = Counter()
+
+            for meta in metadatas:
+                by_provider[meta.get("llm_provider", "unknown")] += 1
+                by_content_type[meta.get("content_type", "unknown")] += 1
+                by_status[meta.get("generation_status", "unknown")] += 1
+                by_difficulty[meta.get("difficulty_level", "unknown")] += 1
+                if meta.get("subject_area"):
+                    by_subject[meta.get("subject_area")] += 1
+
+            return {
+                "total_screenshots": len(metadatas),
+                "organization_id": organization_id,
+                "by_provider": dict(by_provider),
+                "by_content_type": dict(by_content_type),
+                "by_status": dict(by_status),
+                "by_difficulty": dict(by_difficulty),
+                "by_subject": dict(by_subject)
+            }
+
+        except RAGException:
+            raise
+        except Exception as e:
+            raise RAGException(
+                message="Unexpected error calculating screenshot statistics",
+                error_code="SCREENSHOT_STATS_CALC_ERROR",
+                details={"organization_id": organization_id},
+                original_exception=e
+            )
+
+
 # Initialize RAG service
 rag_service = RAGService()
 
@@ -996,6 +1379,46 @@ class InteractionLearningRequest(BaseModel):
     feedback: Optional[str] = Field(default="", description="User feedback")
     quality_score: float = Field(default=0.0, description="Quality score (0-1)")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
+
+
+# Screenshot Course Generation Pydantic Models
+class CourseStructureModel(BaseModel):
+    """Course structure extracted from screenshot analysis"""
+    title: str = Field(..., description="Course title")
+    description: str = Field(default="", description="Course description")
+    modules: List[Dict[str, Any]] = Field(default_factory=list, description="List of course modules")
+    learning_objectives: List[str] = Field(default_factory=list, description="Learning objectives")
+
+
+class AddScreenshotAnalysisRequest(BaseModel):
+    """Request to add screenshot analysis to RAG system"""
+    screenshot_id: str = Field(..., description="Unique screenshot identifier")
+    organization_id: str = Field(..., description="Organization that owns the screenshot")
+    extracted_text: str = Field(..., description="Text extracted from screenshot via vision analysis")
+    course_structure: CourseStructureModel = Field(..., description="Generated course structure")
+    llm_provider: str = Field(..., description="LLM provider used for analysis (openai, anthropic, etc.)")
+    content_type: str = Field(default="mixed", description="Type of content (slide, diagram, table, code, mixed)")
+    subject_area: str = Field(default="", description="Detected subject area")
+    difficulty_level: str = Field(default="intermediate", description="Difficulty level")
+    confidence_score: float = Field(default=0.8, ge=0.0, le=1.0, description="Analysis confidence score")
+    file_hash: str = Field(default="", description="Hash of original file for deduplication")
+    course_id: Optional[str] = Field(default=None, description="Generated course ID (if created)")
+
+
+class FindSimilarScreenshotsRequest(BaseModel):
+    """Request to find similar screenshot-generated courses"""
+    query_text: str = Field(..., description="Text to search for")
+    organization_id: Optional[str] = Field(default=None, description="Filter by organization")
+    content_type: Optional[str] = Field(default=None, description="Filter by content type")
+    subject_area: Optional[str] = Field(default=None, description="Filter by subject area")
+    n_results: int = Field(default=5, ge=1, le=50, description="Maximum number of results")
+
+
+class UpdateScreenshotCourseIdRequest(BaseModel):
+    """Request to link screenshot to generated course"""
+    screenshot_id: str = Field(..., description="Screenshot analysis ID")
+    course_id: str = Field(..., description="Generated course ID to link")
+
 
 # API Endpoints
 @app.post("/api/v1/rag/add-document")
@@ -1377,6 +1800,195 @@ async def evaluate_rag_endpoint(
     except Exception as e:
         logger.error(f"Evaluation error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# Screenshot Course Generation Endpoints
+@app.post("/api/v1/rag/screenshots/add-analysis")
+async def add_screenshot_analysis_endpoint(request: AddScreenshotAnalysisRequest):
+    """
+    Add screenshot analysis to RAG system for semantic search
+
+    ENDPOINT PURPOSE:
+    Stores screenshot analysis results (extracted text, course structure) in the
+    RAG system to enable semantic search across screenshot-generated courses.
+
+    BUSINESS VALUE:
+    - Enables "find similar courses" functionality
+    - Prevents duplicate course creation from similar screenshots
+    - Supports cross-organization content discovery (with proper permissions)
+
+    Args:
+        request: Screenshot analysis data including extracted text and course structure
+
+    Returns:
+        Document ID for the stored analysis
+    """
+    try:
+        doc_id = await rag_service.add_screenshot_analysis(
+            screenshot_id=request.screenshot_id,
+            organization_id=request.organization_id,
+            extracted_text=request.extracted_text,
+            course_structure=request.course_structure.model_dump(),
+            llm_provider=request.llm_provider,
+            content_type=request.content_type,
+            subject_area=request.subject_area,
+            difficulty_level=request.difficulty_level,
+            confidence_score=request.confidence_score,
+            file_hash=request.file_hash,
+            course_id=request.course_id
+        )
+
+        return {
+            "status": "success",
+            "document_id": doc_id,
+            "screenshot_id": request.screenshot_id,
+            "message": "Screenshot analysis added to RAG system"
+        }
+
+    except ValidationException as e:
+        logger.warning(f"Add screenshot analysis validation error: {e.message}")
+        raise HTTPException(status_code=400, detail=e.message)
+    except (RAGException, EmbeddingException) as e:
+        logger.error(f"Add screenshot analysis RAG error: {e.message}")
+        raise HTTPException(status_code=500, detail=e.message)
+    except Exception as e:
+        logger.error(f"Add screenshot analysis unexpected error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.post("/api/v1/rag/screenshots/find-similar")
+async def find_similar_screenshots_endpoint(request: FindSimilarScreenshotsRequest):
+    """
+    Find similar screenshot-generated courses via semantic search
+
+    ENDPOINT PURPOSE:
+    Searches the RAG system for screenshot analyses that are semantically
+    similar to the provided query text, with optional filtering.
+
+    BUSINESS VALUE:
+    - Helps users discover existing related courses
+    - Enables content reuse and inspiration
+    - Prevents duplicate work by showing similar existing content
+
+    Args:
+        request: Search parameters including query text and filters
+
+    Returns:
+        List of similar screenshot analyses with similarity scores
+    """
+    try:
+        similar = await rag_service.find_similar_screenshots(
+            query_text=request.query_text,
+            organization_id=request.organization_id,
+            content_type=request.content_type,
+            subject_area=request.subject_area,
+            n_results=request.n_results
+        )
+
+        return {
+            "status": "success",
+            "query": request.query_text,
+            "n_results": len(similar),
+            "results": similar,
+            "filters_applied": {
+                "organization_id": request.organization_id,
+                "content_type": request.content_type,
+                "subject_area": request.subject_area
+            }
+        }
+
+    except ValidationException as e:
+        logger.warning(f"Find similar screenshots validation error: {e.message}")
+        raise HTTPException(status_code=400, detail=e.message)
+    except (RAGException, EmbeddingException) as e:
+        logger.error(f"Find similar screenshots RAG error: {e.message}")
+        raise HTTPException(status_code=500, detail=e.message)
+    except Exception as e:
+        logger.error(f"Find similar screenshots unexpected error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.post("/api/v1/rag/screenshots/link-course")
+async def link_screenshot_to_course_endpoint(request: UpdateScreenshotCourseIdRequest):
+    """
+    Link screenshot analysis to generated course
+
+    ENDPOINT PURPOSE:
+    Updates the screenshot analysis in the RAG system with the ID of the
+    course that was generated from it, enabling bidirectional lookup.
+
+    BUSINESS VALUE:
+    - Tracks screenshot-to-course conversion
+    - Enables finding source screenshots for any course
+    - Supports analytics on content generation workflows
+
+    Args:
+        request: Screenshot ID and course ID to link
+
+    Returns:
+        Success status
+    """
+    try:
+        success = await rag_service.update_screenshot_course_id(
+            screenshot_id=request.screenshot_id,
+            course_id=request.course_id
+        )
+
+        return {
+            "status": "success" if success else "failed",
+            "screenshot_id": request.screenshot_id,
+            "course_id": request.course_id,
+            "message": "Screenshot linked to course" if success else "Failed to link screenshot"
+        }
+
+    except ValidationException as e:
+        logger.warning(f"Link screenshot validation error: {e.message}")
+        raise HTTPException(status_code=400, detail=e.message)
+    except RAGException as e:
+        logger.error(f"Link screenshot RAG error: {e.message}")
+        raise HTTPException(status_code=500, detail=e.message)
+    except Exception as e:
+        logger.error(f"Link screenshot unexpected error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@app.get("/api/v1/rag/screenshots/stats")
+async def get_screenshot_stats_endpoint(
+    organization_id: Optional[str] = Query(default=None, description="Filter by organization")
+):
+    """
+    Get statistics about screenshot-generated courses
+
+    ENDPOINT PURPOSE:
+    Provides analytics on screenshot course generation usage, including
+    breakdowns by LLM provider, content type, subject area, and status.
+
+    BUSINESS VALUE:
+    - Helps organizations understand content creation patterns
+    - Supports LLM provider selection decisions
+    - Enables usage tracking and cost optimization
+
+    Args:
+        organization_id: Optional filter by organization
+
+    Returns:
+        Statistics dictionary with counts by various dimensions
+    """
+    try:
+        stats = await rag_service.get_screenshot_stats(organization_id=organization_id)
+
+        return {
+            "status": "success",
+            "statistics": stats,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
+    except RAGException as e:
+        logger.error(f"Screenshot stats RAG error: {e.message}")
+        raise HTTPException(status_code=500, detail=e.message)
+    except Exception as e:
+        logger.error(f"Screenshot stats unexpected error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @app.get("/api/v1/rag/health")

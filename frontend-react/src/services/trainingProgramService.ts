@@ -93,6 +93,60 @@ export interface TrainingProgramFilters {
 }
 
 /**
+ * API Response interface (matches backend CourseResponseDTO)
+ * Backend uses is_published, frontend uses published
+ */
+interface ApiTrainingProgram {
+  id: string;
+  title: string;
+  description: string;
+  category?: string;
+  difficulty_level: 'beginner' | 'intermediate' | 'advanced';
+  estimated_duration?: number;
+  duration_unit: 'hours' | 'days' | 'weeks' | 'months';
+  price?: number;
+  tags: string[];
+  instructor_id: string;
+  instructor_name?: string;
+  organization_id?: string;
+  project_id?: string;
+  track_id?: string;
+  location_id?: string;
+  is_published: boolean;  // Backend field name
+  created_at: string;
+  updated_at: string;
+  enrolled_students?: number;
+  completion_rate?: number;
+}
+
+interface ApiTrainingProgramListResponse {
+  data: ApiTrainingProgram[];
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}
+
+/**
+ * Transform API response to frontend interface
+ * Maps is_published (backend) to published (frontend)
+ */
+function transformProgram(apiProgram: ApiTrainingProgram): TrainingProgram {
+  const { is_published, ...rest } = apiProgram;
+  return {
+    ...rest,
+    published: is_published,
+  };
+}
+
+function transformProgramList(apiResponse: ApiTrainingProgramListResponse): TrainingProgramListResponse {
+  return {
+    ...apiResponse,
+    data: apiResponse.data.map(transformProgram),
+  };
+}
+
+/**
  * Training Program Service Class
  *
  * WHY THIS APPROACH:
@@ -100,6 +154,7 @@ export interface TrainingProgramFilters {
  * - Type-safe interfaces for all operations
  * - Consistent error handling via apiClient
  * - Supports B2B workflows (bulk operations, filtering)
+ * - Transforms API responses to match frontend interfaces
  */
 class TrainingProgramService {
   private baseUrl = '/courses'; // Using /courses as backend endpoint name
@@ -128,14 +183,16 @@ class TrainingProgramService {
     const queryString = params.toString();
     const url = queryString ? `${this.baseUrl}?${queryString}` : this.baseUrl;
 
-    return await apiClient.get<TrainingProgramListResponse>(url);
+    const apiResponse = await apiClient.get<ApiTrainingProgramListResponse>(url);
+    return transformProgramList(apiResponse);
   }
 
   /**
    * Get training program by ID
    */
   async getTrainingProgramById(id: string): Promise<TrainingProgram> {
-    return await apiClient.get<TrainingProgram>(`${this.baseUrl}/${id}`);
+    const apiResponse = await apiClient.get<ApiTrainingProgram>(`${this.baseUrl}/${id}`);
+    return transformProgram(apiResponse);
   }
 
   /**
@@ -144,7 +201,8 @@ class TrainingProgramService {
   async createTrainingProgram(
     data: CreateTrainingProgramRequest
   ): Promise<TrainingProgram> {
-    return await apiClient.post<TrainingProgram>(this.baseUrl, data);
+    const apiResponse = await apiClient.post<ApiTrainingProgram>(this.baseUrl, data);
+    return transformProgram(apiResponse);
   }
 
   /**
@@ -154,21 +212,24 @@ class TrainingProgramService {
     id: string,
     data: UpdateTrainingProgramRequest
   ): Promise<TrainingProgram> {
-    return await apiClient.put<TrainingProgram>(`${this.baseUrl}/${id}`, data);
+    const apiResponse = await apiClient.put<ApiTrainingProgram>(`${this.baseUrl}/${id}`, data);
+    return transformProgram(apiResponse);
   }
 
   /**
    * Publish training program (make available to students)
    */
   async publishTrainingProgram(id: string): Promise<TrainingProgram> {
-    return await apiClient.post<TrainingProgram>(`${this.baseUrl}/${id}/publish`);
+    const apiResponse = await apiClient.post<ApiTrainingProgram>(`${this.baseUrl}/${id}/publish`);
+    return transformProgram(apiResponse);
   }
 
   /**
    * Unpublish training program (remove from student access)
    */
   async unpublishTrainingProgram(id: string): Promise<TrainingProgram> {
-    return await apiClient.post<TrainingProgram>(`${this.baseUrl}/${id}/unpublish`);
+    const apiResponse = await apiClient.post<ApiTrainingProgram>(`${this.baseUrl}/${id}/unpublish`);
+    return transformProgram(apiResponse);
   }
 
   /**
@@ -184,7 +245,8 @@ class TrainingProgramService {
    */
   async getMyAssignedPrograms(): Promise<TrainingProgramListResponse> {
     // This will be filtered by backend based on student's enrollments
-    return await apiClient.get<TrainingProgramListResponse>(`${this.baseUrl}/my-courses`);
+    const apiResponse = await apiClient.get<ApiTrainingProgramListResponse>(`${this.baseUrl}/my-courses`);
+    return transformProgramList(apiResponse);
   }
 
   /**

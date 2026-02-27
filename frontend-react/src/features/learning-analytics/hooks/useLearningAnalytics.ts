@@ -102,69 +102,50 @@ export const useLearningAnalytics = (
       setIsLoading(true);
       setError(null);
 
-      /**
-       * Parallel Data Fetching
-       *
-       * WHAT: Fetches all analytics data concurrently
-       * WHERE: API service calls
-       * WHY: Reduces total loading time vs sequential calls
-       */
-      const [
-        summaryData,
-        pathsData,
-        skillsData,
-        sessionsData,
-        progressData,
-      ] = await Promise.all([
-        // Summary analytics (overall metrics)
-        studentId
-          ? learningAnalyticsService.getStudentLearningAnalytics(studentId)
-          : learningAnalyticsService.getMyLearningAnalytics(),
+      // Helper to validate API responses are JSON objects (not HTML fallback)
+      const isValidResponse = (data: unknown): boolean =>
+        data !== null && data !== undefined && typeof data === 'object' && !Array.isArray(data);
+      const isValidArrayResponse = (data: unknown): data is unknown[] =>
+        Array.isArray(data);
 
-        // Learning paths progress
-        studentId
-          ? learningAnalyticsService.getStudentLearningPaths(studentId)
-          : learningAnalyticsService
-              .getMyLearningAnalytics()
-              .then((data) =>
-                learningAnalyticsService.getStudentLearningPaths(data.student_id)
-              ),
+      // Fetch summary first - needed for student_id when no studentId prop
+      let summaryData: LearningAnalyticsSummary | null = null;
+      try {
+        const raw = studentId
+          ? await learningAnalyticsService.getStudentLearningAnalytics(studentId)
+          : await learningAnalyticsService.getMyLearningAnalytics();
+        summaryData = isValidResponse(raw) ? raw : null;
+      } catch {
+        summaryData = null;
+      }
 
-        // Skill mastery data
-        studentId
-          ? learningAnalyticsService.getSkillMastery(studentId, courseId)
-          : learningAnalyticsService
-              .getMyLearningAnalytics()
-              .then((data) => learningAnalyticsService.getSkillMastery(data.student_id, courseId)),
+      // Determine effective student ID for subsequent calls
+      const effectiveId = studentId || (summaryData?.student_id as string | undefined);
 
-        // Session activity
-        studentId
-          ? learningAnalyticsService.getSessionActivity(studentId, timeRange)
-          : learningAnalyticsService
-              .getMyLearningAnalytics()
-              .then((data) =>
-                learningAnalyticsService.getSessionActivity(data.student_id, timeRange)
-              ),
+      // Fetch remaining data in parallel (only if we have a student ID)
+      let pathsData: LearningPathProgress[] = [];
+      let skillsData: SkillMastery[] = [];
+      let sessionsData: SessionActivity[] = [];
+      let progressData: LearningProgressDataPoint[] = [];
 
-        // Progress time series
-        studentId
-          ? learningAnalyticsService.getLearningProgressTimeSeries(
-              studentId,
-              courseId,
-              timeRange
-            )
-          : learningAnalyticsService
-              .getMyLearningAnalytics()
-              .then((data) =>
-                learningAnalyticsService.getLearningProgressTimeSeries(
-                  data.student_id,
-                  courseId,
-                  timeRange
-                )
-              ),
-      ]);
+      if (effectiveId) {
+        const [rawPaths, rawSkills, rawSessions, rawProgress] = await Promise.allSettled([
+          learningAnalyticsService.getStudentLearningPaths(effectiveId),
+          learningAnalyticsService.getSkillMastery(effectiveId, courseId),
+          learningAnalyticsService.getSessionActivity(effectiveId, timeRange),
+          learningAnalyticsService.getLearningProgressTimeSeries(effectiveId, courseId, timeRange),
+        ]);
 
-      // Update state with fetched data
+        pathsData = rawPaths.status === 'fulfilled' && isValidArrayResponse(rawPaths.value)
+          ? rawPaths.value as LearningPathProgress[] : [];
+        skillsData = rawSkills.status === 'fulfilled' && isValidArrayResponse(rawSkills.value)
+          ? rawSkills.value as SkillMastery[] : [];
+        sessionsData = rawSessions.status === 'fulfilled' && isValidArrayResponse(rawSessions.value)
+          ? rawSessions.value as SessionActivity[] : [];
+        progressData = rawProgress.status === 'fulfilled' && isValidArrayResponse(rawProgress.value)
+          ? rawProgress.value as LearningProgressDataPoint[] : [];
+      }
+
       setSummary(summaryData);
       setLearningPaths(pathsData);
       setSkillMastery(skillsData);

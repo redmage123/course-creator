@@ -137,7 +137,9 @@ export const Heading = forwardRef<HTMLHeadingElement, HeadingProps>(({
     .join(' ');
 
   // Render the appropriate semantic HTML element
-  const HeadingTag = level as React.ElementType;
+  // Guard: coerce numeric levels to string heading tags (e.g., 1 → "h1")
+  const safeLevel = typeof level === 'number' ? `h${level}` as HeadingLevel : level;
+  const HeadingTag = safeLevel as React.ElementType;
 
   return (
     <HeadingTag ref={ref} className={headingClasses} {...rest}>

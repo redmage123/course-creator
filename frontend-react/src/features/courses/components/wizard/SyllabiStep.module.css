@@ -1,0 +1,202 @@
+/**
+ * SyllabiStep Styles - Step 4: Per-course syllabus generation
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin: 4px 0 0 0;
+}
+
+.trackSection {
+  margin-bottom: 8px;
+}
+
+.trackName {
+  font-size: 15px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.courseList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.courseCard {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  background: #fff;
+}
+
+.courseCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.courseName {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+}
+
+.syllabusStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.statusGenerated {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.statusPending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.statusGenerating {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.statusError {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Generation form */
+.generateForm {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.urlInputGroup {
+  display: flex;
+  gap: 8px;
+}
+
+.urlInputGroup input {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  font-family: inherit;
+}
+
+.urlInputGroup input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.progressBar {
+  height: 4px;
+  background: #e2e8f0;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.progressFill {
+  height: 100%;
+  background: #2563eb;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.progressText {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* Syllabus preview */
+.syllabusPreview {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+}
+
+.syllabusPreview h5 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #065f46;
+  margin: 0 0 8px 0;
+}
+
+.moduleList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.moduleItem {
+  padding: 4px 0;
+  font-size: 13px;
+  color: #374151;
+}
+
+.moduleNumber {
+  font-weight: 600;
+  color: #065f46;
+  margin-right: 6px;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+}
+
+.emptyState p {
+  margin: 8px 0;
+}
+
+.emptyTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+}

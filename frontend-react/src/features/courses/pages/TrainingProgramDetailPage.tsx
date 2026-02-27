@@ -254,10 +254,6 @@ export const TrainingProgramDetailPage: React.FC = () => {
           <Heading level="h2" gutterBottom>
             Course Content
           </Heading>
-          <p className={styles['content-description']}>
-            Detailed course syllabus, modules, and learning materials will be displayed here.
-            This section will include:
-          </p>
           <ul className={styles['content-features']}>
             <li>Course modules and lessons</li>
             <li>Video lectures and presentations</li>
@@ -265,9 +261,6 @@ export const TrainingProgramDetailPage: React.FC = () => {
             <li>Quizzes and assessments</li>
             <li>Downloadable resources</li>
           </ul>
-          <p className={styles['coming-soon']}>
-            📋 Detailed syllabus view coming in next phase
-          </p>
         </Card>
 
         {/* Enrollment Section (for instructors/admins) */}

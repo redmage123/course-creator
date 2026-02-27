@@ -1,0 +1,175 @@
+/**
+ * EnrollmentStep Styles - Step 5: Student enrollment per track
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin: 4px 0 0 0;
+}
+
+.trackSection {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.trackHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  background: #f8fafc;
+}
+
+.trackName {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+}
+
+.enrollCount {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 400;
+}
+
+.trackBody {
+  padding: 16px;
+}
+
+/* Email input area */
+.enrollForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.formLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.emailTextarea {
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  font-family: monospace;
+  resize: vertical;
+  min-height: 80px;
+  background: #fff;
+  color: #1a1a1a;
+}
+
+.emailTextarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.helperText {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.enrollActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Enrollment results */
+.resultCard {
+  padding: 12px;
+  border-radius: 6px;
+  margin-top: 8px;
+}
+
+.resultSuccess {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #065f46;
+  font-size: 14px;
+}
+
+.resultError {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  font-size: 14px;
+}
+
+.resultList {
+  list-style: disc;
+  padding-left: 20px;
+  margin: 8px 0 0 0;
+  font-size: 13px;
+}
+
+/* Current enrollments */
+.enrollmentList {
+  margin-top: 16px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 12px;
+}
+
+.enrollmentListTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 8px 0;
+}
+
+.enrolledStudent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 13px;
+  color: #374151;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.enrolledStudent:last-child {
+  border-bottom: none;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+}
+
+.emptyState p {
+  margin: 8px 0;
+}
+
+.emptyTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+}

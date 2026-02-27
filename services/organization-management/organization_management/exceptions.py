@@ -496,17 +496,104 @@ class RAGException(CourseCreatorBaseException):
 class EmbeddingException(RAGException):
     """
     Exception raised for text embedding generation failures.
-    
+
     Business Context:
     Embedding generation failures prevent effective semantic search and context retrieval,
     directly impacting the quality of AI-generated educational content and assistance.
     These exceptions help identify API failures, model issues, and text processing problems.
-    
+
     Technical Context:
     - OpenAI API embedding failures
     - Local embedding model errors
     - Text preprocessing issues
     - Token limit exceeded errors
+    """
+    pass
+
+
+# LLM Provider Exceptions
+class LLMProviderException(CourseCreatorBaseException):
+    """
+    Base exception for LLM provider operations.
+
+    Business Context:
+    Handles failures in external LLM provider integrations including OpenAI, Anthropic,
+    Deepseek, Qwen, Ollama, Llama, Gemini, and Mistral. These exceptions help identify
+    provider-specific issues and enable appropriate fallback strategies.
+
+    Technical Context:
+    - API call failures
+    - Model availability issues
+    - Token limit exceeded
+    - Response parsing errors
+    """
+    pass
+
+
+class LLMProviderConnectionException(LLMProviderException):
+    """
+    Exception raised when unable to connect to an LLM provider.
+
+    Business Context:
+    Connection failures prevent AI-powered features from functioning and may indicate
+    network issues, provider outages, or configuration problems that need resolution.
+
+    Technical Context:
+    - Network connectivity issues
+    - DNS resolution failures
+    - TLS/SSL handshake errors
+    - Connection timeouts
+    """
+    pass
+
+
+class LLMProviderAuthenticationException(LLMProviderException):
+    """
+    Exception raised for LLM provider authentication failures.
+
+    Business Context:
+    Authentication failures indicate invalid, expired, or revoked API keys that need
+    to be updated by organization administrators before AI features can be used.
+
+    Technical Context:
+    - Invalid API key
+    - Expired credentials
+    - Insufficient permissions
+    - Account suspended
+    """
+    pass
+
+
+class LLMProviderRateLimitException(LLMProviderException):
+    """
+    Exception raised when rate limits are exceeded.
+
+    Business Context:
+    Rate limit exceptions indicate that the organization has exceeded their API quota
+    and should either wait for limit reset or consider upgrading their plan.
+
+    Technical Context:
+    - Per-minute request limits
+    - Per-day token limits
+    - Concurrent request limits
+    - Organization-wide quotas
+    """
+    pass
+
+
+class LLMProviderResponseException(LLMProviderException):
+    """
+    Exception raised for invalid or unexpected LLM responses.
+
+    Business Context:
+    Response exceptions indicate that the LLM returned data that cannot be processed,
+    potentially due to model issues, content filtering, or parsing failures.
+
+    Technical Context:
+    - Invalid JSON response
+    - Missing required fields
+    - Content filtered response
+    - Unexpected response format
     """
     pass
 

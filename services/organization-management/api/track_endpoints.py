@@ -149,8 +149,12 @@ async def create_track(
                 detail=f"Invalid difficulty level: {request.difficulty_level}"
             )
 
-        # Generate slug from track name
+        # Generate slug from track name — strip non-alphanumeric chars except hyphens
+        import re as _re
         slug = request.name.lower().replace(' ', '-').replace('_', '-')
+        slug = _re.sub(r'[^a-z0-9-]', '', slug)   # remove invalid chars
+        slug = _re.sub(r'-{2,}', '-', slug)         # collapse double hyphens
+        slug = slug.strip('-')
 
         track = await track_service.create_track(
             project_id=request.project_id,
@@ -263,77 +267,98 @@ def _parse_difficulty_filter(difficulty_level: Optional[str]) -> Optional[Diffic
         )
 
 
+def _get_attr(obj, key, default=None):
+    """Get value from either a dict or an object by key/attribute name.
+
+    The DAO layer returns dicts while domain entities are objects.
+    This helper normalises access so _build_track_response works
+    regardless of what the service layer hands back.
+    """
+    if isinstance(obj, dict):
+        return obj.get(key, default)
+    return getattr(obj, key, default)
+
+
+def _ensure_list(val) -> list:
+    """Ensure a value is a Python list.
+
+    Database may store JSON arrays as strings (e.g. '[]' or '["a","b"]').
+    This converts string representations back to actual lists.
+    """
+    if val is None:
+        return []
+    if isinstance(val, list):
+        return val
+    if isinstance(val, str):
+        import json as _json
+        try:
+            parsed = _json.loads(val)
+            if isinstance(parsed, list):
+                return parsed
+        except (ValueError, TypeError):
+            pass
+        return []
+    return []
+
+
 async def _build_track_response(track, track_service: TrackService) -> TrackResponse:
     """
-    Build track response with enrollment and instructor counts
+    Build track response with enrollment and instructor counts.
 
-    BUSINESS CONTEXT:
-    Track responses include real-time enrollment and instructor counts for analytics.
-    For newly created tracks or when count methods are not yet implemented,
-    these counts default to 0 to ensure API responses remain stable.
-
-    TECHNICAL IMPLEMENTATION:
-    Uses graceful degradation pattern - attempts to fetch real-time counts,
-    but falls back to 0 if methods don't exist or database queries fail.
-    This ensures the tracks list endpoint remains functional even if
-    enrollment/instructor counting features are incomplete.
-
-    WHY THIS APPROACH:
-    - Prevents API failures when new tracks have no enrollments/instructors
-    - Allows incremental development (can add count methods later)
-    - Maintains backward compatibility if count methods are removed
-    - Logs failures for debugging without breaking the API response
+    Handles both Track domain objects and raw dicts from the DAO layer.
     """
     import logging
     logger = logging.getLogger(__name__)
+
+    track_id = _get_attr(track, 'id')
 
     # Get enrollment count with graceful degradation
     enrollment_count = 0
     if hasattr(track_service, 'get_track_enrollment_count'):
         try:
-            enrollment_count = await track_service.get_track_enrollment_count(track.id)
-        except AttributeError as e:
-            logger.warning(f"Enrollment count method exists but failed for track {track.id}: {e}")
-            enrollment_count = 0
-        except (ValueError, TypeError) as e:
-            logger.error(f"Invalid data type when getting enrollment count for track {track.id}: {e}")
-            enrollment_count = 0
+            enrollment_count = await track_service.get_track_enrollment_count(track_id)
         except Exception as e:
-            logger.error(f"Unexpected error getting enrollment count for track {track.id}: {e}")
-            enrollment_count = 0
+            logger.warning(f"Enrollment count failed for track {track_id}: {e}")
 
     # Get instructor count with graceful degradation
     instructor_count = 0
     if hasattr(track_service, 'get_track_instructor_count'):
         try:
-            instructor_count = await track_service.get_track_instructor_count(track.id)
-        except AttributeError as e:
-            logger.warning(f"Instructor count method exists but failed for track {track.id}: {e}")
-            instructor_count = 0
-        except (ValueError, TypeError) as e:
-            logger.error(f"Invalid data type when getting instructor count for track {track.id}: {e}")
-            instructor_count = 0
+            instructor_count = await track_service.get_track_instructor_count(track_id)
         except Exception as e:
-            logger.error(f"Unexpected error getting instructor count for track {track.id}: {e}")
-            instructor_count = 0
+            logger.warning(f"Instructor count failed for track {track_id}: {e}")
+
+    # Extract difficulty_level — may be an enum or a plain string
+    difficulty_raw = _get_attr(track, 'difficulty_level', 'beginner')
+    difficulty_str = difficulty_raw.value if hasattr(difficulty_raw, 'value') else str(difficulty_raw)
+
+    # Extract status — may be an enum or a plain string
+    status_raw = _get_attr(track, 'status', 'draft')
+    status_str = status_raw.value if hasattr(status_raw, 'value') else str(status_raw)
+
+    # Extract timestamps
+    created_at = _get_attr(track, 'created_at')
+    updated_at = _get_attr(track, 'updated_at')
+    created_at_str = created_at.isoformat() if hasattr(created_at, 'isoformat') else str(created_at or '')
+    updated_at_str = updated_at.isoformat() if hasattr(updated_at, 'isoformat') else str(updated_at or '')
 
     return TrackResponse(
-        id=str(track.id),
-        name=track.name,
-        description=track.description,
-        project_id=str(track.project_id),
-        organization_id=str(track.organization_id),
-        target_audience=track.target_audience,
-        prerequisites=track.prerequisites,
-        learning_objectives=track.learning_objectives,
-        duration_weeks=track.duration_weeks,
-        difficulty_level=track.difficulty_level.value,
-        max_students=track.max_students,
-        status=track.status.value,
+        id=str(track_id),
+        name=_get_attr(track, 'name', ''),
+        description=_get_attr(track, 'description'),
+        project_id=str(_get_attr(track, 'project_id', '')),
+        organization_id=str(_get_attr(track, 'organization_id', '')),
+        target_audience=_ensure_list(_get_attr(track, 'target_audience')),
+        prerequisites=_ensure_list(_get_attr(track, 'prerequisites')),
+        learning_objectives=_ensure_list(_get_attr(track, 'learning_objectives')),
+        duration_weeks=_get_attr(track, 'duration_weeks'),
+        difficulty_level=difficulty_str,
+        max_students=_get_attr(track, 'max_students') or _get_attr(track, 'max_enrolled'),
+        status=status_str,
         enrollment_count=enrollment_count,
         instructor_count=instructor_count,
-        created_at=track.created_at.isoformat(),
-        updated_at=track.updated_at.isoformat()
+        created_at=created_at_str,
+        updated_at=updated_at_str,
     )
 
 
@@ -475,7 +500,7 @@ async def get_track_locations(
             )
 
         # Verify user has permission to view track details
-        await verify_permission(current_user.id, track.organization_id, Permission.VIEW_TRACKS)
+        await verify_permission(UUID(_get_attr(current_user, 'user_id') or _get_attr(current_user, 'sub')), track.organization_id, Permission.VIEW_TRACKS)
 
         # Get locations for the track's parent project
         container = get_container()
@@ -586,7 +611,7 @@ async def update_track(
             )
 
         # Verify permissions
-        await verify_permission(current_user.id, track.organization_id, Permission.MANAGE_TRACKS)
+        await verify_permission(UUID(_get_attr(current_user, 'user_id') or _get_attr(current_user, 'sub')), track.organization_id, Permission.MANAGE_TRACKS)
 
         # Build update data
         update_data = _build_update_data(request)
@@ -620,7 +645,7 @@ async def delete_track(
             )
 
         # Verify permissions
-        await verify_permission(current_user.id, track.organization_id, Permission.MANAGE_TRACKS)
+        await verify_permission(UUID(_get_attr(current_user, 'user_id') or _get_attr(current_user, 'sub')), track.organization_id, Permission.MANAGE_TRACKS)
 
         success = await track_service.delete_track(track_id)
 
@@ -655,7 +680,7 @@ async def publish_track(
             )
 
         # Verify permissions
-        await verify_permission(current_user.id, track.organization_id, Permission.PUBLISH_TRACKS)
+        await verify_permission(UUID(_get_attr(current_user, 'user_id') or _get_attr(current_user, 'sub')), track.organization_id, Permission.PUBLISH_TRACKS)
 
         published_track = await track_service.publish_track(track_id)
 
@@ -688,7 +713,7 @@ async def unpublish_track(
             )
 
         # Verify permissions
-        await verify_permission(current_user.id, track.organization_id, Permission.MANAGE_TRACKS)
+        await verify_permission(UUID(_get_attr(current_user, 'user_id') or _get_attr(current_user, 'sub')), track.organization_id, Permission.MANAGE_TRACKS)
 
         unpublished_track = await track_service.unpublish_track(track_id)
 
@@ -722,10 +747,10 @@ async def bulk_enroll_students(
             )
 
         # Verify permissions
-        await verify_permission(current_user.id, track.organization_id, Permission.ADD_STUDENTS_TO_PROJECT)
+        await verify_permission(UUID(_get_attr(current_user, 'user_id') or _get_attr(current_user, 'sub')), track.organization_id, Permission.ADD_STUDENTS_TO_PROJECT)
 
         result = await track_service.bulk_enroll_students(
-            track_id, request.student_emails, current_user.id, request.auto_approve
+            track_id, request.student_emails, UUID(_get_attr(current_user, 'user_id') or _get_attr(current_user, 'sub')), request.auto_approve
         )
 
         return EnrollmentResponse(
@@ -762,7 +787,7 @@ async def get_track_enrollments(
             )
 
         # Verify permissions
-        await verify_permission(current_user.id, track.organization_id, Permission.MANAGE_TRACKS)
+        await verify_permission(UUID(_get_attr(current_user, 'user_id') or _get_attr(current_user, 'sub')), track.organization_id, Permission.MANAGE_TRACKS)
 
         enrollments = await track_service.get_track_enrollments(track_id, enrollment_status)
 
@@ -793,7 +818,7 @@ async def get_track_analytics(
             )
 
         # Verify permissions
-        await verify_permission(current_user.id, track.organization_id, Permission.VIEW_ANALYTICS)
+        await verify_permission(UUID(_get_attr(current_user, 'user_id') or _get_attr(current_user, 'sub')), track.organization_id, Permission.VIEW_ANALYTICS)
 
         analytics = await track_service.get_track_analytics(track_id)
 
@@ -826,10 +851,10 @@ async def duplicate_track(
             )
 
         # Verify permissions
-        await verify_permission(current_user.id, track.organization_id, Permission.CREATE_TRACKS)
+        await verify_permission(UUID(_get_attr(current_user, 'user_id') or _get_attr(current_user, 'sub')), track.organization_id, Permission.CREATE_TRACKS)
 
         duplicated_track = await track_service.duplicate_track(
-            track_id, current_user.id, new_name
+            track_id, UUID(_get_attr(current_user, 'user_id') or _get_attr(current_user, 'sub')), new_name
         )
 
         return {

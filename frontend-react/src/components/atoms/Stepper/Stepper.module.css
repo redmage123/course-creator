@@ -1,0 +1,244 @@
+/**
+ * Stepper Component Styles
+ *
+ * BUSINESS CONTEXT:
+ * Visual progress indicator for multi-step wizards.
+ * Uses platform blue (#2563eb) for completed/active states.
+ *
+ * DESIGN SYSTEM:
+ * - 8px spacing system
+ * - Platform blue color scheme
+ * - 200ms transitions
+ * - WCAG AA+ accessible
+ */
+
+/* Container */
+.stepper {
+  position: relative;
+  padding: 24px 16px;
+  margin-bottom: 32px;
+}
+
+/* Step list */
+.stepList {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* Connecting line (background) */
+.line {
+  position: absolute;
+  top: 40px;
+  left: 48px;
+  right: 48px;
+  height: 2px;
+  background-color: #e2e8f0;
+  z-index: 0;
+}
+
+.lineFill {
+  height: 100%;
+  background-color: #2563eb;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+/* Individual step */
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 80px;
+  position: relative;
+  cursor: default;
+}
+
+/* Circle */
+.circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fff;
+  border: 2px solid #e2e8f0;
+  transition: all 0.2s ease;
+  font-weight: 600;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.number {
+  line-height: 1;
+}
+
+.checkIcon {
+  width: 14px;
+  height: 14px;
+  color: #fff;
+}
+
+.errorIcon {
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* Label */
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+  text-align: center;
+  line-height: 1.4;
+  max-width: 120px;
+  word-wrap: break-word;
+}
+
+/* ================================================================
+ * STEP STATES
+ * ================================================================ */
+
+/* Upcoming */
+.step--upcoming .circle {
+  background-color: #fff;
+  border-color: #e2e8f0;
+  color: #64748b;
+}
+
+.step--upcoming .label {
+  color: #64748b;
+}
+
+/* Active */
+.step--active .circle {
+  background-color: #fff;
+  border-color: #2563eb;
+  border-width: 3px;
+  color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
+
+.step--active .label {
+  color: #2563eb;
+}
+
+/* Completed */
+.step--completed .circle {
+  background-color: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.step--completed .label {
+  color: #0f172a;
+}
+
+/* Error */
+.step--error .circle {
+  background-color: rgba(220, 38, 38, 0.1);
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+.step--error .label {
+  color: #dc2626;
+}
+
+/* Clickable completed steps */
+.step--clickable {
+  cursor: pointer;
+}
+
+.step--clickable:hover .circle {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
+  transform: scale(1.05);
+}
+
+.step--clickable:active .circle {
+  transform: scale(0.98);
+}
+
+.step--clickable:focus-visible {
+  outline: none;
+}
+
+.step--clickable:focus-visible .circle {
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.3);
+}
+
+/* Screen reader only */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ================================================================
+ * RESPONSIVE
+ * ================================================================ */
+
+@media (max-width: 767px) {
+  .stepper {
+    padding: 16px 8px;
+  }
+
+  .stepList {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .step {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
+    min-width: auto;
+  }
+
+  .line {
+    display: none;
+  }
+
+  .label {
+    text-align: left;
+    max-width: none;
+    font-size: 14px;
+  }
+}
+
+/* High contrast */
+@media (prefers-contrast: high) {
+  .circle {
+    border-width: 3px;
+  }
+
+  .step--active .circle {
+    border-width: 4px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .circle,
+  .lineFill {
+    transition: none;
+  }
+}

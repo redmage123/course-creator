@@ -26,8 +26,11 @@ import { WelcomePopup } from '../WelcomePopup';
 export const WelcomePopupManager: React.FC = () => {
   const { isAuthenticated, isFirstLogin, clearFirstLogin } = useAuth();
 
-  // Only show popup if user is authenticated and it's their first login
-  if (!isAuthenticated || !isFirstLogin) {
+  // Check localStorage to respect "Don't show again" preference across navigations
+  const hasSeenWelcome = typeof window !== 'undefined' && localStorage.getItem('ai_welcome_seen') === 'true';
+
+  // Only show popup if user is authenticated, it's their first login, and they haven't dismissed it
+  if (!isAuthenticated || !isFirstLogin || hasSeenWelcome) {
     return null;
   }
 

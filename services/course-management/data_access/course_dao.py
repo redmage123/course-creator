@@ -158,7 +158,7 @@ class CourseManagementDAO:
                         title = $2, description = $3, category = $4,
                         difficulty_level = $5, estimated_duration = $6, duration_unit = $7,
                         price = $8, is_published = $9, updated_at = $10, metadata = $11,
-                        organization_id = $12, project_id = $13, track_id = $14, location_id = $15
+                        organization_id = $12, track_id = $13, location_id = $14
                     WHERE id = $1""",
                     course.id, course.title, course.description, course.category,
                     course.difficulty_level.value, course.estimated_duration,
@@ -166,7 +166,6 @@ class CourseManagementDAO:
                     course.price, course.is_published, course.updated_at,
                     json.dumps(metadata),
                     getattr(course, 'organization_id', None),
-                    getattr(course, 'project_id', None),
                     getattr(course, 'track_id', None),
                     getattr(course, 'location_id', None)
                 )
@@ -306,7 +305,6 @@ class CourseManagementDAO:
             updated_at=row.get('updated_at'),
             tags=metadata.get('tags', []),
             organization_id=str(row['organization_id']) if row.get('organization_id') else None,
-            project_id=str(row['project_id']) if row.get('project_id') else None,
             track_id=str(row['track_id']) if row.get('track_id') else None,
             location_id=str(row['location_id']) if row.get('location_id') else None
         )
@@ -878,7 +876,7 @@ class CourseManagementDAO:
                         instructor_id=str(row['instructor_id']),
                         category=row['category'] or 'General',
                         difficulty_level=DifficultyLevel(row['difficulty_level'] or 'beginner'),
-                        estimated_duration=row['estimated_duration'] or 0,
+                        estimated_duration=row['estimated_duration'],
                         is_published=row['is_published'],
                         created_at=row['created_at'],
                         updated_at=row['updated_at'],

@@ -21,7 +21,7 @@ cors:
     - "http://${oc.env:HOST_IP,176.9.99.103}:8004"
 
 database:
-  url: postgresql://${oc.env:DB_USER,postgres}:${oc.env:DB_PASSWORD,postgres_password}@${oc.env:DB_HOST,postgres}:${oc.env:DB_PORT,5432}/${oc.env:DB_NAME,course_creator}
+  url: postgresql://postgres:bY9QwaxIoTFo705wxqT8jd0UnTsejDNW@postgres:5432/course_creator
 
 jwt:
   # SECURITY: JWT secret must be set via JWT_SECRET_KEY environment variable - no default allowed

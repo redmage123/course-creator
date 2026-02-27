@@ -75,11 +75,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
    * Useful for error reporting services (e.g., Sentry)
    */
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // Log error to console in development
-    if (process.env.NODE_ENV === 'development') {
-      console.error('ErrorBoundary caught an error:', error);
-      console.error('Component stack:', errorInfo.componentStack);
-    }
+    // Always log errors to console for debugging
+    console.error('ErrorBoundary caught an error:', error);
+    console.error('Component stack:', errorInfo.componentStack);
 
     // Update state with error details
     this.setState({
@@ -152,22 +150,13 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               We're sorry for the inconvenience. An unexpected error has occurred.
             </p>
 
-            {/* Show error details in development mode */}
-            {process.env.NODE_ENV === 'development' && error && (
+            {/* Show error details in development */}
+            {error && process.env.NODE_ENV === 'development' && (
               <details className={styles.errorDetails}>
-                <summary className={styles.errorDetailsSummary}>
-                  Technical Details (Development Only)
-                </summary>
-                <div className={styles.errorDetailsContent}>
-                  <p className={styles.errorName}>
-                    <strong>Error:</strong> {error.toString()}
-                  </p>
-                  {errorInfo && (
-                    <pre className={styles.errorStack}>
-                      {errorInfo.componentStack}
-                    </pre>
-                  )}
-                </div>
+                <summary>Error Details</summary>
+                <p className={styles.errorName}>
+                  <strong>Error:</strong> {error.toString()}
+                </p>
               </details>
             )}
 

@@ -14,11 +14,11 @@ cors:
   origins: ${oc.env:CORS_ORIGINS,"https://localhost:3000,https://localhost:3001"}
 
 database:
-  host: ${oc.env:DB_HOST,postgres}
-  port: ${oc.env:DB_PORT,5432}
-  name: ${oc.env:DB_NAME,course_creator}
-  username: ${oc.env:DB_USER,postgres}
-  password: ${oc.env:DB_PASSWORD,postgres_password}
+  host: postgres
+  port: 5432
+  name: course_creator
+  username: postgres
+  password: bY9QwaxIoTFo705wxqT8jd0UnTsejDNW
 
 storage:
   type: local

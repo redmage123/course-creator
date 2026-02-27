@@ -126,7 +126,7 @@ class CourseCreatorException(Exception):
 
         log_context = {
             "error_code": self.error_code,
-            "message": self.message,
+            "error_message": self.message,  # Changed from "message" to avoid LogRecord collision
             "details": self.details,
             "timestamp": self.timestamp.isoformat(),
             "severity": self.severity.value,
@@ -671,6 +671,270 @@ class DAOQueryException(DAOException):
         self.error_code = "DAO_QUERY_ERROR"
 
 
+class LLMProviderException(CourseCreatorException):
+    """
+    Base exception for LLM provider failures.
+
+    USE CASES:
+    - LLM API errors
+    - Provider configuration issues
+    - Model unavailability
+    - Provider-specific errors
+    """
+
+    def __init__(
+        self,
+        message: str = "LLM provider operation failed",
+        provider_name: Optional[str] = None,
+        model_name: Optional[str] = None,
+        operation: Optional[str] = None,
+        original_exception: Optional[Exception] = None,
+        service_name: Optional[str] = None
+    ):
+        details = {}
+        if provider_name:
+            details["provider_name"] = provider_name
+        if model_name:
+            details["model_name"] = model_name
+        if operation:
+            details["operation"] = operation
+
+        super().__init__(
+            message=message,
+            error_code="LLM_PROVIDER_ERROR",
+            details=details,
+            original_exception=original_exception,
+            severity=ErrorSeverity.HIGH,
+            service_name=service_name
+        )
+
+
+class LLMProviderConnectionException(LLMProviderException):
+    """Exception for LLM provider connection failures."""
+
+    def __init__(
+        self,
+        message: str = "Failed to connect to LLM provider",
+        provider_name: Optional[str] = None,
+        original_exception: Optional[Exception] = None,
+        service_name: Optional[str] = None
+    ):
+        super().__init__(
+            message=message,
+            provider_name=provider_name,
+            operation="connect",
+            original_exception=original_exception,
+            service_name=service_name
+        )
+        self.error_code = "LLM_PROVIDER_CONNECTION_ERROR"
+
+
+class LLMProviderAuthenticationException(LLMProviderException):
+    """Exception for LLM provider authentication failures."""
+
+    def __init__(
+        self,
+        message: str = "LLM provider authentication failed",
+        provider_name: Optional[str] = None,
+        original_exception: Optional[Exception] = None,
+        service_name: Optional[str] = None
+    ):
+        super().__init__(
+            message=message,
+            provider_name=provider_name,
+            operation="authenticate",
+            original_exception=original_exception,
+            service_name=service_name
+        )
+        self.error_code = "LLM_PROVIDER_AUTH_ERROR"
+
+
+class LLMProviderRateLimitException(LLMProviderException):
+    """Exception for LLM provider rate limit exceeded."""
+
+    def __init__(
+        self,
+        message: str = "LLM provider rate limit exceeded",
+        provider_name: Optional[str] = None,
+        retry_after: Optional[int] = None,
+        original_exception: Optional[Exception] = None,
+        service_name: Optional[str] = None
+    ):
+        details = {"retry_after": retry_after} if retry_after else {}
+        super().__init__(
+            message=message,
+            provider_name=provider_name,
+            operation="api_call",
+            original_exception=original_exception,
+            service_name=service_name
+        )
+        self.error_code = "LLM_PROVIDER_RATE_LIMIT_ERROR"
+        if retry_after:
+            self.details["retry_after"] = retry_after
+
+
+class LLMProviderResponseException(LLMProviderException):
+    """Exception for invalid LLM provider responses."""
+
+    def __init__(
+        self,
+        message: str = "LLM provider returned invalid response",
+        provider_name: Optional[str] = None,
+        model_name: Optional[str] = None,
+        original_exception: Optional[Exception] = None,
+        service_name: Optional[str] = None
+    ):
+        super().__init__(
+            message=message,
+            provider_name=provider_name,
+            model_name=model_name,
+            operation="parse_response",
+            original_exception=original_exception,
+            service_name=service_name
+        )
+        self.error_code = "LLM_PROVIDER_RESPONSE_ERROR"
+
+
+class VisionAnalysisException(CourseCreatorException):
+    """
+    Exception for vision/screenshot analysis failures.
+
+    USE CASES:
+    - Image analysis failures
+    - Vision model errors
+    - Content extraction failures
+    """
+
+    def __init__(
+        self,
+        message: str = "Vision analysis failed",
+        image_hash: Optional[str] = None,
+        provider_name: Optional[str] = None,
+        original_exception: Optional[Exception] = None,
+        service_name: Optional[str] = None
+    ):
+        details = {}
+        if image_hash:
+            details["image_hash"] = image_hash
+        if provider_name:
+            details["provider_name"] = provider_name
+
+        super().__init__(
+            message=message,
+            error_code="VISION_ANALYSIS_ERROR",
+            details=details,
+            original_exception=original_exception,
+            severity=ErrorSeverity.MEDIUM,
+            service_name=service_name
+        )
+
+
+class UnsupportedImageFormatException(CourseCreatorException):
+    """
+    Exception for unsupported image formats.
+
+    USE CASES:
+    - Invalid image format uploaded
+    - Corrupted image files
+    - Unsupported MIME types
+    """
+
+    def __init__(
+        self,
+        message: str = "Unsupported image format",
+        format_detected: Optional[str] = None,
+        supported_formats: Optional[list] = None,
+        original_exception: Optional[Exception] = None,
+        service_name: Optional[str] = None
+    ):
+        details = {}
+        if format_detected:
+            details["format_detected"] = format_detected
+        if supported_formats:
+            details["supported_formats"] = supported_formats
+
+        super().__init__(
+            message=message,
+            error_code="UNSUPPORTED_IMAGE_FORMAT",
+            details=details,
+            original_exception=original_exception,
+            severity=ErrorSeverity.LOW,
+            service_name=service_name
+        )
+
+
+class ScreenshotAnalysisException(CourseCreatorException):
+    """
+    Exception for screenshot analysis service errors.
+
+    USE CASES:
+    - Screenshot processing failures
+    - Unexpected analysis errors
+    - Service-level failures
+    """
+
+    def __init__(
+        self,
+        message: str = "Screenshot analysis failed",
+        upload_id: Optional[str] = None,
+        original_exception: Optional[Exception] = None,
+        service_name: Optional[str] = None
+    ):
+        details = {}
+        if upload_id:
+            details["upload_id"] = upload_id
+
+        super().__init__(
+            message=message,
+            error_code="SCREENSHOT_ANALYSIS_ERROR",
+            details=details,
+            original_exception=original_exception,
+            severity=ErrorSeverity.MEDIUM,
+            service_name=service_name
+        )
+
+
+class ExternalServiceException(CourseCreatorException):
+    """
+    Exception for external service integration failures.
+
+    USE CASES:
+    - External API failures (Google Calendar, Microsoft Graph, Slack, etc.)
+    - Third-party service unavailability
+    - External service timeout errors
+    - Invalid external service responses
+
+    DESIGN:
+    Similar to ServiceException but specifically for external (non-platform) services.
+    """
+
+    def __init__(
+        self,
+        message: str = "External service operation failed",
+        service_name_external: Optional[str] = None,
+        operation: Optional[str] = None,
+        status_code: Optional[int] = None,
+        original_exception: Optional[Exception] = None,
+        service_name: Optional[str] = None
+    ):
+        details = {}
+        if service_name_external:
+            details["external_service"] = service_name_external
+        if operation:
+            details["operation"] = operation
+        if status_code:
+            details["status_code"] = status_code
+
+        super().__init__(
+            message=message,
+            error_code="EXTERNAL_SERVICE_ERROR",
+            details=details,
+            original_exception=original_exception,
+            severity=ErrorSeverity.HIGH,
+            service_name=service_name
+        )
+
+
 # Export all exception classes
 __all__ = [
     "ErrorSeverity",
@@ -688,4 +952,13 @@ __all__ = [
     "DAOException",
     "DAOConnectionException",
     "DAOQueryException",
+    "LLMProviderException",
+    "LLMProviderConnectionException",
+    "LLMProviderAuthenticationException",
+    "LLMProviderRateLimitException",
+    "LLMProviderResponseException",
+    "VisionAnalysisException",
+    "UnsupportedImageFormatException",
+    "ScreenshotAnalysisException",
+    "ExternalServiceException",
 ]

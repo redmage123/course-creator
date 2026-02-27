@@ -54,6 +54,7 @@ from api.location_endpoints import router as location_router
 from api.instructor_assignment_endpoints import router as instructor_assignment_router
 from api.course_assignment_endpoints import router as course_assignment_router
 from api.scheduling_endpoints import router as scheduling_router
+from api.llm_config_endpoints import router as llm_config_router
 
 # Custom exceptions
 # Import shared exceptions from platform-wide exception hierarchy
@@ -436,6 +437,7 @@ def create_app(config: DictConfig = None) -> FastAPI:
     app.include_router(course_assignment_router)
     app.include_router(scheduling_router)
     app.include_router(organization_router)  # Registered last to override rbac endpoint
+    app.include_router(llm_config_router)  # LLM provider configuration endpoints
 
     # Health check endpoint
     @app.get("/health")

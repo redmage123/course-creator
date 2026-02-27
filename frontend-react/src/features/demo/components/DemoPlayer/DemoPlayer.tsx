@@ -506,9 +506,15 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
    * Handle video error
    */
   const handleVideoError = useCallback(() => {
+    const video = videoRef.current;
+    const mediaError = video?.error;
+    const errorMsg = mediaError
+      ? `Video error (code ${mediaError.code}): ${mediaError.message || 'Unknown'}`
+      : 'Failed to load video';
+    console.error(`[DemoPlayer] ${errorMsg}`, { src: video?.src, slide: currentSlide?.title });
     setIsLoading(false);
     setError('Failed to load video. Please check your connection and try again.');
-  }, []);
+  }, [currentSlide]);
 
   /**
    * Keyboard navigation
@@ -595,6 +601,7 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
           onCanPlay={handleCanPlay}
           onError={handleVideoError}
           playsInline
+          preload="auto"
         />
 
         {/* Hidden Audio Player for Narration */}

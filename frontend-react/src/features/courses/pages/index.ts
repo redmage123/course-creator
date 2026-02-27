@@ -9,6 +9,8 @@ export type { TrainingProgramListPageProps } from './TrainingProgramListPage';
 
 export { TrainingProgramDetailPage } from './TrainingProgramDetailPage';
 
+export { ProgramWizard } from './ProgramWizard';
+
 export { CreateEditTrainingProgramPage } from './CreateEditTrainingProgramPage';
 
 export { ContentGenerationPage } from './ContentGenerationPage';

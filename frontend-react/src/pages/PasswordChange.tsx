@@ -177,7 +177,7 @@ export const PasswordChange: React.FC = () => {
       <div className={styles.passwordChangeContainer}>
         <Card className={styles.passwordChangeCard}>
           <div className={styles.header}>
-            <Heading level={1} className={styles.title}>
+            <Heading level="h1" className={styles.title}>
               Change Password
             </Heading>
             <p className={styles.subtitle}>
@@ -199,7 +199,7 @@ export const PasswordChange: React.FC = () => {
             />
 
             <div className={styles.passwordRequirements}>
-              <Heading level={3} className={styles.requirementsTitle}>
+              <Heading level="h3" className={styles.requirementsTitle}>
                 New Password Requirements:
               </Heading>
               <ul className={styles.requirementsList}>

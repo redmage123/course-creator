@@ -112,7 +112,7 @@ export const useIntegrations = (
       const platforms = await integrationsService.getOrganizationLTIPlatforms(organizationId);
       setState(prev => ({
         ...prev,
-        ltiPlatforms: platforms,
+        ltiPlatforms: Array.isArray(platforms) ? platforms : [],
         ltiLoading: false,
       }));
     } catch (error: any) {
@@ -192,8 +192,8 @@ export const useIntegrations = (
       ]);
       setState(prev => ({
         ...prev,
-        outboundWebhooks: outbound,
-        inboundWebhooks: inbound,
+        outboundWebhooks: Array.isArray(outbound) ? outbound : [],
+        inboundWebhooks: Array.isArray(inbound) ? inbound : [],
         webhooksLoading: false,
       }));
     } catch (error: any) {
@@ -217,9 +217,11 @@ export const useIntegrations = (
     try {
       let tokens: OAuthToken[] = [];
       if (userId) {
-        tokens = await integrationsService.getUserOAuthConnections(userId);
+        const result = await integrationsService.getUserOAuthConnections(userId);
+        tokens = Array.isArray(result) ? result : [];
       } else {
-        tokens = await integrationsService.getOrganizationOAuthConnections(organizationId);
+        const result = await integrationsService.getOrganizationOAuthConnections(organizationId);
+        tokens = Array.isArray(result) ? result : [];
       }
       setState(prev => ({
         ...prev,

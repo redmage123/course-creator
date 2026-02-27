@@ -25,7 +25,7 @@ import { Button } from '../../../../components/atoms/Button';
 import { Heading } from '../../../../components/atoms/Heading';
 import { Spinner } from '../../../../components/atoms/Spinner';
 import { useAuth } from '../../../../hooks/useAuth';
-import { analyticsService } from '../../../../services';
+import { analyticsService, trainingProgramService } from '../../../../services';
 import styles from './InstructorDashboard.module.css';
 
 /**
@@ -54,12 +54,31 @@ export const InstructorDashboard: React.FC = () => {
    * Fetch instructor analytics data from backend API
    * Uses React Query for caching, loading states, and automatic refetching
    */
-  const { data: analytics, isLoading, error } = useQuery({
+  const { data: analytics, isLoading: analyticsLoading, error: analyticsError } = useQuery({
     queryKey: ['instructorAnalytics', 'me'],
     queryFn: () => analyticsService.getMyInstructorAnalytics(),
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     retry: 2,
   });
+
+  /**
+   * Fetch actual training programs from course-management service
+   * This ensures the dashboard shows real program data even when analytics
+   * service hasn't aggregated yet
+   */
+  const { data: programsData, isLoading: programsLoading } = useQuery({
+    queryKey: ['trainingPrograms', 'instructor', user?.id],
+    queryFn: () => trainingProgramService.getInstructorPrograms(user!.id),
+    enabled: !!user?.id,
+    staleTime: 2 * 60 * 1000,
+    retry: 2,
+  });
+
+  const isLoading = analyticsLoading || programsLoading;
+  const error = analyticsError;
+
+  const recentPrograms = programsData?.data?.slice(0, 4) || [];
+  const actualProgramCount = programsData?.data?.length ?? analytics?.total_programs ?? 0;
 
   const displayName = user?.firstName
     ? `${user.firstName} ${user.lastName || ''}`
@@ -135,7 +154,7 @@ export const InstructorDashboard: React.FC = () => {
         <div className={styles['stats-grid']}>
           <Card variant="elevated" padding="medium">
             <div className={styles['stat-card']}>
-              <div className={styles['stat-value']}>{analytics?.total_programs || 0}</div>
+              <div className={styles['stat-value']}>{actualProgramCount}</div>
               <div className={styles['stat-label']}>Training Programs</div>
             </div>
           </Card>
@@ -167,6 +186,59 @@ export const InstructorDashboard: React.FC = () => {
             </div>
           </Card>
         </div>
+
+        {/* Recent Programs Section */}
+        {recentPrograms.length > 0 && (
+          <div>
+            <div className={styles['section-header']}>
+              <Heading level="h2" gutterBottom>
+                Your Programs
+              </Heading>
+              <Link to="/instructor/programs">
+                <Button variant="ghost" size="small">
+                  View All ({actualProgramCount})
+                </Button>
+              </Link>
+            </div>
+            <div className={styles['programs-grid']}>
+              {recentPrograms.map((program) => (
+                <Link
+                  key={program.id}
+                  to={`/courses/${program.id}`}
+                  className={styles['program-card-link']}
+                >
+                  <Card variant="elevated" padding="medium">
+                    <div className={styles['program-card']}>
+                      <div className={styles['program-card-header']}>
+                        <span className={`${styles['program-badge']} ${program.published ? styles['badge-published'] : styles['badge-draft']}`}>
+                          {program.published ? 'Published' : 'Draft'}
+                        </span>
+                        <span className={styles['program-difficulty']}>
+                          {program.difficulty_level}
+                        </span>
+                      </div>
+                      <h3 className={styles['program-title']}>{program.title}</h3>
+                      {program.description && (
+                        <p className={styles['program-description']}>
+                          {program.description.length > 100
+                            ? program.description.slice(0, 100) + '...'
+                            : program.description}
+                        </p>
+                      )}
+                      {program.tags && program.tags.length > 0 && (
+                        <div className={styles['program-tags']}>
+                          {program.tags.slice(0, 3).map((tag) => (
+                            <span key={tag} className={styles['program-tag']}>{tag}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Main Content */}
         <div className={styles['content-grid']}>

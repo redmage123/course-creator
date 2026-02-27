@@ -98,9 +98,9 @@ export const CreateEditTrainingProgramPage: React.FC = () => {
   const createMutation = useMutation({
     mutationFn: (data: CreateTrainingProgramRequest) =>
       trainingProgramService.createTrainingProgram(data),
-    onSuccess: () => {
+    onSuccess: (newProgram) => {
       queryClient.invalidateQueries({ queryKey: ['trainingPrograms'] });
-      navigate(getRedirectPath());
+      navigate(`/courses/${newProgram.id}?step=2`);
     },
   });
 

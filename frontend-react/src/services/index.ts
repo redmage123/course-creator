@@ -26,6 +26,7 @@ export { trackService } from './trackService';
 export { courseService } from './courseService';
 export { syllabusService } from './syllabusService';
 export { bugService } from './bugService';
+export { screenshotService } from './screenshotService';
 
 // Type exports for convenience
 export type {
@@ -120,3 +121,17 @@ export type {
   BugListResponse,
   BugFilters,
 } from './bugService';
+
+export type {
+  ScreenshotUploadResponse,
+  ScreenshotAnalysisResult,
+  CourseStructure,
+  ModuleStructure,
+  LessonStructure,
+  ScreenshotStatus,
+  GenerateCourseFromScreenshotRequest,
+  GenerateCourseResponse,
+  SimilarScreenshot,
+  LLMProviderConfig,
+  AvailableLLMProvider,
+} from './screenshotService';

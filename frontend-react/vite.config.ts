@@ -41,7 +41,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
-    minify: 'esbuild', // Enable minification
+    minify: 'esbuild',
     cssMinify: true, // Enable CSS minification
     reportCompressedSize: true,
     rollupOptions: {

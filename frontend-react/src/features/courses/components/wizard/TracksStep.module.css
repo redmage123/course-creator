@@ -1,0 +1,207 @@
+/**
+ * TracksStep Styles - Step 2: Track management
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin: 4px 0 0 0;
+}
+
+.trackList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.trackCard {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  background: #fff;
+  transition: border-color 0.2s ease;
+}
+
+.trackCard:hover {
+  border-color: #94a3b8;
+}
+
+.trackCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.trackName {
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+}
+
+.trackDescription {
+  font-size: 14px;
+  color: #64748b;
+  margin: 4px 0 0 0;
+  line-height: 1.5;
+}
+
+.trackMeta {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.trackActions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.statusBadge {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.statusDraft {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.statusActive {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.statusArchived {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+/* Inline form for creating/editing tracks */
+.inlineForm {
+  border: 2px solid #2563eb;
+  border-radius: 8px;
+  padding: 20px;
+  background: #f8fafc;
+}
+
+.formTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 16px 0;
+}
+
+.formGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.formLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.required {
+  color: #dc2626;
+}
+
+.formInput,
+.formTextarea,
+.formSelect {
+  padding: 10px 12px;
+  font-size: 15px;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  font-family: inherit;
+  background: #fff;
+  color: #1a1a1a;
+}
+
+.formInput:focus,
+.formTextarea:focus,
+.formSelect:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.formTextarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.formActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+}
+
+.emptyState p {
+  margin: 8px 0;
+}
+
+.emptyTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+}
+
+@media (max-width: 640px) {
+  .formRow {
+    grid-template-columns: 1fr;
+  }
+
+  .trackCardHeader {
+    flex-direction: column;
+  }
+}

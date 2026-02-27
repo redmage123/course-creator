@@ -1,0 +1,557 @@
+/**
+ * Screenshot Course Creator Styles
+ *
+ * DESIGN SYSTEM:
+ * - Uses CSS variables from global theme
+ * - Mobile-first responsive design
+ * - Accessible focus states and color contrast
+ */
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.header h2 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--text-primary, #1a1a2e);
+  margin: 0 0 0.5rem 0;
+}
+
+.description {
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+/* Error Banner */
+.errorBanner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+  color: #dc2626;
+}
+
+.errorIcon {
+  font-size: 1.25rem;
+}
+
+.dismissBtn {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: #dc2626;
+  padding: 0.25rem;
+  line-height: 1;
+}
+
+.dismissBtn:hover {
+  opacity: 0.7;
+}
+
+/* Provider Select */
+.providerSelect {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.providerSelect label {
+  font-weight: 500;
+  color: var(--text-primary, #1a1a2e);
+}
+
+.providerSelect select {
+  flex: 1;
+  max-width: 300px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 0.375rem;
+  font-size: 0.9rem;
+  background-color: white;
+}
+
+.providerSelect select:focus {
+  outline: none;
+  border-color: var(--primary-color, #4f46e5);
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+}
+
+/* Drop Zone */
+.dropZone {
+  border: 2px dashed var(--border-color, #d1d5db);
+  border-radius: 0.75rem;
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: #fafafa;
+}
+
+.dropZone:hover {
+  border-color: var(--primary-color, #4f46e5);
+  background-color: #f3f4f6;
+}
+
+.dropZone.dragOver {
+  border-color: var(--primary-color, #4f46e5);
+  background-color: #eef2ff;
+  border-style: solid;
+}
+
+.dropZoneContent {
+  pointer-events: none;
+}
+
+.uploadIcon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.dropZoneText {
+  font-size: 1.1rem;
+  color: var(--text-primary, #1a1a2e);
+  margin: 0 0 0.5rem 0;
+}
+
+.browseLink {
+  color: var(--primary-color, #4f46e5);
+  font-weight: 500;
+}
+
+.dropZoneHint {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #6b7280);
+  margin: 0;
+}
+
+/* Preview Grid */
+.previewGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.previewItem {
+  position: relative;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid var(--border-color, #e5e7eb);
+  background-color: white;
+}
+
+.previewItem img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+}
+
+.removeBtn {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.removeBtn:hover {
+  background-color: rgba(220, 38, 38, 0.9);
+}
+
+.fileName {
+  display: block;
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary, #6b7280);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Upload Button */
+.uploadBtn {
+  display: block;
+  width: 100%;
+  padding: 0.875rem 1.5rem;
+  background-color: var(--primary-color, #4f46e5);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.uploadBtn:hover:not(:disabled) {
+  background-color: var(--primary-hover, #4338ca);
+}
+
+.uploadBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Analyzing Section */
+.analyzingSection {
+  text-align: center;
+  padding: 3rem 2rem;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e5e7eb;
+  border-top-color: var(--primary-color, #4f46e5);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1.5rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.analyzingSection h3 {
+  font-size: 1.25rem;
+  color: var(--text-primary, #1a1a2e);
+  margin: 0 0 1rem 0;
+}
+
+.progressInfo {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.progressBar {
+  height: 8px;
+  background-color: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.progressFill {
+  height: 100%;
+  background-color: var(--primary-color, #4f46e5);
+  transition: width 0.3s ease;
+}
+
+.progressStep {
+  font-size: 0.9rem;
+  color: var(--text-secondary, #6b7280);
+  margin: 0;
+}
+
+.progressPercent {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--primary-color, #4f46e5);
+  margin: 0.25rem 0 0 0;
+}
+
+.analyzingHint {
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.9rem;
+  margin: 1.5rem 0 0 0;
+}
+
+/* Preview Section */
+.previewSection {
+  background-color: white;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+
+.analysisInfo {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  margin-bottom: 1.5rem;
+}
+
+.infoRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.infoLabel {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.infoValue {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-primary, #1a1a2e);
+}
+
+/* Course Structure */
+.courseStructure {
+  margin-bottom: 1.5rem;
+}
+
+.courseStructure h3 {
+  font-size: 1.5rem;
+  color: var(--text-primary, #1a1a2e);
+  margin: 0 0 0.5rem 0;
+}
+
+.courseDescription {
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.95rem;
+  margin: 0 0 1.5rem 0;
+  line-height: 1.6;
+}
+
+.objectives {
+  margin-bottom: 1.5rem;
+}
+
+.objectives h4 {
+  font-size: 1rem;
+  color: var(--text-primary, #1a1a2e);
+  margin: 0 0 0.75rem 0;
+}
+
+.objectives ul {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.objectives li {
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.modules h4 {
+  font-size: 1rem;
+  color: var(--text-primary, #1a1a2e);
+  margin: 0 0 1rem 0;
+}
+
+.module {
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.module h5 {
+  font-size: 0.95rem;
+  color: var(--text-primary, #1a1a2e);
+  margin: 0 0 0.5rem 0;
+}
+
+.module p {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #6b7280);
+  margin: 0 0 0.75rem 0;
+}
+
+.lessons {
+  margin: 0;
+  padding-left: 1.25rem;
+  list-style-type: disc;
+}
+
+.lessons li {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #6b7280);
+  margin-bottom: 0.25rem;
+}
+
+/* Similar Courses */
+.similarCourses {
+  background-color: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.similarCourses h4 {
+  font-size: 0.95rem;
+  color: #92400e;
+  margin: 0 0 0.5rem 0;
+}
+
+.similarHint {
+  font-size: 0.85rem;
+  color: #b45309;
+  margin: 0 0 0.75rem 0;
+}
+
+.similarCourses ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.similarCourses li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-top: 1px solid #fde68a;
+}
+
+.similarCourses li:first-child {
+  border-top: none;
+}
+
+.similarTitle {
+  font-size: 0.9rem;
+  color: #92400e;
+}
+
+.similarScore {
+  font-size: 0.8rem;
+  color: #b45309;
+  font-weight: 500;
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.primaryBtn {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--primary-color, #4f46e5);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.primaryBtn:hover:not(:disabled) {
+  background-color: var(--primary-hover, #4338ca);
+}
+
+.primaryBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.secondaryBtn {
+  padding: 0.75rem 1.5rem;
+  background-color: white;
+  color: var(--text-primary, #1a1a2e);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.secondaryBtn:hover:not(:disabled) {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.secondaryBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Success Section */
+.successSection {
+  text-align: center;
+  padding: 3rem 2rem;
+}
+
+.successIcon {
+  font-size: 4rem;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.successSection h3 {
+  font-size: 1.5rem;
+  color: var(--text-primary, #1a1a2e);
+  margin: 0 0 0.5rem 0;
+}
+
+.successSection p {
+  color: var(--text-secondary, #6b7280);
+  margin: 0 0 1.5rem 0;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .header h2 {
+    font-size: 1.5rem;
+  }
+
+  .dropZone {
+    padding: 2rem 1rem;
+  }
+
+  .uploadIcon {
+    font-size: 2.5rem;
+  }
+
+  .previewGrid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+
+  .analysisInfo {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .actions {
+    flex-direction: column-reverse;
+  }
+
+  .primaryBtn,
+  .secondaryBtn {
+    width: 100%;
+  }
+}

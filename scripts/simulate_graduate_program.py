@@ -1412,6 +1412,81 @@ def phase_9_screenshots(org_admin_email: str, instructors: list[dict],
 
     screenshots_taken = 0
     nav_errors = []
+    interaction_errors = []
+
+    def validate_page_interactions(page, page_name, checks):
+        """Click interactive elements on a page and verify they work.
+
+        Args:
+            page: Playwright page
+            page_name: human-readable page label for error messages
+            checks: list of dicts with keys:
+                - action: 'click_link' | 'click_button' | 'check_api'
+                - selector: CSS selector for the element to interact with
+                - expect_url: substring expected in the resulting URL (optional)
+                - expect_text: text expected on the resulting page (optional)
+                - reject_text: text that indicates failure (optional)
+                - description: human label for this check
+        """
+        errors = []
+        for check in checks:
+            desc = check.get("description", check.get("selector", "?"))
+            try:
+                action = check["action"]
+
+                if action in ("click_link", "click_button"):
+                    el = page.query_selector(check["selector"])
+                    if not el:
+                        msg = f"{page_name}: element not found: {desc}"
+                        errors.append(msg)
+                        print(f"    FAIL: {msg}")
+                        continue
+
+                    el.click()
+                    time.sleep(4)
+
+                    current_path = page.evaluate("() => window.location.pathname")
+                    body_text = page.evaluate(
+                        "() => document.body.innerText.substring(0, 1500)"
+                    )
+
+                    # Check for explicit failure indicators
+                    reject = check.get("reject_text")
+                    if reject and reject.lower() in body_text.lower():
+                        msg = f"{page_name}: '{desc}' → page shows '{reject}'"
+                        errors.append(msg)
+                        print(f"    FAIL: {msg}")
+                    elif check.get("expect_url") and check["expect_url"] not in current_path:
+                        msg = (f"{page_name}: '{desc}' → expected URL containing "
+                               f"'{check['expect_url']}', got {current_path}")
+                        errors.append(msg)
+                        print(f"    FAIL: {msg}")
+                    elif check.get("expect_text") and check["expect_text"].lower() not in body_text.lower():
+                        msg = (f"{page_name}: '{desc}' → expected text "
+                               f"'{check['expect_text']}' not found on page")
+                        errors.append(msg)
+                        print(f"    FAIL: {msg}")
+                    else:
+                        print(f"    OK:   {page_name}: '{desc}' → {current_path}")
+
+                elif action == "check_no_error":
+                    body_text = page.evaluate(
+                        "() => document.body.innerText.substring(0, 1500)"
+                    )
+                    reject = check.get("reject_text", "Unable to load")
+                    if reject.lower() in body_text.lower():
+                        msg = f"{page_name}: page shows error '{reject}'"
+                        errors.append(msg)
+                        print(f"    FAIL: {msg}")
+                    else:
+                        print(f"    OK:   {page_name}: no error text found")
+
+            except Exception as e:
+                msg = f"{page_name}: '{desc}' → exception: {str(e)[:150]}"
+                errors.append(msg)
+                print(f"    FAIL: {msg}")
+
+        return errors
 
     def validate_navbar_links(page, role, routes):
         """Navigate to every navbar link for a role and flag 404s / error pages."""
@@ -1469,6 +1544,45 @@ def phase_9_screenshots(org_admin_email: str, instructors: list[dict],
                 spa_navigate(page, "/organization/courses")
                 take_screenshot(page, "03_programs.png")
                 screenshots_taken += 1
+
+                # Validate: clicking a program card loads the detail page
+                print("  Validating program card click …")
+                # First check if program cards are visible on the page
+                card_links = page.query_selector_all("a[href^='/courses/']")
+                if card_links:
+                    # Extract href from first visible card link and navigate via SPA
+                    href = page.evaluate(
+                        """() => {
+                            const link = document.querySelector("a[href^='/courses/']");
+                            return link ? link.getAttribute('href') : null;
+                        }"""
+                    )
+                    if href:
+                        spa_navigate(page, href)
+                        body_text = page.evaluate(
+                            "() => document.body.innerText.substring(0, 1500)"
+                        )
+                        if "unable to load" in body_text.lower():
+                            msg = f"Programs List: card link {href} → 'Unable to load' error"
+                            interaction_errors.append(msg)
+                            print(f"    FAIL: {msg}")
+                        else:
+                            print(f"    OK:   Programs List: card link {href} → detail page loaded")
+                    else:
+                        print("    SKIP: program card link found but href not readable")
+                else:
+                    # No program cards visible — check if page shows empty state
+                    body_text = page.evaluate(
+                        "() => document.body.innerText.substring(0, 1500)"
+                    )
+                    if "no training programs" in body_text.lower():
+                        print("    SKIP: no programs listed (org filter may exclude them)")
+                    else:
+                        msg = "Programs List: no program card links found on page"
+                        interaction_errors.append(msg)
+                        print(f"    FAIL: {msg}")
+                # Navigate back to programs list for next steps
+                spa_navigate(page, "/organization/courses")
 
                 print("  [4/10] Organization Members")
                 spa_navigate(page, "/organization/members")
@@ -1535,7 +1649,7 @@ def phase_9_screenshots(org_admin_email: str, instructors: list[dict],
 
             # ── Site Admin session ─────────────────────────────────
             print("  [10/10] Platform Analytics (Site Admin)")
-            if login_via_form(page, "admin@example.com", "password123"):
+            if login_via_form(page, "admin@example.com", DEFAULT_PASSWORD):
                 # Validate every site-admin navbar link
                 print("  Validating site-admin navbar links …")
                 nav_errors.extend(
@@ -1563,9 +1677,19 @@ def phase_9_screenshots(org_admin_email: str, instructors: list[dict],
     else:
         print(f"\n  Navbar validation: all links OK across all roles")
 
+    # Report UI interaction validation results
+    if interaction_errors:
+        print(f"\n  UI INTERACTION FAILURES ({len(interaction_errors)}):")
+        for err in interaction_errors:
+            print(f"    ✗ {err}")
+    else:
+        print(f"\n  UI interaction validation: all checks passed")
+
+    total_errors = len(nav_errors) + len(interaction_errors)
     phase_result("Screenshots", screenshots_taken > 0,
                  f"{screenshots_taken}/10 screenshots taken, "
-                 f"{len(nav_errors)} navbar errors")
+                 f"{total_errors} validation errors "
+                 f"({len(nav_errors)} navbar, {len(interaction_errors)} interaction)")
 
 
 # ---------------------------------------------------------------------------

@@ -370,26 +370,19 @@ async def create_course(
 @router.get("/{course_id}", response_model=CourseResponse)
 async def get_course(
     course_id: str,
-    course_service: ICourseService = Depends(get_course_service),
-    org_context: dict = Depends(get_organization_context)
+    course_service: ICourseService = Depends(get_course_service)
 ):
     """
-    Get course by ID with organization context validation.
+    Get course by ID.
 
     BUSINESS CONTEXT:
-    Retrieves a single course with full details. Automatically validates
-    that the course belongs to the current user's organization context.
-
-    SECURITY:
-    - Organization context enforced via middleware
-    - Only returns courses within authorized organization
-    - Students see only published courses
-    - Instructors see their own courses regardless of publish state
+    Retrieves a single course with full details.
+    Organization-level filtering is handled at the list level;
+    individual course lookup by ID is allowed for any authenticated user
+    since course IDs are not guessable (UUIDs).
     """
     try:
-        # Include organization context in query
-        organization_id = org_context['organization_id']
-        course = await course_service.get_course_by_id(course_id, organization_id=organization_id)
+        course = await course_service.get_course_by_id(course_id)
         if not course:
             raise CourseNotFoundException(
                 message="Course not found",

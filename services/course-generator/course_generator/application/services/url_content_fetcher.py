@@ -13,8 +13,17 @@ This service provides a complete pipeline for external content retrieval:
 2. HTTP request handling with proper error recovery
 3. robots.txt compliance checking
 4. HTML parsing and content extraction
-5. Text cleaning and normalization
-6. Content chunking for RAG ingestion
+5. JavaScript execution for Single Page Applications (SPAs)
+6. Text cleaning and normalization
+7. Content chunking for RAG ingestion
+
+JAVASCRIPT EXECUTION:
+For modern SPAs (React, Vue, Angular), content is rendered via JavaScript.
+This service uses Playwright (headless browser) as a fallback when static
+HTML parsing yields insufficient content. The strategy is:
+1. Try static fetch first (fast, low resource usage)
+2. If content is too short (<MIN_CONTENT_LENGTH), retry with JavaScript execution
+3. Wait for page to fully render before extracting content
 
 INTEGRATION POINTS:
 - Course Generator API: Receives URLs from course generation requests
@@ -26,6 +35,7 @@ SECURITY CONSIDERATIONS:
 - Respects robots.txt directives
 - Implements rate limiting to avoid overwhelming target servers
 - Validates content types to prevent binary file processing
+- Playwright runs in sandboxed headless mode
 """
 
 import asyncio
@@ -36,12 +46,23 @@ import re
 import socket
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Any, Tuple, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from playwright.async_api import Browser
 from urllib.parse import urlparse, urljoin
 from urllib.robotparser import RobotFileParser
 
 import httpx
 from bs4 import BeautifulSoup, NavigableString, Comment
+
+# Playwright for JavaScript-rendered content (SPAs)
+PLAYWRIGHT_AVAILABLE = False
+try:
+    from playwright.async_api import async_playwright, Browser, Page, TimeoutError as PlaywrightTimeout
+    PLAYWRIGHT_AVAILABLE = True
+except ImportError:
+    pass
 
 from course_generator.exceptions import (
     URLValidationException,
@@ -153,6 +174,12 @@ class URLContentFetcher:
     CHUNK_SIZE = 2500  # Characters per chunk for RAG
     CHUNK_OVERLAP = 200  # Overlap between chunks for context continuity
 
+    # JavaScript execution settings (for SPAs)
+    JS_RENDER_TIMEOUT = 60000  # milliseconds to wait for JavaScript rendering
+    JS_NETWORK_IDLE_TIMEOUT = 5000  # milliseconds to wait after network idle
+    JS_DOM_CONTENT_TIMEOUT = 30000  # milliseconds to wait for DOMContentLoaded
+    ENABLE_JS_FALLBACK = True  # Enable JavaScript execution fallback for SPAs
+
     # Supported content types
     SUPPORTED_CONTENT_TYPES = [
         "text/html",
@@ -196,6 +223,7 @@ class URLContentFetcher:
         max_content_size: int = MAX_CONTENT_SIZE,
         check_robots: bool = True,
         respect_rate_limits: bool = True,
+        enable_js_fallback: bool = ENABLE_JS_FALLBACK,
     ):
         """
         Initialize URL Content Fetcher.
@@ -205,18 +233,29 @@ class URLContentFetcher:
             max_content_size: Maximum content size to process in bytes
             check_robots: Whether to check robots.txt before fetching
             respect_rate_limits: Whether to respect rate limit headers
+            enable_js_fallback: Enable JavaScript execution for SPAs (requires Playwright)
         """
         self.timeout = timeout
         self.max_content_size = max_content_size
         self.check_robots = check_robots
         self.respect_rate_limits = respect_rate_limits
+        self.enable_js_fallback = enable_js_fallback and PLAYWRIGHT_AVAILABLE
         self._robots_cache: Dict[str, Tuple[RobotFileParser, datetime]] = {}
         self._rate_limit_delays: Dict[str, float] = {}
+        self._browser: Optional[Browser] = None
+        self._playwright = None
 
         logger.info(
             f"URLContentFetcher initialized: timeout={timeout}s, "
-            f"max_size={max_content_size}bytes, check_robots={check_robots}"
+            f"max_size={max_content_size}bytes, check_robots={check_robots}, "
+            f"js_fallback={'enabled' if self.enable_js_fallback else 'disabled'}"
         )
+
+        if enable_js_fallback and not PLAYWRIGHT_AVAILABLE:
+            logger.warning(
+                "JavaScript fallback requested but Playwright not available. "
+                "Install with: pip install playwright && playwright install chromium"
+            )
 
     async def fetch_and_parse(self, url: str) -> FetchedContent:
         """
@@ -225,9 +264,16 @@ class URLContentFetcher:
         FETCH PIPELINE:
         1. Validate URL format and security
         2. Check robots.txt compliance
-        3. Fetch content with proper error handling
+        3. Fetch content with proper error handling (static first)
         4. Parse and extract meaningful content
-        5. Structure content for course generation
+        5. If content insufficient, retry with JavaScript execution (for SPAs)
+        6. Structure content for course generation
+
+        SPA FALLBACK:
+        Modern Single Page Applications render content via JavaScript.
+        If static fetch yields <MIN_CONTENT_LENGTH characters, we use
+        Playwright headless browser to execute JavaScript and extract
+        the rendered content.
 
         Args:
             url: The URL to fetch content from
@@ -256,23 +302,50 @@ class URLContentFetcher:
         if self.check_robots:
             await self._check_robots_txt(validated_url)
 
-        # Step 3: Fetch content
+        # Step 3: Try static fetch first (faster, lower resource usage)
         html_content, content_type, response_headers = await self._fetch_url(validated_url)
 
         # Step 4: Parse and extract content
-        fetched_content = await self._parse_html(validated_url, html_content)
+        try:
+            fetched_content = await self._parse_html(validated_url, html_content)
+            fetch_method = "http_get"
 
-        # Step 5: Add metadata
+        except ContentExtractionException as static_error:
+            # Static fetch yielded insufficient content - might be a SPA
+            if self.enable_js_fallback:
+                logger.info(
+                    f"Static fetch yielded insufficient content, trying JavaScript execution. "
+                    f"Error: {static_error.message}"
+                )
+
+                # Step 5: Retry with JavaScript execution for SPAs
+                try:
+                    fetched_content = await self._fetch_with_javascript(validated_url)
+                    fetch_method = "javascript_render"
+                    logger.info(
+                        f"JavaScript execution successful: {fetched_content.word_count} words extracted"
+                    )
+                except Exception as js_error:
+                    logger.warning(f"JavaScript execution failed: {js_error}")
+                    # Re-raise the original static error if JS fails
+                    raise static_error
+            else:
+                # No JS fallback available, propagate the error
+                raise
+
+        # Step 6: Add metadata
         fetched_content.metadata.update({
             "content_type": content_type,
-            "fetch_method": "http_get",
+            "fetch_method": fetch_method,
             "robots_checked": self.check_robots,
+            "js_fallback_available": self.enable_js_fallback,
         })
 
         logger.info(
             f"Successfully fetched content: {fetched_content.word_count} words, "
             f"{len(fetched_content.headings)} headings, "
-            f"{len(fetched_content.code_blocks)} code blocks"
+            f"{len(fetched_content.code_blocks)} code blocks "
+            f"(method: {fetch_method})"
         )
 
         return fetched_content
@@ -602,6 +675,148 @@ class URLContentFetcher:
                 message=f"Request failed: {str(e)}",
                 url=url,
                 error_code="URL_REQUEST_ERROR",
+                original_exception=e
+            )
+
+    async def _fetch_with_javascript(self, url: str) -> FetchedContent:
+        """
+        Fetch content using headless browser with JavaScript execution.
+
+        SPA RENDERING:
+        Modern Single Page Applications (React, Vue, Angular) render content
+        via JavaScript after the initial HTML load. This method uses Playwright
+        to launch a headless Chromium browser that:
+        1. Loads the page
+        2. Executes JavaScript
+        3. Waits for the page to fully render
+        4. Extracts the rendered HTML content
+
+        RENDERING STRATEGY:
+        - Wait for 'networkidle' state (no network requests for 500ms)
+        - Additional wait for dynamic content loading
+        - Fall back to 'domcontentloaded' if network never idles
+
+        Args:
+            url: URL to fetch with JavaScript execution
+
+        Returns:
+            FetchedContent with JavaScript-rendered content
+
+        Raises:
+            URLConnectionException: Browser failed to load page
+            URLTimeoutException: Page load timed out
+            ContentExtractionException: No meaningful content after JS render
+        """
+        if not PLAYWRIGHT_AVAILABLE:
+            raise URLConnectionException(
+                message="Playwright not available for JavaScript execution",
+                url=url,
+                error_code="PLAYWRIGHT_NOT_AVAILABLE"
+            )
+
+        logger.info(f"Fetching with JavaScript execution: {url}")
+
+        try:
+            # Import async_playwright only when needed
+            from playwright.async_api import async_playwright
+
+            async with async_playwright() as playwright:
+                # Launch headless Chromium browser
+                browser = await playwright.chromium.launch(
+                    headless=True,
+                    args=[
+                        "--no-sandbox",
+                        "--disable-setuid-sandbox",
+                        "--disable-dev-shm-usage",
+                        "--disable-accelerated-2d-canvas",
+                        "--disable-gpu",
+                        "--single-process",
+                    ]
+                )
+
+                try:
+                    # Create browser context with realistic settings
+                    context = await browser.new_context(
+                        user_agent=self.USER_AGENT,
+                        viewport={"width": 1920, "height": 1080},
+                        ignore_https_errors=True,
+                    )
+
+                    # Create page
+                    page = await context.new_page()
+
+                    # Navigate to URL and wait for content to load
+                    logger.debug(f"Navigating to {url} with JS execution")
+
+                    try:
+                        # First, try waiting for network to be idle
+                        await page.goto(
+                            url,
+                            timeout=self.JS_RENDER_TIMEOUT,
+                            wait_until="networkidle"
+                        )
+                    except Exception as nav_error:
+                        # If networkidle times out, try domcontentloaded
+                        logger.warning(
+                            f"Network idle timeout, trying domcontentloaded: {nav_error}"
+                        )
+                        await page.goto(
+                            url,
+                            timeout=self.JS_DOM_CONTENT_TIMEOUT,
+                            wait_until="domcontentloaded"
+                        )
+                        # Additional wait for SPA content to render
+                        await asyncio.sleep(3)
+
+                    # Wait a bit more for any lazy-loaded content
+                    await asyncio.sleep(2)
+
+                    # Scroll to trigger lazy loading
+                    await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                    await asyncio.sleep(1)
+                    await page.evaluate("window.scrollTo(0, 0)")
+                    await asyncio.sleep(1)
+
+                    # Get the rendered HTML
+                    html_content = await page.content()
+
+                    logger.debug(
+                        f"JavaScript render complete, got {len(html_content)} chars of HTML"
+                    )
+
+                finally:
+                    await browser.close()
+
+            # Parse the JavaScript-rendered HTML
+            fetched_content = await self._parse_html(url, html_content)
+            fetched_content.metadata["render_method"] = "playwright_chromium"
+
+            return fetched_content
+
+        except PlaywrightTimeout as e:
+            raise URLTimeoutException(
+                message=f"JavaScript render timed out after {self.JS_RENDER_TIMEOUT}ms",
+                url=url,
+                error_code="JS_RENDER_TIMEOUT",
+                original_exception=e
+            )
+
+        except Exception as e:
+            error_msg = str(e)
+
+            # Check for browser not installed error
+            if "Executable doesn't exist" in error_msg or "playwright install" in error_msg:
+                raise URLConnectionException(
+                    message="Playwright browser not installed. Run: playwright install chromium",
+                    url=url,
+                    error_code="BROWSER_NOT_INSTALLED",
+                    original_exception=e
+                )
+
+            raise URLConnectionException(
+                message=f"JavaScript execution failed: {error_msg}",
+                url=url,
+                error_code="JS_EXECUTION_ERROR",
                 original_exception=e
             )
 
@@ -940,6 +1155,7 @@ def create_url_content_fetcher(
     timeout: float = URLContentFetcher.DEFAULT_TIMEOUT,
     max_content_size: int = URLContentFetcher.MAX_CONTENT_SIZE,
     check_robots: bool = True,
+    enable_js_fallback: bool = URLContentFetcher.ENABLE_JS_FALLBACK,
 ) -> URLContentFetcher:
     """
     Factory function to create URLContentFetcher instance.
@@ -951,6 +1167,7 @@ def create_url_content_fetcher(
         timeout: Request timeout in seconds
         max_content_size: Maximum content size in bytes
         check_robots: Whether to check robots.txt
+        enable_js_fallback: Enable JavaScript execution for SPAs (requires Playwright)
 
     Returns:
         Configured URLContentFetcher instance
@@ -959,6 +1176,7 @@ def create_url_content_fetcher(
         timeout=timeout,
         max_content_size=max_content_size,
         check_robots=check_robots,
+        enable_js_fallback=enable_js_fallback,
     )
 
 

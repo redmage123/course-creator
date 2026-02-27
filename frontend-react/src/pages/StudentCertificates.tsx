@@ -147,7 +147,7 @@ export const StudentCertificates: React.FC = () => {
     <DashboardLayout seo={seoElement}>
       <div className={styles.certificatesContainer}>
         <div className={styles.header}>
-          <Heading level={1} className={styles.pageTitle}>
+          <Heading level="h1" className={styles.pageTitle}>
             My Certificates
           </Heading>
           <Link to="/dashboard/student" className={styles.backLink}>
@@ -172,7 +172,7 @@ export const StudentCertificates: React.FC = () => {
             <div className={styles.noCertificatesIcon}>
               <i className="fas fa-certificate"></i>
             </div>
-            <Heading level={2} className={styles.noCertificatesTitle}>
+            <Heading level="h2" className={styles.noCertificatesTitle}>
               No Certificates Yet
             </Heading>
             <p className={styles.noCertificatesMessage}>
@@ -196,7 +196,7 @@ export const StudentCertificates: React.FC = () => {
                   </div>
 
                   <div className={styles.certificateInfo}>
-                    <Heading level={3} className={styles.certificateTitle}>
+                    <Heading level="h3" className={styles.certificateTitle}>
                       {certificate.course_name}
                     </Heading>
 

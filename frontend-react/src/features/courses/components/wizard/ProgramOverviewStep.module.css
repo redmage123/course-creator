@@ -1,0 +1,167 @@
+/**
+ * ProgramOverviewStep Styles
+ * Step 1: Program metadata editing
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.required {
+  color: #dc2626;
+}
+
+.formInput,
+.formTextarea,
+.formSelect {
+  padding: 10px 12px;
+  font-size: 15px;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background: #fff;
+  color: #1a1a1a;
+}
+
+.formInput:focus,
+.formTextarea:focus,
+.formSelect:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.formTextarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.inputError {
+  border-color: #dc2626;
+}
+
+.inputError:focus {
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.errorMessage {
+  font-size: 13px;
+  color: #dc2626;
+  font-weight: 500;
+}
+
+.charCount {
+  font-size: 12px;
+  color: #64748b;
+  text-align: right;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+}
+
+.tagsInputGroup {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.tagsInputGroup .formInput {
+  flex: 1;
+}
+
+.tagsDisplay {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 16px;
+  font-size: 13px;
+  color: #1e40af;
+}
+
+.tagRemove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  color: #1e40af;
+  padding: 0 2px;
+  border-radius: 50%;
+}
+
+.tagRemove:hover {
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.readOnlyValue {
+  font-size: 15px;
+  color: #1a1a1a;
+  padding: 10px 0;
+}
+
+.metadataGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.saveError {
+  font-size: 14px;
+  color: #dc2626;
+  margin: 8px 0 0 0;
+  font-weight: 500;
+}
+
+.saveSuccess {
+  font-size: 14px;
+  color: #16a34a;
+  margin: 8px 0 0 0;
+  font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  .formRow {
+    grid-template-columns: 1fr;
+  }
+}
