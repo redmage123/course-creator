@@ -39,15 +39,15 @@ interface DemoPlayerProps {
 }
 
 // Demo slide data with video and audio paths
-// Duration values match regenerated ElevenLabs audio (Rachel voice, multilingual_v2 model)
-// Videos need to be recorded to match these exact audio durations
+// Duration values = max(audio, video) rounded up. Audio: Charlotte voice (ElevenLabs eleven_turbo_v2).
+// Duration is used for display only; actual playback uses media ended events.
 const DEMO_SLIDES: DemoSlide[] = [
   {
     id: 1,
     title: 'Platform Introduction',
     video: '/demo/videos/slide_01_platform_introduction.mp4',
     audio: '/demo/audio/slide_01_narration.mp3',
-    duration: 16, // Actual: 15.8s
+    duration: 23, // Audio 22.5s, Video 17.8s
     narration: 'Welcome to the Course Creator Platform. Built specifically for corporate training teams and professional instructors who need to create courses fast. Our AI-powered system transforms what used to take weeks into just minutes. In the next slide, we\'ll show you how to get started.'
   },
   {
@@ -55,7 +55,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     title: 'Organization Registration',
     video: '/demo/videos/slide_02_organization_registration.mp4',
     audio: '/demo/audio/slide_02_narration.mp3',
-    duration: 26, // Actual: 25.9s
+    duration: 34, // Audio 33.9s, Video 18.6s
     narration: 'To get started, simply click Register Organization on the home page. Now, let\'s fill in the details. Enter your organization name, website, and a brief description. Add your contact information, including business email and address. Finally, set up your administrator account with credentials. Click submit, and there you go! Your organization is successfully registered. Next, we\'ll show you how to create projects.'
   },
   {
@@ -63,7 +63,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     title: 'Organization Admin Dashboard',
     video: '/demo/videos/slide_03_organization_admin_dashboard.mp4',
     audio: '/demo/audio/slide_03_narration.mp3',
-    duration: 91, // Actual: 91.1s
+    duration: 87, // Audio 86.8s, Video 83.1s
     narration: 'Let\'s log in as the organization admin we just created. First, navigate to the home page and click the Login button in the header. Now, enter the email address: sarah at acmelearning dot e-d-u. Then enter the password. Click the login button to sign in. Notice the user icon in the header changes to show you\'re logged in. You\'re now redirected to your organization admin dashboard! From here, you can manage everything. Notice the purple AI assistant button in the bottom right corner. You can use it to manage your organization through natural language instead of filling out forms.'
   },
   {
@@ -71,7 +71,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     title: 'Creating Training Tracks',
     video: '/demo/videos/slide_04_creating_training_tracks.mp4',
     audio: '/demo/audio/slide_04_narration.mp3',
-    duration: 41, // Actual: 41.4s
+    duration: 43, // Audio 37.4s, Video 43.4s
     narration: 'Now let\'s create a learning track! We\'re already viewing the Tracks tab from the previous slide. Click the Create New Track button. This opens the track creation form. First, enter the track name: Python Fundamentals. Next, select the project. Choose Data Science Foundations from the dropdown. Then select the level. We\'ll make this a Beginner track. Now add a description: Learn Python basics for data science. Click Create Track, and there you go! Your track is created.'
   },
   {
@@ -79,7 +79,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     title: 'AI Assistant',
     video: '/demo/videos/slide_05_ai_assistant.mp4',
     audio: '/demo/audio/slide_05_narration.mp3',
-    duration: 47, // Actual: 47.2s
+    duration: 49, // Audio 40.6s, Video 49.4s
     narration: 'Instead of filling out forms, you can simply tell our AI assistant what you need. Watch how easy it is! Click the purple AI assistant button in the bottom right corner. The chat panel slides up. Now, just describe what you want in plain English. Type: Create an intermediate track called Machine Learning Basics for the Data Science project. The AI understands your request instantly! It confirms the details and creates the track for you. No forms to fill out. No dropdowns to navigate. Just natural conversation.'
   },
   {
@@ -87,7 +87,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     title: 'Adding Instructors',
     video: '/demo/videos/slide_06_adding_instructors.mp4',
     audio: '/demo/audio/slide_06_narration.mp3',
-    duration: 19, // Actual: 18.8s
+    duration: 26, // Audio 25.9s, Video 20.5s
     narration: 'Your instructors are your greatest asset. Bring them onboard in seconds, assign them to specific projects or tracks, and they\'re instantly connected to your Slack or Teams channels for seamless collaboration. Whether it\'s co-developing courses with colleagues or running independent programs, everything integrates with the tools your team already uses.'
   },
   {
@@ -95,7 +95,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     title: 'Instructor Dashboard',
     video: '/demo/videos/slide_07_instructor_dashboard.mp4',
     audio: '/demo/audio/slide_07_narration.mp3',
-    duration: 32, // Actual: 31.5s
+    duration: 34, // Audio 30.5s, Video 33.4s
     narration: 'Instructors have powerful AI tools at their fingertips! Tell the system your learning objectives, your target audience, and your key topics. Then watch as artificial intelligence generates a complete course structure, suggested modules, learning outcomes, even quiz questions! You review, refine, and approve. What used to take days of curriculum design now takes minutes. And when you schedule live sessions? Automatic Zoom or Teams integration means one click launches your class!'
   },
   {
@@ -103,7 +103,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     title: 'Course Content Generation',
     video: '/demo/videos/slide_08_course_content.mp4',
     audio: '/demo/audio/slide_08_narration.mp3',
-    duration: 36, // Actual: 35.8s
+    duration: 38, // Audio 29.2s, Video 37.9s
     narration: 'AI accelerates content creation! Need lesson content? Describe your topic and the AI generates a complete lesson draft. You just add your expertise and real-world examples. Creating quizzes? AI suggests questions based on your content: multiple choice, code challenges, scenario-based problems. You spend your time refining and personalizing, not starting from scratch. Upload presentations, embed videos, add code exercises with real-time feedback. The AI accelerates creation. You ensure quality.'
   },
   {
@@ -111,7 +111,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     title: 'Student Enrollment',
     video: '/demo/videos/slide_09_enroll_students.mp4',
     audio: '/demo/audio/slide_09_narration.mp3',
-    duration: 22, // Actual: 22.2s
+    duration: 25, // Audio 17.6s, Video 24.2s
     narration: 'Your course is ready! Now it\'s time to welcome your students. One student? Easy. One hundred students? Even easier! Upload a CSV file and enroll an entire class in seconds. Organize by section, group by skill level, track by semester. However you teach, we adapt. Because managing students should be effortless, not exhausting.'
   },
   {
@@ -119,7 +119,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     title: 'Student Dashboard',
     video: '/demo/videos/slide_10_student_dashboard.mp4',
     audio: '/demo/audio/slide_10_narration.mp3',
-    duration: 18, // Actual: 17.8s
+    duration: 24, // Audio 23.2s, Video 19.9s
     narration: 'Now let\'s see what your students experience. They log in and immediately, everything they need is right there. Their courses, their progress, upcoming deadlines, recent achievements. No confusion. No hunting for information. Just a clear path forward and the motivation to keep going.'
   },
   {
@@ -127,7 +127,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     title: 'Course Browsing & Labs',
     video: '/demo/videos/slide_11_course_browsing.mp4',
     audio: '/demo/audio/slide_11_narration.mp3',
-    duration: 35, // Actual: 34.5s
+    duration: 37, // Audio 32.0s, Video 36.6s
     narration: 'Students browse the catalog, discover courses, and enroll with one click. The game changer for technical training? When they hit a coding lesson, professional development environments open right in their browser! VS Code for web development. PyCharm for Python. JupyterLab for data science. Full Linux terminal for system administration. No installation. No configuration. No IT headaches! This is why corporate training teams choose us! Their developers learn with real professional tools, no setup time wasted.'
   },
   {
@@ -135,7 +135,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     title: 'Quiz & Assessment',
     video: '/demo/videos/slide_12_quiz_assessment.mp4',
     audio: '/demo/audio/slide_12_narration.mp3',
-    duration: 28, // Actual: 27.5s
+    duration: 31, // Audio 30.2s, Video 29.2s
     narration: 'Assessment shouldn\'t feel like a gotcha moment. It should be a learning opportunity! Our quiz system delivers multiple question formats: multiple choice for quick checks, coding challenges for hands-on validation, short answer for deeper understanding. But here\'s what matters most: instant feedback! Not just a score, but detailed explanations that turn mistakes into mastery. Because real learning happens when students understand why.'
   },
   {
@@ -143,7 +143,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     title: 'Student Progress',
     video: '/demo/videos/slide_13_student_progress.mp4',
     audio: '/demo/audio/slide_13_narration.mp3',
-    duration: 20, // Actual: 20.3s
+    duration: 24, // Audio 23.5s, Video 22.3s
     narration: 'Progress should be visible and celebrated! Every quiz completed. Every module mastered. Every achievement unlocked. Students see their journey unfold in real time. Completion rates, quiz scores, time invested. It all adds up to something powerful: proof of growth! And that\'s what keeps them coming back.'
   },
   {
@@ -151,7 +151,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     title: 'Instructor Analytics',
     video: '/demo/videos/slide_14_instructor_analytics.mp4',
     audio: '/demo/audio/slide_14_narration.mp3',
-    duration: 34, // Actual: 34.2s
+    duration: 37, // Audio 35.1s, Video 36.3s
     narration: 'We go beyond basic LMS reporting! Our AI-powered analytics don\'t just show you data. They surface insights! Which students are at risk of falling behind? AI flags them automatically. What content drives the most engagement? AI identifies patterns across all your courses. Which quiz questions are too easy or too hard? AI analyzes performance trends and suggests adjustments. Export reports to Slack or Teams so your entire training team stays informed. This isn\'t just analytics. It\'s intelligent course optimization!'
   },
   {
@@ -159,7 +159,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     title: 'Learning Analytics Dashboard',
     video: '/demo/videos/slide_15_learning_analytics.mp4',
     audio: '/demo/audio/slide_15_learning_analytics_narration.mp3',
-    duration: 45, // Actual: max(video 44.5s, audio 42.5s)
+    duration: 45, // Audio 31.5s, Video 44.5s
     narration: 'But students want more than just progress bars! Our Learning Analytics Dashboard gives them deep insights. See skill mastery across different topics with visual radar charts. Track learning velocity to understand how quickly concepts are being absorbed. View session activity patterns to optimize study habits. Monitor learning path progress through multi-course tracks. Students can identify their strengths and areas for improvement. It\'s not just about completing courses. It\'s about truly understanding your learning journey!'
   },
   {
@@ -167,7 +167,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     title: 'Instructor Insights Dashboard',
     video: '/demo/videos/slide_16_instructor_insights.mp4',
     audio: '/demo/audio/slide_16_instructor_insights_narration.mp3',
-    duration: 50, // Actual: max(video 50.0s, audio 48.0s)
+    duration: 50, // Audio 31.4s, Video 50.0s
     narration: 'Now let\'s see the Instructor Insights Dashboard! This is where AI truly shines. Course performance metrics show completion rates, engagement levels, and average scores at a glance. Student engagement widgets reveal who\'s thriving and who needs support. Content effectiveness charts identify which lessons drive the most learning. And the best part? AI-powered teaching recommendations! The system analyzes patterns across all your courses and suggests specific improvements. Maybe a lesson needs more examples. Maybe a quiz is too difficult. The AI tells you exactly what to optimize!'
   },
   {
@@ -175,7 +175,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     title: 'Third-Party Integrations',
     video: '/demo/videos/slide_17_integrations.mp4',
     audio: '/demo/audio/slide_17_integrations_narration.mp3',
-    duration: 42, // Actual: max(video 42.0s, audio 40.1s)
+    duration: 42, // Audio 31.6s, Video 42.0s
     narration: 'Your organization doesn\'t exist in isolation! Let\'s set up integrations. Click the Integrations tab. Here you can connect Slack for instant notifications when students complete courses. Link your Google Calendar or Outlook for automatic scheduling. Set up OAuth connections for single sign-on with your existing identity provider. Configure webhooks to trigger your own automation workflows. LTI integration lets you embed our courses directly in your existing LMS. Everything works together seamlessly!'
   },
   {
@@ -183,7 +183,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     title: 'Accessibility Settings',
     video: '/demo/videos/slide_18_accessibility.mp4',
     audio: '/demo/audio/slide_18_accessibility_narration.mp3',
-    duration: 48, // Actual: max(video 47.8s, audio 45.8s)
+    duration: 48, // Audio 35.1s, Video 47.8s
     narration: 'Accessibility isn\'t an afterthought. It\'s built into everything we do! Every user can customize their experience. Adjust font sizes from default to extra large. Switch between light, dark, or high contrast color schemes. Reduce motion for users sensitive to animations. Choose your preferred focus indicator style. Enable screen reader optimizations. Configure keyboard shortcuts to match your workflow. Skip links are always available for keyboard navigation. We\'re committed to WCAG 2.1 double-A compliance because learning should be accessible to everyone!'
   },
   {
@@ -191,7 +191,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     title: 'Mobile Experience',
     video: '/demo/videos/slide_19_mobile.mp4',
     audio: '/demo/audio/slide_19_mobile_narration.mp3',
-    duration: 41, // Actual: max(video 41.3s, audio 39.3s)
+    duration: 42, // Audio 32.0s, Video 41.3s
     narration: 'Learning doesn\'t stop when you leave your desk! Our mobile experience brings the full platform to any device. Responsive design adapts beautifully to phones and tablets. Swipe through course cards with touch gestures. Pull down to refresh for the latest content. And the game changer? Offline sync! Download courses to learn on the go, even without internet. Your progress syncs automatically when you\'re back online. Train your team anywhere, anytime. That\'s the power of mobile-first design!'
   },
   {
@@ -199,7 +199,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     title: 'Summary & Next Steps',
     video: '/demo/videos/slide_15_summary.mp4',
     audio: '/demo/audio/slide_20_summary_narration.mp3',
-    duration: 49, // Actual: audio 48.7s, video 28.2s
+    duration: 41, // Audio 40.4s, Video 28.2s
     narration: 'So that\'s Course Creator Platform! AI handles course development, content generation, and intelligent analytics. Deep learning insights for both students and instructors. Third-party integrations with Slack, Teams, Zoom, and your existing systems. Full accessibility support and mobile-first design. Your team works inside the tools they already use, and everything integrates seamlessly. Whether you\'re building corporate training programs or teaching as an independent instructor, we turn weeks of work into minutes of guided setup. Ready to see it in action? Visit our site to get started!'
   }
 ];
@@ -242,6 +242,9 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
   const shouldContinuePlayingRef = useRef<boolean>(false);  // Track auto-continue across slides
   const videoEndedRef = useRef<boolean>(false);  // Track video ended for sync
   const audioEndedRef = useRef<boolean>(false);  // Track audio ended for sync
+  const videoReadyRef = useRef<boolean>(false);  // Track video canplay
+  const audioReadyRef = useRef<boolean>(false);  // Track audio canplay
+  const pendingPlayRef = useRef<boolean>(false); // Play requested but waiting for media ready
 
   // Current slide data
   const currentSlide = DEMO_SLIDES[currentSlideIndex];
@@ -257,12 +260,12 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
   };
 
   /**
-   * Sync Engine - Monitors and corrects audio/video drift
+   * Sync Engine - Monitors and corrects audio/video drift using playback rate
    *
-   * WHY THIS APPROACH:
-   * HTML5 audio and video elements can drift apart over time due to
-   * buffering, decoding delays, or system performance. This sync engine
-   * checks drift every 250ms and corrects when beyond threshold.
+   * WHY PLAYBACK RATE INSTEAD OF HARD SEEK:
+   * Hard-seeking audio (audio.currentTime = x) causes audible stutters/clicks.
+   * Instead, we gently speed up or slow down audio playback rate to gradually
+   * close the gap. Only hard-seek for very large drift (>500ms).
    */
   const startSyncEngine = useCallback(() => {
     if (syncIntervalRef.current) return;
@@ -271,15 +274,25 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
       const video = videoRef.current;
       const audio = audioRef.current;
 
-      if (!video || !audio || video.paused) return;
+      if (!video || !audio || video.paused || video.ended) return;
+      if (audio.ended) return; // Audio finished, no need to sync
 
-      // Calculate drift in milliseconds
-      const driftMs = Math.abs(video.currentTime - audio.currentTime) * 1000;
+      const driftMs = (video.currentTime - audio.currentTime) * 1000;
+      const absDrift = Math.abs(driftMs);
 
-      if (driftMs > DRIFT_THRESHOLD_MS) {
-        // Correct audio position to match video
+      if (absDrift > 500) {
+        // Large drift — hard correct (unavoidable stutter, but rare)
         audio.currentTime = video.currentTime;
-        console.log(`[Sync Engine] Corrected drift of ${driftMs.toFixed(0)}ms`);
+        audio.playbackRate = 1.0;
+        console.log(`[Sync Engine] Hard corrected drift of ${absDrift.toFixed(0)}ms`);
+      } else if (absDrift > DRIFT_THRESHOLD_MS) {
+        // Moderate drift — adjust playback rate to gradually close the gap
+        // Audio behind video (positive drift) → speed up audio slightly
+        // Audio ahead of video (negative drift) → slow down audio slightly
+        audio.playbackRate = driftMs > 0 ? 1.03 : 0.97;
+      } else {
+        // Within threshold — normal speed
+        audio.playbackRate = 1.0;
       }
     }, SYNC_CHECK_INTERVAL_MS);
   }, []);
@@ -308,12 +321,16 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
 
     console.log(`[DemoPlayer] Loading slide ${slide.id}: ${slide.title}`);
 
-    // Stop current playback and reset ended tracking
+    // Stop current playback and reset all tracking
     video.pause();
     audio.pause();
+    audio.playbackRate = 1.0;
     stopSyncEngine();
     videoEndedRef.current = false;
     audioEndedRef.current = false;
+    videoReadyRef.current = false;
+    audioReadyRef.current = false;
+    pendingPlayRef.current = false;
 
     // Update sources
     video.src = slide.video;
@@ -344,26 +361,26 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
   }, [stopSyncEngine]);
 
   /**
-   * Start playback with synchronized audio/video
+   * Actually start both media together once both are ready.
+   * Called internally when both canplay events have fired.
    */
-  const play = useCallback(async () => {
+  const startBothMedia = useCallback(async () => {
     const video = videoRef.current;
     const audio = audioRef.current;
 
     if (!video || !audio) return;
 
     try {
-      // Sync audio to video position before playing
       audio.currentTime = video.currentTime;
+      audio.playbackRate = 1.0;
 
-      // Start both playbacks
       await Promise.all([
         video.play(),
         audio.play()
       ]);
 
       setIsPlaying(true);
-      shouldContinuePlayingRef.current = true;  // Track that we're in playing mode
+      shouldContinuePlayingRef.current = true;
       startSyncEngine();
 
       console.log('[DemoPlayer] Playback started with sync engine');
@@ -372,6 +389,30 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
       setError('Failed to start playback. Please try again.');
     }
   }, [startSyncEngine]);
+
+  /**
+   * Start playback — waits for both video and audio to be loaded
+   *
+   * WHY WAIT FOR BOTH:
+   * Starting audio before video is buffered causes the narration to play
+   * over a black/frozen screen. We set a pending flag and only start
+   * once both media fire their canplay events.
+   */
+  const play = useCallback(async () => {
+    const video = videoRef.current;
+    const audio = audioRef.current;
+
+    if (!video || !audio) return;
+
+    if (videoReadyRef.current && audioReadyRef.current) {
+      // Both ready — start immediately
+      await startBothMedia();
+    } else {
+      // Not ready yet — flag it and wait for canplay events
+      pendingPlayRef.current = true;
+      console.log('[DemoPlayer] Waiting for media to buffer before playing...');
+    }
+  }, [startBothMedia]);
 
   /**
    * Pause playback
@@ -476,9 +517,8 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
         loadSlide(currentSlideIndex + 1);
 
         if (shouldContinue) {
-          setTimeout(() => {
-            play();
-          }, 600);
+          // Don't use a fixed timeout — play() will wait for canplay events
+          play();
         }
       }, AUTO_ADVANCE_DELAY_MS);
     } else {
@@ -508,16 +548,37 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
   }, [advanceToNextSlide]);
 
   /**
-   * Handle video can play - ready to start
+   * Check if both media are ready and a play is pending
+   */
+  const tryStartPendingPlay = useCallback(async () => {
+    if (pendingPlayRef.current && videoReadyRef.current && audioReadyRef.current) {
+      pendingPlayRef.current = false;
+      await startBothMedia();
+    }
+  }, [startBothMedia]);
+
+  /**
+   * Handle video can play - track readiness
    */
   const handleCanPlay = useCallback(() => {
+    videoReadyRef.current = true;
     setIsLoading(false);
 
-    // Auto-play if enabled
-    if (autoPlay && currentSlideIndex === 0) {
-      play();
+    // Auto-play on first load if enabled
+    if (autoPlay && currentSlideIndex === 0 && audioReadyRef.current) {
+      pendingPlayRef.current = true;
     }
-  }, [autoPlay, currentSlideIndex, play]);
+
+    tryStartPendingPlay();
+  }, [autoPlay, currentSlideIndex, tryStartPendingPlay]);
+
+  /**
+   * Handle audio can play - track readiness
+   */
+  const handleAudioCanPlay = useCallback(() => {
+    audioReadyRef.current = true;
+    tryStartPendingPlay();
+  }, [tryStartPendingPlay]);
 
   /**
    * Handle video error
@@ -622,7 +683,7 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
         />
 
         {/* Hidden Audio Player for Narration */}
-        <audio ref={audioRef} preload="auto" onEnded={handleAudioEnded} />
+        <audio ref={audioRef} preload="auto" onEnded={handleAudioEnded} onCanPlay={handleAudioCanPlay} />
       </div>
 
       {/* Narration Section - Below video, not overlaid */}
