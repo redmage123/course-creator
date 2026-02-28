@@ -558,6 +558,17 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
   }, [startBothMedia]);
 
   /**
+   * Handle video loaded data - force first frame to paint.
+   * Some browsers show a blank white frame until you seek or play.
+   */
+  const handleLoadedData = useCallback(() => {
+    const video = videoRef.current;
+    if (video && video.paused && video.currentTime === 0) {
+      video.currentTime = 0.001;
+    }
+  }, []);
+
+  /**
    * Handle video can play - track readiness
    */
   const handleCanPlay = useCallback(() => {
@@ -677,6 +688,7 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
           onTimeUpdate={handleTimeUpdate}
           onEnded={handleVideoEnded}
           onCanPlay={handleCanPlay}
+          onLoadedData={handleLoadedData}
           onError={handleVideoError}
           playsInline
           preload="auto"
