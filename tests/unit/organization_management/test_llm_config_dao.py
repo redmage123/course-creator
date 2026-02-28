@@ -408,8 +408,8 @@ def db_state():
                 'auth_type': 'bearer',
                 'supports_vision': True,
                 'supports_streaming': True,
-                'default_model': 'gpt-5.2',
-                'available_models': ['gpt-5.2', 'gpt-4o'],
+                'default_model': 'gpt-5.3',
+                'available_models': ['gpt-5.3', 'gpt-4o'],
                 'rate_limit_requests_per_minute': 500,
                 'max_tokens_per_request': 128000,
                 'is_local': False,
@@ -644,7 +644,7 @@ class TestOrganizationLLMConfiguration:
             organization_id=sample_org_id,
             provider_name='openai',
             api_key=api_key,
-            model_name='gpt-5.2',
+            model_name='gpt-5.3',
             is_primary=True,
             created_by=sample_user_id
         )
@@ -652,7 +652,7 @@ class TestOrganizationLLMConfiguration:
         # Then: Config should be created with correct data
         assert config['organization_id'] == sample_org_id
         assert config['provider_id'] == 1  # OpenAI provider ID
-        assert config['model_name'] == 'gpt-5.2'
+        assert config['model_name'] == 'gpt-5.3'
         assert config['is_primary'] is True
         assert config['is_active'] is True
         assert config['api_key_encrypted'] == api_key  # In production, would be encrypted
@@ -878,7 +878,7 @@ class TestOrganizationLLMConfiguration:
             config_id=config['id'],
             organization_id=sample_org_id,
             updates={
-                'model_name': 'gpt-5.2',
+                'model_name': 'gpt-5.3',
                 'usage_quota_monthly': 1000000
             },
             updated_by=sample_user_id
@@ -1243,7 +1243,7 @@ class TestUsageTracking:
             organization_id=sample_org_id,
             config_id=config['id'],
             provider_name='openai',
-            model_name='gpt-5.2',
+            model_name='gpt-5.3',
             operation_type='vision',
             input_tokens=500,
             output_tokens=1000,
@@ -1284,7 +1284,7 @@ class TestUsageTracking:
             organization_id=sample_org_id,
             config_id=config['id'],
             provider_name='openai',
-            model_name='gpt-5.2',
+            model_name='gpt-5.3',
             operation_type='text',
             input_tokens=500,
             output_tokens=1000,
@@ -1325,7 +1325,7 @@ class TestUsageTracking:
             organization_id=sample_org_id,
             config_id=config['id'],
             provider_name='openai',
-            model_name='gpt-5.2',
+            model_name='gpt-5.3',
             operation_type='text',
             input_tokens=500,
             output_tokens=1000,
@@ -1337,7 +1337,7 @@ class TestUsageTracking:
             organization_id=sample_org_id,
             config_id=config['id'],
             provider_name='openai',
-            model_name='gpt-5.2',
+            model_name='gpt-5.3',
             operation_type='vision',
             input_tokens=300,
             output_tokens=700,
@@ -1378,7 +1378,7 @@ class TestUsageTracking:
             organization_id=sample_org_id,
             config_id=config['id'],
             provider_name='openai',
-            model_name='gpt-5.2',
+            model_name='gpt-5.3',
             operation_type='text',
             input_tokens=500,
             output_tokens=0,
@@ -1420,7 +1420,7 @@ class TestUsageTracking:
             organization_id=sample_org_id,
             config_id=config['id'],
             provider_name='openai',
-            model_name='gpt-5.2',
+            model_name='gpt-5.3',
             operation_type='text',
             input_tokens=500,
             output_tokens=1000,
@@ -1432,7 +1432,7 @@ class TestUsageTracking:
             organization_id=sample_org_id,
             config_id=config['id'],
             provider_name='openai',
-            model_name='gpt-5.2',
+            model_name='gpt-5.3',
             operation_type='vision',
             input_tokens=300,
             output_tokens=700,
@@ -1485,7 +1485,7 @@ class TestUsageTracking:
             organization_id=sample_org_id,
             config_id=config1['id'],
             provider_name='openai',
-            model_name='gpt-5.2',
+            model_name='gpt-5.3',
             operation_type='text',
             input_tokens=500,
             output_tokens=1000,
@@ -1724,7 +1724,7 @@ class TestErrorHandling:
         updated = await llm_config_dao.update_org_llm_config(
             config_id=uuid4(),
             organization_id=sample_org_id,
-            updates={'model_name': 'gpt-5.2'}
+            updates={'model_name': 'gpt-5.3'}
         )
 
         # Then: Should return None

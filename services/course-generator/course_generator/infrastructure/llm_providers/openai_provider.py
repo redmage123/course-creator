@@ -3,16 +3,16 @@ OpenAI LLM Provider Implementation
 
 BUSINESS PURPOSE:
 Implements the LLM provider interface for OpenAI's GPT models including
-GPT-5.2 with vision capabilities for screenshot-to-course generation.
+GPT-5.3 with vision capabilities for screenshot-to-course generation.
 
 TECHNICAL IMPLEMENTATION:
 - Uses httpx for async HTTP requests
-- Supports vision analysis with GPT-5.2 and GPT-4o models
+- Supports vision analysis with GPT-5.3 and GPT-4o models
 - Handles rate limiting, retries, and error translation
 - Token counting and cost estimation
 
 WHY:
-OpenAI provides state-of-the-art vision and language models. GPT-5.2 offers
+OpenAI provides state-of-the-art vision and language models. GPT-5.3 offers
 advanced multimodal capabilities essential for accurate screenshot analysis
 and course content generation.
 """
@@ -48,7 +48,7 @@ class OpenAIProvider(BaseLLMProvider):
     OpenAI LLM Provider
 
     BUSINESS PURPOSE:
-    Provides access to OpenAI's GPT models (including GPT-5.2) for:
+    Provides access to OpenAI's GPT models (including GPT-5.3) for:
     - Screenshot/image analysis (vision)
     - Course content generation
     - Quiz and exercise creation
@@ -56,26 +56,26 @@ class OpenAIProvider(BaseLLMProvider):
     TECHNICAL DETAILS:
     - API Base: https://api.openai.com/v1
     - Authentication: Bearer token
-    - Vision: Supported in GPT-4o, GPT-4-turbo, GPT-5.2
+    - Vision: Supported in GPT-4o, GPT-4-turbo, GPT-5.3
     - Streaming: Supported
     - JSON mode: Supported
 
     MODELS:
-    - gpt-5.2: Latest model with advanced vision and reasoning
-    - gpt-5.2-vision: Vision-specific variant
+    - gpt-5.3: Latest model with advanced vision and reasoning
+    - gpt-5.3-vision: Vision-specific variant
     - gpt-4o: Multimodal model with vision
     - gpt-4o-mini: Cost-effective multimodal model
     - gpt-4-turbo: Previous generation with vision
     """
 
     DEFAULT_BASE_URL = "https://api.openai.com/v1"
-    DEFAULT_MODEL = "gpt-5.2"
-    DEFAULT_VISION_MODEL = "gpt-5.2"
+    DEFAULT_MODEL = "gpt-5.3"
+    DEFAULT_VISION_MODEL = "gpt-5.3"
 
     # Pricing per 1M tokens (as of late 2025)
     PRICING = {
-        "gpt-5.2": {"input": 5.00, "output": 15.00},
-        "gpt-5.2-vision": {"input": 5.00, "output": 15.00},
+        "gpt-5.3": {"input": 5.00, "output": 15.00},
+        "gpt-5.3-vision": {"input": 5.00, "output": 15.00},
         "gpt-4o": {"input": 2.50, "output": 10.00},
         "gpt-4o-mini": {"input": 0.15, "output": 0.60},
         "gpt-4-turbo": {"input": 10.00, "output": 30.00},
@@ -96,7 +96,7 @@ class OpenAIProvider(BaseLLMProvider):
         Args:
             api_key: OpenAI API key
             base_url: Custom base URL (for Azure OpenAI or proxies)
-            model: Default model (defaults to gpt-5.2)
+            model: Default model (defaults to gpt-5.3)
             organization_id: Organization ID for usage tracking
             timeout: Request timeout in seconds
             max_retries: Maximum retry attempts
@@ -162,7 +162,7 @@ class OpenAIProvider(BaseLLMProvider):
         Args:
             image_data: Image bytes or base64 string
             prompt: Analysis prompt
-            model: Model to use (defaults to gpt-5.2)
+            model: Model to use (defaults to gpt-5.3)
             max_tokens: Max response tokens
             temperature: Sampling temperature
 

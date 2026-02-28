@@ -94,12 +94,12 @@ class TestOpenAIProviderInitialization:
     def test_default_model_property(self):
         """Test default_model property returns correct value"""
         provider = OpenAIProvider(api_key="test-key")
-        assert provider.default_model == "gpt-5.2"
+        assert provider.default_model == "gpt-5.3"
 
     def test_default_vision_model_property(self):
         """Test default_vision_model property returns correct value"""
         provider = OpenAIProvider(api_key="test-key")
-        assert provider.default_vision_model == "gpt-5.2"
+        assert provider.default_vision_model == "gpt-5.3"
 
     def test_http_client_initialization(self):
         """Test that HTTP client is initialized with correct headers"""
@@ -216,7 +216,7 @@ class TestOpenAIProviderImageAnalysis:
         assert result.suggested_topics == ["Topic 1", "Topic 2"]
         assert result.suggested_difficulty == "intermediate"
         assert result.suggested_duration_hours == 10
-        assert result.model_used == "gpt-5.2"
+        assert result.model_used == "gpt-5.3"
         assert result.provider_used == "openai"
         assert result.tokens_used == 1500
 
@@ -306,7 +306,7 @@ class TestOpenAIProviderImageAnalysis:
         endpoint, request_body = call_args[0]
 
         assert endpoint == "/chat/completions"
-        assert request_body["model"] == "gpt-5.2"
+        assert request_body["model"] == "gpt-5.3"
         assert request_body["max_tokens"] == 2048
         assert request_body["temperature"] == 0.5
         assert request_body["response_format"] == {"type": "json_object"}
@@ -448,7 +448,7 @@ class TestOpenAIProviderTextGeneration:
 
         assert isinstance(result, LLMResponse)
         assert result.content == "Generated course content here"
-        assert result.model == "gpt-5.2"
+        assert result.model == "gpt-5.3"
         assert result.provider == "openai"
         assert result.input_tokens == 100
         assert result.output_tokens == 200
@@ -509,7 +509,7 @@ class TestOpenAIProviderTextGeneration:
     @pytest.mark.asyncio
     async def test_generate_text_with_custom_model(self):
         """Test text generation with custom model"""
-        provider = OpenAIProvider(api_key="test-key", model="gpt-5.2")
+        provider = OpenAIProvider(api_key="test-key", model="gpt-5.3")
 
         mock_response_data = {
             "choices": [{"message": {"content": "Response"}}],
@@ -617,7 +617,7 @@ class TestOpenAIProviderTokenCounting:
         """Test cost estimation for GPT-5.2 model"""
         response = LLMResponse(
             content="Test",
-            model="gpt-5.2",
+            model="gpt-5.3",
             provider="openai",
             input_tokens=1_000_000,  # 1M input tokens
             output_tokens=500_000,   # 500K output tokens

@@ -435,8 +435,8 @@ class TestLLMConfigAPI:
         assert openai_provider["api_base_url"] == "https://api.openai.com/v1"
         assert openai_provider["supports_vision"] is True
         assert openai_provider["supports_streaming"] is True
-        assert openai_provider["default_model"] == "gpt-5.2"
-        assert "gpt-5.2" in openai_provider["available_models"]
+        assert openai_provider["default_model"] == "gpt-5.3"
+        assert "gpt-5.3" in openai_provider["available_models"]
 
     def test_get_available_providers_without_auth(
         self,
@@ -482,7 +482,7 @@ class TestLLMConfigAPI:
         payload = self.create_llm_config_payload(
             provider_name="openai",
             api_key="sk-test-openai-key-123456789",
-            model_name="gpt-5.2",
+            model_name="gpt-5.3",
             is_primary=True
         )
 
@@ -500,7 +500,7 @@ class TestLLMConfigAPI:
         assert result["organization_id"] == org_id
         assert result["provider_name"] == "openai"
         assert result["display_name"] == "OpenAI"
-        assert result["model_name"] == "gpt-5.2"
+        assert result["model_name"] == "gpt-5.3"
         assert result["is_primary"] is True
         assert result["is_active"] is True
         assert result["supports_vision"] is True
@@ -798,7 +798,7 @@ class TestLLMConfigAPI:
 
         # Create multiple configs
         providers = [
-            ("openai", "sk-openai-key", "gpt-5.2", True),
+            ("openai", "sk-openai-key", "gpt-5.3", True),
             ("anthropic", "sk-ant-key", "claude-3-5-sonnet-20241022", False),
             ("ollama", "ollama-local-no-key", "llava", False)
         ]
@@ -868,7 +868,7 @@ class TestLLMConfigAPI:
         Test updating model name
 
         BUSINESS CONTEXT:
-        Organization switches from gpt-4o to gpt-5.2 for better performance.
+        Organization switches from gpt-4o to gpt-5.3 for better performance.
         """
         org_id = self.get_test_organization_id()
 
@@ -887,7 +887,7 @@ class TestLLMConfigAPI:
 
         # Update model
         update_payload = {
-            "model_name": "gpt-5.2"
+            "model_name": "gpt-5.3"
         }
         response = test_app.put(
             f"/organizations/{org_id}/llm-config/{config_id}",
@@ -897,7 +897,7 @@ class TestLLMConfigAPI:
 
         assert response.status_code == 200
         result = response.json()
-        assert result["model_name"] == "gpt-5.2"
+        assert result["model_name"] == "gpt-5.3"
 
     def test_update_llm_config_set_primary(
         self,
@@ -1047,7 +1047,7 @@ class TestLLMConfigAPI:
         org_id = self.get_test_organization_id()
         fake_config_id = "00000000-0000-0000-0000-000000000999"
 
-        update_payload = {"model_name": "gpt-5.2"}
+        update_payload = {"model_name": "gpt-5.3"}
         response = test_app.put(
             f"/organizations/{org_id}/llm-config/{fake_config_id}",
             headers=auth_headers,
@@ -1204,7 +1204,7 @@ class TestLLMConfigAPI:
         test_payload = {
             "provider_name": "openai",
             "api_key": "sk-test-key-for-connection-test",
-            "model_name": "gpt-5.2"
+            "model_name": "gpt-5.3"
         }
 
         response = test_app.post(
@@ -1221,7 +1221,7 @@ class TestLLMConfigAPI:
         assert "model_name" in result
         assert "message" in result
         assert result["provider_name"] == "openai"
-        assert result["model_name"] == "gpt-5.2"
+        assert result["model_name"] == "gpt-5.3"
 
     def test_test_connection_unknown_provider(
         self,
@@ -1338,7 +1338,7 @@ class TestLLMConfigAPI:
         # Create vision-capable config (OpenAI, Anthropic, Deepseek support vision)
         payload = self.create_llm_config_payload(
             provider_name="openai",
-            model_name="gpt-5.2"
+            model_name="gpt-5.3"
         )
         create_response = test_app.post(
             f"/organizations/{org_id}/llm-config",
@@ -1467,7 +1467,7 @@ class TestLLMConfigAPI:
         test_payload = {
             "provider_name": "openai",
             "api_key": "sk-test-workflow-key",
-            "model_name": "gpt-5.2"
+            "model_name": "gpt-5.3"
         }
         test_response = test_app.post(
             f"/organizations/{org_id}/llm-config/test",
@@ -1480,7 +1480,7 @@ class TestLLMConfigAPI:
         create_payload = self.create_llm_config_payload(
             provider_name="openai",
             api_key="sk-test-workflow-key",
-            model_name="gpt-5.2",
+            model_name="gpt-5.3",
             is_primary=True
         )
         create_response = test_app.post(
@@ -1648,7 +1648,7 @@ class TestLLMConfigAdvancedScenarios:
         payload = self.create_llm_config_payload(
             provider_name="openai",
             api_key="sk-original-key-1234567890",
-            model_name="gpt-5.2",
+            model_name="gpt-5.3",
             usage_quota_monthly=5000000,
             is_primary=True
         )

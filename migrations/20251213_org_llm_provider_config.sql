@@ -39,8 +39,8 @@ INSERT INTO llm_providers (
     (
         'openai', 'OpenAI', 'https://api.openai.com/v1',
         '/chat/completions', '/chat/completions',
-        'bearer', TRUE, TRUE, 'gpt-5.2',
-        '["gpt-5.2", "gpt-5.2-vision", "gpt-4o", "gpt-4o-mini", "gpt-4-turbo"]',
+        'bearer', TRUE, TRUE, 'gpt-5.3',
+        '["gpt-5.3", "gpt-5.3-vision", "gpt-4o", "gpt-4o-mini", "gpt-4-turbo"]',
         500, 128000, FALSE
     ),
     -- Anthropic Claude
