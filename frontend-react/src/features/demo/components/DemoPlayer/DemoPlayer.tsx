@@ -27,6 +27,7 @@ interface DemoSlide {
   id: number;
   title: string;
   video: string;
+  poster: string;
   audio: string;
   duration: number;
   narration: string;
@@ -46,6 +47,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     id: 1,
     title: 'Platform Introduction',
     video: '/demo/videos/slide_01_platform_introduction.mp4',
+    poster: '/demo/videos/slide_01_poster.jpg',
     audio: '/demo/audio/slide_01_narration.mp3',
     duration: 25, // Audio 24.6s, Video 17.8s
     narration: 'Welcome to Course Creator Platform. This is built for people who create training — corporate teams, professional instructors, anyone who\'s tired of spending weeks building courses from scratch. What if you could do all of that in minutes instead? That\'s exactly what our AI-powered system delivers. Let me show you how it works.'
@@ -54,6 +56,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     id: 2,
     title: 'Organization Registration',
     video: '/demo/videos/slide_02_organization_registration.mp4',
+    poster: '/demo/videos/slide_02_poster.jpg',
     audio: '/demo/audio/slide_02_narration.mp3',
     duration: 36, // Audio 35.8s, Video 18.6s
     narration: 'Getting started is really straightforward. Head to the home page and click Register Organization. You\'ll see a clean form — just fill in your organization name, website, and a short description of what you do. Add your contact details, business email, address, the basics. Then set up your admin account with a username and password. Hit submit and... that\'s it. Your organization is live and ready to go. Now let me show you what happens next.'
@@ -62,6 +65,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     id: 3,
     title: 'Organization Admin Dashboard',
     video: '/demo/videos/slide_03_organization_admin_dashboard.mp4',
+    poster: '/demo/videos/slide_03_poster.jpg',
     audio: '/demo/audio/slide_03_narration.mp3',
     duration: 89, // Audio 88.7s, Video 83.1s
     narration: 'Let\'s log in as the organization admin we just created. Go to the home page, click Login, and enter the credentials. For this demo, that\'s sarah at Acme Learning dot e-d-u. Type in the password and sign in. And here we are — the organization admin dashboard. Think of this as your command center. Everything you need to manage your training program lives right here. See that purple button in the bottom right? That\'s our AI assistant. You can manage your entire organization just by talking to it in plain English — but we\'ll get to that in a moment. First, let\'s create a project. Projects are how you organize courses and content. Click Create New Project, give it a name and description, and hit Create. Done. You can always come back to edit or delete it later. Now watch what happens when we switch projects using this dropdown. Select Data Science Foundations and the dashboard updates instantly. You can see your Tracks, those are learning paths. Your Instructors, showing your teaching team. And Students, total enrollment across the board. Below the metrics you\'ve got three tabs: Tracks for managing learning paths, Members for your team, and Settings for configuration. Next up — creating tracks for your project.'
@@ -70,6 +74,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     id: 4,
     title: 'Creating Training Tracks',
     video: '/demo/videos/slide_04_creating_training_tracks.mp4',
+    poster: '/demo/videos/slide_04_poster.jpg',
     audio: '/demo/audio/slide_04_narration.mp3',
     duration: 44, // Audio 40.1s, Video 43.4s
     narration: 'Now let\'s create a learning track. We\'re already on the Tracks tab from the previous step, so click Create New Track. Here\'s the form. Start with the track name — we\'ll call this one Python Fundamentals. Choose the project, Data Science Foundations. Set the level to Beginner. And add a quick description: Learn Python basics for data science. Click Create Track and there you go. Your track is ready. That\'s all it takes — name it, assign it to a project, set the level, and you\'re done.'
@@ -78,6 +83,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     id: 5,
     title: 'AI Assistant',
     video: '/demo/videos/slide_05_ai_assistant.mp4',
+    poster: '/demo/videos/slide_05_poster.jpg',
     audio: '/demo/audio/slide_05_narration.mp3',
     duration: 54, // Audio 53.2s, Video 49.4s
     narration: 'Here\'s where it gets interesting. Instead of filling out forms, you can just tell our AI assistant what you need. Click that purple button in the bottom right corner. The chat panel slides open. Now just type what you want in plain English: Create an intermediate track called Machine Learning Basics for the Data Science project. And watch — the AI understands exactly what you mean. It confirms the details and creates the track right there. No forms. No dropdowns. No hunting through menus. Just a natural conversation. This works for creating courses, enrolling students, pulling up reports — pretty much anything you\'d normally do through the interface.'
@@ -86,6 +92,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     id: 6,
     title: 'Adding Instructors',
     video: '/demo/videos/slide_06_adding_instructors.mp4',
+    poster: '/demo/videos/slide_06_poster.jpg',
     audio: '/demo/audio/slide_06_narration.mp3',
     duration: 46, // Audio 30.3s, Video 45.4s
     narration: 'Your instructors are your greatest asset, so bringing them onboard should be effortless. Add them in seconds, assign them to specific projects or tracks, and they\'re instantly connected to your Slack or Teams channels for real-time collaboration. Whether they\'re co-developing courses with colleagues or running their own independent programs, everything integrates with the tools your team already uses.'
@@ -94,6 +101,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     id: 7,
     title: 'Instructor Dashboard',
     video: '/demo/videos/slide_07_instructor_dashboard.mp4',
+    poster: '/demo/videos/slide_07_poster.jpg',
     audio: '/demo/audio/slide_07_narration.mp3',
     duration: 51, // Audio 39.5s, Video 50.5s
     narration: 'Here\'s what instructors see when they log in. They\'ve got powerful AI tools right at their fingertips. Tell the system your learning objectives, target audience, and key topics — and watch it generate a complete course structure. Modules, learning outcomes, even quiz questions, all created in seconds. You review it, refine it, make it yours. What used to take days of curriculum design now takes minutes. And when you schedule live sessions, automatic Zoom or Teams integration means one click launches your class.'
@@ -102,6 +110,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     id: 8,
     title: 'Course Content Generation',
     video: '/demo/videos/slide_08_course_content.mp4',
+    poster: '/demo/videos/slide_08_poster.jpg',
     audio: '/demo/audio/slide_08_narration.mp3',
     duration: 57, // Audio 46.6s, Video 56.6s
     narration: 'This is where AI really shines for content creation. Need a lesson? Just describe your topic and the AI drafts a complete lesson for you. Add your expertise and real-world examples to make it yours. Quizzes? The AI generates questions based on your content — multiple choice, coding challenges, scenario-based problems. You spend your time refining and personalizing, not starting from a blank page. Upload presentations, embed videos, add code exercises with real-time feedback. The AI handles the heavy lifting so you can focus on what matters — the quality of the learning experience.'
@@ -110,6 +119,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     id: 9,
     title: 'Student Enrollment',
     video: '/demo/videos/slide_09_enroll_students.mp4',
+    poster: '/demo/videos/slide_09_poster.jpg',
     audio: '/demo/audio/slide_09_narration.mp3',
     duration: 60, // Audio 43.7s, Video 59.6s
     narration: 'Your course is ready, so now it\'s time to bring in your students. And enrollment is incredibly flexible. Got one student? Just enter their email and they\'re in. A hundred students? Upload a CSV file and the whole class is enrolled in seconds. No manual data entry at all. You can organize them however makes sense for your program — by section, skill level, semester, department, whatever works. The system adapts to your workflow, not the other way around. Because honestly, managing students should be the easy part, not the time-consuming part.'
@@ -118,6 +128,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     id: 10,
     title: 'Student Dashboard',
     video: '/demo/videos/slide_10_student_dashboard.mp4',
+    poster: '/demo/videos/slide_10_poster.jpg',
     audio: '/demo/audio/slide_10_narration.mp3',
     duration: 40, // Audio 27.6s, Video 39.4s
     narration: 'Now let\'s see what the experience looks like from a student\'s perspective. They log in and immediately, everything they need is right here. Their courses, their progress, upcoming deadlines, recent achievements. There\'s no confusion and no searching around. Just a clean, clear path forward and the motivation to keep learning.'
@@ -126,6 +137,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     id: 11,
     title: 'Course Browsing & Labs',
     video: '/demo/videos/slide_11_course_browsing.mp4',
+    poster: '/demo/videos/slide_11_poster.jpg',
     audio: '/demo/audio/slide_11_narration.mp3',
     duration: 49, // Audio 40.2s, Video 48.6s
     narration: 'Students can browse the catalog, find courses they\'re interested in, and enroll with a single click. But here\'s where it gets really exciting for technical training. When they open a coding lesson, a professional development environment launches right in their browser. VS Code for web development. PyCharm for Python. JupyterLab for data science. Full Linux terminal for system administration. No installation. No configuration headaches. No waiting for IT to set things up. Developers learn with real professional tools from day one.'
@@ -134,6 +146,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     id: 12,
     title: 'Quiz & Assessment',
     video: '/demo/videos/slide_12_quiz_assessment.mp4',
+    poster: '/demo/videos/slide_12_poster.jpg',
     audio: '/demo/audio/slide_12_narration.mp3',
     duration: 48, // Audio 35.0s, Video 47.5s
     narration: 'Assessment shouldn\'t feel like a trap — it should be a genuine learning experience. Our quiz system supports multiple formats. Multiple choice for quick knowledge checks, coding challenges for hands-on skill validation, and short answers for deeper understanding. But what really makes the difference is instant, detailed feedback. Not just a score — actual explanations that help students understand what they got wrong and why. That\'s how mistakes turn into real learning.'
@@ -142,6 +155,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     id: 13,
     title: 'Student Progress',
     video: '/demo/videos/slide_13_student_progress.mp4',
+    poster: '/demo/videos/slide_13_poster.jpg',
     audio: '/demo/audio/slide_13_narration.mp3',
     duration: 46, // Audio 27.3s, Video 45.5s
     narration: 'Progress should be visible and worth celebrating. Every quiz completed, every module mastered, every milestone reached — students see it all unfold in real time. Completion rates, quiz scores, time invested — it adds up to something meaningful. Proof of growth. And that sense of progress? That\'s what keeps people coming back.'
@@ -150,6 +164,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     id: 14,
     title: 'Instructor Analytics',
     video: '/demo/videos/slide_14_instructor_analytics.mp4',
+    poster: '/demo/videos/slide_14_poster.jpg',
     audio: '/demo/audio/slide_14_narration.mp3',
     duration: 56, // Audio 45.2s, Video 55.2s
     narration: 'We go well beyond basic LMS reporting. Our AI-powered analytics don\'t just show you numbers — they surface actual insights. Which students are falling behind? The system flags them automatically. What content drives the most engagement? AI spots the patterns across all your courses. Which quiz questions are too easy or too hard? The system analyzes performance trends and recommends adjustments. You can export reports directly to Slack or Teams so your whole training team stays in the loop. This isn\'t just analytics — it\'s intelligent course optimization.'
@@ -158,6 +173,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     id: 15,
     title: 'Learning Analytics Dashboard',
     video: '/demo/videos/slide_15_learning_analytics.mp4',
+    poster: '/demo/videos/slide_15_poster.jpg',
     audio: '/demo/audio/slide_15_learning_analytics_narration.mp3',
     duration: 60, // Audio 49.5s, Video 59.2s
     narration: 'Students want more than just a progress bar, and this dashboard delivers. The Learning Analytics Dashboard gives them genuinely useful insights into their own learning. Skill mastery shows up as visual radar charts — you can immediately see your strengths and where you need more work. Learning velocity tells you how quickly you\'re absorbing new concepts. Session activity patterns help you figure out when you learn best and optimize your study habits. And for multi-course tracks, you can follow your progress through the entire learning path, not just one course at a time. It\'s not about just finishing courses. It\'s about understanding where you actually stand.'
@@ -166,6 +182,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     id: 16,
     title: 'Instructor Insights Dashboard',
     video: '/demo/videos/slide_16_instructor_insights.mp4',
+    poster: '/demo/videos/slide_16_poster.jpg',
     audio: '/demo/audio/slide_16_instructor_insights_narration.mp3',
     duration: 66, // Audio 52.8s, Video 65.2s
     narration: 'Now let\'s look at the Instructor Insights Dashboard — this is where AI really earns its keep. At a glance, you can see course performance metrics: completion rates, engagement levels, average scores. Student engagement widgets show you who\'s thriving and who might need some extra support. Content effectiveness charts highlight which lessons are driving the most actual learning. But the best part? AI-powered teaching recommendations. The system looks at patterns across all your courses and tells you specifically what to improve. Maybe a lesson needs more worked examples. Maybe a quiz is discouraging students because it\'s too difficult. The AI identifies these issues and suggests concrete changes. That\'s the kind of insight that used to take weeks of manual analysis.'
@@ -174,6 +191,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     id: 17,
     title: 'Third-Party Integrations',
     video: '/demo/videos/slide_17_integrations.mp4',
+    poster: '/demo/videos/slide_17_poster.jpg',
     audio: '/demo/audio/slide_17_integrations_narration.mp3',
     duration: 64, // Audio 50.1s, Video 63.9s
     narration: 'Your organization doesn\'t work in isolation, and your learning platform shouldn\'t either. Click the Integrations tab and you can connect everything your team already uses. Slack for instant notifications when students hit milestones. Google Calendar or Outlook for automatic scheduling. OAuth connections for single sign-on with your existing identity provider. Webhooks to trigger your own custom automation workflows. And if you\'re already running another learning management system, LTI integration lets you embed our courses directly into it. The whole point is seamless connectivity — your training platform working with your tools, not competing with them.'
@@ -182,6 +200,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     id: 18,
     title: 'Accessibility Settings',
     video: '/demo/videos/slide_18_accessibility.mp4',
+    poster: '/demo/videos/slide_18_poster.jpg',
     audio: '/demo/audio/slide_18_accessibility_narration.mp3',
     duration: 62, // Audio 54.3s, Video 61.2s
     narration: 'Accessibility isn\'t something we bolted on at the end — it\'s baked into every part of the platform. Every user can personalize their experience. Font sizes go from default up to extra large. Color schemes include light, dark, and high contrast options. You can reduce motion for anyone sensitive to animations, choose your preferred focus indicator style, and enable screen reader optimizations. Keyboard shortcuts are fully configurable to match how you like to work, and skip links are always there for keyboard navigation. We\'re committed to WCAG 2.1 double-A compliance across the entire platform. Because if your training isn\'t accessible to everyone on your team, it isn\'t really working for your organization.'
@@ -190,6 +209,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     id: 19,
     title: 'Mobile Experience',
     video: '/demo/videos/slide_19_mobile.mp4',
+    poster: '/demo/videos/slide_19_poster.jpg',
     audio: '/demo/audio/slide_19_mobile_narration.mp3',
     duration: 64, // Audio 50.6s, Video 63.1s
     narration: 'Learning doesn\'t stop when someone leaves their desk, and the platform is built with that in mind. The entire experience is fully responsive — it adapts to phones and tablets seamlessly. Swipe through course cards, pull down to refresh, all the touch gestures you\'d expect. But here\'s the real game changer: offline sync. Your team can download courses and learn on the go, even without an internet connection. Progress syncs automatically the moment they\'re back online. Train your people anywhere, anytime, on any device. That\'s not a nice-to-have — for a lot of organizations, that\'s the feature that makes everything else possible.'
@@ -198,6 +218,7 @@ const DEMO_SLIDES: DemoSlide[] = [
     id: 20,
     title: 'Summary & Next Steps',
     video: '/demo/videos/slide_15_summary.mp4',
+    poster: '/demo/videos/slide_20_poster.jpg',
     audio: '/demo/audio/slide_20_summary_narration.mp3',
     duration: 56, // Audio 55.2s, Video 39.2s
     narration: 'So that\'s Course Creator Platform. Let me recap what we\'ve covered. AI handles the heavy lifting — course development, content generation, and intelligent analytics that actually help you improve. Deep learning insights for both students and instructors. Seamless integrations with Slack, Teams, Zoom, and your existing systems. Full accessibility support. Mobile-first design with offline learning. Whether you\'re building corporate training programs or teaching independently, this platform turns what used to take weeks of manual work into minutes of guided setup. So, ready to try it yourself? Head to our site, register your organization, and see how it works for your team.'
@@ -333,6 +354,7 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
     pendingPlayRef.current = false;
 
     // Update sources
+    video.poster = slide.poster;
     video.src = slide.video;
     audio.src = slide.audio;
     audio.volume = 0.8;
@@ -670,6 +692,23 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
           </div>
         )}
 
+        {/* Poster overlay - shows a meaningful frame before playback starts */}
+        {!isPlaying && !isLoading && (
+          <img
+            src={currentSlide.poster}
+            alt={currentSlide.title}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'contain',
+              zIndex: 2
+            }}
+          />
+        )}
+
         {/* Error State */}
         {error && (
           <div className={styles.errorState}>
@@ -685,6 +724,7 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
         <video
           ref={videoRef}
           className={styles.videoPlayer}
+          poster={currentSlide.poster}
           onTimeUpdate={handleTimeUpdate}
           onEnded={handleVideoEnded}
           onCanPlay={handleCanPlay}
