@@ -2,8 +2,12 @@
 """
 Regenerate ALL demo audio files with consistent Charlotte voice.
 
-Uses ElevenLabs API with SSML markup for expressive narration.
+Uses ElevenLabs API with natural conversational narration.
 All 20 slides use the same voice, model, and settings for consistency.
+
+Voice: Charlotte (UK Female, mid-20s) - warm, professional, conversational
+Model: eleven_turbo_v2 (supports SSML for phoneme corrections)
+Settings: stability=0.50, similarity=0.75, style=0.15 for natural delivery
 """
 
 import os
@@ -20,338 +24,186 @@ SLIDES = [
     {
         'num': 1,
         'file': 'slide_01_narration.mp3',
-        'text': '''Welcome to THE Course Creator Platform! <break time="0.5s"/>
-Built specifically for corporate training teams <break time="0.3s"/> and professional instructors <break time="0.3s"/> who need to create courses fast.
-<break time="0.7s"/>
-Our AI-powered system transforms what used to take weeks <break time="0.5s"/> into just minutes.
-<break time="0.5s"/>
-In the next slide, <break time="0.3s"/> we'll show you how to get started.'''
+        'text': """Welcome to Course Creator Platform. This is built for people who create training... corporate teams, professional instructors, anyone who's tired of spending weeks building courses from scratch. What if you could do all of that in minutes instead? That's exactly what our AI-powered system delivers. Let me show you how it works."""
     },
     {
         'num': 2,
         'file': 'slide_02_narration.mp3',
-        'text': '''To get started, <break time="0.3s"/> simply click Register Organization on the home page.
-<break time="0.5s"/>
-Now, let's fill in the details.
-<break time="0.4s"/>
-Enter your organization name, <break time="0.2s"/> website, <break time="0.2s"/> and a brief description.
-Add your contact information, <break time="0.3s"/> including business email and address.
-Finally, <break time="0.3s"/> set up your administrator account with credentials.
-<break time="0.5s"/>
-Click submit, <break time="0.3s"/> and there you go!
-<break time="0.3s"/>
-Your organization is successfully registered.
-<break time="0.5s"/>
-Next, <break time="0.2s"/> we'll show you how to create projects.'''
+        'text': """Getting started is really straightforward. Head to the home page and click Register Organization. You'll see a clean form... just fill in your organization name, website, and a short description of what you do. Add your contact details, business email, address, the basics. Then set up your admin account with a username and password. Hit submit and... that's it. Your organization is live and ready to go. Now let me show you what happens next."""
     },
     {
         'num': 3,
         'file': 'slide_03_narration.mp3',
-        'text': '''Let's log in as the organization admin we just created.
-<break time="0.4s"/>
-First, <break time="0.2s"/> navigate to the home page and click the Login button in the header.
-<break time="0.3s"/>
-Now, enter the email address: <break time="0.3s"/> sarah at acmelearning dot e-d-u.
-<break time="0.2s"/>
-Then enter the password.
-<break time="0.3s"/>
-Click the login button to sign in.
-<break time="0.5s"/>
-Notice the user icon in the header changes to show you're logged in.
-<break time="0.4s"/>
-You're now redirected to your organization admin dashboard!
-<break time="0.3s"/>
-From here, <break time="0.2s"/> you can manage everything.
-<break time="0.7s"/>
-Notice the purple AI assistant button in the bottom right corner. <break time="0.4s"/> You can use it to manage your organization through natural language <break time="0.3s"/> instead of filling out forms!
-<break time="0.6s"/>
-Let's create a new project.
-<break time="0.3s"/>
-Click Create New Project, <break time="0.2s"/> enter the project name and description, <break time="0.3s"/> then click Create.
-<break time="0.4s"/>
-Your project is ready!
-<break time="0.3s"/>
-You can edit or delete projects anytime.
-<break time="0.5s"/>
-Now, let's change which project we're viewing.
-<break time="0.3s"/>
-Click the Current Project dropdown and select Data Science Foundations.
-<break time="0.4s"/>
-Notice how the metrics update instantly!
-<break time="0.5s"/>
-The Tracks metric shows how many learning paths are in this project.
-<break time="0.2s"/>
-The Instructors metric shows your teaching team.
-<break time="0.2s"/>
-And Students shows total enrollment.
-<break time="0.5s"/>
-Click on Tracks to see all learning paths.
-<break time="0.2s"/>
-Click on Members to manage your team.
-<break time="0.2s"/>
-Click Settings to configure the project.
-<break time="0.5s"/>
-Next, <break time="0.2s"/> we'll show you how to create tracks for your project.'''
+        'text': """Let's log in as the organization admin we just created. Go to the home page, click Login, and enter the credentials. For this demo, that's sarah at <phoneme alphabet="cmu-arpabet" ph="AE1 K M IY0">Acme</phoneme> Learning dot e-d-u. Type in the password and sign in.
+
+And here we are... the organization admin dashboard. Think of this as your command center. Everything you need to manage your training program lives right here.
+
+See that purple button in the bottom right? That's our AI assistant. You can manage your entire organization just by talking to it in plain English... but we'll get to that in a moment.
+
+First, let's create a project. Projects are how you organize courses and content. Click Create New Project, give it a name and description, and hit Create. Done. You can always come back to edit or delete it later.
+
+Now watch what happens when we switch projects using this dropdown. Select Data Science Foundations and... the dashboard updates instantly. You can see your Tracks, those are learning paths. Your Instructors, showing your teaching team. And Students, total enrollment across the board.
+
+Below the metrics you've got three tabs: Tracks for managing learning paths, Members for your team, and Settings for configuration.
+
+Next up... creating tracks for your project."""
     },
     {
         'num': 4,
         'file': 'slide_04_narration.mp3',
-        'text': '''Now let's create a learning track!
-<break time="0.4s"/>
-We're already viewing the Tracks tab from the previous slide.
-<break time="0.3s"/>
-Click the Create New Track button.
-<break time="0.4s"/>
-This opens the track creation form.
-<break time="0.3s"/>
-First, <break time="0.2s"/> enter the track name: <break time="0.3s"/> Python Fundamentals.
-<break time="0.3s"/>
-Next, <break time="0.2s"/> select the project.
-<break time="0.2s"/>
-Choose Data Science Foundations from the dropdown.
-<break time="0.3s"/>
-Then select the level. <break time="0.3s"/> We'll make this a Beginner track.
-<break time="0.4s"/>
-Now add a description: <break time="0.3s"/> Learn Python basics for data science.
-<break time="0.5s"/>
-Click Create Track, <break time="0.4s"/> and there you go!
-<break time="0.3s"/>
-Your track is created.'''
+        'text': """Now let's create a learning track. We're already on the Tracks tab from the previous step, so click Create New Track.
+
+Here's the form. Start with the track name... we'll call this one Python Fundamentals. Choose the project, Data Science Foundations. Set the level to Beginner. And add a quick description: Learn Python basics for data science.
+
+Click Create Track and... there you go. Your track is ready. That's all it takes... name it, assign it to a project, set the level, and you're done."""
     },
     {
         'num': 5,
         'file': 'slide_05_narration.mp3',
-        'text': '''Instead of filling out forms, <break time="0.3s"/> you can simply tell our AI assistant what you need.
-<break time="0.5s"/>
-Watch how easy it is!
-<break time="0.5s"/>
-Click the purple AI assistant button in the bottom right corner.
-<break time="0.3s"/>
-The chat panel slides up.
-<break time="0.4s"/>
-Now, <break time="0.3s"/> just describe what you want in plain English.
-<break time="0.3s"/>
-Type: <break time="0.3s"/> Create an intermediate track called Machine Learning Basics for the Data Science project.
-<break time="0.6s"/>
-The AI understands your request instantly!
-<break time="0.4s"/>
-It confirms the details <break time="0.2s"/> and creates the track for you.
-<break time="0.5s"/>
-No forms to fill out. <break time="0.3s"/> No dropdowns to navigate. <break time="0.3s"/> Just natural conversation.'''
+        'text': """Here's where it gets interesting. Instead of filling out forms, you can just tell our AI assistant what you need.
+
+Click that purple button in the bottom right corner. The chat panel slides open. Now just type what you want in plain English: Create an intermediate track called Machine Learning Basics for the Data Science project.
+
+And watch... the AI understands exactly what you mean. It confirms the details and creates the track right there. No forms. No dropdowns. No hunting through menus. Just a natural conversation.
+
+This works for creating courses, enrolling students, pulling up reports... pretty much anything you'd normally do through the interface."""
     },
     {
         'num': 6,
         'file': 'slide_06_narration.mp3',
-        'text': '''Your instructors are your greatest asset.
-<break time="0.4s"/>
-Bring them onboard in seconds, <break time="0.3s"/> assign them to specific projects or tracks, <break time="0.3s"/> and they're instantly connected to your Slack or Teams channels <break time="0.2s"/> for seamless collaboration.
-<break time="0.6s"/>
-Whether it's co-developing courses with colleagues <break time="0.3s"/> or running independent programs, <break time="0.3s"/> everything integrates with the tools your team already uses.'''
+        'text': """Your instructors are your greatest asset, so bringing them onboard should be effortless. Add them in seconds, assign them to specific projects or tracks, and they're instantly connected to your Slack or Teams channels for real-time collaboration. Whether they're co-developing courses with colleagues or running their own independent programs, everything integrates with the tools your team already uses."""
     },
     {
         'num': 7,
         'file': 'slide_07_narration.mp3',
-        'text': '''Instructors have powerful AI tools at their fingertips!
-<break time="0.5s"/>
-Tell the system your learning objectives, <break time="0.2s"/> your target audience, <break time="0.2s"/> and your key topics.
-<break time="0.5s"/>
-Then watch as artificial intelligence generates a complete course structure, <break time="0.3s"/> suggested modules, <break time="0.3s"/> learning outcomes, <break time="0.3s"/> even quiz questions!
-<break time="0.6s"/>
-You review, <break time="0.2s"/> refine, <break time="0.2s"/> and approve.
-<break time="0.5s"/>
-What used to take days of curriculum design <break time="0.4s"/> now takes minutes.'''
+        'text': """Here's what instructors see when they log in. They've got powerful AI tools right at their fingertips. Tell the system your learning objectives, target audience, and key topics... and watch it generate a complete course structure. Modules, learning outcomes, even quiz questions, all created in seconds.
+
+You review it, refine it, make it yours. What used to take days of curriculum design now takes minutes. And when you schedule live sessions, automatic Zoom or Teams integration means one click launches your class."""
     },
     {
         'num': 8,
         'file': 'slide_08_narration.mp3',
-        'text': '''AI accelerates content creation!
-<break time="0.5s"/>
-Need lesson content?
-<break time="0.3s"/>
-Describe your topic and the AI generates a complete lesson draft. <break time="0.4s"/> You just add your expertise <break time="0.2s"/> and real-world examples.
-<break time="0.6s"/>
-Creating quizzes?
-<break time="0.3s"/>
-AI suggests questions based on your content: <break time="0.3s"/> multiple choice, <break time="0.2s"/> code challenges, <break time="0.2s"/> scenario-based problems.
-<break time="0.5s"/>
-The AI accelerates creation. <break time="0.4s"/> You ensure quality.'''
+        'text': """This is where AI really shines for content creation. Need a lesson? Just describe your topic and the AI drafts a complete lesson for you. Add your expertise and real-world examples to make it yours.
+
+Quizzes? The AI generates questions based on your content... multiple choice, coding challenges, scenario-based problems. You spend your time refining and personalizing, not starting from a blank page.
+
+Upload presentations, embed videos, add code exercises with real-time feedback. The AI handles the heavy lifting so you can focus on what matters... the quality of the learning experience."""
     },
     {
         'num': 9,
         'file': 'slide_09_narration.mp3',
-        'text': '''Your course is ready! <break time="0.3s"/> Now it's time to welcome your students.
-<break time="0.5s"/>
-One student? <break time="0.3s"/> Easy.
-<break time="0.3s"/>
-One hundred students? <break time="0.4s"/> Even easier!
-<break time="0.5s"/>
-Upload a CSV file <break time="0.3s"/> and enroll an entire class in seconds.
-<break time="0.4s"/>
-However you teach, <break time="0.3s"/> we adapt.'''
+        'text': """Your course is ready, so now it's time to bring in your students. And enrollment is incredibly flexible.
+
+Got one student? Just enter their email and they're in. A hundred students? Upload a CSV file and the whole class is enrolled in seconds. No manual data entry at all.
+
+You can organize them however makes sense for your program... by section, skill level, semester, department, whatever works. The system adapts to your workflow, not the other way around.
+
+Because honestly... managing students should be the easy part, not the time-consuming part."""
     },
     {
         'num': 10,
         'file': 'slide_10_narration.mp3',
-        'text': '''Now let's see what your students experience.
-<break time="0.5s"/>
-They log in <break time="0.3s"/> and immediately, <break time="0.3s"/> everything they need is right there.
-<break time="0.4s"/>
-Their courses, <break time="0.2s"/> their progress, <break time="0.2s"/> upcoming deadlines, <break time="0.2s"/> recent achievements.
-<break time="0.5s"/>
-No confusion. <break time="0.3s"/> No hunting for information.
-<break time="0.4s"/>
-Just a clear path forward <break time="0.3s"/> and the motivation to keep going.'''
+        'text': """Now let's see what the experience looks like from a student's perspective. They log in and immediately... everything they need is right here. Their courses, their progress, upcoming deadlines, recent achievements. There's no confusion and no searching around. Just a clean, clear path forward and the motivation to keep learning."""
     },
     {
         'num': 11,
         'file': 'slide_11_narration.mp3',
-        'text': '''Students browse the catalog, <break time="0.2s"/> discover courses, <break time="0.2s"/> and enroll with one click.
-<break time="0.5s"/>
-The game changer for technical training?
-<break time="0.5s"/>
-When they hit a coding lesson, <break time="0.3s"/> professional development environments open right in their browser!
-<break time="0.5s"/>
-VS Code for web development. <break time="0.3s"/> PyCharm for Python. <break time="0.3s"/> JupyterLab for data science.
-<break time="0.6s"/>
-No installation. <break time="0.3s"/> No configuration. <break time="0.3s"/> No IT headaches!
-<break time="0.6s"/>
-This is why corporate training teams choose us!'''
+        'text': """Students can browse the catalog, find courses they're interested in, and enroll with a single click. But here's where it gets really exciting for technical training.
+
+When they open a coding lesson, a professional development environment launches right in their browser. VS Code for web development. PyCharm for Python. JupyterLab for data science. Full Linux terminal for system administration.
+
+No installation. No configuration headaches. No waiting for IT to set things up. Developers learn with real professional tools from day one."""
     },
     {
         'num': 12,
         'file': 'slide_12_narration.mp3',
-        'text': '''Assessment shouldn't feel like a gotcha moment. <break time="0.4s"/> It should be a learning opportunity!
-<break time="0.5s"/>
-Our quiz system delivers multiple question formats: <break time="0.3s"/> multiple choice for quick checks, <break time="0.3s"/> coding challenges for hands-on validation, <break time="0.3s"/> short answer for deeper understanding.
-<break time="0.6s"/>
-But here's what matters most: <break time="0.5s"/> instant feedback!
-<break time="0.4s"/>
-Not just a score, <break time="0.3s"/> but detailed explanations <break time="0.3s"/> that turn mistakes into mastery.'''
+        'text': """Assessment shouldn't feel like a trap... it should be a genuine learning experience.
+
+Our quiz system supports multiple formats. Multiple choice for quick knowledge checks, coding challenges for hands-on skill validation, and short answers for deeper understanding.
+
+But what really makes the difference is instant, detailed feedback. Not just a score... actual explanations that help students understand what they got wrong and why. That's how mistakes turn into real learning."""
     },
     {
         'num': 13,
         'file': 'slide_13_narration.mp3',
-        'text': '''Progress should be visible <break time="0.3s"/> and celebrated!
-<break time="0.5s"/>
-Every quiz completed. <break time="0.3s"/> Every module mastered. <break time="0.3s"/> Every achievement unlocked.
-<break time="0.5s"/>
-Students see their journey unfold <break time="0.3s"/> in real time.
-<break time="0.4s"/>
-Completion rates, <break time="0.2s"/> quiz scores, <break time="0.2s"/> time invested. <break time="0.4s"/> It all adds up to something powerful: <break time="0.5s"/> proof of growth!'''
+        'text': """Progress should be visible and worth celebrating. Every quiz completed, every module mastered, every milestone reached... students see it all unfold in real time.
+
+Completion rates, quiz scores, time invested... it adds up to something meaningful. Proof of growth. And that sense of progress? That's what keeps people coming back."""
     },
     {
         'num': 14,
         'file': 'slide_14_narration.mp3',
-        'text': '''We go beyond basic LMS reporting!
-<break time="0.5s"/>
-Our AI-powered analytics don't just show you data. <break time="0.4s"/> They surface insights!
-<break time="0.6s"/>
-Which students are at risk of falling behind? <break time="0.3s"/> AI flags them automatically.
-<break time="0.4s"/>
-What content drives the most engagement? <break time="0.3s"/> AI identifies patterns across all your courses.
-<break time="0.4s"/>
-Which quiz questions are too easy or too hard? <break time="0.3s"/> AI analyzes performance trends <break time="0.3s"/> and suggests adjustments.
-<break time="0.6s"/>
-This isn't just analytics. <break time="0.4s"/> It's intelligent course optimization!'''
+        'text': """We go well beyond basic LMS reporting. Our AI-powered analytics don't just show you numbers... they surface actual insights.
+
+Which students are falling behind? The system flags them automatically. What content drives the most engagement? AI spots the patterns across all your courses. Which quiz questions are too easy or too hard? The system analyzes performance trends and recommends adjustments.
+
+You can export reports directly to Slack or Teams so your whole training team stays in the loop. This isn't just analytics... it's intelligent course optimization."""
     },
     {
         'num': 15,
         'file': 'slide_15_learning_analytics_narration.mp3',
-        'text': '''But students want more than just progress bars!
-<break time="0.5s"/>
-Our Learning Analytics Dashboard gives them deep insights.
-<break time="0.4s"/>
-See skill mastery across different topics <break time="0.3s"/> with visual radar charts.
-<break time="0.3s"/>
-Track learning velocity <break time="0.3s"/> to understand how quickly concepts are being absorbed.
-<break time="0.4s"/>
-View session activity patterns <break time="0.3s"/> to optimize study habits.
-<break time="0.5s"/>
-It's not just about completing courses. <break time="0.4s"/> It's about truly understanding your learning journey!'''
+        'text': """Students want more than just a progress bar, and this dashboard delivers.
+
+The Learning Analytics Dashboard gives them genuinely useful insights into their own learning. Skill mastery shows up as visual radar charts... you can immediately see your strengths and where you need more work. Learning velocity tells you how quickly you're absorbing new concepts. Session activity patterns help you figure out when you learn best and optimize your study habits.
+
+And for multi-course tracks, you can follow your progress through the entire learning path, not just one course at a time.
+
+It's not about just finishing courses. It's about understanding where you actually stand."""
     },
     {
         'num': 16,
         'file': 'slide_16_instructor_insights_narration.mp3',
-        'text': '''Now let's see the Instructor Insights Dashboard!
-<break time="0.4s"/>
-This is where AI truly shines.
-<break time="0.5s"/>
-Course performance metrics show completion rates, <break time="0.2s"/> engagement levels, <break time="0.2s"/> and average scores at a glance.
-<break time="0.4s"/>
-Student engagement widgets reveal who's thriving <break time="0.3s"/> and who needs support.
-<break time="0.5s"/>
-And the best part? <break time="0.4s"/> AI-powered teaching recommendations!
-<break time="0.4s"/>
-The system analyzes patterns across all your courses <break time="0.3s"/> and suggests specific improvements.'''
+        'text': """Now let's look at the Instructor Insights Dashboard... this is where AI really earns its keep.
+
+At a glance, you can see course performance metrics: completion rates, engagement levels, average scores. Student engagement widgets show you who's thriving and who might need some extra support. Content effectiveness charts highlight which lessons are driving the most actual learning.
+
+But the best part? AI-powered teaching recommendations. The system looks at patterns across all your courses and tells you specifically what to improve. Maybe a lesson needs more worked examples. Maybe a quiz is discouraging students because it's too difficult. The AI identifies these issues and suggests concrete changes.
+
+That's the kind of insight that used to take weeks of manual analysis."""
     },
     {
         'num': 17,
         'file': 'slide_17_integrations_narration.mp3',
-        'text': '''Your organization doesn't exist in isolation!
-<break time="0.4s"/>
-Let's set up integrations.
-<break time="0.4s"/>
-Connect Slack <break time="0.3s"/> for instant notifications when students complete courses.
-<break time="0.4s"/>
-Link your Google Calendar or Outlook <break time="0.3s"/> for automatic scheduling.
-<break time="0.4s"/>
-Set up OAuth connections <break time="0.3s"/> for single sign-on with your existing identity provider.
-<break time="0.4s"/>
-LTI integration lets you embed our courses <break time="0.3s"/> directly in your existing LMS.
-<break time="0.5s"/>
-Everything works together seamlessly!'''
+        'text': """Your organization doesn't work in isolation, and your learning platform shouldn't either.
+
+Click the Integrations tab and you can connect everything your team already uses. Slack for instant notifications when students hit milestones. Google Calendar or Outlook for automatic scheduling. OAuth connections for single sign-on with your existing identity provider. Webhooks to trigger your own custom automation workflows.
+
+And if you're already running another learning management system, LTI integration lets you embed our courses directly into it.
+
+The whole point is seamless connectivity... your training platform working with your tools, not competing with them."""
     },
     {
         'num': 18,
         'file': 'slide_18_accessibility_narration.mp3',
-        'text': '''Accessibility isn't an afterthought. <break time="0.4s"/> It's built into everything we do!
-<break time="0.5s"/>
-Every user can customize their experience.
-<break time="0.4s"/>
-Adjust font sizes <break time="0.2s"/> from default to extra large.
-<break time="0.3s"/>
-Switch between light, <break time="0.2s"/> dark, <break time="0.2s"/> or high contrast color schemes.
-<break time="0.4s"/>
-Enable screen reader optimizations.
-<break time="0.3s"/>
-Configure keyboard shortcuts <break time="0.3s"/> to match your workflow.
-<break time="0.5s"/>
-We're committed to WCAG 2.1 double-A compliance <break time="0.3s"/> because learning should be accessible to everyone!'''
+        'text': """Accessibility isn't something we bolted on at the end... it's baked into every part of the platform.
+
+Every user can personalize their experience. Font sizes go from default up to extra large. Color schemes include light, dark, and high contrast options. You can reduce motion for anyone sensitive to animations, choose your preferred focus indicator style, and enable screen reader optimizations.
+
+Keyboard shortcuts are fully configurable to match how you like to work, and skip links are always there for keyboard navigation.
+
+We're committed to WCAG 2.1 double-A compliance across the entire platform. Because if your training isn't accessible to everyone on your team, it isn't really working for your organization."""
     },
     {
         'num': 19,
         'file': 'slide_19_mobile_narration.mp3',
-        'text': '''Learning doesn't stop when you leave your desk!
-<break time="0.5s"/>
-Our mobile experience brings the full platform to any device.
-<break time="0.4s"/>
-Responsive design adapts beautifully <break time="0.3s"/> to phones and tablets.
-<break time="0.5s"/>
-And the game changer? <break time="0.4s"/> Offline sync!
-<break time="0.4s"/>
-Download courses to learn on the go, <break time="0.3s"/> even without internet.
-<break time="0.4s"/>
-Your progress syncs automatically <break time="0.3s"/> when you're back online.
-<break time="0.5s"/>
-Train your team anywhere, <break time="0.3s"/> anytime. <break time="0.4s"/> That's the power of mobile-first design!'''
+        'text': """Learning doesn't stop when someone leaves their desk, and the platform is built with that in mind.
+
+The entire experience is fully responsive... it adapts to phones and tablets seamlessly. Swipe through course cards, pull down to refresh, all the touch gestures you'd expect.
+
+But here's the real game changer: offline sync. Your team can download courses and learn on the go, even without an internet connection. Progress syncs automatically the moment they're back online.
+
+Train your people anywhere, anytime, on any device. That's not a nice-to-have... for a lot of organizations, that's the feature that makes everything else possible."""
     },
     {
         'num': 20,
         'file': 'slide_20_summary_narration.mp3',
-        'text': '''So that's Course Creator Platform! <break time="0.5s"/>
-AI handles course development, <break time="0.2s"/> content generation, <break time="0.2s"/> and intelligent analytics.
-<break time="0.4s"/>
-Deep learning insights for both students and instructors.
-<break time="0.5s"/>
-Third-party integrations with Slack, <break time="0.2s"/> Teams, <break time="0.2s"/> Zoom, <break time="0.2s"/> and your existing systems.
-<break time="0.4s"/>
-Full accessibility support <break time="0.2s"/> and mobile-first design.
-<break time="0.6s"/>
-Whether you're building corporate training programs <break time="0.3s"/> or teaching as an independent instructor, <break time="0.4s"/> we turn weeks of work <break time="0.3s"/> into minutes of guided setup.
-<break time="0.7s"/>
-Ready to see it in action?
-<break time="0.4s"/>
-Visit our site to get started!'''
+        'text': """So that's Course Creator Platform. Let me recap what we've covered.
+
+AI handles the heavy lifting... course development, content generation, and intelligent analytics that actually help you improve. Deep learning insights for both students and instructors. Seamless integrations with Slack, Teams, Zoom, and your existing systems. Full accessibility support. Mobile-first design with offline learning.
+
+Whether you're building corporate training programs or teaching independently, this platform turns what used to take weeks of manual work into minutes of guided setup.
+
+So... ready to try it yourself? Head to our site, register your organization, and see how it works for your team."""
     },
 ]
 
@@ -364,13 +216,17 @@ def generate_audio(slide):
         'Content-Type': 'application/json',
         'xi-api-key': API_KEY
     }
+
+    # Wrap in <speak> tags for SSML support (needed for phoneme in slide 3)
+    text = f'<speak>{slide["text"]}</speak>'
+
     data = {
-        'text': f'<speak>{slide["text"]}</speak>',
+        'text': text,
         'model_id': 'eleven_turbo_v2',
         'voice_settings': {
-            'stability': 0.35,
-            'similarity_boost': 0.80,
-            'style': 0.45,
+            'stability': 0.50,
+            'similarity_boost': 0.75,
+            'style': 0.15,
             'use_speaker_boost': True
         }
     }
@@ -389,10 +245,12 @@ def generate_audio(slide):
 def main():
     if not API_KEY:
         print("ERROR: ELEVENLABS_API_KEY not set")
+        print("Set it with: export ELEVENLABS_API_KEY=your_key_here")
         sys.exit(1)
 
     print(f"Regenerating all {len(SLIDES)} demo audio files with Charlotte voice...")
     print(f"Output: {OUTPUT_DIR}")
+    print(f"Voice settings: stability=0.50, similarity=0.75, style=0.15")
     print()
 
     for slide in SLIDES:
@@ -402,6 +260,10 @@ def main():
         try:
             size = generate_audio(slide)
             print(f"OK ({size:.0f}KB)")
+        except requests.exceptions.HTTPError as e:
+            print(f"FAILED: {e}")
+            if e.response is not None:
+                print(f"           Response: {e.response.text[:200]}")
         except Exception as e:
             print(f"FAILED: {e}")
 
@@ -410,6 +272,7 @@ def main():
 
     print()
     print("Done! All audio regenerated with Charlotte voice.")
+    print("Next steps: check durations with ffprobe and update DemoPlayer.tsx")
 
 
 if __name__ == '__main__':

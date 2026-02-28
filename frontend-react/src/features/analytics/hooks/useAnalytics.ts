@@ -102,7 +102,12 @@ export const useAnalytics = (
       switch (viewType) {
         case 'student':
           if (!studentId || !courseId) {
-            throw new Error('Student ID and Course ID required for student view');
+            // No specific student/course selected — show empty overview
+            setEngagement(null);
+            setProgress(null);
+            setQuizPerformance(null);
+            setLabProficiency(null);
+            break;
           }
 
           // Fetch student-specific analytics
@@ -126,7 +131,13 @@ export const useAnalytics = (
 
         case 'instructor':
           if (!studentId || !courseId) {
-            throw new Error('Student ID and Course ID required for instructor view');
+            // No specific student/course selected — show empty overview
+            setEngagement(null);
+            setProgress(null);
+            setQuizPerformance(null);
+            setLabProficiency(null);
+            setRiskAssessment(null);
+            break;
           }
 
           // Fetch instructor view (same as student but with risk assessment)
@@ -153,7 +164,9 @@ export const useAnalytics = (
 
         case 'course':
           if (!courseId) {
-            throw new Error('Course ID required for course view');
+            // No course selected — show empty overview
+            setCourseAnalytics(null);
+            break;
           }
 
           // Fetch course-level analytics

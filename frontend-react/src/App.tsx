@@ -23,6 +23,7 @@ import { Provider, useSelector } from 'react-redux';
 import { store, RootState } from '@store/index';
 import { Spinner } from './components/atoms/Spinner';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { AccessibilityProvider } from './features/accessibility/context/AccessibilityContext';
 
 // Eager-loaded pages (small, needed immediately)
 import { Homepage } from './pages/Homepage';
@@ -203,6 +204,7 @@ function App() {
       <Provider store={store}>
         <QueryClientProvider client={queryClient}>
           <BrowserRouter>
+            <AccessibilityProvider>
             <ErrorBoundary>
               <Suspense fallback={<RouteLoadingFallback />}>
                 <Routes>
@@ -850,6 +852,7 @@ function App() {
               {/* Global Keyboard Handler - Shortcuts available everywhere */}
               <GlobalKeyboardHandler />
             </ErrorBoundary>
+            </AccessibilityProvider>
           </BrowserRouter>
         </QueryClientProvider>
       </Provider>

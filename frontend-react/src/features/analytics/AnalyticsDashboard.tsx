@@ -62,6 +62,8 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ viewType
     );
   }
 
+  const hasData = engagement || progress || quizPerformance || labProficiency || courseAnalytics;
+
   return (
     <div className={styles.dashboardContainer}>
       {/* Header */}
@@ -87,6 +89,23 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({ viewType
           ))}
         </div>
       </div>
+
+      {/* Empty state when no specific course/student selected */}
+      {!hasData && !isLoading && (
+        <div className={styles.emptyState || ''} style={{ textAlign: 'center', padding: '3rem 1rem' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
+          <h2 style={{ color: '#333', marginBottom: '0.5rem' }}>
+            {viewType === 'student' && 'Your Analytics Overview'}
+            {viewType === 'instructor' && 'Student Analytics Overview'}
+            {viewType === 'course' && 'Course Analytics Overview'}
+          </h2>
+          <p style={{ color: '#666', maxWidth: '500px', margin: '0 auto' }}>
+            {viewType === 'student' && 'Select a course from your enrolled courses to view detailed analytics, progress tracking, and performance metrics.'}
+            {viewType === 'instructor' && 'Select a student from your roster to view their detailed analytics, engagement scores, and progress.'}
+            {viewType === 'course' && 'Select a course to view enrollment statistics, completion rates, and grade distribution.'}
+          </p>
+        </div>
+      )}
 
       {/* Key Metrics */}
       <div className={styles.metricsGrid}>
