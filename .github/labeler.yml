@@ -1,0 +1,45 @@
+frontend:
+  - changed-files:
+      - any-glob-to-any-file: 'frontend-react/**'
+
+backend:
+  - changed-files:
+      - any-glob-to-any-file: 'services/**'
+
+user-management:
+  - changed-files:
+      - any-glob-to-any-file: 'services/user-management/**'
+
+course-management:
+  - changed-files:
+      - any-glob-to-any-file: 'services/course-management/**'
+
+ai-assistant:
+  - changed-files:
+      - any-glob-to-any-file: 'services/ai-assistant-service/**'
+
+infrastructure:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'docker-compose*.yml'
+          - 'Dockerfile*'
+          - '.github/**'
+          - 'scripts/**'
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file: 'tests/**'
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'docs/**'
+          - '*.md'
+
+security:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'services/*/auth/**'
+          - 'shared/auth/**'
+          - 'tests/**/test_security*'
+          - 'tests/**/test_multi_tenant*'

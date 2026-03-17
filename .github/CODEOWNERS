@@ -1,0 +1,8 @@
+# Default owner
+* @redmage123
+
+# Security-sensitive files require explicit review
+services/*/auth/ @redmage123
+shared/auth/ @redmage123
+docker-compose*.yml @redmage123
+.github/ @redmage123
