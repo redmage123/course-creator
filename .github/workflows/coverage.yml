@@ -1,0 +1,46 @@
+name: Test Coverage
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install pytest pytest-cov pytest-asyncio
+          pip install -r requirements.txt 2>/dev/null || true
+
+      - name: Run unit tests with coverage
+        run: |
+          pytest tests/ -m "unit" \
+            --cov=services \
+            --cov-report=xml:coverage.xml \
+            --cov-report=term-missing \
+            --tb=no -q 2>/dev/null || true
+
+      - name: Coverage report as PR comment
+        if: github.event_name == 'pull_request'
+        uses: orgoro/coverage@v3.2
+        with:
+          coverageFile: coverage.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          thresholdAll: 0.80
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage.xml
+          if-no-files-found: warn
