@@ -1,22 +1,30 @@
-name: Deploy to Production
+name: Deploy
 
 on:
   push:
     branches: [master]
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
 
 concurrency:
-  group: deploy-production
+  group: deploy-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  deploy-production:
     name: Deploy to Production
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
     environment:
       name: production
       url: https://courses.techuni.ai
-    if: github.ref == 'refs/heads/master'
 
     steps:
       - name: Deploy via SSH
@@ -27,16 +35,12 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             cd /opt/ai-elevate/course-creator
+            git fetch origin
+            git checkout master
             git pull origin master
-
-            # Rebuild only changed services
             docker compose build --parallel
             docker compose up -d
-
-            # Wait for health checks
             sleep 30
-
-            # Verify all containers are healthy
             RESULT=$(docker compose ps --format json | python3 -c "
             import sys, json
             unhealthy = []
@@ -62,8 +66,8 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             python3 /home/aielevate/notify.py --priority MEDIUM \
-              --subject "Course Creator deployed successfully" \
-              --body "Auto-deploy from GitHub completed. All containers healthy. Commit: ${{ github.sha }}" \
+              --subject "Course Creator PRODUCTION deployed" \
+              --body "Deploy from master completed. All containers healthy. Commit: ${{ github.sha }}" \
               --org techuni 2>/dev/null
 
       - name: Notify on failure
@@ -75,6 +79,6 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             python3 /home/aielevate/notify.py --priority HIGH \
-              --subject "Course Creator deploy FAILED" \
-              --body "Auto-deploy from GitHub failed. Commit: ${{ github.sha }}. Check GitHub Actions." \
+              --subject "Course Creator PRODUCTION deploy FAILED" \
+              --body "Deploy from master failed. Commit: ${{ github.sha }}. Check GitHub Actions." \
               --org techuni 2>/dev/null
