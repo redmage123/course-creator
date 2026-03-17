@@ -11,11 +11,13 @@ concurrency:
 
 jobs:
   deploy:
-    name: Deploy to Hetzner
+    name: Deploy to Production
     runs-on: ubuntu-latest
-    needs: []  # Runs after CI passes (branch protection enforces this)
+    environment:
+      name: production
+      url: https://courses.techuni.ai
     if: github.ref == 'refs/heads/master'
-    
+
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
@@ -26,19 +28,21 @@ jobs:
           script: |
             cd /opt/ai-elevate/course-creator
             git pull origin master
-            
+
             # Rebuild only changed services
             docker compose build --parallel
             docker compose up -d
-            
+
             # Wait for health checks
             sleep 30
-            
+
             # Verify all containers are healthy
-            UNHEALTHY=$(docker compose ps --format json | python3 -c "
+            RESULT=$(docker compose ps --format json | python3 -c "
             import sys, json
             unhealthy = []
             for line in sys.stdin:
+                line = line.strip()
+                if not line: continue
                 c = json.loads(line)
                 if 'healthy' not in c.get('Status', '') and 'running' in c.get('State', ''):
                     unhealthy.append(c['Name'])
@@ -47,8 +51,7 @@ jobs:
                 sys.exit(1)
             print('All containers healthy')
             ")
-            
-            echo "$UNHEALTHY"
+            echo "$RESULT"
 
       - name: Notify on success
         if: success()
@@ -73,5 +76,5 @@ jobs:
           script: |
             python3 /home/aielevate/notify.py --priority HIGH \
               --subject "Course Creator deploy FAILED" \
-              --body "Auto-deploy from GitHub failed. Commit: ${{ github.sha }}. Check GitHub Actions for details." \
+              --body "Auto-deploy from GitHub failed. Commit: ${{ github.sha }}. Check GitHub Actions." \
               --org techuni 2>/dev/null
