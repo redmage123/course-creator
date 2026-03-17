@@ -38,7 +38,7 @@ email-validator==2.1.0
 
 # Utilities
 python-dotenv==1.0.0
-aiofiles==23.2.1
+aiofiles==25.1.0
 jinja2==3.1.2
 
 # Code Quality
