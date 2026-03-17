@@ -1,0 +1,334 @@
+#!/usr/bin/env python3
+"""
+Generate Slide 3 - Organization Admin Dashboard Overview
+
+Shows the org admin logging in and touring the dashboard features:
+1. Login page (sarah@acmelearning.edu from slide 2)
+2. Login and redirect to org admin dashboard
+3. Overview tab - show stats
+4. Projects tab - describe projects feature
+5. Tracks tab - describe tracks feature
+6. Settings tab - describe settings feature
+7. End with "Next, we'll show you how to create tracks for the project"
+
+Duration: ~40 seconds to match audio
+"""
+
+print("SCRIPT STARTING - Before imports", flush=True)
+
+import time
+import os
+import subprocess
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from webdriver_manager.chrome import ChromeDriverManager
+
+BASE_URL = "https://localhost:3000"
+SCREENSHOTS_DIR = "/tmp/slide3_org_admin_dashboard"
+VIDEO_OUTPUT = "/home/bbrelin/course-creator/frontend/static/demo/videos/slide_03_org_admin_dashboard.mp4"
+
+# Org admin credentials from slide 2
+ORG_ADMIN_EMAIL = "sarah@acmelearning.edu"
+ORG_ADMIN_PASSWORD = "SecurePass123!"
+
+# Create screenshots directory
+os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
+
+print("=" * 70)
+print("SLIDE 3: ORGANIZATION ADMIN DASHBOARD OVERVIEW")
+print("=" * 70)
+
+# Setup Chrome (headless)
+options = Options()
+options.add_argument("--headless")
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-dev-shm-usage")
+options.add_argument("--disable-gpu")
+options.add_argument("--window-size=1920,1080")
+options.add_argument("--ignore-certificate-errors")
+
+service = Service(ChromeDriverManager().install())
+driver = webdriver.Chrome(service=service, options=options)
+driver.set_window_size(1920, 1080)
+wait = WebDriverWait(driver, 10)
+
+screenshot_count = 0
+
+# JavaScript to create and move a visible cursor
+CURSOR_SCRIPT = """
+// Remove existing cursor if any
+const existingCursor = document.getElementById('demo-cursor');
+if (existingCursor) existingCursor.remove();
+
+// Create custom cursor
+const cursor = document.createElement('div');
+cursor.id = 'demo-cursor';
+cursor.style.position = 'fixed';
+cursor.style.width = '24px';
+cursor.style.height = '24px';
+cursor.style.border = '3px solid #ff0000';
+cursor.style.borderRadius = '50%';
+cursor.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+cursor.style.pointerEvents = 'none';
+cursor.style.zIndex = '999999';
+cursor.style.transition = 'all 0.1s ease';
+cursor.style.boxShadow = '0 0 10px rgba(255, 0, 0, 0.5)';
+document.body.appendChild(cursor);
+
+// Function to move cursor
+window.moveCursor = function(x, y) {
+    cursor.style.left = x + 'px';
+    cursor.style.top = y + 'px';
+};
+
+// Initialize at center
+window.moveCursor(window.innerWidth / 2, window.innerHeight / 2);
+"""
+
+def inject_cursor():
+    """Inject visible cursor into page"""
+    driver.execute_script(CURSOR_SCRIPT)
+
+def move_cursor_to_element(element, offset_x=0, offset_y=0):
+    """Move cursor to an element with smooth animation"""
+    location = element.location
+    size = element.size
+    target_x = location['x'] + size['width'] // 2 + offset_x
+    target_y = location['y'] + size['height'] // 2 + offset_y
+
+    driver.execute_script(f"window.moveCursor({target_x}, {target_y});")
+
+def capture(label, frames=30):
+    """Capture multiple frames for smooth video"""
+    global screenshot_count
+    start_count = screenshot_count + 1
+    for i in range(frames):
+        screenshot_count += 1
+        screenshot_path = os.path.join(SCREENSHOTS_DIR, f"frame_{screenshot_count:05d}.png")
+        driver.save_screenshot(screenshot_path)
+    print(f"{start_count:5d}. {label} ({frames} frames)")
+    time.sleep(frames / 30)  # Simulate frame delay
+
+try:
+    # ========== 1. Show login page ==========
+    print("\n1. Showing login page...")
+    driver.get(f"{BASE_URL}/html/student-login.html")
+    time.sleep(2)
+
+    inject_cursor()
+    capture("Login page loaded", 45)
+
+    # Fill in email
+    email_field = wait.until(EC.presence_of_element_located((By.ID, "email")))
+    move_cursor_to_element(email_field)
+    capture("Cursor on email field", 15)
+
+    # Click to focus
+    email_field.click()
+    capture("Email field clicked", 10)
+
+    # Type email
+    email_field.send_keys(ORG_ADMIN_EMAIL)
+    capture("Email being typed", 30)
+    capture("Email entered", 15)
+
+    # Fill in password
+    password_field = driver.find_element(By.ID, "password")
+    move_cursor_to_element(password_field)
+    capture("Cursor on password field", 15)
+
+    # Click to focus
+    password_field.click()
+    capture("Password field clicked", 10)
+
+    # Type password
+    password_field.send_keys(ORG_ADMIN_PASSWORD)
+    capture("Password being typed", 25)
+    capture("Password entered", 15)
+
+    # Move to login button
+    login_button = driver.find_element(By.ID, "credentialsBtn")
+    move_cursor_to_element(login_button)
+    capture("Cursor on login button", 20)
+
+    # Click login button
+    login_button.click()
+    time.sleep(0.5)
+    capture("Login button clicked - redirecting", 30)
+
+    # ========== 2. Load dashboard after "login" ==========
+    print("\n2. Loading dashboard after login...")
+    driver.get(f"{BASE_URL}/html/org-admin-dashboard-demo.html")
+    time.sleep(2)
+
+    inject_cursor()
+    capture("Dashboard loaded", 60)
+
+    # ========== 3. Create New Project ==========
+    print("\n3. Creating new project...")
+    create_project_btn = driver.find_element(By.ID, "createProjectBtn")
+    move_cursor_to_element(create_project_btn)
+    capture("Cursor on Create Project button", 30)
+
+    create_project_btn.click()
+    time.sleep(0.5)
+    capture("Project creation modal opened", 60)
+
+    # Fill in project name
+    project_name = driver.find_element(By.ID, "projectName")
+    move_cursor_to_element(project_name)
+    capture("Cursor on project name field", 15)
+
+    project_name.send_keys("Machine Learning Fundamentals")
+    capture("Project name entered", 30)
+
+    # Fill in description
+    project_desc = driver.find_element(By.ID, "projectDescription")
+    move_cursor_to_element(project_desc)
+    capture("Cursor on description field", 15)
+
+    project_desc.send_keys("Comprehensive ML course for beginners")
+    capture("Description entered", 30)
+
+    # Click Create button
+    create_btn = driver.find_element(By.CSS_SELECTOR, ".btn-primary")
+    move_cursor_to_element(create_btn)
+    capture("Cursor on Create button", 20)
+
+    create_btn.click()
+    time.sleep(0.5)
+    capture("Project created - Projects view", 90)
+
+    # ========== 4. Show Edit/Delete buttons ==========
+    print("\n4. Showing project management...")
+    # Highlight edit button
+    edit_btn = driver.find_element(By.CSS_SELECTOR, "button[style*='#f59e0b']")
+    move_cursor_to_element(edit_btn)
+    capture("Edit button - update projects", 45)
+
+    # Highlight delete button
+    delete_btn = driver.find_element(By.CSS_SELECTOR, "button[style*='#ef4444']")
+    move_cursor_to_element(delete_btn)
+    capture("Delete button - remove projects", 45)
+
+    # ========== 5. Return to Overview and show project switching ==========
+    print("\n5. Returning to overview to switch projects...")
+    overview_tab = driver.find_element(By.ID, "nav-overview")
+    move_cursor_to_element(overview_tab)
+    capture("Back to overview", 30)
+
+    overview_tab.click()
+    time.sleep(0.5)
+    capture("Overview - current project: Web Dev", 60)
+
+    # Show current project selector
+    print("\n6. Switching current project...")
+    project_selector = driver.find_element(By.ID, "currentProject")
+    move_cursor_to_element(project_selector)
+    capture("Current project dropdown", 45)
+
+    # Open dropdown
+    project_selector.click()
+    time.sleep(0.3)
+    capture("Project dropdown opened", 30)
+
+    # Select Data Science project
+    driver.execute_script("""
+        const select = document.getElementById('currentProject');
+        select.value = 'data-science';
+        select.dispatchEvent(new Event('change'));
+    """)
+    time.sleep(0.5)
+    capture("Switched to Data Science project", 90)
+
+    # Show that metrics updated
+    print("\n7. Showing updated metrics...")
+    capture("Stats updated: 3 tracks, 5 instructors, 15 students", 90)
+
+    # ========== 8. Click Tracks metric ==========
+    print("\n8. Clicking Tracks metric...")
+    tracks_stat = driver.find_element(By.ID, "stat-tracks")
+    move_cursor_to_element(tracks_stat)
+    capture("Cursor on Tracks", 30)
+
+    tracks_stat.click()
+    time.sleep(0.5)
+    capture("Tracks view", 75)
+
+    # ========== 9. Click Members metric ==========
+    print("\n9. Clicking Members metric...")
+    instructors_stat = driver.find_element(By.ID, "stat-instructors")
+    move_cursor_to_element(instructors_stat)
+    capture("Cursor on Members", 30)
+
+    instructors_stat.click()
+    time.sleep(0.5)
+    capture("Members view", 75)
+
+    # ========== 10. Settings ==========
+    print("\n10. Navigating to Settings...")
+    settings_tab = driver.find_element(By.ID, "nav-settings")
+    move_cursor_to_element(settings_tab)
+    capture("Cursor on Settings", 30)
+
+    settings_tab.click()
+    time.sleep(0.5)
+    capture("Settings configuration", 75)
+
+    # ========== 11. Final hold ==========
+    print("\n11. Final hold...")
+    capture("Dashboard tour complete", 600)  # Extended to match ~75s audio duration with metric explanations
+
+    print(f"\n✅ Captured {screenshot_count} frames (~{screenshot_count/30:.1f} seconds)")
+
+    # ========== 9. Create video ==========
+    print("\n9. Creating video...")
+
+    # Create video from screenshots
+    # Note: Adding scale filter to ensure dimensions are divisible by 2 for H.264
+    ffmpeg_cmd = [
+        "ffmpeg", "-y",
+        "-framerate", "30",
+        "-i", os.path.join(SCREENSHOTS_DIR, "frame_%05d.png"),
+        "-vf", "scale='min(1920,iw)':'min(1080,ih)':force_original_aspect_ratio=decrease,pad=ceil(iw/2)*2:ceil(ih/2)*2",
+        "-c:v", "libx264",
+        "-preset", "fast",
+        "-crf", "23",
+        "-pix_fmt", "yuv420p",
+        "-movflags", "+faststart",
+        "-profile:v", "baseline",
+        "-level", "3.0",
+        VIDEO_OUTPUT
+    ]
+
+    subprocess.run(ffmpeg_cmd, check=True, capture_output=True)
+
+    # Get video file size
+    video_size = os.path.getsize(VIDEO_OUTPUT)
+    print(f"   ✓ Video created successfully")
+    print(f"     File: {VIDEO_OUTPUT}")
+    print(f"     Size: {video_size:,} bytes ({video_size / 1024 / 1024:.2f} MB)")
+    print(f"     Duration: {screenshot_count/30:.1f}s")
+
+finally:
+    print("\n10. Cleaning up...")
+    driver.quit()
+
+    # Optionally clean up screenshots
+    # import shutil
+    # shutil.rmtree(SCREENSHOTS_DIR)
+
+print("\n" + "=" * 70)
+print("✅ COMPLETE")
+print("=" * 70)
+print("\nFeatures:")
+print("  ✓ Org admin login with credentials from slide 2")
+print("  ✓ Dashboard overview with stats")
+print("  ✓ Projects tab walkthrough")
+print("  ✓ Tracks tab walkthrough")
+print("  ✓ Settings tab walkthrough")
+print("\nNext step: Update demo-player.html with new slide 3")

@@ -1,0 +1,185 @@
+{
+  "ref": "refs/heads/main",
+  "before": "0000000000000000000000000000000000000000",
+  "after": "1234567890123456789012345678901234567890",
+  "repository": {
+    "id": 123456789,
+    "name": "course-creator",
+    "full_name": "your-org/course-creator",
+    "owner": {
+      "name": "your-org",
+      "email": "devops@your-org.com"
+    },
+    "private": false,
+    "html_url": "https://github.com/your-org/course-creator",
+    "description": "Course Creator Platform - AI-powered course generation and management",
+    "fork": false,
+    "url": "https://api.github.com/repos/your-org/course-creator",
+    "archive_url": "https://api.github.com/repos/your-org/course-creator/{archive_format}{/ref}",
+    "assignees_url": "https://api.github.com/repos/your-org/course-creator/assignees{/user}",
+    "blobs_url": "https://api.github.com/repos/your-org/course-creator/git/blobs{/sha}",
+    "branches_url": "https://api.github.com/repos/your-org/course-creator/branches{/branch}",
+    "collaborators_url": "https://api.github.com/repos/your-org/course-creator/collaborators{/collaborator}",
+    "comments_url": "https://api.github.com/repos/your-org/course-creator/comments{/number}",
+    "commits_url": "https://api.github.com/repos/your-org/course-creator/commits{/sha}",
+    "compare_url": "https://api.github.com/repos/your-org/course-creator/compare/{base}...{head}",
+    "contents_url": "https://api.github.com/repos/your-org/course-creator/contents/{+path}",
+    "contributors_url": "https://api.github.com/repos/your-org/course-creator/contributors",
+    "deployments_url": "https://api.github.com/repos/your-org/course-creator/deployments",
+    "downloads_url": "https://api.github.com/repos/your-org/course-creator/downloads",
+    "events_url": "https://api.github.com/repos/your-org/course-creator/events",
+    "forks_url": "https://api.github.com/repos/your-org/course-creator/forks",
+    "git_commits_url": "https://api.github.com/repos/your-org/course-creator/git/commits{/sha}",
+    "git_refs_url": "https://api.github.com/repos/your-org/course-creator/git/refs{/sha}",
+    "git_tags_url": "https://api.github.com/repos/your-org/course-creator/git/tags{/sha}",
+    "git_url": "git://github.com/your-org/course-creator.git",
+    "issue_comment_url": "https://api.github.com/repos/your-org/course-creator/issues/comments{/number}",
+    "issue_events_url": "https://api.github.com/repos/your-org/course-creator/issues/events{/number}",
+    "issues_url": "https://api.github.com/repos/your-org/course-creator/issues{/number}",
+    "keys_url": "https://api.github.com/repos/your-org/course-creator/keys{/key_id}",
+    "labels_url": "https://api.github.com/repos/your-org/course-creator/labels{/name}",
+    "languages_url": "https://api.github.com/repos/your-org/course-creator/languages",
+    "merges_url": "https://api.github.com/repos/your-org/course-creator/merges",
+    "milestones_url": "https://api.github.com/repos/your-org/course-creator/milestones{/number}",
+    "notifications_url": "https://api.github.com/repos/your-org/course-creator/notifications{/since}",
+    "pulls_url": "https://api.github.com/repos/your-org/course-creator/pulls{/number}",
+    "releases_url": "https://api.github.com/repos/your-org/course-creator/releases{/id}",
+    "ssh_url": "git@github.com:your-org/course-creator.git",
+    "stargazers_url": "https://api.github.com/repos/your-org/course-creator/stargazers",
+    "statuses_url": "https://api.github.com/repos/your-org/course-creator/statuses/{sha}",
+    "subscribers_url": "https://api.github.com/repos/your-org/course-creator/subscribers",
+    "subscription_url": "https://api.github.com/repos/your-org/course-creator/subscription",
+    "tags_url": "https://api.github.com/repos/your-org/course-creator/tags",
+    "teams_url": "https://api.github.com/repos/your-org/course-creator/teams",
+    "trees_url": "https://api.github.com/repos/your-org/course-creator/git/trees{/sha}",
+    "clone_url": "https://github.com/your-org/course-creator.git",
+    "mirror_url": null,
+    "hooks_url": "https://api.github.com/repos/your-org/course-creator/hooks",
+    "svn_url": "https://github.com/your-org/course-creator",
+    "homepage": "https://course-creator.com",
+    "language": "Python",
+    "forks_count": 5,
+    "stargazers_count": 15,
+    "watchers_count": 15,
+    "size": 2048,
+    "default_branch": "main",
+    "open_issues_count": 3,
+    "is_template": false,
+    "topics": [
+      "education",
+      "ai",
+      "course-management",
+      "python",
+      "docker",
+      "kubernetes"
+    ],
+    "has_issues": true,
+    "has_projects": true,
+    "has_wiki": true,
+    "has_pages": false,
+    "has_downloads": true,
+    "archived": false,
+    "disabled": false,
+    "visibility": "public",
+    "pushed_at": "2025-07-28T01:00:00Z",
+    "created_at": "2025-01-01T00:00:00Z",
+    "updated_at": "2025-07-28T01:00:00Z"
+  },
+  "pusher": {
+    "name": "developer",
+    "email": "developer@your-org.com"
+  },
+  "sender": {
+    "login": "developer",
+    "id": 987654321,
+    "avatar_url": "https://avatars.githubusercontent.com/u/987654321?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/developer",
+    "html_url": "https://github.com/developer",
+    "followers_url": "https://api.github.com/users/developer/followers",
+    "following_url": "https://api.github.com/users/developer/following{/other_user}",
+    "gists_url": "https://api.github.com/users/developer/gists{/gist_id}",
+    "starred_url": "https://api.github.com/users/developer/starred{/owner}{/repo}",
+    "subscriptions_url": "https://api.github.com/users/developer/subscriptions",
+    "organizations_url": "https://api.github.com/users/developer/orgs",
+    "repos_url": "https://api.github.com/users/developer/repos",
+    "events_url": "https://api.github.com/users/developer/events{/privacy}",
+    "received_events_url": "https://api.github.com/users/developer/received_events",
+    "type": "User",
+    "site_admin": false
+  },
+  "commits": [
+    {
+      "id": "1234567890123456789012345678901234567890",
+      "tree_id": "abcdefabcdefabcdefabcdefabcdefabcdefabcd",
+      "distinct": true,
+      "message": "Add comprehensive quiz management system\n\n- Implement course instance-specific quiz publishing\n- Add student access control and analytics integration\n- Create instructor dashboard UI with modal interface\n- Include comprehensive test suite and validation",
+      "timestamp": "2025-07-28T01:00:00Z",
+      "url": "https://github.com/your-org/course-creator/commit/1234567890123456789012345678901234567890",
+      "author": {
+        "name": "Developer",
+        "email": "developer@your-org.com",
+        "username": "developer"
+      },
+      "committer": {
+        "name": "Developer",
+        "email": "developer@your-org.com",
+        "username": "developer"
+      },
+      "added": [
+        "tests/quiz-management/test_quiz_api_functionality.py",
+        "tests/quiz-management/test_frontend_quiz_management.py",
+        "tests/validation/final_quiz_management_validation.py",
+        "docs/QUIZ_MANAGEMENT_GUIDE.md"
+      ],
+      "removed": [
+        "test_quiz_api_functionality.py",
+        "test_frontend_quiz_management.py",
+        "final_quiz_management_validation.py"
+      ],
+      "modified": [
+        "CLAUDE.md",
+        "README.md",
+        "services/course-management/course_publishing_api.py",
+        "frontend/instructor-dashboard.html",
+        "frontend/css/main.css"
+      ]
+    }
+  ],
+  "head_commit": {
+    "id": "1234567890123456789012345678901234567890",
+    "tree_id": "abcdefabcdefabcdefabcdefabcdefabcdefabcd",
+    "distinct": true,
+    "message": "Add comprehensive quiz management system\n\n- Implement course instance-specific quiz publishing\n- Add student access control and analytics integration\n- Create instructor dashboard UI with modal interface\n- Include comprehensive test suite and validation",
+    "timestamp": "2025-07-28T01:00:00Z",
+    "url": "https://github.com/your-org/course-creator/commit/1234567890123456789012345678901234567890",
+    "author": {
+      "name": "Developer",
+      "email": "developer@your-org.com",
+      "username": "developer"
+    },
+    "committer": {
+      "name": "Developer",
+      "email": "developer@your-org.com",
+      "username": "developer"
+    },
+    "added": [
+      "tests/quiz-management/test_quiz_api_functionality.py",
+      "tests/quiz-management/test_frontend_quiz_management.py",
+      "tests/validation/final_quiz_management_validation.py",
+      "docs/QUIZ_MANAGEMENT_GUIDE.md"
+    ],
+    "removed": [
+      "test_quiz_api_functionality.py",
+      "test_frontend_quiz_management.py",
+      "final_quiz_management_validation.py"
+    ],
+    "modified": [
+      "CLAUDE.md",
+      "README.md",
+      "services/course-management/course_publishing_api.py",
+      "frontend/instructor-dashboard.html",
+      "frontend/css/main.css"
+    ]
+  }
+}

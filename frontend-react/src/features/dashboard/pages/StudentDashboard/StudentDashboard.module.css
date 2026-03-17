@@ -1,0 +1,121 @@
+/**
+ * Student Dashboard Styles
+ *
+ * DESIGN PRINCIPLES:
+ * - Card-based grid layout
+ * - Clean, spacious design
+ * - Responsive for mobile/tablet/desktop
+ * - Tami design system colors
+ */
+
+/* ============================================================================
+ * MAIN CONTAINER
+ * ============================================================================ */
+
+.student-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* ============================================================================
+ * WELCOME SECTION
+ * ============================================================================ */
+
+.welcome-section {
+  margin-bottom: 8px;
+}
+
+.welcome-text {
+  font-size: 16px;
+  color: #64748b;
+  margin: 8px 0 0 0;
+  line-height: 1.6;
+}
+
+/* ============================================================================
+ * STATS GRID
+ * ============================================================================ */
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.stat-card {
+  text-align: center;
+  padding: 8px 0;
+}
+
+.stat-value {
+  font-size: 36px;
+  font-weight: 700;
+  color: #2563eb;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ============================================================================
+ * CONTENT GRID
+ * ============================================================================ */
+
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.section-description {
+  font-size: 15px;
+  color: #64748b;
+  margin: 12px 0 20px 0;
+  line-height: 1.6;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* ============================================================================
+ * RESPONSIVE
+ * ============================================================================ */
+
+@media (max-width: 768px) {
+  .student-dashboard {
+    gap: 24px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .content-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .stat-value {
+    font-size: 28px;
+  }
+
+  .stat-label {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}

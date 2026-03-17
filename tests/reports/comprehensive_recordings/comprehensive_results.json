@@ -1,0 +1,248 @@
+{
+  "test_id": "0348f20a",
+  "timestamp": "2025-11-27T10:47:15.059456",
+  "total_tests": 26,
+  "passed": 26,
+  "failed": 0,
+  "pass_rate": 100.0,
+  "categories": {
+    "entity": {
+      "passed": 4,
+      "failed": 0
+    },
+    "upload": {
+      "passed": 3,
+      "failed": 0
+    },
+    "download": {
+      "passed": 2,
+      "failed": 0
+    },
+    "ai": {
+      "passed": 7,
+      "failed": 0
+    },
+    "lab": {
+      "passed": 4,
+      "failed": 0
+    },
+    "quiz": {
+      "passed": 3,
+      "failed": 0
+    },
+    "analytics": {
+      "passed": 3,
+      "failed": 0
+    }
+  },
+  "tests": [
+    {
+      "name": "org_registration_page",
+      "category": "entity",
+      "passed": true,
+      "duration_ms": 689.813,
+      "details": "",
+      "screenshot": ""
+    },
+    {
+      "name": "org_admin_dashboard",
+      "category": "entity",
+      "passed": true,
+      "duration_ms": 8034.0199999999995,
+      "details": "",
+      "screenshot": ""
+    },
+    {
+      "name": "create_track",
+      "category": "entity",
+      "passed": true,
+      "duration_ms": 13852.062,
+      "details": "",
+      "screenshot": ""
+    },
+    {
+      "name": "add_member",
+      "category": "entity",
+      "passed": true,
+      "duration_ms": 13831.965,
+      "details": "",
+      "screenshot": ""
+    },
+    {
+      "name": "bulk_enrollment_page_loads",
+      "category": "upload",
+      "passed": true,
+      "duration_ms": 8182.6410000000005,
+      "details": "",
+      "screenshot": ""
+    },
+    {
+      "name": "csv_upload_interface",
+      "category": "upload",
+      "passed": true,
+      "duration_ms": 8424.003,
+      "details": "",
+      "screenshot": ""
+    },
+    {
+      "name": "analytics_export_button",
+      "category": "download",
+      "passed": true,
+      "duration_ms": 8464.416,
+      "details": "",
+      "screenshot": ""
+    },
+    {
+      "name": "project_template_download",
+      "category": "download",
+      "passed": true,
+      "duration_ms": 8205.5,
+      "details": "",
+      "screenshot": ""
+    },
+    {
+      "name": "content_upload_page",
+      "category": "upload",
+      "passed": true,
+      "duration_ms": 8219.12,
+      "details": "",
+      "screenshot": ""
+    },
+    {
+      "name": "ai_assistant_button_exists",
+      "category": "ai",
+      "passed": true,
+      "duration_ms": 9248.407000000001,
+      "details": "",
+      "screenshot": ""
+    },
+    {
+      "name": "ai_chat_interface",
+      "category": "ai",
+      "passed": true,
+      "duration_ms": 9245.881000000001,
+      "details": "",
+      "screenshot": ""
+    },
+    {
+      "name": "ai_quick_actions",
+      "category": "ai",
+      "passed": true,
+      "duration_ms": 9247.878999999999,
+      "details": "",
+      "screenshot": ""
+    },
+    {
+      "name": "ai_send_message",
+      "category": "ai",
+      "passed": true,
+      "duration_ms": 9267.162,
+      "details": "",
+      "screenshot": ""
+    },
+    {
+      "name": "ai_response_display",
+      "category": "ai",
+      "passed": true,
+      "duration_ms": 9237.647,
+      "details": "",
+      "screenshot": ""
+    },
+    {
+      "name": "ai_context_toggle",
+      "category": "ai",
+      "passed": true,
+      "duration_ms": 9242.942,
+      "details": "",
+      "screenshot": ""
+    },
+    {
+      "name": "ai_thinking_indicator",
+      "category": "ai",
+      "passed": true,
+      "duration_ms": 9179.411999999998,
+      "details": "",
+      "screenshot": ""
+    },
+    {
+      "name": "lab_page_loads",
+      "category": "lab",
+      "passed": true,
+      "duration_ms": 9179.423,
+      "details": "",
+      "screenshot": ""
+    },
+    {
+      "name": "ide_selection",
+      "category": "lab",
+      "passed": true,
+      "duration_ms": 9174.234,
+      "details": "",
+      "screenshot": ""
+    },
+    {
+      "name": "code_editor_present",
+      "category": "lab",
+      "passed": true,
+      "duration_ms": 9235.575,
+      "details": "",
+      "screenshot": ""
+    },
+    {
+      "name": "terminal_present",
+      "category": "lab",
+      "passed": true,
+      "duration_ms": 9156.395,
+      "details": "",
+      "screenshot": ""
+    },
+    {
+      "name": "quiz_list_page",
+      "category": "quiz",
+      "passed": true,
+      "duration_ms": 8165.443,
+      "details": "",
+      "screenshot": ""
+    },
+    {
+      "name": "quiz_creation_form",
+      "category": "quiz",
+      "passed": true,
+      "duration_ms": 8203.928,
+      "details": "",
+      "screenshot": ""
+    },
+    {
+      "name": "student_quiz_access",
+      "category": "quiz",
+      "passed": true,
+      "duration_ms": 8205.817,
+      "details": "",
+      "screenshot": ""
+    },
+    {
+      "name": "instructor_analytics",
+      "category": "analytics",
+      "passed": true,
+      "duration_ms": 8379.25,
+      "details": "",
+      "screenshot": ""
+    },
+    {
+      "name": "org_admin_analytics",
+      "category": "analytics",
+      "passed": true,
+      "duration_ms": 8375.0,
+      "details": "",
+      "screenshot": ""
+    },
+    {
+      "name": "site_admin_analytics",
+      "category": "analytics",
+      "passed": true,
+      "duration_ms": 8391.56,
+      "details": "",
+      "screenshot": ""
+    }
+  ]
+}

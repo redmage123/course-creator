@@ -1,0 +1,316 @@
+/**
+ * Course Creator Platform - Modular CSS Architecture
+ * SOLID Principles Implementation
+ * 
+ * Single Responsibility: Each imported file has one specific responsibility
+ * Open/Closed: New components can be added without modifying existing ones
+ * Liskov Substitution: All components follow consistent interfaces
+ * Interface Segregation: Components are split into focused modules
+ * Dependency Inversion: Components depend on design tokens, not concrete values
+ */
+
+/* ===== BASE LAYER ===== */
+/* Design tokens and foundational styles */
+/* @import url('./base/variables.css'); */
+/* @import url('./base/reset.css'); */
+/* @import url('./base/typography.css'); */
+
+/* ===== LAYOUT LAYER ===== */
+/* Layout-specific components and patterns */
+/* @import url('./layout/dashboard.css'); */
+
+/* ===== COMPONENTS LAYER ===== */
+/* Reusable UI components */
+/* @import url('./components/buttons.css'); */
+/* @import url('./components/forms.css'); */
+/* @import url('./components/modals.css'); */
+/* @import url('./components/cards.css'); */
+/* @import url('./components/navigation.css'); */
+/* @import url('./components/layout.css'); */
+/* @import url('./components/upload.css'); */
+/* @import url('./components/slideshow.css'); */
+/* @import url('./components/rbac-dashboard.css'); */
+/* @import url('./components/site-admin.css'); */
+
+/* ===== FEATURE COMPONENTS ===== */
+/* Feature-specific component styles */
+/* @import url('./feedback.css'); */
+/* @import url('./course-publishing.css'); */
+/* @import url('./components.css'); */
+
+/* ===== PAGES LAYER ===== */
+/* Page-specific styles */
+/* @import url('./pages/home.css'); */
+
+/* ===== UTILITIES LAYER ===== */
+/* Helper classes and utilities */
+/* @import url('./utilities/spacing.css'); */
+/* @import url('./utilities/layout.css'); */
+
+/* ===== ACCESSIBILITY LAYER ===== */
+/* Comprehensive accessibility enhancements */
+/* @import url('./accessibility.css'); */
+
+/* ===== MODERN DESIGN SYSTEM ===== */
+/* Contemporary visual design enhancements */
+/* @import url('./design-system/modern-design.css'); */
+
+/* ===== ENHANCED NAVIGATION ===== */
+/* Advanced navigation UX and patterns */
+/* @import url('./navigation/enhanced-navigation.css'); */
+
+/* ===== DATA VISUALIZATION ===== */
+/* Modern charts and analytics displays */
+/* @import url('./visualization/charts.css'); */
+
+/* ===== ONBOARDING & HELP SYSTEM ===== */
+/* Interactive tutorials and user guidance */
+/* @import url('./onboarding/help-system.css'); */
+
+/* ===== LEGACY COMPATIBILITY ===== */
+/* Temporary compatibility styles for existing HTML */
+/* TODO: Remove these as HTML is updated to use modular classes */
+
+/* Legacy dashboard compatibility */
+.dashboard-container:not(.modular) {
+    @extend .dashboard-container;
+}
+
+/* Legacy button compatibility */
+button:not([class*="btn"]) {
+    @extend .btn;
+    @extend .btn-primary;
+}
+
+input[type="submit"]:not([class*="btn"]) {
+    @extend .btn;
+    @extend .btn-primary;
+}
+
+/* Legacy form compatibility */
+input:not([class*="form"]):not([type="checkbox"]):not([type="radio"]) {
+    @extend .form-input;
+}
+
+select:not([class*="form"]) {
+    @extend .form-select;
+}
+
+textarea:not([class*="form"]) {
+    @extend .form-textarea;
+}
+
+/* Legacy modal compatibility */
+.modal:not(.modular) {
+    /* Ensure existing modals continue to work */
+}
+
+/* Legacy spacing compatibility */
+.content-section:not(.modular) {
+    @extend .content-section;
+}
+
+/* ===== RESPONSIVE BREAKPOINTS ===== */
+/* Consistent breakpoints across all components */
+
+/* Small devices (landscape phones, 576px and up) */
+@media (min-width: 576px) {
+    /* Small device specific overrides if needed */
+}
+
+/* Medium devices (tablets, 768px and up) */
+@media (min-width: 768px) {
+    /* Medium device specific overrides if needed */
+}
+
+/* Large devices (desktops, 992px and up) */
+@media (min-width: 992px) {
+    /* Large device specific overrides if needed */
+}
+
+/* Extra large devices (large desktops, 1200px and up) */
+@media (min-width: 1200px) {
+    /* Extra large device specific overrides if needed */
+}
+
+/* Print styles */
+@media print {
+    /* Optimize for printing */
+    .dashboard-sidebar,
+    .sidebar-toggle,
+    .btn-fab,
+    .modal-backdrop {
+        display: none !important;
+    }
+    
+    .dashboard-main {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+    
+    * {
+        box-shadow: none !important;
+        text-shadow: none !important;
+    }
+    
+    body {
+        background: white !important;
+        color: black !important;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    /* High contrast overrides already handled in variables.css */
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    /* Reduced motion overrides already handled in variables.css */
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    /* Dark mode overrides already handled in variables.css */
+}
+
+/* ===== PERFORMANCE OPTIMIZATIONS ===== */
+
+/* Will-change hints for frequently animated elements */
+.modal,
+.dashboard-sidebar,
+.btn:hover,
+.form-input:focus {
+    will-change: transform, opacity;
+}
+
+/* Contain layout recalculations */
+.dashboard-content,
+.modal-body,
+.content-section {
+    contain: layout style;
+}
+
+/* GPU acceleration for transforms */
+.modal,
+.dashboard-sidebar {
+    transform: translateZ(0);
+}
+
+/* ===== ACCESSIBILITY ENHANCEMENTS ===== */
+
+/* Focus management */
+.skip-link {
+    position: absolute;
+    top: -40px;
+    left: 6px;
+    background: var(--primary-color);
+    color: var(--text-inverse);
+    padding: 8px;
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    z-index: var(--z-toast);
+}
+
+.skip-link:focus {
+    top: 6px;
+}
+
+/* Screen reader only content */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* High contrast borders for better visibility */
+@media (prefers-contrast: high) {
+    .content-section,
+    .dashboard-card,
+    .form-input,
+    .btn {
+        border-width: 2px;
+    }
+}
+
+/* ===== CSS ARCHITECTURE NOTES ===== */
+/*
+ * This modular architecture follows SOLID principles:
+ * 
+ * 1. Single Responsibility Principle (SRP):
+ *    - Each CSS file has one specific responsibility
+ *    - variables.css: Design tokens only
+ *    - buttons.css: Button styles only
+ *    - etc.
+ * 
+ * 2. Open/Closed Principle (OCP):
+ *    - New components can be added without modifying existing files
+ *    - Extension through new files, not modification of existing ones
+ * 
+ * 3. Liskov Substitution Principle (LSP):
+ *    - All button variants can be used interchangeably
+ *    - All form inputs follow the same interface
+ * 
+ * 4. Interface Segregation Principle (ISP):
+ *    - Components are split into focused modules
+ *    - Utilities are separate from components
+ *    - Layout is separate from styling
+ * 
+ * 5. Dependency Inversion Principle (DIP):
+ *    - Components depend on CSS custom properties (abstractions)
+ *    - Not on concrete color values or measurements
+ *    - All values come from the design token system
+ * 
+ * Benefits:
+ * - Maintainable: Easy to find and modify specific styles
+ * - Scalable: New components can be added without conflicts
+ * - Consistent: All components use the same design tokens
+ * - Performant: Only load what you need
+ * - Accessible: Built-in accessibility considerations
+ * - Responsive: Mobile-first design with consistent breakpoints
+ */
+/* Fix cursor for entire page and text inputs */
+body, html {
+    cursor: default !important;
+}
+
+/* Fix cursor for text inputs - should be text cursor, not pointer */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+input[type="number"],
+textarea {
+    cursor: text !important;
+}
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+input[type="tel"],
+input[type="url"],
+input[type="search"],
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+textarea {
+    cursor: text !important;
+}
+
+/* Keep pointer cursor for clickable inputs */
+input[type="checkbox"],
+input[type="radio"],
+input[type="submit"],
+input[type="button"],
+input[type="file"],
+button {
+    cursor: pointer !important;
+}

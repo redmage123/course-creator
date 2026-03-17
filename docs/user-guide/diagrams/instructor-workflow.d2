@@ -1,0 +1,172 @@
+# Instructor Workflow
+# D2 Diagram - Course creation and student management
+
+direction: down
+
+title: {
+  label: Instructor Workflow
+  near: top-center
+  shape: text
+  style: {
+    font-size: 22
+    bold: true
+  }
+}
+
+# Dashboard
+dashboard: {
+  label: Instructor Dashboard
+  style: {
+    fill: "#E3F2FD"
+    stroke: "#1976D2"
+  }
+
+  overview: Dashboard\nOverview
+  courses: My Courses
+  students: My Students
+  analytics: Analytics
+}
+
+# Course Creation
+creation: {
+  label: Course Creation
+  style: {
+    fill: "#E8F5E9"
+    stroke: "#4CAF50"
+  }
+
+  new: Create New\nCourse
+  template: Use Template
+  ai_generate: AI Content\nGeneration
+  manual: Manual\nCreation
+}
+
+# Content Management
+content: {
+  label: Content Management
+  style: {
+    fill: "#FFF3E0"
+    stroke: "#F57C00"
+  }
+
+  modules: Create Modules
+  lessons: Add Lessons
+  upload: Upload Videos\n& Materials
+  slides: Generate\nSlides
+}
+
+# AI Content Generator
+ai_content: {
+  label: AI Content Generator
+  style: {
+    fill: "#F3E5F5"
+    stroke: "#7B1FA2"
+  }
+
+  prompt: Enter Topic\n& Objectives
+  outline: Generate\nOutline
+  content_gen: Generate\nContent
+  quiz_gen: Generate\nQuizzes
+  review: Review &\nEdit
+}
+
+# Lab Setup
+lab_setup: {
+  label: Lab Environment Setup
+  style: {
+    fill: "#FFEBEE"
+    stroke: "#D32F2F"
+  }
+
+  config: Configure\nEnvironment
+  code_template: Create Code\nTemplates
+  test_cases: Define Test\nCases
+  preview: Preview Lab
+}
+
+# Assessment Creation
+assessment: {
+  label: Assessment Creation
+  style: {
+    fill: "#E0F7FA"
+    stroke: "#00ACC1"
+  }
+
+  quiz: Create Quiz
+  questions: Add Questions
+  grading: Set Grading\nCriteria
+  schedule: Schedule\nAssessment
+}
+
+# Student Management
+students: {
+  label: Student Management
+  style: {
+    fill: "#FFF8E1"
+    stroke: "#FFA000"
+  }
+
+  enroll: Enroll\nStudents
+  bulk: Bulk\nEnrollment
+  progress: Track\nProgress
+  feedback: Provide\nFeedback
+}
+
+# Analytics & Reporting
+analytics: {
+  label: Analytics & Insights
+  style: {
+    fill: "#F1F8E9"
+    stroke: "#689F38"
+  }
+
+  engagement: Engagement\nMetrics
+  completion: Completion\nRates
+  quiz_stats: Quiz\nPerformance
+  reports: Generate\nReports
+}
+
+# Connections
+dashboard.overview -> dashboard.courses
+dashboard.overview -> dashboard.students
+dashboard.overview -> dashboard.analytics
+
+dashboard.courses -> creation.new
+
+creation.new -> creation.template
+creation.new -> creation.ai_generate
+creation.new -> creation.manual
+
+creation.template -> content.modules
+creation.ai_generate -> ai_content.prompt
+creation.manual -> content.modules
+
+ai_content.prompt -> ai_content.outline
+ai_content.outline -> ai_content.content_gen
+ai_content.content_gen -> ai_content.quiz_gen
+ai_content.quiz_gen -> ai_content.review
+ai_content.review -> content.modules
+
+content.modules -> content.lessons
+content.lessons -> content.upload
+content.lessons -> content.slides
+content.upload -> lab_setup.config
+
+lab_setup.config -> lab_setup.code_template
+lab_setup.code_template -> lab_setup.test_cases
+lab_setup.test_cases -> lab_setup.preview
+
+content.lessons -> assessment.quiz
+assessment.quiz -> assessment.questions
+assessment.questions -> assessment.grading
+assessment.grading -> assessment.schedule
+
+dashboard.students -> students.enroll
+students.enroll -> students.bulk
+students.bulk -> students.progress
+students.progress -> students.feedback
+
+dashboard.analytics -> analytics.engagement
+analytics.engagement -> analytics.completion
+analytics.completion -> analytics.quiz_stats
+analytics.quiz_stats -> analytics.reports

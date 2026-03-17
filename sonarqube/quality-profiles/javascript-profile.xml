@@ -1,0 +1,582 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Course Creator Platform - JavaScript Quality Profile for SonarQube
+This profile defines comprehensive JavaScript/TypeScript code quality rules
+-->
+<profile>
+  <name>Course Creator JavaScript Profile</name>
+  <language>js</language>
+  <rules>
+    <!-- Code Smells -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S1192</key>
+      <priority>INFO</priority>
+      <parameters>
+        <parameter>
+          <key>threshold</key>
+          <value>3</value>
+        </parameter>
+      </parameters>
+    </rule>
+    
+    <!-- Duplicated string literals -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S1481</key>
+      <priority>MINOR</priority>
+    </rule>
+    
+    <!-- Unused local variables -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S1172</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Unused function parameters -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S1135</key>
+      <priority>INFO</priority>
+    </rule>
+    
+    <!-- TODO comments -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S1066</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Collapsible if statements -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S108</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Empty blocks -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S125</key>
+      <priority>MINOR</priority>
+    </rule>
+    
+    <!-- Commented code -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S1541</key>
+      <priority>MAJOR</priority>
+      <parameters>
+        <parameter>
+          <key>max</key>
+          <value>20</value>
+        </parameter>
+      </parameters>
+    </rule>
+    
+    <!-- Cognitive complexity -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S3776</key>
+      <priority>CRITICAL</priority>
+      <parameters>
+        <parameter>
+          <key>threshold</key>
+          <value>15</value>
+        </parameter>
+      </parameters>
+    </rule>
+    
+    <!-- Cognitive complexity of functions -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S1067</key>
+      <priority>MAJOR</priority>
+      <parameters>
+        <parameter>
+          <key>max</key>
+          <value>5</value>
+        </parameter>
+      </parameters>
+    </rule>
+    
+    <!-- Expression complexity -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S1142</key>
+      <priority>MAJOR</priority>
+      <parameters>
+        <parameter>
+          <key>max</key>
+          <value>30</value>
+        </parameter>
+      </parameters>
+    </rule>
+    
+    <!-- Too many return statements -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S1244</key>
+      <priority>MAJOR</priority>
+      <parameters>
+        <parameter>
+          <key>max</key>
+          <value>100</value>
+        </parameter>
+      </parameters>
+    </rule>
+    
+    <!-- Lines of code per function -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S138</key>
+      <priority>MAJOR</priority>
+      <parameters>
+        <parameter>
+          <key>max</key>
+          <value>150</value>
+        </parameter>
+      </parameters>
+    </rule>
+    
+    <!-- Lines of code per file -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S104</key>
+      <priority>MINOR</priority>
+      <parameters>
+        <parameter>
+          <key>maximum</key>
+          <value>1000</value>
+        </parameter>
+      </parameters>
+    </rule>
+    
+    <!-- Maximum line length -->
+    
+    <!-- Security Hotspots -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S2245</key>
+      <priority>BLOCKER</priority>
+    </rule>
+    
+    <!-- Using pseudorandom number generators -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S4507</key>
+      <priority>CRITICAL</priority>
+    </rule>
+    
+    <!-- Delivering code in production with debug features activated -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S2068</key>
+      <priority>BLOCKER</priority>
+    </rule>
+    
+    <!-- Hard-coded credentials -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S1313</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Hard-coded IP addresses -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S5122</key>
+      <priority>CRITICAL</priority>
+    </rule>
+    
+    <!-- Insecure cookie configuration -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S4502</key>
+      <priority>BLOCKER</priority>
+    </rule>
+    
+    <!-- CSRF protection disabled -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S5144</key>
+      <priority>CRITICAL</priority>
+    </rule>
+    
+    <!-- Server certificates should be verified -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S4423</key>
+      <priority>CRITICAL</priority>
+    </rule>
+    
+    <!-- Weak SSL/TLS protocols -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S5659</key>
+      <priority>CRITICAL</priority>
+    </rule>
+    
+    <!-- JWT tokens should be verified -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S5247</key>
+      <priority>BLOCKER</priority>
+    </rule>
+    
+    <!-- Regular expressions should not be vulnerable to denial of service attacks -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S2755</key>
+      <priority>BLOCKER</priority>
+    </rule>
+    
+    <!-- XML parsers should not be vulnerable to XXE attacks -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S2083</key>
+      <priority>BLOCKER</priority>
+    </rule>
+    
+    <!-- User input should be sanitized -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S3649</key>
+      <priority>BLOCKER</priority>
+    </rule>
+    
+    <!-- Database queries should not be vulnerable to injection attacks -->
+    
+    <!-- Bugs -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S1764</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Identical expressions -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S1862</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Related "if/else if" statements with identical conditions -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S1871</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Related "if/else if" statements with identical bodies -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S1656</key>
+      <priority>CRITICAL</priority>
+    </rule>
+    
+    <!-- Variables should not be self-assigned -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S1854</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Dead stores should be removed -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S1116</key>
+      <priority>MINOR</priority>
+    </rule>
+    
+    <!-- Empty statements should be removed -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S1751</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Exception types should not be ignored -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S1143</key>
+      <priority>BLOCKER</priority>
+    </rule>
+    
+    <!-- Jump statements should not occur in "finally" blocks -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S2189</key>
+      <priority>BLOCKER</priority>
+    </rule>
+    
+    <!-- Loops should not be infinite -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S2589</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Boolean expressions should not be gratuitous -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S2681</key>
+      <priority>CRITICAL</priority>
+    </rule>
+    
+    <!-- Multiline blocks should be enclosed in curly braces -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S1128</key>
+      <priority>MINOR</priority>
+    </rule>
+    
+    <!-- Unused imports should be removed -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S1488</key>
+      <priority>MINOR</priority>
+    </rule>
+    
+    <!-- Local variables should not have the same name as their enclosing function -->
+    
+    <!-- Modern JavaScript/ES6+ rules -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S2138</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- "undefined" should not be assigned -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S2430</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- "constructor" should be declared with "function" or as class method -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S3317</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Promises should not be misused -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S4822</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Promises should be handled appropriately -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S6079</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Async function should return a promise -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S6080</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Promises should not be awaited in loops -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S4635</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- "for...in" loops should not be used to iterate over arrays -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S3735</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Objects should not be created to be immediately destructured -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S6557</key>
+      <priority>MINOR</priority>
+    </rule>
+    
+    <!-- Template literals should be used instead of concatenation -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S6606</key>
+      <priority>MINOR</priority>
+    </rule>
+    
+    <!-- Object destructuring should be used -->
+    
+    <!-- DOM and Browser API rules -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S1442</key>
+      <priority>CRITICAL</priority>
+    </rule>
+    
+    <!-- "alert", "confirm", and "prompt" should not be used -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S2245</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Using "document.write" is security-sensitive -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S5725</key>
+      <priority>CRITICAL</priority>
+    </rule>
+    
+    <!-- Using "document.domain" is security-sensitive -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S6268</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- "window.postMessage" targets should be specified -->
+    
+    <!-- Node.js specific rules -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S4507</key>
+      <priority>CRITICAL</priority>
+    </rule>
+    
+    <!-- "process.exit" should not be called -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S5332</key>
+      <priority>BLOCKER</priority>
+    </rule>
+    
+    <!-- Insecure configurations should be removed -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S5443</key>
+      <priority>CRITICAL</priority>
+    </rule>
+    
+    <!-- OS commands should not be vulnerable to injection attacks -->
+    
+    <!-- Code conventions for Course Creator -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S100</key>
+      <priority>MINOR</priority>
+    </rule>
+    
+    <!-- Function and variable names should comply with a naming convention -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S101</key>
+      <priority>MINOR</priority>
+    </rule>
+    
+    <!-- Class names should comply with a naming convention -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S117</key>
+      <priority>MINOR</priority>
+    </rule>
+    
+    <!-- Local variable names should comply with a naming convention -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S103</key>
+      <priority>MINOR</priority>
+    </rule>
+    
+    <!-- Lines should not be too long -->
+    
+    <!-- Test-specific rules -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S2699</key>
+      <priority>CRITICAL</priority>
+    </rule>
+    
+    <!-- Tests should include assertions -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S2208</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- Wildcard imports should not be used -->
+    
+    <!-- Module system rules -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S1128</key>
+      <priority>MINOR</priority>
+    </rule>
+    
+    <!-- Unused imports should be removed -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S6212</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- "export" should be used -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S6544</key>
+      <priority>MINOR</priority>
+    </rule>
+    
+    <!-- ES6 class syntax should be used -->
+    
+    <!-- Performance rules -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S6281</key>
+      <priority>MINOR</priority>
+    </rule>
+    
+    <!-- Union types should be simplified when possible -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S6582</key>
+      <priority>MINOR</priority>
+    </rule>
+    
+    <!-- Array.prototype methods should be used appropriately -->
+    
+    <!-- Frontend-specific rules for Course Creator -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S6565</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- JSDoc comments should be properly formatted -->
+    
+    <!-- xterm.js and lab environment specific -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S4823</key>
+      <priority>CRITICAL</priority>
+    </rule>
+    
+    <!-- Terminal escape sequences should be handled securely -->
+    
+    <!-- Drag and drop security -->
+    <rule>
+      <repositoryKey>javascript</repositoryKey>
+      <key>S5734</key>
+      <priority>MAJOR</priority>
+    </rule>
+    
+    <!-- File uploads should be restricted -->
+    
+  </rules>
+</profile>

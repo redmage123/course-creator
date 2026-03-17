@@ -1,0 +1,1612 @@
+.:
+total 420
+lrwxrwxrwx  1 bbrelin bbrelin    22 Aug  5 08:20 app-control.sh -> scripts/app-control.sh
+-rw-rw-r--  1 bbrelin bbrelin  3897 Aug  5 08:20 CLAUDE.md
+-rw-rw-r--  1 bbrelin bbrelin  3897 Aug  5 08:20 CLAUDE.md.backup
+drwxrwxr-x  8 bbrelin bbrelin  4096 Aug  5 08:20 config
+drwxrwxr-x  3 bbrelin bbrelin  4096 Aug  5 08:20 data
+drwxrwxr-x  4 bbrelin bbrelin  4096 Aug  5 08:20 deploy
+-rw-rw-r--  1 bbrelin bbrelin 55962 Aug  5 08:20 deploy-linux.sh
+-rw-rw-r--  1 bbrelin bbrelin 14259 Aug  5 08:20 DEPLOYMENT.md
+-rwxrwxr-x  1 bbrelin bbrelin 51192 Aug  5 09:34 deploy-ubuntu.sh
+-rwxrwxr-x  1 bbrelin bbrelin 38841 Aug  5 08:52 deploy-ubuntu.sh.bak
+-rw-rw-r--  1 bbrelin bbrelin     0 Aug  5 09:38 dir.out
+-rw-rw-r--  1 bbrelin bbrelin 15769 Aug  5 08:20 docker-compose.yml
+-rw-rw-r--  1 bbrelin bbrelin   851 Aug  5 08:20 Dockerfile.base
+-rw-rw-r--  1 bbrelin bbrelin 10276 Aug  5 08:20 docker_venv_verification_report.py
+drwxrwxr-x  4 bbrelin bbrelin  4096 Aug  5 08:20 docs
+drwxrwxr-x  6 bbrelin bbrelin  4096 Aug  5 08:20 frontend
+drwxrwxr-x  2 bbrelin bbrelin  4096 Aug  5 08:20 jenkins
+-rw-rw-r--  1 bbrelin bbrelin 37133 Aug  5 08:20 Jenkinsfile
+drwxrwxr-x  5 bbrelin bbrelin  4096 Aug  5 08:20 lab-storage
+-rw-rw-r--  1 bbrelin bbrelin  1076 Aug  5 08:20 LICENSE
+-rw-rw-r--  1 bbrelin bbrelin  4559 Aug  5 08:20 mypy.ini
+-rw-rw-r--  1 bbrelin bbrelin 16517 Aug  5 08:20 OWASP_SECURITY_ASSESSMENT_SUMMARY.md
+-rw-rw-r--  1 bbrelin bbrelin  6686 Aug  5 08:20 owasp_top10_assessment_report.json
+-rw-rw-r--  1 bbrelin bbrelin  4787 Aug  5 08:20 package.json
+-rw-rw-r--  1 bbrelin bbrelin  3532 Aug  5 08:20 playwright.config.js
+-rw-rw-r--  1 bbrelin bbrelin  2097 Aug  5 08:20 pytest.ini
+-rw-rw-r--  1 bbrelin bbrelin  4290 Aug  5 08:20 rbac_validation_report.json
+-rw-rw-r--  1 bbrelin bbrelin 32920 Aug  5 08:20 README.md
+-rw-rw-r--  1 bbrelin bbrelin  2505 Aug  5 08:20 requirements-base.txt
+-rw-rw-r--  1 bbrelin bbrelin  2773 Aug  5 08:20 requirements.txt
+drwxrwxr-x  5 bbrelin bbrelin  4096 Aug  5 08:20 scripts
+-rw-rw-r--  1 bbrelin bbrelin  6411 Aug  5 08:20 security_validation_report.json
+drwxrwxr-x 11 bbrelin bbrelin  4096 Aug  5 08:20 services
+drwxrwxr-x 10 bbrelin bbrelin  4096 Aug  5 08:20 shared
+-rw-rw-r--  1 bbrelin bbrelin  4580 Aug  5 08:20 sonar-project.properties
+drwxrwxr-x  5 bbrelin bbrelin  4096 Aug  5 08:20 sonarqube
+drwxrwxr-x  3 bbrelin bbrelin  4096 Aug  5 08:20 templates
+drwxrwxr-x 22 bbrelin bbrelin  4096 Aug  5 08:20 tests
+
+./config:
+total 32
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 ai
+-rw-rw-r-- 1 bbrelin bbrelin  435 Aug  5 08:20 config.yaml
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 database
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 kubernetes
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 logging
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 messaging
+-rw-rw-r-- 1 bbrelin bbrelin 3526 Aug  5 08:20 production.yaml
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 services
+
+./config/ai:
+total 4
+-rw-rw-r-- 1 bbrelin bbrelin 1730 Aug  5 08:20 claude.yaml
+
+./config/database:
+total 4
+-rw-rw-r-- 1 bbrelin bbrelin 393 Aug  5 08:20 postgres.yaml
+
+./config/kubernetes:
+total 4
+-rw-rw-r-- 1 bbrelin bbrelin 36 Aug  5 08:20 platform.yaml
+
+./config/logging:
+total 16
+-rw-rw-r-- 1 bbrelin bbrelin  818 Aug  5 08:20 default.yaml
+-rw-rw-r-- 1 bbrelin bbrelin 5778 Aug  5 08:20 setup.py
+-rw-rw-r-- 1 bbrelin bbrelin 1383 Aug  5 08:20 syslog.yaml
+
+./config/messaging:
+total 4
+-rw-rw-r-- 1 bbrelin bbrelin 318 Aug  5 08:20 redis.yaml
+
+./config/services:
+total 24
+-rw-rw-r-- 1 bbrelin bbrelin  721 Aug  5 08:20 content_management.yaml
+-rw-rw-r-- 1 bbrelin bbrelin 1017 Aug  5 08:20 course_generator.yaml
+-rw-rw-r-- 1 bbrelin bbrelin  739 Aug  5 08:20 course_management.yaml
+-rw-rw-r-- 1 bbrelin bbrelin 1079 Aug  5 08:20 default.yaml
+-rw-rw-r-- 1 bbrelin bbrelin  623 Aug  5 08:20 lab_manager.yaml
+-rw-rw-r-- 1 bbrelin bbrelin  647 Aug  5 08:20 user_management.yaml
+
+./data:
+total 24
+-rw-rw-r-- 1 bbrelin bbrelin 16944 Aug  5 08:20 create_course_creator_schema.sql
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 migrations
+
+./data/migrations:
+total 124
+-rw-rw-r-- 1 bbrelin bbrelin   691 Aug  5 08:20 001_initial_schema.sql
+-rw-rw-r-- 1 bbrelin bbrelin  3211 Aug  5 08:20 002_add_user_sessions.sql
+-rw-rw-r-- 1 bbrelin bbrelin  1357 Aug  5 08:20 003_add_slides_table.sql
+-rw-rw-r-- 1 bbrelin bbrelin  2304 Aug  5 08:20 004_add_lab_sessions_table.sql
+-rw-rw-r-- 1 bbrelin bbrelin  1581 Aug  5 08:20 005_add_lab_environments_table.sql
+-rw-rw-r-- 1 bbrelin bbrelin   982 Aug  5 08:20 006_add_duration_unit_field.sql
+-rw-rw-r-- 1 bbrelin bbrelin  6159 Aug  5 08:20 007_add_analytics_tables.sql
+-rw-rw-r-- 1 bbrelin bbrelin  9922 Aug  5 08:20 008_add_feedback_system.sql
+-rw-rw-r-- 1 bbrelin bbrelin  2913 Aug  5 08:20 009_add_course_completion_fields.sql
+-rw-rw-r-- 1 bbrelin bbrelin 11772 Aug  5 08:20 009_course_publishing_system.sql
+-rw-rw-r-- 1 bbrelin bbrelin  1745 Aug  5 08:20 010_add_user_name_organization_fields.sql
+-rw-rw-r-- 1 bbrelin bbrelin  1451 Aug  5 08:20 011_update_quiz_attempts_table.sql
+-rw-rw-r-- 1 bbrelin bbrelin  1711 Aug  5 08:20 012_fix_admin_and_instructor_users.sql
+-rw-rw-r-- 1 bbrelin bbrelin  8835 Aug  5 08:20 013_add_project_organization_system.sql
+-rw-rw-r-- 1 bbrelin bbrelin  8230 Aug  5 08:20 014_add_track_system.sql
+-rw-rw-r-- 1 bbrelin bbrelin 10809 Aug  5 08:20 015_add_enhanced_rbac_and_meeting_rooms.sql
+-rw-rw-r-- 1 bbrelin bbrelin 11992 Aug  5 08:20 016_add_organization_security.sql
+-rw-rw-r-- 1 bbrelin bbrelin  2252 Aug  5 08:20 create_quiz_tables.sql
+
+./deploy:
+total 108
+-rw-rw-r-- 1 bbrelin bbrelin  1017 Aug  5 08:20 buildkitd.toml
+-rw-rw-r-- 1 bbrelin bbrelin  1809 Aug  5 08:20 docker-compose.override.yml
+-rw-rw-r-- 1 bbrelin bbrelin 15120 Aug  5 08:20 docker-compose.production.yml
+-rw-rw-r-- 1 bbrelin bbrelin  2918 Aug  5 08:20 docker-compose.test.yml
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 environments
+-rwxrwxr-x 1 bbrelin bbrelin 27579 Aug  5 08:20 health-check.sh
+drwxrwxr-x 3 bbrelin bbrelin  4096 Aug  5 08:20 k8s
+-rw-rw-r-- 1 bbrelin bbrelin  6376 Aug  5 08:20 production.env.template
+-rw-rw-r-- 1 bbrelin bbrelin  5462 Aug  5 08:20 requirements-production.txt
+-rwxrwxr-x 1 bbrelin bbrelin   709 Aug  5 08:20 setup-database-ci.py
+-rwxrwxr-x 1 bbrelin bbrelin 23093 Aug  5 08:20 setup-database.py
+
+./deploy/environments:
+total 16
+-rw-rw-r-- 1 bbrelin bbrelin 2712 Aug  5 08:20 dev.env
+-rw-rw-r-- 1 bbrelin bbrelin 4688 Aug  5 08:20 prod.env
+-rw-rw-r-- 1 bbrelin bbrelin 3289 Aug  5 08:20 staging.env
+
+./deploy/k8s:
+total 4
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 base
+
+./deploy/k8s/base:
+total 12
+-rw-rw-r-- 1 bbrelin bbrelin 2368 Aug  5 08:20 kustomization.yaml
+-rw-rw-r-- 1 bbrelin bbrelin 6440 Aug  5 08:20 lab-containers.yaml
+
+./docs:
+total 292
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 api
+-rw-rw-r-- 1 bbrelin bbrelin 51597 Aug  5 08:20 api.md
+-rw-rw-r-- 1 bbrelin bbrelin 25313 Aug  5 08:20 architecture.md
+-rw-rw-r-- 1 bbrelin bbrelin 13830 Aug  5 08:20 ci-cd-pipeline.md
+-rw-rw-r-- 1 bbrelin bbrelin  7706 Aug  5 08:20 CLEANUP_SUMMARY.md
+-rw-rw-r-- 1 bbrelin bbrelin    36 Aug  5 08:20 content-management.md
+-rw-rw-r-- 1 bbrelin bbrelin 20137 Aug  5 08:20 deployment.md
+-rw-rw-r-- 1 bbrelin bbrelin  7250 Aug  5 08:20 EMAIL_CONFIGURATION.md
+-rw-rw-r-- 1 bbrelin bbrelin 16490 Aug  5 08:20 FEEDBACK_SYSTEM_GUIDE.md
+-rw-rw-r-- 1 bbrelin bbrelin  1092 Aug  5 08:20 PIPELINE_TEST_FINAL.md
+-rw-rw-r-- 1 bbrelin bbrelin   700 Aug  5 08:20 PIPELINE_TEST.md
+-rw-rw-r-- 1 bbrelin bbrelin  3587 Aug  5 08:20 QUICKSTART.md
+-rw-rw-r-- 1 bbrelin bbrelin  7276 Aug  5 08:20 QUIZ_MANAGEMENT_GUIDE.md
+-rw-rw-r-- 1 bbrelin bbrelin 26106 Aug  5 08:20 README.md
+-rw-rw-r-- 1 bbrelin bbrelin  6821 Aug  5 08:20 REFACTORING_PLAN.md
+-rw-rw-r-- 1 bbrelin bbrelin 12916 Aug  5 08:20 RUNBOOK.md
+-rw-rw-r-- 1 bbrelin bbrelin    25 Aug  5 08:20 testing.md
+-rw-rw-r-- 1 bbrelin bbrelin 12329 Aug  5 08:20 TESTING_STRATEGY.md
+-rw-rw-r-- 1 bbrelin bbrelin 23974 Aug  5 08:20 USER-GUIDE.md
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 user-guides
+-rw-rw-r-- 1 bbrelin bbrelin 10547 Aug  5 08:20 WEBHOOK_SETUP.md
+
+./docs/api:
+total 12
+-rw-rw-r-- 1 bbrelin bbrelin 11338 Aug  5 08:20 multi-ide-endpoints.md
+
+./docs/user-guides:
+total 36
+-rw-rw-r-- 1 bbrelin bbrelin 15517 Aug  5 08:20 instructor-guide.md
+-rw-rw-r-- 1 bbrelin bbrelin 20173 Aug  5 08:20 student-guide.md
+
+./frontend:
+total 48
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 components
+drwxrwxr-x 6 bbrelin bbrelin  4096 Aug  5 08:20 css
+-rw-rw-r-- 1 bbrelin bbrelin   634 Aug  5 08:20 Dockerfile
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 html
+drwxrwxr-x 5 bbrelin bbrelin  4096 Aug  5 08:20 js
+-rw-rw-r-- 1 bbrelin bbrelin  5473 Aug  5 08:20 nginx.conf
+-rw-rw-r-- 1 bbrelin bbrelin 19341 Aug  5 08:20 sw.js
+
+./frontend/components:
+total 32
+-rw-rw-r-- 1 bbrelin bbrelin 4573 Aug  5 08:20 analytics-dashboard.html
+-rw-rw-r-- 1 bbrelin bbrelin 3900 Aug  5 08:20 course-creation.html
+-rw-rw-r-- 1 bbrelin bbrelin 1990 Aug  5 08:20 course-management.html
+-rw-rw-r-- 1 bbrelin bbrelin 2602 Aug  5 08:20 course-overview.html
+-rw-rw-r-- 1 bbrelin bbrelin 1321 Aug  5 08:20 dashboard-header.html
+-rw-rw-r-- 1 bbrelin bbrelin 2311 Aug  5 08:20 dashboard-sidebar.html
+-rw-rw-r-- 1 bbrelin bbrelin 3374 Aug  5 08:20 student-management.html
+
+./frontend/css:
+total 212
+drwxrwxr-x 2 bbrelin bbrelin   4096 Aug  5 08:20 base
+drwxrwxr-x 2 bbrelin bbrelin   4096 Aug  5 08:20 components
+-rw-rw-r-- 1 bbrelin bbrelin  13508 Aug  5 08:20 components.css
+-rw-rw-r-- 1 bbrelin bbrelin   8059 Aug  5 08:20 course-publishing.css
+-rw-rw-r-- 1 bbrelin bbrelin   7216 Aug  5 08:20 feedback.css
+drwxrwxr-x 2 bbrelin bbrelin   4096 Aug  5 08:20 layout
+-rw-rw-r-- 1 bbrelin bbrelin   6151 Aug  5 08:20 main.css
+-rw-rw-r-- 1 bbrelin bbrelin 158690 Aug  5 08:20 main-legacy-backup.css
+drwxrwxr-x 2 bbrelin bbrelin   4096 Aug  5 08:20 utilities
+
+./frontend/css/base:
+total 20
+-rw-rw-r-- 1 bbrelin bbrelin 3065 Aug  5 08:20 reset.css
+-rw-rw-r-- 1 bbrelin bbrelin 5655 Aug  5 08:20 typography.css
+-rw-rw-r-- 1 bbrelin bbrelin 4830 Aug  5 08:20 variables.css
+
+./frontend/css/components:
+total 72
+-rw-rw-r-- 1 bbrelin bbrelin  8544 Aug  5 08:20 buttons.css
+-rw-rw-r-- 1 bbrelin bbrelin  9694 Aug  5 08:20 forms.css
+-rw-rw-r-- 1 bbrelin bbrelin  8474 Aug  5 08:20 modals.css
+-rw-rw-r-- 1 bbrelin bbrelin 23670 Aug  5 08:20 rbac-dashboard.css
+-rw-rw-r-- 1 bbrelin bbrelin  9189 Aug  5 08:20 site-admin.css
+
+./frontend/css/layout:
+total 12
+-rw-rw-r-- 1 bbrelin bbrelin 12234 Aug  5 08:20 dashboard.css
+
+./frontend/css/utilities:
+total 24
+-rw-rw-r-- 1 bbrelin bbrelin 10387 Aug  5 08:20 layout.css
+-rw-rw-r-- 1 bbrelin bbrelin 11517 Aug  5 08:20 spacing.css
+
+./frontend/html:
+total 504
+-rw-rw-r-- 1 bbrelin bbrelin  13361 Aug  5 08:20 admin.html
+-rw-rw-r-- 1 bbrelin bbrelin   3162 Aug  5 08:20 index.html
+-rw-rw-r-- 1 bbrelin bbrelin 266875 Aug  5 08:20 instructor-dashboard.html
+-rw-rw-r-- 1 bbrelin bbrelin  10884 Aug  5 08:20 instructor-dashboard-refactored.html
+-rw-rw-r-- 1 bbrelin bbrelin  17958 Aug  5 08:20 lab.html
+-rw-rw-r-- 1 bbrelin bbrelin  45228 Aug  5 08:20 lab-multi-ide.html
+-rw-rw-r-- 1 bbrelin bbrelin  23412 Aug  5 08:20 org-admin-dashboard.html
+-rw-rw-r-- 1 bbrelin bbrelin  25195 Aug  5 08:20 org-admin-enhanced.html
+-rw-rw-r-- 1 bbrelin bbrelin  19397 Aug  5 08:20 quiz.html
+-rw-rw-r-- 1 bbrelin bbrelin  23785 Aug  5 08:20 site-admin-dashboard.html
+-rw-rw-r-- 1 bbrelin bbrelin  17412 Aug  5 08:20 student-dashboard.html
+-rw-rw-r-- 1 bbrelin bbrelin  21265 Aug  5 08:20 student-login.html
+
+./frontend/js:
+total 328
+-rw-rw-r-- 1 bbrelin bbrelin 30828 Aug  5 08:20 admin.js
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 components
+-rw-rw-r-- 1 bbrelin bbrelin 12891 Aug  5 08:20 config.js
+drwxrwxr-x 3 bbrelin bbrelin  4096 Aug  5 08:20 lab
+-rw-rw-r-- 1 bbrelin bbrelin 11971 Aug  5 08:20 lab-integration.js
+-rw-rw-r-- 1 bbrelin bbrelin  9902 Aug  5 08:20 lab-refactored.js
+-rw-rw-r-- 1 bbrelin bbrelin 62589 Aug  5 08:20 lab-template.js
+-rw-rw-r-- 1 bbrelin bbrelin  2608 Aug  5 08:20 main.js
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 modules
+-rw-rw-r-- 1 bbrelin bbrelin 27034 Aug  5 08:20 org-admin-dashboard.js
+-rw-rw-r-- 1 bbrelin bbrelin 33980 Aug  5 08:20 org-admin-enhanced.js
+-rw-rw-r-- 1 bbrelin bbrelin 53660 Aug  5 08:20 site-admin-dashboard.js
+-rw-rw-r-- 1 bbrelin bbrelin 57245 Aug  5 08:20 student-dashboard.js
+
+./frontend/js/components:
+total 56
+-rw-rw-r-- 1 bbrelin bbrelin 11516 Aug  5 08:20 component-loader.js
+-rw-rw-r-- 1 bbrelin bbrelin 13144 Aug  5 08:20 course-manager.js
+-rw-rw-r-- 1 bbrelin bbrelin 25396 Aug  5 08:20 dashboard-navigation.js
+
+./frontend/js/lab:
+total 16
+-rw-rw-r-- 1 bbrelin bbrelin 11630 Aug  5 08:20 lab-controller.js
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 modules
+
+./frontend/js/lab/modules:
+total 36
+-rw-rw-r-- 1 bbrelin bbrelin 9091 Aug  5 08:20 exercise-manager.js
+-rw-rw-r-- 1 bbrelin bbrelin 7536 Aug  5 08:20 file-system.js
+-rw-rw-r-- 1 bbrelin bbrelin 2077 Aug  5 08:20 lab-config.js
+-rw-rw-r-- 1 bbrelin bbrelin 8692 Aug  5 08:20 terminal-emulator.js
+
+./frontend/js/modules:
+total 412
+-rw-rw-r-- 1 bbrelin bbrelin 22022 Aug  5 08:20 activity-tracker.js
+-rw-rw-r-- 1 bbrelin bbrelin 32185 Aug  5 08:20 analytics-dashboard.js
+-rw-rw-r-- 1 bbrelin bbrelin 29372 Aug  5 08:20 app.js
+-rw-rw-r-- 1 bbrelin bbrelin 26622 Aug  5 08:20 asset-cache.js
+-rw-rw-r-- 1 bbrelin bbrelin 42533 Aug  5 08:20 auth.js
+-rw-rw-r-- 1 bbrelin bbrelin 21835 Aug  5 08:20 config-manager.js
+-rw-rw-r-- 1 bbrelin bbrelin 27788 Aug  5 08:20 feedback-manager.js
+-rw-rw-r-- 1 bbrelin bbrelin 98833 Aug  5 08:20 instructor-dashboard.js
+-rw-rw-r-- 1 bbrelin bbrelin 14829 Aug  5 08:20 lab-lifecycle.js
+-rw-rw-r-- 1 bbrelin bbrelin 29946 Aug  5 08:20 navigation.js
+-rw-rw-r-- 1 bbrelin bbrelin 13311 Aug  5 08:20 notifications.js
+-rw-rw-r-- 1 bbrelin bbrelin 12053 Aug  5 08:20 student-file-manager.js
+-rw-rw-r-- 1 bbrelin bbrelin 22759 Aug  5 08:20 ui-components.js
+
+./jenkins:
+total 64
+-rw-rw-r-- 1 bbrelin bbrelin 17089 Aug  5 08:20 jenkins-setup.sh
+-rw-rw-r-- 1 bbrelin bbrelin  5772 Aug  5 08:20 job-config.xml
+-rw-rw-r-- 1 bbrelin bbrelin  3375 Aug  5 08:20 README.md
+-rwxrwxr-x 1 bbrelin bbrelin 10484 Aug  5 08:20 setup-webhook.sh
+-rw-rw-r-- 1 bbrelin bbrelin  8872 Aug  5 08:20 test-webhook-payload.json
+-rw-rw-r-- 1 bbrelin bbrelin  5399 Aug  5 08:20 webhook-config.groovy
+
+./lab-storage:
+total 12
+drwxrwxr-x 3 bbrelin bbrelin 4096 Aug  5 08:20 permission_test
+drwxrwxr-x 3 bbrelin bbrelin 4096 Aug  5 08:20 student123
+drwxrwxr-x 3 bbrelin bbrelin 4096 Aug  5 08:20 test_user
+
+./lab-storage/permission_test:
+total 4
+drwxrwxr-x 3 bbrelin bbrelin 4096 Aug  5 08:20 final_test
+
+./lab-storage/permission_test/final_test:
+total 24
+-rw-rw-r-- 1 bbrelin bbrelin  349 Aug  5 08:20 config.json
+-rw-rw-r-- 1 bbrelin bbrelin  609 Aug  5 08:20 data_analysis.py
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 experiments
+-rw-rw-r-- 1 bbrelin bbrelin   98 Aug  5 08:20 hello.py
+-rw-rw-r-- 1 bbrelin bbrelin  758 Aug  5 08:20 project_notes.md
+-rw-rw-r-- 1 bbrelin bbrelin  620 Aug  5 08:20 python_script.py
+
+./lab-storage/permission_test/final_test/experiments:
+total 4
+-rw-rw-r-- 1 bbrelin bbrelin 835 Aug  5 08:20 jupyter_demo.py
+
+./lab-storage/student123:
+total 4
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 python101
+
+./lab-storage/student123/python101:
+total 12
+-rw-rw-r-- 1 bbrelin bbrelin 35 Aug  5 08:20 config.json
+-rw-rw-r-- 1 bbrelin bbrelin 56 Aug  5 08:20 README.md
+-rw-rw-r-- 1 bbrelin bbrelin 32 Aug  5 08:20 test_script.py
+
+./lab-storage/test_user:
+total 4
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 test_course
+
+./lab-storage/test_user/test_course:
+total 4
+-rw-rw-r-- 1 bbrelin bbrelin 98 Aug  5 08:20 hello.py
+
+./scripts:
+total 124
+-rwxrwxr-x 1 bbrelin bbrelin 27283 Aug  5 08:20 app-control.sh
+-rwxrwxr-x 1 bbrelin bbrelin   935 Aug  5 08:20 build-base-image.sh
+-rwxrwxr-x 1 bbrelin bbrelin  1315 Aug  5 08:20 check-pipeline-status.sh
+-rwxrwxr-x 1 bbrelin bbrelin 18017 Aug  5 08:20 deploy.sh
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 development
+-rwxrwxr-x 1 bbrelin bbrelin 19588 Aug  5 08:20 docker-build-optimized.sh
+-rwxrwxr-x 1 bbrelin bbrelin  1189 Aug  5 08:20 install-all-deps.sh
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 maintenance
+-rw-rw-r-- 1 bbrelin bbrelin  1722 Aug  5 08:20 restart_services.py
+-rw-rw-r-- 1 bbrelin bbrelin 16339 Aug  5 08:20 run_tests.py
+-rwxrwxr-x 1 bbrelin bbrelin  4748 Aug  5 08:20 setup-db-user.sh
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 testing
+-rwxrwxr-x 1 bbrelin bbrelin  3871 Aug  5 08:20 update-remaining-dockerfiles.sh
+
+./scripts/development:
+total 4
+-rwxrwxr-x 1 bbrelin bbrelin 960 Aug  5 08:20 setup-dev-env.sh
+
+./scripts/maintenance:
+total 16
+-rw-rw-r-- 1 bbrelin bbrelin 5633 Aug  5 08:20 run_course_completion_migration.py
+-rw-rw-r-- 1 bbrelin bbrelin 5639 Aug  5 08:20 run_user_fields_migration.py
+
+./scripts/testing:
+total 4
+-rwxrwxr-x 1 bbrelin bbrelin 191 Aug  5 08:20 run-tests.sh
+
+./services:
+total 40
+drwxrwxr-x  6 bbrelin bbrelin 4096 Aug  5 08:20 analytics
+drwxrwxr-x  9 bbrelin bbrelin 4096 Aug  5 08:20 content-management
+drwxrwxr-x  9 bbrelin bbrelin 4096 Aug  5 08:20 content-storage
+drwxrwxr-x 12 bbrelin bbrelin 4096 Aug  5 08:20 course-generator
+drwxrwxr-x  9 bbrelin bbrelin 4096 Aug  5 08:20 course-management
+-rw-rw-r--  1 bbrelin bbrelin   53 Aug  5 08:20 __init__.py
+drwxrwxr-x  6 bbrelin bbrelin 4096 Aug  5 08:20 lab-manager
+drwxrwxr-x 11 bbrelin bbrelin 4096 Aug  5 08:20 organization-management
+drwxrwxr-x  2 bbrelin bbrelin 4096 Aug  5 08:20 rag-service
+drwxrwxr-x 11 bbrelin bbrelin 4096 Aug  5 08:20 user-management
+
+./services/analytics:
+total 212
+-rw-rw-r-- 1 bbrelin bbrelin  24333 Aug  5 08:20 analytics_endpoints.py
+drwxrwxr-x 3 bbrelin bbrelin   4096 Aug  5 08:20 application
+drwxrwxr-x 2 bbrelin bbrelin   4096 Aug  5 08:20 conf
+-rw-rw-r-- 1 bbrelin bbrelin    693 Aug  5 08:20 Dockerfile
+drwxrwxr-x 4 bbrelin bbrelin   4096 Aug  5 08:20 domain
+-rw-rw-r-- 1 bbrelin bbrelin  10985 Aug  5 08:20 exceptions.py
+drwxrwxr-x 2 bbrelin bbrelin   4096 Aug  5 08:20 infrastructure
+-rw-rw-r-- 1 bbrelin bbrelin     27 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin   3558 Aug  5 08:20 logging_setup.py
+-rw-rw-r-- 1 bbrelin bbrelin 100389 Aug  5 08:20 main.py
+-rw-rw-r-- 1 bbrelin bbrelin  11965 Aug  5 08:20 pdf_endpoints.py
+-rw-rw-r-- 1 bbrelin bbrelin  27660 Aug  5 08:20 pdf_generator.py
+-rw-rw-r-- 1 bbrelin bbrelin   1153 Aug  5 08:20 requirements.txt
+-rw-rw-r-- 1 bbrelin bbrelin    950 Aug  5 08:20 run.py
+
+./services/analytics/application:
+total 8
+-rw-rw-r-- 1 bbrelin bbrelin   29 Aug  5 08:20 __init__.py
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 services
+
+./services/analytics/application/services:
+total 76
+-rw-rw-r-- 1 bbrelin bbrelin    32 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 52089 Aug  5 08:20 learning_analytics_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 20000 Aug  5 08:20 student_activity_service.py
+
+./services/analytics/conf:
+total 4
+-rw-rw-r-- 1 bbrelin bbrelin 1267 Aug  5 08:20 config.yaml
+
+./services/analytics/domain:
+total 12
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 entities
+-rw-rw-r-- 1 bbrelin bbrelin   24 Aug  5 08:20 __init__.py
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 interfaces
+
+./services/analytics/domain/entities:
+total 36
+-rw-rw-r-- 1 bbrelin bbrelin    27 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 32704 Aug  5 08:20 student_analytics.py
+
+./services/analytics/domain/interfaces:
+total 40
+-rw-rw-r-- 1 bbrelin bbrelin 18137 Aug  5 08:20 analytics_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin 12539 Aug  5 08:20 analytics_service.py
+-rw-rw-r-- 1 bbrelin bbrelin    29 Aug  5 08:20 __init__.py
+
+./services/analytics/infrastructure:
+total 40
+-rw-rw-r-- 1 bbrelin bbrelin 35398 Aug  5 08:20 container.py
+-rw-rw-r-- 1 bbrelin bbrelin    32 Aug  5 08:20 __init__.py
+
+./services/content-management:
+total 256
+-rw-rw-r-- 1 bbrelin bbrelin 32648 Aug  5 08:20 ai_integration.py
+drwxrwxr-x 3 bbrelin bbrelin  4096 Aug  5 08:20 application
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 conf
+-rw-rw-r-- 1 bbrelin bbrelin   702 Aug  5 08:20 Dockerfile
+drwxrwxr-x 4 bbrelin bbrelin  4096 Aug  5 08:20 domain
+-rw-rw-r-- 1 bbrelin bbrelin 39190 Aug  5 08:20 exceptions.py
+-rw-rw-r-- 1 bbrelin bbrelin 48048 Aug  5 08:20 file_processors.py
+drwxrwxr-x 3 bbrelin bbrelin  4096 Aug  5 08:20 infrastructure
+-rw-rw-r-- 1 bbrelin bbrelin  5161 Aug  5 08:20 logging_setup.py
+-rw-rw-r-- 1 bbrelin bbrelin 41563 Aug  5 08:20 main.py
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 models
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 repositories
+-rw-rw-r-- 1 bbrelin bbrelin   968 Aug  5 08:20 requirements.txt
+-rw-rw-r-- 1 bbrelin bbrelin  3119 Aug  5 08:20 run.py
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 services
+-rw-rw-r-- 1 bbrelin bbrelin 43412 Aug  5 08:20 storage_manager.py
+
+./services/content-management/application:
+total 8
+-rw-rw-r-- 1 bbrelin bbrelin   38 Aug  5 08:20 __init__.py
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 services
+
+./services/content-management/application/services:
+total 56
+-rw-rw-r-- 1 bbrelin bbrelin 11561 Aug  5 08:20 content_search_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 15918 Aug  5 08:20 content_validation_service.py
+-rw-rw-r-- 1 bbrelin bbrelin    41 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 23439 Aug  5 08:20 syllabus_service.py
+
+./services/content-management/conf:
+total 4
+-rw-rw-r-- 1 bbrelin bbrelin 916 Aug  5 08:20 config.yaml
+
+./services/content-management/domain:
+total 12
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 entities
+-rw-rw-r-- 1 bbrelin bbrelin   33 Aug  5 08:20 __init__.py
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 interfaces
+
+./services/content-management/domain/entities:
+total 92
+-rw-rw-r-- 1 bbrelin bbrelin 19277 Aug  5 08:20 base_content.py
+-rw-rw-r-- 1 bbrelin bbrelin 13231 Aug  5 08:20 exercise.py
+-rw-rw-r-- 1 bbrelin bbrelin    36 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 15454 Aug  5 08:20 lab_environment.py
+-rw-rw-r-- 1 bbrelin bbrelin 12286 Aug  5 08:20 quiz.py
+-rw-rw-r-- 1 bbrelin bbrelin  9456 Aug  5 08:20 slide.py
+-rw-rw-r-- 1 bbrelin bbrelin  8997 Aug  5 08:20 syllabus.py
+
+./services/content-management/domain/interfaces:
+total 28
+-rw-rw-r-- 1 bbrelin bbrelin  8853 Aug  5 08:20 content_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin 11263 Aug  5 08:20 content_service.py
+-rw-rw-r-- 1 bbrelin bbrelin    38 Aug  5 08:20 __init__.py
+
+./services/content-management/infrastructure:
+total 28
+-rw-rw-r-- 1 bbrelin bbrelin 20278 Aug  5 08:20 container.py
+-rw-rw-r-- 1 bbrelin bbrelin    41 Aug  5 08:20 __init__.py
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 repositories
+
+./services/content-management/infrastructure/repositories:
+total 24
+-rw-rw-r-- 1 bbrelin bbrelin    48 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 17680 Aug  5 08:20 postgresql_content_repository.py
+
+./services/content-management/models:
+total 32
+-rw-rw-r-- 1 bbrelin bbrelin  7396 Aug  5 08:20 common.py
+-rw-rw-r-- 1 bbrelin bbrelin 18301 Aug  5 08:20 content.py
+-rw-rw-r-- 1 bbrelin bbrelin    46 Aug  5 08:20 __init__.py
+
+./services/content-management/repositories:
+total 56
+-rw-rw-r-- 1 bbrelin bbrelin 11836 Aug  5 08:20 base_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin 37440 Aug  5 08:20 content_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin    52 Aug  5 08:20 __init__.py
+
+./services/content-management/services:
+total 44
+-rw-rw-r-- 1 bbrelin bbrelin 38769 Aug  5 08:20 content_service.py
+-rw-rw-r-- 1 bbrelin bbrelin    48 Aug  5 08:20 __init__.py
+
+./services/content-storage:
+total 92
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 api
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 conf
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 config
+-rw-rw-r-- 1 bbrelin bbrelin  3949 Aug  5 08:20 config.py
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 dao
+-rw-rw-r-- 1 bbrelin bbrelin  3615 Aug  5 08:20 dependencies.py
+-rw-rw-r-- 1 bbrelin bbrelin   801 Aug  5 08:20 Dockerfile
+-rw-rw-r-- 1 bbrelin bbrelin  9155 Aug  5 08:20 exceptions.py
+-rw-rw-r-- 1 bbrelin bbrelin  4060 Aug  5 08:20 logging_setup.py
+-rw-rw-r-- 1 bbrelin bbrelin 23924 Aug  5 08:20 main.py
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 models
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 repositories
+-rw-rw-r-- 1 bbrelin bbrelin   326 Aug  5 08:20 requirements.txt
+-rw-rw-r-- 1 bbrelin bbrelin   343 Aug  5 08:20 run.py
+-rw-rw-r-- 1 bbrelin bbrelin  2977 Aug  5 08:20 schemas.py
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 services
+
+./services/content-storage/api:
+total 32
+-rw-rw-r-- 1 bbrelin bbrelin 16238 Aug  5 08:20 content_api.py
+-rw-rw-r-- 1 bbrelin bbrelin   240 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 12280 Aug  5 08:20 storage_api.py
+
+./services/content-storage/conf:
+total 4
+-rw-rw-r-- 1 bbrelin bbrelin 767 Aug  5 08:20 config.yaml
+
+./services/content-storage/config:
+total 16
+-rw-rw-r-- 1 bbrelin bbrelin 8269 Aug  5 08:20 database.py
+-rw-rw-r-- 1 bbrelin bbrelin  174 Aug  5 08:20 __init__.py
+
+./services/content-storage/dao:
+total 40
+-rw-rw-r-- 1 bbrelin bbrelin  6376 Aug  5 08:20 backup_queries.py
+-rw-rw-r-- 1 bbrelin bbrelin 12329 Aug  5 08:20 content_queries.py
+-rw-rw-r-- 1 bbrelin bbrelin   920 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin  9104 Aug  5 08:20 storage_queries.py
+
+./services/content-storage/models:
+total 28
+-rw-rw-r-- 1 bbrelin bbrelin   984 Aug  5 08:20 common.py
+-rw-rw-r-- 1 bbrelin bbrelin 11581 Aug  5 08:20 content.py
+-rw-rw-r-- 1 bbrelin bbrelin   568 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin  4784 Aug  5 08:20 storage.py
+
+./services/content-storage/repositories:
+total 80
+-rw-rw-r-- 1 bbrelin bbrelin 30066 Aug  5 08:20 content_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin   276 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 42295 Aug  5 08:20 storage_repository.py
+
+./services/content-storage/services:
+total 104
+-rw-rw-r-- 1 bbrelin bbrelin 56994 Aug  5 08:20 content_service.py
+-rw-rw-r-- 1 bbrelin bbrelin   249 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 43397 Aug  5 08:20 storage_service.py
+
+./services/course-generator:
+total 136
+drwxrwxr-x 4 bbrelin bbrelin  4096 Aug  5 08:20 ai
+-rw-rw-r-- 1 bbrelin bbrelin  9828 Aug  5 08:20 analytics_client.py
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 api
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 app
+drwxrwxr-x 3 bbrelin bbrelin  4096 Aug  5 08:20 application
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 conf
+-rw-rw-r-- 1 bbrelin bbrelin  1718 Aug  5 08:20 config.py
+-rw-rw-r-- 1 bbrelin bbrelin   699 Aug  5 08:20 Dockerfile
+drwxrwxr-x 4 bbrelin bbrelin  4096 Aug  5 08:20 domain
+-rw-rw-r-- 1 bbrelin bbrelin  8112 Aug  5 08:20 exceptions.py
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 infrastructure
+-rw-rw-r-- 1 bbrelin bbrelin    34 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin  3558 Aug  5 08:20 logging_setup.py
+-rw-rw-r-- 1 bbrelin bbrelin 14582 Aug  5 08:20 main.py
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 models
+-rw-rw-r-- 1 bbrelin bbrelin 22538 Aug  5 08:20 rag_integration.py
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 repositories
+-rw-rw-r-- 1 bbrelin bbrelin   465 Aug  5 08:20 requirements.txt
+-rw-rw-r-- 1 bbrelin bbrelin   344 Aug  5 08:20 run.py
+-rw-rw-r-- 1 bbrelin bbrelin  2480 Aug  5 08:20 schemas.py
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 services
+-rw-rw-r-- 1 bbrelin bbrelin  5778 Aug  5 08:20 setup.py
+
+./services/course-generator/ai:
+total 84
+-rw-rw-r-- 1 bbrelin bbrelin 29730 Aug  5 08:20 client.py
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 fallback
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 generators
+-rw-rw-r-- 1 bbrelin bbrelin   815 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 37364 Aug  5 08:20 prompts.py
+
+./services/course-generator/ai/fallback:
+total 60
+-rw-rw-r-- 1 bbrelin bbrelin 15228 Aug  5 08:20 fallback_chat.py
+-rw-rw-r-- 1 bbrelin bbrelin 12688 Aug  5 08:20 fallback_quiz.py
+-rw-rw-r-- 1 bbrelin bbrelin  6649 Aug  5 08:20 fallback_slide.py
+-rw-rw-r-- 1 bbrelin bbrelin 13312 Aug  5 08:20 fallback_syllabus.py
+-rw-rw-r-- 1 bbrelin bbrelin   499 Aug  5 08:20 __init__.py
+
+./services/course-generator/ai/generators:
+total 100
+-rw-rw-r-- 1 bbrelin bbrelin 13577 Aug  5 08:20 chat_generator.py
+-rw-rw-r-- 1 bbrelin bbrelin 17206 Aug  5 08:20 exercise_generator.py
+-rw-rw-r-- 1 bbrelin bbrelin   505 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 19914 Aug  5 08:20 quiz_generator.py
+-rw-rw-r-- 1 bbrelin bbrelin 14023 Aug  5 08:20 slide_generator.py
+-rw-rw-r-- 1 bbrelin bbrelin 24000 Aug  5 08:20 syllabus_generator.py
+
+./services/course-generator/api:
+total 32
+-rw-rw-r-- 1 bbrelin bbrelin 5350 Aug  5 08:20 cache.py
+-rw-rw-r-- 1 bbrelin bbrelin 1493 Aug  5 08:20 health.py
+-rw-rw-r-- 1 bbrelin bbrelin  673 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 3608 Aug  5 08:20 jobs.py
+-rw-rw-r-- 1 bbrelin bbrelin 9651 Aug  5 08:20 syllabus.py
+
+./services/course-generator/app:
+total 24
+-rw-rw-r-- 1 bbrelin bbrelin 3866 Aug  5 08:20 dependencies.py
+-rw-rw-r-- 1 bbrelin bbrelin 3925 Aug  5 08:20 error_handlers.py
+-rw-rw-r-- 1 bbrelin bbrelin 2510 Aug  5 08:20 factory.py
+-rw-rw-r-- 1 bbrelin bbrelin  134 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 1981 Aug  5 08:20 middleware.py
+-rw-rw-r-- 1 bbrelin bbrelin  791 Aug  5 08:20 routes.py
+
+./services/course-generator/application:
+total 8
+-rw-rw-r-- 1 bbrelin bbrelin   36 Aug  5 08:20 __init__.py
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 services
+
+./services/course-generator/application/services:
+total 92
+-rw-rw-r-- 1 bbrelin bbrelin 19933 Aug  5 08:20 exercise_generation_service.py
+-rw-rw-r-- 1 bbrelin bbrelin    39 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 15521 Aug  5 08:20 job_management_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 15324 Aug  5 08:20 quiz_generation_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 15550 Aug  5 08:20 slide_generation_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 17724 Aug  5 08:20 syllabus_generation_service.py
+
+./services/course-generator/conf:
+total 4
+-rw-rw-r-- 1 bbrelin bbrelin 1174 Aug  5 08:20 config.yaml
+
+./services/course-generator/domain:
+total 12
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 entities
+-rw-rw-r-- 1 bbrelin bbrelin   31 Aug  5 08:20 __init__.py
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 interfaces
+
+./services/course-generator/domain/entities:
+total 48
+-rw-rw-r-- 1 bbrelin bbrelin 13438 Aug  5 08:20 course_content.py
+-rw-rw-r-- 1 bbrelin bbrelin    34 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 11054 Aug  5 08:20 quiz.py
+-rw-rw-r-- 1 bbrelin bbrelin 14417 Aug  5 08:20 student_interaction.py
+
+./services/course-generator/domain/interfaces:
+total 52
+-rw-rw-r-- 1 bbrelin bbrelin 19361 Aug  5 08:20 ai_service.py
+-rw-rw-r-- 1 bbrelin bbrelin  9034 Aug  5 08:20 content_generation_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 12425 Aug  5 08:20 content_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin    36 Aug  5 08:20 __init__.py
+
+./services/course-generator/infrastructure:
+total 24
+-rw-rw-r-- 1 bbrelin bbrelin 18134 Aug  5 08:20 container.py
+-rw-rw-r-- 1 bbrelin bbrelin    39 Aug  5 08:20 __init__.py
+
+./services/course-generator/models:
+total 8
+-rw-rw-r-- 1 bbrelin bbrelin 7217 Aug  5 08:20 syllabus.py
+
+./services/course-generator/repositories:
+total 76
+-rw-rw-r-- 1 bbrelin bbrelin  6591 Aug  5 08:20 base_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin  3429 Aug  5 08:20 course_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin   750 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin  4266 Aug  5 08:20 lab_environment_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin 14933 Aug  5 08:20 lab_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin 10500 Aug  5 08:20 quiz_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin 10818 Aug  5 08:20 slide_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin  8666 Aug  5 08:20 syllabus_repository.py
+
+./services/course-generator/services:
+total 116
+-rw-rw-r-- 1 bbrelin bbrelin  8881 Aug  5 08:20 ai_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 26635 Aug  5 08:20 exercise_generation_service.py
+-rw-rw-r-- 1 bbrelin bbrelin   637 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin  5365 Aug  5 08:20 job_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 16809 Aug  5 08:20 lab_environment_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 15512 Aug  5 08:20 quiz_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 12091 Aug  5 08:20 slide_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 13758 Aug  5 08:20 syllabus_service.py
+
+./services/course-management:
+total 208
+drwxrwxr-x 3 bbrelin bbrelin  4096 Aug  5 08:20 application
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 conf
+-rw-rw-r-- 1 bbrelin bbrelin  1908 Aug  5 08:20 config.py
+-rw-rw-r-- 1 bbrelin bbrelin 67280 Aug  5 08:20 course_publishing_api.py
+-rw-rw-r-- 1 bbrelin bbrelin  4228 Aug  5 08:20 dependencies.py
+-rw-rw-r-- 1 bbrelin bbrelin   701 Aug  5 08:20 Dockerfile
+drwxrwxr-x 4 bbrelin bbrelin  4096 Aug  5 08:20 domain
+-rw-rw-r-- 1 bbrelin bbrelin 19779 Aug  5 08:20 email_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 15038 Aug  5 08:20 exceptions.py
+drwxrwxr-x 3 bbrelin bbrelin  4096 Aug  5 08:20 infrastructure
+-rw-rw-r-- 1 bbrelin bbrelin    35 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin  3558 Aug  5 08:20 logging_setup.py
+-rw-rw-r-- 1 bbrelin bbrelin 38763 Aug  5 08:20 main.py
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 models
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 repositories
+-rw-rw-r-- 1 bbrelin bbrelin   676 Aug  5 08:20 requirements.txt
+-rw-rw-r-- 1 bbrelin bbrelin   138 Aug  5 08:20 run.py
+-rw-rw-r-- 1 bbrelin bbrelin  3686 Aug  5 08:20 schemas.py
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 services
+
+./services/course-management/application:
+total 8
+-rw-rw-r-- 1 bbrelin bbrelin   37 Aug  5 08:20 __init__.py
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 services
+
+./services/course-management/application/services:
+total 60
+-rw-rw-r-- 1 bbrelin bbrelin 13682 Aug  5 08:20 course_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 14335 Aug  5 08:20 enrollment_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 20811 Aug  5 08:20 feedback_service.py
+-rw-rw-r-- 1 bbrelin bbrelin    40 Aug  5 08:20 __init__.py
+
+./services/course-management/conf:
+total 8
+-rw-rw-r-- 1 bbrelin bbrelin 1272 Aug  5 08:20 config.yaml
+-rw-rw-r-- 1 bbrelin bbrelin   52 Aug  5 08:20 __init__.py
+
+./services/course-management/domain:
+total 12
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 entities
+-rw-rw-r-- 1 bbrelin bbrelin   32 Aug  5 08:20 __init__.py
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 interfaces
+
+./services/course-management/domain/entities:
+total 44
+-rw-rw-r-- 1 bbrelin bbrelin 12264 Aug  5 08:20 course.py
+-rw-rw-r-- 1 bbrelin bbrelin  9056 Aug  5 08:20 enrollment.py
+-rw-rw-r-- 1 bbrelin bbrelin 14634 Aug  5 08:20 feedback.py
+-rw-rw-r-- 1 bbrelin bbrelin    35 Aug  5 08:20 __init__.py
+
+./services/course-management/domain/interfaces:
+total 32
+-rw-rw-r-- 1 bbrelin bbrelin 2203 Aug  5 08:20 course_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin 2227 Aug  5 08:20 course_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 3162 Aug  5 08:20 enrollment_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin 2595 Aug  5 08:20 enrollment_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 5189 Aug  5 08:20 feedback_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin 4020 Aug  5 08:20 feedback_service.py
+-rw-rw-r-- 1 bbrelin bbrelin   37 Aug  5 08:20 __init__.py
+
+./services/course-management/infrastructure:
+total 28
+-rw-rw-r-- 1 bbrelin bbrelin 19939 Aug  5 08:20 container.py
+-rw-rw-r-- 1 bbrelin bbrelin    40 Aug  5 08:20 __init__.py
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 repositories
+
+./services/course-management/infrastructure/repositories:
+total 12
+-rw-rw-r-- 1 bbrelin bbrelin 11245 Aug  5 08:20 postgresql_course_repository.py
+
+./services/course-management/models:
+total 52
+-rw-rw-r-- 1 bbrelin bbrelin  1050 Aug  5 08:20 common.py
+-rw-rw-r-- 1 bbrelin bbrelin 17736 Aug  5 08:20 course_publishing.py
+-rw-rw-r-- 1 bbrelin bbrelin  5116 Aug  5 08:20 course.py
+-rw-rw-r-- 1 bbrelin bbrelin  4902 Aug  5 08:20 enrollment.py
+-rw-rw-r-- 1 bbrelin bbrelin   760 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin  5677 Aug  5 08:20 progress.py
+
+./services/course-management/repositories:
+total 72
+-rw-rw-r-- 1 bbrelin bbrelin  8541 Aug  5 08:20 base_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin 15497 Aug  5 08:20 course_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin 23034 Aug  5 08:20 enrollment_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin   458 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 15494 Aug  5 08:20 progress_repository.py
+
+./services/course-management/services:
+total 28
+-rw-rw-r-- 1 bbrelin bbrelin  6464 Aug  5 08:20 course_instantiation_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 13612 Aug  5 08:20 course_service.py
+-rw-rw-r-- 1 bbrelin bbrelin   336 Aug  5 08:20 __init__.py
+
+./services/lab-manager:
+total 108
+-rw-rw-r--  1 bbrelin bbrelin  6606 Aug  5 08:20 analytics_client.py
+drwxrwxr-x  2 bbrelin bbrelin  4096 Aug  5 08:20 conf
+-rw-rw-r--  1 bbrelin bbrelin  1053 Aug  5 08:20 Dockerfile
+-rw-rw-r--  1 bbrelin bbrelin 11417 Aug  5 08:20 exceptions.py
+drwxrwxr-x 10 bbrelin bbrelin  4096 Aug  5 08:20 lab-images
+-rw-rw-r--  1 bbrelin bbrelin  3558 Aug  5 08:20 logging_setup.py
+-rw-rw-r--  1 bbrelin bbrelin 17828 Aug  5 08:20 main.py
+drwxrwxr-x  2 bbrelin bbrelin  4096 Aug  5 08:20 models
+-rw-rw-r--  1 bbrelin bbrelin 33528 Aug  5 08:20 rag_lab_assistant.py
+-rw-rw-r--  1 bbrelin bbrelin   668 Aug  5 08:20 requirements.txt
+-rw-rw-r--  1 bbrelin bbrelin   815 Aug  5 08:20 run.py
+drwxrwxr-x  2 bbrelin bbrelin  4096 Aug  5 08:20 services
+
+./services/lab-manager/conf:
+total 4
+-rw-rw-r-- 1 bbrelin bbrelin 438 Aug  5 08:20 config.yaml
+
+./services/lab-manager/lab-images:
+total 32
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 js-lab
+drwxrwxr-x 3 bbrelin bbrelin 4096 Aug  5 08:20 multi-ide-base
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 multi-ide-python
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 python-lab
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 python-lab-multi-ide
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 python-web-ide
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 simple-python
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 web-lab
+
+./services/lab-manager/lab-images/js-lab:
+total 12
+-rw-rw-r-- 1 bbrelin bbrelin 1829 Aug  5 08:20 Dockerfile
+-rw-rw-r-- 1 bbrelin bbrelin 8134 Aug  5 08:20 lab-startup.js
+
+./services/lab-manager/lab-images/multi-ide-base:
+total 24
+-rw-rw-r-- 1 bbrelin bbrelin  2309 Aug  5 08:20 Dockerfile
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 ide-configs
+-rw-rw-r-- 1 bbrelin bbrelin 15764 Aug  5 08:20 ide-startup.py
+
+./services/lab-manager/lab-images/multi-ide-base/ide-configs:
+total 8
+-rw-rw-r-- 1 bbrelin bbrelin 847 Aug  5 08:20 jupyter-config.py
+-rw-rw-r-- 1 bbrelin bbrelin 689 Aug  5 08:20 vscode-settings.json
+
+./services/lab-manager/lab-images/multi-ide-python:
+total 12
+-rw-rw-r-- 1 bbrelin bbrelin 1980 Aug  5 08:20 Dockerfile
+-rw-rw-r-- 1 bbrelin bbrelin  486 Aug  5 08:20 start-ides.sh
+-rw-rw-r-- 1 bbrelin bbrelin 1254 Aug  5 08:20 supervisord.conf
+
+./services/lab-manager/lab-images/python-lab:
+total 12
+-rw-rw-r-- 1 bbrelin bbrelin 1292 Aug  5 08:20 Dockerfile
+-rw-rw-r-- 1 bbrelin bbrelin 4790 Aug  5 08:20 lab-startup.py
+
+./services/lab-manager/lab-images/python-lab-multi-ide:
+total 24
+-rw-rw-r-- 1 bbrelin bbrelin  5965 Aug  5 08:20 Dockerfile
+-rw-rw-r-- 1 bbrelin bbrelin 15764 Aug  5 08:20 ide-startup.py
+
+./services/lab-manager/lab-images/python-web-ide:
+total 8
+-rw-rw-r-- 1 bbrelin bbrelin 1345 Aug  5 08:20 Dockerfile
+-rw-rw-r-- 1 bbrelin bbrelin 3417 Aug  5 08:20 start-multi-ide.sh
+
+./services/lab-manager/lab-images/simple-python:
+total 8
+-rw-rw-r-- 1 bbrelin bbrelin 1139 Aug  5 08:20 Dockerfile
+-rw-rw-r-- 1 bbrelin bbrelin  638 Aug  5 08:20 start-simple.sh
+
+./services/lab-manager/lab-images/web-lab:
+total 12
+-rw-rw-r-- 1 bbrelin bbrelin 3762 Aug  5 08:20 Dockerfile
+-rwxrwxr-x 1 bbrelin bbrelin  902 Aug  5 08:20 lab-startup.sh
+-rw-rw-r-- 1 bbrelin bbrelin 1589 Aug  5 08:20 nginx-lab.conf
+
+./services/lab-manager/models:
+total 12
+-rw-rw-r-- 1 bbrelin bbrelin  597 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 4287 Aug  5 08:20 lab_models.py
+
+./services/lab-manager/services:
+total 32
+-rw-rw-r-- 1 bbrelin bbrelin  9558 Aug  5 08:20 docker_service.py
+-rw-rw-r-- 1 bbrelin bbrelin   187 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 13540 Aug  5 08:20 lab_lifecycle_service.py
+
+./services/organization-management:
+total 96
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 api
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 app
+-rw-rw-r-- 1 bbrelin bbrelin  4069 Aug  5 08:20 app_dependencies.py
+drwxrwxr-x 3 bbrelin bbrelin  4096 Aug  5 08:20 application
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 auth
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 conf
+-rw-rw-r-- 1 bbrelin bbrelin   707 Aug  5 08:20 Dockerfile
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 docs
+drwxrwxr-x 4 bbrelin bbrelin  4096 Aug  5 08:20 domain
+-rw-rw-r-- 1 bbrelin bbrelin 12746 Aug  5 08:20 exceptions.py
+drwxrwxr-x 4 bbrelin bbrelin  4096 Aug  5 08:20 infrastructure
+-rw-rw-r-- 1 bbrelin bbrelin  2195 Aug  5 08:20 logging_setup.py
+-rw-rw-r-- 1 bbrelin bbrelin 26667 Aug  5 08:20 main.py
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 middleware
+-rw-rw-r-- 1 bbrelin bbrelin  1081 Aug  5 08:20 requirements.txt
+
+./services/organization-management/api:
+total 60
+-rw-rw-r-- 1 bbrelin bbrelin 17353 Aug  5 08:20 rbac_endpoints.py
+-rw-rw-r-- 1 bbrelin bbrelin 13036 Aug  5 08:20 site_admin_endpoints.py
+-rw-rw-r-- 1 bbrelin bbrelin 20531 Aug  5 08:20 track_endpoints.py
+
+./services/organization-management/app:
+total 8
+-rw-rw-r-- 1 bbrelin bbrelin 5519 Aug  5 08:20 auth_dependencies.py
+
+./services/organization-management/application:
+total 4
+-rw-rw-r-- 1 bbrelin bbrelin    0 Aug  5 08:20 __init__.py
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 services
+
+./services/organization-management/application/services:
+total 68
+-rw-rw-r-- 1 bbrelin bbrelin  2331 Aug  5 08:20 auth_service.py
+-rw-rw-r-- 1 bbrelin bbrelin     0 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 15296 Aug  5 08:20 meeting_room_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 21904 Aug  5 08:20 membership_service.py
+-rw-rw-r-- 1 bbrelin bbrelin  7932 Aug  5 08:20 organization_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 13588 Aug  5 08:20 track_service.py
+
+./services/organization-management/auth:
+total 8
+-rw-rw-r-- 1 bbrelin bbrelin    0 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 5743 Aug  5 08:20 jwt_auth.py
+
+./services/organization-management/conf:
+total 4
+-rw-rw-r-- 1 bbrelin bbrelin 2734 Aug  5 08:20 config.yaml
+
+./services/organization-management/docs:
+total 24
+-rw-rw-r-- 1 bbrelin bbrelin 21022 Aug  5 08:20 api_documentation.py
+
+./services/organization-management/domain:
+total 8
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 entities
+-rw-rw-r-- 1 bbrelin bbrelin    0 Aug  5 08:20 __init__.py
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 interfaces
+
+./services/organization-management/domain/entities:
+total 48
+-rw-rw-r-- 1 bbrelin bbrelin 10709 Aug  5 08:20 enhanced_role.py
+-rw-rw-r-- 1 bbrelin bbrelin     0 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin  9177 Aug  5 08:20 meeting_room.py
+-rw-rw-r-- 1 bbrelin bbrelin  2684 Aug  5 08:20 organization.py
+-rw-rw-r-- 1 bbrelin bbrelin  4883 Aug  5 08:20 project.py
+-rw-rw-r-- 1 bbrelin bbrelin  7821 Aug  5 08:20 track.py
+-rw-rw-r-- 1 bbrelin bbrelin  1302 Aug  5 08:20 user.py
+
+./services/organization-management/domain/interfaces:
+total 32
+-rw-rw-r-- 1 bbrelin bbrelin    0 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 4977 Aug  5 08:20 meeting_room_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin 4331 Aug  5 08:20 membership_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin 2340 Aug  5 08:20 organization_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin 2786 Aug  5 08:20 project_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin 3299 Aug  5 08:20 track_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin  995 Aug  5 08:20 user_repository.py
+
+./services/organization-management/infrastructure:
+total 28
+-rw-rw-r-- 1 bbrelin bbrelin 16837 Aug  5 08:20 container.py
+-rw-rw-r-- 1 bbrelin bbrelin     0 Aug  5 08:20 __init__.py
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 integrations
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 repositories
+
+./services/organization-management/infrastructure/integrations:
+total 32
+-rw-rw-r-- 1 bbrelin bbrelin 12482 Aug  5 08:20 teams_integration.py
+-rw-rw-r-- 1 bbrelin bbrelin 14486 Aug  5 08:20 zoom_integration.py
+
+./services/organization-management/infrastructure/repositories:
+total 80
+-rw-rw-r-- 1 bbrelin bbrelin     0 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 10444 Aug  5 08:20 postgresql_meeting_room_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin 29855 Aug  5 08:20 postgresql_membership_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin  7082 Aug  5 08:20 postgresql_organization_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin  9036 Aug  5 08:20 postgresql_project_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin 11764 Aug  5 08:20 postgresql_track_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin  3349 Aug  5 08:20 postgresql_user_repository.py
+
+./services/organization-management/middleware:
+total 44
+-rw-rw-r-- 1 bbrelin bbrelin 21529 Aug  5 08:20 audit_logging.py
+-rw-rw-r-- 1 bbrelin bbrelin 17943 Aug  5 08:20 error_handling.py
+
+./services/rag-service:
+total 84
+-rw-rw-r-- 1 bbrelin bbrelin   861 Aug  5 08:20 Dockerfile
+-rw-rw-r-- 1 bbrelin bbrelin  6454 Aug  5 08:20 Dockerfile.optimized
+-rw-rw-r-- 1 bbrelin bbrelin  6493 Aug  5 08:20 Dockerfile.test
+-rw-rw-r-- 1 bbrelin bbrelin  1266 Aug  5 08:20 Dockerfile.volume
+-rw-rw-r-- 1 bbrelin bbrelin  9589 Aug  5 08:20 logging_setup.py
+-rw-rw-r-- 1 bbrelin bbrelin 44748 Aug  5 08:20 main.py
+-rw-rw-r-- 1 bbrelin bbrelin  1555 Aug  5 08:20 requirements.txt
+
+./services/user-management:
+total 116
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 app
+drwxrwxr-x 3 bbrelin bbrelin  4096 Aug  5 08:20 application
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 auth
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 conf
+-rw-rw-r-- 1 bbrelin bbrelin  1213 Aug  5 08:20 config.py
+-rw-rw-r-- 1 bbrelin bbrelin   589 Aug  5 08:20 Dockerfile
+drwxrwxr-x 4 bbrelin bbrelin  4096 Aug  5 08:20 domain
+-rw-rw-r-- 1 bbrelin bbrelin  1998 Aug  5 08:20 error_handlers.py
+-rw-rw-r-- 1 bbrelin bbrelin  5766 Aug  5 08:20 exceptions.py
+drwxrwxr-x 3 bbrelin bbrelin  4096 Aug  5 08:20 infrastructure
+-rw-rw-r-- 1 bbrelin bbrelin  3558 Aug  5 08:20 logging_setup.py
+-rw-rw-r-- 1 bbrelin bbrelin  9929 Aug  5 08:20 main.py
+-rw-rw-r-- 1 bbrelin bbrelin  1440 Aug  5 08:20 middleware.py
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 models
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 repositories
+-rw-rw-r-- 1 bbrelin bbrelin   444 Aug  5 08:20 requirements.txt
+-rw-rw-r-- 1 bbrelin bbrelin 16398 Aug  5 08:20 routes.py
+-rw-rw-r-- 1 bbrelin bbrelin   343 Aug  5 08:20 run.py
+-rw-rw-r-- 1 bbrelin bbrelin  2905 Aug  5 08:20 schemas.py
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 services
+-rw-rw-r-- 1 bbrelin bbrelin  5778 Aug  5 08:20 setup.py
+
+./services/user-management/app:
+total 24
+-rw-rw-r-- 1 bbrelin bbrelin  3790 Aug  5 08:20 dependencies.py
+-rw-rw-r-- 1 bbrelin bbrelin 16559 Aug  5 08:20 factory.py
+-rw-rw-r-- 1 bbrelin bbrelin     0 Aug  5 08:20 __init__.py
+
+./services/user-management/application:
+total 8
+-rw-rw-r-- 1 bbrelin bbrelin   35 Aug  5 08:20 __init__.py
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 services
+
+./services/user-management/application/services:
+total 40
+-rw-rw-r-- 1 bbrelin bbrelin 16130 Aug  5 08:20 authentication_service.py
+-rw-rw-r-- 1 bbrelin bbrelin    38 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 10158 Aug  5 08:20 session_service.py
+-rw-rw-r-- 1 bbrelin bbrelin  7117 Aug  5 08:20 user_service.py
+
+./services/user-management/auth:
+total 36
+-rw-rw-r-- 1 bbrelin bbrelin 5892 Aug  5 08:20 dependencies.py
+-rw-rw-r-- 1 bbrelin bbrelin  459 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 6152 Aug  5 08:20 jwt_manager.py
+-rw-rw-r-- 1 bbrelin bbrelin 4054 Aug  5 08:20 password_manager.py
+-rw-rw-r-- 1 bbrelin bbrelin 9878 Aug  5 08:20 session_manager.py
+
+./services/user-management/conf:
+total 4
+-rw-rw-r-- 1 bbrelin bbrelin 1113 Aug  5 08:20 config.yaml
+
+./services/user-management/domain:
+total 12
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 entities
+-rw-rw-r-- 1 bbrelin bbrelin   30 Aug  5 08:20 __init__.py
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 interfaces
+
+./services/user-management/domain/entities:
+total 84
+-rw-rw-r-- 1 bbrelin bbrelin    33 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 18289 Aug  5 08:20 role.py
+-rw-rw-r-- 1 bbrelin bbrelin 16380 Aug  5 08:20 session.py
+-rw-rw-r-- 1 bbrelin bbrelin 42974 Aug  5 08:20 user.py
+
+./services/user-management/domain/interfaces:
+total 68
+-rw-rw-r-- 1 bbrelin bbrelin    35 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin  5363 Aug  5 08:20 role_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin  6127 Aug  5 08:20 session_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin  5544 Aug  5 08:20 session_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 30795 Aug  5 08:20 user_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin  5748 Aug  5 08:20 user_service.py
+
+./services/user-management/infrastructure:
+total 24
+-rw-rw-r-- 1 bbrelin bbrelin 15687 Aug  5 08:20 container.py
+-rw-rw-r-- 1 bbrelin bbrelin    38 Aug  5 08:20 __init__.py
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 repositories
+
+./services/user-management/infrastructure/repositories:
+total 28
+-rw-rw-r-- 1 bbrelin bbrelin   45 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 8377 Aug  5 08:20 postgresql_session_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin 9882 Aug  5 08:20 postgresql_user_repository.py
+
+./services/user-management/models:
+total 24
+-rw-rw-r-- 1 bbrelin bbrelin 1103 Aug  5 08:20 auth.py
+-rw-rw-r-- 1 bbrelin bbrelin 1884 Aug  5 08:20 course_instance.py
+-rw-rw-r-- 1 bbrelin bbrelin  693 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin  649 Aug  5 08:20 role.py
+-rw-rw-r-- 1 bbrelin bbrelin 1152 Aug  5 08:20 session.py
+-rw-rw-r-- 1 bbrelin bbrelin 2215 Aug  5 08:20 user.py
+
+./services/user-management/repositories:
+total 64
+-rw-rw-r-- 1 bbrelin bbrelin  4676 Aug  5 08:20 base_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin   376 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin  5012 Aug  5 08:20 role_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin 17576 Aug  5 08:20 session_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin 21767 Aug  5 08:20 user_repository.py
+
+./services/user-management/services:
+total 100
+-rw-rw-r-- 1 bbrelin bbrelin 11992 Aug  5 08:20 auth_service.py
+-rw-rw-r-- 1 bbrelin bbrelin  6110 Aug  5 08:20 email_service.py
+-rw-rw-r-- 1 bbrelin bbrelin   272 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin  4668 Aug  5 08:20 password_generator.py
+-rw-rw-r-- 1 bbrelin bbrelin  1555 Aug  5 08:20 password_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 15885 Aug  5 08:20 student_access_cleanup_service.py
+-rw-rw-r-- 1 bbrelin bbrelin  7931 Aug  5 08:20 student_access_control_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 13734 Aug  5 08:20 student_dashboard_service.py
+-rw-rw-r-- 1 bbrelin bbrelin  3692 Aug  5 08:20 student_enrollment_service.py
+-rw-rw-r-- 1 bbrelin bbrelin  2690 Aug  5 08:20 token_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 14166 Aug  5 08:20 user_service.py
+
+./shared:
+total 36
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 auth
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 cache
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 database
+drwxrwxr-x 4 bbrelin bbrelin 4096 Aug  5 08:20 domain
+-rw-rw-r-- 1 bbrelin bbrelin  405 Aug  5 08:20 __init__.py
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 legacy
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 middleware
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 models
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 utils
+
+./shared/auth:
+total 20
+-rw-rw-r-- 1 bbrelin bbrelin 17096 Aug  5 08:20 organization_middleware.py
+
+./shared/cache:
+total 52
+-rw-rw-r-- 1 bbrelin bbrelin   765 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 19343 Aug  5 08:20 organization_redis_cache.py
+-rw-rw-r-- 1 bbrelin bbrelin 25732 Aug  5 08:20 redis_cache.py
+
+./shared/database:
+total 28
+-rw-rw-r-- 1 bbrelin bbrelin   880 Aug  5 08:20 base.py
+-rw-rw-r-- 1 bbrelin bbrelin   543 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin  4743 Aug  5 08:20 interfaces.py
+-rw-rw-r-- 1 bbrelin bbrelin 10995 Aug  5 08:20 postgresql.py
+
+./shared/domain:
+total 8
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 entities
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 repositories
+
+./shared/domain/entities:
+total 16
+-rw-rw-r-- 1 bbrelin bbrelin 5270 Aug  5 08:20 course.py
+-rw-rw-r-- 1 bbrelin bbrelin 4969 Aug  5 08:20 user.py
+
+./shared/domain/repositories:
+total 8
+-rw-rw-r-- 1 bbrelin bbrelin 7724 Aug  5 08:20 user_repository.py
+
+./shared/legacy:
+total 16
+-rw-rw-r-- 1 bbrelin bbrelin 1391 Aug  5 08:20 auth.py
+-rw-rw-r-- 1 bbrelin bbrelin  600 Aug  5 08:20 courses.py
+-rw-rw-r-- 1 bbrelin bbrelin  402 Aug  5 08:20 enrollments.py
+-rw-rw-r-- 1 bbrelin bbrelin    0 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin  419 Aug  5 08:20 users.py
+
+./shared/middleware:
+total 24
+-rw-rw-r-- 1 bbrelin bbrelin 13810 Aug  5 08:20 rate_limiting.py
+-rw-rw-r-- 1 bbrelin bbrelin  6252 Aug  5 08:20 security_headers.py
+
+./shared/models:
+total 8
+-rw-rw-r-- 1 bbrelin bbrelin 1679 Aug  5 08:20 course_models.py
+-rw-rw-r-- 1 bbrelin bbrelin  278 Aug  5 08:20 __init__.py
+
+./shared/utils:
+total 12
+-rw-rw-r-- 1 bbrelin bbrelin 2068 Aug  5 08:20 config_manager.py
+-rw-rw-r-- 1 bbrelin bbrelin  124 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin  771 Aug  5 08:20 logging.py
+
+./sonarqube:
+total 28
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 quality-gates
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 quality-profiles
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 rules
+-rwxrwxr-x 1 bbrelin bbrelin 14924 Aug  5 08:20 setup-sonarqube.sh
+
+./sonarqube/quality-gates:
+total 8
+-rw-rw-r-- 1 bbrelin bbrelin 6485 Aug  5 08:20 course-creator-gate.xml
+
+./sonarqube/quality-profiles:
+total 28
+-rw-rw-r-- 1 bbrelin bbrelin 15063 Aug  5 08:20 javascript-profile.xml
+-rw-rw-r-- 1 bbrelin bbrelin 11090 Aug  5 08:20 python-profile.xml
+
+./sonarqube/rules:
+total 12
+-rw-rw-r-- 1 bbrelin bbrelin 10849 Aug  5 08:20 custom-rules.json
+
+./templates:
+total 12
+-rw-rw-r-- 1 bbrelin bbrelin  918 Aug  5 08:20 base.html
+-rw-rw-r-- 1 bbrelin bbrelin  863 Aug  5 08:20 Dockerfile.venv-template
+drwxrwxr-x 3 bbrelin bbrelin 4096 Aug  5 08:20 slide-templates
+
+./templates/slide-templates:
+total 4
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 professional
+
+./templates/slide-templates/professional:
+total 4
+-rw-rw-r-- 1 bbrelin bbrelin 236 Aug  5 08:20 master.json
+
+./tests:
+total 224
+drwxrwxr-x  2 bbrelin bbrelin  4096 Aug  5 08:20 config
+-rw-rw-r--  1 bbrelin bbrelin 20625 Aug  5 08:20 conftest.py
+drwxrwxr-x  5 bbrelin bbrelin  4096 Aug  5 08:20 content
+drwxrwxr-x  4 bbrelin bbrelin  4096 Aug  5 08:20 e2e
+drwxrwxr-x  2 bbrelin bbrelin  4096 Aug  5 08:20 email-integration
+drwxrwxr-x  2 bbrelin bbrelin  4096 Aug  5 08:20 file-operations
+-rw-rw-r--  1 bbrelin bbrelin  6845 Aug  5 08:20 final_comprehensive_test.py
+-rw-rw-r--  1 bbrelin bbrelin  2411 Aug  5 08:20 final_comprehensive_test_report.json
+drwxrwxr-x  2 bbrelin bbrelin  4096 Aug  5 08:20 fixtures
+drwxrwxr-x  2 bbrelin bbrelin  4096 Aug  5 08:20 framework
+drwxrwxr-x  4 bbrelin bbrelin  4096 Aug  5 08:20 frontend
+drwxrwxr-x  5 bbrelin bbrelin  4096 Aug  5 08:20 integration
+drwxrwxr-x  2 bbrelin bbrelin  4096 Aug  5 08:20 lab-systems
+-rwxrwxr-x  1 bbrelin bbrelin 13290 Aug  5 08:20 main.py
+drwxrwxr-x  2 bbrelin bbrelin  4096 Aug  5 08:20 mocks
+drwxrwxr-x  2 bbrelin bbrelin  4096 Aug  5 08:20 performance
+-rw-rw-r--  1 bbrelin bbrelin  4355 Aug  5 08:20 quick_test_validation.py
+drwxrwxr-x  2 bbrelin bbrelin  4096 Aug  5 08:20 quiz-management
+-rw-rw-r--  1 bbrelin bbrelin 16769 Aug  5 08:20 README.md
+drwxrwxr-x  2 bbrelin bbrelin  4096 Aug  5 08:20 reports
+-rwxrwxr-x  1 bbrelin bbrelin 13939 Aug  5 08:20 run_all_tests.py
+drwxrwxr-x  2 bbrelin bbrelin  4096 Aug  5 08:20 runners
+drwxrwxr-x  2 bbrelin bbrelin  4096 Aug  5 08:20 security
+-rw-rw-r--  1 bbrelin bbrelin  1533 Aug  5 08:20 setup.js
+-rwxrwxr-x  1 bbrelin bbrelin  8216 Aug  5 08:20 setup_test_environment.py
+-rw-rw-r--  1 bbrelin bbrelin   315 Aug  5 08:20 simple_test.py
+drwxrwxr-x  2 bbrelin bbrelin  4096 Aug  5 08:20 smoke
+-rw-rw-r--  1 bbrelin bbrelin  6671 Aug  5 08:20 test_complete_data_loading.py
+-rw-rw-r--  1 bbrelin bbrelin  4539 Aug  5 08:20 test_hybrid_memory.py
+-rw-rw-r--  1 bbrelin bbrelin  1446 Aug  5 08:20 test_requirements.txt
+-rw-rw-r--  1 bbrelin bbrelin   336 Aug  5 08:20 test_service_registry.py
+-rw-rw-r--  1 bbrelin bbrelin  1554 Aug  5 08:20 test_utils.py
+drwxrwxr-x 15 bbrelin bbrelin  4096 Aug  5 08:20 unit
+drwxrwxr-x  2 bbrelin bbrelin  4096 Aug  5 08:20 utils
+drwxrwxr-x  2 bbrelin bbrelin  4096 Aug  5 08:20 validation
+
+./tests/config:
+total 12
+-rw-rw-r-- 1 bbrelin bbrelin 9501 Aug  5 08:20 test_configuration_validation.py
+
+./tests/content:
+total 20
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 download
+-rw-rw-r-- 1 bbrelin bbrelin    0 Aug  5 08:20 __init__.py
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 management
+-rw-rw-r-- 1 bbrelin bbrelin   34 Aug  5 08:20 test_content_security.py
+-rw-rw-r-- 1 bbrelin bbrelin   29 Aug  5 08:20 test_file_formats.py
+drwxrwxr-x 2 bbrelin bbrelin 4096 Aug  5 08:20 upload
+
+./tests/content/download:
+total 4
+-rw-rw-r-- 1 bbrelin bbrelin 34 Aug  5 08:20 test_content_download.py
+
+./tests/content/management:
+total 4
+-rw-rw-r-- 1 bbrelin bbrelin 36 Aug  5 08:20 test_content_lifecycle.py
+
+./tests/content/upload:
+total 4
+-rw-rw-r-- 1 bbrelin bbrelin 32 Aug  5 08:20 test_content_upload.py
+
+./tests/e2e:
+total 276
+-rw-rw-r-- 1 bbrelin bbrelin 12952 Aug  5 08:20 auth-flow.spec.js
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 course_lifecycle
+-rw-rw-r-- 1 bbrelin bbrelin 14367 Aug  5 08:20 course-lifecycle.spec.js
+-rw-rw-r-- 1 bbrelin bbrelin  1764 Aug  5 08:20 global-setup.js
+-rw-rw-r-- 1 bbrelin bbrelin   788 Aug  5 08:20 global-teardown.js
+-rw-rw-r-- 1 bbrelin bbrelin 13501 Aug  5 08:20 student-enrollment.spec.js
+-rw-rw-r-- 1 bbrelin bbrelin 20954 Aug  5 08:20 test_analytics_dashboard_e2e.py
+-rw-rw-r-- 1 bbrelin bbrelin 26149 Aug  5 08:20 test_centralized_logging_e2e.py
+-rw-rw-r-- 1 bbrelin bbrelin 31166 Aug  5 08:20 test_course_publishing_e2e.py
+-rw-rw-r-- 1 bbrelin bbrelin 27351 Aug  5 08:20 test_enhanced_content_selenium.py
+-rw-rw-r-- 1 bbrelin bbrelin  7533 Aug  5 08:20 test-helpers.js
+-rw-rw-r-- 1 bbrelin bbrelin 30776 Aug  5 08:20 test_lab_system_e2e.py
+-rw-rw-r-- 1 bbrelin bbrelin 31776 Aug  5 08:20 test_rbac_complete_workflows.py
+-rw-rw-r-- 1 bbrelin bbrelin 25699 Aug  5 08:20 test_track_system_e2e.py
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 workflows
+
+./tests/e2e/course_lifecycle:
+total 8
+-rw-rw-r-- 1 bbrelin bbrelin   83 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 1550 Aug  5 08:20 test_course_lifecycle.py
+
+./tests/e2e/workflows:
+total 8
+-rw-rw-r-- 1 bbrelin bbrelin   71 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 1628 Aug  5 08:20 test_complete_workflows.py
+
+./tests/email-integration:
+total 32
+-rw-rw-r-- 1 bbrelin bbrelin 6835 Aug  5 08:20 test_enrollment_email_with_instructor_info.py
+-rw-rw-r-- 1 bbrelin bbrelin 6181 Aug  5 08:20 test_hydra_config_simple.py
+-rw-rw-r-- 1 bbrelin bbrelin 5917 Aug  5 08:20 test_hydra_email_config.py
+-rw-rw-r-- 1 bbrelin bbrelin 5908 Aug  5 08:20 test_simple_email_instructor.py
+
+./tests/file-operations:
+total 36
+-rw-rw-r-- 1 bbrelin bbrelin 15052 Aug  5 08:20 test_comprehensive_student_files.py
+-rw-rw-r-- 1 bbrelin bbrelin  2649 Aug  5 08:20 test_file_operations.py
+-rw-rw-r-- 1 bbrelin bbrelin  3338 Aug  5 08:20 test_simple_file_ops.py
+-rw-rw-r-- 1 bbrelin bbrelin 10168 Aug  5 08:20 test_student_file_system.py
+
+./tests/fixtures:
+total 44
+-rw-rw-r-- 1 bbrelin bbrelin     0 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 20938 Aug  5 08:20 rbac_fixtures.py
+-rw-rw-r-- 1 bbrelin bbrelin 17519 Aug  5 08:20 security_fixtures.py
+
+./tests/framework:
+total 88
+-rw-rw-r-- 1 bbrelin bbrelin   859 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 12113 Aug  5 08:20 test_config.py
+-rw-rw-r-- 1 bbrelin bbrelin 13891 Aug  5 08:20 test_factory.py
+-rw-rw-r-- 1 bbrelin bbrelin 20846 Aug  5 08:20 test_reporter.py
+-rw-rw-r-- 1 bbrelin bbrelin 13594 Aug  5 08:20 test_runner.py
+-rw-rw-r-- 1 bbrelin bbrelin 14258 Aug  5 08:20 test_suite.py
+
+./tests/frontend:
+total 628
+-rw-rw-r-- 1 bbrelin bbrelin 13662 Aug  5 08:20 auth-flow.test.js
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 components
+-rw-rw-r-- 1 bbrelin bbrelin 12053 Aug  5 08:20 conftest.py
+-rw-rw-r-- 1 bbrelin bbrelin 31591 Aug  5 08:20 course-publishing.test.js
+-rw-rw-r-- 1 bbrelin bbrelin    31 Aug  5 08:20 __init__.py
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 integration
+-rw-rw-r-- 1 bbrelin bbrelin  1348 Aug  5 08:20 pytest.ini
+-rw-rw-r-- 1 bbrelin bbrelin 19011 Aug  5 08:20 student-dashboard-permissions.test.js
+-rw-rw-r-- 1 bbrelin bbrelin 16882 Aug  5 08:20 student-enrollment.test.js
+-rw-rw-r-- 1 bbrelin bbrelin 14100 Aug  5 08:20 test_auth.py
+-rw-rw-r-- 1 bbrelin bbrelin 19998 Aug  5 08:20 test_centralized_logging_frontend.py
+-rw-rw-r-- 1 bbrelin bbrelin 22773 Aug  5 08:20 test_clickable_panes.py
+-rw-rw-r-- 1 bbrelin bbrelin 30409 Aug  5 08:20 test_course_publishing_frontend.py
+-rw-rw-r-- 1 bbrelin bbrelin 15257 Aug  5 08:20 test_dashboard_functions_unit.py
+-rw-rw-r-- 1 bbrelin bbrelin 20877 Aug  5 08:20 test_e2e_workflows.py
+-rw-rw-r-- 1 bbrelin bbrelin 11426 Aug  5 08:20 test_enhanced_content_management.py
+-rw-rw-r-- 1 bbrelin bbrelin 43118 Aug  5 08:20 test_enhanced_rbac_frontend.js
+-rw-rw-r-- 1 bbrelin bbrelin 13544 Aug  5 08:20 test_javascript_core.py
+-rw-rw-r-- 1 bbrelin bbrelin 31404 Aug  5 08:20 test_lab_integration_frontend.py
+-rw-rw-r-- 1 bbrelin bbrelin  5906 Aug  5 08:20 test_lab_toggle_functions_python.py
+-rw-rw-r-- 1 bbrelin bbrelin  6932 Aug  5 08:20 test_lab_toggle_functions.test.js
+-rw-rw-r-- 1 bbrelin bbrelin 24682 Aug  5 08:20 test_multi_tenant_ui_components.py
+-rw-rw-r-- 1 bbrelin bbrelin 16494 Aug  5 08:20 test_navigation.py
+-rw-rw-r-- 1 bbrelin bbrelin  6540 Aug  5 08:20 test_new_registration.html
+-rw-rw-r-- 1 bbrelin bbrelin 28694 Aug  5 08:20 test_organization_ui_isolation.py
+-rw-rw-r-- 1 bbrelin bbrelin 18724 Aug  5 08:20 test_quiz_api_validation.py
+-rw-rw-r-- 1 bbrelin bbrelin 15881 Aug  5 08:20 test_quiz_functionality_selenium.py
+-rw-rw-r-- 1 bbrelin bbrelin 14107 Aug  5 08:20 test_quiz_functionality_tdd.py
+-rw-rw-r-- 1 bbrelin bbrelin 12637 Aug  5 08:20 test_quiz_functionality.test.js
+-rw-rw-r-- 1 bbrelin bbrelin 28120 Aug  5 08:20 test_rbac_dashboard_frontend.py
+-rw-rw-r-- 1 bbrelin bbrelin 12420 Aug  5 08:20 test_slides_functionality_tdd.py
+-rw-rw-r-- 1 bbrelin bbrelin 15751 Aug  5 08:20 test_slides_generation_tdd.py
+-rw-rw-r-- 1 bbrelin bbrelin 21287 Aug  5 08:20 test_syllabus_generation_tdd.py
+-rw-rw-r-- 1 bbrelin bbrelin 17407 Aug  5 08:20 test_ui_components.py
+
+./tests/frontend/components:
+total 24
+-rw-rw-r-- 1 bbrelin bbrelin    97 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 19263 Aug  5 08:20 test_javascript_modules.py
+
+./tests/frontend/integration:
+total 8
+-rw-rw-r-- 1 bbrelin bbrelin   98 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 1777 Aug  5 08:20 test_dashboard_integration.py
+
+./tests/integration:
+total 416
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 api
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 database
+-rw-rw-r-- 1 bbrelin bbrelin     0 Aug  5 08:20 __init__.py
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 services
+-rw-rw-r-- 1 bbrelin bbrelin 19496 Aug  5 08:20 test_analytics_integration.py
+-rw-rw-r-- 1 bbrelin bbrelin 12448 Aug  5 08:20 test_analytics_real_integration.py
+-rw-rw-r-- 1 bbrelin bbrelin 29037 Aug  5 08:20 test_analytics_services.py
+-rw-rw-r-- 1 bbrelin bbrelin 13186 Aug  5 08:20 test_api_integration.py
+-rw-rw-r-- 1 bbrelin bbrelin 20459 Aug  5 08:20 test_api_workflow_integration.py
+-rw-rw-r-- 1 bbrelin bbrelin 20508 Aug  5 08:20 test_centralized_logging_integration.py
+-rw-rw-r-- 1 bbrelin bbrelin    56 Aug  5 08:20 test_content_flows.py
+-rw-rw-r-- 1 bbrelin bbrelin 22040 Aug  5 08:20 test_course_generator_services.py
+-rw-rw-r-- 1 bbrelin bbrelin 31924 Aug  5 08:20 test_course_management_services.py
+-rw-rw-r-- 1 bbrelin bbrelin 28138 Aug  5 08:20 test_course_publishing_integration.py
+-rw-rw-r-- 1 bbrelin bbrelin 21262 Aug  5 08:20 test_enhanced_content_integration.py
+-rw-rw-r-- 1 bbrelin bbrelin 23715 Aug  5 08:20 test_enhanced_rbac_integration.py
+-rw-rw-r-- 1 bbrelin bbrelin    35 Aug  5 08:20 test_event_flows.py
+-rw-rw-r-- 1 bbrelin bbrelin  5108 Aug  5 08:20 test_feedback_final.py
+-rw-rw-r-- 1 bbrelin bbrelin 10670 Aug  5 08:20 test_feedback_system.py
+-rw-rw-r-- 1 bbrelin bbrelin  9017 Aug  5 08:20 test_instructor_database_integration.py
+-rw-rw-r-- 1 bbrelin bbrelin 24169 Aug  5 08:20 test_lab_lifecycle_integration.py
+-rw-rw-r-- 1 bbrelin bbrelin 25361 Aug  5 08:20 test_rag_system_integration.py
+-rw-rw-r-- 1 bbrelin bbrelin 18142 Aug  5 08:20 test_rbac_api_integration.py
+-rw-rw-r-- 1 bbrelin bbrelin  5501 Aug  5 08:20 test_registration_flow.py
+-rw-rw-r-- 1 bbrelin bbrelin    51 Aug  5 08:20 test_service_communication.py
+-rw-rw-r-- 1 bbrelin bbrelin 18192 Aug  5 08:20 test_track_system_integration.py
+
+./tests/integration/api:
+total 4
+-rw-rw-r-- 1 bbrelin bbrelin 33 Aug  5 08:20 test_api_contracts.py
+
+./tests/integration/database:
+total 4
+-rw-rw-r-- 1 bbrelin bbrelin 38 Aug  5 08:20 test_cross_service_data.py
+
+./tests/integration/services:
+total 24
+-rw-rw-r-- 1 bbrelin bbrelin   102 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 18003 Aug  5 08:20 test_service_integration.py
+
+./tests/lab-systems:
+total 8
+-rw-rw-r-- 1 bbrelin bbrelin 4953 Aug  5 08:20 test_lab_creation.py
+
+./tests/mocks:
+total 0
+-rw-rw-r-- 1 bbrelin bbrelin 0 Aug  5 08:20 __init__.py
+
+./tests/performance:
+total 140
+-rw-rw-r-- 1 bbrelin bbrelin     0 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 14626 Aug  5 08:20 test_analytics_caching.py
+-rw-rw-r-- 1 bbrelin bbrelin  9940 Aug  5 08:20 test_authentication_caching.py
+-rw-rw-r-- 1 bbrelin bbrelin 20727 Aug  5 08:20 test_content_search_caching.py
+-rw-rw-r-- 1 bbrelin bbrelin 19796 Aug  5 08:20 test_course_generation_caching.py
+-rw-rw-r-- 1 bbrelin bbrelin 17854 Aug  5 08:20 test_enrollment_progress_caching.py
+-rw-rw-r-- 1 bbrelin bbrelin 22106 Aug  5 08:20 test_frontend_asset_caching.py
+-rw-rw-r-- 1 bbrelin bbrelin 21681 Aug  5 08:20 test_rbac_permission_caching.py
+
+./tests/quiz-management:
+total 88
+-rw-rw-r-- 1 bbrelin bbrelin  1120 Aug  5 08:20 README.md
+-rw-rw-r-- 1 bbrelin bbrelin 20888 Aug  5 08:20 test_comprehensive_quiz_management.py
+-rw-rw-r-- 1 bbrelin bbrelin  6772 Aug  5 08:20 test_frontend_quiz_management.py
+-rw-rw-r-- 1 bbrelin bbrelin  7479 Aug  5 08:20 test_quiz_api_functionality.py
+-rw-rw-r-- 1 bbrelin bbrelin 32288 Aug  5 08:20 test_quiz_management_frontend.html
+-rw-rw-r-- 1 bbrelin bbrelin 11459 Aug  5 08:20 test_quiz_management_simple.py
+
+./tests/reports:
+total 40
+-rw-rw-r-- 1 bbrelin bbrelin 38384 Aug  5 08:20 frontend-report.html
+
+./tests/runners:
+total 80
+-rwxrwxr-x 1 bbrelin bbrelin  9001 Aug  5 08:20 run_analytics_tests.py
+-rwxrwxr-x 1 bbrelin bbrelin  7810 Aug  5 08:20 run_comprehensive_tests.py
+-rwxrwxr-x 1 bbrelin bbrelin 14495 Aug  5 08:20 run_enhanced_content_tests.py
+-rw-rw-r-- 1 bbrelin bbrelin 16016 Aug  5 08:20 run_lab_tests.py
+-rwxrwxr-x 1 bbrelin bbrelin 14680 Aug  5 08:20 run_rbac_tests.py
+-rw-rw-r-- 1 bbrelin bbrelin  9553 Aug  5 08:20 run_track_tests.py
+
+./tests/security:
+total 224
+-rw-rw-r-- 1 bbrelin bbrelin     0 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 50104 Aug  5 08:20 owasp_top10_assessment.py
+-rw-rw-r-- 1 bbrelin bbrelin 17442 Aug  5 08:20 test_authentication_security.py
+-rw-rw-r-- 1 bbrelin bbrelin 28993 Aug  5 08:20 test_e2e_security_workflows.py
+-rw-rw-r-- 1 bbrelin bbrelin 21472 Aug  5 08:20 test_organization_cache_security.py
+-rw-rw-r-- 1 bbrelin bbrelin 21262 Aug  5 08:20 test_organization_middleware.py
+-rw-rw-r-- 1 bbrelin bbrelin 28933 Aug  5 08:20 test_rbac_security.py
+-rw-rw-r-- 1 bbrelin bbrelin 13510 Aug  5 08:20 test_rbac_validation.py
+-rwxrwxr-x 1 bbrelin bbrelin 23359 Aug  5 08:20 validate_security_implementation.py
+
+./tests/smoke:
+total 16
+-rw-rw-r-- 1 bbrelin bbrelin 14141 Aug  5 08:20 test_service_startup.py
+
+./tests/unit:
+total 236
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 analytics
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 backend
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 content_management
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 course_generator
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 course_management
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 docs
+-rw-rw-r-- 1 bbrelin bbrelin     0 Aug  5 08:20 __init__.py
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 lab_container
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 logging
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 organization_management
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 rbac
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 services
+-rw-rw-r-- 1 bbrelin bbrelin  6672 Aug  5 08:20 test_ai_assistant.py
+-rw-rw-r-- 1 bbrelin bbrelin 10342 Aug  5 08:20 test_course_instantiation.py
+-rw-rw-r-- 1 bbrelin bbrelin 25981 Aug  5 08:20 test_course_publishing_system.py
+-rw-rw-r-- 1 bbrelin bbrelin 14432 Aug  5 08:20 test_exercise_generation_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 11523 Aug  5 08:20 test_lab_environment.py
+-rw-rw-r-- 1 bbrelin bbrelin  9206 Aug  5 08:20 test_pdf_analytics.py
+-rw-rw-r-- 1 bbrelin bbrelin 10777 Aug  5 08:20 test_quiz_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 13701 Aug  5 08:20 test_quiz_system_tdd.py
+-rw-rw-r-- 1 bbrelin bbrelin 17531 Aug  5 08:20 test_student_access_cleanup.py
+-rw-rw-r-- 1 bbrelin bbrelin 17981 Aug  5 08:20 test_student_access_control.py
+-rw-rw-r-- 1 bbrelin bbrelin 17006 Aug  5 08:20 test_student_dashboard_permissions.py
+-rw-rw-r-- 1 bbrelin bbrelin  8034 Aug  5 08:20 test_student_enrollment.py
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 tools
+drwxrwxr-x 2 bbrelin bbrelin  4096 Aug  5 08:20 user_management
+
+./tests/unit/analytics:
+total 48
+-rw-rw-r-- 1 bbrelin bbrelin   100 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 14516 Aug  5 08:20 test_analytics_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 25600 Aug  5 08:20 test_domain_entities.py
+
+./tests/unit/backend:
+total 52
+-rw-rw-r-- 1 bbrelin bbrelin 19866 Aug  5 08:20 test_content_generation.py
+-rw-rw-r-- 1 bbrelin bbrelin 19043 Aug  5 08:20 test_enhanced_content_endpoints.py
+-rw-rw-r-- 1 bbrelin bbrelin 11489 Aug  5 08:20 test_session_management.py
+
+./tests/unit/content_management:
+total 32
+-rw-rw-r-- 1 bbrelin bbrelin   109 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 26669 Aug  5 08:20 test_domain_entities.py
+
+./tests/unit/course_generator:
+total 20
+-rw-rw-r-- 1 bbrelin bbrelin   115 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 12949 Aug  5 08:20 test_domain_entities.py
+
+./tests/unit/course_management:
+total 32
+-rw-rw-r-- 1 bbrelin bbrelin   108 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 26455 Aug  5 08:20 test_domain_entities.py
+
+./tests/unit/docs:
+total 4
+-rw-rw-r-- 1 bbrelin bbrelin 679 Aug  5 08:20 test_api_docs.py
+
+./tests/unit/lab_container:
+total 36
+-rw-rw-r-- 1 bbrelin bbrelin 33129 Aug  5 08:20 test_lab_manager_service.py
+
+./tests/unit/logging:
+total 20
+-rw-rw-r-- 1 bbrelin bbrelin 18549 Aug  5 08:20 test_centralized_logging.py
+
+./tests/unit/organization_management:
+total 52
+-rw-rw-r-- 1 bbrelin bbrelin 12969 Aug  5 08:20 test_track_entity.py
+-rw-rw-r-- 1 bbrelin bbrelin 15608 Aug  5 08:20 test_track_repository.py
+-rw-rw-r-- 1 bbrelin bbrelin 16591 Aug  5 08:20 test_track_service.py
+
+./tests/unit/rbac:
+total 88
+-rw-rw-r-- 1 bbrelin bbrelin 26321 Aug  5 08:20 test_meeting_room_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 20104 Aug  5 08:20 test_membership_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 15748 Aug  5 08:20 test_organization_service.py
+-rw-rw-r-- 1 bbrelin bbrelin 22677 Aug  5 08:20 test_track_service.py
+
+./tests/unit/services:
+total 200
+-rw-rw-r-- 1 bbrelin bbrelin 33810 Aug  5 08:20 test_content_management.py
+-rw-rw-r-- 1 bbrelin bbrelin 39676 Aug  5 08:20 test_content_storage.py
+-rw-rw-r-- 1 bbrelin bbrelin 46814 Aug  5 08:20 test_course_generator.py
+-rw-rw-r-- 1 bbrelin bbrelin 39295 Aug  5 08:20 test_course_management.py
+-rw-rw-r-- 1 bbrelin bbrelin 32971 Aug  5 08:20 test_user_management.py
+
+./tests/unit/tools:
+total 28
+-rwxrwxr-x 1 bbrelin bbrelin 24878 Aug  5 08:20 test_agent.py
+
+./tests/unit/user_management:
+total 12
+-rw-rw-r-- 1 bbrelin bbrelin  106 Aug  5 08:20 __init__.py
+-rw-rw-r-- 1 bbrelin bbrelin 6332 Aug  5 08:20 test_domain_entities.py
+
+./tests/utils:
+total 0
+-rw-rw-r-- 1 bbrelin bbrelin 0 Aug  5 08:20 __init__.py
+
+./tests/validation:
+total 20
+-rw-rw-r-- 1 bbrelin bbrelin 12619 Aug  5 08:20 final_quiz_management_validation.py
+-rw-rw-r-- 1 bbrelin bbrelin   587 Aug  5 08:20 README.md

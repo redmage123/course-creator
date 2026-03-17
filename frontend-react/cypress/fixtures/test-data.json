@@ -1,0 +1,86 @@
+{
+  "api_endpoints": {
+    "auth": {
+      "login": "/api/v1/auth/login",
+      "register": "/api/v1/auth/register",
+      "logout": "/api/v1/auth/logout",
+      "refresh": "/api/v1/auth/refresh",
+      "passwordReset": "/api/v1/auth/password-reset"
+    },
+    "users": {
+      "me": "/api/v1/users/me",
+      "list": "/api/v1/users",
+      "byId": "/api/v1/users/:id"
+    },
+    "courses": {
+      "list": "/api/v1/courses",
+      "byId": "/api/v1/courses/:id",
+      "create": "/api/v1/courses",
+      "publish": "/api/v1/courses/:id/publish",
+      "enroll": "/api/v1/courses/:id/enroll"
+    },
+    "content": {
+      "slides": "/api/v1/content/slides",
+      "quizzes": "/api/v1/content/quizzes",
+      "labs": "/api/v1/content/labs"
+    },
+    "organizations": {
+      "list": "/api/v1/organizations",
+      "byId": "/api/v1/organizations/:id",
+      "users": "/api/v1/organizations/:id/users",
+      "tracks": "/api/v1/organizations/:id/tracks"
+    },
+    "analytics": {
+      "student": "/api/v1/analytics/student/:id",
+      "course": "/api/v1/analytics/course/:id",
+      "organization": "/api/v1/analytics/organization/:id"
+    }
+  },
+  "validation_rules": {
+    "password": {
+      "minLength": 8,
+      "requireUppercase": true,
+      "requireLowercase": true,
+      "requireNumber": true,
+      "requireSpecial": true
+    },
+    "username": {
+      "minLength": 3,
+      "maxLength": 50,
+      "allowedChars": "alphanumeric, underscore, hyphen, dot"
+    },
+    "email": {
+      "format": "RFC 5322 compliant"
+    }
+  },
+  "test_scenarios": {
+    "timeouts": {
+      "shortWait": 1000,
+      "mediumWait": 5000,
+      "longWait": 10000,
+      "apiTimeout": 30000
+    },
+    "retries": {
+      "flaky_test": 2,
+      "network_error": 3
+    }
+  },
+  "ui_elements": {
+    "loading_indicators": [
+      "loading-spinner",
+      "skeleton-loader",
+      "progress-bar"
+    ],
+    "toast_messages": {
+      "success": "toast-success",
+      "error": "toast-error",
+      "warning": "toast-warning",
+      "info": "toast-info"
+    },
+    "modals": [
+      "confirmation-modal",
+      "error-modal",
+      "info-modal"
+    ]
+  }
+}

@@ -1,0 +1,82 @@
+/**
+ * SkipLink Component Styles
+ *
+ * BUSINESS CONTEXT:
+ * Styles for the accessibility skip link component. Visually hidden
+ * until focused, then prominently displayed for keyboard users.
+ *
+ * WCAG COMPLIANCE:
+ * - Meets 2.4.1 Bypass Blocks (Level A)
+ * - High contrast when visible (4.5:1 minimum)
+ * - Focus visible state
+ */
+
+/* ============================================================================
+ * SKIP LINK STYLES
+ * ============================================================================ */
+
+.skip-link {
+  /* Visually hidden by default */
+  position: absolute;
+  top: -100%;
+  left: 0;
+  z-index: 9999;
+
+  /* Visual styling when visible */
+  padding: 12px 24px;
+  background-color: #2563eb;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 0 0 8px 0;
+
+  /* Smooth transition */
+  transition: top 0.2s ease;
+
+  /* Touch target (WCAG AAA) */
+  min-height: 44px;
+  min-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Visible when focused */
+.skip-link:focus {
+  top: 0;
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+/* Hover state */
+.skip-link:hover {
+  background-color: #1e40af;
+}
+
+/* Active state */
+.skip-link:active {
+  background-color: #1e3a8a;
+}
+
+/* ============================================================================
+ * ACCESSIBILITY MEDIA QUERIES
+ * ============================================================================ */
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .skip-link {
+    border: 2px solid #ffffff;
+  }
+
+  .skip-link:focus {
+    outline-width: 3px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .skip-link {
+    transition: none;
+  }
+}

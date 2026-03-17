@@ -1,0 +1,82 @@
+/**
+ * Keyboard Shortcuts Panel Styles
+ * WCAG 2.1 AA Compliant - Color contrast 4.5:1+
+ */
+
+.container {
+  width: 100%;
+  padding: 1.5rem;
+  background-color: #f9fafb;
+  border-radius: 8px;
+}
+
+.title {
+  margin: 0 0 1rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.loading {
+  padding: 2rem;
+  text-align: center;
+  color: #6b7280;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.headerCell {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #111827;
+  background-color: #f3f4f6;
+  border-bottom: 2px solid #e5e7eb;
+  font-size: 0.875rem;
+}
+
+.row {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.row:hover {
+  background-color: #f9fafb;
+}
+
+.cell {
+  padding: 0.75rem 1rem;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.kbd {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+@media (max-width: 640px) {
+  .table {
+    font-size: 0.8125rem;
+  }
+
+  .cell {
+    padding: 0.5rem 0.75rem;
+  }
+}

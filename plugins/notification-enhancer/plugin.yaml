@@ -1,0 +1,51 @@
+"""
+Notification Enhancer Plugin Metadata
+
+This plugin enhances the notification system with
+additional channels and smart routing.
+"""
+name: notification-enhancer
+version: 1.0.0
+description: Enhances notifications with smart routing and additional channels
+author: Course Creator Team
+author_email: dev@coursecreator.io
+license: MIT
+
+min_platform_version: "3.0.0"
+
+# Events this plugin listens to
+events:
+  - course.published
+  - quiz.submitted
+  - user.enrolled
+  - user.completed_course
+  - lab.session_started
+  - feedback.received
+
+# Plugin settings
+settings_schema:
+  enable_email_digest:
+    type: boolean
+    default: true
+    description: Send daily email digests instead of individual notifications
+  digest_time:
+    type: string
+    default: "09:00"
+    description: Time to send daily digest (24h format)
+  slack_webhook_url:
+    type: string
+    default: ""
+    description: Slack webhook URL for team notifications
+  enable_instructor_alerts:
+    type: boolean
+    default: true
+    description: Alert instructors of important student events
+  low_score_threshold:
+    type: integer
+    default: 60
+    description: Quiz score below which to alert instructor
+
+tags:
+  - notifications
+  - integrations
+  - slack

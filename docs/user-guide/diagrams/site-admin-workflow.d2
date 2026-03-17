@@ -1,0 +1,173 @@
+# Site Admin Workflow
+# D2 Diagram - Platform administration and monitoring
+
+direction: down
+
+title: {
+  label: Site Administrator Workflow
+  near: top-center
+  shape: text
+  style: {
+    font-size: 22
+    bold: true
+  }
+}
+
+# Dashboard
+dashboard: {
+  label: Site Admin Dashboard
+  style: {
+    fill: "#E3F2FD"
+    stroke: "#1976D2"
+  }
+
+  overview: Platform\nOverview
+  health: System\nHealth
+  alerts: Critical\nAlerts
+  metrics: Key\nMetrics
+}
+
+# Organization Management
+orgs: {
+  label: Organization Management
+  style: {
+    fill: "#E8F5E9"
+    stroke: "#4CAF50"
+  }
+
+  list: View All\nOrganizations
+  create: Create\nOrganization
+  edit: Edit\nSettings
+  suspend: Suspend/\nActivate
+  delete: Delete\nOrganization
+}
+
+# User Management
+users: {
+  label: Global User Management
+  style: {
+    fill: "#FFF3E0"
+    stroke: "#F57C00"
+  }
+
+  all_users: View All\nUsers
+  search: Search\nUsers
+  roles: Manage\nRoles
+  permissions: Edit\nPermissions
+  impersonate: Impersonate\nUser
+}
+
+# System Configuration
+config: {
+  label: System Configuration
+  style: {
+    fill: "#F3E5F5"
+    stroke: "#7B1FA2"
+  }
+
+  settings: Platform\nSettings
+  features: Feature\nFlags
+  limits: Resource\nLimits
+  api_keys: API Keys\nManagement
+  security: Security\nSettings
+}
+
+# Monitoring & Health
+monitoring: {
+  label: System Monitoring
+  style: {
+    fill: "#FFEBEE"
+    stroke: "#D32F2F"
+  }
+
+  services: Service\nStatus
+  containers: Container\nHealth
+  logs: System\nLogs
+  errors: Error\nTracking
+  performance: Performance\nMetrics
+}
+
+# Analytics
+analytics: {
+  label: Platform Analytics
+  style: {
+    fill: "#E0F7FA"
+    stroke: "#00ACC1"
+  }
+
+  usage: Usage\nStatistics
+  growth: Growth\nTrends
+  engagement: Engagement\nMetrics
+  revenue: Revenue\nReporting
+}
+
+# Demo Management
+demo: {
+  label: Demo Management
+  style: {
+    fill: "#F1F8E9"
+    stroke: "#689F38"
+  }
+
+  create_demo: Create Demo\nData
+  reset: Reset Demo\nEnvironment
+  templates: Demo\nTemplates
+  demo_scenarios: Demo\nScenarios
+}
+
+# Audit & Compliance
+audit: {
+  label: Audit & Compliance
+  style: {
+    fill: "#FFF8E1"
+    stroke: "#FFA000"
+  }
+
+  logs: Audit\nLogs
+  events: Security\nEvents
+  compliance: Compliance\nReports
+  export: Export\nAudit Data
+}
+
+# Connections
+dashboard.overview -> dashboard.health
+dashboard.health -> dashboard.alerts
+dashboard.alerts -> monitoring.errors
+dashboard.metrics -> analytics.usage
+
+orgs.list -> orgs.create
+orgs.list -> orgs.edit
+orgs.edit -> orgs.suspend
+orgs.suspend -> orgs.delete
+
+users.all_users -> users.search
+users.search -> users.roles
+users.roles -> users.permissions
+users.permissions -> users.impersonate
+
+config.settings -> config.features
+config.features -> config.limits
+config.limits -> config.api_keys
+config.api_keys -> config.security
+
+monitoring.services -> monitoring.containers
+monitoring.containers -> monitoring.logs
+monitoring.logs -> monitoring.errors
+monitoring.errors -> monitoring.performance
+
+analytics.usage -> analytics.growth
+analytics.growth -> analytics.engagement
+analytics.engagement -> analytics.revenue
+
+demo.create_demo -> demo.reset
+demo.reset -> demo.templates
+demo.templates -> demo.demo_scenarios
+
+audit.logs -> audit.events
+audit.events -> audit.compliance
+audit.compliance -> audit.export
+
+# Cross-module connections
+orgs.create -> users.roles: Assign Admin
+monitoring.errors -> audit.logs: Log Events
+config.security -> audit.events: Security Audit

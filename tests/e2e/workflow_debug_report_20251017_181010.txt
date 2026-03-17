@@ -1,0 +1,59 @@
+
+============================================================
+AUTOMATED WORKFLOW DEBUGGING REPORT
+============================================================
+
+Generated: 2025-10-17T18:10:10.697724
+Base URL: https://localhost:3000
+Workflow Attempts: 5
+Workflow Complete: ❌ NO
+
+📊 ERRORS DETECTED: 15
+
+Error Summary:
+  1. [SEVERE] https://localhost/api/v1/tracks/ - Failed to load resource: the server responded with a status of 40...
+  2. [SEVERE] https://localhost:3000/js/modules/org-admin-api.js 402:20 "❌ fetchTracks - Error response:" "{\"deta...
+  3. [SEVERE] https://localhost:3000/js/modules/org-admin-api.js 408:16 "Error fetching tracks:" Error: Failed to ...
+  4. [SEVERE] https://localhost/api/v1/tracks/ - Failed to load resource: the server responded with a status of 40...
+  5. [SEVERE] https://localhost:3000/js/modules/org-admin-api.js 402:20 "❌ fetchTracks - Error response:" "{\"deta...
+  6. [SEVERE] https://localhost:3000/js/modules/org-admin-api.js 408:16 "Error fetching tracks:" Error: Failed to ...
+  7. [SEVERE] https://localhost/api/v1/tracks/ - Failed to load resource: the server responded with a status of 40...
+  8. [SEVERE] https://localhost:3000/js/modules/org-admin-api.js 402:20 "❌ fetchTracks - Error response:" "{\"deta...
+  9. [SEVERE] https://localhost:3000/js/modules/org-admin-api.js 408:16 "Error fetching tracks:" Error: Failed to ...
+  10. [SEVERE] https://localhost/api/v1/tracks/ - Failed to load resource: the server responded with a status of 40...
+
+🔧 FIXES APPLIED: 15
+
+Fix Summary:
+  1. Network error identified - may be service connectivity issue
+      Success: ✅
+  2. Network error identified - may be service connectivity issue
+      Success: ✅
+  3. Network error identified - may be service connectivity issue
+      Success: ✅
+  4. Network error identified - may be service connectivity issue
+      Success: ✅
+  5. Network error identified - may be service connectivity issue
+      Success: ✅
+  6. Network error identified - may be service connectivity issue
+      Success: ✅
+  7. Network error identified - may be service connectivity issue
+      Success: ✅
+  8. Network error identified - may be service connectivity issue
+      Success: ✅
+  9. Network error identified - may be service connectivity issue
+      Success: ✅
+  10. Network error identified - may be service connectivity issue
+      Success: ✅
+  11. Network error identified - may be service connectivity issue
+      Success: ✅
+  12. Network error identified - may be service connectivity issue
+      Success: ✅
+  13. Network error identified - may be service connectivity issue
+      Success: ✅
+  14. Network error identified - may be service connectivity issue
+      Success: ✅
+  15. Network error identified - may be service connectivity issue
+      Success: ✅
+
+============================================================

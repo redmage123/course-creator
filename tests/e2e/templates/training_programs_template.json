@@ -1,0 +1,96 @@
+{
+  "template_type": "training_programs",
+  "version": "1.0",
+  "description": "Multi-location software engineering graduate program with sub-projects",
+  "programs": [
+    {
+      "name": "Software Engineering Graduate Program 2025",
+      "description": "18-month intensive software engineering program across major tech hubs",
+      "difficulty_level": "intermediate",
+      "estimated_duration": 18,
+      "duration_unit": "months",
+      "price": 0,
+      "is_published": false,
+      "category": "Software Engineering",
+      "program_type": "multi_location",
+      "locations": [
+        {
+          "city": "New York City",
+          "country": "USA",
+          "region": "Northeast",
+          "timezone": "America/New_York",
+          "start_date": "2025-01-15",
+          "end_date": "2026-07-15",
+          "max_participants": 50,
+          "address": "123 Tech Plaza, Manhattan, NY 10001"
+        },
+        {
+          "city": "San Francisco",
+          "country": "USA",
+          "region": "West Coast",
+          "timezone": "America/Los_Angeles",
+          "start_date": "2025-01-15",
+          "end_date": "2026-07-15",
+          "max_participants": 50,
+          "address": "456 Innovation Way, San Francisco, CA 94102"
+        },
+        {
+          "city": "Chicago",
+          "country": "USA",
+          "region": "Midwest",
+          "timezone": "America/Chicago",
+          "start_date": "2025-01-15",
+          "end_date": "2026-07-15",
+          "max_participants": 40,
+          "address": "789 Code Street, Chicago, IL 60601"
+        },
+        {
+          "city": "Austin",
+          "country": "USA",
+          "region": "Southwest",
+          "timezone": "America/Chicago",
+          "start_date": "2025-01-15",
+          "end_date": "2026-07-15",
+          "max_participants": 40,
+          "address": "321 Startup Lane, Austin, TX 78701"
+        },
+        {
+          "city": "Seattle",
+          "country": "USA",
+          "region": "Pacific Northwest",
+          "timezone": "America/Los_Angeles",
+          "start_date": "2025-01-15",
+          "end_date": "2026-07-15",
+          "max_participants": 45,
+          "address": "654 Cloud Drive, Seattle, WA 98101"
+        }
+      ],
+      "sub_projects": [
+        {
+          "name": "Foundations Track",
+          "description": "Computer Science fundamentals, algorithms, and data structures",
+          "duration_weeks": 12,
+          "sequence": 1
+        },
+        {
+          "name": "Full Stack Development Track",
+          "description": "Modern web development with React, Node.js, and PostgreSQL",
+          "duration_weeks": 16,
+          "sequence": 2
+        },
+        {
+          "name": "Advanced Specialization Track",
+          "description": "Cloud architecture, DevOps, and enterprise systems",
+          "duration_weeks": 14,
+          "sequence": 3
+        },
+        {
+          "name": "Capstone Projects Track",
+          "description": "Real-world projects and portfolio development",
+          "duration_weeks": 12,
+          "sequence": 4
+        }
+      ]
+    }
+  ]
+}

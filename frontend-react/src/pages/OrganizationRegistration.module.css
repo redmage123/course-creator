@@ -1,0 +1,322 @@
+/**
+ * Organization Registration Page Styles
+ *
+ * Modern, clean design matching Course Creator Platform design system
+ */
+
+.registrationContainer {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  position: relative;
+}
+
+.backLink {
+  position: absolute;
+  top: 2rem;
+  left: 2rem;
+  color: white;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.backLink:hover {
+  transform: translateX(-5px);
+}
+
+.registrationCard {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  padding: 3rem;
+  width: 100%;
+  max-width: 800px;
+  position: relative;
+  overflow: visible;
+}
+
+.registrationCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+}
+
+.registrationHeader {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.title {
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+  font-size: 2.25rem;
+}
+
+.subtitle {
+  color: #6b7280;
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+}
+
+.professionalBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #10b981;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 50px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.formSection {
+  margin-bottom: 2.5rem;
+  padding: 1.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f9fafb;
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #1e40af;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.sectionDescription {
+  color: #6b7280;
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem;
+  background: #eff6ff;
+  border-radius: 6px;
+  border-left: 3px solid #3b82f6;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.formGridSingle {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.formLabel {
+  display: block;
+  color: #1f2937;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.optional {
+  color: #9ca3af;
+  font-weight: 400;
+  font-size: 0.8rem;
+}
+
+.required {
+  color: #ef4444;
+}
+
+.logoUploadArea {
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.logoUploadArea:hover {
+  border-color: #6366f1;
+  background: #f9fafb;
+}
+
+.uploadPlaceholder {
+  color: #9ca3af;
+}
+
+.uploadPlaceholder i {
+  color: #d1d5db;
+  margin-bottom: 1rem;
+}
+
+.uploadPlaceholder p {
+  margin: 0.5rem 0;
+  font-weight: 500;
+}
+
+.uploadPlaceholder small {
+  color: #6b7280;
+}
+
+.logoPreview {
+  position: relative;
+  display: inline-block;
+}
+
+.previewImage {
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.removeLogo {
+  margin-top: 1rem;
+}
+
+.hiddenFileInput {
+  display: none;
+}
+
+.phoneGroup {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 1rem;
+  grid-column: 1 / -1;
+}
+
+.countryCodeSelect {
+  min-width: 120px;
+}
+
+.checkboxGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.checkbox {
+  margin-top: 0.25rem;
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+}
+
+.checkboxLabel span {
+  flex: 1;
+  color: #374151;
+}
+
+.checkboxLabel a {
+  color: #6366f1;
+  text-decoration: underline;
+}
+
+.error {
+  color: #ef4444;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}
+
+.submitSection {
+  text-align: center;
+  padding-top: 2rem;
+}
+
+.submitError {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 4px solid #ef4444;
+  color: #991b1b;
+  padding: 1rem;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: left;
+}
+
+.submitButton {
+  min-width: 280px;
+}
+
+.loginLink {
+  margin-top: 1.5rem;
+  color: #6b7280;
+}
+
+.loginLink a {
+  color: #6366f1;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.loginLink a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .registrationContainer {
+    padding: 1rem;
+  }
+
+  .registrationCard {
+    padding: 2rem 1.5rem;
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .phoneGroup {
+    grid-template-columns: 1fr;
+  }
+
+  .backLink {
+    position: static;
+    margin-bottom: 1rem;
+  }
+
+  .title {
+    font-size: 1.75rem;
+  }
+
+  .subtitle {
+    font-size: 1rem;
+  }
+}

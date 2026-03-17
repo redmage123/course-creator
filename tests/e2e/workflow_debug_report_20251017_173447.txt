@@ -1,0 +1,22 @@
+
+============================================================
+AUTOMATED WORKFLOW DEBUGGING REPORT
+============================================================
+
+Generated: 2025-10-17T17:34:47.543178
+Base URL: https://localhost:3000
+Workflow Attempts: 5
+Workflow Complete: ❌ NO
+
+📊 ERRORS DETECTED: 5
+
+Error Summary:
+  1. [SEVERE] https://localhost:3000/auth/login - Failed to load resource: the server responded with a status of 4...
+  2. [SEVERE] https://localhost:3000/auth/login - Failed to load resource: the server responded with a status of 4...
+  3. [SEVERE] https://localhost:3000/auth/login - Failed to load resource: the server responded with a status of 4...
+  4. [SEVERE] https://localhost:3000/auth/login - Failed to load resource: the server responded with a status of 4...
+  5. [SEVERE] https://localhost:3000/auth/login - Failed to load resource: the server responded with a status of 4...
+
+🔧 FIXES APPLIED: 0
+
+============================================================

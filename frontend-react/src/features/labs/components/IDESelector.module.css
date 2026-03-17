@@ -1,0 +1,93 @@
+/**
+ * IDE Selector Styles
+ */
+
+.ideSelector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: #2d2d30;
+  border-bottom: 1px solid #3e3e42;
+}
+
+.ideLabel {
+  font-size: 0.9rem;
+  color: #cccccc;
+  font-weight: 500;
+}
+
+.ideTabs {
+  display: flex;
+  gap: 4px;
+  background: #1e1e1e;
+  border-radius: 6px;
+  padding: 4px;
+}
+
+.ideTab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #3e3e42;
+  color: #cccccc;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.ideTab:hover:not(:disabled) {
+  background: #4e4e52;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.ideTab:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.ideTab.active {
+  background: #007acc;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 122, 204, 0.3);
+}
+
+.ideTab:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ideIcon {
+  font-size: 1rem;
+}
+
+.ideText {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* Focus Styles for Accessibility */
+.ideTab:focus-visible {
+  outline: 2px solid #007acc;
+  outline-offset: 2px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .ideSelector {
+    padding: 8px 12px;
+  }
+
+  .ideText {
+    display: none;
+  }
+
+  .ideTab {
+    padding: 8px 12px;
+  }
+}

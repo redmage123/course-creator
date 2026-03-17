@@ -1,0 +1,266 @@
+/**
+ * IntegrationsSettings Styles
+ *
+ * What: Main integrations page styling with tabbed interface
+ * Where: Used by IntegrationsSettings component
+ * Why: Professional, organized UI for integration management
+ */
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* Page header */
+.pageHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.pageTitle {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #212121;
+  margin: 0 0 0.5rem 0;
+}
+
+.pageDescription {
+  font-size: 1rem;
+  color: #757575;
+  margin: 0;
+}
+
+.refreshButton {
+  padding: 0.625rem 1.25rem;
+  background-color: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #424242;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.refreshButton:hover:not(:disabled) {
+  background-color: #eeeeee;
+  border-color: #bdbdbd;
+}
+
+.refreshButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Error banner */
+.errorBanner {
+  background-color: #ffebee;
+  border: 1px solid #ef9a9a;
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.errorBanner strong {
+  color: #c62828;
+}
+
+.errorBanner span {
+  color: #d32f2f;
+}
+
+/* Tabs navigation */
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #e0e0e0;
+  overflow-x: auto;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.25rem;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #616161;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  position: relative;
+}
+
+.tab:hover {
+  color: #212121;
+  background-color: #f5f5f5;
+}
+
+.activeTab {
+  color: #1976d2;
+  border-bottom-color: #1976d2;
+  background-color: #e3f2fd;
+}
+
+.errorTab {
+  color: #d32f2f;
+}
+
+.tabIcon {
+  font-size: 1.125rem;
+}
+
+.tabLabel {
+  font-weight: 600;
+}
+
+.tabBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.375rem;
+  background-color: #1976d2;
+  color: white;
+  border-radius: 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.activeTab .tabBadge {
+  background-color: #1565c0;
+}
+
+.tabErrorIndicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  background-color: #f44336;
+  color: white;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* Tab content */
+.tabContent {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Error state */
+.errorState {
+  padding: 3rem;
+  text-align: center;
+  color: #757575;
+  background-color: #f5f5f5;
+  border-radius: 0.5rem;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+
+  .pageHeader {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .refreshButton {
+    align-self: flex-start;
+  }
+
+  .tabs {
+    gap: 0.25rem;
+  }
+
+  .tab {
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+  }
+
+  .tabIcon {
+    font-size: 1rem;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .pageHeader {
+    border-bottom-color: #424242;
+  }
+
+  .pageTitle {
+    color: #f5f5f5;
+  }
+
+  .pageDescription {
+    color: #bdbdbd;
+  }
+
+  .refreshButton {
+    background-color: #424242;
+    border-color: #616161;
+    color: #f5f5f5;
+  }
+
+  .refreshButton:hover:not(:disabled) {
+    background-color: #616161;
+  }
+
+  .errorBanner {
+    background-color: rgba(244, 67, 54, 0.1);
+    border-color: rgba(244, 67, 54, 0.3);
+  }
+
+  .tabs {
+    border-bottom-color: #424242;
+  }
+
+  .tab {
+    color: #bdbdbd;
+  }
+
+  .tab:hover {
+    color: #f5f5f5;
+    background-color: #424242;
+  }
+
+  .activeTab {
+    color: #64b5f6;
+    border-bottom-color: #64b5f6;
+    background-color: rgba(33, 150, 243, 0.1);
+  }
+
+  .errorState {
+    background-color: #424242;
+    color: #bdbdbd;
+  }
+}

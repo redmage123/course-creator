@@ -1,0 +1,286 @@
+/* Learning Path Progress Styles */
+
+.pathsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.pathCard {
+  background: #f5f5f5;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.pathHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s ease;
+}
+
+.pathHeader:hover {
+  background: #ececec;
+}
+
+.pathTitleSection {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.pathTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.statusBadge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.expandButton {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: transform 0.2s ease;
+}
+
+.progressSection {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1rem 1rem 1rem;
+}
+
+.progressBar {
+  flex: 1;
+  height: 12px;
+  background: white;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.progressValue {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #666;
+  min-width: 50px;
+  text-align: right;
+}
+
+.quickStats {
+  display: flex;
+  gap: 1.5rem;
+  padding: 0 1rem 1rem 1rem;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.statIcon {
+  font-size: 1rem;
+}
+
+.statText {
+  font-size: 0.875rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.timeDiff {
+  font-size: 0.875rem;
+  padding: 0 1rem 1rem 1rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+.timeDiffSuccess {
+  color: #4caf50;
+}
+
+.timeDiffWarning {
+  color: #f44336;
+}
+
+.expandedContent {
+  padding: 1rem;
+  background: white;
+  border-top: 1px solid #e0e0e0;
+}
+
+.currentPosition {
+  margin-bottom: 1.5rem;
+}
+
+.currentPosition h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #666;
+  margin: 0 0 0.5rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.currentPosition p {
+  font-size: 0.875rem;
+  color: #1a1a1a;
+  margin: 0.25rem 0;
+}
+
+.datesSection {
+  margin-bottom: 1.5rem;
+}
+
+.datesSection h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #666;
+  margin: 0 0 0.5rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.datesList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.dateItem {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+}
+
+.dateLabel {
+  color: #666;
+}
+
+.dateValue {
+  color: #1a1a1a;
+  font-weight: 500;
+}
+
+.milestonesSection {
+  margin-bottom: 1.5rem;
+}
+
+.milestonesSection h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #666;
+  margin: 0 0 0.75rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.milestonesList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.milestoneItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #f5f5f5;
+  border-radius: 6px;
+}
+
+.milestoneIcon {
+  color: #4caf50;
+  font-weight: bold;
+}
+
+.milestoneContent {
+  flex: 1;
+}
+
+.milestoneName {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0 0 0.25rem 0;
+}
+
+.milestoneDate {
+  font-size: 0.75rem;
+  color: #666;
+  margin: 0;
+}
+
+.milestoneScore {
+  font-size: 0.75rem;
+  color: #4caf50;
+  font-weight: 600;
+  margin: 0.25rem 0 0 0;
+}
+
+.performanceMetrics h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #666;
+  margin: 0 0 0.75rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.metricItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.metricLabel {
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.metricValue {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  color: #999;
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  margin-top: 1rem;
+  opacity: 0.5;
+}

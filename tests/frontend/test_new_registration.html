@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test New Registration Form</title>
+    <link rel="stylesheet" href="frontend/css/main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .test-container {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .test-result {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 4px;
+        }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>New Registration Form Test</h1>
+        <p>This page tests the new registration form with separate first/last name and organization fields.</p>
+        
+        <form id="test-register-form">
+            <div class="form-row">
+                <div class="form-group half-width">
+                    <label for="first-name">First Name: <span class="required">*</span></label>
+                    <input type="text" id="first-name" name="first_name" required 
+                           placeholder="Enter your first name" value="John">
+                </div>
+                <div class="form-group half-width">
+                    <label for="last-name">Last Name: <span class="required">*</span></label>
+                    <input type="text" id="last-name" name="last_name" required 
+                           placeholder="Enter your last name" value="Smith">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="email">Email Address: <span class="required">*</span></label>
+                <input type="email" id="email" name="email" required 
+                       placeholder="Enter your email address" value="john.smith@testuniv.edu">
+            </div>
+            <div class="form-group">
+                <label for="organization">Organization:</label>
+                <input type="text" id="organization" name="organization" 
+                       placeholder="Enter your organization (optional)" value="Test University">
+            </div>
+            <div class="form-group">
+                <label for="password">Password: <span class="required">*</span></label>
+                <div class="password-input-container">
+                    <input type="password" id="password" name="password" required 
+                           placeholder="Create a secure password" value="testpass123">
+                    <button type="button" class="password-toggle" 
+                            onclick="togglePasswordVisibility('password', 'password-toggle-1')" 
+                            id="password-toggle-1" 
+                            title="Show password">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Test Registration Data</button>
+                <button type="button" onclick="resetForm()" class="btn btn-secondary">Reset</button>
+            </div>
+        </form>
+        
+        <div id="test-result" class="test-result" style="display: none;"></div>
+    </div>
+    
+    <script>
+        // Password visibility toggle function
+        function togglePasswordVisibility(inputId, buttonId) {
+            const input = document.getElementById(inputId);
+            const button = document.getElementById(buttonId);
+            
+            if (input && button) {
+                const icon = button.querySelector('i');
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    if (icon) {
+                        icon.className = 'fas fa-eye-slash';
+                    }
+                    button.title = 'Hide password';
+                } else {
+                    input.type = 'password';
+                    if (icon) {
+                        icon.className = 'fas fa-eye';
+                    }
+                    button.title = 'Show password';
+                }
+            }
+        }
+        
+        // Form submission test
+        document.getElementById('test-register-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const firstName = formData.get('first_name');
+            const lastName = formData.get('last_name');
+            const fullName = `${firstName} ${lastName}`.trim();
+            
+            const userData = {
+                email: formData.get('email'),
+                first_name: firstName,
+                last_name: lastName,
+                full_name: fullName,
+                organization: formData.get('organization') || null,
+                password: formData.get('password'),
+                username: formData.get('email') // Use email as username
+            };
+            
+            // Display the data that would be sent to the API
+            const resultDiv = document.getElementById('test-result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'test-result success';
+            resultDiv.innerHTML = `
+                <h3>✅ Registration Data Ready for API</h3>
+                <pre>${JSON.stringify(userData, null, 2)}</pre>
+                <p><strong>Form validation:</strong> All required fields filled ✓</p>
+                <p><strong>Password toggle:</strong> Click eye icon to test ✓</p>
+                <p><strong>Data structure:</strong> Matches new API requirements ✓</p>
+            `;
+        });
+        
+        function resetForm() {
+            document.getElementById('test-register-form').reset();
+            document.getElementById('test-result').style.display = 'none';
+            
+            // Reset password field to hidden state
+            const passwordInput = document.getElementById('password');
+            const toggleButton = document.getElementById('password-toggle-1');
+            const icon = toggleButton.querySelector('i');
+            
+            passwordInput.type = 'password';
+            icon.className = 'fas fa-eye';
+            toggleButton.title = 'Show password';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,129 @@
+{
+  "timestamp": "2025-08-05T05:10:23.219958",
+  "total_tests": 20,
+  "passed_tests": 20,
+  "failed_tests": 0,
+  "test_results": [
+    {
+      "test_name": "Student Role - Admin Check",
+      "passed": true,
+      "details": "Student is_admin(): False (should be False)",
+      "timestamp": "2025-08-05T05:10:23.220883"
+    },
+    {
+      "test_name": "Student Role - Instructor Check",
+      "passed": true,
+      "details": "Student is_instructor(): False (should be False)",
+      "timestamp": "2025-08-05T05:10:23.220912"
+    },
+    {
+      "test_name": "Student Role - Create Courses",
+      "passed": true,
+      "details": "Student can_create_courses(): False (should be False)",
+      "timestamp": "2025-08-05T05:10:23.220927"
+    },
+    {
+      "test_name": "Student Role - Manage Users",
+      "passed": true,
+      "details": "Student can_manage_users(): False (should be False)",
+      "timestamp": "2025-08-05T05:10:23.220940"
+    },
+    {
+      "test_name": "Instructor Role - Admin Check",
+      "passed": true,
+      "details": "Instructor is_admin(): False (should be False)",
+      "timestamp": "2025-08-05T05:10:23.221051"
+    },
+    {
+      "test_name": "Instructor Role - Instructor Check",
+      "passed": true,
+      "details": "Instructor is_instructor(): True (should be True)",
+      "timestamp": "2025-08-05T05:10:23.221065"
+    },
+    {
+      "test_name": "Instructor Role - Create Courses",
+      "passed": true,
+      "details": "Instructor can_create_courses(): True (should be True)",
+      "timestamp": "2025-08-05T05:10:23.221084"
+    },
+    {
+      "test_name": "Instructor Role - Manage Users",
+      "passed": true,
+      "details": "Instructor can_manage_users(): False (should be False)",
+      "timestamp": "2025-08-05T05:10:23.221103"
+    },
+    {
+      "test_name": "Admin Role - Admin Check",
+      "passed": true,
+      "details": "Admin is_admin(): True (should be True)",
+      "timestamp": "2025-08-05T05:10:23.221178"
+    },
+    {
+      "test_name": "Admin Role - Instructor Check",
+      "passed": true,
+      "details": "Admin is_instructor(): True (should be True)",
+      "timestamp": "2025-08-05T05:10:23.221191"
+    },
+    {
+      "test_name": "Admin Role - Create Courses",
+      "passed": true,
+      "details": "Admin can_create_courses(): True (should be True)",
+      "timestamp": "2025-08-05T05:10:23.221202"
+    },
+    {
+      "test_name": "Admin Role - Manage Users",
+      "passed": true,
+      "details": "Admin can_manage_users(): True (should be True)",
+      "timestamp": "2025-08-05T05:10:23.221212"
+    },
+    {
+      "test_name": "Inactive Admin - Manage Users",
+      "passed": true,
+      "details": "Inactive admin can_manage_users(): False (should be False)",
+      "timestamp": "2025-08-05T05:10:23.221288"
+    },
+    {
+      "test_name": "Inactive Admin - Create Courses",
+      "passed": true,
+      "details": "Inactive admin can_create_courses(): False (should be False)",
+      "timestamp": "2025-08-05T05:10:23.221299"
+    },
+    {
+      "test_name": "Suspended Instructor - Create Courses",
+      "passed": true,
+      "details": "Suspended instructor can_create_courses(): False (should be False)",
+      "timestamp": "2025-08-05T05:10:23.221348"
+    },
+    {
+      "test_name": "Initial Role - Student",
+      "passed": true,
+      "details": "User starts as student: admin=False, instructor=False",
+      "timestamp": "2025-08-05T05:10:23.221394"
+    },
+    {
+      "test_name": "Role Change - Student to Instructor",
+      "passed": true,
+      "details": "After promotion: admin=False, instructor=True",
+      "timestamp": "2025-08-05T05:10:23.221431"
+    },
+    {
+      "test_name": "Role Change - Instructor to Admin",
+      "passed": true,
+      "details": "After admin promotion: admin=True, instructor=True",
+      "timestamp": "2025-08-05T05:10:23.221449"
+    },
+    {
+      "test_name": "Role Change - Admin to Student",
+      "passed": true,
+      "details": "After demotion: admin=False, instructor=False",
+      "timestamp": "2025-08-05T05:10:23.221466"
+    },
+    {
+      "test_name": "Route Implementation - Admin Checks",
+      "passed": true,
+      "details": "Admin role checks found in routes: True",
+      "timestamp": "2025-08-05T05:10:23.221800"
+    }
+  ],
+  "overall_success": true
+}

@@ -1,0 +1,237 @@
+name: Regression Tests
+
+on:
+  push:
+    branches: [ master, main, develop ]
+    paths:
+      - 'services/**'
+      - 'frontend/**'
+      - 'tests/regression/**'
+  pull_request:
+    branches: [ master, main, develop ]
+    paths:
+      - 'services/**'
+      - 'frontend/**'
+      - 'tests/regression/**'
+  schedule:
+    # Run full regression suite nightly at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    # Allow manual trigger
+
+jobs:
+  python-regression-tests:
+    name: Python Regression Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for git log analysis
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-asyncio pytest-cov pytest-xdist
+          pip install -r tests/test_requirements.txt
+
+      - name: Run regression tests
+        run: |
+          pytest tests/regression/python/ \
+            -v \
+            --tb=short \
+            --strict-markers \
+            --cov=services \
+            --cov-report=xml \
+            --cov-report=term \
+            --junitxml=pytest-regression-results.xml \
+            -m "regression" \
+            -n auto
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: pytest-regression-results-${{ matrix.python-version }}
+          path: pytest-regression-results.xml
+          if-no-files-found: error
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-regression-${{ matrix.python-version }}
+          path: coverage.xml
+          if-no-files-found: warn
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const xml = fs.readFileSync('pytest-regression-results.xml', 'utf8');
+            const passed = (xml.match(/tests="/g) || []).length;
+            const failed = (xml.match(/failures="/g) || []).length;
+
+            const comment = `## Regression Test Results (Python ${{ matrix.python-version }})
+
+            ✅ Passed: ${passed}
+            ❌ Failed: ${failed}
+
+            These tests verify that known bugs don't recur.
+            See \`tests/regression/BUG_CATALOG.md\` for bug documentation.`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  regression-test-summary:
+    name: Regression Test Summary
+    runs-on: ubuntu-latest
+    needs: [python-regression-tests]
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate test summary
+        run: |
+          echo "# Regression Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Bug Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Count bugs in catalog
+          TOTAL_BUGS=$(grep -c "^### BUG-" tests/regression/BUG_CATALOG.md || echo "0")
+          CRITICAL_BUGS=$(grep -A 1 "^### BUG-" tests/regression/BUG_CATALOG.md | grep "Critical" | wc -l || echo "0")
+
+          echo "- Total Bugs Documented: $TOTAL_BUGS" >> $GITHUB_STEP_SUMMARY
+          echo "- Critical Bugs: $CRITICAL_BUGS" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Count test files
+          TEST_FILES=$(find tests/regression/python -name "test_*.py" | wc -l)
+          echo "- Test Files: $TEST_FILES" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "## Documentation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- [Bug Catalog](tests/regression/BUG_CATALOG.md)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Guidelines](tests/regression/GUIDELINES.md)" >> $GITHUB_STEP_SUMMARY
+          echo "- [README](tests/regression/README.md)" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check if regression tests are required
+        run: |
+          echo "## Regression Test Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ needs.python-regression-tests.result }}" == "success" ]; then
+            echo "✅ All regression tests passed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "No known bugs have recurred." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Regression tests failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ WARNING: A known bug may have recurred!" >> $GITHUB_STEP_SUMMARY
+            echo "Check test results above for details." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+  check-new-bugs:
+    name: Check for New Bugs to Document
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 50  # Check recent commits
+
+      - name: Scan for bug fix commits
+        run: |
+          echo "# Bug Fix Commits Scan" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Find recent fix commits
+          FIX_COMMITS=$(git log --all --grep="fix:" --grep="bug:" --oneline -n 10 || echo "")
+
+          if [ -n "$FIX_COMMITS" ]; then
+            echo "## Recent Bug Fix Commits" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "$FIX_COMMITS" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "💡 Consider adding regression tests for these fixes." >> $GITHUB_STEP_SUMMARY
+            echo "See [GUIDELINES.md](tests/regression/GUIDELINES.md) for instructions." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No recent bug fix commits found." >> $GITHUB_STEP_SUMMARY
+          fi
+
+  validate-bug-catalog:
+    name: Validate Bug Catalog
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate catalog structure
+        run: |
+          echo "# Bug Catalog Validation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Check if catalog exists
+          if [ ! -f "tests/regression/BUG_CATALOG.md" ]; then
+            echo "❌ Bug catalog not found!" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          # Count documented bugs
+          TOTAL=$(grep -c "^### BUG-" tests/regression/BUG_CATALOG.md || echo "0")
+          CRITICAL=$(grep -A 1 "^### BUG-" tests/regression/BUG_CATALOG.md | grep -c "Critical" || echo "0")
+          HIGH=$(grep -A 1 "^### BUG-" tests/regression/BUG_CATALOG.md | grep -c "High" || echo "0")
+          MEDIUM=$(grep -A 1 "^### BUG-" tests/regression/BUG_CATALOG.md | grep -c "Medium" || echo "0")
+
+          echo "✅ Bug catalog valid" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Statistics" >> $GITHUB_STEP_SUMMARY
+          echo "- Total: $TOTAL bugs" >> $GITHUB_STEP_SUMMARY
+          echo "- Critical: $CRITICAL bugs" >> $GITHUB_STEP_SUMMARY
+          echo "- High: $HIGH bugs" >> $GITHUB_STEP_SUMMARY
+          echo "- Medium: $MEDIUM bugs" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check for TODOs in regression tests
+        run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Test Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          TODOS=$(grep -r "TODO\|FIXME" tests/regression/ || echo "")
+
+          if [ -n "$TODOS" ]; then
+            echo "⚠️ Found TODOs in regression tests:" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "$TODOS" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ No TODOs found in regression tests" >> $GITHUB_STEP_SUMMARY
+          fi

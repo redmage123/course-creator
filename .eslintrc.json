@@ -1,0 +1,121 @@
+{
+  "env": {
+    "browser": true,
+    "es2021": true,
+    "node": true,
+    "jest": true
+  },
+  "extends": [
+    "eslint:recommended"
+  ],
+  "parserOptions": {
+    "ecmaVersion": 2021,
+    "sourceType": "module"
+  },
+  "globals": {
+    "Auth": "readonly",
+    "showNotification": "readonly",
+    "closeVideoModal": "readonly",
+    "removeVideo": "readonly",
+    "uploadCourseVideos": "readonly",
+    "clearCourseVideos": "readonly",
+    "getCourseVideos": "readonly"
+  },
+  "rules": {
+    "indent": ["error", 4],
+    "linebreak-style": ["error", "unix"],
+    "quotes": ["error", "single", { "avoidEscape": true }],
+    "semi": ["error", "always"],
+    "no-unused-vars": ["warn", {
+      "argsIgnorePattern": "^_",
+      "varsIgnorePattern": "^_"
+    }],
+    "no-console": ["warn", { "allow": ["warn", "error", "info"] }],
+    "no-debugger": "error",
+    "no-alert": "warn",
+    "no-var": "error",
+    "prefer-const": "warn",
+    "prefer-arrow-callback": "warn",
+    "arrow-spacing": "error",
+    "no-duplicate-imports": "error",
+    "no-useless-constructor": "warn",
+    "no-useless-rename": "error",
+    "object-shorthand": "warn",
+    "prefer-template": "warn",
+    "template-curly-spacing": "error",
+    "eqeqeq": ["error", "always"],
+    "curly": ["error", "all"],
+    "brace-style": ["error", "1tbs"],
+    "comma-dangle": ["error", "never"],
+    "comma-spacing": "error",
+    "key-spacing": "error",
+    "keyword-spacing": "error",
+    "space-before-blocks": "error",
+    "space-before-function-paren": ["error", {
+      "anonymous": "never",
+      "named": "never",
+      "asyncArrow": "always"
+    }],
+    "space-in-parens": ["error", "never"],
+    "space-infix-ops": "error",
+    "spaced-comment": ["warn", "always"],
+    "max-len": ["warn", {
+      "code": 120,
+      "ignoreUrls": true,
+      "ignoreStrings": true,
+      "ignoreTemplateLiterals": true
+    }],
+    "max-depth": ["warn", 4],
+    "max-nested-callbacks": ["warn", 3],
+    "max-params": ["warn", 5],
+    "complexity": ["warn", 15],
+    "no-magic-numbers": ["off"],
+    "camelcase": ["warn", {
+      "properties": "never",
+      "ignoreDestructuring": true
+    }],
+    "new-cap": "error",
+    "no-array-constructor": "error",
+    "no-new-object": "error",
+    "func-style": ["warn", "declaration", { "allowArrowFunctions": true }],
+    "consistent-return": "warn",
+    "default-case": "warn",
+    "dot-notation": "warn",
+    "no-else-return": "warn",
+    "no-empty-function": "warn",
+    "no-eval": "error",
+    "no-implied-eval": "error",
+    "no-invalid-this": "off",
+    "no-loop-func": "warn",
+    "no-multi-spaces": "error",
+    "no-new-func": "error",
+    "no-new-wrappers": "error",
+    "no-param-reassign": "off",
+    "no-redeclare": "error",
+    "no-return-assign": "error",
+    "no-return-await": "warn",
+    "no-self-compare": "error",
+    "no-throw-literal": "error",
+    "no-unused-expressions": ["error", {
+      "allowShortCircuit": true,
+      "allowTernary": true
+    }],
+    "no-useless-catch": "warn",
+    "no-useless-return": "warn",
+    "require-await": "warn",
+    "vars-on-top": "warn",
+    "yoda": "error"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.test.js", "**/*.spec.js"],
+      "env": {
+        "jest": true
+      },
+      "rules": {
+        "no-magic-numbers": "off",
+        "max-nested-callbacks": "off"
+      }
+    }
+  ]
+}

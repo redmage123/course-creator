@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Creator Platform - User Guide</title>
+    <style>
+        :root {
+            --primary-color: #1976D2;
+            --text-color: #333;
+            --bg-color: #fff;
+            --border-color: #e0e0e0;
+            --code-bg: #f5f5f5;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: var(--bg-color);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            border-bottom: 3px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 40px;
+        }
+
+        h2 {
+            color: #424242;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+            margin-top: 32px;
+        }
+
+        h3 {
+            color: #616161;
+            margin-top: 24px;
+        }
+
+        h4 {
+            color: #757575;
+        }
+
+        a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 10px 12px;
+            text-align: left;
+        }
+
+        th {
+            background: #f5f5f5;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background: #fafafa;
+        }
+
+        code {
+            background: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background: #263238;
+            color: #fff;
+            padding: 16px 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        pre code {
+            background: transparent;
+            padding: 0;
+            color: inherit;
+        }
+
+        blockquote {
+            border-left: 4px solid var(--primary-color);
+            margin: 20px 0;
+            padding: 10px 20px;
+            background: #E3F2FD;
+            border-radius: 0 8px 8px 0;
+        }
+
+        hr {
+            border: none;
+            border-top: 2px solid var(--border-color);
+            margin: 40px 0;
+        }
+
+        ul, ol {
+            padding-left: 24px;
+        }
+
+        li {
+            margin: 8px 0;
+        }
+
+        .toc {
+            background: #f9f9f9;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px 30px;
+            margin: 30px 0;
+        }
+
+        .toc h2 {
+            margin-top: 0;
+            font-size: 18px;
+            border: none;
+        }
+
+        .toc ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .toc li {
+            margin: 6px 0;
+        }
+
+        .toc a {
+            color: #555;
+        }
+
+        .page-break {
+            page-break-after: always;
+        }
+
+        @media print {
+            body {
+                padding: 20px;
+                max-width: 100%;
+            }
+
+            img {
+                max-width: 100%;
+                page-break-inside: avoid;
+            }
+
+            h1, h2, h3 {
+                page-break-after: avoid;
+            }
+
+            table {
+                page-break-inside: avoid;
+            }
+        }
+
+        @page {
+            margin: 2cm;
+            @bottom-center {
+                content: counter(page);
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Course Creator Platform</h1>
+        <p style="font-size: 1.2em; color: #666;">Comprehensive User Guide</p>
+        <p style="color: #999;">Version 3.3.1 | December 2025</p>
+    </header>
+
+    <main>
+        <h1 id="course-creator-platform-user-guide">Course Creator Platform - User Guide</h1>
+<p><strong>Version:</strong> 3.3.1<br />
+<strong>Last Updated:</strong> December 2025</p>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#platform-overview">Platform Overview</a></li>
+<li><a href="#getting-started">Getting Started</a></li>
+<li><a href="#user-roles--permissions">User Roles &amp; Permissions</a></li>
+<li><a href="#student-guide">Student Guide</a></li>
+<li><a href="#instructor-guide">Instructor Guide</a></li>
+<li><a href="#organization-admin-guide">Organization Admin Guide</a></li>
+<li><a href="#site-admin-guide">Site Admin Guide</a></li>
+<li><a href="#ai-assistant-features">AI Assistant Features</a></li>
+<li><a href="#lab-environments">Lab Environments</a></li>
+<li><a href="#technical-reference">Technical Reference</a></li>
+<li><a href="#troubleshooting">Troubleshooting</a></li>
+<li><a href="#glossary">Glossary</a></li>
+</ol>
+<hr />
+<h2 id="introduction">Introduction</h2>
+<p>Welcome to the Course Creator Platform - a comprehensive learning management system designed for corporate training and educational institutions. This platform enables organizations to create, deliver, and track professional development courses with AI-powered assistance.</p>
+<h3 id="key-features">Key Features</h3>
+<ul>
+<li><strong>AI-Powered Content Generation</strong>: Create courses, quizzes, and labs with AI assistance</li>
+<li><strong>Interactive Lab Environments</strong>: Hands-on coding practice with real-time feedback</li>
+<li><strong>Multi-Tenant Architecture</strong>: Secure organization isolation and management</li>
+<li><strong>RAG-Enhanced AI Assistant</strong>: Context-aware help and tutoring</li>
+<li><strong>Comprehensive Analytics</strong>: Track learning progress and engagement</li>
+<li><strong>Integration Ready</strong>: Connect with Zoom, Slack, and enterprise systems</li>
+</ul>
+<hr />
+<h2 id="platform-overview">Platform Overview</h2>
+<h3 id="system-architecture">System Architecture</h3>
+<p>The platform is built on a modern microservices architecture, ensuring scalability, reliability, and maintainability.</p>
+<p><img alt="Platform Architecture" src="images/platform-architecture.svg" /></p>
+<h4 id="key-components">Key Components</h4>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Description</th>
+<th>Port</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>User Management</strong></td>
+<td>Authentication, authorization, RBAC</td>
+<td>8000</td>
+</tr>
+<tr>
+<td><strong>Organization Management</strong></td>
+<td>Multi-tenant org management</td>
+<td>8001</td>
+</tr>
+<tr>
+<td><strong>Course Management</strong></td>
+<td>Course CRUD, enrollment</td>
+<td>8002</td>
+</tr>
+<tr>
+<td><strong>Content Management</strong></td>
+<td>Media, documents, resources</td>
+<td>8003</td>
+</tr>
+<tr>
+<td><strong>Course Generator</strong></td>
+<td>AI content generation</td>
+<td>8004</td>
+</tr>
+<tr>
+<td><strong>Lab Manager</strong></td>
+<td>Docker container orchestration</td>
+<td>8005</td>
+</tr>
+<tr>
+<td><strong>Analytics</strong></td>
+<td>Learning analytics &amp; reporting</td>
+<td>8006</td>
+</tr>
+<tr>
+<td><strong>Metadata Service</strong></td>
+<td>Search, tags, categorization</td>
+<td>8007</td>
+</tr>
+<tr>
+<td><strong>RAG Service</strong></td>
+<td>Vector search &amp; retrieval</td>
+<td>8009</td>
+</tr>
+<tr>
+<td><strong>AI Assistant</strong></td>
+<td>Conversational AI interface</td>
+<td>8011</td>
+</tr>
+</tbody>
+</table>
+<h3 id="data-flow">Data Flow</h3>
+<p>Understanding how data flows through the platform helps in troubleshooting and optimization.</p>
+<p><img alt="Data Flow" src="images/data-flow.svg" /></p>
+<hr />
+<h2 id="getting-started">Getting Started</h2>
+<h3 id="system-requirements">System Requirements</h3>
+<p><strong>For End Users:</strong><br />
+- Modern web browser (Chrome, Firefox, Safari, Edge)<br />
+- Stable internet connection<br />
+- Screen resolution: 1280x720 or higher</p>
+<p><strong>For Lab Environments:</strong><br />
+- WebSocket support in browser<br />
+- JavaScript enabled</p>
+<h3 id="first-time-login">First-Time Login</h3>
+<ol>
+<li>Navigate to the platform URL provided by your organization</li>
+<li>Click "Login" or "Register" if creating a new account</li>
+<li>Enter your credentials</li>
+<li>Complete the AI Assistant welcome tour (recommended)</li>
+</ol>
+<h3 id="navigation-overview">Navigation Overview</h3>
+<p>The platform uses a role-based dashboard system:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">┌─────────────────────────────────────────┐</span>
+<span class="err">│</span><span class="w">  </span><span class="o">[</span><span class="n">Logo</span><span class="o">]</span><span class="w">    </span><span class="n">Navigation</span><span class="w"> </span><span class="n">Bar</span><span class="w">    </span><span class="o">[</span><span class="n">Profile</span><span class="o">]</span><span class="w">  </span><span class="err">│</span>
+<span class="err">├─────────────────────────────────────────┤</span>
+<span class="err">│</span><span class="w">           </span><span class="err">│</span><span class="w">                             </span><span class="err">│</span>
+<span class="err">│</span><span class="w">  </span><span class="n">Sidebar</span><span class="w">  </span><span class="err">│</span><span class="w">    </span><span class="n">Main</span><span class="w"> </span><span class="n">Content</span><span class="w"> </span><span class="n">Area</span><span class="w">        </span><span class="err">│</span>
+<span class="err">│</span><span class="w">   </span><span class="n">Menu</span><span class="w">    </span><span class="err">│</span><span class="w">                             </span><span class="err">│</span>
+<span class="err">│</span><span class="w">           </span><span class="err">│</span><span class="w">                             </span><span class="err">│</span>
+<span class="err">│</span><span class="w">           </span><span class="err">│</span><span class="w">                             </span><span class="err">│</span>
+<span class="err">├─────────────────────────────────────────┤</span>
+<span class="err">│</span><span class="w">  </span><span class="n">AI</span><span class="w"> </span><span class="n">Assistant</span><span class="w"> </span><span class="n">Button</span><span class="w"> </span><span class="p">(</span><span class="n">Bottom</span><span class="w"> </span><span class="nf">Right</span><span class="p">)</span><span class="w">     </span><span class="err">│</span>
+<span class="err">└─────────────────────────────────────────┘</span>
+</code></pre></div>
+
+<hr />
+<h2 id="user-roles-permissions">User Roles &amp; Permissions</h2>
+<p>The platform supports five user roles with hierarchical permissions:</p>
+<h3 id="role-hierarchy">Role Hierarchy</h3>
+<div class="codehilite"><pre><span></span><code>Site Admin (Platform-wide access)
+    │
+    └── Organization Admin (Organization-level access)
+            │
+            ├── Instructor (Course management)
+            │
+            └── Student (Learning activities)
+                    │
+                    └── Guest (Limited public access)
+</code></pre></div>
+
+<h3 id="permission-matrix">Permission Matrix</h3>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th style="text-align: center;">Site Admin</th>
+<th style="text-align: center;">Org Admin</th>
+<th style="text-align: center;">Instructor</th>
+<th style="text-align: center;">Student</th>
+<th style="text-align: center;">Guest</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>View Public Courses</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td>Enroll in Courses</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td>Create Courses</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td>Manage Students</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td>Manage Instructors</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td>Organization Settings</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td>Platform Settings</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td>System Monitoring</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="student-guide">Student Guide</h2>
+<h3 id="student-workflow-overview">Student Workflow Overview</h3>
+<p><img alt="Student Workflow" src="images/student-workflow.svg" /></p>
+<h3 id="dashboard-features">Dashboard Features</h3>
+<p>Your student dashboard provides quick access to:</p>
+<ul>
+<li><strong>Enrolled Courses</strong>: Current courses with progress indicators</li>
+<li><strong>Upcoming Deadlines</strong>: Assignments, quizzes, and milestones</li>
+<li><strong>Recent Activity</strong>: Continue where you left off</li>
+<li><strong>Certificates</strong>: View and download earned certificates</li>
+<li><strong>Progress Overview</strong>: Visual progress tracking</li>
+</ul>
+<h3 id="taking-courses">Taking Courses</h3>
+<h4 id="viewing-course-content">Viewing Course Content</h4>
+<ol>
+<li>Navigate to <strong>My Courses</strong> from the dashboard</li>
+<li>Click on a course to open it</li>
+<li>Progress through modules sequentially or use the outline</li>
+<li>Mark lessons as complete when finished</li>
+</ol>
+<h4 id="interactive-learning-features">Interactive Learning Features</h4>
+<p><strong>Video Lessons:</strong><br />
+- Playback speed controls<br />
+- Caption support<br />
+- Bookmarking key moments<br />
+- Progress auto-save</p>
+<p><strong>Reading Materials:</strong><br />
+- Downloadable resources<br />
+- Highlighted key concepts<br />
+- Searchable content</p>
+<h3 id="lab-environments">Lab Environments</h3>
+<p>Labs provide hands-on practice in isolated coding environments.</p>
+<h4 id="starting-a-lab">Starting a Lab</h4>
+<ol>
+<li>Navigate to the lab section within a course</li>
+<li>Click "Start Lab Environment"</li>
+<li>Wait for container initialization (10-30 seconds)</li>
+<li>Write and run code in the integrated editor</li>
+</ol>
+<h4 id="lab-features">Lab Features</h4>
+<ul>
+<li><strong>Monaco Editor</strong>: VS Code-like editing experience</li>
+<li><strong>Real-time Execution</strong>: Run code and see output instantly</li>
+<li><strong>AI Assistance</strong>: Get help from the AI assistant</li>
+<li><strong>Test Validation</strong>: Automatic grading of solutions</li>
+<li><strong>Save Progress</strong>: Work is auto-saved</li>
+</ul>
+<h4 id="best-practices-for-labs">Best Practices for Labs</h4>
+<ul>
+<li>Read the instructions completely before starting</li>
+<li>Use the AI assistant for hints, not answers</li>
+<li>Test your code frequently</li>
+<li>Submit before the deadline</li>
+</ul>
+<h3 id="quizzes-assessments">Quizzes &amp; Assessments</h3>
+<h4 id="quiz-types">Quiz Types</h4>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+<th>Feedback</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Practice Quiz</td>
+<td>Unlimited attempts, no grade impact</td>
+<td>Immediate</td>
+</tr>
+<tr>
+<td>Graded Quiz</td>
+<td>Limited attempts, affects grade</td>
+<td>After submission</td>
+</tr>
+<tr>
+<td>Timed Quiz</td>
+<td>Time limit, single attempt</td>
+<td>After deadline</td>
+</tr>
+</tbody>
+</table>
+<h4 id="taking-a-quiz">Taking a Quiz</h4>
+<ol>
+<li>Click "Start Quiz" from the course</li>
+<li>Answer all questions</li>
+<li>Review before submitting</li>
+<li>View results and feedback</li>
+</ol>
+<h3 id="earning-certificates">Earning Certificates</h3>
+<p>Certificates are awarded upon course completion meeting these criteria:</p>
+<ul>
+<li>All required modules completed</li>
+<li>Minimum quiz score achieved (typically 70%)</li>
+<li>All required labs submitted</li>
+</ul>
+<h4 id="downloading-certificates">Downloading Certificates</h4>
+<ol>
+<li>Go to <strong>Certificates</strong> from dashboard</li>
+<li>Click the certificate to preview</li>
+<li>Click "Download PDF" or "Share"</li>
+</ol>
+<hr />
+<h2 id="instructor-guide">Instructor Guide</h2>
+<h3 id="instructor-workflow-overview">Instructor Workflow Overview</h3>
+<p><img alt="Instructor Workflow" src="images/instructor-workflow.svg" /></p>
+<h3 id="dashboard-overview">Dashboard Overview</h3>
+<p>The instructor dashboard provides:</p>
+<ul>
+<li><strong>My Courses</strong>: Courses you teach</li>
+<li><strong>Student Activity</strong>: Recent enrollments and submissions</li>
+<li><strong>Analytics</strong>: Engagement metrics</li>
+<li><strong>Quick Actions</strong>: Create course, view students</li>
+</ul>
+<h3 id="creating-courses">Creating Courses</h3>
+<h4 id="method-1-ai-assisted-creation">Method 1: AI-Assisted Creation</h4>
+<ol>
+<li>Click <strong>Create Course</strong> → <strong>Use AI Generator</strong></li>
+<li>Enter course topic and objectives</li>
+<li>Select target audience and duration</li>
+<li>Click "Generate Outline"</li>
+<li>Review and edit the generated outline</li>
+<li>Click "Generate Content" for each section</li>
+<li>Review, edit, and publish</li>
+</ol>
+<h4 id="method-2-manual-creation">Method 2: Manual Creation</h4>
+<ol>
+<li>Click <strong>Create Course</strong> → <strong>Start from Scratch</strong></li>
+<li>Fill in course details:</li>
+<li>Title and description</li>
+<li>Category and tags</li>
+<li>Learning objectives</li>
+<li>Prerequisites</li>
+<li>Add modules and lessons</li>
+<li>Upload or create content</li>
+<li>Configure assessments</li>
+<li>Preview and publish</li>
+</ol>
+<h3 id="content-generation-with-ai">Content Generation with AI</h3>
+<p>The AI content generator can create:</p>
+<ul>
+<li><strong>Course Outlines</strong>: Structured curriculum</li>
+<li><strong>Lesson Content</strong>: Text, slides, summaries</li>
+<li><strong>Quiz Questions</strong>: Multiple choice, true/false, coding</li>
+<li><strong>Lab Exercises</strong>: Code templates and test cases</li>
+</ul>
+<h4 id="using-the-content-generator">Using the Content Generator</h4>
+<div class="codehilite"><pre><span></span><code><span class="mf">1.</span><span class="w"> </span><span class="n">Navigate</span><span class="w"> </span><span class="kr">to</span><span class="p">:</span><span class="w"> </span><span class="n">Instructor</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="kr">Cont</span><span class="n">ent</span><span class="w"> </span><span class="n">Generator</span>
+<span class="mf">2.</span><span class="w"> </span><span class="n">Select</span><span class="w"> </span><span class="kr">cont</span><span class="n">ent</span><span class="w"> </span><span class="n">type</span>
+<span class="mf">3.</span><span class="w"> </span><span class="n">Provide</span><span class="w"> </span><span class="kr">cont</span><span class="n">ext</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">requirements</span>
+<span class="mf">4.</span><span class="w"> </span><span class="n">Generate</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">review</span>
+<span class="mf">5.</span><span class="w"> </span><span class="n">Edit</span><span class="w"> </span><span class="n">as</span><span class="w"> </span><span class="n">needed</span>
+<span class="mf">6.</span><span class="w"> </span><span class="n">Add</span><span class="w"> </span><span class="kr">to</span><span class="w"> </span><span class="n">course</span>
+</code></pre></div>
+
+<h3 id="managing-students">Managing Students</h3>
+<h4 id="enrolling-students">Enrolling Students</h4>
+<p><strong>Individual Enrollment:</strong><br />
+1. Go to course → Students tab<br />
+2. Click "Enroll Student"<br />
+3. Search by name or email<br />
+4. Click "Enroll"</p>
+<p><strong>Bulk Enrollment:</strong><br />
+1. Go to course → Students → Bulk Enroll<br />
+2. Download the template CSV<br />
+3. Fill in student information<br />
+4. Upload the completed CSV<br />
+5. Review and confirm</p>
+<h4 id="tracking-progress">Tracking Progress</h4>
+<p>The student progress view shows:</p>
+<ul>
+<li>Completion percentage</li>
+<li>Quiz scores</li>
+<li>Lab submissions</li>
+<li>Time spent</li>
+<li>Last activity</li>
+</ul>
+<h3 id="creating-labs">Creating Labs</h3>
+<h4 id="lab-environment-setup">Lab Environment Setup</h4>
+<ol>
+<li>Navigate to course → Labs → Create Lab</li>
+<li>Configure environment:</li>
+<li>Programming language</li>
+<li>Required packages</li>
+<li>Memory/CPU limits</li>
+<li>Create starter code template</li>
+<li>Define test cases</li>
+<li>Set grading criteria</li>
+<li>Preview and publish</li>
+</ol>
+<h3 id="analytics-reporting">Analytics &amp; Reporting</h3>
+<p>Access detailed analytics:</p>
+<ul>
+<li><strong>Engagement</strong>: Time on platform, video completion</li>
+<li><strong>Performance</strong>: Quiz scores, lab grades</li>
+<li><strong>Trends</strong>: Progress over time</li>
+<li><strong>Comparisons</strong>: Cohort analysis</li>
+</ul>
+<h4 id="generating-reports">Generating Reports</h4>
+<ol>
+<li>Go to Analytics → Reports</li>
+<li>Select report type</li>
+<li>Choose date range</li>
+<li>Select students/courses</li>
+<li>Export as PDF or CSV</li>
+</ol>
+<hr />
+<h2 id="organization-admin-guide">Organization Admin Guide</h2>
+<h3 id="organization-admin-workflow">Organization Admin Workflow</h3>
+<p><img alt="Organization Admin Workflow" src="images/org-admin-workflow.svg" /></p>
+<h3 id="organization-setup">Organization Setup</h3>
+<h4 id="initial-configuration">Initial Configuration</h4>
+<ol>
+<li><strong>Organization Profile</strong></li>
+<li>Name and description</li>
+<li>Logo and branding</li>
+<li>
+<p>Contact information</p>
+</li>
+<li>
+<p><strong>Compliance Settings</strong></p>
+</li>
+<li>Data retention policies</li>
+<li>Privacy preferences</li>
+<li>
+<p>GDPR/CCPA compliance</p>
+</li>
+<li>
+<p><strong>Integration Setup</strong></p>
+</li>
+<li>SSO configuration</li>
+<li>Zoom integration</li>
+<li>Slack notifications</li>
+</ol>
+<h3 id="member-management">Member Management</h3>
+<h4 id="inviting-members">Inviting Members</h4>
+<ol>
+<li>Go to <strong>Members</strong> → <strong>Invite</strong></li>
+<li>Enter email address(es)</li>
+<li>Select role (Student, Instructor)</li>
+<li>Send invitation</li>
+</ol>
+<h4 id="bulk-import">Bulk Import</h4>
+<ol>
+<li>Download member template</li>
+<li>Fill in member details</li>
+<li>Upload CSV file</li>
+<li>Review and confirm</li>
+</ol>
+<h4 id="role-assignment">Role Assignment</h4>
+<div class="codehilite"><pre><span></span><code>Available Roles:
+├── Instructor
+│   ├── Can create courses
+│   ├── Can manage students
+│   └── Can view analytics
+│
+└── Student
+    ├── Can enroll in courses
+    ├── Can complete assessments
+    └── Can earn certificates
+</code></pre></div>
+
+<h3 id="training-tracks">Training Tracks</h3>
+<p>Training tracks group related courses into learning paths.</p>
+<h4 id="creating-a-track">Creating a Track</h4>
+<ol>
+<li>Go to <strong>Tracks</strong> → <strong>Create Track</strong></li>
+<li>Enter track details:</li>
+<li>Name and description</li>
+<li>Target audience</li>
+<li>Duration estimate</li>
+<li>Add courses:</li>
+<li>Select from organization courses</li>
+<li>Set sequence order</li>
+<li>Define prerequisites</li>
+<li>Publish track</li>
+</ol>
+<h3 id="projects-cohorts">Projects &amp; Cohorts</h3>
+<p>Projects organize training for specific groups.</p>
+<h4 id="creating-a-project">Creating a Project</h4>
+<ol>
+<li><strong>Define Project</strong></li>
+<li>Name and objectives</li>
+<li>Start and end dates</li>
+<li>
+<p>Success criteria</p>
+</li>
+<li>
+<p><strong>Create Cohorts</strong></p>
+</li>
+<li>Group students</li>
+<li>Assign instructors</li>
+<li>
+<p>Set schedules</p>
+</li>
+<li>
+<p><strong>Assign Content</strong></p>
+</li>
+<li>Select tracks or courses</li>
+<li>Set deadlines</li>
+<li>Configure completion requirements</li>
+</ol>
+<h3 id="integrations">Integrations</h3>
+<h4 id="zoom-integration">Zoom Integration</h4>
+<ol>
+<li>Go to <strong>Settings</strong> → <strong>Integrations</strong> → <strong>Zoom</strong></li>
+<li>Click "Connect Zoom Account"</li>
+<li>Authorize access</li>
+<li>Configure room defaults</li>
+</ol>
+<p><strong>Features:</strong><br />
+- Auto-create meeting rooms<br />
+- Sync participant lists<br />
+- Record sessions</p>
+<h4 id="slack-integration">Slack Integration</h4>
+<ol>
+<li>Go to <strong>Settings</strong> → <strong>Integrations</strong> → <strong>Slack</strong></li>
+<li>Click "Add to Slack"</li>
+<li>Select workspace</li>
+<li>Choose notification channels</li>
+</ol>
+<p><strong>Notification Types:</strong><br />
+- Course enrollments<br />
+- Completion milestones<br />
+- Deadline reminders<br />
+- Announcements</p>
+<h3 id="organization-analytics">Organization Analytics</h3>
+<p>Key metrics available:</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Active Users</td>
+<td>Users logged in (7/30 day)</td>
+</tr>
+<tr>
+<td>Course Completions</td>
+<td>Total completions</td>
+</tr>
+<tr>
+<td>Engagement Rate</td>
+<td>Active learning time</td>
+</tr>
+<tr>
+<td>Compliance Rate</td>
+<td>Mandatory training completion</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="site-admin-guide">Site Admin Guide</h2>
+<h3 id="site-admin-workflow">Site Admin Workflow</h3>
+<p><img alt="Site Admin Workflow" src="images/site-admin-workflow.svg" /></p>
+<h3 id="platform-overview-dashboard">Platform Overview Dashboard</h3>
+<p>The site admin dashboard provides:</p>
+<ul>
+<li><strong>System Health</strong>: All services status</li>
+<li><strong>Platform Metrics</strong>: Users, orgs, courses</li>
+<li><strong>Critical Alerts</strong>: Issues requiring attention</li>
+<li><strong>Quick Actions</strong>: Common admin tasks</li>
+</ul>
+<h3 id="organization-management">Organization Management</h3>
+<h4 id="creating-organizations">Creating Organizations</h4>
+<ol>
+<li>Go to <strong>Organizations</strong> → <strong>Create</strong></li>
+<li>Enter organization details</li>
+<li>Set resource limits</li>
+<li>Assign initial admin</li>
+<li>Activate organization</li>
+</ol>
+<h4 id="managing-organizations">Managing Organizations</h4>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Edit</td>
+<td>Modify settings</td>
+</tr>
+<tr>
+<td>Suspend</td>
+<td>Temporarily disable</td>
+</tr>
+<tr>
+<td>Activate</td>
+<td>Re-enable suspended org</td>
+</tr>
+<tr>
+<td>Delete</td>
+<td>Permanent removal</td>
+</tr>
+</tbody>
+</table>
+<h3 id="global-user-management">Global User Management</h3>
+<h4 id="user-search">User Search</h4>
+<p>Search across all organizations by:<br />
+- Username or email<br />
+- Organization<br />
+- Role<br />
+- Status</p>
+<h4 id="user-actions">User Actions</h4>
+<ul>
+<li>View profile and activity</li>
+<li>Reset password</li>
+<li>Change role</li>
+<li>Transfer between orgs</li>
+<li>Disable/enable account</li>
+</ul>
+<h3 id="system-configuration">System Configuration</h3>
+<h4 id="platform-settings">Platform Settings</h4>
+<div class="codehilite"><pre><span></span><code><span class="nt">General</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Platform name</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Contact email</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Support URL</span>
+
+<span class="nt">Features</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Registration enabled</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Guest access</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AI features</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Lab environments</span>
+
+<span class="nt">Limits</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Max organizations</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Users per org</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Storage per org</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Concurrent labs</span>
+</code></pre></div>
+
+<h4 id="security-settings">Security Settings</h4>
+<ul>
+<li>Password policies</li>
+<li>Session timeouts</li>
+<li>2FA requirements</li>
+<li>API rate limits</li>
+</ul>
+<h3 id="system-monitoring">System Monitoring</h3>
+<h4 id="service-status">Service Status</h4>
+<p>Monitor all microservices:<br />
+- Health status<br />
+- Response times<br />
+- Error rates<br />
+- Resource usage</p>
+<h4 id="log-management">Log Management</h4>
+<p>Access logs for:<br />
+- Application events<br />
+- Security events<br />
+- Error tracking<br />
+- Audit trail</p>
+<h3 id="demo-management">Demo Management</h3>
+<h4 id="creating-demo-data">Creating Demo Data</h4>
+<ol>
+<li>Go to <strong>Demo</strong> → <strong>Create Demo</strong></li>
+<li>Select template (Small, Medium, Large)</li>
+<li>Configure options</li>
+<li>Generate data</li>
+</ol>
+<h4 id="demo-reset">Demo Reset</h4>
+<p>Reset demo environment to initial state:<br />
+1. Go to <strong>Demo</strong> → <strong>Reset</strong><br />
+2. Confirm reset<br />
+3. Wait for completion</p>
+<hr />
+<h2 id="ai-assistant-features">AI Assistant Features</h2>
+<h3 id="overview">Overview</h3>
+<p>The AI Assistant is available platform-wide to help with:</p>
+<ul>
+<li><strong>Navigation Help</strong>: Finding features and pages</li>
+<li><strong>Learning Assistance</strong>: Explaining concepts</li>
+<li><strong>Technical Support</strong>: Troubleshooting issues</li>
+<li><strong>Content Creation</strong>: Generating course materials</li>
+</ul>
+<h3 id="accessing-the-ai-assistant">Accessing the AI Assistant</h3>
+<p>Click the AI bubble icon in the bottom-right corner of any page.</p>
+<h3 id="conversation-features">Conversation Features</h3>
+<h4 id="natural-language-queries">Natural Language Queries</h4>
+<p>Ask questions naturally:<br />
+- "How do I create a new course?"<br />
+- "What are my upcoming deadlines?"<br />
+- "Explain Python list comprehensions"</p>
+<h4 id="context-awareness">Context Awareness</h4>
+<p>The assistant knows:<br />
+- Your current page<br />
+- Your role and permissions<br />
+- Your enrolled courses<br />
+- Platform features</p>
+<h3 id="role-specific-assistance">Role-Specific Assistance</h3>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>AI Capabilities</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Student</td>
+<td>Study help, quiz prep, lab hints</td>
+</tr>
+<tr>
+<td>Instructor</td>
+<td>Content ideas, grading help, analytics</td>
+</tr>
+<tr>
+<td>Org Admin</td>
+<td>Setup guidance, reporting, integrations</td>
+</tr>
+<tr>
+<td>Site Admin</td>
+<td>System monitoring, troubleshooting</td>
+</tr>
+</tbody>
+</table>
+<h3 id="rag-enhanced-responses">RAG-Enhanced Responses</h3>
+<p>The assistant uses Retrieval-Augmented Generation (RAG) to provide:<br />
+- Course-specific answers<br />
+- Platform documentation<br />
+- Best practices<br />
+- Troubleshooting guides</p>
+<hr />
+<h2 id="lab-environments_1">Lab Environments</h2>
+<h3 id="architecture">Architecture</h3>
+<p>Lab environments use Docker containers for isolation:</p>
+<div class="codehilite"><pre><span></span><code>┌──────────────────────────────────────┐
+│          User&#39;s Browser              │
+│  ┌────────────────────────────────┐  │
+│  │      Monaco Editor (IDE)       │  │
+│  │  ┌─────────────────────────┐   │  │
+│  │  │    Code Editor Pane     │   │  │
+│  │  ├─────────────────────────┤   │  │
+│  │  │    Output Console       │   │  │
+│  │  └─────────────────────────┘   │  │
+│  └────────────────────────────────┘  │
+└──────────────────────────────────────┘
+                    │
+                    │ WebSocket
+                    ▼
+┌──────────────────────────────────────┐
+│         Lab Manager Service          │
+│  ┌────────────────────────────────┐  │
+│  │   Container Orchestration      │  │
+│  └────────────────────────────────┘  │
+└──────────────────────────────────────┘
+                    │
+                    ▼
+┌──────────────────────────────────────┐
+│     Docker Container (per user)      │
+│  ┌─────────┐  ┌─────────┐           │
+│  │  Python │  │  Node   │  ...      │
+│  └─────────┘  └─────────┘           │
+└──────────────────────────────────────┘
+</code></pre></div>
+
+<h3 id="supported-languages">Supported Languages</h3>
+<table>
+<thead>
+<tr>
+<th>Language</th>
+<th>Version</th>
+<th>Features</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python</td>
+<td>3.11</td>
+<td>Full standard library</td>
+</tr>
+<tr>
+<td>JavaScript</td>
+<td>Node 18</td>
+<td>npm packages</td>
+</tr>
+<tr>
+<td>Java</td>
+<td>17</td>
+<td>JDK + common libs</td>
+</tr>
+<tr>
+<td>Go</td>
+<td>1.21</td>
+<td>Standard library</td>
+</tr>
+<tr>
+<td>Rust</td>
+<td>1.70</td>
+<td>Cargo support</td>
+</tr>
+</tbody>
+</table>
+<h3 id="lab-best-practices">Lab Best Practices</h3>
+<p><strong>For Students:</strong><br />
+1. Save work frequently (auto-save enabled)<br />
+2. Test incrementally<br />
+3. Read error messages carefully<br />
+4. Use AI assistant for hints</p>
+<p><strong>For Instructors:</strong><br />
+1. Provide clear instructions<br />
+2. Include starter code<br />
+3. Create comprehensive tests<br />
+4. Set appropriate time limits</p>
+<hr />
+<h2 id="technical-reference">Technical Reference</h2>
+<h3 id="api-overview">API Overview</h3>
+<p>The platform exposes RESTful APIs for all services:</p>
+<div class="codehilite"><pre><span></span><code>Base URL: https://your-domain.com/api/v1
+
+Authentication:
+  Header: Authorization: Bearer &lt;token&gt;
+
+Common Endpoints:
+  GET  /users/me          - Current user
+  GET  /courses           - List courses
+  POST /courses           - Create course
+  GET  /courses/{id}      - Get course
+  PUT  /courses/{id}      - Update course
+</code></pre></div>
+
+<h3 id="websocket-connections">WebSocket Connections</h3>
+<p>Real-time features use WebSocket:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// AI Assistant</span>
+<span class="nx">ws</span><span class="o">:</span><span class="c1">//domain/ws/ai-assistant</span>
+
+<span class="c1">// Lab Environment</span>
+<span class="nx">ws</span><span class="o">:</span><span class="c1">//domain/ws/lab/{labId}</span>
+</code></pre></div>
+
+<h3 id="database-schema">Database Schema</h3>
+<p>Key entities:</p>
+<div class="codehilite"><pre><span></span><code>users
+  ├── id (UUID)
+  ├── username
+  ├── email
+  ├── role
+  └── organization_id
+
+courses
+  ├── id (UUID)
+  ├── title
+  ├── description
+  ├── instructor_id
+  └── organization_id
+
+enrollments
+  ├── user_id
+  ├── course_id
+  ├── progress
+  └── status
+</code></pre></div>
+
+<hr />
+<h2 id="troubleshooting">Troubleshooting</h2>
+<h3 id="common-issues">Common Issues</h3>
+<h4 id="login-problems">Login Problems</h4>
+<table>
+<thead>
+<tr>
+<th>Issue</th>
+<th>Solution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Forgot password</td>
+<td>Use "Forgot Password" link</td>
+</tr>
+<tr>
+<td>Account locked</td>
+<td>Contact organization admin</td>
+</tr>
+<tr>
+<td>SSO not working</td>
+<td>Check with IT department</td>
+</tr>
+</tbody>
+</table>
+<h4 id="course-access-issues">Course Access Issues</h4>
+<table>
+<thead>
+<tr>
+<th>Issue</th>
+<th>Solution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Can't see course</td>
+<td>Verify enrollment</td>
+</tr>
+<tr>
+<td>Content not loading</td>
+<td>Clear browser cache</td>
+</tr>
+<tr>
+<td>Progress not saving</td>
+<td>Check internet connection</td>
+</tr>
+</tbody>
+</table>
+<h4 id="lab-environment-issues">Lab Environment Issues</h4>
+<table>
+<thead>
+<tr>
+<th>Issue</th>
+<th>Solution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Lab won't start</td>
+<td>Refresh page, try again</td>
+</tr>
+<tr>
+<td>Code not running</td>
+<td>Check syntax errors</td>
+</tr>
+<tr>
+<td>Timeout errors</td>
+<td>Optimize code efficiency</td>
+</tr>
+<tr>
+<td>Lost work</td>
+<td>Check auto-save history</td>
+</tr>
+</tbody>
+</table>
+<h3 id="getting-help">Getting Help</h3>
+<ol>
+<li><strong>AI Assistant</strong>: Click the AI bubble for instant help</li>
+<li><strong>FAQ</strong>: Check the Help section</li>
+<li><strong>Support</strong>: Contact your organization admin</li>
+<li><strong>Technical Support</strong>: support@coursecreator.com</li>
+</ol>
+<hr />
+<h2 id="glossary">Glossary</h2>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Cohort</strong></td>
+<td>Group of students taking a course together</td>
+</tr>
+<tr>
+<td><strong>Course</strong></td>
+<td>Collection of learning modules</td>
+</tr>
+<tr>
+<td><strong>Enrollment</strong></td>
+<td>Student registration in a course</td>
+</tr>
+<tr>
+<td><strong>Lab</strong></td>
+<td>Interactive coding environment</td>
+</tr>
+<tr>
+<td><strong>Module</strong></td>
+<td>Section within a course</td>
+</tr>
+<tr>
+<td><strong>Organization</strong></td>
+<td>Company or institution using the platform</td>
+</tr>
+<tr>
+<td><strong>RAG</strong></td>
+<td>Retrieval-Augmented Generation (AI technique)</td>
+</tr>
+<tr>
+<td><strong>Track</strong></td>
+<td>Sequence of related courses</td>
+</tr>
+<tr>
+<td><strong>RBAC</strong></td>
+<td>Role-Based Access Control</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="appendix">Appendix</h2>
+<h3 id="keyboard-shortcuts">Keyboard Shortcuts</h3>
+<table>
+<thead>
+<tr>
+<th>Shortcut</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Ctrl/Cmd + K</code></td>
+<td>Open search</td>
+</tr>
+<tr>
+<td><code>Escape</code></td>
+<td>Close modal/AI Assistant</td>
+</tr>
+<tr>
+<td><code>?</code></td>
+<td>Show help</td>
+</tr>
+<tr>
+<td><code>N</code></td>
+<td>Next lesson (in course)</td>
+</tr>
+<tr>
+<td><code>P</code></td>
+<td>Previous lesson (in course)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="browser-compatibility">Browser Compatibility</h3>
+<table>
+<thead>
+<tr>
+<th>Browser</th>
+<th>Minimum Version</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Chrome</td>
+<td>90+</td>
+</tr>
+<tr>
+<td>Firefox</td>
+<td>88+</td>
+</tr>
+<tr>
+<td>Safari</td>
+<td>14+</td>
+</tr>
+<tr>
+<td>Edge</td>
+<td>90+</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><em>For the latest documentation and updates, visit the platform help center or contact your administrator.</em></p>
+    </main>
+
+    <footer style="margin-top: 60px; padding-top: 20px; border-top: 1px solid #eee; color: #999; text-align: center;">
+        <p>Course Creator Platform - User Guide</p>
+        <p>Generated: 2025-12-01</p>
+    </footer>
+</body>
+</html>

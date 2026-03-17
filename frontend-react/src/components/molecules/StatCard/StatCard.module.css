@@ -1,0 +1,237 @@
+/**
+ * StatCard Component Styles
+ *
+ * BUSINESS CONTEXT:
+ * Styles for dashboard statistic cards with trend indicators.
+ * Designed for clear data visualization at a glance.
+ *
+ * DESIGN PRINCIPLES:
+ * - Large, prominent values for quick scanning
+ * - Color-coded trends (green=positive, red=negative)
+ * - Subtle animations for polish
+ * - Responsive for all screen sizes
+ */
+
+/* ============================================================================
+ * STAT CARD CONTAINER
+ * ============================================================================ */
+
+.stat-card {
+  /* Ensure full height in grids */
+  height: 100%;
+}
+
+/* ============================================================================
+ * STAT CONTENT
+ * ============================================================================ */
+
+.stat-content {
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+}
+
+/* ============================================================================
+ * STAT ICON
+ * ============================================================================ */
+
+.stat-icon {
+  /* Layout */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Sizing */
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+
+  /* Background */
+  background-color: #eff6ff;
+
+  /* Icon color */
+  color: #2563eb;
+
+  /* Spacing */
+  margin-bottom: 8px;
+}
+
+.stat-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* ============================================================================
+ * STAT VALUE
+ * ============================================================================ */
+
+.stat-value {
+  /* Typography */
+  font-size: 32px;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+
+  /* Animation for number changes */
+  transition: transform 0.2s ease;
+}
+
+.stat-card:hover .stat-value {
+  transform: scale(1.02);
+}
+
+/* ============================================================================
+ * STAT LABEL
+ * ============================================================================ */
+
+.stat-label {
+  /* Typography */
+  font-size: 14px;
+  font-weight: 500;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ============================================================================
+ * TREND INDICATOR
+ * ============================================================================ */
+
+.trend-indicator {
+  /* Layout */
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  /* Spacing */
+  margin-top: 8px;
+  padding: 4px 12px;
+  border-radius: 16px;
+
+  /* Typography */
+  font-size: 13px;
+  font-weight: 500;
+
+  /* Default neutral state */
+  background-color: #f1f5f9;
+  color: #64748b;
+}
+
+/* Positive trend (up) */
+.trend-up {
+  background-color: #dcfce7;
+  color: #16a34a;
+}
+
+/* Negative trend (down) */
+.trend-down {
+  background-color: #fef2f2;
+  color: #dc2626;
+}
+
+/* Neutral trend */
+.trend-neutral {
+  background-color: #f1f5f9;
+  color: #64748b;
+}
+
+/* ============================================================================
+ * TREND ICON
+ * ============================================================================ */
+
+.trend-icon {
+  /* Sizing */
+  width: 16px;
+  height: 16px;
+
+  /* Prevent shrinking */
+  flex-shrink: 0;
+}
+
+/* ============================================================================
+ * TREND VALUE
+ * ============================================================================ */
+
+.trend-value {
+  /* Typography */
+  font-weight: 600;
+}
+
+/* ============================================================================
+ * TREND LABEL
+ * ============================================================================ */
+
+.trend-label {
+  /* Typography */
+  font-weight: 400;
+  opacity: 0.8;
+
+  /* Hide on very small screens */
+  display: none;
+}
+
+@media (min-width: 480px) {
+  .trend-label {
+    display: inline;
+  }
+}
+
+/* ============================================================================
+ * RESPONSIVE DESIGN
+ * ============================================================================ */
+
+@media (max-width: 640px) {
+  .stat-value {
+    font-size: 28px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+  }
+
+  .stat-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .stat-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* ============================================================================
+ * ACCESSIBILITY
+ * ============================================================================ */
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .trend-up {
+    background-color: #14532d;
+    color: #ffffff;
+  }
+
+  .trend-down {
+    background-color: #7f1d1d;
+    color: #ffffff;
+  }
+
+  .stat-value {
+    color: #000000;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .stat-value {
+    transition: none;
+  }
+
+  .stat-card:hover .stat-value {
+    transform: none;
+  }
+}

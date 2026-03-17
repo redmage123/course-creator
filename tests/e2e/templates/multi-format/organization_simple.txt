@@ -1,0 +1,191 @@
+===============================================================================
+SIMPLE ORGANIZATION TEMPLATE - PLAIN TEXT FORMAT
+===============================================================================
+AI Assistant can parse this structured text format to create organizations
+
+Template Type: organization
+Version: 1.0
+Description: Simple organization template with basic course structure
+
+===============================================================================
+ORGANIZATION DETAILS
+===============================================================================
+
+Name: TechEd Academy
+Slug: teched-academy
+Description: Modern technology education academy focusing on software development
+Domain: teched-academy.edu
+Industry: Education & Technology
+Size: small
+
+Address:
+  Street: 456 Innovation Drive
+  City: San Francisco
+  State: CA
+  Postal Code: 94105
+  Country: US
+
+Contact:
+  Phone: +1-415-555-0199
+  Email: contact@teched-academy.edu
+  Website: https://teched-academy.edu
+
+Administrator:
+  Full Name: Dr. Emily Chen
+  Username: echen
+  Email: admin@teched-academy.edu
+  Password: AdminPass123!
+  First Name: Emily
+  Last Name: Chen
+  Role: organization_admin
+
+Settings:
+  Timezone: America/Los_Angeles
+  Language: en
+  Currency: USD
+  Date Format: MM/DD/YYYY
+
+===============================================================================
+TRAINING PROGRAMS
+===============================================================================
+
+Program 1:
+  Name: Web Development Bootcamp 2025
+  Description: Intensive 12-week program covering modern web development
+  Category: Software Engineering
+  Difficulty: intermediate
+  Duration: 12 weeks
+  Price: $0
+  Published: No
+
+===============================================================================
+LEARNING TRACKS
+===============================================================================
+
+Track 1: Frontend Development
+  Description: Master modern frontend technologies
+  Target Audience:
+    - Career changers
+    - Junior developers
+  Prerequisites:
+    - Basic HTML/CSS knowledge
+    - JavaScript fundamentals
+  Learning Objectives:
+    - Build responsive web applications with React
+    - Implement state management with Redux
+    - Create accessible and performant UIs
+  Duration: 6 weeks
+  Difficulty: beginner
+  Max Students: 30
+
+Track 2: Backend Development
+  Description: Server-side development with Node.js
+  Target Audience:
+    - Frontend developers
+    - Junior developers
+  Prerequisites:
+    - JavaScript proficiency
+    - Understanding of HTTP
+  Learning Objectives:
+    - Build RESTful APIs with Express
+    - Work with databases (SQL and NoSQL)
+    - Implement authentication and authorization
+  Duration: 6 weeks
+  Difficulty: intermediate
+  Max Students: 30
+
+===============================================================================
+COURSES
+===============================================================================
+
+FRONTEND DEVELOPMENT TRACK:
+
+Course 1: React Fundamentals
+  Description: Learn React basics including components, props, and state
+  Difficulty: beginner
+  Duration: 2 weeks
+
+Course 2: Advanced React Patterns
+  Description: Master hooks, context, and performance optimization
+  Difficulty: intermediate
+  Duration: 2 weeks
+
+Course 3: State Management with Redux
+  Description: Implement complex state management in React apps
+  Difficulty: intermediate
+  Duration: 2 weeks
+
+BACKEND DEVELOPMENT TRACK:
+
+Course 4: Node.js Essentials
+  Description: Build server-side applications with Node.js
+  Difficulty: beginner
+  Duration: 2 weeks
+
+Course 5: Express.js and REST APIs
+  Description: Create RESTful APIs with Express framework
+  Difficulty: intermediate
+  Duration: 2 weeks
+
+Course 6: Database Integration
+  Description: Work with PostgreSQL and MongoDB
+  Difficulty: intermediate
+  Duration: 2 weeks
+
+===============================================================================
+INSTRUCTORS
+===============================================================================
+
+Instructor 1:
+  Name: Alex Rodriguez
+  Email: alex.rodriguez@teched-academy.edu
+  Username: arodriguez
+  Password: InstructorPass123!
+  Specialties: React, JavaScript
+  Bio: Senior frontend developer with 8 years of experience
+
+Instructor 2:
+  Name: Maya Patel
+  Email: maya.patel@teched-academy.edu
+  Username: mpatel
+  Password: InstructorPass123!
+  Specialties: Node.js, Databases
+  Bio: Backend engineer specializing in scalable systems
+
+===============================================================================
+STUDENTS
+===============================================================================
+
+Student 1:
+  Name: Jordan Smith
+  Email: jordan.smith@students.teched-academy.edu
+  Username: jsmith
+  Password: StudentPass123!
+  Background: Career changer from marketing
+  Goals:
+    - Become a frontend developer
+    - Build portfolio projects
+
+Student 2:
+  Name: Taylor Johnson
+  Email: taylor.johnson@students.teched-academy.edu
+  Username: tjohnson
+  Password: StudentPass123!
+  Background: Computer science graduate
+  Goals:
+    - Master full-stack development
+    - Get hired at a tech company
+
+Student 3:
+  Name: Casey Williams
+  Email: casey.williams@students.teched-academy.edu
+  Username: cwilliams
+  Password: StudentPass123!
+  Background: Self-taught developer
+  Goals:
+    - Formalize web development skills
+    - Learn best practices
+
+===============================================================================
+END OF TEMPLATE
+===============================================================================

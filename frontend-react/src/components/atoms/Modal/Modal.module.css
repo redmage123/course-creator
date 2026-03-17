@@ -1,0 +1,303 @@
+/**
+ * Modal Component Styles - Tami Design System
+ *
+ * BUSINESS CONTEXT:
+ * Implements Tami design system modal styles with smooth animations.
+ * Provides consistent, professional dialog styling for critical user actions.
+ *
+ * CRITICAL: Uses OUR blue (#2563eb), NOT Tami purple/orange
+ */
+
+/* ============================================================================
+ * BACKDROP
+ * ============================================================================ */
+
+.backdrop {
+  /* Positioning */
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+
+  /* Layout */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+
+  /* Background */
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+
+  /* Animation */
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ============================================================================
+ * MODAL CONTAINER
+ * ============================================================================ */
+
+.modal {
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  width: 100%;
+  max-height: 90vh;
+  box-sizing: border-box;
+
+  /* Background */
+  background-color: #ffffff;
+  border-radius: 12px;
+
+  /* Shadow */
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+              0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+  /* Animation */
+  animation: slideIn 0.3s ease-out;
+
+  /* Outline for focus */
+  outline: none;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ============================================================================
+ * SIZE VARIANTS
+ * ============================================================================ */
+
+.modal-small {
+  max-width: 400px;
+}
+
+.modal-medium {
+  max-width: 600px;
+}
+
+.modal-large {
+  max-width: 800px;
+}
+
+.modal-fullscreen {
+  max-width: 90vw;
+  max-height: 90vh;
+}
+
+/* ============================================================================
+ * MODAL HEADER
+ * ============================================================================ */
+
+.modal-header {
+  /* Layout */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+
+  /* Prevent shrinking */
+  flex-shrink: 0;
+}
+
+.modal-title {
+  /* Typography */
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a202c;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.modal-close {
+  /* Reset */
+  border: none;
+  background: none;
+  padding: 8px;
+  margin: -8px -8px -8px 16px;
+  cursor: pointer;
+
+  /* Layout */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+
+  /* Colors */
+  color: #64748b;
+
+  /* Transitions */
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+  background-color: #f1f5f9;
+  color: #1a202c;
+}
+
+.modal-close:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* ============================================================================
+ * MODAL BODY
+ * ============================================================================ */
+
+.modal-body {
+  /* Layout */
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+
+  /* Typography */
+  color: #1a202c;
+  line-height: 1.6;
+}
+
+/* Custom scrollbar for modal body */
+.modal-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ============================================================================
+ * MODAL FOOTER
+ * ============================================================================ */
+
+.modal-footer {
+  /* Layout */
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid #e2e8f0;
+
+  /* Prevent shrinking */
+  flex-shrink: 0;
+
+  /* Background */
+  background-color: #f8fafc;
+  border-radius: 0 0 12px 12px;
+}
+
+/* ============================================================================
+ * ACCESSIBILITY
+ * ============================================================================ */
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .modal {
+    border: 2px solid #1a202c;
+  }
+
+  .modal-header,
+  .modal-footer {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .backdrop,
+  .modal {
+    animation: none;
+  }
+
+  .modal-close {
+    transition: none;
+  }
+}
+
+/* ============================================================================
+ * RESPONSIVE DESIGN
+ * ============================================================================ */
+
+/* Tablet and mobile */
+@media (max-width: 768px) {
+  .backdrop {
+    padding: 0;
+  }
+
+  .modal {
+    max-width: 100% !important;
+    max-height: 100vh;
+    border-radius: 0;
+    min-height: 100vh;
+  }
+
+  .modal-header {
+    padding: 16px 20px;
+  }
+
+  .modal-title {
+    font-size: 18px;
+  }
+
+  .modal-body {
+    padding: 20px;
+  }
+
+  .modal-footer {
+    padding: 12px 20px;
+    flex-direction: column-reverse;
+    border-radius: 0;
+  }
+
+  .modal-footer > * {
+    width: 100%;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+  .modal-header {
+    padding: 12px 16px;
+  }
+
+  .modal-title {
+    font-size: 16px;
+  }
+
+  .modal-body {
+    padding: 16px;
+  }
+
+  .modal-footer {
+    padding: 12px 16px;
+  }
+}

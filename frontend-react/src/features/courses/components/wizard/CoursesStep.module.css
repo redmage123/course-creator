@@ -1,0 +1,238 @@
+/**
+ * CoursesStep Styles - Step 3: Course management per track
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin: 4px 0 0 0;
+}
+
+/* Track accordion */
+.trackAccordion {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.trackAccordionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: #f8fafc;
+  cursor: pointer;
+  user-select: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.2s ease;
+}
+
+.trackAccordionHeader:hover {
+  background: #f1f5f9;
+}
+
+.trackAccordionTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chevron {
+  font-size: 12px;
+  transition: transform 0.2s ease;
+  color: #64748b;
+}
+
+.chevronOpen {
+  transform: rotate(90deg);
+}
+
+.courseCount {
+  font-size: 13px;
+  font-weight: 400;
+  color: #64748b;
+}
+
+.trackAccordionBody {
+  padding: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+/* Course list */
+.courseList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.courseItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.courseInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.courseName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0;
+}
+
+.courseMeta {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.courseActions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Inline form */
+.inlineForm {
+  border: 2px solid #2563eb;
+  border-radius: 8px;
+  padding: 16px;
+  background: #f0f9ff;
+  margin-top: 12px;
+}
+
+.formTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+  margin: 0 0 12px 0;
+}
+
+.formGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.formLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.required {
+  color: #dc2626;
+}
+
+.formInput,
+.formTextarea,
+.formSelect {
+  padding: 10px 12px;
+  font-size: 15px;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  font-family: inherit;
+  background: #fff;
+  color: #1a1a1a;
+}
+
+.formInput:focus,
+.formTextarea:focus,
+.formSelect:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.formTextarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.formActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 24px 16px;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.noTracks {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+}
+
+.noTracks p {
+  margin: 8px 0;
+}
+
+.noTracksTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+}
+
+@media (max-width: 640px) {
+  .formRow {
+    grid-template-columns: 1fr;
+  }
+
+  .courseItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}

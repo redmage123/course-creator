@@ -1,0 +1,258 @@
+/**
+ * Login Page Styles - Tami Design System
+ *
+ * BUSINESS CONTEXT:
+ * Centered authentication layout with clean, professional design.
+ * Optimized for accessibility and mobile responsiveness.
+ *
+ * DESIGN PRINCIPLES:
+ * - Centered card layout with max-width constraint
+ * - Platform blue (#2563eb) for primary actions
+ * - Clear visual hierarchy with proper spacing
+ * - Mobile-responsive design
+ */
+
+/* ============================================================================
+ * PAGE LAYOUT
+ * ============================================================================ */
+
+.login-page {
+  /* Full viewport height */
+  min-height: 100vh;
+
+  /* Background */
+  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+
+  /* Flexbox centering */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Padding */
+  padding: 24px;
+}
+
+.login-container {
+  /* Max width */
+  width: 100%;
+  max-width: 480px;
+
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ============================================================================
+ * HEADER
+ * ============================================================================ */
+
+.login-header {
+  /* Layout */
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.login-subtitle {
+  /* Typography */
+  font-size: 16px;
+  line-height: 24px;
+  color: #64748b;
+  margin: 12px 0 0 0;
+}
+
+/* ============================================================================
+ * FORM
+ * ============================================================================ */
+
+.login-form {
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ============================================================================
+ * ERROR BANNER
+ * ============================================================================ */
+
+.login-error-banner {
+  /* Layout */
+  padding: 12px 16px;
+  border-radius: 8px;
+
+  /* Colors */
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+
+  /* Typography */
+  font-size: 14px;
+  line-height: 1.5;
+
+  /* Animation */
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================================
+ * OPTIONS ROW (REMEMBER ME + FORGOT PASSWORD)
+ * ============================================================================ */
+
+.login-options {
+  /* Layout */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: -8px 0;
+}
+
+/* ============================================================================
+ * LINKS
+ * ============================================================================ */
+
+.login-link {
+  /* Typography */
+  font-size: 14px;
+  font-weight: 500;
+  color: #2563eb;
+  text-decoration: none;
+
+  /* Transitions */
+  transition: color 0.2s ease;
+}
+
+.login-link:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.login-link:focus {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ============================================================================
+ * FOOTER
+ * ============================================================================ */
+
+.login-footer {
+  /* Layout */
+  text-align: center;
+  padding-top: 4px;
+}
+
+.login-footer-text {
+  /* Typography */
+  font-size: 14px;
+  line-height: 1.5;
+  color: #64748b;
+  margin: 0;
+}
+
+/* ============================================================================
+ * DEMO CREDENTIALS (DEVELOPMENT ONLY)
+ * ============================================================================ */
+
+.demo-credentials {
+  /* Visual cue that this is for development */
+  opacity: 0.9;
+}
+
+.demo-list {
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.demo-list p {
+  /* Typography */
+  font-size: 13px;
+  line-height: 1.5;
+  color: #475569;
+  margin: 0;
+}
+
+.demo-list strong {
+  /* Typography */
+  font-weight: 600;
+  color: #1e293b;
+  min-width: 110px;
+  display: inline-block;
+}
+
+/* ============================================================================
+ * MOBILE RESPONSIVE
+ * ============================================================================ */
+
+@media (max-width: 640px) {
+  .login-page {
+    padding: 16px;
+    align-items: flex-start;
+    padding-top: 40px;
+  }
+
+  .login-container {
+    max-width: 100%;
+    gap: 20px;
+  }
+
+  .login-subtitle {
+    font-size: 15px;
+  }
+
+  .login-options {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .demo-credentials {
+    margin-top: 8px;
+  }
+
+  .demo-list strong {
+    min-width: 100px;
+    font-size: 12px;
+  }
+}
+
+/* ============================================================================
+ * ACCESSIBILITY
+ * ============================================================================ */
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .login-error-banner {
+    border-width: 2px;
+  }
+
+  .login-link {
+    text-decoration: underline;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .login-error-banner {
+    animation: none;
+  }
+
+  .login-link {
+    transition: none;
+  }
+}

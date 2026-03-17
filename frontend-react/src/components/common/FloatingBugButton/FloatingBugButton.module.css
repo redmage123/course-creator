@@ -1,0 +1,163 @@
+/**
+ * Floating Bug Report Button Styles
+ *
+ * BUSINESS CONTEXT:
+ * Styles for the floating action button (FAB) used to access bug reporting.
+ * Uses platform blue color scheme with subtle animations.
+ *
+ * DESIGN PRINCIPLES:
+ * - Non-intrusive but easily discoverable
+ * - Clear visual feedback on interaction
+ * - Accessible focus states
+ */
+
+/* Container for positioning */
+.container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+/* Floating Action Button */
+.fab {
+  /* Reset */
+  border: none;
+  margin: 0;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
+
+  /* Size and shape */
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+
+  /* Colors - Using a distinct orange/amber color for bug reports */
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #ffffff;
+
+  /* Shadow for depth */
+  box-shadow:
+    0 4px 12px rgba(245, 158, 11, 0.4),
+    0 2px 4px rgba(0, 0, 0, 0.1);
+
+  /* Layout */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Animation */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Icon styling */
+.fab i {
+  font-size: 22px;
+  transition: transform 0.3s ease;
+}
+
+/* Hover state */
+.fab:hover {
+  transform: scale(1.1);
+  box-shadow:
+    0 6px 20px rgba(245, 158, 11, 0.5),
+    0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.fab:hover i {
+  transform: rotate(-15deg);
+}
+
+/* Focus state for accessibility */
+.fab:focus {
+  outline: none;
+  box-shadow:
+    0 0 0 4px rgba(245, 158, 11, 0.3),
+    0 6px 20px rgba(245, 158, 11, 0.5),
+    0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Active/pressed state */
+.fab:active {
+  transform: scale(0.95);
+  box-shadow:
+    0 2px 8px rgba(245, 158, 11, 0.4),
+    0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Tooltip */
+.tooltip {
+  background: #1e293b;
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+  /* Animation */
+  animation: tooltipFadeIn 0.2s ease;
+}
+
+/* Tooltip arrow */
+.tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  right: 24px;
+  border-width: 6px;
+  border-style: solid;
+  border-color: #1e293b transparent transparent transparent;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .container {
+    bottom: 16px;
+    right: 16px;
+  }
+
+  .fab {
+    width: 48px;
+    height: 48px;
+  }
+
+  .fab i {
+    font-size: 18px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .fab,
+  .fab i,
+  .tooltip {
+    transition: none;
+    animation: none;
+  }
+
+  .fab:hover {
+    transform: none;
+  }
+
+  .fab:hover i {
+    transform: none;
+  }
+}

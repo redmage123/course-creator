@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Button Test</title>
+    <link rel="stylesheet" href="../../frontend/css/main.css">
+    <style>
+        .test-results {
+            padding: 20px;
+            margin: 20px;
+            border: 2px solid #ccc;
+            background: #f9f9f9;
+            font-family: monospace;
+        }
+        .test-pass {
+            color: green;
+            font-weight: bold;
+        }
+        .test-fail {
+            color: red;
+            font-weight: bold;
+        }
+        .test-info {
+            color: blue;
+        }
+    </style>
+</head>
+<body>
+    <h1>Registration Button Frontend Test</h1>
+    
+    <!-- Replicate the same structure as index.html -->
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="auth-buttons" id="authButtons">
+                    <button class="btn-auth btn-login" id="loginBtn">Login</button>
+                    <button class="btn-auth btn-register" id="registerBtn">Register</button>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <main id="main-content">
+        <div>Initial content</div>
+    </main>
+    
+    <div class="test-results" id="testResults">
+        <h2>Test Results:</h2>
+        <div id="testOutput"></div>
+    </div>
+
+    <!-- Load modules in the same order as main.js -->
+    <script type="module">
+        import { App } from '../../frontend/js/modules/app.js';
+        import { Auth } from '../../frontend/js/modules/auth.js';
+        import { Navigation } from '../../frontend/js/modules/navigation.js';
+        import { showNotification } from '../../frontend/js/modules/notifications.js';
+
+        const testOutput = document.getElementById('testOutput');
+        
+        function logTest(message, status = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-${status}`;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            testOutput.appendChild(div);
+        }
+
+        async function runTests() {
+            logTest('=== REGISTRATION BUTTON FRONTEND TESTS ===');
+            
+            // Test 1: Check if elements exist
+            logTest('TEST 1: Checking if DOM elements exist...');
+            const registerBtn = document.getElementById('registerBtn');
+            const loginBtn = document.getElementById('loginBtn');
+            const mainContent = document.getElementById('main-content');
+            
+            if (registerBtn) {
+                logTest('✓ Registration button found', 'pass');
+            } else {
+                logTest('✗ Registration button NOT found', 'fail');
+                return;
+            }
+            
+            if (mainContent) {
+                logTest('✓ Main content container found', 'pass');
+            } else {
+                logTest('✗ Main content container NOT found', 'fail');
+            }
+
+            // Test 2: Check if modules are loaded
+            logTest('TEST 2: Checking module availability...');
+            
+            if (typeof App !== 'undefined') {
+                logTest('✓ App module loaded', 'pass');
+            } else {
+                logTest('✗ App module NOT loaded', 'fail');
+            }
+            
+            if (typeof Navigation !== 'undefined') {
+                logTest('✓ Navigation module loaded', 'pass');
+            } else {
+                logTest('✗ Navigation module NOT loaded', 'fail');
+            }
+            
+            if (typeof Navigation.showRegister === 'function') {
+                logTest('✓ Navigation.showRegister method available', 'pass');
+            } else {
+                logTest('✗ Navigation.showRegister method NOT available', 'fail');
+            }
+
+            // Test 3: Initialize App and check event listeners
+            logTest('TEST 3: Initializing App module...');
+            
+            try {
+                await App.init();
+                logTest('✓ App initialized successfully', 'pass');
+            } catch (error) {
+                logTest(`✗ App initialization failed: ${error.message}`, 'fail');
+            }
+
+            // Test 4: Test button click programmatically
+            logTest('TEST 4: Testing registration button click programmatically...');
+            
+            let clickHandled = false;
+            const originalContent = mainContent.innerHTML;
+            
+            // Add our own click listener to verify the event fires
+            registerBtn.addEventListener('click', () => {
+                logTest('✓ Registration button click event fired', 'pass');
+                clickHandled = true;
+            });
+            
+            // Simulate click
+            registerBtn.click();
+            
+            // Wait a moment for any async operations
+            setTimeout(() => {
+                if (clickHandled) {
+                    logTest('✓ Click event handler executed', 'pass');
+                } else {
+                    logTest('✗ Click event handler NOT executed', 'fail');
+                }
+                
+                // Check if main content changed (indicating Navigation.showRegister worked)
+                if (mainContent.innerHTML !== originalContent) {
+                    logTest('✓ Main content changed - Navigation.showRegister appears to work', 'pass');
+                    logTest(`Content preview: ${mainContent.innerHTML.substring(0, 100)}...`, 'info');
+                } else {
+                    logTest('✗ Main content unchanged - Navigation.showRegister may not be working', 'fail');
+                }
+                
+                // Test 5: Test Navigation.showRegister directly
+                logTest('TEST 5: Testing Navigation.showRegister directly...');
+                
+                try {
+                    Navigation.showRegister();
+                    logTest('✓ Navigation.showRegister() called without error', 'pass');
+                    
+                    setTimeout(() => {
+                        if (mainContent.innerHTML.includes('registration-options') || 
+                            mainContent.innerHTML.includes('Register') ||
+                            mainContent.innerHTML.includes('registration-card')) {
+                            logTest('✓ Registration content loaded in main area', 'pass');
+                        } else {
+                            logTest('✗ Registration content NOT loaded in main area', 'fail');
+                            logTest(`Current content: ${mainContent.innerHTML}`, 'info');
+                        }
+                        
+                        logTest('=== TESTS COMPLETED ===');
+                    }, 500);
+                    
+                } catch (error) {
+                    logTest(`✗ Navigation.showRegister() failed: ${error.message}`, 'fail');
+                    logTest('=== TESTS COMPLETED ===');
+                }
+            }, 500);
+        }
+
+        // Wait for DOM to be ready, then run tests
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', runTests);
+        } else {
+            runTests();
+        }
+    </script>
+</body>
+</html>

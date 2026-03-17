@@ -1,0 +1,59 @@
+/**
+ * Dashboard Redirect Component Styles
+ *
+ * BUSINESS CONTEXT:
+ * Styles for the loading state shown during dashboard redirect.
+ * Provides visual feedback while determining user's dashboard destination.
+ *
+ * DESIGN PRINCIPLES:
+ * - Centered layout for loading indicator
+ * - Subtle message to inform user of redirect
+ * - Matches platform design system
+ */
+
+/* ============================================================================
+ * CONTAINER
+ * ============================================================================ */
+
+.container {
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+
+  /* Sizing */
+  min-height: 100vh;
+  width: 100%;
+
+  /* Background */
+  background-color: #f8fafc;
+}
+
+/* ============================================================================
+ * LOADING MESSAGE
+ * ============================================================================ */
+
+.message {
+  /* Typography */
+  font-size: 14px;
+  color: #64748b;
+  text-align: center;
+
+  /* Reset */
+  margin: 0;
+  padding: 0;
+}
+
+/* ============================================================================
+ * ACCESSIBILITY
+ * ============================================================================ */
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .container {
+    /* Ensure no animations in container */
+    animation: none;
+  }
+}

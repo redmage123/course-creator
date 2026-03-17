@@ -1,0 +1,73 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Node
+node_modules/
+
+# Docker
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Env/secrets
+.env
+.env.local
+*.env
+credentials/
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data
+*.sqlite3
+*.db
+
+# Large/generated files
+*.tar.gz
+*.zip
+*.whl
+*.model
+*.bin
+*.pkl
+*.h5
+
+# Shared env
+.cc_env
+shared/.cc_env
+
+# Claude config (local)
+.claude/
+logs/
+models/blobs/
+memory-bank/
+*.log
+*.log.*
+models/
+training/
+fine-tuning/
+*.json.bak
+tokenizer.json
+services/local-llm-service/models/
+services/local-llm-service/logs/
+checkpoint-*/
+*.mp3
+*.png
+.playwright-mcp/

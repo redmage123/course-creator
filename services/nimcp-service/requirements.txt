@@ -1,0 +1,56 @@
+# ============================================================================
+# NIMCP Service Dependencies
+# ============================================================================
+# Python package dependencies for the NIMCP neuromorphic AI brain service
+#
+# Version Strategy:
+#   - Core packages: Pin major.minor versions for stability
+#   - Utility packages: Allow patch updates with ~= operator
+#   - Development: Use >= for flexibility
+#
+# Last Updated: 2025-11-09
+# ============================================================================
+
+# ============================================================================
+# Web Framework
+# ============================================================================
+fastapi==0.104.1              # High-performance async web framework
+uvicorn[standard]==0.24.0     # ASGI server with WebSockets and HTTP/2 support
+pydantic==2.5.0               # Data validation using Python type hints
+python-multipart==0.0.6       # Multipart form data parser (for file uploads)
+
+# ============================================================================
+# Database & Async I/O
+# ============================================================================
+asyncpg==0.29.0               # Fast async PostgreSQL driver
+
+# ============================================================================
+# NIMCP Library (Neuromorphic AI)
+# ============================================================================
+# NOTE: NIMCP is a local C library with Python bindings
+# It must be built and installed from /home/bbrelin/nimcp
+# Installation: cd /home/bbrelin/nimcp && python setup.py install
+# For now, we'll handle this in the Dockerfile
+
+# ============================================================================
+# Utilities
+# ============================================================================
+python-dotenv==1.0.0          # Load environment variables from .env files
+pyyaml==6.0.1                 # YAML configuration file parsing
+
+# ============================================================================
+# Logging & Monitoring
+# ============================================================================
+structlog==23.2.0             # Structured logging for better observability
+python-json-logger==2.0.7     # JSON formatter for logs
+
+# ============================================================================
+# Development & Testing (Optional)
+# ============================================================================
+# pytest==7.4.3               # Testing framework
+# pytest-asyncio==0.21.1      # Async test support for pytest
+# pytest-cov==4.1.0           # Code coverage plugin
+# httpx==0.25.2               # Async HTTP client for testing
+# black==23.12.0              # Code formatter
+# flake8==6.1.0               # Code linter
+# mypy==1.7.1                 # Static type checker

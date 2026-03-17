@@ -1,0 +1,243 @@
+/* Skill Mastery Widget Styles */
+
+.widgetContainer {
+  width: 100%;
+}
+
+.controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.viewToggle {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.toggleBtn {
+  padding: 0.5rem 1rem;
+  border: 2px solid #e0e0e0;
+  background: white;
+  color: #666;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.toggleBtn:hover {
+  border-color: #2196f3;
+}
+
+.toggleBtn.active {
+  background: #2196f3;
+  border-color: #2196f3;
+  color: white;
+}
+
+.sortSelector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sortSelector label {
+  font-size: 0.875rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.sortSelect {
+  padding: 0.5rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  background: white;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.chartView {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.radarChart {
+  width: 100%;
+  max-width: 500px;
+  height: 400px;
+  position: relative;
+}
+
+.chartNote {
+  font-size: 0.875rem;
+  color: #999;
+  margin-top: 1rem;
+  font-style: italic;
+}
+
+.listView {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.skillCard {
+  background: #f5f5f5;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.skillHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.skillName {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.masteryBadge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.progressSection {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.progressBar {
+  flex: 1;
+  height: 12px;
+  background: #e0e0e0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.progressValue {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #666;
+  min-width: 45px;
+  text-align: right;
+}
+
+.skillMetrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.metricLabel {
+  font-size: 0.75rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metricValue {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.repetitionInfo {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.repetitionMetric {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.repetitionLabel {
+  font-size: 0.7rem;
+  color: #999;
+}
+
+.repetitionValue {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #666;
+}
+
+.lastPractice {
+  font-size: 0.75rem;
+  color: #999;
+  margin: 0.5rem 0 0 0;
+}
+
+.summaryStats {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.summaryItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.summaryLabel {
+  font-size: 0.75rem;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.summaryValue {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  color: #999;
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  margin-top: 1rem;
+  opacity: 0.5;
+}

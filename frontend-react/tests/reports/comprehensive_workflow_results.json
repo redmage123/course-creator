@@ -1,0 +1,576 @@
+{
+  "test_run_id": "9g1ugq",
+  "started_at": "2025-11-28T15:00:26.362755",
+  "completed_at": "2025-11-28T15:04:54.718082",
+  "total_tests": 43,
+  "passed": 43,
+  "failed": 0,
+  "pass_rate": "100.0%",
+  "results": [
+    {
+      "name": "guest_register_new_user",
+      "role": "guest",
+      "category": "registration",
+      "passed": true,
+      "duration_ms": 3996.5299999999997,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "email": "newuser_9g1ugq@test.com",
+        "registration_attempted": true,
+        "success_indicators_found": false
+      }
+    },
+    {
+      "name": "guest_org_registration_form",
+      "role": "guest",
+      "category": "registration",
+      "passed": true,
+      "duration_ms": 688.245,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "org_name": "Test Org 9g1ugq",
+        "admin_email": "orgadmin_9g1ugq@test.com",
+        "form_fillable": true
+      }
+    },
+    {
+      "name": "org_admin_dashboard",
+      "role": "org_admin",
+      "category": "navigation",
+      "passed": true,
+      "duration_ms": 6411.67,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "on_dashboard": false,
+        "url": "https://localhost:3000/login"
+      }
+    },
+    {
+      "name": "org_admin_view_members",
+      "role": "org_admin",
+      "category": "navigation",
+      "passed": true,
+      "duration_ms": 6464.737999999999,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_member_content": true,
+        "member_rows": 0
+      }
+    },
+    {
+      "name": "org_admin_view_courses",
+      "role": "org_admin",
+      "category": "navigation",
+      "passed": true,
+      "duration_ms": 6360.361,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_course_content": true,
+        "course_count": 0
+      }
+    },
+    {
+      "name": "org_admin_view_analytics",
+      "role": "org_admin",
+      "category": "analytics",
+      "passed": true,
+      "duration_ms": 6393.9349999999995,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_analytics": true,
+        "charts": 0,
+        "stats": 0
+      }
+    },
+    {
+      "name": "org_admin_navigate_to_project",
+      "role": "org_admin",
+      "category": "project_notes",
+      "passed": true,
+      "duration_ms": 6398.23,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_projects": false,
+        "navigated_to_project": false
+      }
+    },
+    {
+      "name": "org_admin_view_project_notes",
+      "role": "org_admin",
+      "category": "project_notes",
+      "passed": true,
+      "duration_ms": 6346.5509999999995,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "notes_widget_found": false,
+        "has_notes_section": false,
+        "has_edit_capability": false
+      }
+    },
+    {
+      "name": "org_admin_edit_project_notes",
+      "role": "org_admin",
+      "category": "project_notes",
+      "passed": true,
+      "duration_ms": 6363.562,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "edit_mode_entered": false,
+        "edit_btn_found": false
+      }
+    },
+    {
+      "name": "org_admin_toggle_notes_content_type",
+      "role": "org_admin",
+      "category": "project_notes",
+      "passed": true,
+      "duration_ms": 6286.343,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "content_type_selector_found": false,
+        "markdown_mention": false,
+        "html_mention": true
+      }
+    },
+    {
+      "name": "org_admin_upload_notes_file",
+      "role": "org_admin",
+      "category": "project_notes",
+      "passed": true,
+      "duration_ms": 6363.944,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "upload_option_found": false,
+        "file_input_found": false,
+        "upload_btn_found": false,
+        "upload_reference_in_page": false
+      }
+    },
+    {
+      "name": "org_admin_delete_project_notes",
+      "role": "org_admin",
+      "category": "project_notes",
+      "passed": true,
+      "duration_ms": 6338.340999999999,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "delete_option_found": false
+      }
+    },
+    {
+      "name": "org_admin_collapse_expand_notes",
+      "role": "org_admin",
+      "category": "project_notes",
+      "passed": true,
+      "duration_ms": 6418.935,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "collapse_toggle_found": false
+      }
+    },
+    {
+      "name": "org_admin_upload_template",
+      "role": "org_admin",
+      "category": "upload",
+      "passed": true,
+      "duration_ms": 6346.106,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "import_available": false,
+        "upload_in_page": false
+      }
+    },
+    {
+      "name": "org_admin_ai_auto_project_creation",
+      "role": "org_admin",
+      "category": "ai",
+      "passed": true,
+      "duration_ms": 6319.694,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "ai_project_creation_available": false,
+        "ai_features_in_page": true
+      }
+    },
+    {
+      "name": "org_admin_bulk_enroll_students",
+      "role": "org_admin",
+      "category": "upload",
+      "passed": true,
+      "duration_ms": 6387.938,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "bulk_add_available": false,
+        "bulk_in_page": false
+      }
+    },
+    {
+      "name": "instructor_dashboard",
+      "role": "instructor",
+      "category": "navigation",
+      "passed": true,
+      "duration_ms": 6293.132,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "on_dashboard": false,
+        "url": "https://localhost:3000/login"
+      }
+    },
+    {
+      "name": "instructor_view_courses",
+      "role": "instructor",
+      "category": "navigation",
+      "passed": true,
+      "duration_ms": 6387.831,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_course_content": true,
+        "course_count": 0
+      }
+    },
+    {
+      "name": "instructor_view_students",
+      "role": "instructor",
+      "category": "navigation",
+      "passed": true,
+      "duration_ms": 6318.093,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_student_content": false,
+        "student_count": 0
+      }
+    },
+    {
+      "name": "instructor_view_analytics",
+      "role": "instructor",
+      "category": "analytics",
+      "passed": true,
+      "duration_ms": 6306.226,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_analytics": true,
+        "charts": 0
+      }
+    },
+    {
+      "name": "instructor_create_course",
+      "role": "instructor",
+      "category": "content_creation",
+      "passed": true,
+      "duration_ms": 6400.258,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_create_btn": false,
+        "create_form_found": false
+      }
+    },
+    {
+      "name": "instructor_generate_slides",
+      "role": "instructor",
+      "category": "content_creation",
+      "passed": true,
+      "duration_ms": 6304.079,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_content_generation": false,
+        "has_slide_option": false
+      }
+    },
+    {
+      "name": "instructor_create_lab",
+      "role": "instructor",
+      "category": "content_creation",
+      "passed": true,
+      "duration_ms": 6397.62,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_create_lab_btn": false,
+        "has_lab_page": true
+      }
+    },
+    {
+      "name": "instructor_create_quiz",
+      "role": "instructor",
+      "category": "content_creation",
+      "passed": true,
+      "duration_ms": 6290.1939999999995,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_quiz_option": false,
+        "quiz_in_page": false
+      }
+    },
+    {
+      "name": "instructor_bulk_enroll_spreadsheet",
+      "role": "instructor",
+      "category": "upload",
+      "passed": true,
+      "duration_ms": 6339.414,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "bulk_enroll_available": false,
+        "import_in_page": false
+      }
+    },
+    {
+      "name": "ai_content_generation",
+      "role": "instructor",
+      "category": "ai",
+      "passed": true,
+      "duration_ms": 6350.8009999999995,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "ai_generation_available": false,
+        "ai_in_page": false
+      }
+    },
+    {
+      "name": "student_dashboard",
+      "role": "student",
+      "category": "navigation",
+      "passed": true,
+      "duration_ms": 6295.343,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "on_dashboard": false,
+        "url": "https://localhost:3000/login"
+      }
+    },
+    {
+      "name": "student_view_courses",
+      "role": "student",
+      "category": "learning",
+      "passed": true,
+      "duration_ms": 6380.435,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "course_count": 0,
+        "has_course_content": true
+      }
+    },
+    {
+      "name": "student_view_labs",
+      "role": "student",
+      "category": "learning",
+      "passed": true,
+      "duration_ms": 6393.733,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_lab_content": true,
+        "lab_count": 0
+      }
+    },
+    {
+      "name": "student_view_progress",
+      "role": "student",
+      "category": "learning",
+      "passed": true,
+      "duration_ms": 6392.475,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_progress_content": false,
+        "progress_bars": 0
+      }
+    },
+    {
+      "name": "student_access_course_content",
+      "role": "student",
+      "category": "learning",
+      "passed": true,
+      "duration_ms": 6351.937999999999,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "course_accessed": false,
+        "has_courses": false
+      }
+    },
+    {
+      "name": "student_launch_lab",
+      "role": "student",
+      "category": "lab",
+      "passed": true,
+      "duration_ms": 6442.820000000001,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_launch_btn": false,
+        "labs_available": true
+      }
+    },
+    {
+      "name": "student_take_quiz",
+      "role": "student",
+      "category": "quiz",
+      "passed": true,
+      "duration_ms": 6397.862,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_quiz_btn": false,
+        "quiz_in_page": false
+      }
+    },
+    {
+      "name": "download_course_materials",
+      "role": "student",
+      "category": "download",
+      "passed": true,
+      "duration_ms": 6368.016,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "download_available": false,
+        "materials_visible": false
+      }
+    },
+    {
+      "name": "student_open_monaco_editor",
+      "role": "student",
+      "category": "ide",
+      "passed": true,
+      "duration_ms": 6395.4890000000005,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "monaco_available": false,
+        "editor_in_page": false
+      }
+    },
+    {
+      "name": "student_open_jupyter_notebook",
+      "role": "student",
+      "category": "ide",
+      "passed": true,
+      "duration_ms": 6460.481,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "jupyter_available": false,
+        "notebook_in_page": false
+      }
+    },
+    {
+      "name": "student_open_vscode_ide",
+      "role": "student",
+      "category": "ide",
+      "passed": true,
+      "duration_ms": 6384.797,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "vscode_available": false,
+        "ide_in_page": true
+      }
+    },
+    {
+      "name": "ai_assistant_chat",
+      "role": "student",
+      "category": "ai",
+      "passed": true,
+      "duration_ms": 6409.834,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "ai_available": false,
+        "assistant_in_page": false
+      }
+    },
+    {
+      "name": "ai_assistant_in_lab",
+      "role": "student",
+      "category": "ai",
+      "passed": true,
+      "duration_ms": 6431.266,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "ai_in_lab": false,
+        "ai_features_visible": true
+      }
+    },
+    {
+      "name": "site_admin_dashboard",
+      "role": "site_admin",
+      "category": "navigation",
+      "passed": true,
+      "duration_ms": 6325.062,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "on_dashboard": false,
+        "url": "https://localhost:3000/login"
+      }
+    },
+    {
+      "name": "site_admin_view_organizations",
+      "role": "site_admin",
+      "category": "management",
+      "passed": true,
+      "duration_ms": 6334.5289999999995,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "org_count": 0,
+        "has_org_content": false
+      }
+    },
+    {
+      "name": "site_admin_view_users",
+      "role": "site_admin",
+      "category": "management",
+      "passed": true,
+      "duration_ms": 6388.397999999999,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "user_count": 0,
+        "has_user_content": false
+      }
+    },
+    {
+      "name": "site_admin_view_analytics",
+      "role": "site_admin",
+      "category": "analytics",
+      "passed": true,
+      "duration_ms": 6408.686000000001,
+      "error": null,
+      "screenshot": null,
+      "details": {
+        "has_analytics": true,
+        "charts": 0,
+        "stats": 0
+      }
+    }
+  ]
+}

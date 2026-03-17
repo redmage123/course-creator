@@ -1,0 +1,22 @@
+
+============================================================
+AUTOMATED WORKFLOW DEBUGGING REPORT
+============================================================
+
+Generated: 2025-10-17T17:42:20.978498
+Base URL: https://localhost:3000
+Workflow Attempts: 5
+Workflow Complete: ❌ NO
+
+📊 ERRORS DETECTED: 5
+
+Error Summary:
+  1. [SEVERE] https://localhost:3000/js/site-admin-dashboard.js 38:0 Uncaught SyntaxError: Cannot use import state...
+  2. [SEVERE] https://localhost:3000/js/site-admin-dashboard.js 38:0 Uncaught SyntaxError: Cannot use import state...
+  3. [SEVERE] https://localhost:3000/js/site-admin-dashboard.js 38:0 Uncaught SyntaxError: Cannot use import state...
+  4. [SEVERE] https://localhost:3000/js/site-admin-dashboard.js 38:0 Uncaught SyntaxError: Cannot use import state...
+  5. [SEVERE] https://localhost:3000/js/site-admin-dashboard.js 38:0 Uncaught SyntaxError: Cannot use import state...
+
+🔧 FIXES APPLIED: 0
+
+============================================================

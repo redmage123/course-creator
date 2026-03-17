@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NLP Track Name Generator Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        .test-case {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .input {
+            color: #666;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .output {
+            color: #0066cc;
+            font-weight: bold;
+            font-size: 18px;
+            margin-top: 10px;
+        }
+        .checkmark {
+            color: green;
+            font-size: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔤 NLP Track Name Generator Test</h1>
+    <p>Testing linguistic transformation rules for track name generation:</p>
+
+    <div id="test-results"></div>
+
+    <script type="module">
+        // NLP-based Track Name Generator (copied from org-admin-projects.js)
+        function generateTrackName(audienceIdentifier) {
+            const words = audienceIdentifier.split('_');
+            const profession = words[words.length - 1];
+            const prefixWords = words.slice(0, -1);
+
+            const professionToField = {
+                'developers': 'Development',
+                'analysts': 'Analysis',
+                'engineers': 'Engineering',
+                'scientists': 'Science',
+                'administrators': 'Administration',
+                'developer': 'Development',
+                'analyst': 'Analysis',
+                'engineer': 'Engineering',
+                'scientist': 'Science',
+                'administrator': 'Administration'
+            };
+
+            let fieldName = professionToField[profession.toLowerCase()];
+
+            if (!fieldName) {
+                fieldName = profession.charAt(0).toUpperCase() + profession.slice(1);
+            }
+
+            const capitalizedPrefix = prefixWords.map(word => {
+                if (word.toLowerCase() === 'qa') return 'QA';
+                if (word.toLowerCase() === 'devops') return 'DevOps';
+                return word.charAt(0).toUpperCase() + word.slice(1);
+            });
+
+            return [...capitalizedPrefix, fieldName].join(' ');
+        }
+
+        // Test cases
+        const testCases = [
+            { input: 'application_developers', expected: 'Application Development' },
+            { input: 'business_analysts', expected: 'Business Analysis' },
+            { input: 'operations_engineers', expected: 'Operations Engineering' },
+            { input: 'data_scientists', expected: 'Data Science' },
+            { input: 'qa_engineers', expected: 'QA Engineering' },
+            { input: 'devops_engineers', expected: 'DevOps Engineering' },
+            { input: 'security_engineers', expected: 'Security Engineering' },
+            { input: 'database_administrators', expected: 'Database Administration' }
+        ];
+
+        const resultsContainer = document.getElementById('test-results');
+
+        testCases.forEach(test => {
+            const result = generateTrackName(test.input);
+            const passed = result === test.expected;
+
+            const testDiv = document.createElement('div');
+            testDiv.className = 'test-case';
+            testDiv.innerHTML = `
+                <div class="input">Input: <code>${test.input}</code></div>
+                <div class="output">
+                    ${passed ? '<span class="checkmark">✓</span>' : '✗'}
+                    Output: ${result}
+                </div>
+                ${!passed ? `<div style="color: red;">Expected: ${test.expected}</div>` : ''}
+            `;
+
+            resultsContainer.appendChild(testDiv);
+        });
+
+        // Summary
+        const allPassed = testCases.every(test => generateTrackName(test.input) === test.expected);
+        const summaryDiv = document.createElement('div');
+        summaryDiv.style.cssText = 'margin-top: 20px; padding: 20px; background: ' + (allPassed ? '#d4edda' : '#f8d7da') + '; border-radius: 8px;';
+        summaryDiv.innerHTML = `
+            <h2>${allPassed ? '✅ All Tests Passed!' : '❌ Some Tests Failed'}</h2>
+            <p>Results: ${testCases.filter(test => generateTrackName(test.input) === test.expected).length} / ${testCases.length} passed</p>
+        `;
+        resultsContainer.appendChild(summaryDiv);
+    </script>
+</body>
+</html>

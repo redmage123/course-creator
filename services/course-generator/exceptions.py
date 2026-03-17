@@ -1,0 +1,972 @@
+"""
+Common Exception Classes for Course Creator Platform
+
+This module provides a comprehensive hierarchy of custom exceptions that all services
+should use instead of generic exception handling. This design follows the SOLID principles
+and ensures consistent error handling across the entire platform.
+
+Business Context:
+- Provides structured error information for debugging and monitoring
+- Enables specific error handling strategies based on exception type
+- Supports detailed logging and error reporting requirements
+- Facilitates API error response standardization
+
+Technical Rationale:
+- Replaces all generic 'except Exception as e' patterns with specific exceptions
+- Provides context-rich error information including error codes and details
+- Supports nested exception handling for error tracing
+- Enables different handling strategies for different error categories
+"""
+
+from typing import Dict, Any, Optional
+from datetime import datetime
+
+
+class CourseCreatorBaseException(Exception):
+    """
+    Base exception class for all Course Creator Platform exceptions.
+    
+    Business Context:
+    All platform exceptions inherit from this base class to ensure consistent
+    error handling and logging across all microservices. This supports the
+    platform's requirement for comprehensive error tracking and debugging.
+    
+    Technical Rationale:
+    - Provides common error structure with error codes and context details
+    - Supports exception chaining for root cause analysis
+    - Enables platform-wide error handling middleware
+    - Facilitates structured logging and monitoring integration
+    """
+    
+    def __init__(
+        self, 
+        message: str, 
+        error_code: str = None, 
+        details: Dict[str, Any] = None,
+        original_exception: Exception = None
+    ):
+        super().__init__(message)
+        self.message = message
+        self.error_code = error_code or self.__class__.__name__.upper()
+        self.details = details or {}
+        self.original_exception = original_exception
+        self.timestamp = datetime.utcnow()
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert exception to dictionary for API responses and logging.
+        
+        Returns structured error information suitable for JSON serialization
+        and consistent error reporting across all platform services.
+        """
+        return {
+            "error_type": self.__class__.__name__,
+            "error_code": self.error_code,
+            "message": self.message,
+            "details": self.details,
+            "timestamp": self.timestamp.isoformat(),
+            "original_error": str(self.original_exception) if self.original_exception else None
+        }
+
+
+# Authentication and Authorization Exceptions
+class AuthenticationException(CourseCreatorBaseException):
+    """
+    Authentication-related exceptions for login, token validation, and session management.
+    
+    Business Context:
+    Handles all authentication failures across the platform including login attempts,
+    session validation, and token-based authentication. Critical for security monitoring
+    and user access management.
+    """
+    pass
+
+
+class AuthorizationException(CourseCreatorBaseException):
+    """
+    Authorization-related exceptions for role-based access control and permissions.
+    
+    Business Context:
+    Manages access control violations and permission denials. Essential for the
+    platform's RBAC system and multi-tenant organization security.
+    """
+    pass
+
+
+class SessionException(CourseCreatorBaseException):
+    """
+    Session management exceptions for session creation, validation, and expiration.
+    
+    Business Context:
+    Handles session lifecycle issues critical for user experience and security.
+    Supports the platform's requirement for secure session management.
+    """
+    pass
+
+
+class JWTException(CourseCreatorBaseException):
+    """
+    JWT token-related exceptions for token creation, validation, and parsing.
+    
+    Business Context:
+    Manages JWT token issues critical for API authentication and inter-service
+    communication security across the microservices architecture.
+    """
+    pass
+
+
+# User Management Exceptions
+class UserManagementException(CourseCreatorBaseException):
+    """
+    General user management exceptions for user operations and profile management.
+    
+    Business Context:
+    Handles user lifecycle operations including registration, profile updates,
+    and account management. Core to the platform's user management capabilities.
+    """
+    pass
+
+
+class UserNotFoundException(CourseCreatorBaseException):
+    """
+    Exception for when a requested user cannot be found in the system.
+    
+    Business Context:
+    Critical for user lookup operations and API responses. Helps distinguish
+    between user not found vs. system errors for proper error handling.
+    """
+    pass
+
+
+class UserValidationException(CourseCreatorBaseException):
+    """
+    User data validation exceptions for registration and profile update operations.
+    
+    Business Context:
+    Handles validation errors for user input including email format, username
+    constraints, and profile data validation. Essential for data integrity.
+    """
+    
+    def __init__(self, message: str, validation_errors: Dict[str, str] = None, **kwargs):
+        super().__init__(message, **kwargs)
+        self.validation_errors = validation_errors or {}
+        self.details["validation_errors"] = self.validation_errors
+
+
+class DuplicateUserException(CourseCreatorBaseException):
+    """
+    Exception for duplicate user registration attempts (email/username conflicts).
+    
+    Business Context:
+    Prevents duplicate user accounts and provides clear feedback for registration
+    conflicts. Critical for user account uniqueness and system integrity.
+    """
+    pass
+
+
+# Organization Management Exceptions
+class OrganizationException(CourseCreatorBaseException):
+    """
+    Organization management exceptions for multi-tenant operations.
+    
+    Business Context:
+    Handles organization lifecycle, RBAC operations, and tenant management.
+    Core to the platform's multi-tenant architecture and organization features.
+    """
+    pass
+
+
+class OrganizationNotFoundException(CourseCreatorBaseException):
+    """
+    Exception for when a requested organization cannot be found.
+    
+    Business Context:
+    Critical for organization lookup operations and tenant validation.
+    Essential for multi-tenant security and access control.
+    """
+    pass
+
+
+class OrganizationValidationException(CourseCreatorBaseException):
+    """
+    Organization data validation exceptions for registration and updates.
+    
+    Business Context:
+    Ensures organization data integrity and validates business rules for
+    organization creation and management operations.
+    """
+    pass
+
+
+# Content Management Exceptions
+class ContentException(CourseCreatorBaseException):
+    """
+    Content management exceptions for content operations and lifecycle.
+    
+    Business Context:
+    Handles content creation, storage, retrieval, and management operations.
+    Critical for the platform's content management and course delivery capabilities.
+    """
+    pass
+
+
+class ContentNotFoundException(CourseCreatorBaseException):
+    """
+    Exception for when requested content cannot be found.
+    
+    Business Context:
+    Handles content lookup failures and helps distinguish between missing
+    content vs. access permission issues for proper error handling.
+    """
+    pass
+
+
+class ContentValidationException(CourseCreatorBaseException):
+    """
+    Content validation exceptions for content creation and update operations.
+    
+    Business Context:
+    Ensures content meets platform standards and business rules. Critical
+    for content quality and platform content management requirements.
+    """
+    pass
+
+
+class FileStorageException(CourseCreatorBaseException):
+    """
+    File storage and upload exceptions for content storage operations.
+    
+    Business Context:
+    Handles file upload, storage, and retrieval issues. Essential for the
+    platform's content storage capabilities and user file management.
+    """
+    pass
+
+
+# Course Management Exceptions
+class CourseException(CourseCreatorBaseException):
+    """
+    Course management exceptions for course operations and lifecycle.
+    
+    Business Context:
+    Handles course creation, publishing, enrollment, and management operations.
+    Core to the platform's educational course delivery capabilities.
+    """
+    pass
+
+
+class CourseNotFoundException(CourseCreatorBaseException):
+    """
+    Exception for when a requested course cannot be found.
+    
+    Business Context:
+    Critical for course lookup operations and enrollment management.
+    Helps provide clear feedback for course access attempts.
+    """
+    pass
+
+
+class CourseValidationException(CourseCreatorBaseException):
+    """
+    Course validation exceptions for course creation and update operations.
+    
+    Business Context:
+    Ensures courses meet educational standards and platform requirements.
+    Critical for course quality and educational content validation.
+    """
+    pass
+
+
+class EnrollmentException(CourseCreatorBaseException):
+    """
+    Course enrollment exceptions for student enrollment operations.
+    
+    Business Context:
+    Handles enrollment processes, capacity limits, and access control.
+    Essential for the platform's course enrollment and access management.
+    """
+    pass
+
+
+# Database and Infrastructure Exceptions
+class DatabaseException(CourseCreatorBaseException):
+    """
+    Database operation exceptions for SQL operations and connection issues.
+    
+    Business Context:
+    Handles database connectivity, query execution, and data persistence issues.
+    Critical for platform reliability and data integrity across all services.
+    """
+    pass
+
+
+class DatabaseConnectionException(CourseCreatorBaseException):
+    """
+    Database connection exceptions for connection pool and connectivity issues.
+    
+    Business Context:
+    Handles database connectivity problems that could affect platform availability.
+    Essential for infrastructure monitoring and service reliability.
+    """
+    pass
+
+
+class DatabaseQueryException(CourseCreatorBaseException):
+    """
+    Database query execution exceptions for SQL execution and constraint violations.
+    
+    Business Context:
+    Handles SQL execution errors, constraint violations, and data integrity issues.
+    Critical for data consistency and platform reliability.
+    """
+    pass
+
+
+# External Service Exceptions
+class ExternalServiceException(CourseCreatorBaseException):
+    """
+    External service integration exceptions for third-party service interactions.
+    
+    Business Context:
+    Handles communication issues with external APIs and service dependencies.
+    Important for platform integration reliability and service monitoring.
+    """
+    pass
+
+
+class EmailServiceException(CourseCreatorBaseException):
+    """
+    Email service exceptions for email delivery and notification operations.
+    
+    Business Context:
+    Handles email delivery issues for user notifications, password resets,
+    and platform communications. Critical for user engagement features.
+    """
+    pass
+
+
+class AIServiceException(CourseCreatorBaseException):
+    """
+    AI service exceptions for course generation and RAG operations.
+    
+    Business Context:
+    Handles AI service failures for course generation, content analysis,
+    and RAG-enhanced features. Critical for platform's AI capabilities.
+    """
+    pass
+
+
+# Lab and Container Management Exceptions
+class LabException(CourseCreatorBaseException):
+    """
+    Lab container management exceptions for Docker operations and lab lifecycle.
+    
+    Business Context:
+    Handles lab container creation, management, and lifecycle operations.
+    Critical for the platform's hands-on learning lab capabilities.
+    """
+    pass
+
+
+class ContainerException(CourseCreatorBaseException):
+    """
+    Docker container exceptions for container operations and resource management.
+    
+    Business Context:
+    Handles Docker container lifecycle, resource allocation, and networking issues.
+    Essential for the platform's containerized lab environment.
+    """
+    pass
+
+
+class LabResourceException(CourseCreatorBaseException):
+    """
+    Lab resource management exceptions for resource allocation and limits.
+    
+    Business Context:
+    Handles resource allocation, capacity limits, and lab environment constraints.
+    Critical for platform resource management and lab scalability.
+    """
+    pass
+
+
+# API and HTTP Exceptions
+class APIException(CourseCreatorBaseException):
+    """
+    API operation exceptions for HTTP operations and service communication.
+    
+    Business Context:
+    Handles API communication issues between microservices and external clients.
+    Essential for platform service reliability and API error handling.
+    """
+    pass
+
+
+class ValidationException(CourseCreatorBaseException):
+    """
+    Data validation exceptions for input validation and business rule enforcement.
+    
+    Business Context:
+    Handles input validation across all platform operations. Critical for
+    data integrity, security, and user experience consistency.
+    """
+    
+    def __init__(self, message: str, field_errors: Dict[str, str] = None, **kwargs):
+        super().__init__(message, **kwargs)
+        self.field_errors = field_errors or {}
+        self.details["field_errors"] = self.field_errors
+
+
+class ConfigurationException(CourseCreatorBaseException):
+    """
+    Configuration and environment exceptions for service configuration issues.
+    
+    Business Context:
+    Handles configuration problems that could affect service startup and operation.
+    Critical for deployment reliability and environment management.
+    """
+    pass
+
+
+# Rate Limiting and Security Exceptions
+class RateLimitException(CourseCreatorBaseException):
+    """
+    Rate limiting exceptions for API throttling and abuse prevention.
+    
+    Business Context:
+    Handles rate limiting enforcement for API protection and resource management.
+    Important for platform security and service quality protection.
+    """
+    pass
+
+
+class SecurityException(CourseCreatorBaseException):
+    """
+    Security-related exceptions for security policy violations and threats.
+    
+    Business Context:
+    Handles security policy violations, suspicious activity, and threat detection.
+    Critical for platform security and compliance requirements.
+    """
+    pass
+
+
+# Business Logic Exceptions
+class BusinessRuleException(CourseCreatorBaseException):
+    """
+    Business rule violations for domain-specific business logic enforcement.
+    
+    Business Context:
+    Handles violations of business rules and domain constraints. Essential for
+    maintaining business logic integrity across platform operations.
+    """
+    pass
+
+
+class QuotaExceededException(CourseCreatorBaseException):
+    """
+    Resource quota exceptions for usage limits and capacity constraints.
+    
+    Business Context:
+    Handles resource usage limits, storage quotas, and capacity constraints.
+    Important for resource management and service level compliance.
+    """
+    pass
+
+
+class RAGException(CourseCreatorBaseException):
+    """
+    Exception raised for Retrieval-Augmented Generation operations.
+    
+    Business Context:
+    RAG service failures impact AI-powered features across the platform including content
+    generation quality, lab assistance effectiveness, and personalized learning recommendations.
+    These exceptions help identify vector database issues, embedding failures, and context
+    retrieval problems that degrade AI performance.
+    
+    Technical Context:
+    - ChromaDB connection and query failures
+    - Vector embedding generation errors
+    - Context retrieval and ranking issues
+    - Knowledge base ingestion problems
+    """
+    pass
+
+
+class EmbeddingException(RAGException):
+    """
+    Exception raised for text embedding generation failures.
+
+    Business Context:
+    Embedding generation failures prevent effective semantic search and context retrieval,
+    directly impacting the quality of AI-generated educational content and assistance.
+    These exceptions help identify API failures, model issues, and text processing problems.
+
+    Technical Context:
+    - OpenAI API embedding failures
+    - Local embedding model errors
+    - Text preprocessing issues
+    - Token limit exceeded errors
+    """
+    pass
+
+
+# URL Fetching and Content Parsing Exceptions
+class URLFetchException(CourseCreatorBaseException):
+    """
+    Base exception for URL fetching operations.
+
+    Business Context:
+    URL-based course generation requires fetching external documentation from third-party
+    software websites. These exceptions handle network failures, invalid URLs, and access
+    issues that prevent content retrieval from external sources.
+
+    Technical Context:
+    - HTTP request failures (timeouts, connection errors)
+    - Invalid or malformed URLs
+    - DNS resolution failures
+    - SSL/TLS certificate issues
+    """
+
+    def __init__(
+        self,
+        message: str,
+        url: str = None,
+        status_code: int = None,
+        **kwargs
+    ):
+        super().__init__(message, **kwargs)
+        self.url = url
+        self.status_code = status_code
+        self.details["url"] = url
+        self.details["status_code"] = status_code
+
+
+class URLValidationException(URLFetchException):
+    """
+    Exception for invalid or malformed URL inputs.
+
+    Business Context:
+    Validates that user-provided URLs are properly formatted and point to accessible
+    resources before attempting content retrieval. Prevents wasted API calls and
+    provides immediate user feedback for invalid inputs.
+
+    Technical Context:
+    - Malformed URL syntax (missing protocol, invalid characters)
+    - Unsupported URL schemes (must be http/https)
+    - URLs pointing to internal/private networks (security)
+    - URLs exceeding maximum length limits
+    """
+    pass
+
+
+class URLConnectionException(URLFetchException):
+    """
+    Exception for network connectivity failures when fetching URLs.
+
+    Business Context:
+    Network issues can prevent retrieval of external documentation. This exception
+    helps distinguish between user errors (bad URL) and infrastructure issues
+    (network problems) for appropriate error handling and user messaging.
+
+    Technical Context:
+    - Connection timeouts
+    - DNS resolution failures
+    - Connection refused errors
+    - Network unreachable errors
+    """
+    pass
+
+
+class URLTimeoutException(URLFetchException):
+    """
+    Exception for URL fetch operations that exceed timeout limits.
+
+    Business Context:
+    External documentation sites may be slow or unresponsive. Timeout handling
+    ensures the platform doesn't hang indefinitely waiting for content, providing
+    users with timely feedback about retrieval issues.
+
+    Technical Context:
+    - Connection timeout (server not responding)
+    - Read timeout (server responding slowly)
+    - Total request timeout exceeded
+    """
+    pass
+
+
+class URLAccessDeniedException(URLFetchException):
+    """
+    Exception for URLs that return access denied responses (401, 403).
+
+    Business Context:
+    Some documentation may be behind authentication or access controls.
+    This exception helps users understand that the URL exists but requires
+    credentials or is otherwise restricted.
+
+    Technical Context:
+    - HTTP 401 Unauthorized responses
+    - HTTP 403 Forbidden responses
+    - Rate limiting responses (429)
+    - IP-based access restrictions
+    """
+    pass
+
+
+class URLNotFoundException(URLFetchException):
+    """
+    Exception for URLs that return 404 Not Found responses.
+
+    Business Context:
+    Documentation URLs may become stale or be incorrectly entered.
+    This exception provides clear feedback that the specific page
+    does not exist at the given location.
+
+    Technical Context:
+    - HTTP 404 Not Found responses
+    - Redirects to error pages
+    - Soft 404s (200 status with error content)
+    """
+    pass
+
+
+class ContentParsingException(CourseCreatorBaseException):
+    """
+    Base exception for content parsing and extraction operations.
+
+    Business Context:
+    After fetching external documentation, content must be extracted and cleaned
+    for use in course generation. These exceptions handle failures in the parsing
+    and text extraction process from various content formats.
+
+    Technical Context:
+    - HTML parsing failures
+    - Markdown conversion errors
+    - Character encoding issues
+    - Malformed document structure
+    """
+
+    def __init__(
+        self,
+        message: str,
+        content_type: str = None,
+        parsing_stage: str = None,
+        **kwargs
+    ):
+        super().__init__(message, **kwargs)
+        self.content_type = content_type
+        self.parsing_stage = parsing_stage
+        self.details["content_type"] = content_type
+        self.details["parsing_stage"] = parsing_stage
+
+
+class HTMLParsingException(ContentParsingException):
+    """
+    Exception for HTML parsing and text extraction failures.
+
+    Business Context:
+    Most external documentation is served as HTML. Parsing failures prevent
+    content extraction needed for course generation. This exception helps
+    identify malformed HTML or incompatible page structures.
+
+    Technical Context:
+    - Invalid HTML structure
+    - Encoding mismatches
+    - JavaScript-rendered content (not accessible)
+    - Deeply nested or complex DOM structures
+    """
+    pass
+
+
+class ContentExtractionException(ContentParsingException):
+    """
+    Exception for failures in extracting meaningful content from parsed documents.
+
+    Business Context:
+    Even with successful HTML parsing, meaningful content extraction may fail
+    if the page structure doesn't contain extractable documentation content
+    (e.g., login pages, captchas, or navigation-only pages).
+
+    Technical Context:
+    - No extractable text content found
+    - Content below minimum length threshold
+    - Only boilerplate/navigation content detected
+    - Content language detection failures
+    """
+    pass
+
+
+class ContentTooLargeException(ContentParsingException):
+    """
+    Exception for content that exceeds processing size limits.
+
+    Business Context:
+    Large documentation pages may exceed processing limits or token limits
+    for AI models. This exception ensures graceful handling of oversized
+    content with clear feedback about size constraints.
+
+    Technical Context:
+    - Content exceeds maximum character limit
+    - Too many chunks created from single URL
+    - Memory limits exceeded during processing
+    - Token limits for AI model context
+    """
+
+    def __init__(
+        self,
+        message: str,
+        content_size: int = None,
+        max_size: int = None,
+        **kwargs
+    ):
+        super().__init__(message, **kwargs)
+        self.content_size = content_size
+        self.max_size = max_size
+        self.details["content_size"] = content_size
+        self.details["max_size"] = max_size
+
+
+class UnsupportedContentTypeException(ContentParsingException):
+    """
+    Exception for content types that cannot be processed.
+
+    Business Context:
+    The URL fetcher supports specific content types (HTML, Markdown, plain text).
+    This exception handles attempts to process unsupported formats like PDFs,
+    images, or binary files.
+
+    Technical Context:
+    - Unsupported MIME types (application/pdf, image/*, etc.)
+    - Binary content detection
+    - Non-text content responses
+    - Unsupported character encodings
+    """
+
+    def __init__(
+        self,
+        message: str,
+        actual_content_type: str = None,
+        supported_types: list = None,
+        **kwargs
+    ):
+        super().__init__(message, **kwargs)
+        self.actual_content_type = actual_content_type
+        self.supported_types = supported_types or []
+        self.details["actual_content_type"] = actual_content_type
+        self.details["supported_types"] = self.supported_types
+
+
+class RobotsDisallowedException(URLFetchException):
+    """
+    Exception for URLs disallowed by robots.txt.
+
+    Business Context:
+    Respecting robots.txt is important for ethical web scraping and maintaining
+    good relationships with content providers. This exception is raised when
+    attempting to fetch URLs that the site owner has explicitly disallowed.
+
+    Technical Context:
+    - robots.txt Disallow rules
+    - Crawl-delay requirements
+    - User-agent specific restrictions
+    """
+    pass
+
+
+# ================================================================
+# LLM PROVIDER AND VISION EXCEPTIONS
+# ================================================================
+
+class LLMProviderException(ExternalServiceException):
+    """
+    Base exception for LLM provider operations.
+
+    Business Context:
+    Handles failures in external LLM provider integrations including OpenAI, Anthropic,
+    Deepseek, Qwen, Ollama, Llama, Gemini, and Mistral. These exceptions help identify
+    provider-specific issues and enable appropriate fallback strategies.
+
+    Technical Context:
+    - API call failures
+    - Model availability issues
+    - Token limit exceeded
+    - Response parsing errors
+    """
+    pass
+
+
+class LLMProviderConnectionException(LLMProviderException):
+    """
+    Exception raised when unable to connect to an LLM provider.
+
+    Business Context:
+    Connection failures prevent AI-powered features from functioning and may indicate
+    network issues, provider outages, or configuration problems that need resolution.
+
+    Technical Context:
+    - Network connectivity issues
+    - DNS resolution failures
+    - TLS/SSL handshake errors
+    - Connection timeouts
+    """
+    pass
+
+
+class LLMProviderAuthenticationException(LLMProviderException):
+    """
+    Exception raised for LLM provider authentication failures.
+
+    Business Context:
+    Authentication failures indicate invalid, expired, or revoked API keys that need
+    to be updated by organization administrators before AI features can be used.
+
+    Technical Context:
+    - Invalid API key
+    - Expired credentials
+    - Insufficient permissions
+    - Account suspended
+    """
+    pass
+
+
+class LLMProviderRateLimitException(LLMProviderException):
+    """
+    Exception raised when rate limits are exceeded.
+
+    Business Context:
+    Rate limit exceptions indicate that the organization has exceeded their API quota
+    and should either wait for limit reset or consider upgrading their plan.
+
+    Technical Context:
+    - Per-minute request limits
+    - Per-day token limits
+    - Concurrent request limits
+    - Organization-wide quotas
+    """
+    pass
+
+
+class VisionAnalysisException(LLMProviderException):
+    """
+    Exception raised for vision/image analysis failures.
+
+    Business Context:
+    Vision analysis failures prevent screenshot-to-course generation from working.
+    May indicate issues with image quality, unsupported content, or provider issues.
+
+    Technical Context:
+    - Image encoding errors
+    - Vision model unavailable
+    - Image content blocked
+    - Analysis response parsing failures
+    """
+    pass
+
+
+class ScreenshotUploadException(FileStorageException):
+    """
+    Exception raised for screenshot upload failures.
+
+    Business Context:
+    Screenshot upload failures prevent users from using the screenshot-to-course
+    feature. May indicate file issues, storage problems, or validation failures.
+
+    Technical Context:
+    - File size limits exceeded
+    - Storage quota exceeded
+    - Invalid file content
+    - Upload timeout
+    """
+    pass
+
+
+class UnsupportedImageFormatException(ValidationException):
+    """
+    Exception raised for unsupported image formats.
+
+    Business Context:
+    Users may attempt to upload images in formats not supported by the vision
+    analysis system. This exception provides clear guidance on supported formats.
+
+    Technical Context:
+    - Supported formats: PNG, JPEG, WebP, GIF
+    - Image header validation
+    - MIME type checking
+    """
+    pass
+
+
+class CourseGenerationException(CourseCreatorBaseException):
+    """
+    Exception raised for course generation failures.
+
+    Business Context:
+    Course generation from screenshots may fail due to various reasons including
+    insufficient content, AI failures, or validation issues.
+
+    Technical Context:
+    - Course structure validation failures
+    - Module expansion errors
+    - Content generation timeouts
+    - Database storage failures
+    """
+    pass
+
+
+# Factory functions for common exception patterns
+def create_not_found_exception(resource_type: str, resource_id: str, **kwargs) -> CourseCreatorBaseException:
+    """
+    Factory function for creating standardized not found exceptions.
+    
+    Business Context:
+    Provides consistent not found error messages across all platform services.
+    Improves user experience and debugging capabilities.
+    
+    Args:
+        resource_type: Type of resource (e.g., 'User', 'Course', 'Organization')
+        resource_id: Identifier of the missing resource
+        **kwargs: Additional exception parameters
+    
+    Returns:
+        Appropriate not found exception for the resource type
+    """
+    message = f"{resource_type} with ID '{resource_id}' not found"
+    error_code = f"{resource_type.upper()}_NOT_FOUND"
+    
+    # Map resource types to specific exception classes
+    exception_map = {
+        'user': UserNotFoundException,
+        'course': CourseNotFoundException,
+        'organization': OrganizationNotFoundException,
+        'content': ContentNotFoundException,
+    }
+    
+    exception_class = exception_map.get(resource_type.lower(), CourseCreatorBaseException)
+    return exception_class(message, error_code=error_code, **kwargs)
+
+
+def create_validation_exception(resource_type: str, validation_errors: Dict[str, str], **kwargs) -> ValidationException:
+    """
+    Factory function for creating standardized validation exceptions.
+    
+    Business Context:
+    Provides consistent validation error handling across all platform services.
+    Ensures uniform validation feedback for user experience consistency.
+    
+    Args:
+        resource_type: Type of resource being validated
+        validation_errors: Dictionary of field-specific validation errors
+        **kwargs: Additional exception parameters
+    
+    Returns:
+        ValidationException with structured error information
+    """
+    message = f"Validation failed for {resource_type}"
+    error_code = f"{resource_type.upper()}_VALIDATION_ERROR"
+    
+    return ValidationException(
+        message, 
+        field_errors=validation_errors,
+        error_code=error_code,
+        **kwargs
+    )

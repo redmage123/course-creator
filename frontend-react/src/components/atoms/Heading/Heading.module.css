@@ -1,0 +1,245 @@
+/**
+ * Heading Component Styles - Tami Design System
+ *
+ * BUSINESS CONTEXT:
+ * Implements Tami design system typography scale for headings.
+ * Provides consistent heading styles across the platform.
+ *
+ * TYPOGRAPHY SCALE:
+ * Display: 48px/56px - Hero sections
+ * H1: 36px/40px - Page titles
+ * H2: 30px/36px - Section headers
+ * H3: 24px/32px - Subsection headers
+ * H4: 20px/28px - Card titles
+ * H5: 18px/24px - Small headers
+ * H6: 16px/24px - Tiny headers
+ */
+
+/* ============================================================================
+ * BASE HEADING STYLES
+ * ============================================================================ */
+
+.heading {
+  /* Reset */
+  margin: 0;
+  padding: 0;
+
+  /* Typography */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', sans-serif;
+  font-weight: 600;
+  color: #1a202c;
+  line-height: 1.2;
+
+  /* Prevent text overflow */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* ============================================================================
+ * TYPOGRAPHY SCALE VARIANTS
+ * ============================================================================ */
+
+/* Display - Hero sections */
+.heading-display {
+  font-size: 48px;
+  line-height: 56px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* H1 - Page titles */
+.heading-h1 {
+  font-size: 36px;
+  line-height: 40px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* H2 - Section headers */
+.heading-h2 {
+  font-size: 30px;
+  line-height: 36px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* H3 - Subsection headers */
+.heading-h3 {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 600;
+}
+
+/* H4 - Card titles */
+.heading-h4 {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+}
+
+/* H5 - Small headers */
+.heading-h5 {
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 500;
+}
+
+/* H6 - Tiny headers */
+.heading-h6 {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+}
+
+/* ============================================================================
+ * TEXT ALIGNMENT
+ * ============================================================================ */
+
+.heading-align-left {
+  text-align: left;
+}
+
+.heading-align-center {
+  text-align: center;
+}
+
+.heading-align-right {
+  text-align: right;
+}
+
+/* ============================================================================
+ * COLOR VARIANTS
+ * ============================================================================ */
+
+.heading-color-default {
+  color: #1a202c;
+}
+
+.heading-color-muted {
+  color: #64748b;
+}
+
+.heading-color-primary {
+  color: #2563eb;
+}
+
+.heading-color-error {
+  color: #dc2626;
+}
+
+.heading-color-success {
+  color: #16a34a;
+}
+
+.heading-color-warning {
+  color: #f59e0b;
+}
+
+/* ============================================================================
+ * FONT WEIGHT VARIANTS
+ * ============================================================================ */
+
+.heading-weight-normal {
+  font-weight: 400;
+}
+
+.heading-weight-medium {
+  font-weight: 500;
+}
+
+.heading-weight-semibold {
+  font-weight: 600;
+}
+
+.heading-weight-bold {
+  font-weight: 700;
+}
+
+/* ============================================================================
+ * GUTTER (BOTTOM MARGIN)
+ * ============================================================================ */
+
+.heading-gutter-bottom {
+  margin-bottom: 16px;
+}
+
+.heading-display.heading-gutter-bottom {
+  margin-bottom: 24px;
+}
+
+.heading-h1.heading-gutter-bottom {
+  margin-bottom: 20px;
+}
+
+.heading-h2.heading-gutter-bottom {
+  margin-bottom: 16px;
+}
+
+.heading-h3.heading-gutter-bottom,
+.heading-h4.heading-gutter-bottom {
+  margin-bottom: 12px;
+}
+
+.heading-h5.heading-gutter-bottom,
+.heading-h6.heading-gutter-bottom {
+  margin-bottom: 8px;
+}
+
+/* ============================================================================
+ * RESPONSIVE TYPOGRAPHY
+ * ============================================================================ */
+
+@media (max-width: 768px) {
+  .heading-display {
+    font-size: 36px;
+    line-height: 40px;
+  }
+
+  .heading-h1 {
+    font-size: 30px;
+    line-height: 36px;
+  }
+
+  .heading-h2 {
+    font-size: 24px;
+    line-height: 32px;
+  }
+
+  .heading-h3 {
+    font-size: 20px;
+    line-height: 28px;
+  }
+
+  .heading-h4 {
+    font-size: 18px;
+    line-height: 24px;
+  }
+
+  .heading-h5 {
+    font-size: 16px;
+    line-height: 24px;
+  }
+
+  .heading-h6 {
+    font-size: 14px;
+    line-height: 20px;
+  }
+}
+
+/* ============================================================================
+ * ACCESSIBILITY
+ * ============================================================================ */
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .heading {
+    font-weight: 700;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .heading {
+    transition: none;
+  }
+}

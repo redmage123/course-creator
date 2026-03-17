@@ -1,0 +1,154 @@
+{
+  "slides": [
+    {
+      "id": 1,
+      "title": "Introduction",
+      "duration": 25,
+      "script": "Welcome to Course Creator Platform. We're the AI-powered learning management system built for corporate training teams and professional instructors. If you're spending weeks building courses when you need them in days, or managing training programs across multiple tools, we solve that. In the next few minutes, you'll see how AI accelerates course development, how organizations manage employee training at scale, and how we turn complex workflows into simple clicks. Let's dive in.",
+      "actions": [
+        "Load homepage",
+        "Scroll to show hero section",
+        "Highlight key value proposition",
+        "Show overview of platform features"
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Getting Started",
+      "duration": 20,
+      "script": "Getting started is simple. Click Register Organization to create your corporate training account. Whether you're a Fortune 500 with thousands of employees or a professional services firm training dozens, you'll get a dedicated environment. Organizations manage their training programs, instructors, and employee enrollments all in one place. Let's see how registration works.",
+      "actions": [
+        "Show Register Organization button",
+        "Hover over button with mouse",
+        "Highlight the call to action",
+        "Prepare to navigate to registration"
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Create Organization",
+      "duration": 45,
+      "script": "Here's the organization registration form. We need just a few details to get you started. Company name, website, and a brief description of your training needs. Notice we're not asking for credit cards or commitments, just information to set up your dedicated training environment. The platform automatically provisions your organization workspace, creates admin accounts, and sets up role-based access control. Within minutes, you're ready to build training programs. Let's fill this out for a sample tech training company.",
+      "actions": [
+        "Navigate to organization-registration.html",
+        "Show cursor moving to organization name field",
+        "Type 'TechCorp Global Training'",
+        "Move to website field",
+        "Type 'https://techcorp.training'",
+        "Scroll to description",
+        "Type 'Enterprise software development training for 500+ engineers'",
+        "Hover over submit button"
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Projects and Tracks",
+      "duration": 40,
+      "script": "Once your organization is created, you land in the org admin dashboard. The first thing you'll do is create training tracks. Think of tracks as learning pathways for different roles or departments. A Software Engineering track, a Cloud Architecture track, a DevOps track. Each track bundles related courses, assigns instructors, and enrolls employees. You can run multiple cohorts simultaneously, track completion rates, and measure skill development across your organization. Let's create a Cloud Engineering track for our platform teams.",
+      "actions": [
+        "Navigate to org-admin-dashboard",
+        "Show Projects & Tracks section",
+        "Click 'Create New Track' button with mouse",
+        "Show track creation modal",
+        "Type track name 'Cloud Engineering Fundamentals'",
+        "Select track category",
+        "Show track configuration options"
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Assign Instructors",
+      "duration": 35,
+      "script": "With your track created, it's time to add instructors. Instructors are subject matter experts who create and manage courses. They can be internal employees or external contractors. Add them individually or bulk upload via CSV. Each instructor gets their own dashboard where they'll build courses, manage content, and track student progress. Instructors can collaborate on courses, share content libraries, and reuse materials across multiple training programs. We'll assign Sarah Chen, our senior cloud architect, to this track.",
+      "actions": [
+        "Show instructor management section",
+        "Click 'Add Instructor' button",
+        "Type instructor name 'Sarah Chen'",
+        "Type email 'sarah.chen@techcorp.training'",
+        "Select role 'Instructor'",
+        "Assign to Cloud Engineering track",
+        "Show confirmation"
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Create Course with AI",
+      "duration": 60,
+      "script": "Now let's see what instructors do. This is the instructor dashboard where courses come to life. Creating a course used to take weeks of work. Outline lessons, write content, design quizzes, build labs. With our AI assistance, you describe what you want and get a complete course draft in minutes. Let's create a Kubernetes Fundamentals course. Watch how the AI generates a course outline, suggests lesson topics, and even drafts quiz questions. Instructors review, add their expertise, customize examples, and publish. The AI handles the heavy lifting, instructors provide the quality and real-world context. Upload slides, embed videos, add coding labs with browser-based IDEs. Everything integrates seamlessly.",
+      "actions": [
+        "Navigate to instructor-dashboard",
+        "Click 'Create New Course' button",
+        "Type course title 'Kubernetes Fundamentals'",
+        "Show AI course generation dialog",
+        "Type course description prompt",
+        "Show AI generating course outline",
+        "Display generated modules and lessons",
+        "Show AI-suggested quiz questions",
+        "Demonstrate content editor interface"
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Enroll Employees",
+      "duration": 40,
+      "script": "Your course is ready. Now organizations enroll their employees. Back in the org admin dashboard, you can assign employees to specific tracks or individual courses. Upload a CSV with employee IDs, departments, and track assignments. The system automatically sends welcome emails, creates student accounts, and tracks enrollment status. Employees don't self-register for training, they're assigned by their organization as part of professional development programs. Organize by department, skill level, or business unit. Track who's completed training, who's in progress, and who needs to start. This is corporate training management at scale.",
+      "actions": [
+        "Navigate back to org-admin-dashboard",
+        "Show employee enrollment section",
+        "Click 'Bulk Enroll Employees'",
+        "Show CSV upload interface",
+        "Display sample CSV with employee data",
+        "Select track for enrollment",
+        "Show enrollment confirmation",
+        "Display enrolled employees list"
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Student Experience",
+      "duration": 45,
+      "script": "Here's what employees see when they log in. Their personalized dashboard shows assigned courses, progress tracking, and upcoming deadlines. Click into a course and you get video lessons, interactive coding labs with browser-based IDEs supporting Python, JavaScript, Go, and more. Take quizzes with immediate feedback, submit projects, earn completion certificates. Everything is tracked and reported back to organizational admins. Students learn at their own pace, but organizations maintain oversight and ensure training goals are met. The experience is smooth, professional, and focused on outcomes.",
+      "actions": [
+        "Navigate to student-dashboard",
+        "Show assigned courses",
+        "Click into Kubernetes course",
+        "Display lesson content",
+        "Show browser IDE with code example",
+        "Navigate to quiz section",
+        "Display progress tracking",
+        "Show certificate preview"
+      ]
+    },
+    {
+      "id": 9,
+      "title": "AI Assistant & Contact",
+      "duration": 50,
+      "script": "Throughout the platform, you'll find our AI assistant ready to help. Have questions about features, pricing, or how something works? Ask the AI. It knows the entire platform and can guide you through any workflow. Need to speak with our sales team? The AI can capture your contact information and schedule a demo. Want to understand our enterprise pricing or discuss custom integrations? The AI connects you with the right person. It's like having a knowledgeable guide available twenty-four seven. Let's ask it a few questions about deployment options and enterprise features.",
+      "actions": [
+        "Show AI chatbot trigger button",
+        "Click to open chatbot",
+        "Display welcome message",
+        "Type question 'How does SSO integration work?'",
+        "Show AI response",
+        "Type 'I want to schedule a demo'",
+        "Show contact form in chatbot",
+        "Fill in sample contact details",
+        "Show confirmation message"
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Summary & Next Steps",
+      "duration": 30,
+      "script": "So that's Course Creator Platform. AI-powered course development that turns weeks into hours. Organization management that scales from ten employees to ten thousand. Instructor tools that enhance expertise with intelligent assistance. And student experiences that drive completion and skill development. We integrate with your existing tools, Slack, Teams, Zoom, SSO providers, SCIM for user provisioning. We're built for enterprises that need compliance, security, and support. Ready to transform your corporate training? Visit our website to register your organization or schedule a personalized demo. Let's build better training, faster.",
+      "actions": [
+        "Return to homepage",
+        "Show key features summary",
+        "Highlight Register Organization CTA",
+        "Display integration logos",
+        "Show contact information",
+        "End with company branding"
+      ]
+    }
+  ]
+}

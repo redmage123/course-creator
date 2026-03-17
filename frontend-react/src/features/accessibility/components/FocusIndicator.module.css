@@ -1,0 +1,91 @@
+/**
+ * Focus Indicator Styles
+ * WCAG 2.1 AA Compliant - Color contrast 4.5:1+
+ */
+
+.container {
+  width: 100%;
+}
+
+.fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.9375rem;
+}
+
+.helpText {
+  font-weight: 400;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 60px;
+}
+
+.option:hover {
+  border-color: #2563eb;
+  background-color: #eff6ff;
+}
+
+.option.selected {
+  border-color: #2563eb;
+  background-color: #dbeafe;
+}
+
+.radio {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #2563eb;
+}
+
+.radio:focus {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.optionLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  color: #111827;
+  font-weight: 500;
+}
+
+.optionDescription {
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .option {
+    transition: none;
+  }
+}

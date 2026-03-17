@@ -1,0 +1,36 @@
+# Mistral 7B Training Configuration
+# Course Creator Platform - Local LLM Service
+# No HuggingFace authentication required
+
+# Model Configuration
+model_name: "mistralai/Mistral-7B-v0.1"
+output_dir: "./models/mistral-course-creator-quick"
+training_data: "./training_data/quick_training_data.jsonl"
+
+# Training Hyperparameters (Quick test mode)
+num_train_epochs: 1
+per_device_train_batch_size: 2
+gradient_accumulation_steps: 2
+learning_rate: 0.00002  # 2e-5 as float (YAML doesn't parse scientific notation correctly)
+max_seq_length: 512
+
+# LoRA Configuration
+use_lora: true
+lora_r: 8
+lora_alpha: 16
+lora_dropout: 0.05
+lora_target_modules:
+  - "q_proj"
+  - "v_proj"
+
+# Quantization
+use_4bit: true
+bnb_4bit_compute_dtype: "float16"
+bnb_4bit_quant_type: "nf4"
+
+# Logging
+warmup_steps: 50
+logging_steps: 10
+save_steps: 250
+report_to: "tensorboard"
+logging_dir: "./logs/mistral-course-creator-quick"

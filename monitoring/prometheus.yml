@@ -1,0 +1,278 @@
+# Prometheus Configuration for Course Creator Platform
+# Comprehensive service monitoring with HTTPS endpoints
+
+global:
+  scrape_interval: 15s      # Default scrape interval
+  evaluation_interval: 15s  # Evaluate rules every 15 seconds
+  external_labels:
+    cluster: 'course-creator-platform'
+    environment: 'docker'
+
+# Alertmanager configuration (optional - for future use)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           - alertmanager:9093
+
+# Rule files for alerting (optional - for future use)
+# rule_files:
+#   - "alerts/*.yml"
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+          type: 'monitoring'
+
+  # User Management Service - Port 8000
+  - job_name: 'user-management'
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['user-management:8000']
+        labels:
+          service: 'user-management'
+          type: 'core'
+          layer: 'application'
+
+  # Course Generator Service - Port 8001
+  - job_name: 'course-generator'
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['course-generator:8001']
+        labels:
+          service: 'course-generator'
+          type: 'ai'
+          layer: 'application'
+
+  # Content Storage Service - Port 8003
+  - job_name: 'content-storage'
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['content-storage:8003']
+        labels:
+          service: 'content-storage'
+          type: 'storage'
+          layer: 'infrastructure'
+
+  # Course Management Service - Port 8004
+  - job_name: 'course-management'
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['course-management:8004']
+        labels:
+          service: 'course-management'
+          type: 'core'
+          layer: 'application'
+
+  # Content Management Service - Port 8005
+  - job_name: 'content-management'
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['content-management:8005']
+        labels:
+          service: 'content-management'
+          type: 'core'
+          layer: 'application'
+
+  # Lab Manager Service - Port 8006
+  - job_name: 'lab-manager'
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['lab-manager:8006']
+        labels:
+          service: 'lab-manager'
+          type: 'labs'
+          layer: 'infrastructure'
+
+  # Analytics Service - Port 8007
+  - job_name: 'analytics'
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['analytics:8007']
+        labels:
+          service: 'analytics'
+          type: 'analytics'
+          layer: 'application'
+
+  # Organization Management Service - Port 8008
+  - job_name: 'organization-management'
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['organization-management:8008']
+        labels:
+          service: 'organization-management'
+          type: 'core'
+          layer: 'application'
+
+  # RAG Service - Port 8009
+  - job_name: 'rag-service'
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['rag-service:8009']
+        labels:
+          service: 'rag-service'
+          type: 'ai'
+          layer: 'application'
+
+  # Demo Service - Port 8010
+  - job_name: 'demo-service'
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['demo-service:8010']
+        labels:
+          service: 'demo-service'
+          type: 'demo'
+          layer: 'application'
+
+  # AI Assistant Service - Port 8011
+  - job_name: 'ai-assistant-service'
+    scheme: http
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['ai-assistant-service:8011']
+        labels:
+          service: 'ai-assistant-service'
+          type: 'ai'
+          layer: 'application'
+
+  # Knowledge Graph Service - Port 8012
+  - job_name: 'knowledge-graph-service'
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['knowledge-graph-service:8012']
+        labels:
+          service: 'knowledge-graph-service'
+          type: 'ai'
+          layer: 'infrastructure'
+
+  # NLP Preprocessing Service - Port 8013
+  - job_name: 'nlp-preprocessing'
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['nlp-preprocessing:8013']
+        labels:
+          service: 'nlp-preprocessing'
+          type: 'ai'
+          layer: 'infrastructure'
+
+  # Metadata Service - Port 8014
+  - job_name: 'metadata-service'
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['metadata-service:8014']
+        labels:
+          service: 'metadata-service'
+          type: 'metadata'
+          layer: 'infrastructure'
+
+  # Local LLM Service - Port 8015
+  - job_name: 'local-llm-service'
+    scheme: http
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['host.docker.internal:8015']
+        labels:
+          service: 'local-llm-service'
+          type: 'ai'
+          layer: 'infrastructure'
+
+  # NIMCP Service - Port 8016
+  - job_name: 'nimcp-service'
+    scheme: http
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['nimcp-service:8016']
+        labels:
+          service: 'nimcp-service'
+          type: 'ai'
+          layer: 'infrastructure'
+
+  # PostgreSQL Database Exporter
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+        labels:
+          service: 'postgres'
+          type: 'database'
+          layer: 'infrastructure'
+
+  # Redis Cache Exporter
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+        labels:
+          service: 'redis'
+          type: 'cache'
+          layer: 'infrastructure'
+
+  # Frontend Service - Port 3000 (HTTPS)
+  - job_name: 'frontend'
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['frontend:3000']
+        labels:
+          service: 'frontend'
+          type: 'web'
+          layer: 'presentation'
+
+  # Docker Container Metrics (via cAdvisor if added)
+  # - job_name: 'cadvisor'
+  #   static_configs:
+  #     - targets: ['cadvisor:8080']
+  #       labels:
+  #         service: 'cadvisor'
+  #         type: 'monitoring'
+
+  # Node Exporter for Host Metrics (if added)
+  # - job_name: 'node'
+  #   static_configs:
+  #     - targets: ['node-exporter:9100']
+  #       labels:
+  #         service: 'node-exporter'
+  #         type: 'monitoring'

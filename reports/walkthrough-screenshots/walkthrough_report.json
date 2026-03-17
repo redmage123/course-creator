@@ -1,0 +1,389 @@
+{
+  "timestamp": "2026-02-21T19:24:22.452917",
+  "sections": [
+    {
+      "name": "PUBLIC PAGES (No Authentication)",
+      "pages": [
+        {
+          "name": "Homepage",
+          "url": "/",
+          "status": "loaded",
+          "details": "Title: Course Creator Platform - AI-Powered Learning Management System | Course Creator Platform"
+        },
+        {
+          "name": "Login Page",
+          "url": "/login",
+          "status": "loaded",
+          "details": "Title: Course Creator Platform - React"
+        },
+        {
+          "name": "Registration Page",
+          "url": "/register",
+          "status": "loaded",
+          "details": "Title: Register | Course Creator Platform"
+        },
+        {
+          "name": "Forgot Password",
+          "url": "/forgot-password",
+          "status": "loaded",
+          "details": "Title: Course Creator Platform - React"
+        },
+        {
+          "name": "Organization Registration",
+          "url": "/organization/register",
+          "status": "loaded",
+          "details": "Title: Course Creator Platform - React"
+        },
+        {
+          "name": "Terms of Service",
+          "url": "/terms",
+          "status": "loaded",
+          "details": "Title: Course Creator Platform - React"
+        },
+        {
+          "name": "Privacy Policy",
+          "url": "/privacy",
+          "status": "loaded",
+          "details": "Title: Course Creator Platform - React"
+        },
+        {
+          "name": "Demo Page",
+          "url": "/demo",
+          "status": "loaded",
+          "details": "Title: Course Creator Platform - React"
+        }
+      ]
+    },
+    {
+      "name": "STUDENT ROLE",
+      "pages": [
+        {
+          "name": "[Student] Student Dashboard",
+          "url": "/dashboard/student",
+          "status": "loaded",
+          "details": "Title: Student Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[Student] My Courses",
+          "url": "/courses/my-courses",
+          "status": "loaded",
+          "details": "Title: Student Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[Student] Labs List",
+          "url": "/labs",
+          "status": "loaded",
+          "details": "Title: Student Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[Student] Quizzes List",
+          "url": "/quizzes",
+          "status": "loaded",
+          "details": "Title: Student Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[Student] Resources",
+          "url": "/resources",
+          "status": "loaded",
+          "details": "Title: Student Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[Student] Certificates",
+          "url": "/certificates",
+          "status": "loaded",
+          "details": "Title: Student Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[Student] Learning Analytics",
+          "url": "/learning-analytics",
+          "status": "loaded",
+          "details": "Title: Student Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[Student] Progress",
+          "url": "/progress",
+          "status": "loaded",
+          "details": "Title: Student Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[Student] Password Change",
+          "url": "/settings/password",
+          "status": "loaded",
+          "details": "Title: Student Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[Student] Accessibility Settings",
+          "url": "/settings/accessibility",
+          "status": "loaded",
+          "details": "Title: Student Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[Student] Bug Submit",
+          "url": "/bugs/submit",
+          "status": "loaded",
+          "details": "Title: Student Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[Student] My Bugs",
+          "url": "/bugs/my",
+          "status": "loaded",
+          "details": "Title: Student Dashboard | Course Creator Platform"
+        }
+      ]
+    },
+    {
+      "name": "INSTRUCTOR ROLE",
+      "pages": [
+        {
+          "name": "[Instructor] Instructor Dashboard",
+          "url": "/dashboard/instructor",
+          "status": "loaded",
+          "details": "Title: Instructor Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[Instructor] Training Programs",
+          "url": "/instructor/programs",
+          "status": "loaded",
+          "details": "Title: Instructor Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[Instructor] Create Program",
+          "url": "/instructor/programs/create",
+          "status": "loaded",
+          "details": "Title: Instructor Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[Instructor] Manage Students",
+          "url": "/instructor/students",
+          "status": "loaded",
+          "details": "Title: Instructor Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[Instructor] Enroll Students",
+          "url": "/instructor/students/enroll",
+          "status": "loaded",
+          "details": "Title: Instructor Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[Instructor] Bulk Enroll",
+          "url": "/instructor/students/bulk-enroll",
+          "status": "loaded",
+          "details": "Title: Instructor Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[Instructor] Instructor Analytics",
+          "url": "/instructor/analytics",
+          "status": "loaded",
+          "details": "Title: Instructor Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[Instructor] Content Generator",
+          "url": "/instructor/content-generator",
+          "status": "loaded",
+          "details": "Title: Instructor Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[Instructor] Instructor Insights",
+          "url": "/instructor/insights",
+          "status": "loaded",
+          "details": "Title: Instructor Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[Instructor] Password Change",
+          "url": "/settings/password",
+          "status": "loaded",
+          "details": "Title: Instructor Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[Instructor] Accessibility Settings",
+          "url": "/settings/accessibility",
+          "status": "loaded",
+          "details": "Title: Instructor Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[Instructor] Bug Submit",
+          "url": "/bugs/submit",
+          "status": "loaded",
+          "details": "Title: Instructor Dashboard | Course Creator Platform"
+        }
+      ]
+    },
+    {
+      "name": "ORGANIZATION ADMIN ROLE",
+      "pages": [
+        {
+          "name": "[OrgAdmin] Org Admin Dashboard",
+          "url": "/dashboard/org-admin",
+          "status": "loaded",
+          "details": "Title: Organization Admin Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[OrgAdmin] Manage Trainers",
+          "url": "/organization/trainers",
+          "status": "loaded",
+          "details": "Title: Organization Admin Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[OrgAdmin] Manage Members",
+          "url": "/organization/members",
+          "status": "loaded",
+          "details": "Title: Organization Admin Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[OrgAdmin] Training Programs",
+          "url": "/organization/programs",
+          "status": "loaded",
+          "details": "Title: Organization Admin Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[OrgAdmin] Tracks",
+          "url": "/organization/tracks",
+          "status": "loaded",
+          "details": "Title: Organization Admin Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[OrgAdmin] Course Create",
+          "url": "/organization/courses/create",
+          "status": "loaded",
+          "details": "Title: Organization Admin Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[OrgAdmin] Org Analytics",
+          "url": "/organization/analytics",
+          "status": "loaded",
+          "details": "Title: Organization Admin Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[OrgAdmin] Organization Settings",
+          "url": "/organization/settings",
+          "status": "loaded",
+          "details": "Title: Organization Admin Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[OrgAdmin] Import Template",
+          "url": "/organization/import",
+          "status": "loaded",
+          "details": "Title: Organization Admin Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[OrgAdmin] AI Create",
+          "url": "/organization/ai-create",
+          "status": "loaded",
+          "details": "Title: Organization Admin Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[OrgAdmin] Integrations Settings",
+          "url": "/organization/integrations",
+          "status": "loaded",
+          "details": "Title: Organization Admin Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[OrgAdmin] Password Change",
+          "url": "/settings/password",
+          "status": "loaded",
+          "details": "Title: Organization Admin Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[OrgAdmin] Accessibility Settings",
+          "url": "/settings/accessibility",
+          "status": "loaded",
+          "details": "Title: Organization Admin Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[OrgAdmin] Bug Submit",
+          "url": "/bugs/submit",
+          "status": "loaded",
+          "details": "Title: Organization Admin Dashboard | Course Creator Platform"
+        }
+      ]
+    },
+    {
+      "name": "SITE ADMIN ROLE",
+      "pages": [
+        {
+          "name": "[SiteAdmin] Admin Organizations",
+          "url": "/admin/organizations",
+          "status": "loaded",
+          "details": "Title: Site Admin Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[SiteAdmin] Create Organization",
+          "url": "/admin/organizations/create",
+          "status": "loaded",
+          "details": "Title: Site Admin Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[SiteAdmin] Admin Users",
+          "url": "/admin/users",
+          "status": "loaded",
+          "details": "Title: Site Admin Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[SiteAdmin] Admin Analytics",
+          "url": "/admin/analytics",
+          "status": "loaded",
+          "details": "Title: Site Admin Dashboard | Course Creator Platform"
+        },
+        {
+          "name": "[SiteAdmin] System Settings",
+          "url": "/admin/settings",
+          "status": "loaded",
+          "details": "Title: Site Admin Dashboard | Course Creator Platform"
+        }
+      ]
+    },
+    {
+      "name": "API HEALTH CHECKS",
+      "pages": [
+        {
+          "name": "User Management API",
+          "url": "/api/v1/auth/health",
+          "status": "loaded",
+          "details": "Title: "
+        },
+        {
+          "name": "Course Management API",
+          "url": "/api/v1/courses/health",
+          "status": "loaded",
+          "details": "Title: "
+        },
+        {
+          "name": "Organization Management API",
+          "url": "/api/v1/organizations/health",
+          "status": "loaded",
+          "details": "Title: "
+        },
+        {
+          "name": "Content Management API",
+          "url": "/api/v1/content/health",
+          "status": "loaded",
+          "details": "Title: "
+        },
+        {
+          "name": "Analytics API",
+          "url": "/api/v1/analytics/health",
+          "status": "loaded",
+          "details": "Title: "
+        },
+        {
+          "name": "RAG Service API",
+          "url": "/api/v1/rag/health",
+          "status": "loaded",
+          "details": "Title: "
+        },
+        {
+          "name": "Demo Service API",
+          "url": "/api/v1/demo/health",
+          "status": "loaded",
+          "details": "Title: "
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total": 58,
+    "passed": 58,
+    "failed": 0,
+    "errors": []
+  }
+}

@@ -1,0 +1,74 @@
+# Docker Compose Override for Optimized Builds
+# This file enables BuildKit and optimizes build performance
+
+services:
+  # Enable BuildKit for all services
+  user-management:
+    build:
+      context: ./services/user-management
+      dockerfile: Dockerfile
+      cache_from:
+        - course-creator-user-management:latest
+      target: runtime
+    environment:
+      - DOCKER_BUILDKIT=1
+
+  course-generator:
+    build:
+      context: ./services/course-generator
+      dockerfile: Dockerfile
+      cache_from:
+        - course-creator-course-generator:latest
+      target: runtime
+    environment:
+      - DOCKER_BUILDKIT=1
+
+  content-storage:
+    build:
+      context: ./services/content-storage
+      dockerfile: Dockerfile
+      cache_from:
+        - course-creator-content-storage:latest
+      target: runtime
+    environment:
+      - DOCKER_BUILDKIT=1
+
+  course-management:
+    build:
+      context: ./services/course-management
+      dockerfile: Dockerfile
+      cache_from:
+        - course-creator-course-management:latest
+      target: runtime
+    environment:
+      - DOCKER_BUILDKIT=1
+
+  content-management:
+    build:
+      context: ./services/content-management
+      dockerfile: Dockerfile
+      cache_from:
+        - course-creator-content-management:latest
+      target: runtime
+    environment:
+      - DOCKER_BUILDKIT=1
+
+  analytics:
+    build:
+      context: ./services/analytics
+      dockerfile: Dockerfile
+      cache_from:
+        - course-creator-analytics:latest
+      target: runtime
+    environment:
+      - DOCKER_BUILDKIT=1
+
+  organization-management:
+    build:
+      context: ./services/organization-management
+      dockerfile: Dockerfile
+      cache_from:
+        - course-creator-organization-management:latest
+      target: runtime
+    environment:
+      - DOCKER_BUILDKIT=1

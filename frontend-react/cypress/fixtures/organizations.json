@@ -1,0 +1,52 @@
+{
+  "organizations": [
+    {
+      "id": "org-001",
+      "name": "Test University",
+      "description": "A test educational organization",
+      "domain": "testuniversity.edu",
+      "settings": {
+        "allowSelfEnrollment": true,
+        "requireApproval": false,
+        "maxUsersPerOrg": 1000
+      }
+    },
+    {
+      "id": "org-002",
+      "name": "Tech Corp Training",
+      "description": "Corporate training organization",
+      "domain": "techcorp.com",
+      "settings": {
+        "allowSelfEnrollment": false,
+        "requireApproval": true,
+        "maxUsersPerOrg": 500
+      }
+    }
+  ],
+  "new_organization": {
+    "name": "E2E Test Organization",
+    "description": "Organization created during E2E testing",
+    "domain": "e2etest.org",
+    "settings": {
+      "allowSelfEnrollment": true,
+      "requireApproval": false,
+      "maxUsersPerOrg": 100
+    }
+  },
+  "tracks": [
+    {
+      "id": "track-001",
+      "name": "Full Stack Developer Path",
+      "description": "Complete path to becoming a full stack developer",
+      "organizationId": "org-001",
+      "courses": ["course-001", "course-002"]
+    },
+    {
+      "id": "track-002",
+      "name": "Data Science Track",
+      "description": "Data science learning track",
+      "organizationId": "org-001",
+      "courses": ["course-003"]
+    }
+  ]
+}

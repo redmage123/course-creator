@@ -1,0 +1,124 @@
+/**
+ * 404 Not Found Page Styles
+ *
+ * DESIGN PRINCIPLES:
+ * - Consistent gradient background with auth pages
+ * - Large, clear error code display
+ * - Centered card layout
+ * - Friendly, accessible design
+ */
+
+/* ============================================================================
+ * PAGE CONTAINER
+ * ============================================================================ */
+
+.not-found-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+  padding: 24px;
+}
+
+/* ============================================================================
+ * CARD CONTAINER
+ * ============================================================================ */
+
+.not-found-card {
+  max-width: 500px;
+  width: 100%;
+  text-align: center;
+}
+
+/* ============================================================================
+ * ERROR CODE
+ * ============================================================================ */
+
+.error-code {
+  font-size: 96px;
+  font-weight: 900;
+  color: #2563eb;
+  line-height: 1;
+  margin-bottom: 16px;
+  letter-spacing: -2px;
+}
+
+/* ============================================================================
+ * ERROR MESSAGE
+ * ============================================================================ */
+
+.error-message {
+  font-size: 16px;
+  color: #64748b;
+  margin: 16px 0 32px 0;
+  line-height: 1.6;
+}
+
+/* ============================================================================
+ * ACTION BUTTONS
+ * ============================================================================ */
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+/* ============================================================================
+ * AUTH LINKS
+ * ============================================================================ */
+
+.auth-links {
+  padding-top: 24px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.auth-text {
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 12px;
+}
+
+.auth-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.auth-link {
+  font-size: 14px;
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.auth-link:hover {
+  color: #1d4ed8;
+  text-decoration: underline;
+}
+
+.auth-separator {
+  color: #cbd5e1;
+}
+
+/* ============================================================================
+ * RESPONSIVE
+ * ============================================================================ */
+
+@media (max-width: 640px) {
+  .not-found-page {
+    padding: 16px;
+  }
+
+  .error-code {
+    font-size: 72px;
+  }
+
+  .error-message {
+    font-size: 15px;
+  }
+}

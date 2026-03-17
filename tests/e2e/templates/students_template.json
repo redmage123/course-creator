@@ -1,0 +1,172 @@
+{
+  "template_type": "students",
+  "version": "1.0",
+  "description": "Student roster for Software Engineering Graduate Program 2025 across 5 cities",
+  "students": [
+    {
+      "email": "john.martinez@students.globaltech.edu",
+      "first_name": "John",
+      "last_name": "Martinez",
+      "city": "New York City",
+      "background": "Career changer from finance, no prior programming experience",
+      "enrolled_tracks": ["Foundations Track", "Full Stack Development Track", "Advanced Specialization Track", "Capstone Projects Track"],
+      "start_date": "2025-01-15",
+      "graduation_date": "2026-07-15",
+      "preferred_instructor": "David Kim"
+    },
+    {
+      "email": "sarah.anderson@students.globaltech.edu",
+      "first_name": "Sarah",
+      "last_name": "Anderson",
+      "city": "New York City",
+      "background": "Recent college graduate in Computer Science, seeking practical experience",
+      "enrolled_tracks": ["Foundations Track", "Full Stack Development Track", "Advanced Specialization Track", "Capstone Projects Track"],
+      "start_date": "2025-01-15",
+      "graduation_date": "2026-07-15",
+      "preferred_instructor": "Priya Patel"
+    },
+    {
+      "email": "michael.wong@students.globaltech.edu",
+      "first_name": "Michael",
+      "last_name": "Wong",
+      "city": "New York City",
+      "background": "Self-taught developer wanting formal training",
+      "enrolled_tracks": ["Foundations Track", "Full Stack Development Track", "Advanced Specialization Track", "Capstone Projects Track"],
+      "start_date": "2025-01-15",
+      "graduation_date": "2026-07-15",
+      "preferred_instructor": "David Kim"
+    },
+    {
+      "email": "jennifer.taylor@students.globaltech.edu",
+      "first_name": "Jennifer",
+      "last_name": "Taylor",
+      "city": "San Francisco",
+      "background": "Product manager transitioning to technical role",
+      "enrolled_tracks": ["Foundations Track", "Full Stack Development Track", "Advanced Specialization Track", "Capstone Projects Track"],
+      "start_date": "2025-01-15",
+      "graduation_date": "2026-07-15",
+      "preferred_instructor": "Maria Rodriguez"
+    },
+    {
+      "email": "david.lee@students.globaltech.edu",
+      "first_name": "David",
+      "last_name": "Lee",
+      "city": "San Francisco",
+      "background": "Former graphic designer learning web development",
+      "enrolled_tracks": ["Foundations Track", "Full Stack Development Track", "Advanced Specialization Track", "Capstone Projects Track"],
+      "start_date": "2025-01-15",
+      "graduation_date": "2026-07-15",
+      "preferred_instructor": "Maria Rodriguez"
+    },
+    {
+      "email": "emily.garcia@students.globaltech.edu",
+      "first_name": "Emily",
+      "last_name": "Garcia",
+      "city": "San Francisco",
+      "background": "Military veteran using GI Bill benefits",
+      "enrolled_tracks": ["Foundations Track", "Full Stack Development Track", "Advanced Specialization Track", "Capstone Projects Track"],
+      "start_date": "2025-01-15",
+      "graduation_date": "2026-07-15",
+      "preferred_instructor": "Robert Jackson"
+    },
+    {
+      "email": "robert.smith@students.globaltech.edu",
+      "first_name": "Robert",
+      "last_name": "Smith",
+      "city": "Chicago",
+      "background": "Manufacturing engineer pivoting to software",
+      "enrolled_tracks": ["Foundations Track", "Full Stack Development Track", "Advanced Specialization Track", "Capstone Projects Track"],
+      "start_date": "2025-01-15",
+      "graduation_date": "2026-07-15",
+      "preferred_instructor": "James Chen"
+    },
+    {
+      "email": "jessica.brown@students.globaltech.edu",
+      "first_name": "Jessica",
+      "last_name": "Brown",
+      "city": "Chicago",
+      "background": "Teacher changing careers to tech education",
+      "enrolled_tracks": ["Foundations Track", "Full Stack Development Track", "Advanced Specialization Track", "Capstone Projects Track"],
+      "start_date": "2025-01-15",
+      "graduation_date": "2026-07-15",
+      "preferred_instructor": "Emily Nguyen"
+    },
+    {
+      "email": "james.johnson@students.globaltech.edu",
+      "first_name": "James",
+      "last_name": "Johnson",
+      "city": "Chicago",
+      "background": "Recent high school graduate interested in coding",
+      "enrolled_tracks": ["Foundations Track", "Full Stack Development Track", "Advanced Specialization Track", "Capstone Projects Track"],
+      "start_date": "2025-01-15",
+      "graduation_date": "2026-07-15",
+      "preferred_instructor": "James Chen"
+    },
+    {
+      "email": "amanda.wilson@students.globaltech.edu",
+      "first_name": "Amanda",
+      "last_name": "Wilson",
+      "city": "Austin",
+      "background": "Startup founder learning to code her own product",
+      "enrolled_tracks": ["Foundations Track", "Full Stack Development Track", "Advanced Specialization Track", "Capstone Projects Track"],
+      "start_date": "2025-01-15",
+      "graduation_date": "2026-07-15",
+      "preferred_instructor": "Sarah Williams"
+    },
+    {
+      "email": "christopher.moore@students.globaltech.edu",
+      "first_name": "Christopher",
+      "last_name": "Moore",
+      "city": "Austin",
+      "background": "Data analyst wanting to build full applications",
+      "enrolled_tracks": ["Foundations Track", "Full Stack Development Track", "Advanced Specialization Track", "Capstone Projects Track"],
+      "start_date": "2025-01-15",
+      "graduation_date": "2026-07-15",
+      "preferred_instructor": "Alex Thompson"
+    },
+    {
+      "email": "melissa.davis@students.globaltech.edu",
+      "first_name": "Melissa",
+      "last_name": "Davis",
+      "city": "Austin",
+      "background": "UX designer expanding into front-end development",
+      "enrolled_tracks": ["Foundations Track", "Full Stack Development Track", "Advanced Specialization Track", "Capstone Projects Track"],
+      "start_date": "2025-01-15",
+      "graduation_date": "2026-07-15",
+      "preferred_instructor": "Sarah Williams"
+    },
+    {
+      "email": "daniel.miller@students.globaltech.edu",
+      "first_name": "Daniel",
+      "last_name": "Miller",
+      "city": "Seattle",
+      "background": "Biology PhD student transitioning to bioinformatics",
+      "enrolled_tracks": ["Foundations Track", "Full Stack Development Track", "Advanced Specialization Track", "Capstone Projects Track"],
+      "start_date": "2025-01-15",
+      "graduation_date": "2026-07-15",
+      "preferred_instructor": "Michael O'Connor"
+    },
+    {
+      "email": "ashley.thomas@students.globaltech.edu",
+      "first_name": "Ashley",
+      "last_name": "Thomas",
+      "city": "Seattle",
+      "background": "Nurse learning healthcare software development",
+      "enrolled_tracks": ["Foundations Track", "Full Stack Development Track", "Advanced Specialization Track", "Capstone Projects Track"],
+      "start_date": "2025-01-15",
+      "graduation_date": "2026-07-15",
+      "preferred_instructor": "Lisa Brown"
+    },
+    {
+      "email": "matthew.jackson@students.globaltech.edu",
+      "first_name": "Matthew",
+      "last_name": "Jackson",
+      "city": "Seattle",
+      "background": "Photographer learning web development for freelance work",
+      "enrolled_tracks": ["Foundations Track", "Full Stack Development Track", "Advanced Specialization Track", "Capstone Projects Track"],
+      "start_date": "2025-01-15",
+      "graduation_date": "2026-07-15",
+      "preferred_instructor": "Michael O'Connor"
+    }
+  ]
+}

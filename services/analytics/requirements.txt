@@ -1,0 +1,28 @@
+# Analytics Service - Service-Specific Dependencies
+# Base dependencies are installed from requirements-base.txt
+
+# =============================================================================
+# DATA ANALYSIS & PROCESSING (ANALYTICS SPECIFIC)
+# =============================================================================
+pandas>=2.1.4
+numpy>=1.24.4
+
+# =============================================================================
+# PDF GENERATION (ANALYTICS REPORTS)
+# =============================================================================
+reportlab>=4.0.7
+
+# =============================================================================
+# DATA VISUALIZATION (ANALYTICS SPECIFIC)
+# =============================================================================
+matplotlib>=3.8.2
+seaborn>=0.13.0
+Pillow>=10.1.0
+
+# =============================================================================
+# DATE/TIME UTILITIES (ANALYTICS SPECIFIC)
+# =============================================================================
+python-dateutil>=2.8.2
+
+# Note: All other dependencies (FastAPI, SQLAlchemy, Redis, etc.) 
+# are provided by requirements-base.txt

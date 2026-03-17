@@ -1,0 +1,1971 @@
+"""
+Organization Management Data Access Object (DAO)
+
+This module implements the Data Access Object (DAO) pattern for organization management operations,
+centralizing all SQL queries and database interactions in a single, maintainable locations.
+
+Business Context:
+The Organization Management service is the foundation of the Course Creator Platform's multi-tenant
+architecture. It handles organization creation, user membership management, project tracking,
+and role-based access control. By centralizing all SQL operations in this DAO, we achieve:
+- Single source of truth for all organization-related database queries
+- Enhanced security through consistent multi-tenant data access patterns
+- Improved maintainability and testing capabilities
+- Clear separation between business logic and data access concerns
+- Better performance through optimized query patterns
+
+Technical Rationale:
+- Follows the Single Responsibility Principle by isolating data access concerns
+- Enables comprehensive transaction support for complex organizational operations
+- Provides consistent error handling using shared platform exceptions
+- Supports connection pooling for optimal database resource utilization
+- Facilitates database schema evolution without affecting business logic
+- Enables easier unit testing through clear interface boundaries
+"""
+
+import asyncpg
+import logging
+from typing import List, Dict, Any, Optional, Tuple
+from datetime import datetime, timedelta
+from uuid import UUID, uuid4
+import json
+import sys
+sys.path.append('/app/shared')
+from organization_management.domain.entities.enhanced_role import RoleType
+from organization_management.exceptions import (
+    CourseCreatorBaseException,
+    DatabaseException,
+    UserNotFoundException,
+    UserValidationException,
+    AuthenticationException,
+    ValidationException
+)
+
+
+class OrganizationManagementDAO:
+    """
+    Data Access Object for Organization Management Operations
+    
+    This class centralizes all SQL queries and database operations for the organization
+    management service, following the DAO pattern for clean architecture.
+    
+    Business Context:
+    Provides comprehensive data access methods for multi-tenant organization management including:
+    - Organization creation, configuration, and lifecycle management
+    - User membership and role assignment operations
+    - Project creation, tracking, and resource allocation
+    - Meeting room management and scheduling
+    - Track management for educational content organization
+    - Audit logging and compliance tracking
+    
+    Technical Implementation:
+    - Uses asyncpg for high-performance PostgreSQL operations
+    - Implements connection pooling for optimal resource usage
+    - Provides transaction support for complex multi-table operations
+    - Includes comprehensive error handling and security logging
+    - Supports prepared statements for performance optimization
+    - Enforces multi-tenant data isolation through proper WHERE clauses
+    """
+    
+    def __init__(self, db_pool: asyncpg.Pool):
+        """
+        Initialize the Organization Management DAO with database connection pool.
+        
+        Business Context:
+        The DAO requires a connection pool to efficiently manage database connections
+        across the organization management service's operations.
+        
+        Args:
+            db_pool: AsyncPG connection pool for database operations
+        """
+        self.db_pool = db_pool
+        self.logger = logging.getLogger(__name__)
+    
+    # ================================================================
+    # ORGANIZATION MANAGEMENT QUERIES
+    # ================================================================
+    
+    async def create_organization(self, org_data: Dict[str, Any]) -> str:
+        """
+        Create a new organization with comprehensive configuration.
+        
+        Business Context:
+        Organization creation is the foundational operation for multi-tenant setup.
+        This operation creates the organizational structure, default settings,
+        and initial administrative access for platform usage.
+        
+        Technical Implementation:
+        - Validates organization slug uniqueness
+        - Sets up default organizational settings
+        - Creates initial audit trail
+        - Generates unique organization ID for tenant isolation
+        
+        Args:
+            org_data: Dictionary containing organization information
+                - name: Organization display name
+                - slug: Unique organization identifier (URL-safe)
+                - description: Organization description
+                - domain: Optional organization domain
+                - contact_email: Primary contact email
+                - contact_phone: Optional contact phone
+                - settings: JSON configuration object
+                
+        Returns:
+            Created organization ID as string
+        """
+        try:
+            print(f"=== DAO DEBUG: Starting create_organization")
+            print(f"=== DAO DEBUG: Received org_data keys: {list(org_data.keys())}")
+            print(f"=== DAO DEBUG: org_data values: name='{org_data.get('name')}', slug='{org_data.get('slug')}', id='{org_data.get('id')}'")
+            self.logger.info(f"DAO DEBUG: Starting create_organization for slug: {org_data.get('slug')}")
+            
+            print(f"=== DAO DEBUG: About to acquire database connection")
+            async with self.db_pool.acquire() as conn:
+                print(f"=== DAO DEBUG: Database connection acquired successfully")
+                print(f"=== DAO DEBUG: About to execute INSERT query")
+                print(f"=== DAO DEBUG: Query parameters - id: {org_data['id']}, name: {org_data['name']}, slug: {org_data['slug']}")
+                
+                org_id = await conn.fetchval(
+                    """INSERT INTO course_creator.organizations (
+                        id, name, slug, description, domain, contact_email,
+                        contact_phone, street_address, city, state_province,
+                        postal_code, country, settings, is_active, created_at, updated_at
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+                    RETURNING id""",
+                    org_data['id'],
+                    org_data['name'],
+                    org_data['slug'],
+                    org_data.get('description'),
+                    org_data.get('domain'),
+                    org_data['contact_email'],
+                    org_data.get('contact_phone'),
+                    org_data.get('street_address'),
+                    org_data.get('city'),
+                    org_data.get('state_province'),
+                    org_data.get('postal_code'),
+                    org_data.get('country', 'US'),
+                    json.dumps(org_data.get('settings', {})),
+                    org_data.get('is_active', True),
+                    datetime.utcnow(),
+                    datetime.utcnow()
+                )
+                print(f"=== DAO DEBUG: INSERT query completed successfully, returned ID: {org_id}")
+                self.logger.info(f"DAO DEBUG: Organization created successfully with ID: {org_id}")
+                return str(org_id)
+        except asyncpg.UniqueViolationError as e:
+            # Handle duplicate organization slug gracefully
+            print(f"=== DAO ERROR: UniqueViolationError - {str(e)}")
+            self.logger.error(f"DAO ERROR: UniqueViolationError - {str(e)}")
+            raise ValidationException(
+                message="Organization with this slug already exists",
+                error_code="DUPLICATE_ORGANIZATION_SLUG",
+                validation_errors={"slug": "Slug already in use"},
+                original_exception=e
+            )
+        except Exception as e:
+            print(f"=== DAO ERROR: Exception in create_organization: {type(e).__name__}: {str(e)}")
+            self.logger.error(f"DAO ERROR: Exception in create_organization: {type(e).__name__}: {str(e)}")
+            import traceback
+            print(f"=== DAO ERROR TRACEBACK: {traceback.format_exc()}")
+            self.logger.error(f"DAO ERROR TRACEBACK: {traceback.format_exc()}")
+            raise DatabaseException(
+                message="Failed to create organization",
+                error_code="ORGANIZATION_CREATION_ERROR",
+                details={
+                    "name": org_data.get('name'),
+                    "slug": org_data.get('slug')
+                },
+                original_exception=e
+            )
+    
+    async def get_all_organizations(self) -> List[Dict[str, Any]]:
+        """
+        Retrieve all organizations.
+
+        Business Context:
+        Site administrators need to view all organizations for platform-wide management.
+
+        Returns:
+            List of all organization records
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                orgs = await conn.fetch(
+                    """SELECT id, name, slug, description, logo_url, domain,
+                              address, street_address, city, state_province, postal_code, country,
+                              contact_phone, contact_email, logo_file_path,
+                              settings, is_active, created_at, updated_at
+                       FROM course_creator.organizations
+                       ORDER BY created_at DESC"""
+                )
+                return [dict(org) for org in orgs]
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to retrieve all organizations",
+                error_code="ORGANIZATION_LIST_ERROR",
+                details={},
+                original_exception=e
+            )
+
+    async def get_organization_by_id(self, org_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve organization information by unique ID.
+
+        Business Context:
+        Organization lookup by ID is used for tenant validation, configuration
+        retrieval, and administrative operations requiring organizational context.
+
+        Args:
+            org_id: Unique organization identifier
+
+        Returns:
+            Complete organization record or None if not found
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                org = await conn.fetchrow(
+                    """SELECT id, name, slug, description, logo_url, domain,
+                              address, street_address, city, state_province, postal_code, country,
+                              contact_phone, contact_email, logo_file_path,
+                              settings, is_active, created_at, updated_at
+                       FROM course_creator.organizations WHERE id = $1""",
+                    UUID(org_id)
+                )
+                return dict(org) if org else None
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to retrieve organization by ID",
+                error_code="ORGANIZATION_LOOKUP_ERROR",
+                details={"org_id": org_id},
+                original_exception=e
+            )
+    
+    async def get_organization_by_slug(self, slug: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve organization information by slug (URL identifier).
+        
+        Business Context:
+        Slug-based organization lookup supports URL routing and public-facing
+        organization identification for branded experiences.
+        
+        Args:
+            slug: Organization slug identifier
+            
+        Returns:
+            Complete organization record or None if not found
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                org = await conn.fetchrow(
+                    """SELECT id, name, slug, description, logo_url, domain,
+                              address, street_address, city, state_province, postal_code, country,
+                              contact_phone, contact_email, logo_file_path,
+                              settings, is_active, created_at, updated_at
+                       FROM course_creator.organizations WHERE slug = $1""",
+                    slug
+                )
+                return dict(org) if org else None
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to retrieve organization by slug",
+                error_code="ORGANIZATION_LOOKUP_ERROR",
+                details={"slug": slug},
+                original_exception=e
+            )
+    
+    async def exists_by_slug(self, slug: str) -> bool:
+        """
+        Check if an organization exists with the given slug.
+        
+        Args:
+            slug: Organization slug to check
+            
+        Returns:
+            bool: True if organization exists, False otherwise
+        """
+        try:
+            async with self.db_pool.acquire() as connection:
+                result = await connection.fetchval(
+                    "SELECT EXISTS(SELECT 1 FROM course_creator.organizations WHERE slug = $1)",
+                    slug
+                )
+                return bool(result)
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to check organization existence by slug",
+                error_code="ORGANIZATION_EXISTS_CHECK_ERROR",
+                details={"slug": slug},
+                original_exception=e
+            )
+    
+    async def exists_by_domain(self, domain: str) -> bool:
+        """
+        Check if an organization exists with the given domain.
+        
+        Args:
+            domain: Organization domain to check
+            
+        Returns:
+            bool: True if organization exists, False otherwise
+        """
+        try:
+            async with self.db_pool.acquire() as connection:
+                result = await connection.fetchval(
+                    "SELECT EXISTS(SELECT 1 FROM course_creator.organizations WHERE domain = $1)",
+                    domain
+                )
+                return bool(result)
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to check organization existence by domain",
+                error_code="ORGANIZATION_EXISTS_CHECK_ERROR",
+                details={"domain": domain},
+                original_exception=e
+            )
+    
+    async def update_organization_settings(self, org_id: str, settings: Dict[str, Any]) -> bool:
+        """
+        Update organization configuration settings.
+
+        Business Context:
+        Organization settings control feature availability, branding, and
+        operational parameters for the multi-tenant platform experience.
+
+        Args:
+            org_id: Organization to update settings for
+            settings: New settings configuration object
+
+        Returns:
+            True if settings were updated successfully
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                result = await conn.execute(
+                    """UPDATE course_creator.organizations
+                       SET settings = $1, updated_at = $2
+                       WHERE id = $3""",
+                    json.dumps(settings),
+                    datetime.utcnow(),
+                    UUID(org_id)
+                )
+                return result.split()[-1] == '1'
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to update organization settings",
+                error_code="ORGANIZATION_UPDATE_ERROR",
+                details={"org_id": org_id},
+                original_exception=e
+            )
+
+    async def update_organization(self, org_id: str, update_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Update organization details with flexible field updates.
+
+        Business Context:
+        Organization admin can update various organization details like name,
+        description, contact information, domain, logo, etc.
+
+        Args:
+            org_id: Organization ID to update
+            update_data: Dictionary of fields to update (only non-None values)
+
+        Returns:
+            Updated organization record or None if not found
+        """
+        try:
+            # Build dynamic UPDATE query based on provided fields
+            set_clauses = []
+            params = []
+            param_count = 1
+
+            for field, value in update_data.items():
+                if field == 'settings':
+                    set_clauses.append(f"{field} = ${param_count}")
+                    params.append(json.dumps(value))
+                else:
+                    set_clauses.append(f"{field} = ${param_count}")
+                    params.append(value)
+                param_count += 1
+
+            # Add updated_at timestamp
+            set_clauses.append(f"updated_at = ${param_count}")
+            params.append(datetime.utcnow())
+            param_count += 1
+
+            # Add org_id as final parameter
+            params.append(UUID(org_id))
+
+            query = f"""
+                UPDATE course_creator.organizations
+                SET {', '.join(set_clauses)}
+                WHERE id = ${param_count}
+                RETURNING *
+            """
+
+            async with self.db_pool.acquire() as conn:
+                row = await conn.fetchrow(query, *params)
+                if row:
+                    return dict(row)
+                return None
+
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to update organization",
+                error_code="ORGANIZATION_UPDATE_ERROR",
+                details={"org_id": org_id, "update_data": update_data},
+                original_exception=e
+            )
+
+    # ================================================================
+    # USER LOOKUP QUERIES (for membership operations)
+    # ================================================================
+
+    async def get_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+        """
+        Get user by email address from user-management service
+
+        Business Context:
+        When adding members to organizations, we need to lookup users by email.
+        This queries the users table to find existing user records.
+
+        Args:
+            email: Email address to lookup
+
+        Returns:
+            User record if found, None otherwise
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                user = await conn.fetchrow(
+                    """SELECT id, email, username, full_name, role, status
+                       FROM course_creator.users
+                       WHERE email = $1 AND status = 'active'""",
+                    email
+                )
+                return dict(user) if user else None
+        except Exception as e:
+            self._logger.error(f"Failed to lookup user by email {email}: {e}")
+            return None
+
+    async def create_pending_user(self, email: str) -> Dict[str, Any]:
+        """
+        Create a pending user record for invitation workflows
+
+        Business Context:
+        When adding instructors/admins who don't have accounts yet,
+        create a pending user record that will be activated when they register.
+
+        Args:
+            email: Email address for the pending user
+
+        Returns:
+            Created user record
+        """
+        try:
+            import uuid
+            user_id = uuid.uuid4()
+            username = email.split('@')[0]  # Generate username from email
+
+            async with self.db_pool.acquire() as conn:
+                user_id = await conn.fetchval(
+                    """INSERT INTO course_creator.users (
+                        id, email, username, full_name, role, status,
+                        password, created_at, updated_at
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                    RETURNING id""",
+                    user_id,
+                    email,
+                    username,
+                    email.split('@')[0].title(),  # Use email prefix as name
+                    'instructor',  # Default role
+                    'pending',  # Pending activation
+                    '',  # Empty password - will be set on activation
+                    datetime.utcnow(),
+                    datetime.utcnow()
+                )
+
+                return {
+                    'id': str(user_id),
+                    'email': email,
+                    'username': username,
+                    'full_name': email.split('@')[0].title(),
+                    'role': 'instructor',
+                    'status': 'pending'
+                }
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to create pending user",
+                error_code="PENDING_USER_CREATION_ERROR",
+                details={"email": email},
+                original_exception=e
+            )
+
+    async def get_user_membership(
+        self,
+        user_id: UUID,
+        organization_id: UUID
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Get specific user membership in an organization
+
+        Business Context:
+        Check if a user is already a member of an organization before
+        adding them, to prevent duplicate memberships.
+
+        Args:
+            user_id: User to check
+            organization_id: Organization to check
+
+        Returns:
+            Membership record if exists, None otherwise
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                membership = await conn.fetchrow(
+                    """SELECT id, user_id, organization_id, role, is_active, joined_at, updated_at
+                       FROM course_creator.organization_memberships
+                       WHERE user_id = $1 AND organization_id = $2""",
+                    user_id, organization_id
+                )
+                return dict(membership) if membership else None
+        except Exception as e:
+            self._logger.error(f"Failed to get user membership: {e}")
+            return None
+
+    # ================================================================
+    # MEMBERSHIP MANAGEMENT QUERIES
+    # ================================================================
+
+    async def create_membership(self, membership_data: Dict[str, Any]) -> str:
+        """
+        Create a new organizational membership with role assignment.
+        
+        Business Context:
+        Memberships link users to organizations with specific roles and permissions.
+        This enables multi-tenant access control and organizational resource management.
+        
+        Args:
+            membership_data: Dictionary containing membership information
+                - user_id: User being granted membership
+                - organization_id: Organization granting membership
+                - role: User role within the organization
+                - permissions: Optional additional permissions
+                
+        Returns:
+            Created membership ID as string
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                membership_id = await conn.fetchval(
+                    """INSERT INTO course_creator.organization_memberships (
+                        id, user_id, organization_id, role,
+                        is_active, joined_at, updated_at
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+                    RETURNING id""",
+                    membership_data['id'],
+                    UUID(membership_data['user_id']),
+                    UUID(membership_data['organization_id']),
+                    membership_data['role'],
+                    membership_data.get('is_active', True),
+                    datetime.utcnow(),
+                    datetime.utcnow()
+                )
+                return str(membership_id)
+        except asyncpg.UniqueViolationError as e:
+            # Handle duplicate membership gracefully
+            raise ValidationException(
+                message="User is already a member of this organization",
+                error_code="DUPLICATE_MEMBERSHIP_ERROR",
+                validation_errors={"user_id": "User already has membership"},
+                original_exception=e
+            )
+        except Exception as e:
+            raise DatabaseException(
+                message="Failed to create organizational membership",
+                error_code="MEMBERSHIP_CREATION_ERROR",
+                details=membership_data,
+                original_exception=e
+            )
+    
+    async def get_user_memberships(self, user_id: str) -> List[Dict[str, Any]]:
+        """
+        Retrieve all organizational memberships for a specific user.
+        
+        Business Context:
+        User membership lookup enables multi-tenant navigation, permission
+        validation, and organizational context switching for users.
+        
+        Args:
+            user_id: User to get memberships for
+            
+        Returns:
+            List of membership records with organization information
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                memberships = await conn.fetch(
+                    """SELECT m.id, m.role, m.is_active, m.joined_at as created_at,
+                              o.id as org_id, o.name as org_name, o.slug as org_slug,
+                              o.logo_url as org_logo
+                       FROM course_creator.organization_memberships m
+                       JOIN course_creator.organizations o ON m.organization_id = o.id
+                       WHERE m.user_id = $1 AND m.is_active = true
+                       ORDER BY o.name""",
+                    UUID(user_id)
+                )
+                return [dict(membership) for membership in memberships]
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to retrieve user memberships",
+                error_code="MEMBERSHIP_LOOKUP_ERROR",
+                details={"user_id": user_id},
+                original_exception=e
+            )
+    
+    async def get_organization_members(self, org_id: str, limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
+        """
+        Retrieve organization members with pagination support.
+        
+        Business Context:
+        Organization member listing supports administrative tasks, communication,
+        and membership management operations within organizations.
+        
+        Args:
+            org_id: Organization to get members for
+            limit: Maximum number of members to return
+            offset: Number of members to skip (for pagination)
+            
+        Returns:
+            List of member records with user information
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                members = await conn.fetch(
+                    """SELECT m.id, m.role, m.is_active, m.joined_at as created_at,
+                              u.id as user_id, u.email, u.username, u.full_name, u.phone
+                       FROM course_creator.organization_memberships m
+                       JOIN course_creator.users u ON m.user_id = u.id
+                       WHERE m.organization_id = $1 AND m.is_active = true
+                       ORDER BY m.joined_at DESC
+                       LIMIT $2 OFFSET $3""",
+                    UUID(org_id), limit, offset
+                )
+                return [dict(member) for member in members]
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to retrieve organization members",
+                error_code="MEMBERSHIP_QUERY_ERROR",
+                details={"org_id": org_id, "limit": limit, "offset": offset},
+                original_exception=e
+            )
+    
+    async def update_membership_role(self, membership_id: str, new_role: str) -> bool:
+        """
+        Update the role for an organizational membership.
+        
+        Business Context:
+        Role updates support promotion, role changes, and permission management
+        within organizational hierarchies and access control systems.
+        
+        Args:
+            membership_id: Membership to update role for
+            new_role: New role to assign
+            
+        Returns:
+            True if role was updated successfully
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                result = await conn.execute(
+                    """UPDATE course_creator.organization_memberships
+                       SET role = $1, updated_at = $2
+                       WHERE id = $3""",
+                    new_role,
+                    datetime.utcnow(),
+                    UUID(membership_id)
+                )
+                return result.split()[-1] == '1'
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to update membership role",
+                error_code="MEMBERSHIP_UPDATE_ERROR",
+                details={"membership_id": membership_id, "new_role": new_role},
+                original_exception=e
+            )
+    
+    # ================================================================
+    # PROJECT MANAGEMENT QUERIES
+    # ================================================================
+    
+    async def create_project(self, project_data: Dict[str, Any]) -> str:
+        """
+        Create a new project within an organization.
+        
+        Business Context:
+        Projects organize educational content, courses, and resources within
+        organizations, enabling structured content management and collaboration.
+        
+        Args:
+            project_data: Dictionary containing project information
+                - name: Project display name
+                - description: Project description
+                - organization_id: Parent organization
+                - created_by: User creating the project
+                - settings: Project configuration
+                
+        Returns:
+            Created project ID as string
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                project_id = await conn.fetchval(
+                    """INSERT INTO course_creator.projects (
+                        id, name, description, organization_id, created_by,
+                        settings, is_active, created_at, updated_at
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
+                    RETURNING id""",
+                    project_data['id'],
+                    project_data['name'],
+                    project_data.get('description'),
+                    UUID(project_data['organization_id']),
+                    UUID(project_data['created_by']),
+                    json.dumps(project_data.get('settings', {})),
+                    project_data.get('is_active', True),
+                    datetime.utcnow(),
+                    datetime.utcnow()
+                )
+                return str(project_id)
+        except Exception as e:
+            raise DatabaseException(
+                message="Failed to create project",
+                error_code="PROJECT_CREATION_ERROR",
+                details=project_data,
+                original_exception=e
+            )
+    
+    async def get_organization_projects(self, org_id: str, limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
+        """
+        Retrieve projects belonging to an organization with pagination.
+        
+        Business Context:
+        Project listing supports organizational content management, resource
+        allocation, and project overview operations for administrative users.
+        
+        Args:
+            org_id: Organization to get projects for
+            limit: Maximum number of projects to return
+            offset: Number of projects to skip (for pagination)
+            
+        Returns:
+            List of project records with creator information
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                projects = await conn.fetch(
+                    """SELECT id, name, description, settings, is_active,
+                              created_at, updated_at
+                       FROM course_creator.projects
+                       WHERE organization_id = $1
+                       ORDER BY created_at DESC
+                       LIMIT $2 OFFSET $3""",
+                    UUID(org_id), limit, offset
+                )
+                return [dict(project) for project in projects]
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to retrieve organization projects",
+                error_code="PROJECT_QUERY_ERROR",
+                details={"org_id": org_id, "limit": limit, "offset": offset},
+                original_exception=e
+            )
+    
+    async def get_project_by_id(self, project_id: str, org_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve project information by ID with organization validation.
+        
+        Business Context:
+        Project lookup with organization validation ensures multi-tenant
+        data isolation and prevents cross-organizational data access.
+        
+        Args:
+            project_id: Project identifier
+            org_id: Organization identifier for validation
+            
+        Returns:
+            Project record or None if not found or not accessible
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                project = await conn.fetchrow(
+                    """SELECT p.*, u.full_name as creator_name, u.email as creator_email
+                       FROM course_creator.projects p
+                       JOIN users u ON p.created_by = u.id
+                       WHERE p.id = $1 AND p.organization_id = $2""",
+                    UUID(project_id), UUID(org_id)
+                )
+                return dict(project) if project else None
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to retrieve project by ID",
+                error_code="PROJECT_LOOKUP_ERROR",
+                details={"project_id": project_id, "org_id": org_id},
+                original_exception=e
+            )
+
+    # ================================================================
+    # PROJECT NOTES OPERATIONS
+    # ================================================================
+
+    async def get_project_notes(self, project_id: str, org_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve project notes with metadata.
+
+        Business Context:
+        Project notes provide extensive documentation capabilities for project managers
+        to store guidelines, requirements, schedules, and other information.
+        Notes can be in markdown or HTML format for flexible content authoring.
+
+        Args:
+            project_id: Project identifier
+            org_id: Organization identifier for validation (multi-tenant isolation)
+
+        Returns:
+            Dictionary containing notes, content_type, and metadata or None if not found
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                notes_data = await conn.fetchrow(
+                    """SELECT
+                        p.id as project_id,
+                        p.name as project_name,
+                        p.notes,
+                        p.notes_content_type,
+                        p.notes_updated_at,
+                        p.notes_updated_by,
+                        u.full_name as updated_by_name,
+                        u.email as updated_by_email
+                       FROM course_creator.projects p
+                       LEFT JOIN course_creator.users u ON p.notes_updated_by = u.id
+                       WHERE p.id = $1 AND p.organization_id = $2""",
+                    UUID(project_id), UUID(org_id)
+                )
+                return dict(notes_data) if notes_data else None
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to retrieve project notes",
+                error_code="PROJECT_NOTES_QUERY_ERROR",
+                details={"project_id": project_id, "org_id": org_id},
+                original_exception=e
+            )
+
+    async def update_project_notes(
+        self,
+        project_id: str,
+        org_id: str,
+        notes: str,
+        content_type: str,
+        updated_by: str
+    ) -> Dict[str, Any]:
+        """
+        Update project notes with content and metadata.
+
+        Business Context:
+        Allows organization admins to update project documentation. Notes are stored
+        with audit information (who updated and when) for compliance tracking.
+        Content type allows proper rendering of markdown or HTML content.
+
+        Args:
+            project_id: Project identifier
+            org_id: Organization identifier for validation (multi-tenant isolation)
+            notes: The notes content (can be extensive text in markdown or HTML)
+            content_type: Content format - 'markdown' or 'html'
+            updated_by: UUID of user updating the notes
+
+        Returns:
+            Updated notes data with metadata
+
+        Raises:
+            DatabaseException: If project not found or update fails
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                # Verify project exists and belongs to organization
+                project_exists = await conn.fetchval(
+                    """SELECT 1 FROM course_creator.projects
+                       WHERE id = $1 AND organization_id = $2""",
+                    UUID(project_id), UUID(org_id)
+                )
+
+                if not project_exists:
+                    raise DatabaseException(
+                        message="Project not found or access denied",
+                        error_code="PROJECT_NOT_FOUND",
+                        details={"project_id": project_id, "org_id": org_id}
+                    )
+
+                # Update the notes
+                result = await conn.fetchrow(
+                    """UPDATE course_creator.projects
+                       SET notes = $1,
+                           notes_content_type = $2,
+                           notes_updated_at = CURRENT_TIMESTAMP,
+                           notes_updated_by = $3
+                       WHERE id = $4 AND organization_id = $5
+                       RETURNING id, notes, notes_content_type, notes_updated_at, notes_updated_by""",
+                    notes,
+                    content_type,
+                    UUID(updated_by),
+                    UUID(project_id),
+                    UUID(org_id)
+                )
+
+                return dict(result) if result else None
+        except DatabaseException:
+            raise
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to update project notes",
+                error_code="PROJECT_NOTES_UPDATE_ERROR",
+                details={"project_id": project_id, "org_id": org_id, "content_type": content_type},
+                original_exception=e
+            )
+
+    async def delete_project_notes(self, project_id: str, org_id: str, deleted_by: str) -> bool:
+        """
+        Clear project notes (set to NULL).
+
+        Business Context:
+        Allows organization admins to remove project notes entirely.
+        The deletion is recorded via the notes_updated_by field for audit purposes.
+
+        Args:
+            project_id: Project identifier
+            org_id: Organization identifier for validation
+            deleted_by: UUID of user deleting the notes
+
+        Returns:
+            True if notes were cleared, False if project not found
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                result = await conn.execute(
+                    """UPDATE course_creator.projects
+                       SET notes = NULL,
+                           notes_content_type = 'markdown',
+                           notes_updated_at = CURRENT_TIMESTAMP,
+                           notes_updated_by = $1
+                       WHERE id = $2 AND organization_id = $3""",
+                    UUID(deleted_by),
+                    UUID(project_id),
+                    UUID(org_id)
+                )
+                return result == "UPDATE 1"
+        except Exception as e:
+            raise DatabaseException(
+                message=f"Failed to delete project notes",
+                error_code="PROJECT_NOTES_DELETE_ERROR",
+                details={"project_id": project_id, "org_id": org_id},
+                original_exception=e
+            )
+
+    async def delete_project(
+        self,
+        project_id: str,
+        org_id: str,
+        deleted_by: str,
+        force: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Delete a project and optionally cascade to related entities.
+
+        Business Context:
+        Organization admins can delete projects that are no longer needed.
+        This is a destructive operation that removes the project and related data.
+        Active enrollments will block deletion unless force=True.
+
+        Args:
+            project_id: Project identifier to delete
+            org_id: Organization identifier for validation
+            deleted_by: UUID of user performing the deletion
+            force: If True, cascade delete even with active enrollments
+
+        Returns:
+            Dictionary with deletion results:
+            - success: bool indicating if deletion was successful
+            - deleted_tracks: count of tracks deleted
+            - deleted_subprojects: count of sub-projects deleted
+            - blocked_reason: reason if deletion was blocked (if any)
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                # Verify project exists and belongs to organization
+                project = await conn.fetchrow(
+                    """SELECT id, name, is_active
+                       FROM course_creator.projects
+                       WHERE id = $1 AND organization_id = $2""",
+                    UUID(project_id),
+                    UUID(org_id)
+                )
+
+                if not project:
+                    return {
+                        "success": False,
+                        "blocked_reason": "Project not found or access denied"
+                    }
+
+                # Check for active enrollments in tracks under this project
+                if not force:
+                    active_enrollments = await conn.fetchval(
+                        """SELECT COUNT(*) FROM course_creator.track_assignments ta
+                           JOIN course_creator.tracks t ON ta.track_id = t.id
+                           WHERE t.project_id = $1 AND ta.status = 'active'""",
+                        UUID(project_id)
+                    )
+
+                    if active_enrollments > 0:
+                        return {
+                            "success": False,
+                            "blocked_reason": f"Cannot delete project with {active_enrollments} active enrollments. Use force=true to override.",
+                            "active_enrollments": active_enrollments
+                        }
+
+                # Begin transaction for cascade deletion
+                async with conn.transaction():
+                    # Count tracks and sub-projects before deletion
+                    track_count = await conn.fetchval(
+                        """SELECT COUNT(*) FROM course_creator.tracks
+                           WHERE project_id = $1""",
+                        UUID(project_id)
+                    )
+
+                    subproject_count = await conn.fetchval(
+                        """SELECT COUNT(*) FROM course_creator.sub_projects
+                           WHERE project_id = $1""",
+                        UUID(project_id)
+                    )
+
+                    # Delete track assignments first (foreign key constraint)
+                    await conn.execute(
+                        """DELETE FROM course_creator.track_assignments
+                           WHERE track_id IN (
+                               SELECT id FROM course_creator.tracks WHERE project_id = $1
+                           )""",
+                        UUID(project_id)
+                    )
+
+                    # Delete tracks
+                    await conn.execute(
+                        """DELETE FROM course_creator.tracks WHERE project_id = $1""",
+                        UUID(project_id)
+                    )
+
+                    # Delete sub-project track assignments
+                    await conn.execute(
+                        """DELETE FROM course_creator.sub_project_track_assignments
+                           WHERE sub_project_id IN (
+                               SELECT id FROM course_creator.sub_projects WHERE project_id = $1
+                           )""",
+                        UUID(project_id)
+                    )
+
+                    # Delete sub-projects
+                    await conn.execute(
+                        """DELETE FROM course_creator.sub_projects WHERE project_id = $1""",
+                        UUID(project_id)
+                    )
+
+                    # Delete the project itself
+                    result = await conn.execute(
+                        """DELETE FROM course_creator.projects
+                           WHERE id = $1 AND organization_id = $2""",
+                        UUID(project_id),
+                        UUID(org_id)
+                    )
+
+                    # Log the audit event
+                    await conn.execute(
+                        """INSERT INTO course_creator.audit_logs (
+                            id, user_id, organization_id, action, resource_type,
+                            resource_id, details, created_at
+                        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)""",
+                        uuid4(),
+                        UUID(deleted_by),
+                        UUID(org_id),
+                        "delete",
+                        "project",
+                        UUID(project_id),
+                        json.dumps({
+                            "project_name": project["name"],
+                            "tracks_deleted": track_count,
+                            "subprojects_deleted": subproject_count,
+                            "force": force
+                        }),
+                        datetime.utcnow()
+                    )
+
+                    return {
+                        "success": result == "DELETE 1",
+                        "deleted_tracks": track_count,
+                        "deleted_subprojects": subproject_count,
+                        "project_name": project["name"]
+                    }
+
+        except DatabaseException:
+            raise
+        except Exception as e:
+            raise DatabaseException(
+                message="Failed to delete project",
+                error_code="PROJECT_DELETE_ERROR",
+                details={"project_id": project_id, "org_id": org_id},
+                original_exception=e
+            )
+
+    # ================================================================
+    # AUDIT LOGGING AND ANALYTICS QUERIES
+    # ================================================================
+    
+    async def log_audit_event(self, audit_data: Dict[str, Any]) -> str:
+        """
+        Log an audit event for compliance and security tracking.
+        
+        Business Context:
+        Audit logging supports compliance requirements, security monitoring,
+        and administrative oversight of organizational activities.
+        
+        Args:
+            audit_data: Dictionary containing audit information
+                - user_id: User performing the action
+                - organization_id: Organization context
+                - action: Action performed
+                - resource_type: Type of resource affected
+                - resource_id: Specific resource identifier
+                - details: Additional audit details
+                
+        Returns:
+            Created audit log ID as string
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                audit_id = await conn.fetchval(
+                    """INSERT INTO course_creator.audit_logs (
+                        id, user_id, organization_id, action, resource_type,
+                        resource_id, details, timestamp, ip_address
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
+                    RETURNING id""",
+                    audit_data['id'],
+                    UUID(audit_data['user_id']) if audit_data.get('user_id') else None,
+                    UUID(audit_data['organization_id']) if audit_data.get('organization_id') else None,
+                    audit_data['action'],
+                    audit_data['resource_type'],
+                    audit_data.get('resource_id'),
+                    json.dumps(audit_data.get('details', {})),
+                    datetime.utcnow(),
+                    audit_data.get('ip_address')
+                )
+                return str(audit_id)
+        except Exception as e:
+            raise DatabaseException(
+                message="Failed to create audit log entry",
+                error_code="AUDIT_LOG_ERROR",
+                details=audit_data,
+                original_exception=e
+            )
+    
+    async def get_organization_statistics(self, org_id: str) -> Dict[str, Any]:
+        """
+        Retrieve comprehensive statistics for an organization.
+        
+        Business Context:
+        Organization statistics support administrative decision making, resource
+        planning, and organizational growth analysis by providing key metrics.
+        
+        Args:
+            org_id: Organization to get statistics for
+            
+        Returns:
+            Dictionary containing organizational statistics and metrics
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                # Get member count
+                member_count = await conn.fetchval(
+                    """SELECT COUNT(*) FROM course_creator.organization_memberships
+                       WHERE organization_id = $1 AND is_active = true""",
+                    UUID(org_id)
+                )
+
+                # Get project count
+                project_count = await conn.fetchval(
+                    """SELECT COUNT(*) FROM course_creator.projects
+                       WHERE organization_id = $1 AND is_active = true""",
+                    UUID(org_id)
+                )
+
+                # Get role distribution
+                role_distribution = await conn.fetch(
+                    """SELECT role, COUNT(*) as count
+                       FROM course_creator.organization_memberships
+                       WHERE organization_id = $1 AND is_active = true
+                       GROUP BY role""",
+                    UUID(org_id)
+                )
+                
+                # Get recent activity count (last 30 days)
+                recent_activity = await conn.fetchval(
+                    """SELECT COUNT(*) FROM course_creator.audit_logs 
+                       WHERE organization_id = $1 AND timestamp > $2""",
+                    UUID(org_id), datetime.utcnow() - timedelta(days=30)
+                )
+                
+                return {
+                    "member_count": member_count or 0,
+                    "project_count": project_count or 0,
+                    "role_distribution": {row['role']: row['count'] for row in role_distribution},
+                    "recent_activity_count": recent_activity or 0
+                }
+        except Exception as e:
+            raise DatabaseException(
+                message="Failed to retrieve organization statistics",
+                error_code="ORGANIZATION_STATS_ERROR",
+                details={"org_id": org_id},
+                original_exception=e
+            )
+    
+    # ================================================================
+    # TRANSACTION SUPPORT AND BATCH OPERATIONS
+    # ================================================================
+    
+    async def execute_organization_transaction(self, operations: List[tuple]) -> List[Any]:
+        """
+        Execute multiple organization-related database operations within a single transaction.
+        
+        Business Context:
+        Complex organizational operations often require multiple database changes that must
+        succeed or fail together to maintain data consistency and referential integrity.
+        
+        Args:
+            operations: List of (query, params) tuples to execute
+            
+        Returns:
+            List of operation results
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                async with conn.transaction():
+                    results = []
+                    for query, params in operations:
+                        if params:
+                            result = await conn.execute(query, *params)
+                        else:
+                            result = await conn.execute(query)
+                        results.append(result)
+                    return results
+        except Exception as e:
+            raise DatabaseException(
+                message="Failed to execute organization transaction operations",
+                error_code="ORGANIZATION_TRANSACTION_ERROR",
+                details={"operation_count": len(operations)},
+                original_exception=e
+            )
+
+    async def get_by_id(self, track_id: UUID) -> Optional[Dict[str, Any]]:
+        """
+        Get a track by its ID.
+
+        Args:
+            track_id: UUID of the track
+
+        Returns:
+            Track record as dictionary, or None if not found
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                track = await conn.fetchrow(
+                    """SELECT * FROM course_creator.tracks WHERE id = $1""",
+                    track_id
+                )
+                return dict(track) if track else None
+        except Exception as e:
+            logging.error(f"Failed to get track by ID {track_id}: {e}")
+            return None
+
+    async def get_by_project_and_slug(self, project_id: UUID, slug: str) -> Optional[Dict[str, Any]]:
+        """
+        Get a track by project ID and slug.
+
+        Args:
+            project_id: UUID of the project
+            slug: URL-friendly track identifier
+
+        Returns:
+            Track record as dictionary, or None if not found
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                track = await conn.fetchrow(
+                    """SELECT * FROM course_creator.tracks
+                       WHERE project_id = $1 AND slug = $2""",
+                    project_id, slug
+                )
+                return dict(track) if track else None
+        except Exception as e:
+            logging.error(f"Failed to get track by project {project_id} and slug {slug}: {e}")
+            return None
+
+    async def update(self, track) -> Optional[Dict[str, Any]]:
+        """
+        Update an existing track in the database.
+
+        Args:
+            track: Track entity with updated fields
+
+        Returns:
+            Updated track record as dictionary
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                result = await conn.fetchrow(
+                    """UPDATE course_creator.tracks SET
+                        name = $2, slug = $3, description = $4, track_type = $5,
+                        target_audience = $6::jsonb, prerequisites = $7::jsonb,
+                        duration_weeks = $8, max_students = $9,
+                        learning_objectives = $10::jsonb, skills_taught = $11::jsonb,
+                        difficulty_level = $12, display_order = $13,
+                        auto_enroll_enabled = $14, status = $15,
+                        settings = $16::jsonb, updated_at = $17
+                    WHERE id = $1
+                    RETURNING *""",
+                    track.id,
+                    track.name,
+                    track.slug,
+                    track.description,
+                    json.dumps(track.track_type.value if hasattr(track.track_type, 'value') else str(track.track_type)) if hasattr(track, 'track_type') and track.track_type else json.dumps(None),
+                    json.dumps(track.target_audience or []),
+                    json.dumps(track.prerequisites or []),
+                    track.duration_weeks,
+                    track.max_enrolled if hasattr(track, 'max_enrolled') else track.max_students if hasattr(track, 'max_students') else None,
+                    json.dumps(track.learning_objectives or []),
+                    json.dumps(track.skills_taught or []),
+                    track.difficulty_level,
+                    track.display_order if hasattr(track, 'display_order') else 0,
+                    track.auto_enroll_enabled if hasattr(track, 'auto_enroll_enabled') else False,
+                    track.status.value if hasattr(track.status, 'value') else str(track.status) if track.status else 'draft',
+                    json.dumps(track.settings or {}),
+                    datetime.utcnow()
+                )
+                return dict(result) if result else None
+        except Exception as e:
+            logging.error(f"Failed to update track {track.id}: {e}")
+            raise
+
+    async def delete(self, track_id: UUID) -> bool:
+        """
+        Delete a track by ID.
+
+        Args:
+            track_id: UUID of the track to delete
+
+        Returns:
+            True if deleted successfully
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                result = await conn.execute(
+                    """DELETE FROM course_creator.tracks WHERE id = $1""",
+                    track_id
+                )
+                return result == "DELETE 1"
+        except Exception as e:
+            logging.error(f"Failed to delete track {track_id}: {e}")
+            raise
+
+    async def get_user_by_id(self, user_id: UUID) -> Optional[Dict[str, Any]]:
+        """
+        Get user by ID.
+
+        Args:
+            user_id: UUID of the user
+
+        Returns:
+            User record as dictionary, or None if not found
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                user = await conn.fetchrow(
+                    """SELECT id, email, username, full_name, role, status
+                       FROM course_creator.users WHERE id = $1""",
+                    user_id
+                )
+                return dict(user) if user else None
+        except Exception as e:
+            logging.error(f"Failed to get user by ID {user_id}: {e}")
+            return None
+
+    async def exists_assignment(
+        self,
+        user_id: UUID,
+        track_id: UUID,
+        role_type: RoleType
+    ) -> bool:
+        """
+        Check if a track assignment already exists.
+
+        Args:
+            user_id: UUID of the user
+            track_id: UUID of the track
+            role_type: Role type (INSTRUCTOR or STUDENT)
+
+        Returns:
+            True if assignment exists
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                result = await conn.fetchval(
+                    """SELECT EXISTS(
+                        SELECT 1 FROM course_creator.track_assignments
+                        WHERE user_id = $1 AND track_id = $2 AND role_type = $3 AND is_active = true
+                    )""",
+                    user_id, track_id,
+                    role_type.value if hasattr(role_type, 'value') else str(role_type)
+                )
+                return result
+        except Exception as e:
+            logging.error(f"Failed to check assignment existence: {e}")
+            return False
+
+    async def create_assignment(self, assignment) -> Dict[str, Any]:
+        """
+        Create a track assignment (instructor or student to track).
+
+        Args:
+            assignment: TrackAssignment entity
+
+        Returns:
+            Created assignment as dictionary
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                result = await conn.fetchrow(
+                    """INSERT INTO course_creator.track_assignments (
+                        id, user_id, track_id, role_type, assigned_by, assigned_at, status, is_active
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    RETURNING *""",
+                    assignment.id,
+                    assignment.user_id,
+                    assignment.track_id,
+                    assignment.role_type.value if hasattr(assignment.role_type, 'value') else str(assignment.role_type),
+                    assignment.assigned_by,
+                    assignment.assigned_at,
+                    assignment.status,
+                    True
+                )
+                return dict(result) if result else None
+        except Exception as e:
+            logging.error(f"Failed to create track assignment: {e}")
+            raise
+
+    async def get_track_assignments(
+        self,
+        track_id: UUID,
+        role_type: Optional[RoleType] = None
+    ) -> List[Dict[str, Any]]:
+        """Get all assignments for a track, optionally filtered by role"""
+        try:
+            async with self.db_pool.acquire() as conn:
+                if role_type:
+                    assignments = await conn.fetch(
+                        """SELECT * FROM course_creator.track_assignments
+                           WHERE track_id = $1 AND role_type = $2 AND is_active = true""",
+                        track_id, role_type.value if hasattr(role_type, 'value') else str(role_type)
+                    )
+                else:
+                    assignments = await conn.fetch(
+                        """SELECT * FROM course_creator.track_assignments
+                           WHERE track_id = $1 AND is_active = true""",
+                        track_id
+                    )
+                return [dict(a) for a in assignments] if assignments else []
+        except Exception as e:
+            logging.error(f"Failed to get track assignments for track {track_id}: {e}")
+            return []
+
+    async def exists_by_project_and_slug(
+        self,
+        project_id: UUID,
+        slug: str
+    ) -> bool:
+        """
+        Check if a track with the given slug already exists in the project.
+
+        BUSINESS CONTEXT:
+        Prevent duplicate track slugs within a project to ensure unique URL paths
+        and avoid confusion when referencing tracks.
+
+        Args:
+            project_id: UUID of the project
+            slug: URL-friendly track identifier
+
+        Returns:
+            True if track with slug exists in project, False otherwise
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                result = await conn.fetchval(
+                    """SELECT EXISTS(
+                        SELECT 1 FROM course_creator.tracks
+                        WHERE project_id = $1 AND slug = $2
+                    )""",
+                    project_id, slug
+                )
+                return result
+        except Exception as e:
+            logging.error(f"Failed to check track existence for project {project_id}, slug {slug}: {e}")
+            return False
+
+    async def get_by_project(self, project_id: UUID) -> List[Dict[str, Any]]:
+        """
+        Get all tracks for a project.
+
+        Args:
+            project_id: UUID of the project
+
+        Returns:
+            List of track dictionaries
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                tracks = await conn.fetch(
+                    """SELECT * FROM course_creator.tracks
+                       WHERE project_id = $1
+                       ORDER BY display_order, created_at""",
+                    project_id
+                )
+                return [dict(t) for t in tracks] if tracks else []
+        except Exception as e:
+            logging.error(f"Failed to get tracks for project {project_id}: {e}")
+            return []
+
+    async def get_project_organization_id(self, project_id: UUID) -> Optional[UUID]:
+        """
+        Get the organization_id for a project (training program).
+
+        BUSINESS CONTEXT:
+        In this system, "projects" or "training programs" are represented by the courses table.
+        These are the primary training program entities created by organization admins.
+
+        SEMANTIC MAPPING:
+        - courses = Training Programs/Projects (primary entity created via UI)
+        - course_outlines = Templates/curricula (course content)
+        - course_instances = Specific runs/sessions of courses (not currently used)
+        - tracks = Learning paths within a project
+
+        TECHNICAL IMPLEMENTATION:
+        Queries the courses table which stores training programs with organization assignment.
+        This enables proper multi-tenant isolation for track creation.
+
+        Args:
+            project_id: UUID of the course (training program/project)
+
+        Returns:
+            Organization UUID or None if project not found
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                result = await conn.fetchval(
+                    """SELECT organization_id FROM course_creator.courses WHERE id = $1""",
+                    project_id
+                )
+                return result
+        except Exception as e:
+            logging.error(f"Failed to get organization_id for project {project_id}: {e}")
+            return None
+
+    async def create(self, track):
+        """
+        Create a new track in the database.
+
+        BUSINESS CONTEXT:
+        Persist a newly created track entity to the database with all metadata
+        and relationships properly established.
+
+        Args:
+            track: Track entity to persist
+
+        Returns:
+            Persisted Track entity with database-generated fields
+        """
+        from organization_management.domain.entities.track import Track
+
+        try:
+            async with self.db_pool.acquire() as conn:
+                import json
+
+                result = await conn.fetchrow(
+                    """
+                    INSERT INTO course_creator.tracks (
+                        id, organization_id, project_id, location_id, name, slug,
+                        description, track_type, target_audience, prerequisites,
+                        duration_weeks, max_students, learning_objectives, skills_taught,
+                        difficulty_level, display_order, auto_enroll_enabled, status,
+                        settings, created_by, created_at, updated_at
+                    ) VALUES (
+                        $1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10::jsonb, $11, $12, $13::jsonb, $14::jsonb,
+                        $15, $16, $17, $18, $19::jsonb, $20, $21, $22
+                    ) RETURNING *
+                    """,
+                    track.id,
+                    track.organization_id,
+                    track.project_id,
+                    track.location_id,
+                    track.name,
+                    track.slug,
+                    track.description,
+                    track.track_type.value if hasattr(track.track_type, 'value') else str(track.track_type),
+                    json.dumps(track.target_audience or []),
+                    json.dumps(track.prerequisites or []),
+                    track.duration_weeks,
+                    track.max_enrolled,
+                    json.dumps(track.learning_objectives or []),
+                    json.dumps(track.skills_taught or []),
+                    track.difficulty_level,
+                    track.display_order,
+                    track.auto_enroll_enabled,
+                    track.status.value if hasattr(track.status, 'value') else str(track.status),
+                    json.dumps(track.settings or {}),
+                    track.created_by,
+                    track.created_at,
+                    track.updated_at
+                )
+
+                # Convert result to Track entity
+                # Parse JSONB fields if they're strings
+                def parse_jsonb(value):
+                    if isinstance(value, str):
+                        import json
+                        return json.loads(value)
+                    return value
+
+                return Track(
+                    id=result['id'],
+                    organization_id=result['organization_id'],
+                    project_id=result['project_id'],
+                    location_id=result['location_id'],
+                    name=result['name'],
+                    slug=result['slug'],
+                    description=result['description'],
+                    track_type=result['track_type'],
+                    target_audience=parse_jsonb(result['target_audience']),
+                    prerequisites=parse_jsonb(result['prerequisites']),
+                    duration_weeks=result['duration_weeks'],
+                    max_enrolled=result['max_students'],
+                    learning_objectives=parse_jsonb(result['learning_objectives']),
+                    skills_taught=parse_jsonb(result['skills_taught']),
+                    difficulty_level=result['difficulty_level'],
+                    display_order=result['display_order'],
+                    auto_enroll_enabled=result['auto_enroll_enabled'],
+                    status=result['status'],
+                    settings=parse_jsonb(result['settings']),
+                    created_by=result['created_by'],
+                    created_at=result['created_at'],
+                    updated_at=result['updated_at']
+                )
+
+        except Exception as e:
+            logging.error(f"Failed to create track: {e}")
+            raise
+
+    # ================================================================
+    # ORGANIZATION ACTIVITY TRACKING
+    # ================================================================
+
+    async def log_organization_activity(
+        self,
+        organization_id: str,
+        user_id: Optional[str],
+        activity_type: str,
+        description: str,
+        metadata: Optional[Dict[str, Any]] = None,
+        user_name: Optional[str] = None,
+        source: str = 'web'
+    ) -> str:
+        """
+        Log an activity for an organization
+
+        BUSINESS CONTEXT:
+        Activity logging is essential for:
+        - Audit compliance and security monitoring
+        - Operational visibility for organization admins
+        - Troubleshooting and support
+        - Analytics and usage tracking
+
+        Activities include all significant user and system actions such as:
+        - Project creation, updates, deletions
+        - User management (add, remove, role changes)
+        - Track management (create, update, publish)
+        - Meeting room operations
+        - System configuration changes
+
+        TECHNICAL IMPLEMENTATION:
+        - Single Responsibility: Focused solely on logging activities
+        - Dependency Inversion: Depends on database abstraction (asyncpg pool)
+        - Uses JSON B for flexible metadata storage
+        - Returns activity ID for future reference/correlation
+
+        SOLID PRINCIPLES:
+        - SRP: Single responsibility of logging one activity
+        - OCP: Open for extension (new activity types can be added without modification)
+        - DIP: Depends on abstraction (db_pool) not concrete implementation
+
+        Args:
+            organization_id: UUID of the organization
+            user_id: Optional UUID of the user who performed the action
+            activity_type: Type classification (e.g., 'project_created', 'user_added')
+            description: Human-readable description for UI display
+            metadata: Optional structured data about the activity
+            user_name: Optional user name for display (denormalized for performance)
+            source: Activity source (web, api, system, integration)
+
+        Returns:
+            str: UUID of the created activity record
+
+        Raises:
+            DatabaseException: If activity logging fails
+
+        Example:
+            activity_id = await dao.log_organization_activity(
+                organization_id='org-123',
+                user_id='user-456',
+                activity_type='project_created',
+                description='Created new project "AI Course 2025"',
+                metadata={'project_id': 'proj-789', 'project_name': 'AI Course 2025'},
+                user_name='John Doe'
+            )
+        """
+        try:
+            # Validate required parameters
+            if not organization_id:
+                raise ValidationException("organization_id is required for activity logging")
+
+            if not activity_type:
+                raise ValidationException("activity_type is required for activity logging")
+
+            if not description:
+                raise ValidationException("description is required for activity logging")
+
+            # Default empty metadata if not provided
+            if metadata is None:
+                metadata = {}
+
+            # Insert activity record
+            async with self.db_pool.acquire() as conn:
+                result = await conn.fetchrow(
+                    """
+                    INSERT INTO organization_activity (
+                        organization_id,
+                        user_id,
+                        user_name,
+                        activity_type,
+                        description,
+                        metadata,
+                        source,
+                        created_at
+                    ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+                    RETURNING id
+                    """,
+                    organization_id,
+                    user_id,
+                    user_name,
+                    activity_type,
+                    description,
+                    json.dumps(metadata),
+                    source
+                )
+
+                activity_id = str(result['id'])
+
+                self.logger.info(
+                    f"Activity logged successfully: {activity_type} for organization {organization_id}",
+                    extra={
+                        'activity_id': activity_id,
+                        'organization_id': organization_id,
+                        'activity_type': activity_type
+                    }
+                )
+
+                return activity_id
+
+        except ValidationException:
+            # Re-raise validation exceptions
+            raise
+        except Exception as e:
+            error_msg = f"Failed to log activity for organization {organization_id}: {e}"
+            self.logger.error(error_msg, exc_info=True)
+            raise DatabaseException(error_msg) from e
+
+    async def get_organization_activities(
+        self,
+        organization_id: str,
+        limit: int = 50,
+        offset: int = 0,
+        days_back: Optional[int] = None,
+        activity_types: Optional[List[str]] = None
+    ) -> List[Dict[str, Any]]:
+        """
+        Retrieve activities for an organization
+
+        BUSINESS CONTEXT:
+        Organization admins need to view recent activities for:
+        - Monitoring team actions and collaboration
+        - Security auditing and compliance
+        - Operational awareness and troubleshooting
+        - Understanding platform usage patterns
+
+        Activities are displayed in reverse chronological order (newest first)
+        with pagination support for performance.
+
+        TECHNICAL IMPLEMENTATION:
+        - Multi-tenant isolation enforced through organization_id WHERE clause
+        - Efficient indexing on (organization_id, created_at) for performance
+        - Pagination support through LIMIT/OFFSET
+        - Optional date range filtering for compliance reporting
+        - Optional activity type filtering for focused views
+
+        SOLID PRINCIPLES:
+        - SRP: Single responsibility of retrieving activities
+        - OCP: Extensible through optional filters without modifying core logic
+        - ISP: Interface segregation - focused method for activity retrieval only
+
+        Args:
+            organization_id: UUID of the organization
+            limit: Maximum number of activities to return (default: 50, max: 100)
+            offset: Number of activities to skip for pagination (default: 0)
+            days_back: Optional number of days to look back (default: all activities)
+            activity_types: Optional list of activity types to filter (default: all types)
+
+        Returns:
+            List[Dict]: List of activity dictionaries containing:
+                - id: Activity UUID
+                - organization_id: Organization UUID
+                - user_id: Optional user UUID
+                - user_name: Optional user name
+                - activity_type: Activity type classification
+                - description: Human-readable description
+                - metadata: Structured activity data (parsed from JSONB)
+                - created_at: Timestamp of activity
+                - source: Activity source
+
+        Raises:
+            DatabaseException: If activity retrieval fails
+
+        Example:
+            # Get last 10 activities
+            activities = await dao.get_organization_activities(
+                organization_id='org-123',
+                limit=10
+            )
+
+            # Get activities from last 7 days
+            activities = await dao.get_organization_activities(
+                organization_id='org-123',
+                days_back=7
+            )
+
+            # Get only project-related activities
+            activities = await dao.get_organization_activities(
+                organization_id='org-123',
+                activity_types=['project_created', 'project_updated', 'project_deleted']
+            )
+        """
+        try:
+            # Validate organization_id
+            if not organization_id:
+                raise ValidationException("organization_id is required")
+
+            # Cap limit at maximum to prevent abuse
+            limit = min(limit, 100)
+
+            # Ensure offset is non-negative
+            offset = max(offset, 0)
+
+            # Build dynamic query based on filters
+            query_conditions = ["organization_id = $1"]
+            query_params = [organization_id]
+            param_index = 2
+
+            # Add date range filter if specified
+            if days_back is not None and days_back > 0:
+                query_conditions.append(f"created_at >= NOW() - INTERVAL '{days_back} days'")
+
+            # Add activity type filter if specified
+            if activity_types and len(activity_types) > 0:
+                placeholders = ", ".join([f"${i}" for i in range(param_index, param_index + len(activity_types))])
+                query_conditions.append(f"activity_type IN ({placeholders})")
+                query_params.extend(activity_types)
+                param_index += len(activity_types)
+
+            where_clause = " AND ".join(query_conditions)
+
+            # Add limit and offset parameters
+            query_params.append(limit)
+            query_params.append(offset)
+
+            # Execute query
+            async with self.db_pool.acquire() as conn:
+                rows = await conn.fetch(
+                    f"""
+                    SELECT
+                        id,
+                        organization_id,
+                        user_id,
+                        user_name,
+                        activity_type,
+                        description,
+                        metadata,
+                        created_at,
+                        source
+                    FROM organization_activity
+                    WHERE {where_clause}
+                    ORDER BY created_at DESC
+                    LIMIT ${param_index} OFFSET ${param_index + 1}
+                    """,
+                    *query_params
+                )
+
+                # Convert rows to dictionaries and parse metadata
+                activities = []
+                for row in rows:
+                    activity = dict(row)
+                    # Parse JSONB metadata back to Python dict
+                    if activity.get('metadata'):
+                        if isinstance(activity['metadata'], str):
+                            activity['metadata'] = json.loads(activity['metadata'])
+                    else:
+                        activity['metadata'] = {}
+
+                    # Convert UUID to string for JSON serialization
+                    activity['id'] = str(activity['id'])
+                    activity['organization_id'] = str(activity['organization_id'])
+                    if activity.get('user_id'):
+                        activity['user_id'] = str(activity['user_id'])
+
+                    activities.append(activity)
+
+                self.logger.info(
+                    f"Retrieved {len(activities)} activities for organization {organization_id}",
+                    extra={
+                        'organization_id': organization_id,
+                        'count': len(activities),
+                        'limit': limit,
+                        'offset': offset
+                    }
+                )
+
+                return activities
+
+        except ValidationException:
+            # Re-raise validation exceptions
+            raise
+        except Exception as e:
+            error_msg = f"Failed to retrieve activities for organization {organization_id}: {e}"
+            self.logger.error(error_msg, exc_info=True)
+            raise DatabaseException(error_msg) from e

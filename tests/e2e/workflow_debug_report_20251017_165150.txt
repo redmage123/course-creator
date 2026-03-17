@@ -1,0 +1,35 @@
+
+============================================================
+AUTOMATED WORKFLOW DEBUGGING REPORT
+============================================================
+
+Generated: 2025-10-17T16:51:50.683438
+Base URL: https://localhost:3000
+Workflow Attempts: 5
+Workflow Complete: ❌ NO
+
+📊 ERRORS DETECTED: 2
+
+Error Summary:
+  1. [SEVERE] https://localhost:3000/js/components/course-manager.js 186:20 "Error loading courses:" TypeError: Fa...
+  2. [SEVERE] https://localhost:3000/js/components/course-manager.js 186:20 "Error loading courses:" TypeError: Fa...
+
+🔧 FIXES APPLIED: 7
+
+Fix Summary:
+  1. Network error identified - may be service connectivity issue
+      Success: ✅
+  2. Network error identified - may be service connectivity issue
+      Success: ✅
+  3. Network error identified - may be service connectivity issue
+      Success: ✅
+  4. Network error identified - may be service connectivity issue
+      Success: ✅
+  5. Network error identified - may be service connectivity issue
+      Success: ✅
+  6. Network error identified - may be service connectivity issue
+      Success: ✅
+  7. Network error identified - may be service connectivity issue
+      Success: ✅
+
+============================================================

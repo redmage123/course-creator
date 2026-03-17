@@ -1,0 +1,193 @@
+{
+  "started_at": "2025-11-27T11:49:02.774612",
+  "completed_at": "2025-11-27T11:50:51.570413",
+  "total_tests": 23,
+  "passed": 23,
+  "failed": 0,
+  "results": [
+    {
+      "name": "guest_homepage",
+      "role": "guest",
+      "passed": true,
+      "duration_ms": 662.6919999999999,
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "guest_login_page",
+      "role": "guest",
+      "passed": true,
+      "duration_ms": 538.85,
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "guest_register_page",
+      "role": "guest",
+      "passed": true,
+      "duration_ms": 1526.012,
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "guest_org_registration",
+      "role": "guest",
+      "passed": true,
+      "duration_ms": 1518.076,
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "student_login",
+      "role": "student",
+      "passed": true,
+      "duration_ms": 5597.606,
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "student_dashboard",
+      "role": "student",
+      "passed": true,
+      "duration_ms": 5576.705,
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "student_view_courses",
+      "role": "student",
+      "passed": true,
+      "duration_ms": 5589.952,
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "instructor_login",
+      "role": "instructor",
+      "passed": true,
+      "duration_ms": 5574.080999999999,
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "instructor_dashboard",
+      "role": "instructor",
+      "passed": true,
+      "duration_ms": 5584.8279999999995,
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "instructor_courses_tab",
+      "role": "instructor",
+      "passed": true,
+      "duration_ms": 5590.523,
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "instructor_content_generation",
+      "role": "instructor",
+      "passed": true,
+      "duration_ms": 5583.898999999999,
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "instructor_analytics",
+      "role": "instructor",
+      "passed": true,
+      "duration_ms": 5598.971,
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "org_admin_login",
+      "role": "org_admin",
+      "passed": true,
+      "duration_ms": 5573.004,
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "org_admin_dashboard",
+      "role": "org_admin",
+      "passed": true,
+      "duration_ms": 5592.005999999999,
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "org_admin_members_tab",
+      "role": "org_admin",
+      "passed": true,
+      "duration_ms": 5605.144,
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "org_admin_projects_tab",
+      "role": "org_admin",
+      "passed": true,
+      "duration_ms": 5599.3820000000005,
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "org_admin_tracks_tab",
+      "role": "org_admin",
+      "passed": true,
+      "duration_ms": 5597.152,
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "org_admin_settings",
+      "role": "org_admin",
+      "passed": true,
+      "duration_ms": 5600.463000000001,
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "site_admin_login",
+      "role": "site_admin",
+      "passed": true,
+      "duration_ms": 5570.321,
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "site_admin_dashboard",
+      "role": "site_admin",
+      "passed": true,
+      "duration_ms": 5592.31,
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "site_admin_organizations",
+      "role": "site_admin",
+      "passed": true,
+      "duration_ms": 5585.982,
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "site_admin_users",
+      "role": "site_admin",
+      "passed": true,
+      "duration_ms": 5605.138,
+      "error": null,
+      "screenshot": null
+    },
+    {
+      "name": "navigation_all_main_routes",
+      "role": "system",
+      "passed": true,
+      "duration_ms": 2073.247,
+      "error": null,
+      "screenshot": null
+    }
+  ]
+}

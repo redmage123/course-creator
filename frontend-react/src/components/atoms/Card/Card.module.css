@@ -1,0 +1,243 @@
+/**
+ * Card Component Styles - Tami Design System
+ *
+ * BUSINESS CONTEXT:
+ * Implements Tami design system card styles with platform blue color scheme.
+ * Provides consistent, professional card styling for content organization.
+ *
+ * CRITICAL: Uses OUR blue (#2563eb), NOT Tami purple/orange
+ */
+
+/* ============================================================================
+ * BASE CARD STYLES
+ * ============================================================================ */
+
+.card {
+  /* Layout */
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+
+  /* Background */
+  background-color: #ffffff;
+
+  /* Border */
+  border-radius: 8px;
+
+  /* Transitions */
+  transition: all 0.2s ease;
+
+  /* Positioning */
+  position: relative;
+  overflow: hidden;
+}
+
+/* ============================================================================
+ * VARIANT STYLES
+ * ============================================================================ */
+
+/* Default - Subtle border */
+.card-default {
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Outlined - Emphasized border */
+.card-outlined {
+  border: 2px solid #e2e8f0;
+  box-shadow: none;
+}
+
+.card-outlined:hover {
+  border-color: #cbd5e1;
+}
+
+/* Elevated - Shadow without border */
+.card-elevated {
+  border: none;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07),
+              0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+/* Interactive - Hover effects for clickable cards */
+.card-interactive {
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  cursor: default;
+}
+
+.card-interactive:hover {
+  border-color: #2563eb;
+  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.1),
+              0 4px 6px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+}
+
+.card-interactive:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 8px rgba(37, 99, 235, 0.08),
+              0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* ============================================================================
+ * CLICKABLE STATE
+ * ============================================================================ */
+
+.card-clickable {
+  cursor: pointer;
+}
+
+.card-clickable:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* ============================================================================
+ * PADDING VARIANTS
+ * ============================================================================ */
+
+.card-padding-none {
+  padding: 0;
+}
+
+.card-padding-small {
+  padding: 12px;
+}
+
+.card-padding-medium {
+  padding: 16px;
+}
+
+.card-padding-large {
+  padding: 24px;
+}
+
+/* Override padding for cards with header/footer */
+.card-padding-none .card-header,
+.card-padding-none .card-body,
+.card-padding-none .card-footer {
+  padding: 0;
+}
+
+.card-padding-small .card-header,
+.card-padding-small .card-body,
+.card-padding-small .card-footer {
+  padding: 0;
+}
+
+.card-padding-medium .card-header,
+.card-padding-medium .card-body,
+.card-padding-medium .card-footer {
+  padding: 0;
+}
+
+.card-padding-large .card-header,
+.card-padding-large .card-body,
+.card-padding-large .card-footer {
+  padding: 0;
+}
+
+/* ============================================================================
+ * CARD SECTIONS
+ * ============================================================================ */
+
+.card-header {
+  padding: 16px;
+  border-bottom: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+  font-weight: 600;
+  color: #1a202c;
+}
+
+.card-body {
+  padding: 16px;
+  flex: 1;
+  color: #1a202c;
+}
+
+.card-footer {
+  padding: 16px;
+  border-top: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Adjust section padding based on card padding variant */
+.card-padding-small .card-header,
+.card-padding-small .card-body,
+.card-padding-small .card-footer {
+  padding: 12px;
+}
+
+.card-padding-large .card-header,
+.card-padding-large .card-body,
+.card-padding-large .card-footer {
+  padding: 24px;
+}
+
+.card-padding-none .card-header {
+  padding: 16px 16px 12px 16px;
+}
+
+.card-padding-none .card-body {
+  padding: 12px 16px;
+}
+
+.card-padding-none .card-footer {
+  padding: 12px 16px 16px 16px;
+}
+
+/* ============================================================================
+ * FULL WIDTH
+ * ============================================================================ */
+
+.card-full-width {
+  width: 100%;
+}
+
+/* ============================================================================
+ * ACCESSIBILITY
+ * ============================================================================ */
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .card-default,
+  .card-outlined {
+    border-width: 2px;
+  }
+
+  .card-interactive:focus-visible {
+    outline-width: 3px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+
+  .card-interactive:hover {
+    transform: none;
+  }
+}
+
+/* ============================================================================
+ * RESPONSIVE DESIGN
+ * ============================================================================ */
+
+/* Mobile - Reduce padding on small screens */
+@media (max-width: 640px) {
+  .card-padding-large .card-header,
+  .card-padding-large .card-body,
+  .card-padding-large .card-footer {
+    padding: 16px;
+  }
+
+  .card-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
