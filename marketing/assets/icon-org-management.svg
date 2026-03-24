@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="bgO" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7c4dff"/>
+      <stop offset="100%" style="stop-color:#1565c0"/>
+    </linearGradient>
+    <linearGradient id="nodeG" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#42a5f5"/>
+      <stop offset="100%" style="stop-color:#7c4dff"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <circle cx="64" cy="64" r="56" fill="url(#bgO)"/>
+
+  <!-- Building / org outline -->
+  <rect x="44" y="70" width="40" height="34" rx="3" fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+  <!-- Building windows -->
+  <rect x="50" y="76" width="8" height="8" rx="1" fill="rgba(255,255,255,0.5)"/>
+  <rect x="62" y="76" width="8" height="8" rx="1" fill="rgba(255,255,255,0.5)"/>
+  <rect x="74" y="76" width="8" height="8" rx="1" fill="rgba(255,255,255,0.3)"/>
+  <rect x="50" y="88" width="8" height="8" rx="1" fill="rgba(255,255,255,0.3)"/>
+  <rect x="62" y="88" width="8" height="8" rx="1" fill="rgba(255,255,255,0.5)"/>
+  <rect x="74" y="88" width="8" height="8" rx="1" fill="rgba(255,255,255,0.5)"/>
+
+  <!-- Org chart nodes -->
+  <!-- Top node (admin) -->
+  <circle cx="64" cy="30" r="14" fill="url(#nodeG)" stroke="white" stroke-width="2"/>
+  <!-- Person silhouette in top node -->
+  <circle cx="64" cy="26" r="4" fill="white"/>
+  <path d="M56 38 Q56 32 64 32 Q72 32 72 38" fill="white"/>
+
+  <!-- Connector lines -->
+  <line x1="64" y1="44" x2="64" y2="52" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+  <line x1="42" y1="52" x2="86" y2="52" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+  <line x1="42" y1="52" x2="42" y2="60" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+  <line x1="64" y1="52" x2="64" y2="60" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+  <line x1="86" y1="52" x2="86" y2="60" stroke="rgba(255,255,255,0.5)" stroke-width="1.5"/>
+
+  <!-- Sub-nodes -->
+  <circle cx="42" cy="64" r="9" fill="rgba(66,165,245,0.7)" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+  <circle cx="64" cy="64" r="9" fill="rgba(66,165,245,0.7)" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+  <circle cx="86" cy="64" r="9" fill="rgba(66,165,245,0.7)" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+
+  <!-- Person silhouettes in sub-nodes -->
+  <circle cx="42" cy="61" r="2.5" fill="white"/>
+  <path d="M38 69 Q38 65.5 42 65.5 Q46 65.5 46 69" fill="white"/>
+  <circle cx="64" cy="61" r="2.5" fill="white"/>
+  <path d="M60 69 Q60 65.5 64 65.5 Q68 65.5 68 69" fill="white"/>
+  <circle cx="86" cy="61" r="2.5" fill="white"/>
+  <path d="M82 69 Q82 65.5 86 65.5 Q90 65.5 90 69" fill="white"/>
+
+  <!-- Sparkle -->
+  <path d="M103 22 L104 18 L105 22 L109 23 L105 24 L104 28 L103 24 L99 23 Z" fill="rgba(255,255,255,0.7)"/>
+  <path d="M22 96 L23 93 L24 96 L27 97 L24 98 L23 101 L22 98 L19 97 Z" fill="rgba(66,165,245,0.8)"/>
+</svg>

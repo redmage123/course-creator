@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="bgG" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1565c0"/>
+      <stop offset="100%" style="stop-color:#7c4dff"/>
+    </linearGradient>
+    <linearGradient id="sparkG" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#42a5f5"/>
+      <stop offset="100%" style="stop-color:#ffffff"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="56" fill="url(#bgG)"/>
+
+  <!-- Brain outline paths (simplified) -->
+  <!-- Left hemisphere -->
+  <path d="M40 55 C36 46 38 35 46 32 C50 30 55 31 58 34 L58 80 C55 83 50 84 46 82 C38 78 36 68 40 55Z"
+        fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
+  <!-- Right hemisphere -->
+  <path d="M88 55 C92 46 90 35 82 32 C78 30 73 31 70 34 L70 80 C73 83 78 84 82 82 C90 78 92 68 88 55Z"
+        fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
+  <!-- Center bridge -->
+  <line x1="58" y1="56" x2="70" y2="56" stroke="rgba(255,255,255,0.25)" stroke-width="2"/>
+  <line x1="58" y1="64" x2="70" y2="64" stroke="rgba(255,255,255,0.25)" stroke-width="2"/>
+
+  <!-- AI Spark / lightning bolt — centred -->
+  <path d="M64 30 L52 60 L62 60 L58 94 L80 52 L68 52 Z"
+        fill="url(#sparkG)" opacity="0.95"/>
+
+  <!-- Orbit dots -->
+  <circle cx="64" cy="22" r="4" fill="rgba(255,255,255,0.7)"/>
+  <circle cx="106" cy="64" r="4" fill="rgba(255,255,255,0.5)"/>
+  <circle cx="64" cy="106" r="4" fill="rgba(255,255,255,0.5)"/>
+  <circle cx="22" cy="64" r="4" fill="rgba(255,255,255,0.7)"/>
+
+  <!-- Sparkle accents -->
+  <path d="M98 32 L100 26 L102 32 L108 34 L102 36 L100 42 L98 36 L92 34 Z" fill="rgba(255,255,255,0.8)"/>
+  <path d="M24 88 L25 85 L26 88 L29 89 L26 90 L25 93 L24 90 L21 89 Z" fill="rgba(66,165,245,0.9)"/>
+</svg>
