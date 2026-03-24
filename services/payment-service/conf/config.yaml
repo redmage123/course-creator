@@ -39,17 +39,17 @@ auth:
   jwt_algorithm: "HS256"
 
 payment:
-  default_provider: "null"
-  default_currency: "USD"
+  default_provider: "stripe"
+  default_currency: "EUR"
   providers:
     "null":
       enabled: true
       description: "Built-in provider for free and trial plans"
-    # stripe:
-    #   enabled: false
-    #   secret_key: ${oc.env:STRIPE_SECRET_KEY,}
-    #   webhook_secret: ${oc.env:STRIPE_WEBHOOK_SECRET,}
-    #   publishable_key: ${oc.env:STRIPE_PUBLISHABLE_KEY,}
+    stripe:
+      enabled: true
+      secret_key: ${oc.env:STRIPE_SECRET_KEY,}
+      webhook_secret: ${oc.env:STRIPE_WEBHOOK_SECRET,}
+      publishable_key: ${oc.env:STRIPE_PUBLISHABLE_KEY,}
     # square:
     #   enabled: false
     #   access_token: ${oc.env:SQUARE_ACCESS_TOKEN,}
