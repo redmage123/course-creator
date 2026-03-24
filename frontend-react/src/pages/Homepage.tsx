@@ -209,9 +209,9 @@ export const Homepage = () => {
   return (
     <>
       <SEO
-        title="Course Creator Platform - AI-Powered Learning Management System"
+        title="TechUni - AI-Powered Learning Management System"
         description="Transform your training programs with AI-powered content generation, multi-IDE lab environments, and real-time analytics. Perfect for corporate training and educational institutions."
-        keywords="education, learning management, course creation, online courses, AI-powered, LMS, e-learning, corporate training, course authoring"
+        keywords="TechUni, education, learning management, course creation, online courses, AI-powered, LMS, e-learning, corporate training, course authoring"
       />
 
       <div className={styles.homepage}>
@@ -219,7 +219,8 @@ export const Homepage = () => {
         <nav className={styles.topNav}>
           <div className={styles.topNavContent}>
             <Link to="/" className={styles.brandLink}>
-              <span className={styles.brandName}>AI Elevate</span>
+              <img src="/techuni-icon.svg" alt="TechUni" width="28" height="28" style={{ marginRight: '8px' }} />
+              <span className={styles.brandName}>TechUni</span>
             </Link>
             <div className={styles.topNavLinks}>
               <Link to="/login" className={styles.topNavLink}>
@@ -325,7 +326,7 @@ export const Homepage = () => {
               </Link>
             </div>
             <p className={styles.footerText}>
-              &copy; {new Date().getFullYear()} AI Elevate. All rights reserved.
+              &copy; {new Date().getFullYear()} TechUni. All rights reserved.
             </p>
           </div>
         </footer>

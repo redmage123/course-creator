@@ -112,7 +112,6 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:bY9QwaxIoTFo705wxqT8jd0UnTsejDNW@postgres:5432/course_creator
       - REDIS_URL=redis://redis:6379
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - RAG_SERVICE_URL=https://rag-service:8009
       - DB_HOST=postgres
       - DB_PORT=5432
@@ -320,7 +319,6 @@ services:
       - CHROMADB_PATH=/app/chromadb_data
       - LOG_DIR=/var/log/course-creator
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - PYTHONPATH=/app:/app/.venv/lib/python3.12/site-packages
       - VIRTUAL_ENV=/app/.venv
     ports:

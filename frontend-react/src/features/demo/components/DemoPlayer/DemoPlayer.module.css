@@ -75,35 +75,51 @@
   opacity: 0;
 }
 
-/* Loading State */
-.loadingState {
+/* Preload Screen — shown while all demo media is being cached */
+.preloadSection {
+  aspect-ratio: 16 / 9;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preloadContent {
+  text-align: center;
+  width: 60%;
+  max-width: 400px;
+}
+
+.preloadProgressBarBg {
+  height: 6px;
+  background: #374151;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.preloadProgressBarFill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  border-radius: 3px;
+  transition: width 0.2s ease;
+}
+
+.preloadText {
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+
+/* Poster overlay — shown when not playing, covers video section */
+.posterOverlay {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  object-fit: contain;
+  z-index: 2;
   background: #000;
-  color: #9ca3af;
-  z-index: 10;
-}
-
-.spinner {
-  border: 4px solid #e5e7eb;
-  border-top: 4px solid #667eea;
-  border-radius: 50%;
-  width: 48px;
-  height: 48px;
-  animation: spin 1s linear infinite;
-  margin-bottom: 16px;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
 }
 
 /* Error State */

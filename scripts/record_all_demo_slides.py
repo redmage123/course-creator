@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Record ALL demo video slides (6-20) with proper authentication.
+Record ALL demo video slides (3-20) with proper authentication.
 
 Uses Playwright's built-in video recording (headless) + ffmpeg conversion.
 Each slide creates a fresh browser context, logs in as the appropriate role,
@@ -164,6 +164,160 @@ async def login_and_navigate(page, role, target_path):
 # SLIDE RECORDING FUNCTIONS
 # Each returns the webm path for conversion
 # ============================================================================
+
+async def record_slide_03(browser):
+    """Slide 3: Org Admin Dashboard — org_admin → /dashboard/org-admin
+    Shows the org admin dashboard with overview cards, navigation tabs."""
+    context = await create_recording_context(browser)
+    page = await context.new_page()
+    await login_and_navigate(page, 'org_admin', '/dashboard/org-admin')
+
+    # Show dashboard overview
+    await asyncio.sleep(8)
+    await smooth_scroll(page, 300)
+    await asyncio.sleep(6)
+    await smooth_scroll(page, 600)
+    await asyncio.sleep(6)
+
+    # Navigate to members section
+    await spa_navigate(page, '/organization/members')
+    await asyncio.sleep(6)
+    await smooth_scroll(page, 300)
+    await asyncio.sleep(5)
+
+    # Navigate to tracks
+    await spa_navigate(page, '/organization/tracks')
+    await asyncio.sleep(6)
+    await smooth_scroll(page, 300)
+    await asyncio.sleep(5)
+
+    # Navigate to analytics
+    await spa_navigate(page, '/organization/analytics')
+    await asyncio.sleep(6)
+    await smooth_scroll(page, 300)
+    await asyncio.sleep(5)
+
+    # Navigate to settings
+    await spa_navigate(page, '/organization/settings')
+    await asyncio.sleep(6)
+    await smooth_scroll(page, 300)
+    await asyncio.sleep(5)
+
+    # Back to dashboard
+    await spa_navigate(page, '/dashboard/org-admin')
+    await asyncio.sleep(5)
+    await smooth_scroll(page, 0)
+    await asyncio.sleep(5)
+
+    video_path = await page.video.path()
+    await context.close()
+    return video_path
+
+
+async def record_slide_04(browser):
+    """Slide 4: Creating Training Tracks — org_admin → /organization/tracks
+    Shows the tracks management page and create form."""
+    context = await create_recording_context(browser)
+    page = await context.new_page()
+    await login_and_navigate(page, 'org_admin', '/organization/tracks')
+
+    # Show tracks page
+    await asyncio.sleep(7)
+    await smooth_scroll(page, 300)
+    await asyncio.sleep(5)
+
+    # Try clicking Create Track button
+    try:
+        btn = page.locator('button:has-text("Create"), button:has-text("New Track"), button:has-text("Add Track")').first
+        if await btn.is_visible(timeout=3000):
+            await btn.click()
+            await asyncio.sleep(4)
+            await smooth_scroll(page, 200)
+            await asyncio.sleep(4)
+    except:
+        pass
+
+    await smooth_scroll(page, 0)
+    await asyncio.sleep(5)
+    await smooth_scroll(page, 400)
+    await asyncio.sleep(5)
+    await smooth_scroll(page, 0)
+    await asyncio.sleep(5)
+
+    video_path = await page.video.path()
+    await context.close()
+    return video_path
+
+
+async def record_slide_05(browser):
+    """Slide 5: AI Assistant — org_admin, show AI chat interface.
+    Opens the AI chat panel and shows interaction."""
+    context = await create_recording_context(browser)
+    page = await context.new_page()
+    await login_and_navigate(page, 'org_admin', '/dashboard/org-admin')
+
+    await asyncio.sleep(5)
+
+    # Try to open AI assistant chat panel
+    for selector in [
+        'button[aria-label*="chat"]',
+        'button[aria-label*="AI"]',
+        'button[aria-label*="assistant"]',
+        'button:has-text("AI")',
+        '[class*="chat"] button',
+        '[class*="assistant"]',
+        '.fab', '.floating-action',
+    ]:
+        try:
+            btn = page.locator(selector).first
+            if await btn.is_visible(timeout=1500):
+                await btn.click()
+                await asyncio.sleep(3)
+                break
+        except:
+            continue
+
+    await asyncio.sleep(5)
+
+    # Try typing in chat input
+    for selector in [
+        'textarea', 'input[placeholder*="message"]',
+        'input[placeholder*="ask"]', 'input[placeholder*="type"]',
+        '[class*="chat"] input', '[class*="chat"] textarea',
+    ]:
+        try:
+            inp = page.locator(selector).first
+            if await inp.is_visible(timeout=1500):
+                await inp.click()
+                await asyncio.sleep(0.5)
+                await inp.type("Create a Python fundamentals course with 5 modules covering variables, loops, functions, data structures, and file handling", delay=40)
+                await asyncio.sleep(3)
+                # Try pressing Enter or clicking send
+                try:
+                    send = page.locator('button:has-text("Send"), button[type="submit"], button[aria-label*="send"]').first
+                    if await send.is_visible(timeout=1000):
+                        await send.click()
+                except:
+                    await page.keyboard.press('Enter')
+                await asyncio.sleep(8)
+                break
+        except:
+            continue
+
+    # Show the AI content generator as fallback/additional content
+    await spa_navigate(page, '/instructor/content-generator')
+    await asyncio.sleep(6)
+    await smooth_scroll(page, 300)
+    await asyncio.sleep(6)
+    await smooth_scroll(page, 600)
+    await asyncio.sleep(6)
+    await smooth_scroll(page, 0)
+    await asyncio.sleep(5)
+
+    video_path = await page.video.path()
+    await context.close()
+    return video_path
+
 
 async def record_slide_06(browser):
     """Slide 6: Adding Instructors — org_admin → /organization/members"""
@@ -419,24 +573,31 @@ async def record_slide_15(browser):
 
 
 async def record_slide_16(browser):
-    """Slide 16: Instructor Insights — instructor → /instructor/programs (insights crashes)"""
+    """Slide 16: Instructor Insights — instructor → /instructor/insights
+    Now with crash bugs fixed (null-safe toFixed/toLocaleString)."""
     context = await create_recording_context(browser)
     page = await context.new_page()
-    # /instructor/insights crashes, so show programs + analytics as alternative
-    await login_and_navigate(page, 'instructor', '/instructor/programs')
+    await login_and_navigate(page, 'instructor', '/instructor/insights')
 
     await asyncio.sleep(8)
     await smooth_scroll(page, 400)
-    await asyncio.sleep(7)
-
-    await spa_navigate(page, '/instructor/analytics')
     await asyncio.sleep(8)
-    await smooth_scroll(page, 400)
-    await asyncio.sleep(7)
     await smooth_scroll(page, 800)
-    await asyncio.sleep(7)
+    await asyncio.sleep(8)
+    await smooth_scroll(page, 1200)
+    await asyncio.sleep(8)
+    await smooth_scroll(page, 1600)
+    await asyncio.sleep(8)
     await smooth_scroll(page, 0)
-    await asyncio.sleep(7)
+    await asyncio.sleep(8)
+
+    # Also show analytics for more content
+    await spa_navigate(page, '/instructor/analytics')
+    await asyncio.sleep(6)
+    await smooth_scroll(page, 400)
+    await asyncio.sleep(5)
+    await smooth_scroll(page, 0)
+    await asyncio.sleep(5)
 
     video_path = await page.video.path()
     await context.close()
@@ -467,24 +628,39 @@ async def record_slide_17(browser):
 
 
 async def record_slide_18(browser):
-    """Slide 18: Accessibility — show settings/password + org settings as alternatives
-    since /settings/accessibility crashes with ErrorBoundary"""
+    """Slide 18: Accessibility Settings — student → /settings/accessibility
+    Shows the full accessibility settings page with all preference controls."""
     context = await create_recording_context(browser)
     page = await context.new_page()
-    # Show password settings as user security/accessibility feature
-    await login_and_navigate(page, 'student', '/settings/password')
+    await login_and_navigate(page, 'student', '/settings/accessibility')
 
-    await asyncio.sleep(7)
+    # Show accessibility settings page
+    await asyncio.sleep(8)
     await smooth_scroll(page, 300)
-    await asyncio.sleep(7)
+    await asyncio.sleep(6)
+    await smooth_scroll(page, 600)
+    await asyncio.sleep(6)
+    await smooth_scroll(page, 900)
+    await asyncio.sleep(6)
+    await smooth_scroll(page, 1200)
+    await asyncio.sleep(6)
+
+    # Try toggling some accessibility options
+    try:
+        toggles = page.locator('input[type="checkbox"], button[role="switch"], [class*="toggle"]')
+        count = await toggles.count()
+        if count > 0:
+            first_toggle = toggles.first
+            if await first_toggle.is_visible(timeout=2000):
+                await first_toggle.click()
+                await asyncio.sleep(2)
+    except:
+        pass
+
     await smooth_scroll(page, 0)
-    await asyncio.sleep(5)
+    await asyncio.sleep(6)
 
-    # Navigate to student dashboard to show keyboard shortcuts button
-    await spa_navigate(page, '/dashboard/student')
-    await asyncio.sleep(7)
-
-    # Try clicking keyboard shortcuts button
+    # Also show keyboard shortcuts if button exists
     try:
         shortcuts_btn = page.locator('button:has-text("Shortcuts"), [aria-label*="shortcut"]').first
         if await shortcuts_btn.is_visible(timeout=2000):
@@ -493,9 +669,6 @@ async def record_slide_18(browser):
     except:
         pass
 
-    await smooth_scroll(page, 400)
-    await asyncio.sleep(5)
-    await smooth_scroll(page, 0)
     await asyncio.sleep(5)
 
     video_path = await page.video.path()
@@ -576,6 +749,9 @@ async def record_slide_20(browser):
 # ============================================================================
 
 SLIDE_FUNCS = {
+    3: ("Org Admin Dashboard", record_slide_03, "slide_03_organization_admin_dashboard.mp4"),
+    4: ("Creating Training Tracks", record_slide_04, "slide_04_creating_training_tracks.mp4"),
+    5: ("AI Assistant", record_slide_05, "slide_05_ai_assistant.mp4"),
     6: ("Adding Instructors", record_slide_06, "slide_06_adding_instructors.mp4"),
     7: ("Instructor Dashboard", record_slide_07, "slide_07_instructor_dashboard.mp4"),
     8: ("Course Content Creation", record_slide_08, "slide_08_course_content.mp4"),

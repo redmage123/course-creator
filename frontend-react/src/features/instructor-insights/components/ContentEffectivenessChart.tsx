@@ -120,16 +120,16 @@ export const ContentEffectivenessChart: React.FC<ContentEffectivenessChartProps>
                 <div className={styles.metricLabel}>
                   <span>Rating</span>
                   <span className={styles.metricValue}>
-                    {content.average_rating.toFixed(1)}/5.0
+                    {(content.average_rating ?? 0).toFixed(1)}/5.0
                   </span>
                 </div>
                 <div className={styles.barBackground}>
                   <div
                     className={styles.barFill}
                     style={{
-                      width: `${(content.average_rating / 5) * 100}%`,
+                      width: `${((content.average_rating ?? 0) / 5) * 100}%`,
                       backgroundColor: getScoreColor(
-                        (content.average_rating / 5) * 100,
+                        ((content.average_rating ?? 0) / 5) * 100,
                         content.needs_improvement
                       ),
                     }}
@@ -141,15 +141,15 @@ export const ContentEffectivenessChart: React.FC<ContentEffectivenessChartProps>
               <div className={styles.metricBar}>
                 <div className={styles.metricLabel}>
                   <span>Completion</span>
-                  <span className={styles.metricValue}>{content.completion_rate.toFixed(1)}%</span>
+                  <span className={styles.metricValue}>{(content.completion_rate ?? 0).toFixed(1)}%</span>
                 </div>
                 <div className={styles.barBackground}>
                   <div
                     className={styles.barFill}
                     style={{
-                      width: `${content.completion_rate}%`,
+                      width: `${content.completion_rate ?? 0}%`,
                       backgroundColor: getScoreColor(
-                        content.completion_rate,
+                        content.completion_rate ?? 0,
                         content.needs_improvement
                       ),
                     }}
@@ -161,15 +161,15 @@ export const ContentEffectivenessChart: React.FC<ContentEffectivenessChartProps>
               <div className={styles.metricBar}>
                 <div className={styles.metricLabel}>
                   <span>Engagement</span>
-                  <span className={styles.metricValue}>{content.engagement_score.toFixed(0)}/100</span>
+                  <span className={styles.metricValue}>{(content.engagement_score ?? 0).toFixed(0)}/100</span>
                 </div>
                 <div className={styles.barBackground}>
                   <div
                     className={styles.barFill}
                     style={{
-                      width: `${content.engagement_score}%`,
+                      width: `${content.engagement_score ?? 0}%`,
                       backgroundColor: getScoreColor(
-                        content.engagement_score,
+                        content.engagement_score ?? 0,
                         content.needs_improvement
                       ),
                     }}

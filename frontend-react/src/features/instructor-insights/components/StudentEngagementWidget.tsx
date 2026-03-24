@@ -86,7 +86,7 @@ export const StudentEngagementWidget: React.FC<StudentEngagementWidgetProps> = (
           <div className={styles.metricIcon}>📊</div>
           <div className={styles.metricContent}>
             <div className={styles.metricLabel}>Total Sessions</div>
-            <div className={styles.metricValue}>{engagement.total_sessions.toLocaleString()}</div>
+            <div className={styles.metricValue}>{(engagement.total_sessions ?? 0).toLocaleString()}</div>
           </div>
         </div>
 
@@ -126,25 +126,25 @@ export const StudentEngagementWidget: React.FC<StudentEngagementWidgetProps> = (
           <div className={styles.statRow}>
             <span className={styles.statLabel}>Content Views</span>
             <span className={styles.statValue}>
-              {engagement.total_content_views.toLocaleString()}
+              {(engagement.total_content_views ?? 0).toLocaleString()}
             </span>
           </div>
           <div className={styles.statRow}>
             <span className={styles.statLabel}>Lab Sessions</span>
             <span className={styles.statValue}>
-              {engagement.total_lab_sessions.toLocaleString()}
+              {(engagement.total_lab_sessions ?? 0).toLocaleString()}
             </span>
           </div>
           <div className={styles.statRow}>
             <span className={styles.statLabel}>Quiz Attempts</span>
             <span className={styles.statValue}>
-              {engagement.total_quiz_attempts.toLocaleString()}
+              {(engagement.total_quiz_attempts ?? 0).toLocaleString()}
             </span>
           </div>
           <div className={styles.statRow}>
             <span className={styles.statLabel}>Forum Posts</span>
             <span className={styles.statValue}>
-              {engagement.total_forum_posts.toLocaleString()}
+              {(engagement.total_forum_posts ?? 0).toLocaleString()}
             </span>
           </div>
         </div>
@@ -177,13 +177,13 @@ export const StudentEngagementWidget: React.FC<StudentEngagementWidgetProps> = (
             <div className={styles.statRow}>
               <span className={styles.statLabel}>Questions Asked</span>
               <span className={styles.statValue}>
-                {engagement.total_questions_asked.toLocaleString()}
+                {(engagement.total_questions_asked ?? 0).toLocaleString()}
               </span>
             </div>
             <div className={styles.statRow}>
               <span className={styles.statLabel}>Questions Answered</span>
               <span className={styles.statValue}>
-                {engagement.questions_answered.toLocaleString()}
+                {(engagement.questions_answered ?? 0).toLocaleString()}
               </span>
             </div>
             <div className={styles.statRow}>

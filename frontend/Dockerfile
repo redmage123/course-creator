@@ -6,6 +6,10 @@ COPY index.html /usr/share/nginx/html/
 COPY assets/ /usr/share/nginx/html/assets/
 COPY vite.svg /usr/share/nginx/html/vite.svg
 COPY demo/ /usr/share/nginx/html/demo/
+COPY techuni-icon.svg /usr/share/nginx/html/techuni-icon.svg
+COPY techuni-logo.svg /usr/share/nginx/html/techuni-logo.svg
+COPY favicon.svg /usr/share/nginx/html/favicon.svg
+COPY favicon.ico /usr/share/nginx/html/favicon.ico
 
 # Copy custom nginx configuration for React SPA
 COPY nginx.conf /etc/nginx/conf.d/default.conf

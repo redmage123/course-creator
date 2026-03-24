@@ -1,5 +1,5 @@
 /**
- * DemoPlayer Component - Course Creator Platform Demo Slideshow
+ * DemoPlayer Component - TechUni Platform Demo Slideshow
  *
  * BUSINESS PURPOSE:
  * Interactive demo player showcasing platform features with professionally
@@ -7,6 +7,7 @@
  * markup for expressive, engaging narration.
  *
  * TECHNICAL IMPLEMENTATION:
+ * - Upfront preloading of ALL demo media (video, audio, posters) on mount
  * - Perfect audio/video synchronization with drift correction
  * - Auto-advance slides with smooth transitions
  * - SSML-enhanced narration with dramatic pauses and emphasis
@@ -17,6 +18,12 @@
  * Uses a sync engine that monitors drift between audio and video,
  * correcting when they diverge beyond a threshold (100ms default).
  * This ensures narration stays perfectly aligned with visuals.
+ *
+ * PRELOADING STRATEGY:
+ * On mount, all poster images, video files, and audio files are fetched
+ * into the browser cache. A progress bar shows overall loading status.
+ * Once everything is cached, the player renders with instant transitions
+ * and never shows per-slide loading indicators.
  */
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
@@ -231,9 +238,60 @@ const DRIFT_THRESHOLD_MS = 100; // Max allowed drift before correction
 const AUTO_ADVANCE_DELAY_MS = 1000; // Delay before auto-advancing to next slide
 
 /**
+ * Preload all demo media assets into the browser cache.
+ * Returns a promise that resolves when all assets are loaded,
+ * calling onProgress with (loaded, total) as each asset completes.
+ */
+function preloadAllMedia(
+  slides: DemoSlide[],
+  onProgress: (loaded: number, total: number) => void
+): Promise<void> {
+  const totalAssets = slides.length * 3; // poster + video + audio per slide
+  let loadedCount = 0;
+
+  const reportProgress = () => {
+    loadedCount++;
+    onProgress(loadedCount, totalAssets);
+  };
+
+  const promises: Promise<void>[] = [];
+
+  for (const slide of slides) {
+    // Preload poster image
+    promises.push(
+      new Promise<void>((resolve) => {
+        const img = new Image();
+        img.onload = () => { reportProgress(); resolve(); };
+        img.onerror = () => { reportProgress(); resolve(); }; // Don't block on failure
+        img.src = slide.poster;
+      })
+    );
+
+    // Preload video — fetch into cache so <video> picks it up instantly
+    promises.push(
+      fetch(slide.video)
+        .then((res) => { if (res.ok) return res.blob(); })
+        .then(() => { reportProgress(); })
+        .catch(() => { reportProgress(); })
+    );
+
+    // Preload audio — fetch into cache
+    promises.push(
+      fetch(slide.audio)
+        .then((res) => { if (res.ok) return res.blob(); })
+        .then(() => { reportProgress(); })
+        .catch(() => { reportProgress(); })
+    );
+  }
+
+  return Promise.all(promises).then(() => {});
+}
+
+/**
  * DemoPlayer Component
  *
  * WHY THIS IMPLEMENTATION:
+ * - Preloads ALL media on mount so transitions are instant
  * - Uses refs for video/audio elements to enable precise sync control
  * - Implements drift correction to maintain perfect audio/video alignment
  * - Auto-advance with configurable delay for smooth transitions
@@ -245,14 +303,17 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
   showSubtitles: initialShowSubtitles = true,
   onComplete
 }) => {
-  // State
+  // Preload state
+  const [preloadComplete, setPreloadComplete] = useState(false);
+  const [preloadProgress, setPreloadProgress] = useState({ loaded: 0, total: 1 });
+
+  // Player state
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState('0:00');
   const [totalTime, setTotalTime] = useState('0:00');
   const [showSubtitles, setShowSubtitles] = useState(initialShowSubtitles);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Refs
@@ -260,15 +321,26 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
   const audioRef = useRef<HTMLAudioElement>(null);
   const syncIntervalRef = useRef<number | null>(null);
   const slideTimelineRef = useRef<HTMLDivElement>(null);
-  const shouldContinuePlayingRef = useRef<boolean>(false);  // Track auto-continue across slides
-  const videoEndedRef = useRef<boolean>(false);  // Track video ended for sync
-  const audioEndedRef = useRef<boolean>(false);  // Track audio ended for sync
-  const videoReadyRef = useRef<boolean>(false);  // Track video canplay
-  const audioReadyRef = useRef<boolean>(false);  // Track audio canplay
-  const pendingPlayRef = useRef<boolean>(false); // Play requested but waiting for media ready
+  const shouldContinuePlayingRef = useRef<boolean>(false);
+  const videoEndedRef = useRef<boolean>(false);
+  const audioEndedRef = useRef<boolean>(false);
+  const videoReadyRef = useRef<boolean>(false);
+  const audioReadyRef = useRef<boolean>(false);
+  const pendingPlayRef = useRef<boolean>(false);
 
   // Current slide data
   const currentSlide = DEMO_SLIDES[currentSlideIndex];
+
+  /**
+   * Preload all media on mount
+   */
+  useEffect(() => {
+    preloadAllMedia(DEMO_SLIDES, (loaded, total) => {
+      setPreloadProgress({ loaded, total });
+    }).then(() => {
+      setPreloadComplete(true);
+    });
+  }, []);
 
   /**
    * Format seconds to mm:ss display
@@ -282,11 +354,6 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
 
   /**
    * Sync Engine - Monitors and corrects audio/video drift using playback rate
-   *
-   * WHY PLAYBACK RATE INSTEAD OF HARD SEEK:
-   * Hard-seeking audio (audio.currentTime = x) causes audible stutters/clicks.
-   * Instead, we gently speed up or slow down audio playback rate to gradually
-   * close the gap. Only hard-seek for very large drift (>500ms).
    */
   const startSyncEngine = useCallback(() => {
     if (syncIntervalRef.current) return;
@@ -296,23 +363,17 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
       const audio = audioRef.current;
 
       if (!video || !audio || video.paused || video.ended) return;
-      if (audio.ended) return; // Audio finished, no need to sync
+      if (audio.ended) return;
 
       const driftMs = (video.currentTime - audio.currentTime) * 1000;
       const absDrift = Math.abs(driftMs);
 
       if (absDrift > 500) {
-        // Large drift — hard correct (unavoidable stutter, but rare)
         audio.currentTime = video.currentTime;
         audio.playbackRate = 1.0;
-        console.log(`[Sync Engine] Hard corrected drift of ${absDrift.toFixed(0)}ms`);
       } else if (absDrift > DRIFT_THRESHOLD_MS) {
-        // Moderate drift — adjust playback rate to gradually close the gap
-        // Audio behind video (positive drift) → speed up audio slightly
-        // Audio ahead of video (negative drift) → slow down audio slightly
         audio.playbackRate = driftMs > 0 ? 1.03 : 0.97;
       } else {
-        // Within threshold — normal speed
         audio.playbackRate = 1.0;
       }
     }, SYNC_CHECK_INTERVAL_MS);
@@ -329,7 +390,7 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
   }, []);
 
   /**
-   * Load a specific slide
+   * Load a specific slide (media is already cached from preload)
    */
   const loadSlide = useCallback((index: number) => {
     if (index < 0 || index >= DEMO_SLIDES.length) return;
@@ -340,9 +401,7 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
 
     if (!video || !audio) return;
 
-    console.log(`[DemoPlayer] Loading slide ${slide.id}: ${slide.title}`);
-
-    // Stop current playback and reset all tracking
+    // Stop current playback and reset tracking
     video.pause();
     audio.pause();
     audio.playbackRate = 1.0;
@@ -353,20 +412,18 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
     audioReadyRef.current = false;
     pendingPlayRef.current = false;
 
-    // Update sources
+    // Update sources (these load from browser cache instantly)
     video.poster = slide.poster;
     video.src = slide.video;
     audio.src = slide.audio;
     audio.volume = 0.8;
 
-    // Load media
     video.load();
     audio.load();
 
     // Update state
     setCurrentSlideIndex(index);
     setProgress(0);
-    setIsLoading(true);
     setError(null);
 
     // Scroll slide into view in timeline
@@ -383,8 +440,7 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
   }, [stopSyncEngine]);
 
   /**
-   * Actually start both media together once both are ready.
-   * Called internally when both canplay events have fired.
+   * Start both media together once both are ready
    */
   const startBothMedia = useCallback(async () => {
     const video = videoRef.current;
@@ -404,8 +460,6 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
       setIsPlaying(true);
       shouldContinuePlayingRef.current = true;
       startSyncEngine();
-
-      console.log('[DemoPlayer] Playback started with sync engine');
     } catch (err) {
       console.error('[DemoPlayer] Playback failed:', err);
       setError('Failed to start playback. Please try again.');
@@ -413,12 +467,7 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
   }, [startSyncEngine]);
 
   /**
-   * Start playback — waits for both video and audio to be loaded
-   *
-   * WHY WAIT FOR BOTH:
-   * Starting audio before video is buffered causes the narration to play
-   * over a black/frozen screen. We set a pending flag and only start
-   * once both media fire their canplay events.
+   * Start playback — waits for both video and audio to be ready
    */
   const play = useCallback(async () => {
     const video = videoRef.current;
@@ -427,12 +476,9 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
     if (!video || !audio) return;
 
     if (videoReadyRef.current && audioReadyRef.current) {
-      // Both ready — start immediately
       await startBothMedia();
     } else {
-      // Not ready yet — flag it and wait for canplay events
       pendingPlayRef.current = true;
-      console.log('[DemoPlayer] Waiting for media to buffer before playing...');
     }
   }, [startBothMedia]);
 
@@ -447,10 +493,8 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
     if (audio) audio.pause();
 
     setIsPlaying(false);
-    shouldContinuePlayingRef.current = false;  // User explicitly paused
+    shouldContinuePlayingRef.current = false;
     stopSyncEngine();
-
-    console.log('[DemoPlayer] Playback paused');
   }, [stopSyncEngine]);
 
   /**
@@ -464,18 +508,12 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
     }
   }, [isPlaying, play, pause]);
 
-  /**
-   * Navigate to previous slide
-   */
   const previousSlide = useCallback(() => {
     if (currentSlideIndex > 0) {
       loadSlide(currentSlideIndex - 1);
     }
   }, [currentSlideIndex, loadSlide]);
 
-  /**
-   * Navigate to next slide
-   */
   const nextSlide = useCallback(() => {
     if (currentSlideIndex < DEMO_SLIDES.length - 1) {
       loadSlide(currentSlideIndex + 1);
@@ -484,9 +522,6 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
     }
   }, [currentSlideIndex, loadSlide, onComplete]);
 
-  /**
-   * Seek to position
-   */
   const seek = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const video = videoRef.current;
     const audio = audioRef.current;
@@ -497,16 +532,10 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
     const pos = (e.clientX - rect.left) / rect.width;
     const newTime = pos * video.duration;
 
-    // Seek both video and audio
     video.currentTime = newTime;
     audio.currentTime = newTime;
-
-    console.log(`[DemoPlayer] Seeked to ${formatTime(newTime)}`);
   }, []);
 
-  /**
-   * Handle video time update
-   */
   const handleTimeUpdate = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -518,17 +547,11 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
   }, []);
 
   /**
-   * Advance to next slide once both audio and video have ended.
-   *
-   * WHY WAIT FOR BOTH:
-   * Audio narration can be longer than the video (e.g., slides 2 and 3).
-   * Previously, handleVideoEnded would immediately stop the audio mid-sentence.
-   * Now we wait for both media to finish so narration is never cut off.
+   * Advance to next slide once both audio and video have ended
    */
   const advanceToNextSlide = useCallback(() => {
     if (!videoEndedRef.current || !audioEndedRef.current) return;
 
-    // Reset for next slide
     videoEndedRef.current = false;
     audioEndedRef.current = false;
 
@@ -539,12 +562,10 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
         loadSlide(currentSlideIndex + 1);
 
         if (shouldContinue) {
-          // Don't use a fixed timeout — play() will wait for canplay events
           play();
         }
       }, AUTO_ADVANCE_DELAY_MS);
     } else {
-      // Demo complete
       setIsPlaying(false);
       shouldContinuePlayingRef.current = false;
       stopSyncEngine();
@@ -552,18 +573,12 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
     }
   }, [currentSlideIndex, loadSlide, play, stopSyncEngine, onComplete]);
 
-  /**
-   * Handle video ended - mark video as done, advance if audio also done
-   */
   const handleVideoEnded = useCallback(() => {
     videoEndedRef.current = true;
     stopSyncEngine();
     advanceToNextSlide();
   }, [stopSyncEngine, advanceToNextSlide]);
 
-  /**
-   * Handle audio ended - mark audio as done, advance if video also done
-   */
   const handleAudioEnded = useCallback(() => {
     audioEndedRef.current = true;
     advanceToNextSlide();
@@ -580,8 +595,7 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
   }, [startBothMedia]);
 
   /**
-   * Handle video loaded data - force first frame to paint.
-   * Some browsers show a blank white frame until you seek or play.
+   * Force first frame to paint on video load
    */
   const handleLoadedData = useCallback(() => {
     const video = videoRef.current;
@@ -590,14 +604,9 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
     }
   }, []);
 
-  /**
-   * Handle video can play - track readiness
-   */
   const handleCanPlay = useCallback(() => {
     videoReadyRef.current = true;
-    setIsLoading(false);
 
-    // Auto-play on first load if enabled
     if (autoPlay && currentSlideIndex === 0 && audioReadyRef.current) {
       pendingPlayRef.current = true;
     }
@@ -605,17 +614,11 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
     tryStartPendingPlay();
   }, [autoPlay, currentSlideIndex, tryStartPendingPlay]);
 
-  /**
-   * Handle audio can play - track readiness
-   */
   const handleAudioCanPlay = useCallback(() => {
     audioReadyRef.current = true;
     tryStartPendingPlay();
   }, [tryStartPendingPlay]);
 
-  /**
-   * Handle video error
-   */
   const handleVideoError = useCallback(() => {
     const video = videoRef.current;
     const mediaError = video?.error;
@@ -623,7 +626,6 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
       ? `Video error (code ${mediaError.code}): ${mediaError.message || 'Unknown'}`
       : 'Failed to load video';
     console.error(`[DemoPlayer] ${errorMsg}`, { src: video?.src, slide: currentSlide?.title });
-    setIsLoading(false);
     setError('Failed to load video. Please check your connection and try again.');
   }, [currentSlide]);
 
@@ -631,6 +633,8 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
    * Keyboard navigation
    */
   useEffect(() => {
+    if (!preloadComplete) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       switch (e.key) {
         case ' ':
@@ -651,14 +655,16 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [togglePlayPause, previousSlide, nextSlide]);
+  }, [preloadComplete, togglePlayPause, previousSlide, nextSlide]);
 
   /**
-   * Initialize first slide on mount
+   * Load first slide once preloading is done
    */
   useEffect(() => {
-    loadSlide(0);
-  }, [loadSlide]);
+    if (preloadComplete) {
+      loadSlide(0);
+    }
+  }, [preloadComplete, loadSlide]);
 
   /**
    * Cleanup on unmount
@@ -669,12 +675,41 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
     };
   }, [stopSyncEngine]);
 
+  // ========== PRELOADING SCREEN ==========
+  if (!preloadComplete) {
+    const pct = Math.round((preloadProgress.loaded / preloadProgress.total) * 100);
+    return (
+      <div className={styles.demoContainer}>
+        <header className={styles.demoHeader}>
+          <div>
+            <h1 className={styles.demoTitle}>TechUni Platform Demo</h1>
+            <p className={styles.demoSubtitle}>Preparing demo experience...</p>
+          </div>
+        </header>
+        <div className={styles.preloadSection}>
+          <div className={styles.preloadContent}>
+            <div className={styles.preloadProgressBarBg}>
+              <div
+                className={styles.preloadProgressBarFill}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <p className={styles.preloadText}>
+              Loading demo content... {pct}%
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ========== MAIN PLAYER ==========
   return (
     <div className={styles.demoContainer}>
       {/* Header */}
       <header className={styles.demoHeader}>
         <div>
-          <h1 className={styles.demoTitle}>Course Creator Platform Demo</h1>
+          <h1 className={styles.demoTitle}>TechUni Platform Demo</h1>
           <p className={styles.demoSubtitle}>See the platform in action</p>
         </div>
         <div className={styles.progressIndicator}>
@@ -684,28 +719,12 @@ export const DemoPlayer: React.FC<DemoPlayerProps> = ({
 
       {/* Video Section */}
       <div className={styles.videoSection}>
-        {/* Loading State */}
-        {isLoading && (
-          <div className={styles.loadingState}>
-            <div className={styles.spinner} />
-            <p>Loading slide...</p>
-          </div>
-        )}
-
-        {/* Poster overlay - shows a meaningful frame before playback starts */}
-        {!isPlaying && !isLoading && (
+        {/* Poster overlay - always visible when not playing */}
+        {!isPlaying && (
           <img
             src={currentSlide.poster}
             alt={currentSlide.title}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              objectFit: 'contain',
-              zIndex: 2
-            }}
+            className={styles.posterOverlay}
           />
         )}
 

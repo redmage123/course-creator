@@ -32,7 +32,7 @@ import styles from './Navbar.module.css';
 export interface NavbarProps {
   /**
    * Application logo URL or text
-   * @default 'Course Creator'
+   * @default 'TechUni'
    */
   logo?: string | React.ReactNode;
 
@@ -58,7 +58,7 @@ export interface NavbarProps {
  * ```
  */
 export const Navbar: React.FC<NavbarProps> = ({
-  logo = 'Course Creator',
+  logo = 'TechUni',
   className,
 }) => {
   const { user, isAuthenticated, logout, organizationId, isOrgAdmin, isSiteAdmin } = useAuth();
@@ -260,6 +260,13 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className={styles['navbar-container']}>
         {/* Logo */}
         <Link to="/" className={styles['navbar-logo']}>
+          <img
+            src="/techuni-icon.svg"
+            alt="TechUni"
+            className={styles['logo-icon']}
+            width="32"
+            height="32"
+          />
           {typeof logo === 'string' ? (
             <span className={styles['logo-text']}>{logo}</span>
           ) : (
@@ -462,7 +469,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     </Link>
                     <a
                       href="/docs/USER_GUIDE.pdf"
-                      download="Course_Creator_User_Guide.pdf"
+                      download="TechUni_User_Guide.pdf"
                       className={styles['dropdown-item']}
                       onClick={() => setIsUserMenuOpen(false)}
                     >
@@ -531,7 +538,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <>
               <a
                 href="/docs/USER_GUIDE.pdf"
-                download="Course_Creator_User_Guide.pdf"
+                download="TechUni_User_Guide.pdf"
                 className={styles['help-link']}
                 title="Download User Guide"
               >
