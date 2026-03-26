@@ -221,7 +221,7 @@ export const RegistrationPage: React.FC = () => {
     <>
       <SEO
         title="Register"
-        description="Create your Course Creator Platform account. Join thousands of learners and instructors. GDPR and CCPA compliant registration with secure data handling."
+        description="Create your free TechUni account and start building AI-powered courses in minutes."
         keywords="register, sign up, create account, join course creator, student registration, instructor registration"
       />
       <main className={styles['registration-page']}>
@@ -231,7 +231,7 @@ export const RegistrationPage: React.FC = () => {
             Create Account
           </Heading>
           <p className={styles['registration-subtitle']}>
-            Join the Course Creator Platform
+            Start building courses with AI — free
           </p>
         </div>
 
@@ -300,6 +300,11 @@ export const RegistrationPage: React.FC = () => {
               autoComplete="new-password"
               disabled={isLoading}
             />
+            {!errors.password && (
+              <p style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '-0.5rem', marginBottom: '0.5rem' }}>
+                Min. 8 characters · uppercase · lowercase · number
+              </p>
+            )}
 
             {/* Confirm Password Input */}
             <Input

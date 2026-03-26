@@ -1,203 +1,76 @@
 # Python
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# Virtual environments
-venv/
-env/
-ENV/
+*.pyc
+*.pyo
 .venv/
-.env/
+venv/
+*.egg-info/
+dist/
+build/
+.eggs/
 
-# Environment variables
-.env
-.env.local
-.env.staging
-.env.production
-.cc_env
+# Node
+node_modules/
 
-# IDEs
-.vscode/
+# Docker
+*.log
+
+# IDE
 .idea/
+.vscode/
 *.swp
 *.swo
-*~
+
+# Env/secrets
+.env
+.env.local
+*.env
+credentials/
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Node.js
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-course-creator-frontnd/
-
-# Generated content
-generated_content/
-*.pptx
-*.pdf
-*.docx
-
-# Logs
-logs/
-*.log
-backend.log
-frontend.log
-platform_generator.log
-
-# MCP and Daemon files
-*.pid
-*daemon*.pid
-course-creator-mcp*.pid
-mcp-daemon*.log
-*-daemon*.log
-*-error.log
-mcp-stdout.log
-mcp-stderr.log
-
-# MCP Runtime files
-mcp_runtime/
-mcp_sessions/
-mcp_state/
-
-# MCP Server files
-mcp_server*.py
-mcp_manager*.py
-mcp-*.py
-mcp-control.sh
-mcp-daemon.sh
-
-# Database
+# Data
+*.sqlite3
 *.db
-*.sqlite
-postgres_data/
 
-# Secrets and certificates
-*.key
-*.pem
-*.crt
-secrets/
-certificates/
-
-# Terraform
-*.tfstate
-*.tfstate.*
-.terraform/
-
-# Temporary files
-*.tmp
-*.temp
-dir.out
-
-# Runtime directories
-.pids/
-outputs/
-content_files/
-
-# MCP Configuration and Cache
-.config/claude-desktop/
-mcp_cache/
-mcp_temp/
-
-# MCP Service and Documentation files
-course-creator-mcp.service
-mcp-unified-setup.md
-mcp-setup.md
-mcp-daemon-setup.md
-mcp_server_unified.py
-
-# Development files
-*_original.py
-simple_main.py
-
-# Test and validation files
-test-*.py
-validate-*.py
-
-# Test artifacts and reports
-test_report*.json
-analytics_test_report.json
-*_TEST_REPORT.md
-htmlcov/
-.coverage
-.pytest_cache/
-.tox/
-
-# Browser automation
-chromedriver
-geckodriver
-selenium-server-standalone-*.jar
-
-# Memory files
-memory/
-.claude/memory.db
-.claude/*.db
-
-# Large archives and downloads
+# Large/generated files
 *.tar.gz
 *.zip
-*.dmg
-*.pkg
-*.msi
-ideaIC-*.tar.gz
-*.iso
-
-# JetBrains IDEs archives
-ideaIC-*
-IntelliJ-*
-
-# Test coverage reports
-coverage/
-test_reports/
-test-reports/
-
-# Node.js lock files
-package-lock.json
-
-# Docker volumes and data
-postgres_data/
-redis_data/
-lab-storage/
-chromadb_data/
-.aider*
-
-# LLM Models and Ollama
-models/
-*.gguf
-*.ggml
-*.bin
-*.safetensors
-*.pt
-*.pth
-*.onnx
-*.h5
-*.pkl
-*.pickle
+*.whl
 *.model
-*.weights
-ollama_data/
-.ollama/
+*.bin
+*.pkl
+*.h5
 
-# Development documentation and progress reports
-devel_docs/
+# Shared env
+.cc_env
+shared/.cc_env
+
+# Claude config (local)
+.claude/
+logs/
+models/blobs/
+memory-bank/
+*.log
+*.log.*
+models/
+training/
+fine-tuning/
+*.json.bak
+tokenizer.json
+services/local-llm-service/models/
+services/local-llm-service/logs/
+checkpoint-*/
+*.mp3
+*.png
+.playwright-mcp/
+
+# Compiled frontend build assets
+frontend/assets/

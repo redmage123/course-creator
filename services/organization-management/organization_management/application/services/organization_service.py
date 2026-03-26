@@ -220,7 +220,9 @@ class OrganizationService:
                                   # Organization admin parameters
                                   admin_full_name: str = None, admin_email: str = None,
                                   admin_phone: str = None, admin_roles: List[str] = None,
-                                  admin_password: str = None, admin_username: str = None) -> Dict[str, Any]:
+                                  admin_password: str = None, admin_username: str = None,
+                                  # If the calling user already exists, skip user creation
+                                  existing_user_id: str = None) -> Dict[str, Any]:
         """
         Create a new organization with automatic administrator user creation
         
@@ -237,8 +239,10 @@ class OrganizationService:
             self._logger.info(f"SERVICE DEBUG: Starting create_organization with name='{name}', slug='{slug}'")
             
             # Validate admin information is provided
+            # When existing_user_id is supplied (authenticated caller reuse flow), we don't need
+            # admin_full_name/admin_email because we'll look the user up by ID instead.
             print(f"=== SERVICE DEBUG: Validating admin information")
-            if not admin_full_name or not admin_email:
+            if not existing_user_id and (not admin_full_name or not admin_email):
                 print(f"=== SERVICE ERROR: Missing admin info - admin_full_name: {admin_full_name}, admin_email: {admin_email}")
                 raise ValueError("Organization administrator information (full name and email) is required")
             
@@ -259,21 +263,50 @@ class OrganizationService:
                     print(f"=== SERVICE ERROR: Domain already exists: {domain}")
                     raise ValueError(f"Organization with domain '{domain}' already exists")
 
-            # Step 1: Create organization administrator user first
-            print(f"=== SERVICE DEBUG: About to create organization administrator")
-            self._logger.info(f"Creating organization administrator: {admin_email}")
-            admin_user_info = await self._create_organization_admin_user(
-                admin_full_name=admin_full_name,
-                admin_email=admin_email,
-                admin_phone=admin_phone,
-                admin_roles=admin_roles,
-                organization_slug=slug,
-                admin_password=admin_password,
-                admin_username=admin_username
-            )
-            
-            print(f"=== SERVICE DEBUG: Admin user creation completed successfully")
-            self._logger.info(f"SERVICE DEBUG: Admin user creation completed successfully")
+            # Step 1: Create organization administrator user first,
+            # OR reuse an existing user if existing_user_id is provided (authenticated caller flow).
+            print(f"=== SERVICE DEBUG: About to resolve organization administrator (existing_user_id={existing_user_id})")
+            self._logger.info(f"Resolving organization administrator: existing_user_id={existing_user_id}, admin_email={admin_email}")
+            if existing_user_id:
+                # The calling user already exists in user-management — fetch their info instead of
+                # trying to register them again (which would fail with "Email already exists").
+                print(f"=== SERVICE DEBUG: Reusing existing user {existing_user_id} as org admin")
+                self._logger.info(f"SERVICE DEBUG: Reusing existing user {existing_user_id} as org admin")
+                try:
+                    user_response = await self._http_client.get(
+                        f"{self._user_management_url}/users/{existing_user_id}",
+                        headers={"Content-Type": "application/json"}
+                    )
+                    if user_response.status_code == 200:
+                        user_data = user_response.json()
+                        admin_user_info = {
+                            "user_id": user_data.get("id"),
+                            "username": user_data.get("username"),
+                            "email": user_data.get("email"),
+                            "full_name": user_data.get("full_name"),
+                            "role": user_data.get("role"),
+                            "password_status": "existing",
+                            "temp_password": None,
+                            "organization": slug
+                        }
+                    else:
+                        raise Exception(f"Could not fetch existing user {existing_user_id}: {user_response.status_code} {user_response.text}")
+                except Exception as lookup_err:
+                    self._logger.error(f"Failed to look up existing user {existing_user_id}: {lookup_err}")
+                    raise
+            else:
+                admin_user_info = await self._create_organization_admin_user(
+                    admin_full_name=admin_full_name,
+                    admin_email=admin_email,
+                    admin_phone=admin_phone,
+                    admin_roles=admin_roles,
+                    organization_slug=slug,
+                    admin_password=admin_password,
+                    admin_username=admin_username
+                )
+
+            print(f"=== SERVICE DEBUG: Admin user resolution completed successfully")
+            self._logger.info(f"SERVICE DEBUG: Admin user resolution completed successfully")
 
             # Step 2: Create organization entity
             print(f"=== SERVICE DEBUG: About to create organization entity")

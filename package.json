@@ -78,7 +78,7 @@
     "@wdio/local-runner": "^8.24.12",
     "@wdio/mocha-framework": "^8.24.12",
     "@wdio/spec-reporter": "^8.24.12",
-    "babel-jest": "^30.0.4",
+    "babel-jest": "^29.7.0",
     "c8": "^8.0.1",
     "cross-env": "^7.0.3",
     "eslint": "^8.55.0",

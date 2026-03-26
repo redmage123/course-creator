@@ -83,6 +83,18 @@
   padding: 4rem 2rem;
   text-align: center;
   color: white;
+  position: relative;
+  background-image: url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1920&q=80&fit=crop&auto=format');
+  background-size: cover;
+  background-position: center;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 15, 30, 0.65);
+  z-index: 0;
 }
 
 .heroTitle {
@@ -90,6 +102,8 @@
   font-weight: 700;
   margin-bottom: 1.5rem;
   text-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 1;
 }
 
 .heroSubtitle {
@@ -97,6 +111,8 @@
   font-weight: 400;
   margin-bottom: 3rem;
   opacity: 0.95;
+  position: relative;
+  z-index: 1;
 }
 
 .ctaButtons {
@@ -105,6 +121,8 @@
   justify-content: center;
   align-items: center;
   flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
 }
 
 .ctaButton {
@@ -178,6 +196,25 @@
   gap: 2rem;
 }
 
+.featureCardImage {
+  width: calc(100% + 4rem);
+  margin: -2rem -2rem 1.5rem -2rem;
+  height: 180px;
+  overflow: hidden;
+  border-radius: 12px 12px 0 0;
+}
+
+.featureCardImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.featureCard:hover .featureCardImage img {
+  transform: scale(1.05);
+}
+
 .featureCard {
   padding: 2rem;
   background: #f9fafb;
@@ -186,6 +223,7 @@
   transition: all 0.3s;
   cursor: pointer;
   position: relative;
+  overflow: hidden;
 }
 
 .featureCard:hover {
@@ -252,21 +290,41 @@
 
 .organizationSection {
   padding: 5rem 2rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-image: url('https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=1920&q=80&fit=crop&auto=format');
+  background-size: cover;
+  background-position: center;
   color: white;
   text-align: center;
+  position: relative;
+}
+
+.organizationSection::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 15, 30, 0.55);
+  z-index: 0;
 }
 
 .organizationTitle {
   font-size: 2.5rem;
   font-weight: 700;
   margin-bottom: 1rem;
+  position: relative;
+  z-index: 1;
 }
 
 .organizationDescription {
   font-size: 1.25rem;
   margin-bottom: 2rem;
   opacity: 0.95;
+  position: relative;
+  z-index: 1;
+}
+
+.organizationSection .ctaButton {
+  position: relative;
+  z-index: 1;
 }
 
 .footer {

@@ -39,8 +39,8 @@ auth:
   jwt_algorithm: "HS256"
 
 payment:
-  default_provider: "stripe"
-  default_currency: "EUR"
+  default_provider: "null"
+  default_currency: "USD"
   providers:
     "null":
       enabled: true

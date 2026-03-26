@@ -30,7 +30,7 @@ from datetime import datetime, timedelta
 # Use local service exceptions
 from exceptions import UserManagementException as CourseCreatorBaseException
 # Import domain entities
-from user_management.domain.entities.user import User, UserRole, UserStatus
+from user_management.domain.entities.user import User, UserRole, UserStatus, SubscriptionTier
 
 
 class UserManagementDAO:
@@ -107,7 +107,8 @@ class UserManagementDAO:
             last_login=row.get('last_login'),
             created_at=row.get('created_at'),
             updated_at=row.get('updated_at'),
-            metadata={'hashed_password': row.get('hashed_password')} if row.get('hashed_password') else {}
+            metadata={'hashed_password': row.get('hashed_password')} if row.get('hashed_password') else {},
+            subscription_tier=SubscriptionTier(row['subscription_tier']) if row.get('subscription_tier') else SubscriptionTier.FREE
         )
     
     # ================================================================

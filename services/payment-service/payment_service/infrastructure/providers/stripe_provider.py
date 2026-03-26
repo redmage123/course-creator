@@ -2,27 +2,32 @@
 Stripe Payment Provider Implementation
 
 Business Context:
-Integrates with Stripe's API for real payment processing — checkout sessions,
-subscriptions, refunds, and webhook handling. Used by organizations that have
-configured Stripe as their payment provider.
+Implements the PaymentProvider ABC for Stripe. Handles checkout sessions,
+subscriptions, refunds, and webhook verification using Stripe's Python SDK.
+
+Operates in test mode by default (STRIPE_MODE=test). Keys are loaded from
+the container environment (STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET).
 
 Technical Rationale:
-Uses the stripe Python SDK for all API interactions. Webhook signature
-verification ensures that incoming events are authentic. All operations
-return the standardized ProviderResult/WebhookEvent types so the orchestrator
-remains provider-agnostic.
+- Uses stripe.stripe_object async patterns via the synchronous Stripe SDK
+  (Stripe's Python SDK is sync; all calls are wrapped to remain non-blocking
+  via run_in_executor in a production setting — kept sync here for clarity)
+- Webhook signature verification uses stripe.Webhook.construct_event which
+  requires the raw request bytes (not parsed JSON)
+- Provider config dict keys: secret_key, webhook_secret, publishable_key
 """
 
 import logging
 from typing import Dict, Any, Optional
 
-import stripe
-from stripe import StripeError, SignatureVerificationError
-
 from payment_service.infrastructure.providers.base import (
     PaymentProvider,
     ProviderResult,
     WebhookEvent,
+)
+from payment_service.exceptions import (
+    PaymentProviderConfigError,
+    WebhookVerificationException,
 )
 
 logger = logging.getLogger(__name__)
@@ -30,25 +35,41 @@ logger = logging.getLogger(__name__)
 
 class StripeProvider(PaymentProvider):
     """
-    Stripe payment provider using the stripe Python SDK.
+    Stripe payment provider.
 
-    Expects config with:
-        secret_key: Stripe secret key (sk_test_... or sk_live_...)
-        publishable_key: Stripe publishable key (pk_test_... or pk_live_...)
-        webhook_secret: Stripe webhook endpoint signing secret (whsec_...)
+    Required config keys (passed via config.yaml under payment.providers.stripe
+    or injected via environment variables loaded by the container):
+        secret_key       — Stripe secret key (sk_test_... or sk_live_...)
+        webhook_secret   — Stripe webhook signing secret (whsec_...)
+        publishable_key  — Stripe publishable key (pk_test_... or pk_live_...)
     """
 
     def __init__(self, config: Dict[str, Any]):
-        self._config = config or {}
-        self._secret_key = self._config.get("secret_key", "")
-        self._publishable_key = self._config.get("publishable_key", "")
-        self._webhook_secret = self._config.get("webhook_secret", "")
+        try:
+            import stripe as _stripe
+            self._stripe = _stripe
+        except ImportError as e:
+            raise PaymentProviderConfigError(
+                "stripe",
+                "stripe Python package not installed. Run: pip install stripe>=7.0.0",
+                original_exception=e,
+            )
+
+        self._secret_key = config.get("secret_key", "")
+        self._webhook_secret = config.get("webhook_secret", "")
+        self._publishable_key = config.get("publishable_key", "")
 
         if not self._secret_key:
-            logger.warning("StripeProvider initialized without secret_key — API calls will fail")
+            raise PaymentProviderConfigError(
+                "stripe",
+                "secret_key is required. Set STRIPE_SECRET_KEY environment variable.",
+            )
 
-        stripe.api_key = self._secret_key
-        logger.info("StripeProvider initialized (test=%s)", self._secret_key.startswith("sk_test_"))
+        self._stripe.api_key = self._secret_key
+        logger.info(
+            "StripeProvider initialized (mode=%s)",
+            "test" if self._secret_key.startswith("sk_test") else "live",
+        )
 
     async def get_provider_name(self) -> str:
         return "stripe"
@@ -59,26 +80,39 @@ class StripeProvider(PaymentProvider):
         currency: str,
         metadata: Dict[str, Any],
     ) -> ProviderResult:
-        """Create a Stripe Checkout Session for one-time payment."""
+        """
+        Create a Stripe Checkout Session for a one-time payment.
+
+        Returns a checkout URL the frontend can redirect to.
+        """
         try:
-            session = stripe.checkout.Session.create(
-                payment_method_types=["card"],
-                line_items=[{
-                    "price_data": {
-                        "currency": currency,
-                        "unit_amount": amount_cents,
-                        "product_data": {
-                            "name": metadata.get("description", "Payment"),
-                        },
-                    },
-                    "quantity": 1,
-                }],
+            session = self._stripe.checkout.Session.create(
                 mode="payment",
-                metadata=_sanitize_metadata(metadata),
-                success_url=metadata.get("success_url", "https://courses.techuni.ai/payment/success"),
-                cancel_url=metadata.get("cancel_url", "https://courses.techuni.ai/payment/cancel"),
+                line_items=[
+                    {
+                        "price_data": {
+                            "currency": currency.lower(),
+                            "unit_amount": amount_cents,
+                            "product_data": {
+                                "name": metadata.get("description", "Course Creator Payment"),
+                            },
+                        },
+                        "quantity": 1,
+                    }
+                ],
+                metadata=metadata,
+                success_url=metadata.get(
+                    "success_url", "https://localhost:3000/billing?status=success"
+                ),
+                cancel_url=metadata.get(
+                    "cancel_url", "https://localhost:3000/billing?status=cancelled"
+                ),
             )
-            logger.info("Stripe checkout session created: %s", session.id)
+            logger.info(
+                "Stripe checkout session created: id=%s amount_cents=%d",
+                session.id,
+                amount_cents,
+            )
             return ProviderResult(
                 success=True,
                 provider_id=session.id,
@@ -86,39 +120,50 @@ class StripeProvider(PaymentProvider):
                 data={
                     "checkout_url": session.url,
                     "session_id": session.id,
-                    "publishable_key": self._publishable_key,
+                    "amount_cents": amount_cents,
+                    "currency": currency,
                     "status": session.status,
                 },
-                raw_response=dict(session),
+                raw_response={"id": session.id, "url": session.url},
             )
-        except StripeError as e:
-            logger.error("Stripe create_checkout_session failed: %s", e.user_message or str(e))
+        except self._stripe.error.StripeError as e:
+            logger.error("Stripe checkout session failed: %s", e)
             return ProviderResult(
                 success=False,
                 provider_name="stripe",
-                error_message=e.user_message or str(e),
-                error_code=e.code,
+                error_message=str(e),
+                error_code=e.code if hasattr(e, "code") else "stripe_error",
             )
 
     async def capture_payment(self, provider_payment_id: str) -> ProviderResult:
-        """Capture a previously authorized payment intent."""
+        """
+        Confirm/capture a PaymentIntent.
+
+        For Checkout Sessions that auto-capture, this is a lookup to verify status.
+        """
         try:
-            intent = stripe.PaymentIntent.capture(provider_payment_id)
-            logger.info("Stripe payment captured: %s", intent.id)
+            # Retrieve the PaymentIntent linked to the session
+            intent = self._stripe.PaymentIntent.retrieve(provider_payment_id)
+            status = intent.status
+            logger.info(
+                "Stripe payment intent status: id=%s status=%s",
+                provider_payment_id,
+                status,
+            )
             return ProviderResult(
-                success=True,
+                success=status == "succeeded",
                 provider_id=intent.id,
                 provider_name="stripe",
-                data={"status": intent.status},
-                raw_response=dict(intent),
+                data={"status": status},
+                error_message=None if status == "succeeded" else f"Intent status: {status}",
             )
-        except StripeError as e:
-            logger.error("Stripe capture_payment failed: %s", e.user_message or str(e))
+        except self._stripe.error.StripeError as e:
+            logger.error("Stripe capture failed: %s", e)
             return ProviderResult(
                 success=False,
                 provider_name="stripe",
-                error_message=e.user_message or str(e),
-                error_code=e.code,
+                error_message=str(e),
+                error_code=getattr(e, "code", "stripe_error"),
             )
 
     async def refund_payment(
@@ -126,31 +171,39 @@ class StripeProvider(PaymentProvider):
         provider_payment_id: str,
         amount_cents: Optional[int] = None,
     ) -> ProviderResult:
-        """Refund a Stripe payment — full or partial."""
+        """
+        Refund a Stripe charge or PaymentIntent (full or partial).
+        """
         try:
             params: Dict[str, Any] = {"payment_intent": provider_payment_id}
             if amount_cents is not None:
                 params["amount"] = amount_cents
-            refund = stripe.Refund.create(**params)
-            logger.info("Stripe refund created: %s (amount=%s)", refund.id, amount_cents)
+
+            refund = self._stripe.Refund.create(**params)
+            logger.info(
+                "Stripe refund created: id=%s amount=%s status=%s",
+                refund.id,
+                refund.amount,
+                refund.status,
+            )
             return ProviderResult(
-                success=True,
+                success=refund.status in ("succeeded", "pending"),
                 provider_id=refund.id,
                 provider_name="stripe",
                 data={
-                    "status": refund.status,
+                    "refund_id": refund.id,
                     "amount": refund.amount,
+                    "status": refund.status,
                     "currency": refund.currency,
                 },
-                raw_response=dict(refund),
             )
-        except StripeError as e:
-            logger.error("Stripe refund_payment failed: %s", e.user_message or str(e))
+        except self._stripe.error.StripeError as e:
+            logger.error("Stripe refund failed: %s", e)
             return ProviderResult(
                 success=False,
                 provider_name="stripe",
-                error_message=e.user_message or str(e),
-                error_code=e.code,
+                error_message=str(e),
+                error_code=getattr(e, "code", "stripe_error"),
             )
 
     async def create_subscription(
@@ -159,58 +212,84 @@ class StripeProvider(PaymentProvider):
         customer_id: str,
         metadata: Dict[str, Any],
     ) -> ProviderResult:
-        """Create a Stripe subscription for a customer."""
+        """
+        Create a Stripe subscription.
+
+        plan_external_id should be a Stripe Price ID (price_xxx).
+        customer_id should be a Stripe Customer ID (cus_xxx).
+
+        If customer_id is not a Stripe Customer ID (e.g. it's an org UUID),
+        a Stripe Customer will be created automatically.
+        """
         try:
-            subscription = stripe.Subscription.create(
-                customer=customer_id,
+            # Ensure we have a Stripe Customer
+            if not customer_id.startswith("cus_"):
+                customer = self._stripe.Customer.create(
+                    metadata={"organization_id": customer_id, **metadata},
+                )
+                stripe_customer_id = customer.id
+                logger.info(
+                    "Created Stripe customer for org %s: %s",
+                    customer_id,
+                    stripe_customer_id,
+                )
+            else:
+                stripe_customer_id = customer_id
+
+            subscription = self._stripe.Subscription.create(
+                customer=stripe_customer_id,
                 items=[{"price": plan_external_id}],
-                metadata=_sanitize_metadata(metadata),
+                metadata=metadata,
+                payment_behavior="default_incomplete",
+                expand=["latest_invoice.payment_intent"],
             )
-            logger.info("Stripe subscription created: %s", subscription.id)
+            logger.info(
+                "Stripe subscription created: id=%s status=%s",
+                subscription.id,
+                subscription.status,
+            )
             return ProviderResult(
                 success=True,
                 provider_id=subscription.id,
                 provider_name="stripe",
                 data={
+                    "subscription_id": subscription.id,
+                    "customer_id": stripe_customer_id,
                     "status": subscription.status,
                     "current_period_end": subscription.current_period_end,
                 },
-                raw_response=dict(subscription),
             )
-        except StripeError as e:
-            logger.error("Stripe create_subscription failed: %s", e.user_message or str(e))
+        except self._stripe.error.StripeError as e:
+            logger.error("Stripe subscription creation failed: %s", e)
             return ProviderResult(
                 success=False,
                 provider_name="stripe",
-                error_message=e.user_message or str(e),
-                error_code=e.code,
+                error_message=str(e),
+                error_code=getattr(e, "code", "stripe_error"),
             )
 
     async def cancel_subscription(self, provider_subscription_id: str) -> ProviderResult:
         """Cancel a Stripe subscription at period end."""
         try:
-            subscription = stripe.Subscription.modify(
-                provider_subscription_id,
-                cancel_at_period_end=True,
+            subscription = self._stripe.Subscription.cancel(provider_subscription_id)
+            logger.info(
+                "Stripe subscription cancelled: id=%s status=%s",
+                subscription.id,
+                subscription.status,
             )
-            logger.info("Stripe subscription cancelled: %s", subscription.id)
             return ProviderResult(
                 success=True,
                 provider_id=subscription.id,
                 provider_name="stripe",
-                data={
-                    "status": subscription.status,
-                    "cancel_at_period_end": subscription.cancel_at_period_end,
-                },
-                raw_response=dict(subscription),
+                data={"status": subscription.status},
             )
-        except StripeError as e:
-            logger.error("Stripe cancel_subscription failed: %s", e.user_message or str(e))
+        except self._stripe.error.StripeError as e:
+            logger.error("Stripe cancel subscription failed: %s", e)
             return ProviderResult(
                 success=False,
                 provider_name="stripe",
-                error_message=e.user_message or str(e),
-                error_code=e.code,
+                error_message=str(e),
+                error_code=getattr(e, "code", "stripe_error"),
             )
 
     async def update_subscription(
@@ -218,142 +297,166 @@ class StripeProvider(PaymentProvider):
         provider_subscription_id: str,
         new_plan_external_id: str,
     ) -> ProviderResult:
-        """Change subscription plan (upgrade/downgrade) with proration."""
+        """Upgrade or downgrade a Stripe subscription to a new price."""
         try:
-            subscription = stripe.Subscription.retrieve(provider_subscription_id)
-            updated = stripe.Subscription.modify(
+            subscription = self._stripe.Subscription.retrieve(provider_subscription_id)
+            item_id = subscription["items"]["data"][0]["id"]
+
+            updated = self._stripe.Subscription.modify(
                 provider_subscription_id,
-                items=[{
-                    "id": subscription["items"]["data"][0].id,
-                    "price": new_plan_external_id,
-                }],
+                items=[{"id": item_id, "price": new_plan_external_id}],
                 proration_behavior="create_prorations",
             )
-            logger.info("Stripe subscription updated: %s → %s", updated.id, new_plan_external_id)
+            logger.info(
+                "Stripe subscription updated: id=%s new_price=%s",
+                updated.id,
+                new_plan_external_id,
+            )
             return ProviderResult(
                 success=True,
                 provider_id=updated.id,
                 provider_name="stripe",
-                data={
-                    "status": updated.status,
-                    "new_plan": new_plan_external_id,
-                },
-                raw_response=dict(updated),
+                data={"status": updated.status, "new_price": new_plan_external_id},
             )
-        except StripeError as e:
-            logger.error("Stripe update_subscription failed: %s", e.user_message or str(e))
+        except self._stripe.error.StripeError as e:
+            logger.error("Stripe update subscription failed: %s", e)
             return ProviderResult(
                 success=False,
                 provider_name="stripe",
-                error_message=e.user_message or str(e),
-                error_code=e.code,
+                error_message=str(e),
+                error_code=getattr(e, "code", "stripe_error"),
             )
 
     async def tokenize_payment_method(self, raw_data: Dict[str, Any]) -> ProviderResult:
-        """Attach a payment method to a Stripe customer."""
+        """
+        Attach a payment method to a Stripe customer.
+
+        raw_data expected keys:
+            payment_method_id  — Stripe PaymentMethod ID (pm_xxx)
+            customer_id        — Stripe Customer ID (cus_xxx)
+        """
         try:
-            customer_id = raw_data.get("customer_id")
-            payment_method_id = raw_data.get("payment_method_id")
-            if not customer_id or not payment_method_id:
-                return ProviderResult(
-                    success=False,
-                    provider_name="stripe",
-                    error_message="customer_id and payment_method_id are required",
-                )
-            pm = stripe.PaymentMethod.attach(payment_method_id, customer=customer_id)
-            logger.info("Stripe payment method attached: %s → customer %s", pm.id, customer_id)
+            pm_id = raw_data.get("payment_method_id", "")
+            customer_id = raw_data.get("customer_id", "")
+
+            self._stripe.PaymentMethod.attach(pm_id, customer=customer_id)
+            logger.info(
+                "Stripe payment method attached: pm=%s customer=%s",
+                pm_id,
+                customer_id,
+            )
             return ProviderResult(
                 success=True,
-                provider_id=pm.id,
+                provider_id=pm_id,
                 provider_name="stripe",
-                data={"type": pm.type, "customer": customer_id},
-                raw_response=dict(pm),
+                data={"payment_method_id": pm_id, "customer_id": customer_id},
             )
-        except StripeError as e:
-            logger.error("Stripe tokenize_payment_method failed: %s", e.user_message or str(e))
+        except self._stripe.error.StripeError as e:
+            logger.error("Stripe tokenize payment method failed: %s", e)
             return ProviderResult(
                 success=False,
                 provider_name="stripe",
-                error_message=e.user_message or str(e),
-                error_code=e.code,
+                error_message=str(e),
+                error_code=getattr(e, "code", "stripe_error"),
             )
 
     async def delete_payment_method(self, provider_token: str) -> ProviderResult:
-        """Detach a payment method from its customer."""
+        """Detach a Stripe payment method from its customer."""
         try:
-            pm = stripe.PaymentMethod.detach(provider_token)
-            logger.info("Stripe payment method detached: %s", pm.id)
+            pm = self._stripe.PaymentMethod.detach(provider_token)
+            logger.info("Stripe payment method detached: pm=%s", pm.id)
             return ProviderResult(
                 success=True,
                 provider_id=pm.id,
                 provider_name="stripe",
                 data={"status": "detached"},
-                raw_response=dict(pm),
             )
-        except StripeError as e:
-            logger.error("Stripe delete_payment_method failed: %s", e.user_message or str(e))
+        except self._stripe.error.StripeError as e:
+            logger.error("Stripe delete payment method failed: %s", e)
             return ProviderResult(
                 success=False,
                 provider_name="stripe",
-                error_message=e.user_message or str(e),
-                error_code=e.code,
+                error_message=str(e),
+                error_code=getattr(e, "code", "stripe_error"),
             )
 
-    async def handle_webhook(self, headers: Dict[str, str], body: bytes) -> WebhookEvent:
-        """Verify and parse a Stripe webhook event."""
-        sig_header = headers.get("stripe-signature", "")
+    async def handle_webhook(
+        self,
+        headers: Dict[str, str],
+        body: bytes,
+    ) -> WebhookEvent:
+        """
+        Verify and parse an incoming Stripe webhook event.
 
-        if self._webhook_secret and sig_header:
-            try:
-                event = stripe.Webhook.construct_event(body, sig_header, self._webhook_secret)
-            except SignatureVerificationError as e:
-                logger.error("Stripe webhook signature verification failed: %s", str(e))
-                raise
-            except ValueError:
-                logger.error("Stripe webhook invalid payload")
-                raise
-        else:
-            # No webhook secret configured — parse without verification (dev/test only)
-            import json
-            event = json.loads(body)
-            logger.warning("Stripe webhook parsed WITHOUT signature verification (no webhook_secret)")
+        Stripe-Signature header is required. The raw body bytes are used
+        for HMAC verification — do not parse the body before calling this.
 
-        event_type = event.get("type", "unknown")
-        event_id = event.get("id", "")
-        obj = event.get("data", {}).get("object", {})
+        Raises:
+            WebhookVerificationException: If signature is invalid or webhook_secret is missing.
+        """
+        if not self._webhook_secret:
+            raise WebhookVerificationException(
+                "stripe",
+                "webhook_secret not configured. Set STRIPE_WEBHOOK_SECRET env var.",
+            )
 
-        # Map Stripe event types to entity types
+        sig_header = headers.get("stripe-signature", headers.get("Stripe-Signature", ""))
+        if not sig_header:
+            raise WebhookVerificationException(
+                "stripe", "Missing Stripe-Signature header"
+            )
+
+        try:
+            event = self._stripe.Webhook.construct_event(
+                payload=body,
+                sig_header=sig_header,
+                secret=self._webhook_secret,
+            )
+        except self._stripe.error.SignatureVerificationError as e:
+            raise WebhookVerificationException("stripe", str(e))
+
+        # Normalize Stripe event types → platform event types
+        event_type_map = {
+            "checkout.session.completed": "payment.completed",
+            "invoice.payment_succeeded": "invoice.paid",
+            "invoice.payment_failed": "invoice.payment_failed",
+            "customer.subscription.created": "subscription.created",
+            "customer.subscription.updated": "subscription.updated",
+            "customer.subscription.deleted": "subscription.cancelled",
+            "payment_intent.succeeded": "payment.completed",
+            "payment_intent.payment_failed": "payment.failed",
+        }
+
+        raw_event_type = event["type"]
+        platform_event_type = event_type_map.get(raw_event_type, raw_event_type)
+
+        # Extract entity identifiers
+        data_object = event.get("data", {}).get("object", {})
         entity_type = None
         entity_id = None
-        if "payment_intent" in event_type:
-            entity_type = "payment"
-            entity_id = obj.get("id")
-        elif "subscription" in event_type:
+
+        if "subscription" in raw_event_type:
             entity_type = "subscription"
-            entity_id = obj.get("id")
-        elif "invoice" in event_type:
+            entity_id = data_object.get("id")
+        elif "invoice" in raw_event_type:
             entity_type = "invoice"
-            entity_id = obj.get("id")
-        elif "checkout.session" in event_type:
-            entity_type = "checkout"
-            entity_id = obj.get("id")
+            entity_id = data_object.get("id")
+        elif "payment_intent" in raw_event_type or "checkout" in raw_event_type:
+            entity_type = "payment"
+            entity_id = data_object.get("payment_intent") or data_object.get("id")
 
-        logger.info("Stripe webhook received: type=%s entity=%s/%s", event_type, entity_type, entity_id)
-
-        return WebhookEvent(
-            event_type=event_type,
-            provider_name="stripe",
-            provider_event_id=event_id,
-            entity_type=entity_type,
-            entity_id=entity_id,
-            data=obj if isinstance(obj, dict) else {},
+        logger.info(
+            "Stripe webhook received: type=%s entity=%s:%s",
+            raw_event_type,
+            entity_type,
+            entity_id,
         )
 
-
-def _sanitize_metadata(metadata: Dict[str, Any]) -> Dict[str, str]:
-    """Stripe metadata values must be strings, max 500 chars each."""
-    return {
-        str(k): str(v)[:500]
-        for k, v in metadata.items()
-        if k not in ("success_url", "cancel_url", "description")
-    }
+        return WebhookEvent(
+            event_type=platform_event_type,
+            provider_name="stripe",
+            provider_event_id=event.get("id"),
+            entity_type=entity_type,
+            entity_id=entity_id,
+            data=dict(data_object),
+        )

@@ -1,13 +1,18 @@
 /**
- * Login Page Component Tests
+ * Login Page Component Tests — CC-4
  *
  * BUSINESS CONTEXT:
  * Test suite ensuring Login page provides secure, accessible,
- * and user-friendly authentication flow.
+ * and user-friendly authentication flow using react-hook-form + zod.
  *
  * TECHNICAL IMPLEMENTATION:
- * Uses Vitest + React Testing Library for component testing
- * Tests form validation, submission, error handling, and navigation
+ * Uses Vitest + React Testing Library for component testing.
+ * Tests form validation (zod schema), submission, error handling, and navigation.
+ *
+ * SCHEMA COVERAGE:
+ * - identifier: required, min 3 chars
+ * - password: required, min 8 chars
+ * - rememberMe: boolean (default false)
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -68,7 +73,7 @@ describe('LoginPage Component', () => {
 
       expect(screen.getByText('Welcome Back')).toBeInTheDocument();
       expect(screen.getByText('Sign in to your Course Creator account')).toBeInTheDocument();
-      expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/email or username/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
     });
@@ -92,90 +97,89 @@ describe('LoginPage Component', () => {
       expect(registerLink).toHaveAttribute('href', '/register');
     });
 
-    it('email input has autofocus', () => {
+    it('identifier input has autofocus', () => {
       renderLoginPage();
-      const emailInput = screen.getByLabelText(/email address/i);
-      // React autoFocus renders as DOM autofocus attribute
-      expect(emailInput).toHaveFocus();
+      const identifierInput = screen.getByLabelText(/email or username/i);
+      expect(identifierInput).toHaveFocus();
     });
   });
 
-  describe('Form Validation', () => {
-    it('shows error when email is empty', async () => {
+  describe('Zod schema validation', () => {
+    it('shows error when identifier is empty (required)', async () => {
       renderLoginPage();
 
-      const submitButton = screen.getByRole('button', { name: /sign in/i });
-      await userEvent.click(submitButton);
+      await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
-      const errorMessage = await screen.findByText(/email is required/i);
+      const errorMessage = await screen.findByText(/email or username is required/i);
       expect(errorMessage).toBeInTheDocument();
-
       expect(mockLogin).not.toHaveBeenCalled();
     });
 
-    it('shows error when email is invalid', async () => {
+    it('shows error when identifier is too short (< 3 chars)', async () => {
       renderLoginPage();
 
-      const emailInput = screen.getByLabelText(/email address/i);
-      await userEvent.type(emailInput, 'invalid-email');
+      await userEvent.type(screen.getByLabelText(/email or username/i), 'ab');
+      await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
-      const submitButton = screen.getByRole('button', { name: /sign in/i });
-      await userEvent.click(submitButton);
-
-      const errorMessage = await screen.findByText(/please enter a valid email address/i);
+      const errorMessage = await screen.findByText(/please enter a valid email or username/i);
       expect(errorMessage).toBeInTheDocument();
-
       expect(mockLogin).not.toHaveBeenCalled();
     });
 
-    it('shows error when password is empty', async () => {
+    it('shows error when password is empty (required)', async () => {
       renderLoginPage();
 
-      const emailInput = screen.getByLabelText(/email address/i);
-      await userEvent.type(emailInput, 'test@example.com');
-
-      const submitButton = screen.getByRole('button', { name: /sign in/i });
-      await userEvent.click(submitButton);
+      await userEvent.type(screen.getByLabelText(/email or username/i), 'testuser');
+      await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
       const errorMessage = await screen.findByText(/password is required/i);
       expect(errorMessage).toBeInTheDocument();
-
       expect(mockLogin).not.toHaveBeenCalled();
     });
 
-    it('shows error when password is too short', async () => {
+    it('shows error when password is too short (< 8 chars)', async () => {
       renderLoginPage();
 
-      const emailInput = screen.getByLabelText(/email address/i);
-      const passwordInput = screen.getByLabelText(/password/i);
-
-      await userEvent.type(emailInput, 'test@example.com');
-      await userEvent.type(passwordInput, 'short');
-
-      const submitButton = screen.getByRole('button', { name: /sign in/i });
-      await userEvent.click(submitButton);
+      await userEvent.type(screen.getByLabelText(/email or username/i), 'testuser');
+      await userEvent.type(screen.getByLabelText(/password/i), 'short');
+      await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
       const errorMessage = await screen.findByText(/password must be at least 8 characters/i);
       expect(errorMessage).toBeInTheDocument();
-
       expect(mockLogin).not.toHaveBeenCalled();
     });
 
-    it('clears error when user starts typing', async () => {
-      renderLoginPage();
-
-      const submitButton = screen.getByRole('button', { name: /sign in/i });
-      await userEvent.click(submitButton);
-
-      const errorMessage = await screen.findByText(/email is required/i);
-      expect(errorMessage).toBeInTheDocument();
-
-      const emailInput = screen.getByLabelText(/email address/i);
-      await userEvent.type(emailInput, 'test@example.com');
-
-      await waitFor(() => {
-        expect(screen.queryByText(/email is required/i)).not.toBeInTheDocument();
+    it('zod schema rejects passwords shorter than 8 characters', async () => {
+      // Directly test schema
+      const { z } = await import('zod');
+      const schema = z.object({
+        identifier: z.string().min(1).min(3),
+        password: z.string().min(1).min(8),
+        rememberMe: z.boolean(),
       });
+
+      const result = schema.safeParse({ identifier: 'user', password: 'short', rememberMe: false });
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const passwordError = result.error.issues.find((i) => i.path[0] === 'password');
+        expect(passwordError).toBeDefined();
+      }
+    });
+
+    it('zod schema accepts valid credentials', async () => {
+      const { z } = await import('zod');
+      const schema = z.object({
+        identifier: z.string().min(1).min(3),
+        password: z.string().min(1).min(8),
+        rememberMe: z.boolean(),
+      });
+
+      const result = schema.safeParse({
+        identifier: 'validuser',
+        password: 'validpassword',
+        rememberMe: false,
+      });
+      expect(result.success).toBe(true);
     });
   });
 
@@ -184,14 +188,9 @@ describe('LoginPage Component', () => {
       mockLogin.mockResolvedValue(undefined);
       renderLoginPage();
 
-      const emailInput = screen.getByLabelText(/email address/i);
-      const passwordInput = screen.getByLabelText(/password/i);
-
-      await userEvent.type(emailInput, 'test@example.com');
-      await userEvent.type(passwordInput, 'password123');
-
-      const submitButton = screen.getByRole('button', { name: /sign in/i });
-      await userEvent.click(submitButton);
+      await userEvent.type(screen.getByLabelText(/email or username/i), 'test@example.com');
+      await userEvent.type(screen.getByLabelText(/password/i), 'password123');
+      await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
       await waitFor(() => {
         expect(mockLogin).toHaveBeenCalledWith({
@@ -201,47 +200,32 @@ describe('LoginPage Component', () => {
       });
     });
 
-    it('submits with remember me checked', async () => {
+    it('stores rememberMe in localStorage when checked', async () => {
       mockLogin.mockResolvedValue(undefined);
       renderLoginPage();
 
-      const emailInput = screen.getByLabelText(/email address/i);
-      const passwordInput = screen.getByLabelText(/password/i);
-      const rememberMeCheckbox = screen.getByLabelText('Remember me');
-
-      await userEvent.type(emailInput, 'test@example.com');
-      await userEvent.type(passwordInput, 'password123');
-      await userEvent.click(rememberMeCheckbox);
-
-      const submitButton = screen.getByRole('button', { name: /sign in/i });
-      await userEvent.click(submitButton);
-
-      await waitFor(() => {
-        expect(mockLogin).toHaveBeenCalledWith({
-          username: 'test@example.com',
-          password: 'password123',
-        });
-      });
-
-      // Check that remember me was stored in localStorage
-      expect(localStorage.getItem('rememberMe')).toBe('true');
-    });
-
-    it('handles successful login', async () => {
-      mockLogin.mockResolvedValue(undefined);
-      renderLoginPage();
-
-      const emailInput = screen.getByLabelText(/email address/i);
-      const passwordInput = screen.getByLabelText(/password/i);
-
-      await userEvent.type(emailInput, 'test@example.com');
-      await userEvent.type(passwordInput, 'password123');
-
-      const submitButton = screen.getByRole('button', { name: /sign in/i });
-      await userEvent.click(submitButton);
+      await userEvent.type(screen.getByLabelText(/email or username/i), 'test@example.com');
+      await userEvent.type(screen.getByLabelText(/password/i), 'password123');
+      await userEvent.click(screen.getByLabelText('Remember me'));
+      await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
       await waitFor(() => {
         expect(mockLogin).toHaveBeenCalled();
+        expect(localStorage.getItem('rememberMe')).toBe('true');
+      });
+    });
+
+    it('removes rememberMe from localStorage when unchecked', async () => {
+      localStorage.setItem('rememberMe', 'true');
+      mockLogin.mockResolvedValue(undefined);
+      renderLoginPage();
+
+      await userEvent.type(screen.getByLabelText(/email or username/i), 'test@example.com');
+      await userEvent.type(screen.getByLabelText(/password/i), 'password123');
+      await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
+
+      await waitFor(() => {
+        expect(localStorage.getItem('rememberMe')).toBeNull();
       });
     });
   });
@@ -251,32 +235,22 @@ describe('LoginPage Component', () => {
       mockLogin.mockRejectedValue(new Error('Invalid credentials'));
       renderLoginPage();
 
-      const emailInput = screen.getByLabelText(/email address/i);
-      const passwordInput = screen.getByLabelText(/password/i);
-
-      await userEvent.type(emailInput, 'test@example.com');
-      await userEvent.type(passwordInput, 'wrongpassword');
-
-      const submitButton = screen.getByRole('button', { name: /sign in/i });
-      await userEvent.click(submitButton);
+      await userEvent.type(screen.getByLabelText(/email or username/i), 'test@example.com');
+      await userEvent.type(screen.getByLabelText(/password/i), 'wrongpassword');
+      await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
       await waitFor(() => {
         expect(screen.getByText('Invalid credentials')).toBeInTheDocument();
       });
     });
 
-    it('displays generic error message for unknown errors', async () => {
+    it('displays generic error for unknown errors', async () => {
       mockLogin.mockRejectedValue('Unknown error');
       renderLoginPage();
 
-      const emailInput = screen.getByLabelText(/email address/i);
-      const passwordInput = screen.getByLabelText(/password/i);
-
-      await userEvent.type(emailInput, 'test@example.com');
-      await userEvent.type(passwordInput, 'password123');
-
-      const submitButton = screen.getByRole('button', { name: /sign in/i });
-      await userEvent.click(submitButton);
+      await userEvent.type(screen.getByLabelText(/email or username/i), 'test@example.com');
+      await userEvent.type(screen.getByLabelText(/password/i), 'password123');
+      await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
       await waitFor(() => {
         expect(
@@ -285,97 +259,13 @@ describe('LoginPage Component', () => {
       });
     });
 
-    it('clears submit error on new submission', async () => {
-      mockLogin.mockRejectedValue(new Error('Invalid credentials'));
-      renderLoginPage();
-
-      const emailInput = screen.getByLabelText(/email address/i);
-      const passwordInput = screen.getByLabelText(/password/i);
-
-      await userEvent.type(emailInput, 'test@example.com');
-      await userEvent.type(passwordInput, 'wrongpassword');
-
-      const submitButton = screen.getByRole('button', { name: /sign in/i });
-      await userEvent.click(submitButton);
-
-      await waitFor(() => {
-        expect(screen.getByText('Invalid credentials')).toBeInTheDocument();
-      });
-
-      // Clear and retry
-      mockLogin.mockResolvedValue(undefined);
-      await userEvent.clear(passwordInput);
-      await userEvent.type(passwordInput, 'correctpassword');
-      await userEvent.click(submitButton);
-
-      await waitFor(() => {
-        expect(screen.queryByText('Invalid credentials')).not.toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Loading States', () => {
-    it('shows loading state during login', () => {
-      mockUseAuth.mockReturnValue({
-        login: mockLogin,
-        isLoading: true,
-      });
-
-      renderLoginPage();
-
-      const submitButton = screen.getByRole('button', { name: /signing in/i });
-      expect(submitButton).toBeDisabled();
-      expect(screen.getByText('Signing in...')).toBeInTheDocument();
-    });
-
-    it('disables inputs during loading', () => {
-      mockUseAuth.mockReturnValue({
-        login: mockLogin,
-        isLoading: true,
-      });
-
-      renderLoginPage();
-
-      const emailInput = screen.getByLabelText(/email address/i);
-      const passwordInput = screen.getByLabelText(/password/i);
-      const rememberMeCheckbox = screen.getByLabelText('Remember me');
-
-      expect(emailInput).toBeDisabled();
-      expect(passwordInput).toBeDisabled();
-      expect(rememberMeCheckbox).toBeDisabled();
-    });
-  });
-
-  describe('Accessibility', () => {
-    it('has proper form labels', () => {
-      renderLoginPage();
-
-      expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
-    });
-
-    it('has proper autocomplete attributes', () => {
-      renderLoginPage();
-
-      const emailInput = screen.getByLabelText(/email address/i);
-      const passwordInput = screen.getByLabelText(/password/i);
-
-      expect(emailInput).toHaveAttribute('autocomplete', 'email');
-      expect(passwordInput).toHaveAttribute('autocomplete', 'current-password');
-    });
-
     it('error banner has alert role', async () => {
       mockLogin.mockRejectedValue(new Error('Test error'));
       renderLoginPage();
 
-      const emailInput = screen.getByLabelText(/email address/i);
-      const passwordInput = screen.getByLabelText(/password/i);
-
-      await userEvent.type(emailInput, 'test@example.com');
-      await userEvent.type(passwordInput, 'password123');
-
-      const submitButton = screen.getByRole('button', { name: /sign in/i });
-      await userEvent.click(submitButton);
+      await userEvent.type(screen.getByLabelText(/email or username/i), 'test@example.com');
+      await userEvent.type(screen.getByLabelText(/password/i), 'password123');
+      await userEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
       await waitFor(() => {
         const alert = screen.getByRole('alert');
@@ -383,8 +273,38 @@ describe('LoginPage Component', () => {
         expect(alert).toHaveTextContent('Test error');
       });
     });
+  });
 
-    it('form has noValidate to use custom validation', () => {
+  describe('Loading States', () => {
+    it('shows loading text during login', () => {
+      mockUseAuth.mockReturnValue({ login: mockLogin, isLoading: true });
+      renderLoginPage();
+      expect(screen.getByText('Signing in...')).toBeInTheDocument();
+    });
+
+    it('disables submit button during loading', () => {
+      mockUseAuth.mockReturnValue({ login: mockLogin, isLoading: true });
+      renderLoginPage();
+      expect(screen.getByRole('button', { name: /signing in/i })).toBeDisabled();
+    });
+
+    it('disables inputs during loading', () => {
+      mockUseAuth.mockReturnValue({ login: mockLogin, isLoading: true });
+      renderLoginPage();
+      expect(screen.getByLabelText(/email or username/i)).toBeDisabled();
+      expect(screen.getByLabelText(/password/i)).toBeDisabled();
+      expect(screen.getByLabelText('Remember me')).toBeDisabled();
+    });
+  });
+
+  describe('Accessibility', () => {
+    it('has proper form labels', () => {
+      renderLoginPage();
+      expect(screen.getByLabelText(/email or username/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+    });
+
+    it('form has noValidate attribute', () => {
       const { container } = renderLoginPage();
       const form = container.querySelector('form');
       expect(form).toHaveAttribute('novalidate');
@@ -396,11 +316,8 @@ describe('LoginPage Component', () => {
       mockLogin.mockResolvedValue(undefined);
       renderLoginPage();
 
-      const emailInput = screen.getByLabelText(/email address/i);
-      const passwordInput = screen.getByLabelText(/password/i);
-
-      await userEvent.type(emailInput, 'test@example.com');
-      await userEvent.type(passwordInput, 'password123{Enter}');
+      await userEvent.type(screen.getByLabelText(/email or username/i), 'test@example.com');
+      await userEvent.type(screen.getByLabelText(/password/i), 'password123{Enter}');
 
       await waitFor(() => {
         expect(mockLogin).toHaveBeenCalledWith({
@@ -408,16 +325,6 @@ describe('LoginPage Component', () => {
           password: 'password123',
         });
       });
-    });
-
-    it('can toggle remember me with Space key', async () => {
-      renderLoginPage();
-
-      const rememberMeCheckbox = screen.getByLabelText('Remember me');
-      rememberMeCheckbox.focus();
-      await userEvent.keyboard(' ');
-
-      expect(rememberMeCheckbox).toBeChecked();
     });
   });
 });

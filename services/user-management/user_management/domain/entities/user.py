@@ -46,6 +46,13 @@ from enum import Enum
 import uuid
 import re
 
+class SubscriptionTier(Enum):
+    """Subscription tier controlling feature access and usage limits."""
+    FREE = "free"
+    PRO = "pro"
+    ENTERPRISE = "enterprise"
+
+
 class UserRole(Enum):
     """
     User Role Enumeration - Defines Role-Based Access Control Levels
@@ -224,7 +231,8 @@ class User:
     created_at: datetime = field(default_factory=datetime.utcnow)
     updated_at: datetime = field(default_factory=datetime.utcnow)
     metadata: Dict[str, Any] = field(default_factory=dict)
-    
+    subscription_tier: SubscriptionTier = SubscriptionTier.FREE
+
     def __post_init__(self):
         """
         Post-initialization hook for dataclass validation and setup.

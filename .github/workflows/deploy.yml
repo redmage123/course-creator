@@ -1,0 +1,179 @@
+name: Deploy
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  # QA gate — verify the commit that triggered this deploy was QA-approved.
+  # Checks the PR associated with this commit for the qa-pass or qa-warn label.
+  # Deployment is blocked if no QA sign-off is found (TU-BUG-024).
+  qa-pre-deploy-check:
+    name: Verify QA Sign-Off Before Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check QA sign-off on triggering commit
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = context.sha;
+            console.log(`Checking QA sign-off for commit: ${sha}`);
+
+            // Find PRs associated with this commit
+            const { data: prs } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: sha,
+            });
+
+            if (prs.length === 0) {
+              // workflow_dispatch or direct push — check most recent merged PR as fallback
+              console.log('No PR found for this commit. Checking most recent merged PR...');
+              const { data: mergedPRs } = await github.rest.pulls.list({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'closed',
+                base: 'master',
+                sort: 'updated',
+                direction: 'desc',
+                per_page: 1,
+              });
+
+              if (mergedPRs.length === 0) {
+                core.setFailed(
+                  '❌ DEPLOY BLOCKED: Cannot verify QA sign-off.\n' +
+                  'No merged PRs found. Deploy requires QA approval via qa-pass label.'
+                );
+                return;
+              }
+
+              const pr = mergedPRs[0];
+              const labels = pr.labels.map(l => l.name.toLowerCase());
+              console.log(`Checking PR #${pr.number}: "${pr.title}" — labels: ${labels.join(', ') || 'none'}`);
+
+              if (labels.includes('qa-block')) {
+                core.setFailed(
+                  `❌ DEPLOY BLOCKED: PR #${pr.number} has qa-block label. QA agent blocked this deploy.`
+                );
+                return;
+              }
+
+              if (!labels.includes('qa-pass') && !labels.includes('qa-warn')) {
+                core.setFailed(
+                  `❌ DEPLOY BLOCKED: PR #${pr.number} "${pr.title}" has no QA sign-off.\n` +
+                  'The techuni-qa agent must apply the qa-pass label before deploying to production.\n' +
+                  'Required label: qa-pass or qa-warn'
+                );
+                return;
+              }
+
+              console.log(`✅ QA sign-off confirmed on PR #${pr.number}.`);
+              return;
+            }
+
+            // Check PRs associated with this commit
+            let approved = false;
+            for (const pr of prs) {
+              const labels = pr.labels.map(l => l.name.toLowerCase());
+              console.log(`PR #${pr.number}: "${pr.title}" — labels: ${labels.join(', ') || 'none'}`);
+
+              if (labels.includes('qa-block')) {
+                core.setFailed(
+                  `❌ DEPLOY BLOCKED: PR #${pr.number} has qa-block label. QA agent blocked this deploy.`
+                );
+                return;
+              }
+
+              if (labels.includes('qa-pass') || labels.includes('qa-warn')) {
+                approved = true;
+                console.log(`✅ QA sign-off confirmed on PR #${pr.number}.`);
+              }
+            }
+
+            if (!approved) {
+              const prNums = prs.map(p => `#${p.number}`).join(', ');
+              core.setFailed(
+                `❌ DEPLOY BLOCKED: No QA sign-off on PRs ${prNums}.\n` +
+                'The techuni-qa agent must apply the qa-pass or qa-warn label before deploying.\n' +
+                'Deploy is blocked until QA signs off.'
+              );
+            }
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [qa-pre-deploy-check]
+    if: github.ref == 'refs/heads/master'
+    environment:
+      name: production
+      url: https://courses.techuni.ai
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: 78.47.104.139
+          username: aielevate
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            cd /opt/ai-elevate/course-creator
+            git fetch origin
+            git checkout master
+            git pull origin master
+            docker compose build --parallel
+            docker compose up -d
+            sleep 30
+            RESULT=$(docker compose ps --format json | python3 -c "
+            import sys, json
+            unhealthy = []
+            for line in sys.stdin:
+                line = line.strip()
+                if not line: continue
+                c = json.loads(line)
+                if 'healthy' not in c.get('Status', '') and 'running' in c.get('State', ''):
+                    unhealthy.append(c['Name'])
+            if unhealthy:
+                print('UNHEALTHY: ' + ', '.join(unhealthy))
+                sys.exit(1)
+            print('All containers healthy')
+            ")
+            echo "$RESULT"
+
+      - name: Notify on success
+        if: success()
+        uses: appleboy/ssh-action@v1
+        with:
+          host: 78.47.104.139
+          username: aielevate
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            python3 /home/aielevate/notify.py --priority MEDIUM \
+              --subject "Course Creator PRODUCTION deployed" \
+              --body "Deploy from master completed. All containers healthy. Commit: ${{ github.sha }}" \
+              --org techuni 2>/dev/null
+
+      - name: Notify on failure
+        if: failure()
+        uses: appleboy/ssh-action@v1
+        with:
+          host: 78.47.104.139
+          username: aielevate
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            python3 /home/aielevate/notify.py --priority HIGH \
+              --subject "Course Creator PRODUCTION deploy FAILED" \
+              --body "Deploy from master failed. Commit: ${{ github.sha }}. Check GitHub Actions." \
+              --org techuni 2>/dev/null

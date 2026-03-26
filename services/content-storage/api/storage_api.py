@@ -24,10 +24,22 @@ router = APIRouter()
 
 
 def get_storage_service() -> StorageService:
-    """Dependency injection for storage service."""
-    # This would be replaced with actual dependency injection
-    # For now, return None and handle in the endpoint
-    return None
+    """Dependency injection for storage service.
+
+    Reads from the module-level `_storage_service` variable set by
+    main.py at startup via `set_storage_service()`.
+    """
+    return _storage_service
+
+
+# Module-level service instance — set by main.py during startup.
+_storage_service: Optional[StorageService] = None
+
+
+def set_storage_service(service: StorageService) -> None:
+    """Set the module-level storage service instance (called by main.py at startup)."""
+    global _storage_service
+    _storage_service = service
 
 
 @router.get("/stats", response_model=StorageStats)

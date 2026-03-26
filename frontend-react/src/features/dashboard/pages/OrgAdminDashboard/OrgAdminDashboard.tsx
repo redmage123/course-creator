@@ -110,8 +110,8 @@ export const OrgAdminDashboard: React.FC = () => {
   }
 
   /**
-   * Error State
-   * Show error message if API call fails
+   * Error / New User State
+   * New users have no org data yet — show an onboarding prompt instead of an error.
    */
   if (error) {
     return (
@@ -121,12 +121,33 @@ export const OrgAdminDashboard: React.FC = () => {
         <div className={styles['org-admin-dashboard']}>
           <div className={styles['welcome-section']}>
             <Heading level="h1" gutterBottom>
-              Organization Administration
+              Welcome to TechUni 👋
             </Heading>
             <Card variant="outlined" padding="large">
-              <p style={{ color: 'var(--color-error)', textAlign: 'center' }}>
-                Unable to load dashboard data. Please try refreshing the page.
-              </p>
+              <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                <p style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--color-text-primary)' }}>
+                  You're all set up — let's build your first course.
+                </p>
+                <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1.5rem' }}>
+                  TechUni uses AI to turn a topic or URL into a complete course in minutes.
+                  No content? No problem — just give us a subject and we'll handle the rest.
+                </p>
+                <Link
+                  to="/organization/courses/create"
+                  style={{
+                    display: 'inline-block',
+                    padding: '0.75rem 2rem',
+                    background: 'var(--color-primary, #6366f1)',
+                    color: '#fff',
+                    borderRadius: '0.5rem',
+                    textDecoration: 'none',
+                    fontWeight: 600,
+                    fontSize: '1rem',
+                  }}
+                >
+                  Create My First Course →
+                </Link>
+              </div>
             </Card>
           </div>
         </div>
@@ -178,6 +199,27 @@ export const OrgAdminDashboard: React.FC = () => {
           <p className={styles['welcome-text']}>
             Welcome, {displayName}! Manage your corporate trainers, enroll students in IT training programs, and track organizational learning metrics.
           </p>
+        </div>
+
+        {/* Create Course CTA */}
+        <div style={{ marginBottom: '1.5rem' }}>
+          <Card variant="elevated" padding="medium" style={{ background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <p style={{ color: '#fff', fontWeight: 700, fontSize: '1.1rem', margin: 0 }}>
+                  Ready to build a new course?
+                </p>
+                <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.9rem', margin: '0.25rem 0 0' }}>
+                  AI turns a topic or URL into a full course in minutes.
+                </p>
+              </div>
+              <Link to="/organization/courses/create">
+                <Button variant="primary" size="medium" style={{ background: '#fff', color: '#6366f1', fontWeight: 700 }}>
+                  + Create Course
+                </Button>
+              </Link>
+            </div>
+          </Card>
         </div>
 
         {/* Quick Stats - Real Data from API */}

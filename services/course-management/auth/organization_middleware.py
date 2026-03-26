@@ -36,6 +36,7 @@ from datetime import datetime
 import jwt
 import httpx
 from fastapi import HTTPException, Request, status
+from fastapi.responses import JSONResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -146,13 +147,20 @@ class OrganizationAuthorizationMiddleware(BaseHTTPMiddleware):
             
             return await call_next(request)
             
-        except HTTPException:
-            raise
+        except HTTPException as exc:
+            # Return JSONResponse directly instead of re-raising HTTPException.
+            # Raising HTTPException inside Starlette BaseHTTPMiddleware.dispatch()
+            # crashes the ASGI handler because the exception propagates outside the
+            # middleware call stack before FastAPI's exception handlers can intercept it.
+            return JSONResponse(
+                status_code=exc.status_code,
+                content={"detail": exc.detail}
+            )
         except Exception as e:
             logger.error(f"Organization authorization middleware error: {e}")
-            raise HTTPException(
+            return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Authorization service error"
+                content={"detail": "Authorization service error"}
             )
     
     async def _validate_jwt_token(self, request: Request) -> Optional[Dict[str, Any]]:

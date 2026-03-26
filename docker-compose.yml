@@ -481,15 +481,15 @@ services:
       analytics:
         condition: service_healthy
       rag-service:
-        condition: service_healthy
+        condition: service_started
       nlp-preprocessing:
-        condition: service_healthy
+        condition: service_started
       metadata-service:
-        condition: service_healthy
+        condition: service_started
       knowledge-graph-service:
-        condition: service_healthy
+        condition: service_started
       course-generator:
-        condition: service_healthy
+        condition: service_started
       organization-management:
         condition: service_healthy
     healthcheck:
@@ -561,6 +561,7 @@ services:
       - ./logs:/var/log/course-creator
       - ./config:/home/bbrelin/course-creator/config:ro
       - ./ssl:/app/ssl:ro
+      - ./shared:/app/shared:ro
     ports:
       - "8006:8006"
     networks:
@@ -763,6 +764,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 60s
     restart: unless-stopped
 
   local-llm-service:

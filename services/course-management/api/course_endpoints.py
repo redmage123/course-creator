@@ -42,8 +42,10 @@ from exceptions import (
 
 # Organization security middleware
 import sys
-sys.path.insert(0, '/app/shared')
+if '/app/shared' not in sys.path:
+    sys.path.append('/app/shared')
 from auth.organization_middleware import get_organization_context
+from middleware.subscription_middleware import require_feature
 
 # Pydantic models for API (Data Transfer Objects)
 from pydantic import BaseModel, Field
@@ -288,7 +290,8 @@ def _course_to_response(course: Course) -> CourseResponse:
 async def create_course(
     request: CourseCreateRequest,
     course_service: ICourseService = Depends(get_course_service),
-    current_user_id: str = Depends(get_current_user_id)
+    current_user_id: str = Depends(get_current_user_id),
+    _tier: None = require_feature("course_creation"),
 ):
     """
     Create a new course in the educational platform.

@@ -961,4 +961,22 @@ __all__ = [
     "UnsupportedImageFormatException",
     "ScreenshotAnalysisException",
     "ExternalServiceException",
+    "CourseGenerationException",
+    "NLPServiceException",
+    "NLPServiceConnectionException",
+    "NLPServiceResponseException",
 ]
+
+# Backwards-compatibility alias used by course-generator service
+CourseGenerationException = ServiceException
+
+# Backwards-compatibility aliases used by ai-assistant-service
+NLPServiceException = ServiceException
+NLPServiceConnectionException = ServiceException
+NLPServiceResponseException = ServiceException
+
+# Backwards-compatibility aliases used by rag-service
+ContentException = ServiceException
+ContentNotFoundException = NotFoundException
+RAGException = ServiceException
+EmbeddingException = ServiceException

@@ -92,7 +92,11 @@ Error Handlers: Standardize error responses across the API
 Container: Dependency injection container for service management
 Exceptions: Custom exception types for domain-specific errors
 """
-from routes import setup_auth_routes, setup_user_routes, setup_session_routes, setup_admin_routes, set_container
+from routes import (
+    setup_auth_routes, setup_user_routes, setup_session_routes,
+    setup_admin_routes, setup_subscription_routes, set_container,
+    setup_sso_routes, setup_api_key_routes, setup_lti_routes,
+)
 from middleware import setup_cors_middleware, setup_logging_middleware, setup_security_headers, setup_rate_limiting
 from error_handlers import setup_exception_handlers
 from user_management.infrastructure.container import UserManagementContainer
@@ -266,11 +270,11 @@ class ApplicationFactory:
         - Critical for containerized deployment patterns
         """
         app = FastAPI(
-            title="User Management Service",
-            description="User authentication, authorization, and profile management for Course Creator Platform",
-            version="2.3.0",
-            docs_url="/docs" if getattr(config, 'service', {}).get('debug', False) else None,
-            redoc_url="/redoc" if getattr(config, 'service', {}).get('debug', False) else None,
+            title="Course Creator API",
+            description="User authentication, SSO, API keys, LTI 1.3, and profile management for Course Creator Platform",
+            version="2.4.0",
+            docs_url="/api/v1/docs",
+            redoc_url="/api/v1/redoc",
             lifespan=lifespan
         )
         
@@ -322,9 +326,16 @@ class ApplicationFactory:
         through the dependency injection container.
         """
         setup_auth_routes(app)
+        # setup_subscription_routes must come before setup_user_routes so that
+        # /users/subscription is registered before the /users/{user_id} wildcard,
+        # otherwise FastAPI matches "subscription" as user_id.
+        setup_subscription_routes(app)
         setup_user_routes(app)
         setup_session_routes(app)
         setup_admin_routes(app)
+        setup_sso_routes(app)
+        setup_api_key_routes(app)
+        setup_lti_routes(app)
         
         """
         HEALTH CHECK ENDPOINT

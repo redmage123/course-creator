@@ -20,11 +20,28 @@ from dataclasses import dataclass
 import logging
 
 from ai_assistant_service.domain.entities.message import Message, MessageRole
-from shared.exceptions import (
-    NLPServiceException,
-    NLPServiceConnectionException,
-    NLPServiceResponseException
-)
+try:
+    from shared.exceptions import (
+        NLPServiceException,
+        NLPServiceConnectionException,
+        NLPServiceResponseException
+    )
+except ImportError:
+    # Graceful fallback when shared volume is not mounted or path is unavailable.
+    # Defining local stubs allows the service to start without the shared module.
+    class NLPServiceException(Exception):  # type: ignore[no-redef]
+        """Stub: shared.exceptions unavailable at import time."""
+        pass
+
+    class NLPServiceConnectionException(NLPServiceException):  # type: ignore[no-redef]
+        """Stub: shared.exceptions unavailable at import time."""
+        def __init__(self, operation: str = "", original_error: str = ""):
+            super().__init__(f"NLP connection error during {operation}: {original_error}")
+
+    class NLPServiceResponseException(NLPServiceException):  # type: ignore[no-redef]
+        """Stub: shared.exceptions unavailable at import time."""
+        def __init__(self, operation: str = "", status_code: int = 0, detail: str = ""):
+            super().__init__(f"NLP response error during {operation} (HTTP {status_code}): {detail}")
 
 
 logger = logging.getLogger(__name__)

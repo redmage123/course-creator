@@ -41,10 +41,15 @@ This router integrates with the LabLifecycleService for Docker container
 orchestration, ensuring efficient resource management for educational environments.
 """
 
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Query, status
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Query, status, Depends
 from typing import Dict, List, Optional
 import logging
+import sys
 from datetime import datetime
+
+if '/app/shared' not in sys.path:
+    sys.path.append('/app/shared')
+from middleware.subscription_middleware import require_feature
 
 # Import models
 from models.lab_models import (
@@ -118,7 +123,8 @@ def get_lab_lifecycle_service() -> LabLifecycleService:
 @router.post("", response_model=LabResponse, status_code=status.HTTP_201_CREATED)
 async def create_lab(
     request: LabRequest,
-    background_tasks: BackgroundTasks
+    background_tasks: BackgroundTasks,
+    _tier: None = require_feature("docker_labs"),
 ):
     """
     Create a new lab container for course demonstration or testing.
@@ -174,7 +180,8 @@ async def create_lab(
 @router.post("/student", response_model=LabResponse, status_code=status.HTTP_201_CREATED)
 async def create_student_lab(
     request: StudentLabRequest,
-    user_id: str = Query(..., description="Student user ID")
+    user_id: str = Query(..., description="Student user ID"),
+    _tier: None = require_feature("docker_labs"),
 ):
     """
     Create or retrieve student lab container.

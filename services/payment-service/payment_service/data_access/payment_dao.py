@@ -467,6 +467,28 @@ class PaymentDAO:
                 original_exception=e,
             )
 
+    async def get_subscription_by_provider_id(self, provider_subscription_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieve a subscription by its external provider reference (e.g. Stripe sub_xxx)."""
+        try:
+            async with self.db_pool.acquire() as conn:
+                result = await conn.fetchrow(
+                    """SELECT id, organization_id, plan_id, status, provider_name,
+                              provider_subscription_id, current_period_start,
+                              current_period_end, trial_end, cancelled_at,
+                              cancel_reason, created_at, updated_at
+                       FROM course_creator.subscriptions
+                       WHERE provider_subscription_id = $1""",
+                    provider_subscription_id,
+                )
+                return dict(result) if result else None
+        except Exception as e:
+            self.logger.error(f"Failed to get subscription by provider id {provider_subscription_id}: {e}")
+            raise PaymentDatabaseException(
+                message=f"Failed to retrieve subscription by provider id: {e}",
+                operation="get_subscription_by_provider_id",
+                original_exception=e,
+            )
+
     async def get_active_subscription_for_org(self, org_id: str) -> Optional[Dict[str, Any]]:
         """
         Retrieve the active-family subscription for an organization.

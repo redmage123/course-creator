@@ -30,6 +30,7 @@ import styles from './Homepage.module.css';
 interface Feature {
   id: string;
   icon: string;
+  image: string;
   title: string;
   brief: string;
   detailed: string;
@@ -40,6 +41,7 @@ const FEATURES: Feature[] = [
   {
     id: 'ai-content',
     icon: 'fas fa-brain',
+    image: 'https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=600&q=80&fit=crop&auto=format',
     title: 'AI Content Generation',
     brief: 'Generate course content, quizzes, and slides instantly with advanced AI. Save hours of content creation time while maintaining quality.',
     detailed: 'Our AI-powered content generation system leverages state-of-the-art language models to help instructors create comprehensive course materials in minutes instead of hours. The system understands educational best practices and generates pedagogically sound content tailored to your subject matter.',
@@ -55,6 +57,7 @@ const FEATURES: Feature[] = [
   {
     id: 'labs',
     icon: 'fas fa-code',
+    image: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=600&q=80&fit=crop&auto=format',
     title: 'Interactive Lab Environments',
     brief: 'Provide hands-on coding practice with isolated Docker containers. Support for Python, JavaScript, Java, and more with built-in AI assistance.',
     detailed: 'Each student gets their own isolated Docker container environment where they can safely experiment with code without affecting others. The built-in AI assistant helps students debug issues and provides contextual hints based on the current exercise.',
@@ -70,6 +73,7 @@ const FEATURES: Feature[] = [
   {
     id: 'analytics',
     icon: 'fas fa-chart-line',
+    image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&q=80&fit=crop&auto=format',
     title: 'Real-time Analytics',
     brief: 'Track student progress, engagement, and performance with comprehensive dashboards. Make data-driven decisions to improve learning outcomes.',
     detailed: 'Our analytics engine provides instructors and administrators with deep insights into student performance and engagement. Real-time dashboards show completion rates, time spent on materials, quiz scores, and identify students who may need additional support.',
@@ -85,6 +89,7 @@ const FEATURES: Feature[] = [
   {
     id: 'multi-tenant',
     icon: 'fas fa-users-cog',
+    image: 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=600&q=80&fit=crop&auto=format',
     title: 'Multi-tenant Architecture',
     brief: 'Perfect for organizations with multiple teams. Manage instructors, students, and courses with granular role-based permissions.',
     detailed: 'Our multi-tenant architecture allows organizations to maintain complete separation between departments, teams, or client groups while sharing the same platform infrastructure. Each organization has full control over their users, courses, and settings.',
@@ -100,6 +105,7 @@ const FEATURES: Feature[] = [
   {
     id: 'assessments',
     icon: 'fas fa-clipboard-check',
+    image: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=600&q=80&fit=crop&auto=format',
     title: 'Comprehensive Assessments',
     brief: 'Create multiple choice, coding challenges, and essay questions. Automated grading and instant feedback for students.',
     detailed: 'Build assessments that truly measure understanding with our versatile question types. From auto-graded multiple choice to AI-assisted essay evaluation and live code execution for programming challenges, our assessment tools cover every learning scenario.',
@@ -115,6 +121,7 @@ const FEATURES: Feature[] = [
   {
     id: 'certificates',
     icon: 'fas fa-certificate',
+    image: 'https://images.unsplash.com/photo-1567427017947-545c5f8d16ad?w=600&q=80&fit=crop&auto=format',
     title: 'Digital Certificates',
     brief: 'Award verifiable certificates upon course completion. Students can download PDFs and share achievements on social media.',
     detailed: 'Motivate students and validate their achievements with beautiful, verifiable digital certificates. Each certificate includes a unique verification code and QR link that employers can use to confirm authenticity.',
@@ -279,6 +286,9 @@ export const Homepage = () => {
                   tabIndex={0}
                   aria-label={`Learn more about ${feature.title}`}
                 >
+                  <div className={styles.featureCardImage}>
+                    <img src={feature.image} alt={feature.title} loading="lazy" />
+                  </div>
                   <div className={styles.featureIcon}>
                     <i className={feature.icon}></i>
                   </div>

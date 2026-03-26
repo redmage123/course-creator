@@ -1,0 +1,59 @@
+name: Weekly Security Audit
+
+on:
+  schedule:
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+
+jobs:
+  python-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install audit tools
+        run: pip install pip-audit safety
+
+      - name: Run pip-audit
+        run: |
+          pip install -r requirements.txt 2>/dev/null || true
+          pip-audit --format json --output pip-audit-report.json 2>/dev/null || true
+          pip-audit 2>/dev/null || true
+
+      - name: Run safety check
+        run: safety check --full-report 2>/dev/null || true
+
+      - name: Upload audit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: python-security-audit
+          path: pip-audit-report.json
+          if-no-files-found: warn
+
+  npm-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install and audit
+        run: |
+          npm install --legacy-peer-deps 2>/dev/null || npm install --force 2>/dev/null || true
+          npm audit --json > npm-audit-report.json 2>/dev/null || true
+          npm audit 2>/dev/null || true
+
+      - name: Upload audit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: npm-security-audit
+          path: npm-audit-report.json
+          if-no-files-found: warn

@@ -6,18 +6,21 @@
  * Supports login for Site Admin, Org Admin, Instructor, and Student roles.
  *
  * TECHNICAL IMPLEMENTATION:
- * Form validation with controlled inputs, auth service integration,
- * error handling, and loading states.
+ * Form validation via react-hook-form + zod, matching the pattern used
+ * across all other auth forms (RegistrationPage, etc.).
  *
  * DESIGN PRINCIPLES:
  * - Clean, centered layout with Tami design system
- * - Client-side validation before submission
+ * - Schema-driven validation (zod) — single source of truth for rules
  * - Clear error messages for failed login attempts
  * - Accessible form with proper labels and ARIA attributes
  */
 
-import React, { useState, FormEvent } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { SEO } from '../../../../components/common/SEO';
 import { Input } from '../../../../components/atoms/Input';
 import { Button } from '../../../../components/atoms/Button';
@@ -27,28 +30,32 @@ import { Card } from '../../../../components/atoms/Card';
 import { useAuth } from '../../../../hooks/useAuth';
 import styles from './LoginPage.module.css';
 
-interface LoginFormData {
-  identifier: string;  // Can be email OR username/userid
-  password: string;
-  rememberMe: boolean;
-}
+/**
+ * Zod schema — single source of truth for login validation rules.
+ * Accepts either an email address or a username/userid (min 3 chars).
+ */
+const loginSchema = z.object({
+  identifier: z
+    .string()
+    .min(1, 'Email or username is required')
+    .min(3, 'Please enter a valid email or username'),
+  password: z
+    .string()
+    .min(1, 'Password is required')
+    .min(8, 'Password must be at least 8 characters'),
+  rememberMe: z.boolean(),
+});
 
-interface LoginFormErrors {
-  identifier?: string;
-  password?: string;
-  submit?: string;
-}
+type LoginFormData = z.infer<typeof loginSchema>;
 
 /**
  * Login Page Component
  *
  * WHY THIS APPROACH:
- * - Controlled form inputs for validation
- * - useAuth hook for authentication state management
- * - Client-side validation before API call
- * - Loading states to prevent double submission
- * - Role-based redirects after successful login
- * - Clear error messages for user feedback
+ * - react-hook-form reduces re-renders vs controlled state
+ * - zod schema is the single source of validation truth
+ * - Matches RegistrationPage and all other auth form patterns
+ * - Role-based redirects after successful login handled by useAuth
  *
  * @example
  * ```tsx
@@ -56,59 +63,33 @@ interface LoginFormErrors {
  * ```
  */
 export const LoginPage: React.FC = () => {
-  const navigate = useNavigate();
   const { login, isLoading } = useAuth();
 
-  const [formData, setFormData] = useState<LoginFormData>({
-    identifier: '',
-    password: '',
-    rememberMe: false,
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setError,
+    watch,
+    setValue,
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      identifier: '',
+      password: '',
+      rememberMe: false,
+    },
   });
 
-  const [errors, setErrors] = useState<LoginFormErrors>({});
+  const rememberMe = watch('rememberMe');
 
   /**
-   * Validate form data
-   * Accepts either email address OR username/userid
+   * Handle validated form submission
    */
-  const validateForm = (): boolean => {
-    const newErrors: LoginFormErrors = {};
-
-    // Identifier validation (email or username)
-    if (!formData.identifier) {
-      newErrors.identifier = 'Email or username is required';
-    } else if (formData.identifier.length < 3) {
-      newErrors.identifier = 'Please enter a valid email or username';
-    }
-
-    // Password validation
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  /**
-   * Handle form submission
-   */
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    // Clear previous submit errors
-    setErrors((prev) => ({ ...prev, submit: undefined }));
-
-    // Validate form
-    if (!validateForm()) {
-      return;
-    }
-
+  const onSubmit = async (data: LoginFormData) => {
     try {
       // Store remember me preference
-      if (formData.rememberMe) {
+      if (data.rememberMe) {
         localStorage.setItem('rememberMe', 'true');
       } else {
         localStorage.removeItem('rememberMe');
@@ -116,8 +97,8 @@ export const LoginPage: React.FC = () => {
 
       // Attempt login (identifier can be email or username)
       await login({
-        username: formData.identifier,
-        password: formData.password,
+        username: data.identifier,
+        password: data.password,
       });
 
       // Redirect will be handled by useAuth hook based on user role
@@ -126,35 +107,12 @@ export const LoginPage: React.FC = () => {
       // Instructor -> /instructor/dashboard
       // Student -> /student/dashboard
     } catch (error) {
-      // Handle login error
-      setErrors({
-        submit:
+      setError('root', {
+        message:
           error instanceof Error
             ? error.message
             : 'Login failed. Please check your credentials and try again.',
       });
-    }
-  };
-
-  /**
-   * Handle input change
-   */
-  const handleChange = (field: keyof LoginFormData) => (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const value = field === 'rememberMe' ? e.target.checked : e.target.value;
-
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-
-    // Clear field error on change
-    if (errors[field as keyof LoginFormErrors]) {
-      setErrors((prev) => ({
-        ...prev,
-        [field]: undefined,
-      }));
     }
   };
 
@@ -177,11 +135,11 @@ export const LoginPage: React.FC = () => {
         </div>
 
         <Card variant="elevated" padding="large">
-          <form onSubmit={handleSubmit} className={styles['login-form']} noValidate>
-            {/* Submit Error Message */}
-            {errors.submit && (
+          <form onSubmit={handleSubmit(onSubmit)} className={styles['login-form']} noValidate>
+            {/* Root / submit error message */}
+            {errors.root && (
               <div className={styles['login-error-banner']} role="alert">
-                {errors.submit}
+                {errors.root.message}
               </div>
             )}
 
@@ -190,13 +148,12 @@ export const LoginPage: React.FC = () => {
               type="text"
               label="Email or Username"
               placeholder="you@example.com or username"
-              value={formData.identifier}
-              onChange={handleChange('identifier')}
-              error={errors.identifier}
+              error={errors.identifier?.message}
               required
               autoComplete="username"
               autoFocus
               disabled={isLoading}
+              {...register('identifier')}
             />
 
             {/* Password Input */}
@@ -204,21 +161,20 @@ export const LoginPage: React.FC = () => {
               type="password"
               label="Password"
               placeholder="Enter your password"
-              value={formData.password}
-              onChange={handleChange('password')}
-              error={errors.password}
+              error={errors.password?.message}
               required
               autoComplete="current-password"
               showPasswordToggle
               disabled={isLoading}
+              {...register('password')}
             />
 
             {/* Remember Me & Forgot Password Row */}
             <div className={styles['login-options']}>
               <Checkbox
                 label="Remember me"
-                checked={formData.rememberMe}
-                onChange={handleChange('rememberMe')}
+                checked={rememberMe}
+                onChange={(e) => setValue('rememberMe', e.target.checked)}
                 disabled={isLoading}
               />
 

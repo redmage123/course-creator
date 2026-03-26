@@ -37,7 +37,7 @@ from course_generator.infrastructure.llm_providers import (
     get_provider_for_organization,
     LLMResponse
 )
-from shared.exceptions import (
+from exceptions import (
     CourseGenerationException,
     LLMProviderException
 )
