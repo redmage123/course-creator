@@ -116,11 +116,11 @@ class BugReport:
     def __post_init__(self):
         """Validate bug report data after initialization."""
         if len(self.title) < 10:
-            raise ValueError("Bug title must be at least 10 characters")
+            raise ValueError("Title must be at least 10 characters")
         if len(self.description) < 20:
-            raise ValueError("Bug description must be at least 20 characters")
+            raise ValueError("Description must be at least 20 characters")
         if "@" not in self.submitter_email:
-            raise ValueError("Invalid submitter email address")
+            raise ValueError("Invalid email address")
 
     @classmethod
     def create(

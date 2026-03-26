@@ -29,12 +29,14 @@ class ComplexityEstimate(Enum):
     SIMPLE: Small isolated change (single file, few lines)
     MODERATE: Multiple files, clear scope
     COMPLEX: Significant changes, careful testing needed
-    MAJOR: Architectural changes, extensive testing required
+    VERY_COMPLEX: Architectural changes, extensive testing required
+    MAJOR: Alias for VERY_COMPLEX, architectural changes
     """
     TRIVIAL = "trivial"
     SIMPLE = "simple"
     MODERATE = "moderate"
     COMPLEX = "complex"
+    VERY_COMPLEX = "very_complex"
     MAJOR = "major"
 
 
@@ -162,7 +164,7 @@ class BugAnalysisResult:
         """
         return (
             self.is_high_confidence(80.0) and
-            self.complexity_estimate != ComplexityEstimate.MAJOR and
+            self.complexity_estimate not in (ComplexityEstimate.MAJOR, ComplexityEstimate.VERY_COMPLEX, ComplexityEstimate.COMPLEX) and
             len(self.affected_files) < 5
         )
 

@@ -30,7 +30,7 @@ router = APIRouter(tags=["sso"])
 _sso_configs: dict = {}  # org_id → OrgSSOConfig dict
 
 SP_BASE_URL = os.environ.get("SP_BASE_URL", "https://courses.techuni.ai")
-JWT_SECRET = os.environ.get("JWT_SECRET_KEY", "your-secret-key-change-in-production")
+JWT_SECRET = os.environ["JWT_SECRET_KEY"]
 USER_MANAGEMENT_URL = os.environ.get("USER_MANAGEMENT_URL", "http://user-management:8000")
 
 # ── Pydantic models ──────────────────────────────────────────────────────────

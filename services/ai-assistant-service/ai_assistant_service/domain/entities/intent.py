@@ -107,9 +107,11 @@ class FunctionSchema:
     """
     name: str
     description: str
-    parameters: List[FunctionParameter]
+    parameters: Any = field(default_factory=list)  # List[FunctionParameter] or dict schema
     rbac_required: List[str] = field(default_factory=list)
     interaction_examples: Optional[List[str]] = None
+    api_endpoint: Optional[str] = None
+    http_method: Optional[str] = None
 
     def get_missing_param_clarifications(self, provided_args: Dict[str, Any]) -> List[str]:
         """

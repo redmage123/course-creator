@@ -461,6 +461,39 @@ class HookManager:
             return await hook.run_async(*args, **kwargs)
         return None
 
+    def get_or_create(
+        self,
+        name: str,
+        hook_type: HookType = HookType.NORMAL,
+        docstring: Optional[str] = None
+    ) -> Hook:
+        """
+        Get an existing hook or create a new one. Alias for define().
+
+        Args:
+            name: Hook identifier
+            hook_type: Type of hook
+            docstring: Description of the hook
+
+        Returns:
+            The Hook instance
+        """
+        return self.define(name, hook_type, docstring)
+
+    def run_sync(self, name: str, *args, **kwargs) -> Any:
+        """
+        Run a hook synchronously by name. Alias for run().
+
+        Args:
+            name: Hook identifier
+            *args: Arguments to pass
+            **kwargs: Keyword arguments to pass
+
+        Returns:
+            Hook results
+        """
+        return self.run(name, *args, **kwargs)
+
     def remove_plugin(self, plugin_id: str) -> Dict[str, int]:
         """
         Remove all functions registered by a plugin.

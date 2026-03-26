@@ -187,6 +187,7 @@ class AnalyticsRequest(BaseModel):
     metrics: List[str] = Field(default_factory=list)
     aggregation: str = Field(default="daily", pattern="^(daily|weekly|monthly)$")
     format: str = Field(default="json", pattern="^(json|csv|pdf)$")
+    export_format: Optional[str] = None  # Alias for format
 
 
 # ========================================
@@ -248,43 +249,36 @@ class LearningAnalyticsResponse(BaseModel):
 
     Provides a holistic view of student learning incorporating multiple
     educational metrics and research-based learning indicators.
-
-    Learning Analytics Dimensions:
-    - Engagement: Multi-faceted engagement measurement
-    - Progress Velocity: Learning pace and efficiency analysis
-    - Lab Proficiency: Hands-on skill development tracking
-    - Quiz Performance: Knowledge assessment and retention
-    - Time Analytics: Learning time investment and efficiency
-    - Streak Analysis: Learning consistency and habit formation
-    - Risk Assessment: Early intervention indicators
-    - Personalized Recommendations: AI-driven learning guidance
-
-    Educational Research Applications:
-    - Learning effectiveness measurement
-    - Predictive modeling for student success
-    - Personalized learning path optimization
-    - Institutional effectiveness assessment
-
-    Overall Performance Calculation:
-    Uses weighted scoring algorithm based on educational research:
-    - 25% Engagement (behavioral learning indicators)
-    - 25% Progress Velocity (learning efficiency)
-    - 25% Lab Proficiency (practical skill development)
-    - 25% Quiz Performance (knowledge acquisition and retention)
     """
-    id: str
-    student_id: str
-    course_id: str
-    analysis_date: datetime
-    engagement_score: float
-    progress_velocity: float
-    lab_proficiency: float
-    quiz_performance: float
-    time_on_platform: int
-    streak_days: int
-    risk_level: str
-    recommendations: List[str]
-    overall_performance: float
+    # New flexible format fields
+    data_range: Optional[Dict[str, Any]] = None
+    summary: Optional[Dict[str, Any]] = None
+    detailed_data: Optional[Dict[str, Any]] = None
+    recommendations: List[str] = Field(default_factory=list)
+    request_id: Optional[str] = None
+    generated_at: Optional[datetime] = None
+
+    # Legacy detailed fields (all optional for backward compatibility)
+    id: Optional[str] = None
+    student_id: Optional[str] = None
+    course_id: Optional[str] = None
+    analysis_date: Optional[datetime] = None
+    engagement_score: Optional[float] = None
+    progress_velocity: Optional[float] = None
+    lab_proficiency: Optional[float] = None
+    quiz_performance: Optional[float] = None
+    time_on_platform: Optional[int] = None
+    streak_days: Optional[int] = None
+    risk_level: Optional[str] = None
+    overall_performance: Optional[float] = None
+
+    def model_post_init(self, __context: Any) -> None:
+        """Auto-populate request_id and generated_at if not provided."""
+        import uuid
+        if self.request_id is None:
+            self.request_id = str(uuid.uuid4())
+        if self.generated_at is None:
+            self.generated_at = datetime.utcnow()
 
 
 class CourseAnalyticsSummaryResponse(BaseModel):

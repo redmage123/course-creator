@@ -48,7 +48,7 @@ class TestStudentActivity:
     def test_student_activity_creation_with_empty_student_id_raises_error(self):
         """Test creating activity with empty student_id raises ValueError"""
         # Act & Assert
-        with pytest.raises(ValueError, match="Student ID cannot be empty"):
+        with pytest.raises(ValueError, match="Student ID is required"):
             StudentActivity(
                 student_id="",
                 course_id=str(uuid4()),
@@ -59,7 +59,7 @@ class TestStudentActivity:
     def test_student_activity_creation_with_empty_course_id_raises_error(self):
         """Test creating activity with empty course_id raises ValueError"""
         # Act & Assert
-        with pytest.raises(ValueError, match="Course ID cannot be empty"):
+        with pytest.raises(ValueError, match="Course ID is required"):
             StudentActivity(
                 student_id=str(uuid4()),
                 course_id="",
@@ -82,16 +82,24 @@ class TestStudentActivity:
             ActivityType.LOGOUT
         ]
         
+        # Activity data required per type
+        activity_data_map = {
+            ActivityType.QUIZ_START: {"quiz_id": "quiz-123"},
+            ActivityType.LAB_START: {},
+            ActivityType.CONTENT_VIEW: {},
+            ActivityType.DISCUSSION_POST: {},
+        }
+
         # Act & Assert
         for activity_type in engagement_activities:
             activity = StudentActivity(
                 student_id=str(uuid4()),
                 course_id=str(uuid4()),
                 activity_type=activity_type,
-                activity_data={}
+                activity_data=activity_data_map.get(activity_type, {})
             )
             assert activity.is_engagement_activity()
-        
+
         for activity_type in non_engagement_activities:
             activity = StudentActivity(
                 student_id=str(uuid4()),

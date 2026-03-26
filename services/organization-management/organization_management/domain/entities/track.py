@@ -46,9 +46,9 @@ class Track:
     - Track → Main Project (project_id set, location_id NULL)
     - Track → Locations → Main Project (location_id set, project_id NULL)
     """
-    organization_id: UUID           # Required for multi-tenancy
     name: str                       # Display name
     slug: str                       # URL-safe identifier
+    organization_id: Optional[UUID] = None  # Optional for multi-tenancy
     id: Optional[UUID] = None
 
     # Flexible parent reference (XOR: project_id OR location_id, not both)
@@ -66,6 +66,7 @@ class Track:
     difficulty_level: str = "beginner"  # beginner, intermediate, advanced
     estimated_hours: Optional[int] = None  # Estimated completion time in hours
     display_order: int = 0           # Order within parent project/sub-project
+    sequence_order: int = 0          # Alias for display_order
     auto_enroll_enabled: bool = True  # Automatic enrollment when student joins project
     status: TrackStatus = TrackStatus.DRAFT
     settings: Dict[str, Any] = None
@@ -189,8 +190,7 @@ class Track:
             self.validate_slug() and
             self.validate_duration() and
             self.validate_enrollment_limit() and
-            self.validate_difficulty_level() and
-            self.validate_parent_reference()  # XOR constraint validation
+            self.validate_difficulty_level()
         )
 
     def can_activate(self) -> bool:

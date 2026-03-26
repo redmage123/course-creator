@@ -177,6 +177,7 @@ class Course:
     difficulty_level: DifficultyLevel = DifficultyLevel.BEGINNER
     price: float = 0.00
     is_published: bool = False
+    published_at: Optional[datetime] = None
     id: Optional[str] = None
     category: Optional[str] = None
     estimated_duration: Optional[int] = None
@@ -216,8 +217,15 @@ class Course:
         Raises:
             ValueError: If any business rule or invariant is violated
         """
+        import uuid as _uuid
+        if self.id is None:
+            self.id = str(_uuid.uuid4())
+        if self.created_at is None:
+            self.created_at = datetime.utcnow()
+        if self.updated_at is None:
+            self.updated_at = datetime.utcnow()
         self.validate()
-    
+
     def validate(self) -> None:
         """
         Validate all business rules and domain invariants for course entity.
@@ -270,10 +278,13 @@ class Course:
                 with clear messaging for developers and logging systems
         """
         if not self.title or len(self.title.strip()) == 0:
-            raise ValueError("Course title cannot be empty")
+            raise ValueError("Title cannot be empty")
 
         if len(self.title) > 200:
             raise ValueError("Course title cannot exceed 200 characters")
+
+        if self.description is not None and len(self.description.strip()) == 0:
+            raise ValueError("Description cannot be empty")
 
         # Description is optional but has max length if provided
         if self.description and len(self.description) > 2000:
@@ -283,7 +294,7 @@ class Course:
             raise ValueError("Course must have an instructor")
 
         if self.price < 0:
-            raise ValueError("Course price cannot be negative")
+            raise ValueError("Price cannot be negative")
 
         if self.estimated_duration is not None and self.estimated_duration <= 0:
             raise ValueError("Course duration must be positive")
@@ -491,8 +502,9 @@ class Course:
             raise ValueError("Course does not meet publication requirements")
 
         self.is_published = True
+        self.published_at = datetime.utcnow()
         self.updated_at = datetime.utcnow()
-    
+
     def unpublish(self) -> None:
         """
         Transition course from published to draft state (unpublish operation).
@@ -542,8 +554,18 @@ class Course:
             >>> course.unpublish()  # Remove from catalog for updates
         """
         self.is_published = False
+        self.published_at = None
         self.updated_at = datetime.utcnow()
-    
+
+    def set_thumbnail(self, url: str) -> None:
+        """Set the course thumbnail URL."""
+        self.thumbnail_url = url
+        self.updated_at = datetime.utcnow()
+
+    def can_be_enrolled(self) -> bool:
+        """Check if course is available for student enrollment."""
+        return self.is_published
+
     def update_details(self, title: Optional[str] = None,
                       description: Optional[str] = None,
                       category: Optional[str] = None,

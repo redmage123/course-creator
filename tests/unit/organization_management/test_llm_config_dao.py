@@ -71,7 +71,20 @@ class FakeAsyncPGConnection:
         return []
 
     async def fetchrow(self, query: str, *args):
-        """Execute SELECT query and return single row"""
+        """Execute SELECT/INSERT/UPDATE/DELETE query and return single row"""
+        # Handle INSERT ... RETURNING queries
+        if "INSERT INTO organization_llm_config" in query and "RETURNING" in query:
+            result = self._insert_org_config(query, *args)
+            return FakeRecord(result) if result else None
+        elif "INSERT INTO llm_usage_log" in query and "RETURNING" in query:
+            result = self._insert_usage_log(query, *args)
+            return FakeRecord(result) if result else None
+        elif "UPDATE organization_llm_config" in query and "RETURNING" in query:
+            result = self._update_org_config_returning(query, *args)
+            return FakeRecord(result) if result else None
+        elif "DELETE FROM organization_llm_config" in query and "RETURNING" in query:
+            result = self._delete_org_config(query, *args)
+            return FakeRecord(result) if result else None
         rows = await self.fetch(query, *args)
         return rows[0] if rows else None
 
@@ -105,8 +118,15 @@ class FakeAsyncPGConnection:
         """Fetch organization LLM configs from in-memory state"""
         configs = self.db_state.get('org_configs', [])
 
-        # Filter by organization_id
-        if args:
+        # Filter by id (single config lookup by id)
+        if args and "WHERE id = $1" in query:
+            config_id = args[0]
+            configs = [c for c in configs if c['id'] == config_id]
+        elif args and "organization_id" in query:
+            # Filter by organization_id
+            org_id = args[0]
+            configs = [c for c in configs if c['organization_id'] == org_id]
+        elif args:
             org_id = args[0]
             configs = [c for c in configs if c['organization_id'] == org_id]
 
@@ -243,13 +263,14 @@ class FakeAsyncPGConnection:
         for cfg in existing:
             if (cfg['organization_id'] == config['organization_id'] and
                 cfg['provider_id'] == config['provider_id']):
-                raise Exception("UniqueViolationError")
+                import asyncpg
+                raise asyncpg.UniqueViolationError()
 
         self.db_state.setdefault('org_configs', []).append(config)
         return config
 
     def _update_org_config(self, query: str, *args):
-        """Update organization LLM config"""
+        """Update organization LLM config (no RETURNING)"""
         configs = self.db_state.get('org_configs', [])
 
         # Handle unset primary
@@ -274,17 +295,56 @@ class FakeAsyncPGConnection:
                     cfg['updated_at'] = datetime.now()
             return
 
-        # Handle general update
-        # Last two args are config_id and org_id
+        # Handle general update - last two args are config_id and org_id
         config_id = args[-2]
         org_id = args[-1]
 
         for cfg in configs:
             if cfg['id'] == config_id and cfg['organization_id'] == org_id:
-                # Parse SET clause to apply updates
-                # This is simplified - in real implementation would parse query
                 cfg['updated_at'] = datetime.now()
                 return
+
+    def _update_org_config_returning(self, query: str, *args):
+        """Update organization LLM config and return updated record"""
+        configs = self.db_state.get('org_configs', [])
+
+        # Handle usage increment
+        if "usage_current_month = usage_current_month" in query:
+            tokens = args[0]
+            config_id = args[1]
+            for cfg in configs:
+                if cfg['id'] == config_id:
+                    cfg['usage_current_month'] = cfg.get('usage_current_month', 0) + tokens
+                    cfg['last_used_at'] = datetime.now()
+                    cfg['updated_at'] = datetime.now()
+                    return cfg
+            return None
+
+        # Handle general update - last two args are config_id and org_id
+        config_id = args[-2]
+        org_id = args[-1]
+
+        for cfg in configs:
+            if cfg['id'] == config_id and cfg['organization_id'] == org_id:
+                # Apply field updates from args (simplified)
+                cfg['updated_at'] = datetime.now()
+                # Apply model_name and other updates if provided
+                # Scan args for known fields based on query SET clauses
+                import re
+                set_match = re.search(r'SET\s+(.+?)\s+WHERE', query, re.DOTALL)
+                if set_match:
+                    set_clause = set_match.group(1)
+                    # Get field names from SET clause
+                    field_names = []
+                    for m in re.finditer(r'(\w+)\s*=\s*\$(\d+)', set_clause):
+                        fname, pidx = m.group(1), int(m.group(2)) - 1
+                        if fname != 'updated_at' and fname != 'updated_by':
+                            field_names.append((fname, pidx))
+                    for fname, pidx in field_names:
+                        if pidx < len(args):
+                            cfg[fname] = args[pidx]
+                return cfg
+        return None
 
     def _delete_org_config(self, query: str, *args):
         """Delete organization LLM config"""
