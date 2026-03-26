@@ -97,6 +97,19 @@ class CourseManagementDAO:
                     getattr(course, 'track_id', None),
                     getattr(course, 'location_id', None)
                 )
+                # Analytics: log course_created event (non-fatal)
+                try:
+                    _uid = course.instructor_id if len(str(course.instructor_id)) == 36 else None
+                    await conn.execute(
+                        """INSERT INTO course_creator.analytics_events
+                           (user_id, org_id, event_name, properties)
+                           VALUES ($1::uuid, $2::uuid, 'course_created', $3)""",
+                        _uid,
+                        getattr(course, 'organization_id', None),
+                        json.dumps({"course_id": course.id, "category": course.category}),
+                    )
+                except Exception:
+                    pass
                 return course
         except Exception as e:
             raise DatabaseException(

@@ -22,13 +22,14 @@ import logging
 
 from payment_service.infrastructure.providers.base import PaymentProvider
 from payment_service.infrastructure.providers.null_provider import NullProvider
+from payment_service.infrastructure.providers.stripe_provider import StripeProvider
 from payment_service.exceptions import PaymentProviderNotFoundError, PaymentProviderConfigError
 
 logger = logging.getLogger(__name__)
 
 PROVIDER_REGISTRY: Dict[str, Type[PaymentProvider]] = {
     "null": NullProvider,
-    # "stripe": StripeProvider,   # Add when implementing Stripe
+    "stripe": StripeProvider,
     # "square": SquareProvider,   # Add when implementing Square
 }
 

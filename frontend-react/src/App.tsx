@@ -33,6 +33,9 @@ import { ComingSoon } from './pages/ComingSoon';
 // Global AI Assistant Widget
 import { GlobalAIAssistant } from './components/organisms/GlobalAIAssistant';
 
+// GDPR/CCPA Cookie Consent Banner
+import { CookieConsentBanner } from './components/organisms/CookieConsentBanner';
+
 // Global Notification Manager (Toast notifications from Redux)
 import { NotificationManager } from './components/common/NotificationManager';
 
@@ -845,6 +848,8 @@ function App() {
               </Suspense>
               {/* Global Notification Manager - Toast notifications */}
               <NotificationManager />
+              {/* GDPR/CCPA Cookie Consent Banner - First-visit consent */}
+              <CookieConsentBanner />
               {/* Global AI Assistant - Available on all pages */}
               <GlobalAIAssistant />
               {/* AI Assistant Welcome Popup - Shown on first login */}

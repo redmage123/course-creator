@@ -93,33 +93,39 @@ router = APIRouter()
 def get_content_service() -> ContentService:
     """
     Dependency Injection for Content Service
-    
+
     Provides content service instance for FastAPI endpoint dependency injection.
-    This function is overridden by the main application during service startup
-    to provide the actual service instance.
-    
+    Reads from the module-level `_content_service` variable which is set by
+    main.py during service startup via `set_content_service()`.
+
     DEPENDENCY INJECTION PATTERN:
     - Enables loose coupling between API and service layers
     - Supports testing with mock services
     - Facilitates service configuration and lifecycle management
     - Provides clean separation of concerns
-    
+
     SERVICE LIFECYCLE:
-    - Service instance created during application startup
+    - Service instance created during application startup via set_content_service()
     - Shared across all API requests for efficiency
     - Properly configured with database connections and dependencies
     - Managed lifecycle with graceful shutdown
-    
+
     Returns:
         ContentService instance configured for the current environment
-        
-    Note:
-        This function returns None by default and is replaced with actual
-        service instance during application initialization.
     """
-    # This would be replaced with actual dependency injection
-    # For now, return None and handle in the endpoint
-    return None
+    return _content_service
+
+
+# Module-level service instance — set by main.py during startup.
+# Using a mutable container so FastAPI's DI (which captures the function reference,
+# not the module attribute) always reads the current value.
+_content_service: Optional[ContentService] = None
+
+
+def set_content_service(service: ContentService) -> None:
+    """Set the module-level content service instance (called by main.py at startup)."""
+    global _content_service
+    _content_service = service
 
 
 @router.post("/upload", response_model=ContentUploadResponse)

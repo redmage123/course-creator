@@ -143,7 +143,7 @@ export const useAuth = () => {
       try {
         const response = await authService.register(data);
 
-        // Auto-login after registration
+        // Auto-login: store token immediately so subsequent API calls are authenticated
         dispatch(
           loginSuccess({
             token: response.token,
@@ -152,6 +152,7 @@ export const useAuth = () => {
             userId: response.user.id,
             organizationId: response.user.organizationId,
             expiresAt: response.expiresIn,
+            isFirstLogin: true,
           })
         );
 
@@ -160,21 +161,13 @@ export const useAuth = () => {
         dispatch(
           addNotification({
             type: 'success',
-            message: 'Account created successfully!',
-            duration: 3000,
+            message: 'Account created! Welcome to TechUni.',
+            duration: 4000,
           })
         );
 
-        // Redirect based on role (same as login)
-        const dashboardRoutes = {
-          site_admin: '/dashboard/site-admin',
-          organization_admin: '/dashboard/org-admin',
-          instructor: '/dashboard/instructor',
-          student: '/dashboard/student',
-          guest: '/',
-        };
-
-        navigate(dashboardRoutes[response.user.role] || '/dashboard');
+        // New users → org-admin dashboard to start creating courses
+        navigate('/dashboard/org-admin');
       } catch (error) {
         dispatch(
           addNotification({

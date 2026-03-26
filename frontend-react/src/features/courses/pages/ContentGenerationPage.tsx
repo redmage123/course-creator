@@ -22,7 +22,7 @@ import { Button } from '../../../components/atoms/Button';
 import { Heading } from '../../../components/atoms/Heading';
 import { Spinner } from '../../../components/atoms/Spinner';
 import { useAuth } from '../../../hooks/useAuth';
-import { trainingProgramService } from '../../../services';
+import { trainingProgramService, apiClient } from '../../../services';
 import styles from './ContentGenerationPage.module.css';
 
 /**
@@ -76,14 +76,38 @@ export const ContentGenerationPage: React.FC = () => {
   });
 
   /**
-   * Generate content mutation (placeholder)
+   * Generate content mutation — calls real course-generator endpoints
    */
   const generateMutation = useMutation({
     mutationFn: async (params: { type: ContentType; data: any }) => {
-      // TODO: Integrate with course-generator service
-      // For now, simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      return { success: true, content: 'Generated content will appear here' };
+      const selectedProgramData = programs?.data.find((p) => p.id === selectedProgram);
+      const courseTitle = selectedProgramData?.title || params.data.topic || '';
+
+      switch (params.type) {
+        case 'quiz': {
+          return apiClient.post<any>('/course-generator/quiz/generate', {
+            course_id: selectedProgram,
+            course_title: courseTitle,
+            topic: params.data.topic,
+            num_questions: params.data.questionCount,
+            difficulty: params.data.difficulty,
+          });
+        }
+        case 'syllabus': {
+          return apiClient.post<any>('/syllabus/generate', {
+            title: params.data.topic || courseTitle,
+            description: `A ${params.data.duration || 4}-week course covering ${params.data.topic || courseTitle}`,
+            course_id: selectedProgram,
+            duration: (params.data.duration || 4) * 8,
+            difficulty_level: 'intermediate',
+          });
+        }
+        default: {
+          // slides and exercise endpoints not yet available
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          return { success: false, _notAvailable: true };
+        }
+      }
     },
   });
 
@@ -420,31 +444,57 @@ export const ContentGenerationPage: React.FC = () => {
             </div>
 
             {/* Results Preview */}
-            {generateMutation.isSuccess && (
+            {generateMutation.isSuccess && generateMutation.data && (
               <div className={styles['results-preview']}>
                 <Heading level="h4" gutterBottom>
                   Generated Content Preview
                 </Heading>
                 <div className={styles['preview-content']}>
-                  <p>✨ AI content generation completed successfully!</p>
-                  <p className={styles['placeholder-text']}>
-                    Preview of generated content will be displayed here. This will include:
-                  </p>
-                  <ul>
-                    <li>Generated questions, slides, or exercises</li>
-                    <li>Edit and refine options</li>
-                    <li>Save to course button</li>
-                  </ul>
-                  <p className={styles['coming-soon']}>
-                    🚀 Full AI integration with course-generator service coming in Phase 6
-                  </p>
+                  {(generateMutation.data as any)._notAvailable ? (
+                    <p className={styles['coming-soon']}>
+                      Slides and exercise generation are coming soon. Use the Quiz or Syllabus tabs for AI-generated content.
+                    </p>
+                  ) : (generateMutation.data as any).quiz ? (
+                    // Quiz result
+                    <div>
+                      <p><strong>{(generateMutation.data as any).quiz.title}</strong> — {(generateMutation.data as any).quiz.question_count} questions, {(generateMutation.data as any).quiz.time_limit_minutes} min, passing score {(generateMutation.data as any).quiz.passing_score}%</p>
+                      <ol>
+                        {((generateMutation.data as any).quiz.questions || []).map((q: any, i: number) => (
+                          <li key={i} style={{ marginBottom: '0.75rem' }}>
+                            <strong>{q.question}</strong>
+                            <ul>
+                              {(q.options || []).map((opt: string, j: number) => (
+                                <li key={j} style={{ color: j === q.correct_answer ? 'var(--color-success, #22c55e)' : undefined }}>
+                                  {j === q.correct_answer ? '✓ ' : ''}{opt}
+                                </li>
+                              ))}
+                            </ul>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  ) : (generateMutation.data as any).syllabus ? (
+                    // Syllabus result
+                    <div>
+                      <p><strong>{(generateMutation.data as any).syllabus.title}</strong></p>
+                      {((generateMutation.data as any).syllabus.modules || []).map((mod: any, i: number) => (
+                        <div key={i} style={{ marginBottom: '0.5rem' }}>
+                          <strong>Module {i + 1}: {mod.title}</strong>
+                          <ul>
+                            {(mod.topics || mod.lessons || []).map((t: any, j: number) => (
+                              <li key={j}>{typeof t === 'string' ? t : t.title}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.8rem' }}>{JSON.stringify(generateMutation.data, null, 2)}</pre>
+                  )}
                 </div>
                 <div className={styles['preview-actions']}>
-                  <Button variant="secondary">
-                    Regenerate
-                  </Button>
-                  <Button variant="primary">
-                    Save to Course
+                  <Button variant="secondary" onClick={() => generateMutation.reset()}>
+                    Generate Another
                   </Button>
                 </div>
               </div>

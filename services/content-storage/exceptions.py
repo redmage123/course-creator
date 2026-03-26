@@ -33,7 +33,7 @@ class ContentStorageException(Exception):
         
         log_context = {
             "error_code": self.error_code,
-            "message": self.message,
+            "error_message": self.message,  # "message" is reserved in LogRecord; use error_message
             "details": self.details,
             "timestamp": self.timestamp.isoformat(),
             "service": "content-storage"

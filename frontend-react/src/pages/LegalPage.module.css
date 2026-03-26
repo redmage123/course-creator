@@ -133,6 +133,35 @@
   color: white;
 }
 
+/* Subprocessor table */
+
+.subprocessorTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin: 1rem 0;
+}
+
+.subprocessorTable th {
+  background: var(--surface-light, #f9fafb);
+  color: var(--text-primary, #1f2937);
+  font-weight: 600;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.subprocessorTable td {
+  padding: 10px 12px;
+  border: 1px solid var(--border-color, #e5e7eb);
+  vertical-align: top;
+  color: var(--text-primary, #374151);
+}
+
+.subprocessorTable tr:nth-child(even) td {
+  background: var(--surface-light, #f9fafb);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .legalCard {

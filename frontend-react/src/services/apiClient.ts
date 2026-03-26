@@ -108,13 +108,11 @@ class APIClient {
             } catch (refreshError) {
               // Refresh failed - logout user
               tokenManager.clearTokens();
-              localStorage.clear();
               window.location.href = '/login';
             }
           } else {
             // No refresh token - logout
             tokenManager.clearTokens();
-            localStorage.clear();
             window.location.href = '/login';
           }
         }

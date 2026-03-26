@@ -185,39 +185,25 @@ class AuthService {
         password: data.password,
         first_name: data.firstName,
         last_name: data.lastName,
-        role: 'student', // Default role for self-registration
+        // organization_admin role so new users can create courses immediately
+        role: 'organization_admin',
       };
 
       const response = await apiClient.post<any>('/auth/register', backendData);
 
-      // Backend returns user object, need to construct login response
-      // After successful registration, user may need to login separately
-      // or backend may return a token - handle both cases
-      if (response.access_token) {
-        const expiresAt = Date.now() + (response.expires_in || 3600) * 1000;
-        return {
-          token: response.access_token,
-          user: {
-            id: response.user?.id || response.id,
-            username: response.user?.username || response.username,
-            email: response.user?.email || response.email,
-            role: response.user?.role || response.role || 'student',
-            organizationId: response.user?.organization_id,
-          },
-          expiresIn: expiresAt,
-        };
-      }
-
-      // If no token returned, registration succeeded but user needs to login
+      const expiresAt = Date.now() + (response.expires_in || 3600) * 1000;
       return {
-        token: '',
+        token: response.access_token,
         user: {
-          id: response.id,
-          username: response.username,
-          email: response.email,
-          role: response.role || 'student',
+          id: response.user?.id || response.id,
+          username: response.user?.username || response.username,
+          email: response.user?.email || response.email,
+          full_name: response.user?.full_name,
+          role: response.user?.role || response.role || 'organization_admin',
+          organizationId: response.user?.organization_id,
         },
-        expiresIn: 0,
+        expiresIn: expiresAt,
+        isFirstLogin: true,
       };
     } catch (error: any) {
       console.error('[AuthService] Registration failed:', error);

@@ -29,6 +29,9 @@ with institutional-grade metadata handling, search capabilities, and analytics i
 """
 
 import logging
+import os
+import uuid
+from datetime import datetime, timezone
 from typing import Dict, Any, Optional, List
 
 logger = logging.getLogger(__name__)
@@ -98,6 +101,85 @@ class ContentService:
         self.db_pool = db_pool
         self.storage_config = storage_config
     
+    async def upload_content(
+        self,
+        file_content: bytes,
+        filename: str,
+        content_type: str,
+        uploaded_by: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Store a file on disk and persist its metadata to the database.
+
+        Returns a dict matching the ContentUploadResponse model fields:
+          content_id, filename, size, url, upload_time, message
+        """
+        content_id = str(uuid.uuid4())
+        now = datetime.now(timezone.utc)
+
+        # Determine storage path from config (fall back to /tmp/content-storage)
+        base_path = self.storage_config.get("base_path", "/tmp/content-storage")
+        os.makedirs(base_path, exist_ok=True)
+
+        # Use content_id-based filename to avoid collisions
+        safe_filename = f"{content_id}_{filename}"
+        storage_path = os.path.join(base_path, safe_filename)
+
+        # Write file to disk
+        with open(storage_path, "wb") as f:
+            f.write(file_content)
+
+        # Derive content category from MIME type
+        if content_type.startswith("image/"):
+            category = "image"
+        elif content_type.startswith("video/"):
+            category = "video"
+        elif content_type.startswith("audio/"):
+            category = "audio"
+        elif content_type in ("text/plain", "application/pdf"):
+            category = "document"
+        else:
+            category = "other"
+
+        # URL for the file (relative path served by the API)
+        url = f"/api/content/{content_id}/download"
+
+        # Persist to DB
+        insert_sql = """
+            INSERT INTO content_storage (
+                id, filename, content_type, size, path, url,
+                content_category, status, uploaded_by, storage_path,
+                storage_backend, is_public, created_at, updated_at
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        """
+        try:
+            async with self.db_pool.acquire() as conn:
+                await conn.execute(
+                    insert_sql,
+                    content_id, filename, content_type, len(file_content),
+                    storage_path, url, category, "ready",
+                    uploaded_by, storage_path, "local",
+                    False, now.replace(tzinfo=None), now.replace(tzinfo=None)
+                )
+        except Exception as db_err:
+            self.logger.error(f"DB insert failed for upload {content_id}: {db_err}")
+            # Clean up the file if DB insert failed
+            try:
+                os.remove(storage_path)
+            except OSError:
+                pass
+            raise
+
+        self.logger.info(f"Uploaded content {content_id}: {filename} ({len(file_content)} bytes)")
+        return {
+            "content_id": content_id,
+            "filename": filename,
+            "size": len(file_content),
+            "url": url,
+            "upload_time": now,
+            "message": "File uploaded successfully",
+        }
+
     async def create_content(self, content_data: Dict[str, Any]) -> str:
         """
         Create new educational content record with comprehensive metadata validation.

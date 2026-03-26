@@ -1,0 +1,68 @@
+name: QA Gate
+
+# This workflow enforces the QA sign-off requirement before any PR can be merged
+# to main or master. The techuni-qa agent must apply the 'qa-pass' label before
+# merge is permitted. Without it, this required check will block the merge.
+#
+# To pass this gate:
+#   1. QA agent reviews the PR
+#   2. QA agent applies the 'qa-pass' label (or 'qa-warn' with sign-off comment)
+#   3. This check automatically passes once the label is present
+#
+# To block a PR: QA agent applies 'qa-block' label — this check will fail.
+
+on:
+  pull_request:
+    branches: [main, master]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+jobs:
+  qa-sign-off:
+    name: QA Sign-Off Required
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check for QA labels
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+            });
+
+            const labels = pr.labels.map(l => l.name.toLowerCase());
+            console.log(`PR #${pr.number}: "${pr.title}"`);
+            console.log(`Labels: ${labels.join(', ') || '(none)'}`);
+
+            if (labels.includes('qa-block')) {
+              core.setFailed(
+                '❌ QA BLOCKED: The qa-block label is present. ' +
+                'QA agent has identified critical issues. Resolve before merging.'
+              );
+              return;
+            }
+
+            if (labels.includes('qa-pass')) {
+              console.log('✅ QA PASS: QA agent has signed off on this PR.');
+              return;
+            }
+
+            if (labels.includes('qa-warn')) {
+              console.log(
+                '⚠️  QA WARN: QA agent has flagged non-blocking issues. ' +
+                'Proceeding — ensure issues are tracked.'
+              );
+              return;
+            }
+
+            // No QA label at all — block merge
+            core.setFailed(
+              '🚫 QA GATE: No QA sign-off label found on this PR.\n\n' +
+              'Required: a QA agent must review and apply one of:\n' +
+              '  • qa-pass  — approved for merge\n' +
+              '  • qa-warn  — approved with non-blocking issues noted\n' +
+              '  • qa-block — DO NOT merge (critical issues found)\n\n' +
+              'To request QA review, comment "@techuni-qa please review".'
+            );
