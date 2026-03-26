@@ -12,11 +12,14 @@ class ActivityType(Enum):
     LOGIN = "login"
     LOGOUT = "logout"
     LAB_ACCESS = "lab_access"
+    LAB_START = "lab_start"
+    LAB_COMPLETE = "lab_complete"
     QUIZ_START = "quiz_start"
     QUIZ_COMPLETE = "quiz_complete"
     CONTENT_VIEW = "content_view"
     CODE_EXECUTION = "code_execution"
     EXERCISE_SUBMISSION = "exercise_submission"
+    DISCUSSION_POST = "discussion_post"
 
 class CompletionStatus(Enum):
     NOT_STARTED = "not_started"
@@ -108,38 +111,30 @@ class StudentActivity:
         """Validate student activity business rules"""
         if not self.student_id:
             raise ValueError("Student ID is required")
-        
+
         if not self.course_id:
             raise ValueError("Course ID is required")
-        
+
         if not isinstance(self.activity_type, ActivityType):
             raise ValueError("Invalid activity type")
-        
-        if self.timestamp > datetime.utcnow():
+
+        # Validate timestamp is not in the future
+        if self.timestamp > datetime.utcnow() + timedelta(seconds=5):
             raise ValueError("Activity timestamp cannot be in the future")
-        
-        # Validate activity-specific data
-        self._validate_activity_specific_data()
-    
-    def _validate_activity_specific_data(self) -> None:
-        """Validate activity-specific data based on activity type"""
+
+        # Activity-type-specific validation
         if self.activity_type == ActivityType.QUIZ_START:
             if 'quiz_id' not in self.activity_data:
-                raise ValueError("Quiz start activity must include quiz_id")
-        
+                raise ValueError("Quiz start activity must include quiz_id in activity_data")
         elif self.activity_type == ActivityType.QUIZ_COMPLETE:
-            required_fields = ['quiz_id', 'score', 'questions_total', 'questions_correct']
-            for field in required_fields:
-                if field not in self.activity_data:
-                    raise ValueError(f"Quiz complete activity must include {field}")
-        
+            if 'quiz_id' not in self.activity_data or 'score' not in self.activity_data:
+                raise ValueError("Quiz complete activity must include quiz_id and score in activity_data")
         elif self.activity_type == ActivityType.LAB_ACCESS:
             if 'lab_id' not in self.activity_data:
-                raise ValueError("Lab access activity must include lab_id")
-        
+                raise ValueError("Lab access activity must include lab_id in activity_data")
         elif self.activity_type == ActivityType.CODE_EXECUTION:
             if 'code_snippet' not in self.activity_data:
-                raise ValueError("Code execution activity must include code_snippet")
+                raise ValueError("Code execution activity must include code_snippet in activity_data")
     
     def get_duration_from_previous(self, previous_activity: 'StudentActivity') -> timedelta:
         """Calculate duration between this activity and a previous one"""
@@ -155,12 +150,22 @@ class StudentActivity:
         """Check if this activity indicates active engagement"""
         engagement_activities = {
             ActivityType.LAB_ACCESS,
+            ActivityType.LAB_START,
+            ActivityType.LAB_COMPLETE,
             ActivityType.QUIZ_START,
             ActivityType.CODE_EXECUTION,
             ActivityType.EXERCISE_SUBMISSION,
-            ActivityType.CONTENT_VIEW
+            ActivityType.CONTENT_VIEW,
+            ActivityType.DISCUSSION_POST
         }
         return self.activity_type in engagement_activities
+
+    def get_duration(self) -> Optional[timedelta]:
+        """Get duration of activity from activity_data if available"""
+        duration_seconds = self.activity_data.get('duration_seconds')
+        if duration_seconds is not None:
+            return timedelta(seconds=duration_seconds)
+        return None
 
 @dataclass
 class LabUsageMetrics:
@@ -277,27 +282,39 @@ class LabUsageMetrics:
     def get_engagement_level(self) -> str:
         """Determine engagement level based on metrics"""
         duration = self.get_duration_minutes()
-        if not duration:
-            return "unknown"
-        
-        if duration < 5:
+        if duration:
+            if duration < 5:
+                return "low"
+            elif duration < 30:
+                if self.actions_performed >= 10:
+                    return "high"
+                elif self.actions_performed >= 5:
+                    return "medium"
+                else:
+                    return "low"
+            else:  # Long sessions
+                actions_per_minute = self.actions_performed / duration
+                if actions_per_minute >= 0.5:
+                    return "high"
+                elif actions_per_minute >= 0.2:
+                    return "medium"
+                else:
+                    return "low"
+
+        # No duration available - use actions as fallback
+        if self.actions_performed >= 20 or self.code_executions >= 10:
+            return "high"
+        elif self.actions_performed >= 5 or self.code_executions >= 3:
+            return "medium"
+        else:
             return "low"
-        elif duration < 30:
-            if self.actions_performed >= 10:
-                return "high"
-            elif self.actions_performed >= 5:
-                return "medium"
-            else:
-                return "low"
-        else:  # Long sessions
-            actions_per_minute = self.actions_performed / duration
-            if actions_per_minute >= 0.5:
-                return "high"
-            elif actions_per_minute >= 0.2:
-                return "medium"
-            else:
-                return "low"
     
+    def get_session_duration(self) -> Optional[timedelta]:
+        """Get session duration as timedelta, or None for active session"""
+        if not self.session_end:
+            return None
+        return self.session_end - self.session_start
+
     def end_session(self, final_code: Optional[str] = None) -> None:
         """End the lab session with optional final code"""
         self.session_end = datetime.utcnow()
@@ -365,9 +382,9 @@ class QuizPerformance:
     student_id: str
     course_id: str
     quiz_id: str
-    attempt_number: int
     start_time: datetime
     questions_total: int
+    attempt_number: int = 1
     end_time: Optional[datetime] = None
     questions_answered: int = 0
     questions_correct: int = 0
@@ -413,13 +430,13 @@ class QuizPerformance:
         
         return (self.questions_correct / self.questions_total) * 100
     
-    def get_duration_minutes(self) -> Optional[int]:
+    def get_duration_minutes(self) -> Optional[float]:
         """Calculate quiz duration in minutes"""
         if not self.end_time:
             return None
-        
+
         duration = self.end_time - self.start_time
-        return int(duration.total_seconds() / 60)
+        return duration.total_seconds() / 60
     
     def get_average_time_per_question(self) -> Optional[float]:
         """Calculate average time per question in seconds"""
@@ -517,10 +534,12 @@ class StudentProgress:
     content_type: ContentType
     status: CompletionStatus = CompletionStatus.NOT_STARTED
     progress_percentage: float = 0.0
-    time_spent_minutes: int = 0
+    time_spent_minutes: float = 0.0
+    first_accessed: datetime = field(default_factory=datetime.utcnow)
     last_accessed: datetime = field(default_factory=datetime.utcnow)
     completion_date: Optional[datetime] = None
     mastery_score: Optional[float] = None
+    mastery_date: Optional[datetime] = None
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     
     def __post_init__(self):
@@ -556,18 +575,26 @@ class StudentProgress:
         if self.completion_date and self.completion_date > datetime.utcnow():
             raise ValueError("Completion date cannot be in the future")
     
-    def update_progress(self, progress_percentage: float, time_spent_additional: int = 0) -> None:
-        """Update progress with validation"""
+    def update_progress(self, progress_percentage: float, time_spent_additional_seconds: float = 0,
+                        time_spent_additional: float = 0) -> None:
+        """Update progress with validation.
+
+        time_spent_additional_seconds: additional time in seconds (legacy parameter name)
+        time_spent_additional: additional time in minutes (alternative parameter name)
+        """
         if not (0 <= progress_percentage <= 100):
             raise ValueError("Progress percentage must be between 0 and 100")
-        
-        if time_spent_additional < 0:
+
+        # Support both parameter names
+        additional_minutes = time_spent_additional + (time_spent_additional_seconds / 60.0)
+
+        if additional_minutes < 0:
             raise ValueError("Additional time spent cannot be negative")
-        
+
         self.progress_percentage = progress_percentage
-        self.time_spent_minutes += time_spent_additional
+        self.time_spent_minutes += additional_minutes
         self.last_accessed = datetime.utcnow()
-        
+
         # Update status based on progress
         if progress_percentage == 0:
             self.status = CompletionStatus.NOT_STARTED
@@ -577,14 +604,26 @@ class StudentProgress:
             self.status = CompletionStatus.COMPLETED
             if not self.completion_date:
                 self.completion_date = datetime.utcnow()
+
+    def mark_completed(self) -> None:
+        """Mark content as completed"""
+        self.progress_percentage = 100.0
+        self.status = CompletionStatus.COMPLETED
+        self.completion_date = datetime.utcnow()
+        self.last_accessed = datetime.utcnow()
+
+    def is_completed(self) -> bool:
+        """Check if progress is completed or mastered"""
+        return self.status in (CompletionStatus.COMPLETED, CompletionStatus.MASTERED)
     
     def mark_mastered(self, mastery_score: float) -> None:
         """Mark content as mastered with score"""
         if not (0 <= mastery_score <= 100):
             raise ValueError("Mastery score must be between 0 and 100")
-        
+
         self.status = CompletionStatus.MASTERED
         self.mastery_score = mastery_score
+        self.mastery_date = datetime.utcnow()
         self.progress_percentage = 100.0
         self.completion_date = datetime.utcnow()
         self.last_accessed = datetime.utcnow()
@@ -740,25 +779,59 @@ class LearningAnalytics:
         
         return round(overall_score, 2)
     
-    def update_risk_level(self) -> None:
-        """Update risk level based on current metrics"""
+    def update_risk_level(self, new_risk_level: Optional[RiskLevel] = None) -> None:
+        """Update risk level. If new_risk_level provided, set it directly. Otherwise calculate."""
+        if new_risk_level is not None:
+            self.risk_level = new_risk_level
+            return
+
         overall_performance = self.calculate_overall_performance()
         days_since_analysis = (datetime.utcnow() - self.analysis_date).days
-        
+
         # High risk indicators
-        if (overall_performance < 40 or 
-            self.engagement_score < 30 or 
+        if (overall_performance < 40 or
+            self.engagement_score < 30 or
             self.streak_days == 0 and days_since_analysis > 7):
             self.risk_level = RiskLevel.CRITICAL
-        elif (overall_performance < 60 or 
-              self.engagement_score < 50 or 
+        elif (overall_performance < 60 or
+              self.engagement_score < 50 or
               self.streak_days < 3):
             self.risk_level = RiskLevel.HIGH
-        elif (overall_performance < 75 or 
+        elif (overall_performance < 75 or
               self.engagement_score < 70):
             self.risk_level = RiskLevel.MEDIUM
         else:
             self.risk_level = RiskLevel.LOW
+
+    def assess_risk_level(self) -> RiskLevel:
+        """Assess and return risk level based on current metrics"""
+        overall_performance = self.calculate_overall_performance()
+
+        if (overall_performance < 40 or
+                self.engagement_score < 30 or
+                self.streak_days <= 1):
+            return RiskLevel.HIGH
+        elif (overall_performance < 60 or
+              self.engagement_score < 50 or
+              self.streak_days < 3):
+            return RiskLevel.MEDIUM
+        else:
+            return RiskLevel.LOW
+
+    def add_recommendation(self, recommendation: str) -> None:
+        """Add a recommendation to the list"""
+        self.recommendations.append(recommendation)
+
+    def get_performance_summary(self) -> dict:
+        """Get a summary of performance metrics"""
+        return {
+            "overall_performance": self.calculate_overall_performance(),
+            "risk_level": self.risk_level.value,
+            "engagement_score": self.engagement_score,
+            "recommendations_count": len(self.recommendations),
+            "lab_proficiency": self.lab_proficiency,
+            "quiz_performance": self.quiz_performance,
+        }
     
     def generate_recommendations(self) -> List[str]:
         """Generate personalized recommendations based on analytics"""

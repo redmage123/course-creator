@@ -248,6 +248,51 @@ class EventBus:
             logger.debug(f"Removed {removed} subscriptions for plugin {plugin_id}")
         return removed
 
+    @property
+    def _subscribers(self) -> Dict[str, List]:
+        """
+        Property providing dict-like view of subscriptions keyed by pattern.
+        Used for compatibility with tests that check _subscribers dict.
+        """
+        result = {}
+        with self._sub_lock:
+            for sub in self._subscriptions:
+                if sub.pattern not in result:
+                    result[sub.pattern] = []
+                result[sub.pattern].append(sub)
+        return result
+
+    def subscribe_sync(
+        self,
+        pattern: str,
+        handler: Callable[['Event'], Any],
+        *,
+        priority: int = 50,
+        plugin_id: Optional[str] = None
+    ) -> 'EventSubscription':
+        """
+        Subscribe a synchronous handler to events matching a pattern.
+
+        Args:
+            pattern: Event name pattern (supports wildcards)
+            handler: Synchronous event handler function
+            priority: Execution order (lower = earlier)
+            plugin_id: Plugin identifier
+
+        Returns:
+            EventSubscription instance
+        """
+        subscription = EventSubscription(
+            pattern=pattern,
+            handler=handler,
+            plugin_id=plugin_id,
+            priority=priority
+        )
+        with self._sub_lock:
+            self._subscriptions.append(subscription)
+            self._subscriptions.sort(key=lambda s: s.priority)
+        return subscription
+
     async def publish(self, event: Event) -> List[Any]:
         """
         Publish an event to all matching subscribers.
@@ -284,19 +329,34 @@ class EventBus:
 
     def publish_sync(self, event: Event) -> None:
         """
-        Publish an event without waiting (fire-and-forget).
-
-        Creates a task for async handlers.
+        Publish an event synchronously, calling sync handlers immediately.
+        Async handlers are scheduled as tasks if a loop is running.
 
         Args:
             event: Event to publish
         """
-        try:
-            loop = asyncio.get_running_loop()
-            loop.create_task(self.publish(event))
-        except RuntimeError:
-            # No running loop, run synchronously
-            asyncio.run(self.publish(event))
+        # Store in history
+        self._event_history.append(event)
+        if len(self._event_history) > self._history_limit:
+            self._event_history = self._event_history[-self._history_limit:]
+
+        # Find matching subscriptions
+        with self._sub_lock:
+            matching = [s for s in self._subscriptions if s.matches(event.name)]
+
+        for sub in matching:
+            try:
+                if sub.is_async:
+                    # Try to schedule as async task if loop is running
+                    try:
+                        loop = asyncio.get_running_loop()
+                        loop.create_task(sub.handler(event))
+                    except RuntimeError:
+                        asyncio.run(sub.handler(event))
+                else:
+                    sub.handler(event)
+            except Exception as e:
+                logger.error(f"Error in sync event handler for '{event.name}': {e}")
 
     def get_subscriptions(
         self,

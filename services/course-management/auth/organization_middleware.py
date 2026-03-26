@@ -29,6 +29,7 @@ WHY THIS PREVENTS CROSS-TENANT ACCESS:
 """
 
 import logging
+import os
 import uuid
 from typing import Dict, Any, Optional, Tuple
 from datetime import datetime
@@ -54,7 +55,7 @@ class OrganizationAuthorizationMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, config: dict):
         super().__init__(app)
         self.config = config
-        self.jwt_secret = config.get('jwt', {}).get('secret_key', 'your-secret-key-change-in-production')
+        self.jwt_secret = config.get('jwt', {}).get('secret_key') or os.environ['JWT_SECRET_KEY']
         self.jwt_algorithm = config.get('jwt', {}).get('algorithm', 'HS256')
         self.user_service_url = config.get('services', {}).get('user_management_url', 'http://user-management:8000')
         self.org_service_url = config.get('services', {}).get('organization_management_url', 'http://organization-management:8008')

@@ -71,9 +71,10 @@ PERFORMANCE OPTIMIZATION:
 - Batch Processing: Efficient handling of bulk feedback operations
 - Event Sourcing: Complete audit trail for compliance and analytics
 """
+import uuid
 from datetime import datetime
-from typing import Optional
-from dataclasses import dataclass
+from typing import Optional, List
+from dataclasses import dataclass, field
 from enum import Enum
 
 class FeedbackStatus(Enum):
@@ -155,6 +156,8 @@ class FeedbackType(Enum):
         - May involve multiple stakeholders (advisors, administrators)
         - Use Cases: Academic integrity issues, at-risk student alerts
     """
+    COURSE = "course"
+    STUDENT = "student"
     REGULAR = "regular"
     MIDTERM = "midterm"
     FINAL = "final"
@@ -297,10 +300,11 @@ class CourseFeedback:
     """
     student_id: str
     course_id: str
-    instructor_id: str
     overall_rating: int
+    instructor_id: Optional[str] = None
     is_anonymous: bool = False
     status: FeedbackStatus = FeedbackStatus.ACTIVE
+    feedback_type: FeedbackType = FeedbackType.COURSE
     id: Optional[str] = None
     content_quality: Optional[int] = None
     instructor_effectiveness: Optional[int] = None
@@ -314,25 +318,26 @@ class CourseFeedback:
     last_updated: Optional[datetime] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-    
+
     def __post_init__(self):
         """Validate invariants after initialization"""
+        if self.id is None:
+            self.id = str(uuid.uuid4())
+        if self.created_at is None:
+            self.created_at = datetime.utcnow()
         self.validate()
-    
+
     def validate(self) -> None:
         """Validate business rules and invariants"""
         if not self.student_id:
             raise ValueError("Feedback must have a student ID")
-        
+
         if not self.course_id:
             raise ValueError("Feedback must have a course ID")
-        
-        if not self.instructor_id:
-            raise ValueError("Feedback must have an instructor ID")
-        
+
         if not (1 <= self.overall_rating <= 5):
-            raise ValueError("Overall rating must be between 1 and 5")
-        
+            raise ValueError("Rating must be between 1 and 5")
+
         # Validate optional ratings
         for rating_field, value in [
             ("content_quality", self.content_quality),
@@ -342,6 +347,43 @@ class CourseFeedback:
         ]:
             if value is not None and not (1 <= value <= 5):
                 raise ValueError(f"{rating_field} must be between 1 and 5")
+
+    def update_rating(self, overall_rating: int, content_quality: Optional[int] = None,
+                      instructor_effectiveness: Optional[int] = None,
+                      difficulty_appropriateness: Optional[int] = None,
+                      lab_quality: Optional[int] = None) -> None:
+        """Update course ratings."""
+        self.overall_rating = overall_rating
+        if content_quality is not None:
+            self.content_quality = content_quality
+        if instructor_effectiveness is not None:
+            self.instructor_effectiveness = instructor_effectiveness
+        if difficulty_appropriateness is not None:
+            self.difficulty_appropriateness = difficulty_appropriateness
+        if lab_quality is not None:
+            self.lab_quality = lab_quality
+        self.updated_at = datetime.utcnow()
+
+    def add_comment(self, comment: str) -> None:
+        """Add a comment to the feedback."""
+        self.additional_comments = comment
+        self.updated_at = datetime.utcnow()
+
+    def mark_anonymous(self) -> None:
+        """Mark this feedback as anonymous."""
+        self.is_anonymous = True
+        self.updated_at = datetime.utcnow()
+
+    def calculate_average_detailed_rating(self) -> Optional[float]:
+        """Calculate average of the detailed rating dimensions (excluding overall)."""
+        ratings = []
+        for value in [self.content_quality, self.instructor_effectiveness,
+                      self.difficulty_appropriateness, self.lab_quality]:
+            if value is not None:
+                ratings.append(value)
+        if not ratings:
+            return None
+        return sum(ratings) / len(ratings)
     
     def is_positive_feedback(self) -> bool:
         """Business rule: Check if feedback is generally positive"""
@@ -388,8 +430,10 @@ class StudentFeedback:
     instructor_id: str
     student_id: str
     course_id: str
-    feedback_type: FeedbackType = FeedbackType.REGULAR
+    performance_rating: Optional[int] = None
+    feedback_type: FeedbackType = FeedbackType.STUDENT
     is_shared_with_student: bool = False
+    is_visible_to_student: bool = True
     status: FeedbackStatus = FeedbackStatus.ACTIVE
     id: Optional[str] = None
     overall_performance: Optional[int] = None
@@ -402,38 +446,58 @@ class StudentFeedback:
     specific_recommendations: Optional[str] = None
     notable_achievements: Optional[str] = None
     concerns: Optional[str] = None
+    recommendations: List[str] = None
     progress_assessment: Optional[ProgressAssessment] = None
     expected_outcome: Optional[ExpectedOutcome] = None
     submission_date: Optional[datetime] = None
     last_updated: Optional[datetime] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-    
+
     def __post_init__(self):
         """Validate invariants after initialization"""
+        if self.id is None:
+            self.id = str(uuid.uuid4())
+        if self.created_at is None:
+            self.created_at = datetime.utcnow()
+        if self.recommendations is None:
+            self.recommendations = []
         self.validate()
-    
+
     def validate(self) -> None:
         """Validate business rules and invariants"""
         if not self.instructor_id:
             raise ValueError("Feedback must have an instructor ID")
-        
+
         if not self.student_id:
             raise ValueError("Feedback must have a student ID")
-        
+
         if not self.course_id:
             raise ValueError("Feedback must have a course ID")
-        
+
         # Validate optional ratings
         for rating_field, value in [
             ("overall_performance", self.overall_performance),
             ("participation", self.participation),
             ("lab_performance", self.lab_performance),
             ("quiz_performance", self.quiz_performance),
-            ("improvement_trend", self.improvement_trend)
+            ("improvement_trend", self.improvement_trend),
+            ("performance_rating", self.performance_rating)
         ]:
             if value is not None and not (1 <= value <= 5):
                 raise ValueError(f"{rating_field} must be between 1 and 5")
+
+    def add_recommendation(self, recommendation: str) -> None:
+        """Add a recommendation to this feedback."""
+        if self.recommendations is None:
+            self.recommendations = []
+        self.recommendations.append(recommendation)
+        self.updated_at = datetime.utcnow()
+
+    def set_visibility(self, visible: bool) -> None:
+        """Set whether feedback is visible to the student."""
+        self.is_visible_to_student = visible
+        self.updated_at = datetime.utcnow()
     
     def is_intervention_needed(self) -> bool:
         """Business rule: Check if student needs intervention"""
@@ -494,9 +558,12 @@ class FeedbackResponse:
     """
     Feedback response domain entity - instructor response to course feedback
     """
-    course_feedback_id: str
-    instructor_id: str
+    feedback_id: str
+    responder_id: str
     response_text: str
+    # Legacy field aliases for backward compatibility
+    course_feedback_id: Optional[str] = None
+    instructor_id: Optional[str] = None
     acknowledgment_type: AcknowledgmentType = AcknowledgmentType.STANDARD
     is_public: bool = False
     id: Optional[str] = None
@@ -504,24 +571,38 @@ class FeedbackResponse:
     response_date: Optional[datetime] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-    
+
     def __post_init__(self):
         """Validate invariants after initialization"""
+        if self.id is None:
+            self.id = str(uuid.uuid4())
+        if self.created_at is None:
+            self.created_at = datetime.utcnow()
+        # Sync legacy fields
+        if self.course_feedback_id is None:
+            self.course_feedback_id = self.feedback_id
+        if self.instructor_id is None:
+            self.instructor_id = self.responder_id
         self.validate()
-    
+
     def validate(self) -> None:
         """Validate business rules and invariants"""
-        if not self.course_feedback_id:
-            raise ValueError("Response must reference a course feedback")
-        
-        if not self.instructor_id:
-            raise ValueError("Response must have an instructor ID")
-        
+        if not self.feedback_id:
+            raise ValueError("Response must reference a feedback")
+
+        if not self.responder_id:
+            raise ValueError("Response must have a responder ID")
+
         if not self.response_text or len(self.response_text.strip()) == 0:
             raise ValueError("Response text cannot be empty")
-        
+
         if len(self.response_text) > 2000:
             raise ValueError("Response text cannot exceed 2000 characters")
+
+    def update_text(self, new_text: str) -> None:
+        """Update the response text."""
+        self.response_text = new_text
+        self.updated_at = datetime.utcnow()
     
     def make_public(self) -> None:
         """Business rule: Make response visible to all students"""

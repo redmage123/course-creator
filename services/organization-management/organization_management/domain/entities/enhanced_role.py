@@ -194,7 +194,6 @@ class EnhancedRole:
             RoleType.GUEST: {
                 Permission.ACCESS_DEMO_SERVICE,
                 Permission.VIEW_PUBLIC_COURSES,
-                Permission.VIEW_COURSES,
                 Permission.USE_AI_ASSISTANT_LIMITED,
                 Permission.BROWSE_COURSE_CATALOG
             }

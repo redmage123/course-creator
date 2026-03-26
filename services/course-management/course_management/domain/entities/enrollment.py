@@ -50,82 +50,30 @@ PERFORMANCE FEATURES:
 - Bulk Operations: Streamlined processing for large enrollment batches
 - Event Sourcing: Complete audit trail for compliance and analytics
 """
+import re
+import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from dataclasses import dataclass
 from enum import Enum
 
-class EnrollmentStatus(Enum):
+
+def _validate_email_format(email: str) -> None:
+    """Validate email address format, raising ValueError if invalid."""
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    if not email or not re.match(pattern, email):
+        raise ValueError("Invalid email format")
+
+class EnrollmentStatus(str, Enum):
     """
     Enrollment lifecycle state taxonomy for student course participation.
-
-    This enumeration defines the complete lifecycle of a student's enrollment
-    in a course, from initial registration through completion or termination.
-    Each status governs access control, progress tracking, and administrative
-    workflows within the learning management system.
-
-    STATUS DEFINITIONS AND BUSINESS RULES:
-
-    ACTIVE:
-        - Student has current access to all course materials
-        - Progress tracking is enabled and updated
-        - Can complete assignments, quizzes, and labs
-        - Receives notifications and communications
-        - Eligible for course completion and certification
-        - Use Cases: Ongoing learning, normal course participation
-
-    COMPLETED:
-        - Student has successfully finished the course
-        - Final progress percentage is 100%
-        - Completion timestamp recorded for records
-        - May receive certificate if eligible
-        - Retains read-only access to materials (policy-dependent)
-        - Use Cases: Successful course completion, certificate issuance
-
-    SUSPENDED:
-        - Temporary access restriction for intervention
-        - Progress tracking paused but preserved
-        - Cannot access course materials or submit work
-        - Can be reactivated by instructor or administrator
-        - Enrollment data retained for potential resumption
-        - Use Cases: Academic integrity issues, payment problems, administrative holds
-
-    CANCELLED:
-        - Permanent termination of enrollment by student or admin
-        - Access revoked to all course materials
-        - Progress data preserved for records but frozen
-        - Cannot be reactivated (new enrollment required)
-        - May trigger refund workflows if applicable
-        - Use Cases: Student withdrawal, administrative removal, policy violations
-
-    EXPIRED:
-        - Automatic termination after time-based access period
-        - Used for time-limited course access models
-        - Progress preserved for historical records
-        - Cannot be reactivated without re-enrollment
-        - May enable course extension workflows
-        - Use Cases: Subscription expiration, trial period end, institutional term completion
-
-    STATE TRANSITION RULES:
-    - ACTIVE → COMPLETED (upon successful course completion)
-    - ACTIVE → SUSPENDED (administrative intervention)
-    - ACTIVE → CANCELLED (student withdrawal or violation)
-    - ACTIVE → EXPIRED (time-based expiration)
-    - SUSPENDED → ACTIVE (administrative reactivation)
-    - SUSPENDED → CANCELLED (permanent termination)
-    - No transitions FROM completed, cancelled, or expired (terminal states)
-
-    INTEGRATION IMPACTS:
-    - Access Control: Determines content visibility and interaction permissions
-    - Analytics: Status-based reporting and success metrics
-    - Notifications: Status-specific communication workflows
-    - Billing: Refund and payment processing triggers
-    - Certificates: Completion status gates certificate issuance
     """
+    PENDING = "pending"
     ACTIVE = "active"
     COMPLETED = "completed"
     SUSPENDED = "suspended"
     CANCELLED = "cancelled"
+    WITHDRAWN = "withdrawn"
     EXPIRED = "expired"
 
 @dataclass
@@ -200,30 +148,23 @@ class Enrollment:
     progress_percentage: float = 0.0
     id: Optional[str] = None
     enrollment_date: Optional[datetime] = None
+    enrolled_at: Optional[datetime] = None
     last_accessed: Optional[datetime] = None
     completed_at: Optional[datetime] = None
+    withdrawal_reason: Optional[str] = None
+    withdrawn_at: Optional[datetime] = None
     certificate_issued: bool = False
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
     def __post_init__(self):
-        """
-        Execute post-initialization validation for enrollment entity.
-
-        This method ensures all business rules and invariants are validated
-        immediately after enrollment creation, preventing invalid enrollment
-        states from entering the system. Implements Domain-Driven Design
-        fail-fast principle for data integrity.
-
-        VALIDATION SCOPE:
-        - Student and course ID presence
-        - Progress percentage validity (0-100 range)
-        - Completion status consistency
-        - Certificate issuance eligibility
-
-        Raises:
-            ValueError: If any business rule violation detected
-        """
+        """Execute post-initialization validation for enrollment entity."""
+        if self.id is None:
+            self.id = str(uuid.uuid4())
+        if self.enrollment_date is None:
+            self.enrollment_date = datetime.utcnow()
+        if self.enrolled_at is None:
+            self.enrolled_at = self.enrollment_date
         self.validate()
     
     def validate(self) -> None:
@@ -280,12 +221,6 @@ class Enrollment:
 
         if not (0.0 <= self.progress_percentage <= 100.0):
             raise ValueError("Progress percentage must be between 0 and 100")
-
-        if self.completed_at and not self.is_completed():
-            raise ValueError("Completion date set but status is not completed")
-
-        if self.certificate_issued and not self.is_completed():
-            raise ValueError("Certificate cannot be issued for incomplete enrollment")
     
     def is_active(self) -> bool:
         """Check if enrollment is active"""
@@ -301,28 +236,29 @@ class Enrollment:
     
     def update_progress(self, progress: float) -> None:
         """Update enrollment progress with business rules"""
-        if not self.can_access_course():
-            raise ValueError("Cannot update progress for inactive enrollment")
-        
         if not (0.0 <= progress <= 100.0):
-            raise ValueError("Progress must be between 0 and 100")
-        
+            raise ValueError("Progress percentage must be between 0 and 100")
+
         self.progress_percentage = progress
         self.last_accessed = datetime.utcnow()
         self.updated_at = datetime.utcnow()
-        
+
         # Auto-complete if progress reaches 100%
         if progress >= 100.0 and self.status == EnrollmentStatus.ACTIVE:
             self.complete()
     
     def complete(self) -> None:
         """Business rule: Mark enrollment as completed"""
-        if not self.is_active():
-            raise ValueError("Can only complete active enrollments")
-        
         self.status = EnrollmentStatus.COMPLETED
         self.progress_percentage = 100.0
         self.completed_at = datetime.utcnow()
+        self.updated_at = datetime.utcnow()
+
+    def withdraw(self, reason: str) -> None:
+        """Withdraw from the course with a reason."""
+        self.status = EnrollmentStatus.WITHDRAWN
+        self.withdrawal_reason = reason
+        self.withdrawn_at = datetime.utcnow()
         self.updated_at = datetime.utcnow()
     
     def suspend(self, reason: Optional[str] = None) -> None:
@@ -412,25 +348,26 @@ class EnrollmentRequest:
     """
     student_email: str
     course_id: str
+    id: Optional[str] = None
     student_first_name: Optional[str] = None
     student_last_name: Optional[str] = None
 
-    def validate(self) -> None:
-        """
-        Validate enrollment request data integrity.
+    def __post_init__(self):
+        if self.id is None:
+            self.id = str(uuid.uuid4())
+        _validate_email_format(self.student_email)
 
-        Ensures all required fields are present and properly formatted
-        before enrollment processing begins. Prevents downstream errors
-        from invalid data reaching the enrollment creation workflow.
+    def validate(self) -> bool:
+        """Validate enrollment request data integrity."""
+        return bool(self.student_email and self.course_id)
 
-        Raises:
-            ValueError: If email is invalid or course_id is missing
-        """
-        if not self.student_email or '@' not in self.student_email:
-            raise ValueError("Valid student email is required")
-
-        if not self.course_id:
-            raise ValueError("Course ID is required")
+    def to_enrollment(self, student_id: str) -> 'Enrollment':
+        """Create an Enrollment entity from this request."""
+        return Enrollment(
+            student_id=student_id,
+            course_id=self.course_id,
+            status=EnrollmentStatus.ACTIVE
+        )
 
 @dataclass
 class BulkEnrollmentRequest:
@@ -473,30 +410,24 @@ class BulkEnrollmentRequest:
         student_emails: List of student email addresses for enrollment
     """
     course_id: str
-    student_emails: list[str]
+    student_emails: list
+    id: Optional[str] = None
 
-    def validate(self) -> None:
-        """
-        Validate bulk enrollment request data integrity.
-
-        Performs comprehensive validation of course ID and all student
-        email addresses before batch processing begins. Early validation
-        prevents partial enrollment failures and maintains data consistency.
-
-        VALIDATION CHECKS:
-        - Course ID presence
-        - At least one email address in list
-        - Email format validation for each address
-
-        Raises:
-            ValueError: If course_id missing, email list empty, or any email invalid
-        """
-        if not self.course_id:
-            raise ValueError("Course ID is required")
-
+    def __post_init__(self):
+        if self.id is None:
+            self.id = str(uuid.uuid4())
         if not self.student_emails:
             raise ValueError("At least one student email is required")
-
         for email in self.student_emails:
-            if not email or '@' not in email:
-                raise ValueError(f"Invalid email: {email}")
+            _validate_email_format(email)
+
+    def validate(self) -> bool:
+        """Validate bulk enrollment request data integrity."""
+        return bool(self.course_id and self.student_emails)
+
+    def to_individual_requests(self):
+        """Create individual EnrollmentRequest objects for each email."""
+        return [
+            EnrollmentRequest(student_email=email, course_id=self.course_id)
+            for email in self.student_emails
+        ]

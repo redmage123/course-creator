@@ -499,7 +499,11 @@ class FunctionExecutor:
             verify=False  # Disable SSL verification for localhost
         )
 
+        # Instance-level function registry (supplements class-level AVAILABLE_FUNCTIONS)
+        self._instance_functions: Dict[str, FunctionSchema] = {}
+
         logger.info(f"Function Executor initialized: api_base_url={api_base_url}")
+
 
     async def execute(
         self,
@@ -1451,19 +1455,172 @@ class FunctionExecutor:
                 error_message=f"Failed to get status: {e}"
             )
 
-    @classmethod
-    def get_available_functions(cls) -> List[FunctionSchema]:
+    def get_available_functions(self=None) -> List[FunctionSchema]:
         """
-        Get list of available functions
+        Get list of available functions.
 
-        BUSINESS PURPOSE:
-        Provides function schemas to LLM for function calling.
-        Defines what actions AI assistant can perform.
-
-        RETURNS:
-            List of all available function schemas
+        Can be called as class method or instance method.
+        When called on an instance, also returns instance-registered functions.
         """
-        return cls.AVAILABLE_FUNCTIONS
+        base = list(FunctionExecutor.AVAILABLE_FUNCTIONS)
+        if self is not None and hasattr(self, '_instance_functions'):
+            base = base + list(self._instance_functions.values())
+        return base
+
+    def register_function(self, schema: FunctionSchema) -> None:
+        """
+        Register a new function schema for execution.
+
+        Args:
+            schema: FunctionSchema to register
+
+        Raises:
+            ValueError: If function with same name is already registered
+        """
+        # Check class-level and instance-level registries
+        existing_names = {f.name for f in self.AVAILABLE_FUNCTIONS}
+        existing_names.update(self._instance_functions.keys())
+
+        if schema.name in existing_names:
+            raise ValueError(f"Function '{schema.name}' is already registered")
+
+        self._instance_functions[schema.name] = schema
+
+    def _validate_parameters(self, schema: FunctionSchema, params: Dict[str, Any]) -> None:
+        """
+        Validate parameters against function schema.
+
+        Args:
+            schema: FunctionSchema with parameter definitions
+            params: Parameters to validate
+
+        Raises:
+            ValueError: If required parameter is missing
+            TypeError: If parameter has wrong type
+        """
+        # Handle dict-based parameters schema (JSON Schema format)
+        if isinstance(schema.parameters, dict):
+            required_params = schema.parameters.get("required", [])
+            properties = schema.parameters.get("properties", {})
+
+            for param_name in required_params:
+                if param_name not in params:
+                    raise ValueError(f"Missing required parameter: {param_name}")
+
+            # Type checking
+            for param_name, param_value in params.items():
+                if param_name in properties:
+                    expected_type = properties[param_name].get("type")
+                    if expected_type == "string" and not isinstance(param_value, str):
+                        raise TypeError(
+                            f"Parameter '{param_name}' must be a string, "
+                            f"got {type(param_value).__name__}"
+                        )
+                    elif expected_type == "integer" and not isinstance(param_value, int):
+                        raise TypeError(
+                            f"Parameter '{param_name}' must be an integer, "
+                            f"got {type(param_value).__name__}"
+                        )
+                    elif expected_type == "boolean" and not isinstance(param_value, bool):
+                        raise TypeError(
+                            f"Parameter '{param_name}' must be a boolean, "
+                            f"got {type(param_value).__name__}"
+                        )
+        else:
+            # Handle List[FunctionParameter] format
+            for param in schema.parameters:
+                if param.required and param.name not in params:
+                    raise ValueError(f"Missing required parameter: {param.name}")
+
+    async def execute_function(
+        self,
+        function_name: str,
+        params: Dict[str, Any],
+        auth_token: Optional[str] = None
+    ) -> 'ActionResult':
+        """
+        Execute a registered function with the given parameters.
+
+        Args:
+            function_name: Name of the function to execute
+            params: Parameters to pass to the function
+            auth_token: Optional auth token for API calls
+
+        Returns:
+            ActionResult with success/failure and data
+
+        Raises:
+            ValueError: If function is not found
+        """
+        from ai_assistant_service.domain.entities.intent import ActionResult
+
+        # Find function schema
+        schema = None
+        if hasattr(self, '_instance_functions') and function_name in self._instance_functions:
+            schema = self._instance_functions[function_name]
+        else:
+            for f in self.AVAILABLE_FUNCTIONS:
+                if f.name == function_name:
+                    schema = f
+                    break
+
+        if schema is None:
+            raise ValueError(f"Function '{function_name}' not found")
+
+        # Validate parameters
+        self._validate_parameters(schema, params)
+
+        # Execute via API endpoint if schema has one
+        if schema.api_endpoint:
+            try:
+                # Replace path parameters
+                url = schema.api_endpoint
+                for key, value in params.items():
+                    url = url.replace(f"{{{key}}}", str(value))
+
+                full_url = f"{self.api_base_url}{url}"
+                headers = {}
+                if auth_token:
+                    headers["Authorization"] = auth_token
+
+                http_method = (schema.http_method or "GET").upper()
+
+                if http_method == "GET":
+                    response = await self.client.get(full_url, headers=headers)
+                elif http_method == "POST":
+                    response = await self.client.post(full_url, json=params, headers=headers)
+                elif http_method == "PUT":
+                    response = await self.client.put(full_url, json=params, headers=headers)
+                elif http_method == "DELETE":
+                    response = await self.client.delete(full_url, headers=headers)
+                else:
+                    response = await self.client.get(full_url, headers=headers)
+
+                if response.status_code < 300:
+                    return ActionResult(
+                        success=True,
+                        function_name=function_name,
+                        result_data=response.json()
+                    )
+                else:
+                    return ActionResult(
+                        success=False,
+                        function_name=function_name,
+                        error_message=f"API error {response.status_code}: {response.text}"
+                    )
+
+            except Exception as e:
+                return ActionResult(
+                    success=False,
+                    function_name=function_name,
+                    error_message=str(e)
+                )
+
+        return ActionResult(
+            success=False,
+            function_name=function_name,
+            error_message="No API endpoint configured for this function"
+        )
 
     async def close(self) -> None:
         """Close HTTP client"""

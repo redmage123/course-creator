@@ -35,6 +35,7 @@ class FixStatus(Enum):
     FAILED: Fix generation failed
     """
     PENDING = "pending"
+    IN_PROGRESS = "in_progress"
     GENERATING = "generating"
     TESTING = "testing"
     TESTS_FAILED = "tests_failed"
@@ -56,12 +57,14 @@ class FileChange:
         lines_added: Number of lines added
         lines_removed: Number of lines removed
         diff: Actual diff content
+        description: Human-readable description of the change
     """
     file_path: str
     change_type: str  # 'add', 'modify', 'delete'
     lines_added: int = 0
     lines_removed: int = 0
     diff: Optional[str] = None
+    description: Optional[str] = None
 
     def to_dict(self) -> dict:
         return {
@@ -152,6 +155,59 @@ class BugFixAttempt:
             analysis_id=analysis_id,
             status=FixStatus.PENDING
         )
+
+    def start_progress(self, branch_name: str) -> None:
+        """
+        Mark fix as in progress on the given branch.
+
+        Args:
+            branch_name: Git branch name for this fix
+        """
+        self.status = FixStatus.IN_PROGRESS
+        self.branch_name = branch_name
+
+    def complete_with_pr(
+        self,
+        pr_number: int,
+        pr_url: str,
+        files_changed: Optional[List[FileChange]] = None,
+        lines_added: int = 0,
+        lines_removed: int = 0,
+        tests_passed: int = 0,
+        tests_failed: int = 0
+    ) -> None:
+        """
+        Complete fix by creating a PR.
+
+        Args:
+            pr_number: GitHub PR number
+            pr_url: Full PR URL
+            files_changed: List of changed files
+            lines_added: Lines added
+            lines_removed: Lines removed
+            tests_passed: Tests that passed
+            tests_failed: Tests that failed
+        """
+        self.pr_number = pr_number
+        self.pr_url = pr_url
+        self.files_changed = files_changed or []
+        self.lines_added = lines_added
+        self.lines_removed = lines_removed
+        self.tests_passed = tests_passed
+        self.tests_failed = tests_failed
+        self.status = FixStatus.PR_CREATED
+        self.completed_at = datetime.utcnow()
+
+    def complete_with_error(self, error_message: str) -> None:
+        """
+        Complete fix with an error.
+
+        Args:
+            error_message: Description of what went wrong
+        """
+        self.error_message = error_message
+        self.status = FixStatus.FAILED
+        self.completed_at = datetime.utcnow()
 
     def update_status(self, new_status: FixStatus) -> None:
         """

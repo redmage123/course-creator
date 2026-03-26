@@ -46,6 +46,7 @@ class JWTAuthenticator:
             )
 
         try:
+            # SSL verification disabled for inter-service communication with self-signed certs
             async with httpx.AsyncClient(verify=False) as client:
                 response = await client.get(
                     f"{self._user_service_url}/users/me",

@@ -35,17 +35,21 @@ class JobStatus(Enum):
     """
     Job processing status.
 
+    PENDING: Waiting to be processed (alias for QUEUED)
     QUEUED: Waiting to be processed
     PROCESSING: Currently being processed
     COMPLETED: Successfully finished
     FAILED: Processing failed
     CANCELLED: Cancelled by user/system
+    RETRY_PENDING: Failed but will be retried
     """
+    PENDING = "pending"
     QUEUED = "queued"
     PROCESSING = "processing"
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
+    RETRY_PENDING = "retry_pending"
 
 
 @dataclass
@@ -82,6 +86,7 @@ class BugTrackingJob:
     retry_count: int = 0
     max_retries: int = 3
     error_message: Optional[str] = None
+    result_message: Optional[str] = None
     worker_id: Optional[str] = None
     queued_at: datetime = field(default_factory=datetime.utcnow)
     started_at: Optional[datetime] = None
@@ -97,7 +102,8 @@ class BugTrackingJob:
         cls,
         bug_report_id: str,
         job_type: JobType,
-        priority: int = 5
+        priority: int = 5,
+        max_retries: int = 3
     ) -> "BugTrackingJob":
         """
         Factory method to create a new job.
@@ -106,32 +112,50 @@ class BugTrackingJob:
             bug_report_id: ID of the bug to process
             job_type: Type of job
             priority: Processing priority (1-10)
+            max_retries: Maximum retry attempts
 
         Returns:
-            BugTrackingJob: New job in queued status
+            BugTrackingJob: New job in pending status
         """
         return cls(
             id=str(uuid.uuid4()),
             bug_report_id=bug_report_id,
             job_type=job_type,
             priority=priority,
-            status=JobStatus.QUEUED
+            max_retries=max_retries,
+            status=JobStatus.PENDING
         )
 
-    def start_processing(self, worker_id: str) -> None:
+    def start(self, worker_id: Optional[str] = None) -> None:
         """
         Mark job as being processed.
 
         Args:
-            worker_id: ID of the worker processing this job
+            worker_id: Optional ID of the worker processing this job
         """
         self.status = JobStatus.PROCESSING
-        self.worker_id = worker_id
+        if worker_id:
+            self.worker_id = worker_id
         self.started_at = datetime.utcnow()
 
-    def complete(self) -> None:
-        """Mark job as successfully completed."""
+    def start_processing(self, worker_id: str) -> None:
+        """
+        Mark job as being processed (legacy method).
+
+        Args:
+            worker_id: ID of the worker processing this job
+        """
+        self.start(worker_id)
+
+    def complete(self, result_message: Optional[str] = None) -> None:
+        """Mark job as successfully completed.
+
+        Args:
+            result_message: Optional result message to store
+        """
         self.status = JobStatus.COMPLETED
+        if result_message is not None:
+            self.result_message = result_message
         self.completed_at = datetime.utcnow()
 
     def fail(self, error_message: str) -> bool:
@@ -152,11 +176,20 @@ class BugTrackingJob:
             self.completed_at = datetime.utcnow()
             return False
 
-        # Reset for retry
-        self.status = JobStatus.QUEUED
+        # Set retry pending status
+        self.status = JobStatus.RETRY_PENDING
         self.started_at = None
         self.worker_id = None
         return True
+
+    def get_retry_backoff_seconds(self) -> float:
+        """
+        Calculate exponential backoff wait time before retry.
+
+        Returns:
+            float: Seconds to wait before retrying
+        """
+        return min(2 ** self.retry_count * 5.0, 300.0)  # Max 5 minutes
 
     def cancel(self) -> None:
         """Cancel the job."""

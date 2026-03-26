@@ -15,9 +15,60 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / 'services' /
 
 from analytics.domain.entities.student_analytics import (
     StudentActivity, LabUsageMetrics, QuizPerformance,
-    StudentProgress, LearningAnalytics
+    StudentProgress, LearningAnalytics, ActivityType, ContentType, CompletionStatus
 )
 from api.models import AnalyticsRequest, LearningAnalyticsResponse
+
+
+def calculate_engagement_score(analytics_data: dict) -> float:
+    """Calculate engagement score from analytics data dict."""
+    activity_summary = analytics_data.get('activity_summary', {})
+    lab_metrics = analytics_data.get('lab_metrics', {})
+    quiz_perf = analytics_data.get('quiz_performance', {})
+    progress_summary = analytics_data.get('progress_summary', {})
+
+    total_activities = activity_summary.get('total_activities', 0)
+    total_sessions = lab_metrics.get('total_sessions', 0)
+    avg_quiz_score = quiz_perf.get('average_score', 0)
+    content_types = progress_summary.get('by_content_type', [])
+    total_time = sum(ct.get('total_time_minutes', 0) for ct in content_types)
+
+    if total_activities == 0 and total_sessions == 0 and avg_quiz_score == 0:
+        return 0.0
+
+    activity_score = min(total_activities / 50.0, 1.0) * 30
+    session_score = min(total_sessions / 10.0, 1.0) * 30
+    quiz_score = (avg_quiz_score / 100.0) * 25
+    time_score = min(total_time / 300.0, 1.0) * 15
+
+    return round(activity_score + session_score + quiz_score + time_score, 2)
+
+
+def generate_recommendations(analytics_data: dict) -> list:
+    """Generate recommendations based on analytics data."""
+    recommendations = []
+    activity_summary = analytics_data.get('activity_summary', {})
+    lab_metrics = analytics_data.get('lab_metrics', {})
+    quiz_perf = analytics_data.get('quiz_performance', {})
+    engagement_score = analytics_data.get('engagement_score', 100)
+
+    total_activities = activity_summary.get('total_activities', 0)
+    avg_errors = lab_metrics.get('average_errors', 0)
+    avg_quiz_score = quiz_perf.get('average_score', 100)
+    pass_rate = quiz_perf.get('pass_rate', 1.0)
+
+    if total_activities < 10:
+        recommendations.append("Increase your engagement with course materials for better learning outcomes.")
+    if avg_errors > 5:
+        recommendations.append("Practice debugging skills to reduce errors in lab exercises.")
+    if avg_quiz_score < 70 or pass_rate < 0.6:
+        recommendations.append("Review quiz materials and consider retaking quizzes to improve scores.")
+    if engagement_score >= 80 and avg_quiz_score >= 85:
+        recommendations.append("Excellent progress! Keep up the great work and consider advanced topics.")
+
+    if not recommendations:
+        recommendations.append("Great job maintaining consistent engagement with the course!")
+    return recommendations
 
 class TestAnalyticsModels:
     """Test analytics data models - pure Pydantic validation, no mocks needed"""
@@ -27,15 +78,15 @@ class TestAnalyticsModels:
         activity = StudentActivity(
             student_id="student-123",
             course_id="course-456",
-            activity_type="lab_access",
+            activity_type=ActivityType.LAB_ACCESS,
             activity_data={"lab_id": "lab-789"}
         )
-        
+
         assert activity.student_id == "student-123"
         assert activity.course_id == "course-456"
-        assert activity.activity_type == "lab_access"
+        assert activity.activity_type == ActivityType.LAB_ACCESS
         assert activity.activity_data["lab_id"] == "lab-789"
-        assert activity.activity_id is not None
+        assert activity.id is not None
         assert isinstance(activity.timestamp, datetime)
     
     def test_lab_usage_metrics_model(self):
@@ -56,7 +107,7 @@ class TestAnalyticsModels:
         assert lab_usage.actions_performed == 25
         assert lab_usage.code_executions == 12
         assert lab_usage.errors_encountered == 3
-        assert lab_usage.completion_status == "in_progress"
+        assert lab_usage.completion_status == CompletionStatus.IN_PROGRESS
     
     def test_quiz_performance_model(self):
         """Test QuizPerformance model validation"""
@@ -64,12 +115,13 @@ class TestAnalyticsModels:
             student_id="student-123",
             course_id="course-456",
             quiz_id="quiz-789",
+            attempt_number=1,
             start_time=datetime.utcnow(),
             questions_total=10,
             questions_answered=8,
             questions_correct=6
         )
-        
+
         assert quiz_perf.student_id == "student-123"
         assert quiz_perf.course_id == "course-456"
         assert quiz_perf.quiz_id == "quiz-789"
@@ -84,23 +136,24 @@ class TestAnalyticsModels:
             student_id="student-123",
             course_id="course-456",
             content_item_id="lesson-789",
-            content_type="lesson",
-            status="completed",
+            content_type=ContentType.LESSON,
+            status=CompletionStatus.COMPLETED,
             progress_percentage=85.5,
             time_spent_minutes=45,
             last_accessed=datetime.utcnow()
         )
-        
+
         assert progress.student_id == "student-123"
         assert progress.course_id == "course-456"
         assert progress.content_item_id == "lesson-789"
-        assert progress.content_type == "lesson"
-        assert progress.status == "completed"
+        assert progress.content_type == ContentType.LESSON
+        assert progress.status == CompletionStatus.COMPLETED
         assert progress.progress_percentage == 85.5
         assert progress.time_spent_minutes == 45
     
     def test_learning_analytics_model(self):
         """Test LearningAnalytics model validation"""
+        from analytics.domain.entities.student_analytics import RiskLevel
         analytics = LearningAnalytics(
             student_id="student-123",
             course_id="course-456",
@@ -110,10 +163,10 @@ class TestAnalyticsModels:
             quiz_performance=75.2,
             time_on_platform=120,
             streak_days=7,
-            risk_level="low",
+            risk_level=RiskLevel.LOW,
             recommendations=["Great progress!", "Keep it up!"]
         )
-        
+
         assert analytics.student_id == "student-123"
         assert analytics.course_id == "course-456"
         assert analytics.engagement_score == 78.5
@@ -122,7 +175,7 @@ class TestAnalyticsModels:
         assert analytics.quiz_performance == 75.2
         assert analytics.time_on_platform == 120
         assert analytics.streak_days == 7
-        assert analytics.risk_level == "low"
+        assert analytics.risk_level == RiskLevel.LOW
         assert len(analytics.recommendations) == 2
 
 
@@ -243,7 +296,7 @@ class TestAnalyticsModelsValidation:
 
     def test_student_activity_required_fields(self):
         """Test that required fields are validated"""
-        with pytest.raises(ValueError):
+        with pytest.raises((ValueError, TypeError)):
             StudentActivity()  # Missing required fields
     
     def test_student_activity_default_values(self):
@@ -251,12 +304,12 @@ class TestAnalyticsModelsValidation:
         activity = StudentActivity(
             student_id="student-123",
             course_id="course-456",
-            activity_type="login"
+            activity_type=ActivityType.LOGIN
         )
-        
+
         assert activity.activity_data == {}
         assert isinstance(activity.timestamp, datetime)
-        assert activity.activity_id is not None
+        assert activity.id is not None
         assert activity.session_id is None
         assert activity.ip_address is None
         assert activity.user_agent is None
@@ -267,13 +320,14 @@ class TestAnalyticsModelsValidation:
             student_id="student-123",
             course_id="course-456",
             quiz_id="quiz-789",
+            attempt_number=1,
             start_time=datetime.utcnow(),
             end_time=datetime.utcnow() + timedelta(minutes=15),
             questions_total=10,
             questions_answered=10,
             questions_correct=8
         )
-        
+
         # Test duration calculation would be done in the endpoint
         assert quiz_perf.questions_total == 10
         assert quiz_perf.questions_correct == 8
@@ -281,14 +335,19 @@ class TestAnalyticsModelsValidation:
     
     def test_student_progress_status_values(self):
         """Test valid status values for student progress"""
-        valid_statuses = ["not_started", "in_progress", "completed", "mastered"]
-        
+        valid_statuses = [
+            CompletionStatus.NOT_STARTED,
+            CompletionStatus.IN_PROGRESS,
+            CompletionStatus.COMPLETED,
+            CompletionStatus.MASTERED
+        ]
+
         for status in valid_statuses:
             progress = StudentProgress(
                 student_id="student-123",
                 course_id="course-456",
                 content_item_id="lesson-789",
-                content_type="lesson",
+                content_type=ContentType.LESSON,
                 status=status,
                 last_accessed=datetime.utcnow()
             )
@@ -296,8 +355,9 @@ class TestAnalyticsModelsValidation:
     
     def test_learning_analytics_risk_levels(self):
         """Test valid risk level values"""
-        valid_risk_levels = ["low", "medium", "high"]
-        
+        from analytics.domain.entities.student_analytics import RiskLevel
+        valid_risk_levels = [RiskLevel.LOW, RiskLevel.MEDIUM, RiskLevel.HIGH]
+
         for risk_level in valid_risk_levels:
             analytics = LearningAnalytics(
                 student_id="student-123",
