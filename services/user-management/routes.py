@@ -234,24 +234,110 @@ async def get_current_user(
 def setup_auth_routes(app: FastAPI) -> None:
     """Setup authentication routes"""
     
-    @app.post("/auth/register", response_model=UserResponse)
+    @app.post("/auth/register", response_model=TokenResponse)
     async def register(
         request: UserCreateRequest,
-        user_service: IUserService = Depends(get_user_service)
+        raw_request: Request,
+        user_service: IUserService = Depends(get_user_service),
+        token_service=Depends(get_token_service)
     ):
         """
-        Register a new user with optional custom user ID validation.
-        
+        Register a new user and return an access token for immediate login.
+
         Business Context:
-        User registration supports both auto-generated and custom user IDs. When a custom
-        user ID is provided, the system validates its uniqueness before creating the account.
-        This enables flexible user management while maintaining data integrity.
+        Creates user account (default role: organization_admin), auto-creates a
+        personal organization, and returns a JWT so the user is auto-logged-in
+        and can start building courses immediately.
         """
         try:
             user_data = request.dict(exclude={'password'})
+            # Default new self-service registrations to organization_admin
+            if user_data.get('role') == 'student':
+                user_data['role'] = 'organization_admin'
             user = await user_service.create_user(user_data, request.password)
-            return _user_to_response(user)
-            
+            user_response = _user_to_response(user)
+
+            # Auto-create a personal organization for the new user so they can
+            # start creating courses immediately after registration.
+            org_id = None
+            try:
+                pool = raw_request.app.state.container._connection_pool
+                if pool:
+                    import re as _re
+                    org_name = f"{request.full_name or request.username}'s Organization"
+                    base_slug = _re.sub(r'[^a-z0-9]', '-', request.username.lower())
+                    async with pool.acquire() as conn:
+                        # Check slug uniqueness and append suffix if needed
+                        existing = await conn.fetchval(
+                            "SELECT COUNT(*) FROM course_creator.organizations WHERE slug = $1",
+                            base_slug
+                        )
+                        org_slug = base_slug if not existing else f"{base_slug}-{str(user.id)[:6]}"
+                        org_row = await conn.fetchrow(
+                            """INSERT INTO course_creator.organizations (name, slug, description)
+                               VALUES ($1, $2, $3) RETURNING id""",
+                            org_name, org_slug, f"Personal organization for {request.full_name or request.username}"
+                        )
+                        org_id = str(org_row['id'])
+                        await conn.execute(
+                            """INSERT INTO course_creator.organization_memberships
+                               (user_id, organization_id, role)
+                               VALUES ($1, $2, 'organization_admin')""",
+                            str(user.id), org_id
+                        )
+                        # Update user record with their org id for convenience
+                        await conn.execute(
+                            "UPDATE course_creator.users SET organization_id = $1 WHERE id = $2",
+                            org_id, str(user.id)
+                        )
+            except Exception as org_err:
+                logger.warning("Auto org creation failed for user %s: %s", user.id, org_err)
+                # Non-fatal — user can create org manually from dashboard
+
+            user_response.organization_id = org_id
+
+            # --- Analytics: log user_registered + org_created events ---
+            try:
+                pool = raw_request.app.state.container._connection_pool
+                if pool:
+                    import json as _json
+                    async with pool.acquire() as _conn:
+                        await _conn.execute(
+                            """INSERT INTO course_creator.analytics_events
+                               (user_id, org_id, event_name, properties)
+                               VALUES ($1, $2, 'user_registered', $3)""",
+                            str(user.id),
+                            org_id,
+                            _json.dumps({"role": user_data.get("role"), "subscription_tier": user_data.get("subscription_tier", "free")}),
+                        )
+                        if org_id:
+                            await _conn.execute(
+                                """INSERT INTO course_creator.analytics_events
+                                   (user_id, org_id, event_name, properties)
+                                   VALUES ($1, $2, 'org_created', $3)""",
+                                str(user.id),
+                                org_id,
+                                _json.dumps({"auto_created": True}),
+                            )
+            except Exception as _ae:
+                logger.warning("Analytics event logging failed for user %s: %s", user.id, _ae)
+            # -------------------------------------------------------
+
+            # Generate access token so the user is auto-logged-in after registration
+            session_id = f"sess_{str(user.id)[:8]}"
+            access_token = await token_service.generate_access_token(
+                str(user.id),
+                session_id,
+                role=user.role.value if user.role else None,
+                organization_id=org_id
+            )
+
+            return TokenResponse(
+                access_token=access_token,
+                user=user_response,
+                is_first_login=True
+            )
+
         except UserValidationException as e:
             # Handle validation errors (including duplicate user ID)
             if e.error_code == "DUPLICATE_USER_ID_ERROR":
@@ -290,7 +376,7 @@ def setup_auth_routes(app: FastAPI) -> None:
     # All authentication now uses the consolidated /auth/login endpoint below
 
     @app.post("/auth/login", response_model=TokenResponse)
-    @rate_limit(requests_per_minute=5, key_prefix="login")
+    @rate_limit(requests_per_minute=20, key_prefix="login")
     async def login(
         request: LoginRequest,
         raw_request: Request,
@@ -1325,7 +1411,10 @@ def setup_subscription_routes(app: FastAPI) -> None:
         # Resolve tier from Stripe (non-blocking fallback to stored tier)
         stripe_tier = resolve_tier_from_stripe(current_user.email)
 
-        # Persist updated tier if it differs from what's stored
+        # Persist updated tier if it differs from what's stored.
+        # If Stripe returns 'free' but the DB has an explicitly set non-free tier
+        # (e.g. set by an admin), respect the DB value as an override.
+        effective_tier = stripe_tier
         try:
             pool = raw_request.app.state.container._connection_pool
             async with pool.acquire() as conn:
@@ -1333,10 +1422,13 @@ def setup_subscription_routes(app: FastAPI) -> None:
                     "SELECT subscription_tier FROM course_creator.users WHERE id = $1",
                     current_user.id,
                 )
-                if stored != stripe_tier:
+                if stored and stored != "free" and stripe_tier == "free":
+                    # DB has an elevated tier but Stripe returned free — keep DB value
+                    effective_tier = stored
+                elif stored != effective_tier:
                     await conn.execute(
                         "UPDATE course_creator.users SET subscription_tier = $1 WHERE id = $2",
-                        stripe_tier,
+                        effective_tier,
                         current_user.id,
                     )
             usage = await get_usage_counts(current_user.id, pool)
@@ -1344,7 +1436,7 @@ def setup_subscription_routes(app: FastAPI) -> None:
             logger.warning("Subscription DB ops failed: %s", exc)
             usage = {"courses_created": 0, "lab_hours_used": 0}
 
-        return build_subscription_response(stripe_tier, usage)
+        return build_subscription_response(effective_tier, usage)
 
 
 def setup_session_routes(app: FastAPI) -> None:

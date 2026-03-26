@@ -73,8 +73,14 @@ class SubscriptionService:
             trial_end = now + timedelta(days=plan["trial_days"])
             status = "trial"
 
+        # Use Stripe Price ID when available; fall back to local plan UUID for NullProvider
+        plan_external_id = (
+            plan["stripe_price_id"]
+            if provider_name == "stripe" and plan.get("stripe_price_id")
+            else str(plan["id"])
+        )
         result = await provider.create_subscription(
-            plan_external_id=str(plan["id"]),
+            plan_external_id=plan_external_id,
             customer_id=organization_id,
             metadata={"subscription_id": sub_id, "plan_name": plan["name"]},
         )
@@ -144,8 +150,13 @@ class SubscriptionService:
         if sub.get("provider_subscription_id"):
             await provider.cancel_subscription(sub["provider_subscription_id"])
 
+        new_plan_external_id = (
+            new_plan["stripe_price_id"]
+            if provider_name == "stripe" and new_plan.get("stripe_price_id")
+            else str(new_plan["id"])
+        )
         result = await provider.create_subscription(
-            plan_external_id=str(new_plan["id"]),
+            plan_external_id=new_plan_external_id,
             customer_id=str(sub["organization_id"]),
             metadata={"subscription_id": subscription_id, "plan_name": new_plan["name"]},
         )

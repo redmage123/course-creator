@@ -80,7 +80,7 @@ from logging_setup import setup_logging
 import sys
 sys.path.append('/app/shared')
 from exceptions import (
-    CourseCreatorBaseException,
+    CourseCreatorException,
     DatabaseException,
     ValidationException,
     ContentException,
@@ -571,16 +571,16 @@ class RAGService:
         OpenAI embeddings provide consistent quality and compatibility with
         existing systems, while local embeddings reduce API costs when available.
         """
-        # Try OpenAI embeddings first
+        # Try OpenAI embeddings first (openai >= 1.0 client API)
         try:
             openai_api_key = os.getenv("OPENAI_API_KEY")
             if openai_api_key:
-                openai.api_key = openai_api_key
-                response = openai.Embedding.create(
+                _openai_client = openai.OpenAI(api_key=openai_api_key)
+                response = _openai_client.embeddings.create(
                     input=text,
                     model="text-embedding-ada-002"
                 )
-                return response['data'][0]['embedding']
+                return response.data[0].embedding
         except Exception as e:
             logger.warning(f"OpenAI embedding failed: {str(e)}")
             # Don't raise here, continue to fallback options

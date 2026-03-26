@@ -18,12 +18,13 @@ TIER_CONFIG: Dict[str, Dict[str, Any]] = {
         "name": "Free",
         "features": {
             "course_creation": True,
-            "ai_generation": False,
+            "ai_generation": True,
             "docker_labs": False,
             "analytics": "basic",
         },
         "limits": {
-            "courses_max": 1,
+            "courses_max": 3,
+            "ai_generation_max": 3,
             "lab_hours_max": 0,
         },
     },

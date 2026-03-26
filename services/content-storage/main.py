@@ -191,7 +191,15 @@ async def lifespan(app: FastAPI):
         
         content_service = ContentService(db_manager.pool, storage_config)
         storage_service = StorageService(db_manager.pool, storage_config)
-        
+
+        # Wire service instances into the API modules so FastAPI's DI picks them up.
+        # This must happen here (in lifespan) rather than in setup_dependency_injection()
+        # because the services are not created until after create_app() returns.
+        from api.content_api import set_content_service
+        from api.storage_api import set_storage_service
+        set_content_service(content_service)
+        set_storage_service(storage_service)
+
         logger.info("Content Storage Service initialized successfully")
         
         yield
@@ -496,55 +504,18 @@ def create_app(config: DictConfig) -> FastAPI:
 def setup_dependency_injection():
     """
     Dependency Injection Configuration for Content Storage Service
-    
-    Configures dependency injection to provide loose coupling between
-    components and enable testability, maintainability, and flexibility
-    in service architecture.
-    
-    DEPENDENCY INJECTION PATTERN:
-    This implementation uses a service locator pattern to manage dependencies,
-    allowing for easy testing with mock objects and supporting different
-    configurations for various deployment environments.
-    
-    INJECTED DEPENDENCIES:
-    1. ContentService:
-       - Manages content lifecycle operations
-       - Handles file validation and storage
-       - Provides content metadata management
-    
-    2. StorageService:
-       - Manages storage backend operations
-       - Handles quota management and statistics
-       - Provides storage health monitoring
-    
-    BENEFITS:
-    - Testability: Easy to inject mock services for unit testing
-    - Flexibility: Can swap implementations based on configuration
-    - Maintainability: Clear separation of concerns
-    - Scalability: Services can be distributed or scaled independently
-    
-    FUTURE ENHANCEMENTS:
-    This could be replaced with a more sophisticated DI container
-    like dependency-injector or similar framework for more complex
-    dependency graphs and lifecycle management.
+
+    Registers the initialized service instances so that FastAPI's dependency
+    injection can provide them to route handlers.  Uses set_*_service() helpers
+    in each API module so that the existing `get_*_service` functions (which
+    FastAPI captured at app-creation time) look up the current value from a
+    module-level variable rather than returning a stale None.
     """
-    from api.content_api import get_content_service
-    from api.storage_api import get_storage_service
-    
-    # Override the dependency functions
-    def override_content_service():
-        return content_service
-    
-    def override_storage_service():
-        return storage_service
-    
-    # This would be properly implemented with a DI container
-    # For now, we'll modify the functions directly
-    import api.content_api
-    import api.storage_api
-    
-    api.content_api.get_content_service = override_content_service
-    api.storage_api.get_storage_service = override_storage_service
+    from api.content_api import set_content_service
+    from api.storage_api import set_storage_service
+
+    set_content_service(content_service)
+    set_storage_service(storage_service)
 
 
 @hydra.main(config_path="conf", config_name="config", version_base=None)

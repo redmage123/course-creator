@@ -31,7 +31,7 @@ from fastapi.security import OAuth2PasswordBearer
 logger = logging.getLogger(__name__)
 
 USER_MANAGEMENT_URL = os.environ.get(
-    "USER_MANAGEMENT_URL", "http://user-management:8000"
+    "USER_MANAGEMENT_URL", "https://user-management:8000"
 )
 JWT_SECRET = os.environ.get("JWT_SECRET_KEY", "your-secret-key-change-in-production")
 JWT_ALGORITHM = os.environ.get("JWT_ALGORITHM", "HS256")
@@ -44,10 +44,11 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
 _TIER_CONFIG = {
     "free": {
         "course_creation": True,
-        "ai_generation": False,
+        "ai_generation": True,
         "docker_labs": False,
         "analytics": "basic",
-        "courses_max": 1,
+        "courses_max": 3,
+        "ai_generation_max": 3,
     },
     "pro": {
         "course_creation": True,
@@ -82,7 +83,10 @@ async def _fetch_subscription(token: str) -> dict:
     remain available even if user-management is temporarily down.
     """
     try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
+        # Use verify=False to handle self-signed certs in development/staging.
+        # The internal network is trusted; certificate validation is enforced at
+        # the edge (nginx/load-balancer) in production.
+        async with httpx.AsyncClient(timeout=3.0, verify=False) as client:
             resp = await client.get(
                 f"{USER_MANAGEMENT_URL}/users/subscription",
                 headers={"Authorization": f"Bearer {token}"},

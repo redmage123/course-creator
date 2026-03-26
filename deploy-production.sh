@@ -713,10 +713,18 @@ ${NC}
 EOF
     
     log "INFO" "Starting Course Creator Platform production deployment..."
-    
+
     # Pre-flight checks
     check_root
     check_ubuntu_version
+
+    # QA gate — block deploy if Python unit tests fail
+    log "INFO" "Running QA gate: Python unit tests must pass before deploy..."
+    if ! python3 -m pytest tests/unit/ -q --tb=short 2>&1; then
+        log "ERROR" "QA gate FAILED: unit tests did not pass. Aborting deployment."
+        exit 1
+    fi
+    log "INFO" "QA gate PASSED — proceeding with deployment."
     
     # Collect user input
     collect_api_keys

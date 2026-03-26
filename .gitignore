@@ -71,3 +71,6 @@ checkpoint-*/
 *.mp3
 *.png
 .playwright-mcp/
+
+# Compiled frontend build assets
+frontend/assets/

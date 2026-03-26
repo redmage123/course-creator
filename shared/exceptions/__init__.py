@@ -974,3 +974,9 @@ CourseGenerationException = ServiceException
 NLPServiceException = ServiceException
 NLPServiceConnectionException = ServiceException
 NLPServiceResponseException = ServiceException
+
+# Backwards-compatibility aliases used by rag-service
+ContentException = ServiceException
+ContentNotFoundException = NotFoundException
+RAGException = ServiceException
+EmbeddingException = ServiceException

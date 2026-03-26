@@ -16,5 +16,10 @@ httpx>=0.25.0
 # =============================================================================
 asyncio>=3.4.3
 
+# =============================================================================
+# STRIPE PAYMENT INTEGRATION
+# =============================================================================
+stripe>=7.0.0
+
 # Note: All other dependencies (FastAPI, asyncpg, Hydra, Uvicorn, etc.)
 # are provided by requirements-base.txt

@@ -16,6 +16,7 @@
  */
 
 import { Component, ReactNode, ErrorInfo } from 'react';
+import { captureException } from '../../../services/monitoring';
 import styles from './ErrorBoundary.module.css';
 
 interface ErrorBoundaryProps {
@@ -89,8 +90,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       this.props.onError(error, errorInfo);
     }
 
-    // TODO: Send error to logging service (e.g., Sentry, LogRocket)
-    // Example: Sentry.captureException(error, { contexts: { react: { componentStack: errorInfo.componentStack } } });
+    // Report to monitoring (Sentry) — no-op when VITE_SENTRY_DSN is not set
+    captureException(error, {
+      componentStack: errorInfo.componentStack ?? undefined,
+    });
   }
 
   /**

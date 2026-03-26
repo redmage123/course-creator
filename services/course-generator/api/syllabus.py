@@ -156,15 +156,110 @@ async def generate_syllabus(
                 "request_id": result.get("request_id"),
             }
         else:
-            # Standard generation (placeholder for now)
-            logger.info("Using standard syllabus generation (no URLs provided)")
+            # Standard generation using local Ollama LLM
+            logger.info("Using local Ollama LLM for standard syllabus generation")
+
+            import json
+            import re
+            import socket
+            import struct
+            import os
+            import httpx
+
+            # Resolve host gateway — Ollama runs on the host with OLLAMA_HOST=0.0.0.0
+            def _get_host_gateway() -> str:
+                try:
+                    with open('/proc/net/route') as f:
+                        for line in f.readlines()[1:]:
+                            fields = line.split()
+                            if fields[1] == '00000000':
+                                return socket.inet_ntoa(struct.pack('<L', int(fields[2], 16)))
+                except Exception:
+                    pass
+                return '172.18.0.1'  # fallback
+
+            ollama_url = os.environ.get(
+                'OLLAMA_BASE_URL',
+                f'http://{_get_host_gateway()}:11434'
+            )
+            # Prefer phi3:mini (faster CPU inference); fall back to default
+            ollama_model = os.environ.get('OLLAMA_MODEL', 'phi3:mini')
+
+            num_modules = max(3, min(6, (request.duration or 8) // 2 + 1))
+            prompt = f"""You are an expert course designer. Create a {request.level.value}-level course syllabus.
+
+Course: {request.title}
+Description: {request.description}
+Duration: {request.duration or 8} hours
+Audience: {request.target_audience or 'General learners'}
+
+Return ONLY valid JSON (no markdown, no explanation):
+{{"title":"{request.title}","description":"{request.description}","level":"{request.level.value}","duration":{request.duration or 8},"objectives":["obj1","obj2","obj3"],"prerequisites":[],"target_audience":"{request.target_audience or 'General learners'}","modules":[{{"module_number":1,"title":"Module 1","description":"desc","duration":60,"objectives":["obj"],"topics":[{{"title":"Topic 1","description":"desc","duration":30,"objectives":["obj"]}}]}}]}}
+
+Generate {num_modules} real modules for this specific course. Return ONLY the JSON."""
+
+            try:
+                # Generous timeout — CPU-only Ollama inference is slow
+                async with httpx.AsyncClient(timeout=600.0) as http_client:
+                    llm_resp = await http_client.post(
+                        f"{ollama_url}/api/generate",
+                        json={
+                            "model": ollama_model,
+                            "prompt": prompt,
+                            "stream": False,
+                            "options": {
+                                "temperature": 0.7,
+                                "num_predict": 800,
+                            },
+                        },
+                    )
+                    llm_resp.raise_for_status()
+                    response_text = llm_resp.json().get("response", "")
+            except httpx.HTTPStatusError as e:
+                raise AIServiceException(f"Ollama returned error {e.response.status_code}: {str(e)}")
+            except httpx.TimeoutException as e:
+                raise AIServiceException(f"Ollama request timed out (model too slow on CPU): {str(e)}")
+            except httpx.HTTPError as e:
+                raise AIServiceException(f"Ollama request failed: {str(e)}")
+
+            logger.debug(f"LLM raw response (first 200 chars): {response_text[:200]}")
+
+            # Robustly extract JSON from the response
+            json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', response_text)
+            if json_match:
+                json_text = json_match.group(1)
+            else:
+                json_start = response_text.find('{')
+                json_end = response_text.rfind('}')
+                if json_start != -1 and json_end != -1:
+                    json_text = response_text[json_start:json_end + 1]
+                else:
+                    json_text = response_text
+
+            try:
+                syllabus_data = json.loads(json_text)
+            except json.JSONDecodeError as e:
+                raise AIServiceException(
+                    f"Failed to parse AI response as JSON: {str(e)}. "
+                    f"Raw response: {response_text[:300]}"
+                )
+
+            # Ensure required fields are present with request values as fallback
+            syllabus_data.setdefault("title", request.title)
+            syllabus_data.setdefault("description", request.description)
+            syllabus_data.setdefault("level", request.level.value)
+            syllabus_data.setdefault("duration", request.duration)
+            syllabus_data.setdefault("objectives", request.objectives)
+            syllabus_data.setdefault("prerequisites", request.prerequisites)
+            syllabus_data.setdefault("target_audience", request.target_audience)
+            syllabus_data["generation_method"] = "ai_standard_local_llm"
 
             return {
                 "success": True,
-                "message": "Standard syllabus generation endpoint - service starting up",
+                "syllabus": syllabus_data,
+                "message": "Syllabus generated successfully using local AI",
                 "course_id": request.course_id,
-                "status": "placeholder",
-                "hint": "Provide source_url or source_urls for URL-based generation",
+                "generation_method": "ai_standard_local_llm",
             }
 
     except URLValidationException as e:

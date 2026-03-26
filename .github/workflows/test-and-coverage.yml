@@ -34,7 +34,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ['3.11']
+        python-version: ['3.12']
 
     services:
       postgres:
@@ -120,7 +120,7 @@ jobs:
             -v \
             -n auto \
             --maxfail=5 \
-            tests/integration/ || true
+            tests/integration/
         env:
           DATABASE_URL: postgresql://postgres:postgres_password@localhost:5432/course_creator_test
           REDIS_URL: redis://localhost:6379/0
@@ -238,12 +238,12 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: Download Python coverage
         uses: actions/download-artifact@v4
         with:
-          name: python-coverage-3.11
+          name: python-coverage-3.12
           path: coverage/python/
 
       - name: Download React coverage
@@ -306,7 +306,7 @@ jobs:
 
           ### Detailed Reports
           - [View Combined Coverage Report](../artifacts/combined-coverage-report/index.html)
-          - [Python Coverage Details](../artifacts/python-coverage-3.11/index.html)
+          - [Python Coverage Details](../artifacts/python-coverage-3.12/index.html)
           - [React Coverage Details](../artifacts/react-coverage-18/index.html)
           """
 
@@ -332,7 +332,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: Install security tools
         run: |
@@ -340,13 +340,13 @@ jobs:
 
       - name: Run Bandit security scan
         run: |
-          bandit -r services/ -ll --format json -o bandit-report.json || true
-          bandit -r services/ -ll || true
+          bandit -r services/ -ll --format json -o bandit-report.json
+          bandit -r services/ -ll
 
       - name: Run Safety dependency scan
         run: |
-          safety check --json --output safety-report.json || true
-          safety check || true
+          safety check --json --output safety-report.json
+          safety check
 
       - name: Upload security reports
         uses: actions/upload-artifact@v4

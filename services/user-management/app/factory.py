@@ -326,8 +326,11 @@ class ApplicationFactory:
         through the dependency injection container.
         """
         setup_auth_routes(app)
-        setup_user_routes(app)
+        # setup_subscription_routes must come before setup_user_routes so that
+        # /users/subscription is registered before the /users/{user_id} wildcard,
+        # otherwise FastAPI matches "subscription" as user_id.
         setup_subscription_routes(app)
+        setup_user_routes(app)
         setup_session_routes(app)
         setup_admin_routes(app)
         setup_sso_routes(app)

@@ -219,6 +219,19 @@ async def create_organization(
     try:
         logging.info(f"Creating organization: {request.name} with administrator: {request.admin_email}")
 
+        # If the authenticated caller's email matches the admin_email they supplied, they already
+        # exist in user-management.  Pass their user_id so the service can skip creating a
+        # duplicate user (which would fail with "Email already exists").
+        existing_user_id = None
+        if current_user:
+            caller_email = current_user.get("email", "")
+            caller_user_id = str(current_user.get("user_id") or current_user.get("id") or "")
+            if caller_email and caller_email.lower() == (request.admin_email or "").lower() and caller_user_id:
+                existing_user_id = caller_user_id
+                logging.info(
+                    f"Authenticated caller {caller_user_id} matches admin_email — will reuse existing user as org admin"
+                )
+
         # Use enhanced organization service to create both organization and admin user
         result = await organization_service.create_organization(
             name=request.name,
@@ -240,7 +253,8 @@ async def create_organization(
             admin_email=request.admin_email,
             admin_phone=request.admin_phone,
             admin_roles=request.admin_roles or [request.admin_role],
-            admin_password=request.admin_password
+            admin_password=request.admin_password,
+            existing_user_id=existing_user_id
         )
 
         # Extract organization data from result
@@ -250,8 +264,8 @@ async def create_organization(
 
         logging.info(f"Organization and admin user created successfully: {request.name}")
 
-        # If the caller is authenticated, add them as a member of the new org
-        # so they can switch to it via the org switcher
+        # If the caller is authenticated, ensure their organization_id is updated and they have
+        # an org_admin membership in the new org.
         if current_user:
             caller_user_id = str(current_user.get("user_id") or current_user.get("id"))
             try:

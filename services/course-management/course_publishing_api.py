@@ -148,7 +148,7 @@ class CoursePublishingService:
         """Verify a password."""
         return pwd_context.verify(plain_password, hashed_password)
     
-    def generate_unique_url(self, access_token: str, base_url: str = "http://localhost:3000/student-login") -> str:
+    def generate_unique_url(self, access_token: str, base_url: str = "https://courses.techuni.ai/student-login") -> str:
         """Generate unique access URL for student."""
         return f"{base_url}?token={access_token}"
     
